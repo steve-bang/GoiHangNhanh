@@ -1,0 +1,48 @@
+import type { EvidenceStatusLabel } from '@/core/theme';
+
+import { FILE_STATES, type FileState } from './file-state';
+
+/**
+ * Ánh xạ trạng thái tệp -> nhãn hiển thị (docs/09 mục 3). Hai pha ghi hình dùng trạng thái riêng
+ * của màn quay, không dùng sáu nhãn.
+ */
+export type EvidenceDisplayStatus =
+  | { readonly kind: 'capture'; readonly phase: 'recording' | 'saving_local' }
+  | { readonly kind: 'label'; readonly label: EvidenceStatusLabel };
+
+export interface DisplayContext {
+  /**
+   * Lý do đang chờ (ví dụ mất mạng). Có lý do -> "Chờ tải lên"; không có -> "Đã lưu trên máy".
+   * Cách phân biệt này là DIỄN GIẢI của docs/09 mục 3 (cả hai nhãn cùng ứng với trạng thái nghiệp
+   * vụ "Chờ tải lên"); cần BA xác nhận - xem docs/engineering/decisions.md, câu hỏi Q-02.
+   */
+  readonly waitingReason?: string;
+}
+
+const label = (l: EvidenceStatusLabel): EvidenceDisplayStatus => ({ kind: 'label', label: l });
+
+export function toDisplayStatus(
+  state: FileState,
+  context: DisplayContext = {},
+): EvidenceDisplayStatus {
+  switch (state) {
+    case FILE_STATES.RECORDING:
+      return { kind: 'capture', phase: 'recording' };
+    case FILE_STATES.SAVING_LOCAL:
+      return { kind: 'capture', phase: 'saving_local' };
+    case FILE_STATES.QUEUED:
+      return label(context.waitingReason ? 'waiting_upload' : 'saved_on_device');
+    case FILE_STATES.UPLOADING:
+      return label('uploading');
+    case FILE_STATES.UPLOADED:
+      return label('uploaded');
+    case FILE_STATES.VERIFIED:
+      return label('verified');
+    case FILE_STATES.LOCAL_SAVE_FAILED:
+    case FILE_STATES.UPLOAD_FAILED:
+    case FILE_STATES.HASH_MISMATCH:
+    case FILE_STATES.NEEDS_ATTENTION:
+    case FILE_STATES.UNRECOVERABLE:
+      return label('error');
+  }
+}

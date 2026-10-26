@@ -10,7 +10,7 @@ Bạn là Senior Mobile Developer chuyên React Native (TypeScript) và Firebase
 
 1. Đọc `CLAUDE.md` và `docs/README.md` (quyết định D-xx, câu hỏi mở O-xx).
 2. Đọc đặc tả liên quan: màn hình `docs/04`, `docs/05`; trạng thái `docs/02`; chính sách bằng chứng/lưu trữ `docs/06`; phân quyền `docs/07`; nghiệm thu `docs/08`.
-3. Xem mã hiện có (`package.json`, cấu trúc thư mục, cấu hình Firebase) trước khi thêm thứ mới; dùng đúng lệnh build/lint/test có trong repo. Nếu repo chưa có mã, khởi tạo tối thiểu và cập nhật mục lệnh trong `CLAUDE.md`.
+3. Đọc `docs/engineering/` (kiến trúc, quy ước, kiểm thử, ADR — phần lớn là *đề xuất chờ duyệt*), xem mã hiện có (`package.json`, cấu trúc thư mục, cấu hình Firebase) trước khi thêm thứ mới; dùng đúng lệnh trong mục "Lệnh" của `CLAUDE.md`. Thêm lệnh mới thì cập nhật mục đó.
 4. Nghiệp vụ là nguồn sự thật. Nếu spec thiếu, mâu thuẫn hoặc không khả thi trên nền tảng, **dừng và nêu rõ** (đề xuất 2–3 phương án + khuyến nghị) thay vì tự quyết thay đổi hành vi nghiệp vụ. Không tự chốt câu hỏi mở O-xx.
 
 ## Công nghệ đã chốt
@@ -30,10 +30,21 @@ React Native (mobile) + Firebase (BaaS), **không xây backend riêng**. Không 
 - **Quyền riêng tư:** thu thập tối thiểu; không log nội dung nhạy cảm, mã vận đơn hay thông tin khách hàng vào dịch vụ phân tích/crash không cần thiết; không đặt khóa bí mật trong app.
 - **Chi phí:** cân nhắc chi phí lưu trữ/băng thông video và số lần đọc/ghi Firestore khi thiết kế truy vấn và hàng đợi.
 
+## Quy ước kỹ thuật của repo (chi tiết: `docs/engineering/conventions.md`)
+
+- Lệnh: `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:rules` (Emulator, cần Java 21), `npm run check` (lint + typecheck + format + test). Node 22.
+- Lớp: `features/<f>/{domain,data,ui}`; `domain` và `core` là TypeScript thuần (không React/Expo/Firebase); chỉ `data/`/`platform/` gọi SDK; feature khác chỉ import qua `@/features/<f>`. ESLint thực thi.
+- Trạng thái tệp: dùng `src/features/evidence/domain/file-state.ts`; chỉ sự kiện `origin: 'server'` mới tới `uploaded`/`verified`/`hash_mismatch`. Nhãn hiển thị qua `toDisplayStatus` + `EVIDENCE_STATUS_PRESENTATION` (docs/09 mục 3).
+- Chuỗi UI qua i18n (`src/core/i18n/locales/vi`), cấm văn bản cứng trong JSX; mã lỗi chỉ lấy từ `src/core/errors/codes.ts` (khớp docs/04–05), mã mới → đề xuất BA ở `docs/engineering/decisions.md`.
+- Log chỉ qua `src/core/logging/logger.ts` (che PII); không `console`.
+- Đổi Rules → thêm test trong `firebase/tests/rules` (có cả `assertFails`), gồm truy cập chéo shop.
+- Thư viện native còn chờ spike trên thiết bị thật (camera, tải nền, Firebase RN, mã băm): không tự khóa; xem `docs/engineering/architecture.md` mục 11–12.
+- Commit theo Conventional Commits (tiếng Anh); PR theo `.github/pull_request_template.md`; không hợp nhất khi CI chưa xanh.
+
 ## Cách làm việc
 
 - Thay đổi nhỏ, đúng phạm vi; theo quy ước mã sẵn có của repo. Không thêm trừu tượng, tính năng hay cấu hình ngoài yêu cầu.
-- Mã nghiệp vụ trọng yếu (máy trạng thái tệp, hàng đợi tải lên, khôi phục phiên, liên kết phiên–kiện) phải có unit test; Security Rules có test emulator; luồng ghi hình/tải lên cần kịch bản kiểm thử trên thiết bị thật iOS và Android theo `docs/08` (QA-01…12).
+- Mã nghiệp vụ trọng yếu (máy trạng thái tệp, hàng đợi tải lên, khôi phục phiên, liên kết phiên–kiện) phải có unit test; Security Rules có test emulator; luồng ghi hình/tải lên cần kịch bản kiểm thử trên thiết bị thật iOS và Android theo `docs/08` (QA-01…14).
 - Trước khi báo hoàn thành: chạy lint, typecheck, test liên quan và nói rõ đã chạy gì, kết quả ra sao. Không tuyên bố đã chạy được trên thiết bị khi chỉ chạy được unit test/emulator; nói rõ phần nào chưa kiểm chứng trên thiết bị thật.
 - Mã lỗi và thông báo người dùng lấy đúng từ `docs/04`, `docs/05`; thông báo gồm điều gì xảy ra, ảnh hưởng, việc làm tiếp. Nếu cần thêm mã/thông báo mới, đề xuất để BA đưa vào tài liệu thay vì tự đặt rời rạc trong mã.
 - Khi quyết định kỹ thuật làm lệch hoặc giới hạn nghiệp vụ, ghi vào mục "Hệ quả với Firebase" trong `docs/06-evidence-retention-policy.md` hoặc tài liệu kỹ thuật và báo người dùng.

@@ -1,0 +1,265 @@
+rules_version = '2';
+
+// Firestore Security Rules - Đơn Chứng.
+//
+// Nguyên tắc (xem docs/engineering/architecture.md mục 6 và CLAUDE.md):
+// 1. Mặc định TỪ CHỐI. Mỗi collection chỉ được mở khi có rule + test trong
+//    firebase/tests/rules. Chưa có rule cho: returnCases, discrepancies, disputes, exports,
+//    plans... (thêm cùng tính năng tương ứng).
+// 2. Cô lập theo shop (bất biến #8): mọi collection nằm dưới shops/{shopId}; quyền suy ra từ
+//    shops/{shopId}/members/{uid}. Thu hồi quyền có hiệu lực ngay (không dùng custom claims;
+//    xem ADR-005 - giữ trung lập với O-03 nhiều shop).
+// 3. Trường do máy chủ sở hữu (server.*, auditEvents, members, thời gian máy chủ) client không
+//    ghi được (bất biến #3, #7).
+// 4. Bằng chứng bất biến (bất biến #2, #4): liên kết (đơn, kiện, phiên) và mã băm khai báo không
+//    đổi sau khi tạo; không client nào xóa được.
+// 5. Dữ liệu client tạo luôn mang nguồn 'user_entered' (bất biến #10).
+//
+// Ma trận quyền theo hành động còn mở (O-07). Các nhóm vai trò dưới đây là KHUNG TẠM, chặt vừa
+// đủ để cô lập; điều chỉnh khi O-07 được chốt.
+//
+// Giới hạn cần biết: Rules chỉ trả permission-denied, client không phân biệt được "không có
+// quyền" với "xung đột phiên bản (rev)". Client phải đọc lại để phân loại (UI-J13).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Hàm dùng chung ----------
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function memberPath(shopId) {
+      return /databases/$(database)/documents/shops/$(shopId)/members/$(request.auth.uid);
+    }
+
+    // get() trên tài liệu không tồn tại làm biểu thức lỗi -> từ chối. Đó là hành vi mong muốn.
+    function isActiveMember(shopId) {
+      return signedIn() && get(memberPath(shopId)).data.status == 'active';
+    }
+
+    function hasAnyRole(shopId, allowed) {
+      return isActiveMember(shopId) && get(memberPath(shopId)).data.roles.hasAny(allowed);
+    }
+
+    // Nhóm vai trò (khung tạm, chờ O-07).
+    function canManageOrders(shopId) {
+      return hasAnyRole(shopId, ['owner', 'manager', 'packer']);
+    }
+
+    function canReadAudit(shopId) {
+      return hasAnyRole(shopId, ['owner', 'manager', 'dispute_handler']);
+    }
+
+    function isShopSource(v) {
+      return v in ['shopee', 'tiktok_shop', 'lazada', 'other_unknown'];
+    }
+
+    // Trường chỉ cho phép đổi đúng các khóa này (ngoài ra bất biến).
+    function onlyChanges(allowedKeys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedKeys);
+    }
+
+    // ---------- Shop và thành viên ----------
+
+    match /shops/{shopId} {
+      allow get: if isActiveMember(shopId);
+      allow list: if false;
+      allow write: if false; // tạo shop, đổi gói: Cloud Function
+
+      match /members/{uid} {
+        allow read: if isActiveMember(shopId);
+        allow write: if false; // mời/thu hồi/đổi vai trò: Cloud Function + audit
+      }
+
+      // ---------- Đơn hàng (tối giản - D-10) ----------
+
+      match /orders/{orderId} {
+        allow read: if isActiveMember(shopId);
+
+        allow create: if canManageOrders(shopId)
+          && request.resource.data.keys().hasAll([
+            'shopId', 'orderCode', 'orderCodeNormalized', 'source', 'status',
+            'dataSource', 'createdAt', 'createdBy', 'rev'
+          ])
+          && request.resource.data.keys().hasOnly([
+            'shopId', 'orderCode', 'orderCodeNormalized', 'source', 'trackingCode',
+            'trackingCodeNormalized', 'status', 'note', 'dataSource', 'createdAt', 'createdBy',
+            'updatedAt', 'updatedBy', 'rev'
+          ])
+          && request.resource.data.shopId == shopId
+          && request.resource.data.orderCode is string
+          && request.resource.data.orderCode.size() > 0
+          && request.resource.data.orderCode.size() <= 64
+          && request.resource.data.orderCodeNormalized is string
+          && isShopSource(request.resource.data.source)
+          && request.resource.data.status == 'new'
+          && request.resource.data.dataSource == 'user_entered'
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.rev == 1;
+
+        // Cập nhật: khóa lạc quan bằng rev (mỗi lần +1) để không "last write wins" âm thầm.
+        // Lịch sử thay đổi do trigger phía máy chủ ghi vào auditEvents.
+        allow update: if canManageOrders(shopId)
+          && onlyChanges([
+            'orderCode', 'orderCodeNormalized', 'source', 'trackingCode',
+            'trackingCodeNormalized', 'status', 'note', 'updatedAt', 'updatedBy', 'rev'
+          ])
+          && isShopSource(request.resource.data.source)
+          && request.resource.data.status in [
+            'new', 'ready_to_pack', 'packing', 'packed', 'handed_over', 'completed', 'cancelled'
+          ]
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.updatedBy == request.auth.uid
+          && request.resource.data.rev == resource.data.rev + 1;
+
+        allow delete: if false; // hủy đơn là đổi trạng thái 'cancelled', không xóa
+
+        // Dòng sản phẩm: thông tin đối chiếu, tên/variant free text, không gộp variant.
+        match /lines/{lineId} {
+          allow read: if isActiveMember(shopId);
+          allow create: if canManageOrders(shopId)
+            && request.resource.data.keys().hasOnly([
+              'shopId', 'orderId', 'name', 'variant', 'quantity', 'dataSource', 'createdAt',
+              'createdBy'
+            ])
+            && request.resource.data.keys().hasAll([
+              'shopId', 'orderId', 'name', 'quantity', 'dataSource', 'createdAt', 'createdBy'
+            ])
+            && request.resource.data.shopId == shopId
+            && request.resource.data.orderId == orderId
+            && request.resource.data.name is string
+            && request.resource.data.name.size() > 0
+            && request.resource.data.name.size() <= 200
+            && request.resource.data.quantity is int
+            && request.resource.data.quantity >= 1
+            && request.resource.data.dataSource == 'user_entered'
+            && request.resource.data.createdAt == request.time
+            && request.resource.data.createdBy == request.auth.uid;
+          allow update: if canManageOrders(shopId)
+            && onlyChanges(['name', 'variant', 'quantity'])
+            && request.resource.data.quantity is int
+            && request.resource.data.quantity >= 1;
+          allow delete: if false;
+        }
+
+        // Kiện hàng: mỗi kiện có ID riêng; đơn nhiều kiện không dùng chung ID.
+        match /packages/{packageId} {
+          allow read: if isActiveMember(shopId);
+          allow create: if canManageOrders(shopId)
+            && request.resource.data.keys().hasOnly([
+              'shopId', 'orderId', 'index', 'label', 'createdAt', 'createdBy'
+            ])
+            && request.resource.data.keys().hasAll([
+              'shopId', 'orderId', 'index', 'createdAt', 'createdBy'
+            ])
+            && request.resource.data.shopId == shopId
+            && request.resource.data.orderId == orderId
+            && request.resource.data.index is int
+            && request.resource.data.index >= 1
+            && request.resource.data.createdAt == request.time
+            && request.resource.data.createdBy == request.auth.uid;
+          allow update: if canManageOrders(shopId) && onlyChanges(['label']);
+          allow delete: if false;
+        }
+      }
+
+      // ---------- Phiên ghi nhận ----------
+      // Tạo TRƯỚC khi quay, gắn kiện/đơn bằng ID; ảnh chụp dữ liệu đơn lúc bắt đầu bất biến.
+
+      match /sessions/{sessionId} {
+        allow read: if isActiveMember(shopId);
+
+        allow create: if canManageOrders(shopId)
+          && request.resource.data.keys().hasOnly([
+            'shopId', 'kind', 'orderId', 'packageId', 'orderSnapshot', 'status',
+            'startedAtDevice', 'startedAtServer', 'createdBy', 'appVersion'
+          ])
+          && request.resource.data.keys().hasAll([
+            'shopId', 'kind', 'orderId', 'packageId', 'orderSnapshot', 'status',
+            'startedAtDevice', 'startedAtServer', 'createdBy'
+          ])
+          && request.resource.data.shopId == shopId
+          && request.resource.data.kind == 'packing'
+          && request.resource.data.status == 'recording'
+          && request.resource.data.orderSnapshot is map
+          && request.resource.data.startedAtDevice is timestamp
+          && request.resource.data.startedAtServer == request.time
+          && request.resource.data.createdBy == request.auth.uid
+          // Toàn vẹn liên kết: kiện phải thuộc đúng đơn (getAfter/existsAfter để hợp lệ cả khi
+          // đơn, kiện và phiên được tạo trong cùng một batch ngoại tuyến).
+          && existsAfter(/databases/$(database)/documents/shops/$(shopId)/orders/$(request.resource.data.orderId))
+          && getAfter(/databases/$(database)/documents/shops/$(shopId)/orders/$(request.resource.data.orderId)/packages/$(request.resource.data.packageId)).data.orderId
+             == request.resource.data.orderId;
+
+        // Chỉ đổi trạng thái và ghi chú; orderId/packageId/orderSnapshot bất biến.
+        allow update: if canManageOrders(shopId)
+          && onlyChanges(['status', 'endedAtDevice', 'interruptions', 'note'])
+          && request.resource.data.status in
+            ['recording', 'ended', 'interrupted', 'confirmed', 'needs_attention'];
+
+        allow delete: if false;
+      }
+
+      // ---------- Bằng chứng (Media Asset) ----------
+      // Client khai báo; máy chủ sở hữu map `server` (trạng thái nhận, mã băm tính lại, thời gian).
+
+      match /evidence/{evidenceId} {
+        allow read: if isActiveMember(shopId);
+
+        allow create: if canManageOrders(shopId)
+          && request.resource.data.keys().hasOnly([
+            'shopId', 'sessionId', 'orderId', 'packageId', 'kind', 'origin', 'clientFileState',
+            'sha256Client', 'sizeBytes', 'durationMs', 'mimeType', 'capturedAtDevice',
+            'createdAtServer', 'createdBy', 'appVersion'
+          ])
+          && request.resource.data.keys().hasAll([
+            'shopId', 'sessionId', 'orderId', 'packageId', 'kind', 'origin', 'clientFileState',
+            'sha256Client', 'sizeBytes', 'mimeType', 'capturedAtDevice', 'createdAtServer',
+            'createdBy'
+          ])
+          && request.resource.data.shopId == shopId
+          && request.resource.data.kind in ['original_video', 'photo'] // bản dẫn xuất: chỉ máy chủ
+          && request.resource.data.origin == 'in_app_capture' // nhập thư viện: chờ O-02
+          && request.resource.data.clientFileState == 'queued' // chỉ tạo khi tệp đã đóng và đọc được
+          && request.resource.data.sha256Client is string
+          && request.resource.data.sha256Client.size() == 64
+          && request.resource.data.sizeBytes is int
+          && request.resource.data.sizeBytes > 0
+          && request.resource.data.capturedAtDevice is timestamp
+          && request.resource.data.createdAtServer == request.time
+          && request.resource.data.createdBy == request.auth.uid
+          // Phiên phải tồn tại và khớp đơn/kiện (phát hiện liên kết không hợp lệ).
+          && get(/databases/$(database)/documents/shops/$(shopId)/sessions/$(request.resource.data.sessionId)).data.orderId
+             == request.resource.data.orderId
+          && get(/databases/$(database)/documents/shops/$(shopId)/sessions/$(request.resource.data.sessionId)).data.packageId
+             == request.resource.data.packageId;
+
+        // Client chỉ cập nhật trạng thái phía thiết bị. KHÔNG được đặt uploaded/verified/
+        // hash_mismatch và không đụng `server`, `sha256Client`, liên kết.
+        allow update: if canManageOrders(shopId)
+          && onlyChanges(['clientFileState', 'lastError', 'retryCount'])
+          && request.resource.data.clientFileState in [
+            'queued', 'uploading', 'upload_failed', 'needs_attention', 'unrecoverable'
+          ];
+
+        allow delete: if false;
+      }
+
+      // ---------- Nhật ký kiểm toán ----------
+      // Chỉ máy chủ ghi (trigger/Function). Người dùng thường không sửa/xóa (bất biến #7).
+
+      match /auditEvents/{eventId} {
+        allow read: if canReadAudit(shopId);
+        allow write: if false;
+      }
+    }
+
+    // Mọi đường dẫn khác: từ chối.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
