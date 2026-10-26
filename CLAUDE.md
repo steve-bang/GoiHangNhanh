@@ -30,6 +30,7 @@ Chưa có lệnh build/chạy native (`expo prebuild`, dev build) vì chưa dự
 - `docs/engineering/conventions.md` — cấu trúc/đặt tên, quy tắc lớp, TypeScript, lỗi, i18n/UI, log/PII, bảo mật, commit/PR, định nghĩa "xong".
 - `docs/engineering/testing.md` — chiến lược test, ánh xạ QA-01…14, phần chưa tự động hóa được.
 - `docs/engineering/decisions.md` — ADR đề xuất + câu hỏi cần duyệt (Q-xx).
+- `docs/engineering/platform-support.md` — hỗ trợ iOS + Android: thị phần, sàn phiên bản, khác biệt nền tảng, ma trận kiểm thử.
 
 Mã khung đáng chú ý: `src/features/evidence/domain/file-state.ts` (máy trạng thái tệp; client không tự tới `uploaded`/`verified`), `src/core/theme/evidence-status.ts` (nhãn trạng thái docs/09 mục 3), `src/core/errors/codes.ts` (mã lỗi từ docs/04–05), `firebase/firestore.rules` + `firebase/tests/rules/` (cô lập theo shop, QA-11).
 
@@ -41,6 +42,7 @@ Các trao đổi ban đầu đã thay đổi định hướng nhiều lần. Ch�
 |---|---|---|
 | Nền tảng chính | App iOS + Android là sản phẩm chính; web chỉ để marketing/SEO/chuyển đổi | Web quản trị cho người bán, PWA ghi hình |
 | Mobile | **React Native** | Flutter, PWA |
+| Hệ điều hành | **Cả iOS và Android, ngang hàng**, phù hợp các phiên bản phổ biến. Tính năng chỉ xong khi chạy đúng trên cả hai; khác biệt nền tảng ghi trong `docs/engineering/platform-support.md`. Sàn phiên bản tối thiểu **chưa chốt** (O-20) | iOS-first hoặc Android-first, nền tảng "phụ" |
 | Backend | **Firebase** (backend-as-a-service), không xây backend riêng | NestJS, PostgreSQL, Redis, S3 multipart |
 | Nhập đơn | Quét mã hoặc nhập tay; mã chưa có thì tạo nhanh. Dữ liệu đơn **tối giản**: mã đơn + nguồn bán (+ mã vận đơn) để định danh; dòng sản phẩm (tên, variant, số lượng free text) để đối chiếu. Không bắt nhập sản phẩm trước khi quay; tích hợp sàn không bắt buộc | Bắt buộc API sàn, danh mục/SKU, form dài, quản lý bán hàng thu nhỏ |
 | Chế độ đóng hàng | Cả đơn lẻ và theo lô, dùng **chung một quy trình và mô hình dữ liệu** | Hai tính năng rời |

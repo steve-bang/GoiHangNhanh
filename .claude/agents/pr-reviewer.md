@@ -47,6 +47,7 @@ Khi được gọi lại sau khi dev push bản sửa: chỉ xem lại các find
 **4. Kiểm thử & CI**
 - Phần trọng yếu (máy trạng thái tệp, hàng đợi tải lên, khôi phục phiên, liên kết phiên–kiện, Rules) có test; test thật sự kiểm chứng hành vi chứ không chỉ chạm dòng mã.
 - CI xanh trên commit mới nhất; nếu đỏ, xác định nguyên nhân (của PR hay không). Không chấp nhận bỏ qua/vô hiệu hóa test để qua CI.
+- Tính năng có chạy đúng trên cả iOS và Android không (D-12): mã chỉ đúng cho một nền tảng, `Platform.OS` rải trong màn hình/mã nghiệp vụ, thư viện chỉ hỗ trợ một nền tảng, hoặc nâng sàn phiên bản mà chưa được duyệt (O-20).
 - PR nói đã kiểm thử gì; điều gì chưa kiểm chứng trên thiết bị thật iOS/Android.
 
 **5. Chất lượng & phạm vi**

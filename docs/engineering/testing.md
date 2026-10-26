@@ -84,7 +84,7 @@ Nguyên tắc: kiểm tra cả đường sai (không quyền, dữ liệu sai, g
 
 ## 5. Kịch bản thiết bị thật iOS/Android (QA-01…14)
 
-Ma trận thiết bị **đề xuất** (số lượng do đội quyết định, docs/08 chỉ yêu cầu "nhiều phiên bản iOS/Android và dòng máy phổ biến"): ít nhất một Android cấu hình thấp (RAM thấp, bộ nhớ gần đầy), một Android trung cấp, Android 14 và 15 (giới hạn dịch vụ nền khác nhau), một iPhone đời cũ và một đời mới, iOS hiện hành và phiên bản liền trước. Mỗi lần chạy ghi: máy, hệ điều hành, phiên bản app, kết quả.
+Ma trận thiết bị **đề xuất** — xem thêm các lớp phiên bản/hãng máy ở [platform-support.md](platform-support.md#5-ma-trận-kiểm-thử-đề-xuất-tối-thiểu) (số lượng do đội quyết định, docs/08 chỉ yêu cầu "nhiều phiên bản iOS/Android và dòng máy phổ biến"): ít nhất một Android cấu hình thấp (RAM thấp, bộ nhớ gần đầy), một Android trung cấp, Android 14 và 15 (giới hạn dịch vụ nền khác nhau), một iPhone đời cũ và một đời mới, iOS hiện hành và phiên bản liền trước. Mỗi lần chạy ghi: máy, hệ điều hành, phiên bản app, kết quả.
 
 "Tự động" = phần đã/sẽ có test ở tầng 1–3; "Thiết bị" = phải chạy tay.
 

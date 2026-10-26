@@ -75,7 +75,7 @@ Thêm điều kiện thực tế: điện thoại nóng, bộ nhớ gần đầy
 | Định danh đơn | Không tự gắn video vào đơn không xác định |
 | Bảo mật | Phân quyền theo shop, kiểm thử truy cập chéo |
 | Dữ liệu | Sao lưu, kiểm thử khôi phục, chính sách lưu giữ |
-| Mobile | Kiểm thử nhiều phiên bản iOS/Android và dòng máy |
+| Mobile | Chạy đúng trên **cả iOS và Android**; kiểm thử nhiều phiên bản và dòng máy theo ma trận ở [engineering/platform-support.md](engineering/platform-support.md#5-ma-trận-kiểm-thử-đề-xuất-tối-thiểu), gồm phiên bản sàn, giữa và mới nhất, cấu hình thấp |
 | Vận hành | Giám sát lỗi, cảnh báo, đo chi phí, quy trình sự cố |
 | Phát hành | Beta, kiểm thử hồi quy, quản lý phiên bản |
 

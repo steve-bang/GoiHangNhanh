@@ -44,6 +44,7 @@
 - [ ] Lint / typecheck: <!-- lệnh + kết quả -->
 - [ ] Unit test: <!-- lệnh + kết quả -->
 - [ ] Test Security Rules bằng Firebase Emulator (nếu đổi Rules)
+- [ ] Tính năng chạy đúng trên **cả iOS và Android** (hoặc khác biệt nền tảng đã ghi trong tài liệu)
 - [ ] Đã thử trên thiết bị thật iOS: <!-- máy, phiên bản, kịch bản -->
 - [ ] Đã thử trên thiết bị thật Android: <!-- máy, phiên bản, kịch bản -->
 

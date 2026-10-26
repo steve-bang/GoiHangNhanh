@@ -34,6 +34,7 @@ Tài liệu nghiệp vụ (BRD/PRD) cho ứng dụng di động quản lý bằn
 | D-09 | Tạm gác kiến trúc kỹ thuật; hoàn thiện nghiệp vụ trước | Thiết kế kỹ thuật RN + Firebase làm sau khi đặc tả màn hình xong |
 | D-10 | Dữ liệu đơn hàng **tối giản**, Đơn Chứng không phải phần mềm quản lý bán hàng: định danh = mã đơn + nguồn bán (+ mã vận đơn); đối chiếu = dòng sản phẩm (tên, variant free text, số lượng); không SKU/giá/địa chỉ/khách hàng/danh mục. Không bắt nhập sản phẩm trước khi quay (nhãn *Chưa khai báo sản phẩm*); gợi ý từ lịch sử của shop; không gộp variant; dữ liệu người dùng nhập ghi nguồn, không giả làm dữ liệu sàn | Bước xác nhận đơn–kiện (A03) gộp với nút Bắt đầu quay; kiểm tra sẵn sàng (A04) chạy ngầm. Chi tiết: [02](02-domain-model-and-states.md#thông-tin-đơn-hàng-tối-giản) |
 | D-11 | Hướng UI/UX: mobile-first; 4 tab (Tổng quan, Đơn hàng, Hàng hoàn, Đồng bộ); hồ sơ/cài đặt/gói trong menu tài khoản; ẩn thanh tab khi đang quay; nhãn trạng thái bằng chứng thống nhất; danh mục màn hình mã `UI-` | Chi tiết: [09](09-ui-ux-design.md). Chưa phải thiết kế Figma |
+| D-12 | Ứng dụng phải chạy đúng trên **cả iOS và Android**, phù hợp các phiên bản hệ điều hành phổ biến; hai nền tảng ngang hàng, không có nền tảng phụ | Tại Việt Nam Android ≈ 60,65%, iOS ≈ 39,31% (StatCounter 06/2026). Sàn phiên bản cụ thể chưa chốt (O-20). Chi tiết: [engineering/platform-support.md](engineering/platform-support.md) |
 
 ### Đã bị thay thế — không áp dụng
 
@@ -66,3 +67,5 @@ Tài liệu nghiệp vụ (BRD/PRD) cho ứng dụng di động quản lý bằn
 | O-17 | Chế độ tối; ngôn ngữ ngoài tiếng Việt | Bản đầu chế độ sáng, tiếng Việt |
 | O-18 | Thanh điều hướng dưới: mockup có Trang chủ/Đơn hàng/Quét/Thông báo/Cá nhân; D-11 có Tổng quan/Đơn hàng/Hàng hoàn/Đồng bộ | Tổng quan · Đơn hàng · Quét (giữa) · Hàng hoàn · Đồng bộ; Thông báo và Cá nhân ở thanh trên. Xem [09 mục 5.5](09-ui-ux-design.md#55-đối-chiếu-mockup-với-đặc-tả) |
 | O-19 | Đóng gói đơn mới đi qua 3 màn trước camera (mockup) so với một lần chạm (D-10) | Nút chính "Lưu và quay video"; chỉ dùng màn Xác nhận khi quét ra đơn có sẵn |
+| O-20 | Sàn phiên bản hệ điều hành tối thiểu cho iOS và Android | Đặt bằng sàn kỹ thuật cao nhất của framework và thư viện native đã chọn sau spike (hiện RN 0.88: iOS 15.1, Android 7.0); chỉ nâng khi có số liệu người dùng thật. Xem [platform-support](engineering/platform-support.md#3-sàn-phiên-bản) |
+| O-21 | Hỗ trợ máy tính bảng/màn hình gập? | Bản đầu chỉ điện thoại |

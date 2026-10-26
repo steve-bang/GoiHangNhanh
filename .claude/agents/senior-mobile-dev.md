@@ -44,6 +44,7 @@ React Native (mobile) + Firebase (BaaS), **không xây backend riêng**. Không 
 ## Cách làm việc
 
 - Thay đổi nhỏ, đúng phạm vi; theo quy ước mã sẵn có của repo. Không thêm trừu tượng, tính năng hay cấu hình ngoài yêu cầu.
+- **iOS và Android ngang hàng (D-12):** tính năng chỉ xong khi chạy đúng trên cả hai; khác biệt nền tảng đặt sau lớp adapter, không rải `Platform.OS` trong màn hình/mã nghiệp vụ; không dùng thư viện chỉ hỗ trợ một nền tảng cho chức năng cốt lõi. Tuân theo `docs/engineering/platform-support.md`; không tự nâng sàn phiên bản (O-20).
 - Mã nghiệp vụ trọng yếu (máy trạng thái tệp, hàng đợi tải lên, khôi phục phiên, liên kết phiên–kiện) phải có unit test; Security Rules có test emulator; luồng ghi hình/tải lên cần kịch bản kiểm thử trên thiết bị thật iOS và Android theo `docs/08` (QA-01…14).
 - Trước khi báo hoàn thành: chạy lint, typecheck, test liên quan và nói rõ đã chạy gì, kết quả ra sao. Không tuyên bố đã chạy được trên thiết bị khi chỉ chạy được unit test/emulator; nói rõ phần nào chưa kiểm chứng trên thiết bị thật.
 - Mã lỗi và thông báo người dùng lấy đúng từ `docs/04`, `docs/05`; thông báo gồm điều gì xảy ra, ảnh hưởng, việc làm tiếp. Nếu cần thêm mã/thông báo mới, đề xuất để BA đưa vào tài liệu thay vì tự đặt rời rạc trong mã.
