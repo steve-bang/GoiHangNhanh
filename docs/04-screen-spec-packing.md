@@ -1,8 +1,8 @@
 # 04 — Đặc tả màn hình: Đóng gói có ghi hình (A01–A08)
 
-Khung đặc tả mỗi màn hình: mục đích, thành phần, hành động, trạng thái, lỗi, tiêu chí nghiệm thu. Áp dụng các quy tắc chung ở cuối tài liệu.
+Danh mục màn hình giao diện (mã `UI-`) và ánh xạ sang các mã A01–A08 dưới đây: [09](09-ui-ux-design.md). Khung đặc tả mỗi màn hình: mục đích, thành phần, hành động, trạng thái, lỗi, tiêu chí nghiệm thu. Áp dụng các quy tắc chung ở cuối tài liệu.
 
-Luồng chuẩn: **A01** Danh sách công việc → **A02** Tìm/tạo đơn → **A03** Xác nhận đơn và kiện → **A04** Kiểm tra sẵn sàng → **A05** Quay → **A06** Xác nhận kết quả → **A07** Đồng bộ bằng chứng → **A08** Kết quả và đơn tiếp theo. Nhánh ngoại lệ có thể tới màn xử lý lỗi nhưng không được bỏ qua trạng thái lưu tệp, người thực hiện, hay quan hệ phiên–kiện.
+Luồng chuẩn: **A01** Danh sách công việc → **A02** Tìm/tạo đơn → **A03** Xem nhanh đơn/kiện và bắt đầu quay → **A04** Kiểm tra sẵn sàng (chạy ngầm, chỉ hiện khi có vấn đề) → **A05** Quay → **A06** Xác nhận kết quả → **A07** Đồng bộ bằng chứng → **A08** Kết quả và đơn tiếp theo. Nhánh ngoại lệ có thể tới màn xử lý lỗi nhưng không được bỏ qua trạng thái lưu tệp, người thực hiện, hay quan hệ phiên–kiện.
 
 ## A01 — Danh sách công việc đóng gói
 
@@ -39,7 +39,13 @@ Luồng chuẩn: **A01** Danh sách công việc → **A02** Tìm/tạo đơn �
 - Nhiều kết quả → yêu cầu chọn; không tự chọn kết quả đầu.
 - Mã đã có phiên đóng gói → hiển thị lịch sử, hỏi xem phiên cũ hay tạo phiên mới.
 
-**Quy tắc tạo mới:** mã đơn/mã vận đơn nhập tay, không có mã ngoài thì hệ thống tạo ID nội bộ; sản phẩm tên tự do + số lượng + ghi chú; không bắt buộc danh mục/SKU; bổ sung sau phải lưu lịch sử; kiểm tra trùng mã trong phạm vi shop trước khi tạo.
+**Quy tắc tạo nhanh (màn "Đơn hàng mới"):** gồm *Mã đơn hàng*, *Nguồn bán* (Shopee / TikTok Shop / Lazada / Khác–chưa xác định), và tùy chọn *Tên sản phẩm*, *Phân loại/variant*, *Số lượng*; nút **Lưu nhanh và tiếp tục** cùng lối **Quay ngay, khai báo sau**. Mã quét được điền sẵn.
+- Không có mã ngoài → hệ thống tạo ID nội bộ.
+- Tên sản phẩm/variant free text; không bắt buộc danh mục/SKU, giá, địa chỉ, thông tin khách hàng.
+- Bỏ qua sản phẩm → hồ sơ mang nhãn **Chưa khai báo sản phẩm**; không chặn quay. Bổ sung sau có lịch sử.
+- Gợi ý từ lịch sử nhập gần đây của shop; nhiều dòng trong cùng đơn, sửa số lượng ngay trên dòng; không gộp các variant khác nhau.
+- Giá trị người dùng nhập được ghi nguồn *do người dùng nhập*.
+- Kiểm tra trùng mã (mã đơn + nguồn bán) trong phạm vi shop trước khi tạo.
 
 | Mã lỗi | Thông báo |
 |---|---|
@@ -51,21 +57,24 @@ Luồng chuẩn: **A01** Danh sách công việc → **A02** Tìm/tạo đơn �
 **Nghiệm thu:**
 - Tạo được đơn mới khi không kết nối sàn nào.
 - Free text giữ nguyên theo quy tắc chuẩn hóa đã công bố.
+- Tạo đơn và vào quay được mà không nhập tên sản phẩm; hồ sơ hiện nhãn *Chưa khai báo sản phẩm*.
+- Nhiều dòng cùng tên sản phẩm khác variant được giữ thành các dòng riêng.
 - Quét trùng không ghi đè đơn/video cũ.
 - Bấm nhiều lần khi mạng chậm không tạo đơn hai lần.
 - Mất mạng → báo rõ việc tìm kiếm chưa hoàn tất; chỉ tạo bản nháp cục bộ khi có cơ chế xử lý trùng và đồng bộ.
 
-## A03 — Xác nhận đơn hàng và kiện hàng
+## A03 — Xem nhanh đơn và kiện, bắt đầu quay
 
-**Mục đích:** tạo liên kết chính xác đơn–kiện–phiên **trước khi mở camera**.
+**Mục đích:** tạo liên kết chính xác đơn–kiện–phiên **trước khi mở camera**, nhưng không thêm bước xác nhận thừa: màn hình này vừa là chỗ nhìn lại đơn, vừa là nút bắt đầu quay.
 
-**Thành phần:** mã đơn, mã kiện; danh sách sản phẩm free text và số lượng; ghi chú; thêm dòng sản phẩm; thêm kiện; nút Xác nhận bắt đầu đóng gói.
+**Thành phần:** mã đơn, nguồn bán, mã kiện (mặc định một kiện); các dòng sản phẩm/variant/số lượng nếu đã có (sửa số lượng ngay trên dòng); thêm dòng; chỉ nhập phần còn thiếu; thêm kiện (tùy chọn); nhãn *Chưa khai báo sản phẩm* nếu chưa có; nút **Bắt đầu quay**.
 
 **Hành vi:**
 - Sửa tự do trước khi quay.
 - Đơn nhiều kiện → mỗi kiện có ID riêng.
-- Sản phẩm trống → cảnh báo nội dung đối chiếu hạn chế; cho tiếp tục theo chính sách shop.
-- Xác nhận → tạo phiên đóng gói mới gắn đúng kiện, lưu ảnh chụp dữ liệu đơn tại thời điểm bắt đầu.
+- Sản phẩm trống → **không chặn**: cho quay ngay, gắn nhãn *Chưa khai báo sản phẩm*, nhắc bổ sung sau; hiển thị rằng nội dung đối chiếu sẽ hạn chế.
+- Đơn đã đủ dữ liệu và một kiện → chỉ cần một chạm Bắt đầu quay; không có hộp thoại xác nhận phụ.
+- Bấm Bắt đầu quay → tạo phiên đóng gói mới gắn đúng kiện, lưu ảnh chụp dữ liệu đơn tại thời điểm bắt đầu, rồi vào A05. Kiểm tra sẵn sàng (A04) đã chạy ngầm; chỉ chặn và hiện màn hình A04 khi có điều kiện bắt buộc không đạt.
 
 **Lỗi:** "Vui lòng nhập số lượng hợp lệ"; "Kiện này đã có phiên đang thực hiện"; "Thông tin đơn đã thay đổi ở thiết bị khác" (yêu cầu tải lại hoặc xác nhận cách xử lý xung đột).
 
@@ -80,6 +89,8 @@ Luồng chuẩn: **A01** Danh sách công việc → **A02** Tìm/tạo đơn �
 **Mục đích:** phát hiện sớm điều kiện khiến video có thể không được lưu.
 
 **Kiểm tra bắt buộc:** quyền camera; quyền micro (nếu quay có tiếng); dung lượng thiết bị theo ngưỡng vận hành; bộ nhớ tạm; phiên chưa bị thay thế bởi phiên khác; khả năng ghi tệp cục bộ; cảnh báo thiết bị quá nóng/bộ nhớ gần đầy nếu hệ điều hành cung cấp.
+
+**Hiển thị:** các kiểm tra chạy ngầm từ A03; màn hình này chỉ hiện khi có điều kiện bắt buộc không đạt (hoặc người dùng mở lại để kiểm tra). Khi đạt hết, chuyển thẳng vào A05 mà không thêm thao tác.
 
 **Hành động:** Bắt đầu quay (chỉ khi đạt điều kiện bắt buộc); Cấp quyền; Kiểm tra lại; Quay lại A03 không mất dữ liệu.
 

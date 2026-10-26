@@ -112,7 +112,7 @@ Dùng chung các kiểm tra kỹ thuật của [A04](04-screen-spec-packing.md#a
 
 **Thành phần:** hàng dự kiến theo đơn gốc (nếu có); hàng thực nhận; số lượng dự kiến / thực nhận; tình trạng; ghi chú, ảnh bổ sung; thêm dòng; ghi nhận sai lệch.
 
-Mỗi dòng thực nhận: tên hàng (free text), số lượng nếu xác định được, tình trạng quan sát, ghi chú, tài liệu liên quan. Có đơn gốc → gợi ý dòng để đối chiếu; không có → nhập thủ công, không cần danh mục.
+Mỗi dòng thực nhận: tên hàng và variant (free text), số lượng nếu xác định được, tình trạng quan sát, ghi chú, tài liệu liên quan. Có đơn gốc → gợi ý dòng để đối chiếu; không có → nhập thủ công, không cần danh mục. Dữ liệu dự kiến lấy từ đơn gốc (đúng như lúc đóng gói) được giữ nguyên; dữ liệu thực nhận là bản ghi riêng, không ghi đè. Hai variant khác nhau không gộp thành một dòng.
 
 **Nhóm sai lệch:** thiếu hàng; thừa hàng; sai loại/mẫu; khác màu, kích cỡ, phiên bản; hư hỏng bên ngoài; thiếu phụ kiện; không xác định được; khác.
 

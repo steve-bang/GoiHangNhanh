@@ -7,7 +7,9 @@ Tiêu chí tối thiểu; ngưỡng hiệu năng cụ thể xác lập sau khi b
 **Đơn hàng**
 - [ ] Quét mã và tìm đúng đơn hiện có
 - [ ] Tạo đơn mới khi mã chưa tồn tại
-- [ ] Nhập tên sản phẩm, số lượng, ghi chú free text
+- [ ] Nhập tên sản phẩm, variant, số lượng bằng free text; không gộp các variant khác nhau
+- [ ] Quay được khi chưa khai báo sản phẩm; hồ sơ mang nhãn *Chưa khai báo sản phẩm* và bổ sung sau có lịch sử
+- [ ] Giá trị người dùng nhập được ghi nguồn, không thể hiện như dữ liệu chính thức từ sàn
 - [ ] Cảnh báo khi quét trùng, không âm thầm tạo đơn trùng
 
 **Ghi hình**
@@ -58,6 +60,8 @@ Kiểm thử trên thiết bị iOS và Android thực tế, kể cả khi app c
 | QA-10 | Tranh chấp sắp hết hạn | Mở tranh chấp → tới mốc hết hạn → chạy dọn dẹp | Bằng chứng đang giữ không bị xóa |
 | QA-11 | Truy cập chéo shop | Đăng nhập tài khoản shop khác → mở ID tài liệu | Bị từ chối; không lộ video hay metadata nhạy cảm |
 | QA-12 | Hết dung lượng giữa phiên | Mô phỏng đầy bộ nhớ → quay → dừng | Báo lỗi trung thực, giữ phần đọc được, không đánh dấu đầy đủ |
+| QA-13 | Quay trước, khai báo sau | Quét mã chưa có → tạo nhanh chỉ với mã và nguồn bán → quay ngay → hoàn tất → bổ sung sản phẩm sau | Quay không bị chặn; nhãn *Chưa khai báo sản phẩm* hiện đến khi bổ sung; bổ sung có lịch sử; ảnh chụp dữ liệu lúc bắt đầu không bị sửa ngầm |
+| QA-14 | Nhiều variant cùng sản phẩm | Nhập "Áo thun cotton" Đen/XL ×2 và Trắng/L ×1 → quay → nhận hoàn → kiểm kê | Hai dòng riêng ở cả đóng gói và kiểm kê; không gộp; dữ liệu dự kiến không bị ghi đè bởi thực nhận |
 
 Thêm điều kiện thực tế: điện thoại nóng, bộ nhớ gần đầy, Wi-Fi yếu, chuyển Wi-Fi ↔ 4G/5G, app bị đóng đột ngột, quay nhiều video liên tiếp, nhiều phiên bản iOS/Android và dòng máy phổ biến.
 
