@@ -11,6 +11,8 @@
     },
     "android": {
       "package": "vn.doncung.app.dev"
-    }
+    },
+    "scheme": "doncung",
+    "plugins": ["expo-router"]
   }
 }

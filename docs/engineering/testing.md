@@ -9,14 +9,14 @@
 | Unit (domain thuần) | Máy trạng thái tệp, hàng đợi (logic), phục hồi phiên, liên kết phiên–kiện, ánh xạ nhãn, mã lỗi, i18n, theme, logger | Jest 30 + `jest-expo` (project `unit`) | Máy dev, CI | `npm test` |
 | Security Rules | Cô lập theo shop (QA-11), bất biến bằng chứng/phiên, trường chỉ-máy-chủ, audit | `@firebase/rules-unit-testing` 6 + Firebase Emulator (Firestore, Storage) + Jest (project `rules`) | Máy dev, CI (cần Java 21) | `npm run test:rules` |
 | Hợp đồng Cloud Functions | Đầu vào/đầu ra, quyền, idempotency, audit, hành vi theo cờ giữ | Functions + Firestore + Storage Emulator, `firebase-functions-test` | Máy dev, CI | *(thêm cùng Function đầu tiên)* |
-| Component/tích hợp UI | Trạng thái màn hình (loading/empty/offline/error/retry/success), nhãn đúng | `@testing-library/react-native` (14.1.0, 2026-10-08) + `jest-expo` | Máy dev, CI | *(thêm cùng màn hình đầu tiên)* |
+| Component/tích hợp UI | Trạng thái màn hình (loading/empty/offline/error/retry/success), nhãn đúng, điều hướng và thanh tab (router thật trong bộ nhớ) | `@testing-library/react-native` (14.1.0, 2026-10-08) + `expo-router/testing-library` + `jest-expo` | Máy dev, CI | `npm test` (đã có cho khung giao diện, xem `layout.md` mục 8) |
 | Thiết bị thật | Camera, ghi file, gián đoạn, tải nền, mạng, bộ nhớ, nhiệt, pin | Thủ công theo kịch bản; (tùy chọn) Maestro/Detox cho phần điều hướng | iPhone + Android thật | mục 5 |
 
 Nguyên tắc: đẩy tối đa logic xuống `domain` thuần để kiểm thử nhanh ở tầng 1; tầng thiết bị chỉ còn kiểm tra điều **chỉ thiết bị mới có** (hệ điều hành, phần cứng, hành vi nền).
 
 ## 2. Unit test
 
-**Đã có (khung):** 64 test trong 6 tệp.
+**Đã có (khung):** 173 test trong 18 tệp (64 test logic/theme/i18n/logger + test giao diện khung: `src/shared/ui/*.test.tsx`, `src/bootstrap/navigation/*.test.ts(x)`, màn Tổng quan và màn quay).
 
 | Tệp | Bảo đảm |
 |---|---|
@@ -126,7 +126,7 @@ Ma trận thiết bị **đề xuất** — xem thêm các lớp phiên bản/h�
 |---|---|
 | `npm run lint` | Sạch (0 lỗi, 0 cảnh báo). Đã thử vi phạm cố ý: import React Native/Firebase vào `domain`, `data` vào `domain`, import sâu feature, `console`, `any`, JSX hard-code → ESLint báo đúng |
 | `npm run typecheck` | Sạch |
-| `npm test` | 6 tệp, 64 test xanh |
+| `npm test` | 18 tệp, 173 test xanh |
 | `npm run test:rules` | 2 tệp, 49 test xanh với Emulator Firestore + Storage (Java 21); kiểm tra đột biến Rules thất bại đúng |
 | `expo export` (iOS và Android) | Metro đóng gói JS thành công (Hermes bytecode) — **không phải** build native |
 | Build native (Xcode/Gradle), chạy trên máy ảo hoặc thiết bị | **Chưa làm** (môi trường không có Xcode/Android SDK/thiết bị) |

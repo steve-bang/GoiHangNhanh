@@ -28,6 +28,12 @@ describe('tương phản màu (WCAG AA 4.5:1 cho chữ thường)', () => {
     ['success', 'background'],
     ['warning', 'background'],
     ['danger', 'background'],
+    ['text', 'brandSoft'],
+    ['brand', 'brandSoft'],
+    ['success', 'successSoft'],
+    ['warning', 'warningSoft'],
+    ['danger', 'dangerSoft'],
+    ['onCamera', 'cameraBackground'],
   ] as const)('%s trên %s', (fg, bg) => {
     expect(contrast(colors[fg], colors[bg])).toBeGreaterThanOrEqual(4.5);
   });

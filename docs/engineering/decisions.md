@@ -15,11 +15,14 @@ Trạng thái dùng trong bảng: **Đã áp dụng trong khung** (có mã/cấu
 | 005 | Phân quyền bằng tài liệu `members` trong Rules, không dùng custom claims | Đã áp dụng trong Rules mẫu |
 | 006 | Storage từ chối client; tải lên qua phiên resumable và đọc qua URL có thời hạn do Cloud Function cấp | Đã áp dụng trong `storage.rules` — cần spike S2/S5 |
 | 007 | Tài liệu bằng chứng tạo ở `queued`; trạng thái ghi hình chỉ ở thiết bị | Đã áp dụng trong Rules mẫu |
-| 008 | State: Zustand; điều hướng: Expo Router; validate: zod; i18n: i18next | i18next đã áp dụng; còn lại Đề xuất |
+| 008 | State: Zustand; điều hướng: Expo Router; validate: zod; i18n: i18next | i18next và Expo Router đã áp dụng (ADR-013); còn lại Đề xuất |
 | 009 | Ba môi trường Firebase + Emulator; bật App Check | Đề xuất |
 | 010 | Công cụ: ESLint 9, TypeScript 6.0, Jest 30, Prettier | Đã áp dụng trong khung |
 | 011 | Không ép duy nhất cứng cho mã đơn; phát hiện trùng khi truy vấn/đồng bộ | Đề xuất — cần BA (Q-03) |
 | 012 | `src/bootstrap` làm composition root (nhường `src/app` cho Expo Router) | Đã áp dụng trong khung |
+| 013 | Khung giao diện: Expo Router 58, 4 tab cấu hình ở một nơi, bảng route↔`UI-xx`, adapter điều hướng | Đã áp dụng trong khung (chờ duyệt) |
+| 014 | Icon: `@expo/vector-icons` (chỉ Ionicons) sau lớp `Icon`; token qua `useTheme()` | Đã áp dụng trong khung (chờ duyệt) |
+| 015 | Test giao diện: `@testing-library/react-native` 14 + `expo-router/testing-library` | Đã áp dụng trong khung |
 
 ---
 
@@ -99,6 +102,27 @@ Trạng thái dùng trong bảng: **Đã áp dụng trong khung** (có mã/cấu
 
 - Expo Router coi `src/app` là thư mục route. Để không xung đột nếu chọn Expo Router (ADR-008), composition root nằm ở `src/bootstrap`.
 
+## ADR-013 — Khung giao diện và điều hướng (Expo Router)
+
+Chi tiết cấu trúc: [layout.md](layout.md). Ngày kiểm tra phiên bản: 2026-10-26.
+
+- **Expo Router 58.0.26** (đúng phiên bản của Expo SDK 58 trong `expo/bundledNativeModules.json`), kèm `react-native-screens` 4.30.0, `react-native-safe-area-context` 5.10.1, `expo-linking` 58.0.14, `expo-constants` 58.0.13, `react-dom` 19.3.0 (peer bắt buộc để cây phụ thuộc của expo-router giải được; chỉ dùng cho web, app không build web). `package.json#main` = `expo-router/entry`; route ở `src/app`; `src/bootstrap/Providers.tsx` là composition root (ADR-012).
+- Môi trường tạo khung không gọi được `api.expo.dev`, nên **không chạy được `npx expo install`**; phiên bản lấy từ `bundledNativeModules.json` rồi `npm install` đúng bản đó (cùng nguồn mà `expo install` dùng). Lần cài sau nên dùng `npx expo install` thông thường.
+- **Thanh tab: 4 tab theo D-11** (Tổng quan · Đơn hàng · Hàng hoàn · Đồng bộ), cấu hình MỘT nơi ở `src/bootstrap/navigation/tab-config.ts`. Không theo mockup (O-18 chưa chốt). Chuyển sang phương án O-18 = thêm một mục + một thư mục tab (xem layout.md mục 6).
+- **Màn quay (UI-C03, UI-D04) nằm ngoài nhóm `(tabs)`** nên thanh tab ẩn; rời màn đi qua `ConfirmDialog` nhờ `usePreventRemove` của Expo Router (bọc trong `useConfirmBeforeLeave` ở `src/platform/navigation.ts`). Đã kiểm chứng bằng router chạy trong bộ nhớ (Jest), **chưa kiểm chứng nút Back phần cứng Android và cử chỉ vuốt iOS trên thiết bị**.
+- **Một bảng route ↔ `UI-xx`** ở `src/core/navigation/routes.ts` (TypeScript thuần); test đối chiếu bảng với các tệp thật trong `src/app`. Màn hình chỉ biết `RouteDef`, không rải chuỗi đường dẫn; `src/platform/navigation.ts` là adapter duy nhất gọi Expo Router (đổi thư viện điều hướng chỉ sửa tệp này).
+- Header: dùng `Screen`/`ScreenHeader` của design system (`headerShown: false` cho navigator) để iOS và Android giống nhau và tràn viền đúng; không dùng header gốc của navigator.
+
+## ADR-014 — Icon và token giao diện
+
+- **`@expo/vector-icons` 15.1.1, chỉ import `@expo/vector-icons/Ionicons`** (import gốc làm bundle chứa mọi bộ font: kiểm tra `expo export` giảm từ nhiều bộ font xuống một, `Ionicons.ttf` 390 KB), kèm `expo-font` 58.0.10 và `expo-asset` 58.0.18 (phụ thuộc bắt buộc của vector-icons). Là mô-đun native nhẹ có sẵn trong Expo SDK, không phải thư viện native nặng. Mọi nơi dùng icon đi qua `src/shared/ui/Icon.tsx` (bảng tên trừu tượng → glyph) nên đổi bộ icon chỉ sửa một tệp. Font tải bất đồng bộ lần đầu nên icon có thể hiện trễ một nhịp; chưa giữ splash chờ font.
+- Token màu/chữ/khoảng cách vẫn ở `src/core/theme`; component lấy qua `useTheme()` (`src/shared/ui/theme.ts`) thay vì import trực tiếp, để khi O-17 (chế độ tối) được chốt chỉ đổi hook này. Chưa làm chế độ tối. Giá trị màu mới (`*Soft`, `scrim`, `cameraBackground`) là **tạm** như các màu cũ (Q-05a), có test tương phản.
+
+## ADR-015 — Kiểm thử giao diện
+
+- `@testing-library/react-native` **14.1.0** (peer `test-renderer`, đã có sẵn qua `jest-expo`; API `render`/`fireEvent` là bất đồng bộ, phải `await`) và `expo-router/testing-library` (chạy router thật trên `src/app` trong bộ nhớ). `jest.setup.ts` thay font icon bằng component hiển thị tên glyph để test biết biểu tượng nào được vẽ.
+- Giới hạn: không thay thế kiểm thử trên thiết bị (bố cục thật, bàn phím, vùng an toàn, Back phần cứng, font scale thật).
+
 ---
 
 ## Câu hỏi cần người dùng / BA duyệt
@@ -167,6 +191,21 @@ Video lớn có thể làm đầy bộ nhớ đám mây cá nhân của người
 ### Q-10 — Ngưỡng cấu hình (chờ O-05)
 Dung lượng trống tối thiểu để bắt đầu quay (A04), thời lượng video ngắn cảnh báo (A06): khung không đặt số; cần O-05 hoặc giá trị mặc định tạm do BA đề xuất.
 
+### Q-11 — Khung giao diện: chỗ mockup khác tài liệu thiết kế, và quyết định cần duyệt
+Khung (layout.md) bám docs/09; không theo mockup ở các điểm dưới. Không điểm nào chốt O-xx.
+| # | Vấn đề | Cách xử lý trong khung / đề xuất |
+|---|---|---|
+| a | **O-18** thanh tab: mockup có nút Quét giữa, Thông báo, Cá nhân; D-11 có 4 tab | Dùng 4 tab D-11, cấu hình một nơi. Khuyến nghị (giữ như docs/09): chốt *Tổng quan · Đơn hàng · Quét · Hàng hoàn · Đồng bộ* khi BA duyệt; chi phí đổi nhỏ (layout.md mục 6) |
+| b | **O-19** số màn trước camera | *Lưu và quay video* ở Tạo đơn nhanh đang đi tới Xem nhanh đơn (UI-C01) như đặc tả A02→A03; chỉ đổi hằng số `AFTER_CREATE_ROUTE`. Khuyến nghị: bỏ màn Xem nhanh khi đơn vừa tạo (người dùng vừa nhập xong), giữ cho đơn quét ra có sẵn |
+| c | **O-02** nút thư viện ảnh | Không có nút trên màn quay |
+| d | **O-14** lối vào Tranh chấp | Đã có route nhóm G nhưng **chưa có nút dẫn tới** (cần hồ sơ đơn/hàng hoàn thật). Khuyến nghị giữ như docs/09: vào từ hồ sơ đơn, hồ sơ hàng hoàn và "việc cần xử lý" |
+| e | Nhãn nút tạo đơn: docs/04 A02 ghi *Lưu nhanh và tiếp tục* / *Quay ngay, khai báo sau*, docs/09 ghi *Lưu và quay video* / *Bỏ qua thông tin sản phẩm* | Dùng nhãn docs/09. Khuyến nghị: BA thống nhất một bộ nhãn |
+| f | Bộ lọc danh sách hàng hoàn: docs/05 B01 (chưa bắt đầu, đang mở kiện, đang kiểm tra, cần xử lý, chờ tải lên, hoàn tất) khác docs/09 UI-D01 (đang tiếp nhận, đang kiểm tra, đã kiểm tra, có sai lệch, chưa đồng bộ) | Dùng bộ của docs/09. Cần BA thống nhất, vì bộ lọc phụ thuộc máy trạng thái hồ sơ hoàn (docs/02) |
+| g | docs/09 UI-F01 cho "thử lại hàng loạt" và "thử lại" từng tệp, nhưng hàng đợi thật chưa có | Khung chỉ có nút *Chi tiết*; không đặt nút thử lại giả. Thêm cùng tính năng upload |
+| h | Khuyến nghị O-18 đề cập Đồng bộ "để lỗi tải lên luôn thấy": chưa có huy hiệu số lỗi trên tab | Thêm huy hiệu khi có dữ liệu thật; ở Tổng quan đã có khối đồng bộ |
+| i | Nhãn *Chờ tải lên* "ghi lý do": cần danh sách mã lý do (mất mạng, chờ Wi-Fi, hệ điều hành tạm dừng...) | Khung chỉ có `waiting_network`; BA/kỹ thuật chốt danh sách cùng Q-02 |
+| j | Quyền thông báo trong menu tài khoản (UI-I04) và Thông báo (chuông ở mockup) | Không có chuông; chỉ mục *Thông báo* trong menu tài khoản theo docs/09 |
+
 ## Rủi ro nền tảng phát hiện (tóm tắt)
 
 1. Tải nền không bảo đảm: iOS dừng khi vuốt tắt app; Android 15 giới hạn dịch vụ nền loại `dataSync`. Thư viện tải nền hiện có chưa kiểm chứng với giao thức resumable của Cloud Storage.
@@ -176,3 +215,4 @@ Dung lượng trống tối thiểu để bắt đầu quay (A04), thời lượ
 5. Firestore không ép duy nhất mã đơn; trùng đơn tạo ngoại tuyến chỉ phát hiện được sau.
 6. Xác minh SHA-256 phía máy chủ cho video lớn bị giới hạn thời gian/chi phí Function.
 7. Phiên bản mới nhất của một số công cụ (ESLint 10, TypeScript 7) chưa tương thích hệ sinh thái Expo; đã chọn bản tương thích.
+8. Khung giao diện chỉ mới kiểm chứng bằng Jest/router trong bộ nhớ và `expo export`; **chưa chạy trên máy ảo/thiết bị**. Cần xem: tràn viền Android (khoảng trống khi hiện bàn phím, `KeyboardAvoidingView` ở `src/platform/layout.ts`), vùng an toàn, Back phần cứng/cử chỉ ở màn quay, font scale lớn, tải font icon lần đầu.

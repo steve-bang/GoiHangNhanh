@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Trạng thái dự án
 
-Repo có tài liệu nghiệp vụ (`docs/`) và **khung kỹ thuật** (Expo + React Native + TypeScript, cấu hình Firebase, Security Rules có test, CI). Chưa có tính năng nghiệp vụ nào; chưa build native (iOS/Android) và chưa chạy trên thiết bị thật. Thiết kế kỹ thuật ở `docs/engineering/` là **đề xuất, chờ người dùng duyệt** (không phải quyết định D-xx); các thư viện native chưa chốt chờ spike trên thiết bị thật.
+Repo có tài liệu nghiệp vụ (`docs/`) và **khung kỹ thuật** (Expo + React Native + TypeScript, cấu hình Firebase, Security Rules có test, CI). Có **khung giao diện (app shell)**: điều hướng Expo Router, design system, màn hình khung với dữ liệu minh họa (`docs/engineering/layout.md`). Chưa có tính năng nghiệp vụ nào (không camera/tải lên/Firebase thật); chưa build native (iOS/Android) và chưa chạy trên máy ảo/thiết bị thật. Thiết kế kỹ thuật ở `docs/engineering/` là **đề xuất, chờ người dùng duyệt** (không phải quyết định D-xx); các thư viện native chưa chốt chờ spike trên thiết bị thật.
 
 Sản phẩm: **Đơn Chứng** (tên làm việc, có thể đổi sau khi kiểm tra nhãn hiệu; tên repo là `GoiHangNhanh`) — ứng dụng di động quản lý bằng chứng theo vòng đời đơn hàng thương mại điện tử: đóng gói → bàn giao → nhận hàng hoàn → đối chiếu → tranh chấp. Không phải "app lưu video đơn hàng".
 
@@ -21,6 +21,7 @@ Tài liệu nằm trong `docs/`, bắt đầu từ `docs/README.md` (mục lục
 | `npm test` | Unit test Jest (project `unit`); chạy một tệp: `npx jest --selectProjects unit -- <đường-dẫn>` |
 | `npm run test:rules` | Test Security Rules bằng Firebase Emulator (Firestore + Storage); cần Java 21, lần đầu tải emulator |
 | `npm run check` | lint + typecheck + format:check + unit test (chạy trước khi báo xong) |
+| `npx expo export --platform ios` / `--platform android` | Đóng gói JS (Metro) để bắt lỗi bundle; không cần Xcode/Android SDK. Thêm `--output-dir <thư mục ngoài repo>` nếu không muốn tạo `dist/`. `npx expo install` cần truy cập `api.expo.dev` (có thể bị chặn trong môi trường hạn chế: xem ADR-013) |
 
 Chưa có lệnh build/chạy native (`expo prebuild`, dev build) vì chưa dựng được; sau `expo prebuild`/EAS cần bổ sung vào đây khi đã chạy thật. CI: `.github/workflows/ci.yml` (PR vào `main`): lint, typecheck, format, unit test, test Rules.
 
@@ -28,11 +29,12 @@ Chưa có lệnh build/chạy native (`expo prebuild`, dev build) vì chưa dự
 
 - `docs/engineering/architecture.md` — kiến trúc, mô hình dữ liệu Firestore/Storage, máy trạng thái tệp, hàng đợi tải lên, Cloud Functions, so sánh thư viện (kiểm tra 2026-10-26), kế hoạch spike.
 - `docs/engineering/conventions.md` — cấu trúc/đặt tên, quy tắc lớp, TypeScript, lỗi, i18n/UI, log/PII, bảo mật, commit/PR, định nghĩa "xong".
+- `docs/engineering/layout.md` — khung giao diện: cấu trúc điều hướng, bảng route ↔ mã `UI-xx`, component dùng chung, quy tắc bố cục iOS/Android, cách thêm màn hình, cách đổi thanh tab (O-18).
 - `docs/engineering/testing.md` — chiến lược test, ánh xạ QA-01…14, phần chưa tự động hóa được.
 - `docs/engineering/decisions.md` — ADR đề xuất + câu hỏi cần duyệt (Q-xx).
 - `docs/engineering/platform-support.md` — hỗ trợ iOS + Android: thị phần, sàn phiên bản, khác biệt nền tảng, ma trận kiểm thử.
 
-Mã khung đáng chú ý: `src/features/evidence/domain/file-state.ts` (máy trạng thái tệp; client không tự tới `uploaded`/`verified`), `src/core/theme/evidence-status.ts` (nhãn trạng thái docs/09 mục 3), `src/core/errors/codes.ts` (mã lỗi từ docs/04–05), `firebase/firestore.rules` + `firebase/tests/rules/` (cô lập theo shop, QA-11).
+Mã khung đáng chú ý: `src/app/` (route mỏng Expo Router), `src/bootstrap/navigation/tab-config.ts` (cấu hình thanh tab, một nơi duy nhất), `src/core/navigation/routes.ts` (bảng route ↔ `UI-xx`), `src/shared/ui` (design system), `src/shared/fixtures/illustrative-data.ts` (dữ liệu minh họa duy nhất), `src/platform/` (adapter điều hướng/bố cục); `src/features/evidence/domain/file-state.ts` (máy trạng thái tệp; client không tự tới `uploaded`/`verified`), `src/core/theme/evidence-status.ts` (nhãn trạng thái docs/09 mục 3), `src/core/errors/codes.ts` (mã lỗi từ docs/04–05), `firebase/firestore.rules` + `firebase/tests/rules/` (cô lập theo shop, QA-11).
 
 ## Quyết định đã chốt (bản mới nhất thắng)
 
