@@ -46,6 +46,7 @@ Các quyết định còn mở: xem `docs/README.md#quyết-định-còn-mở`. 
 ## Quy ước khi viết tài liệu/mã
 
 - Mỗi màn hình đặc tả theo khung: mục đích, thành phần, hành động, trạng thái, lỗi, tiêu chí nghiệm thu. Mã màn hình: `A01–A08` (đóng gói), `B01–B08` (hàng hoàn).
+- Có hai bộ mã màn hình, không nhầm lẫn: `A01–A08`/`B01–B08` là đặc tả **quy trình** (docs/04, 05); `UI-A01…UI-J15` là danh mục màn hình **giao diện** (docs/09, bảng ánh xạ ở cuối mục 4). Nhãn trạng thái bằng chứng hiển thị theo bảng ở docs/09 mục 3.
 - Thông báo lỗi gồm ba phần: điều gì xảy ra, ảnh hưởng gì, người dùng làm gì tiếp. Mã lỗi nghiệp vụ dạng `UPPER_SNAKE_CASE` (ví dụ `ORDER_NOT_FOUND`), danh sách trong `docs/04-*` và `docs/05-*`.
 - Thiết kế exception-first: mỗi luồng phải có nhánh ngoại lệ, không chỉ đường thuận.
 - UX: người bán dùng phải cực kỳ đơn giản; ưu tiên camera/máy quét, hạn chế gõ, không bắt cấu hình khi đăng ký.

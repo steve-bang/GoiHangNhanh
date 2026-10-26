@@ -1,6 +1,6 @@
 # 04 — Đặc tả màn hình: Đóng gói có ghi hình (A01–A08)
 
-Khung đặc tả mỗi màn hình: mục đích, thành phần, hành động, trạng thái, lỗi, tiêu chí nghiệm thu. Áp dụng các quy tắc chung ở cuối tài liệu.
+Danh mục màn hình giao diện (mã `UI-`) và ánh xạ sang các mã A01–A08 dưới đây: [09](09-ui-ux-design.md). Khung đặc tả mỗi màn hình: mục đích, thành phần, hành động, trạng thái, lỗi, tiêu chí nghiệm thu. Áp dụng các quy tắc chung ở cuối tài liệu.
 
 Luồng chuẩn: **A01** Danh sách công việc → **A02** Tìm/tạo đơn → **A03** Xem nhanh đơn/kiện và bắt đầu quay → **A04** Kiểm tra sẵn sàng (chạy ngầm, chỉ hiện khi có vấn đề) → **A05** Quay → **A06** Xác nhận kết quả → **A07** Đồng bộ bằng chứng → **A08** Kết quả và đơn tiếp theo. Nhánh ngoại lệ có thể tới màn xử lý lỗi nhưng không được bỏ qua trạng thái lưu tệp, người thực hiện, hay quan hệ phiên–kiện.
 
