@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// Mặc định TỪ CHỐI mọi truy cập trực tiếp từ client (đề xuất ADR-006, chờ duyệt).
+//
+// Lý do:
+// - Tải lên đi qua phiên tải có thể tiếp tục (resumable session) do Cloud Function cấp sau khi
+//   kiểm tra thành viên shop và bản ghi bằng chứng (docs/06: bước tin cậy chạy phía máy chủ).
+// - Đọc video qua URL có thời hạn do Cloud Function cấp. Client KHÔNG được gọi getDownloadURL():
+//   URL kèm token đó không hết hạn, vi phạm bất biến "Không URL công khai vĩnh viễn" (CLAUDE.md #8).
+// - Không client nào ghi đè/xóa được bản gốc (bất biến #4).
+//
+// Cấu trúc đường dẫn dự kiến (chỉ Function/Admin SDK truy cập):
+//   shops/{shopId}/evidence/{evidenceId}/original          bản gốc, tạo một lần
+//   shops/{shopId}/evidence/{evidenceId}/derived/{derivId} bản dẫn xuất (xem trước, nén)
+//   shops/{shopId}/exports/{exportId}/...                   bộ hồ sơ xuất
+//
+// Nếu ADR-006 bị bác bỏ (dùng SDK Firebase Storage từ client), phải viết lại file này kèm test
+// truy cập chéo shop trong firebase/tests/rules/storage.rules.test.ts trước khi hợp nhất.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

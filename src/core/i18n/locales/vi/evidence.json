@@ -1,0 +1,22 @@
+{
+  "status": {
+    "saved_on_device": "Đã lưu trên máy",
+    "waiting_upload": "Chờ tải lên",
+    "uploading": "Đang tải lên",
+    "uploaded": "Đã tải lên",
+    "verified": "Đã xác minh",
+    "error": "Lỗi – cần xử lý"
+  },
+  "statusHint": {
+    "saved_on_device": "Video đã lưu trên thiết bị. Chưa có bản trên máy chủ.",
+    "waiting_upload": "Đang chờ mạng hoặc lượt xử lý. Tệp vẫn được giữ trên thiết bị.",
+    "uploading": "Đang truyền tới máy chủ. Chưa phải bản sao lưu cho tới khi máy chủ xác nhận.",
+    "uploaded": "Máy chủ đã nhận đủ tệp. Chưa kiểm tra mã băm.",
+    "verified": "Đã lưu an toàn trên máy chủ: mã băm tệp trên máy chủ khớp với bản gốc.",
+    "error": "Tệp có lỗi cần xử lý. Bản trên thiết bị vẫn được giữ lại."
+  },
+  "capture": {
+    "recording": "Đang ghi hình",
+    "saving_local": "Đang lưu trên thiết bị"
+  }
+}

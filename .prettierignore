@@ -1,0 +1,11 @@
+node_modules/
+.expo/
+dist/
+coverage/
+android/
+ios/
+package-lock.json
+docs/
+CLAUDE.md
+.claude/
+.github/pull_request_template.md

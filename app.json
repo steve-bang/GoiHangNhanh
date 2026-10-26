@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Đơn Chứng",
+    "slug": "don-chung",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "vn.doncung.app.dev",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "vn.doncung.app.dev"
+    }
+  }
+}
