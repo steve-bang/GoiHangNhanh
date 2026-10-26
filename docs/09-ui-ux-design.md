@@ -222,7 +222,59 @@ Lưu ý: xuất PDF/ZIP/chia sẻ phải được xác định trong đặc tả
 
 Các nhóm A (khởi động), E, F, G, H, I chưa có đặc tả quy trình riêng ở 04/05; cần đặc tả theo khung "mục đích, thành phần, hành động, trạng thái, lỗi, nghiệm thu" trước khi bàn giao lập trình (xem mục 8).
 
-## 5. Tương tác chi tiết
+## 5. Bản thiết kế mẫu (concept mockups)
+
+Bốn tấm hình dưới đây là **mockup khái niệm**, lưu ở `docs/assets/ui/`. Chúng minh họa hướng thị giác (xanh rừng, bo góc, thẻ lớn) và bố cục các luồng chính; **chưa phải thiết kế cuối**: chưa có Figma, chưa kiểm thử với người dùng, và có một số chỗ trái với đặc tả (xem bảng đối chiếu bên dưới). Chữ trong ảnh có vài lỗi chính tả hoặc đoạn vô nghĩa (ví dụ "Binh giữ nhiệt", dòng quảng cáo ở màn Tổng quan) — không sao chép nguyên văn; các câu quảng bá viết tay và khẩu hiệu cạnh màn hình là phần trình bày, không phải nội dung giao diện.
+
+### 5.1 Khởi động và thiết lập — UI-A02, A03, A04, A06
+
+![Đăng nhập, tạo tài khoản, tạo hồ sơ shop, hoàn tất thiết lập](assets/ui/01-onboarding.png)
+
+### 5.2 Tổng quan và quét mã — UI-B01, B02
+
+![Màn hình Tổng quan và quét mã đơn hàng](assets/ui/02-home-and-scan.png)
+
+### 5.3 Tạo đơn nhanh, xem nhanh đơn, quay video — UI-B04, C01, C03
+
+![Tạo đơn nhanh, xác nhận đơn trước khi quay, màn hình quay](assets/ui/03-quick-order-confirm-record.png)
+
+### 5.4 Xác nhận lưu và đồng bộ — UI-C04, C05, F01
+
+![Xác nhận lưu video và trung tâm đồng bộ](assets/ui/04-save-confirm-and-sync.png)
+
+### 5.5 Đối chiếu mockup với đặc tả
+
+Phần đúng hướng: bảng màu và phong cách khớp mục 3; Tổng quan có hai nút lớn *Đóng gói đơn* / *Nhận hàng hoàn*; màn quay ẩn thanh tab, cố định mã đơn + kiện + đồng hồ, có hướng dẫn "quay từ khi lấy hàng đến khi dán niêm phong"; có nhãn *Chưa khai báo sản phẩm* và lối *Bỏ qua, quay ngay*; gợi ý sản phẩm từ lịch sử; chọn kiện và thêm kiện; danh sách đồng bộ có lý do chờ ("Đang chờ mạng").
+
+**A. Cần sửa trong mockup** (trái nguyên tắc nghiệp vụ trong `CLAUDE.md`; không cần quyết định thêm):
+
+| # | Mockup | Vấn đề | Cách sửa |
+|---|---|---|---|
+| 1 | 04: tiêu đề "Bằng chứng của bạn đã được lưu an toàn!", "Không lo mất dữ liệu", "lưu an toàn trên cả thiết bị và đám mây" | Ở bước xác nhận lưu, video mới nằm trên máy. Cụm "an toàn" chỉ dùng khi **Đã xác minh** | Ví dụ "Video đã lưu trên thiết bị. Đang chờ tải lên." |
+| 2 | 04, sync: dòng `.jpg` "Đã lưu trên thiết bị" có **dấu tick xanh tròn** | Tick xanh cho trạng thái chỉ-trên-máy, đúng điều mục 1 cấm | Dùng nhãn + biểu tượng riêng (không phải tick thành công) cho *Đã lưu trên máy* |
+| 3 | 04, "Trạng thái lưu trữ": lưới 6 mục hiện cùng lúc cả "Đã xác minh" (tick) lẫn "Chưa xác minh" | Không rõ trạng thái hiện tại là gì | Hiện **một** trạng thái hiện tại của từng tệp, hoặc chuỗi bước có chỉ rõ bước đang ở |
+| 4 | 04, sync: "chúng tôi sẽ tự động hoàn tất" | Hứa quá mức, vì tải nền bị hệ điều hành giới hạn | "Sẽ tiếp tục khi có thể; mở app nếu bị tạm dừng" |
+| 5 | 01: "Bảo vệ bằng chứng tuyệt đối"; 03: "Lưu trữ đa lớp, **chống giả mạo**"; 02: "Tăng uy tín shop", "Bảo vệ quyền lợi của bạn" | Hứa quá mức ("tuyệt đối", chống giả mạo — mã băm không chứng minh tính chân thực) | Bỏ hoặc viết "Ghi nhận có cấu trúc, kiểm tra toàn vẹn tệp" |
+| 6 | 03, màn xác nhận đơn: hiện sản phẩm "Áo thun cotton Đen/XL ×2" **đồng thời** nhãn "Chưa khai báo sản phẩm" | Mâu thuẫn | Nhãn chỉ hiện khi chưa có dòng sản phẩm nào |
+| 7 | 03, màn tạo đơn nhanh: dòng gợi ý gộp "Áo thun cotton - Đen / XL" | Spec: tên và variant là hai trường riêng, gợi ý tên rồi gợi ý variant | Tách; chọn gợi ý tên thì gợi ý variant gần đây |
+| 8 | 03: số lượng mặc định 2 | Spec: mặc định 1 | Mặc định 1 |
+| 9 | 02, Tổng quan: thống kê "Đơn đã xử lý", "Đã đồng bộ" | "Đã xử lý"/"Đã đồng bộ" mơ hồ, không khớp nhãn trạng thái | Dùng nhãn mục 3 (ví dụ "Chờ tải lên", "Lỗi – cần xử lý") |
+| 10 | 02, Tổng quan: hai banner quảng bá chiếm nhiều chỗ; thiếu "đơn gần đây" và "việc cần xử lý" | Mục UI-B01 ưu tiên khối đồng bộ, việc dang dở, đơn gần đây | Thay banner bằng các khối đó; hướng dẫn nhanh đặt ở Trợ giúp |
+| 11 | 03, màn quay: nút X góc trên trái | Rời phiên đang quay phải cảnh báo hậu quả | Bấm X → hộp thoại "Giữ video và quay lại" / "Kết thúc phiên" |
+| 12 | 03, tiêu đề "Kiểm tra 30 giây để tiết kiệm cả giờ" | Con số không có căn cứ | Bỏ |
+| 13 | 01: màn tạo hồ sơ shop ghi "Nguồn bán *" (bắt buộc) | UI-A04: bỏ qua được (có "Bỏ qua, để sau") | Bỏ dấu `*` |
+| 14 | 01: "Gói Tiêu chuẩn (30 ngày)" | Tên gói và thời hạn chưa chốt (O-06); khung gói là Cơ bản/Tăng trưởng/Vận hành lớn | Ghi là minh họa hoặc dùng tên gói chưa gán số liệu |
+| 15 | 02, màn quét: thiếu đèn pin và tìm đơn đã lưu | UI-B02 yêu cầu | Thêm |
+
+**B. Cần quyết định** (mockup khác đặc tả; chưa sửa tài liệu theo mockup):
+
+| Mã | Điểm khác | Phương án / khuyến nghị |
+|---|---|---|
+| O-18 | Mockup 02 có thanh dưới: Trang chủ, Đơn hàng, **nút Quét ở giữa**, Thông báo, Cá nhân. D-11 quy định 4 tab: Tổng quan, Đơn hàng, Hàng hoàn, Đồng bộ | Khuyến nghị: *Tổng quan · Đơn hàng · **Quét** · Hàng hoàn · Đồng bộ*. Giữ nút Quét giữa (hợp "scan first") và giữ Đồng bộ trên thanh để lỗi tải lên luôn thấy. Thông báo (chuông) và Cá nhân (avatar) đã nằm ở thanh trên của Tổng quan nên không cần chiếm tab |
+| O-19 | Đóng gói đơn mới đi qua **3 màn** trước camera: Tạo đơn nhanh → nút "Lưu và xác nhận đơn" → Xác nhận đơn → "Kiểm tra camera và bắt đầu". Spec (D-10) muốn một lần chạm | Khuyến nghị: nút chính ở Tạo đơn nhanh là **Lưu và quay video**, thẳng sang màn Xem nhanh đơn đã gộp nút bắt đầu, hoặc bỏ hẳn màn Xác nhận khi vừa mới tạo đơn (người dùng vừa nhập xong). Màn Xác nhận chỉ cần khi quét ra đơn có sẵn |
+| O-02 | Màn quay có nút **thư viện ảnh** ở góc dưới phải | Nhập từ thư viện đang là câu hỏi mở. Nếu chưa chốt thì bỏ nút khỏi màn quay; nếu cho nhập, đặt ở nơi khác và gắn nhãn nguồn "nhập từ thư viện" |
+
+## 6. Tương tác chi tiết
 
 **Nhập sản phẩm trong vài giây**
 - Gợi ý theo tên từ lịch sử của chính shop; chọn tên đã dùng thì gợi ý variant gần đây.
@@ -243,7 +295,7 @@ Các nhóm A (khởi động), E, F, G, H, I chưa có đặc tả quy trình ri
 - Không hỏi khi lưu thông tin bình thường. Có xác nhận khi xóa dữ liệu, đóng hồ sơ, đổi quan trọng, rời phiên quay chưa kết thúc.
 - Nội dung nêu rõ hậu quả và dữ liệu bị ảnh hưởng; nút có nhãn cụ thể.
 
-## 6. Hai nhóm khách hàng, một sản phẩm
+## 7. Hai nhóm khách hàng, một sản phẩm
 
 | | Shop nhỏ, một người | Shop lớn, nhiều nhân viên |
 |---|---|---|
@@ -252,7 +304,7 @@ Các nhóm A (khởi động), E, F, G, H, I chưa có đặc tả quy trình ri
 
 Tính năng nâng cao chỉ xuất hiện khi cần; không làm hai phiên bản app.
 
-## 7. Nghiệm thu UI/UX
+## 8. Nghiệm thu UI/UX
 
 Bổ sung cho [08](08-acceptance-qa-risks.md); đánh dấu chỉ khi đã kiểm tra thật.
 
@@ -286,7 +338,7 @@ Bổ sung cho [08](08-acceptance-qa-risks.md); đánh dấu chỉ khi đã kiể
 - [ ] Quyền truy cập shop được kiểm tra ở mọi thao tác dữ liệu
 - [ ] Sự cố và chỉnh sửa quan trọng có lịch sử truy vết
 
-## 8. Bàn giao thiết kế
+## 9. Bàn giao thiết kế
 
 Cần khóa trước khi giao đội lập trình:
 - **Điều hướng và luồng:** danh sách màn hình đầy đủ, sơ đồ chuyển trạng thái, điều kiện vào/ra từng màn.

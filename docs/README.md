@@ -14,7 +14,7 @@ Tài liệu nghiệp vụ (BRD/PRD) cho ứng dụng di động quản lý bằn
 | 06 | [Chính sách bằng chứng & lưu trữ](06-evidence-retention-policy.md) | Toàn vẹn, metadata, tải lên nền, thời hạn lưu |
 | 07 | [Vai trò, phân quyền & bảo mật](07-roles-permissions-security.md) | Vai trò, quy tắc truy cập, quyền riêng tư |
 | 08 | [Nghiệm thu, kiểm thử & rủi ro](08-acceptance-qa-risks.md) | Checklist, kịch bản QA-01..14, danh mục rủi ro, điều kiện bàn giao |
-| 09 | [Thiết kế UI/UX](09-ui-ux-design.md) | Triết lý, kiến trúc thông tin (4 tab), design system, chuẩn nhãn trạng thái, danh mục màn hình `UI-A01…UI-J15`, nghiệm thu UI/UX |
+| 09 | [Thiết kế UI/UX](09-ui-ux-design.md) | Triết lý, kiến trúc thông tin (4 tab), design system, chuẩn nhãn trạng thái, danh mục màn hình `UI-A01…UI-J15`, mockup khái niệm (`docs/assets/ui/`) kèm đối chiếu với đặc tả, nghiệm thu UI/UX |
 
 ## Nhật ký quyết định
 
@@ -63,3 +63,5 @@ Tài liệu nghiệp vụ (BRD/PRD) cho ứng dụng di động quản lý bằn
 | O-15 | Phương thức đăng nhập (email/mật khẩu, số điện thoại OTP, Google/Apple…) | Chốt cùng thiết kế Firebase Auth; nếu có đăng nhập bên thứ ba thì kiểm tra yêu cầu của App Store |
 | O-16 | Kênh thanh toán gói dịch vụ trong app (mua trong ứng dụng của Apple/Google hay thanh toán ngoài) | Cần kiểm tra chính sách App Store/Google Play hiện hành trước khi thiết kế UI-H03; chưa kết luận |
 | O-17 | Chế độ tối; ngôn ngữ ngoài tiếng Việt | Bản đầu chế độ sáng, tiếng Việt |
+| O-18 | Thanh điều hướng dưới: mockup có Trang chủ/Đơn hàng/Quét/Thông báo/Cá nhân; D-11 có Tổng quan/Đơn hàng/Hàng hoàn/Đồng bộ | Tổng quan · Đơn hàng · Quét (giữa) · Hàng hoàn · Đồng bộ; Thông báo và Cá nhân ở thanh trên. Xem [09 mục 5.5](09-ui-ux-design.md#55-đối-chiếu-mockup-với-đặc-tả) |
+| O-19 | Đóng gói đơn mới đi qua 3 màn trước camera (mockup) so với một lần chạm (D-10) | Nút chính "Lưu và quay video"; chỉ dùng màn Xác nhận khi quét ra đơn có sẵn |
