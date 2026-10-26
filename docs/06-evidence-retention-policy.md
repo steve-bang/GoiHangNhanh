@@ -82,3 +82,16 @@ Nghiệp vụ trên phải hiện thực được trên React Native + Firebase 
 - Mã băm do client tính phải được máy chủ tính lại trên tệp đã lưu để so sánh; không tin giá trị client gửi lên.
 - Thời gian máy chủ lấy từ máy chủ, không từ thiết bị.
 - Đánh giá chi phí lưu trữ/băng thông video và giới hạn tải lên nền của thư viện React Native được chọn trên thiết bị thật.
+
+### Làm rõ từ thiết kế kỹ thuật đề xuất (chưa được duyệt)
+
+Chi tiết và lý do: [engineering/architecture.md](engineering/architecture.md), [engineering/decisions.md](engineering/decisions.md). Các điểm dưới đây **làm rõ hoặc giới hạn** cách hiện thực nghiệp vụ; chúng không đổi hành vi nghiệp vụ, nhưng người dùng cần biết:
+
+- **Tải nền có giới hạn nền tảng cụ thể.** iOS không tiếp tục tải nếu người dùng vuốt tắt app; Android 15 giới hạn dịch vụ nền loại truyền dữ liệu (`dataSync`) 6 giờ trong 24 giờ. Vì vậy giao diện chỉ được nói "sẽ tiếp tục khi có thể", và mỗi lần mở app phải đối soát lại hàng đợi với máy chủ.
+- **Trạng thái "Đã tải lên", "Đã xác minh" chỉ do máy chủ xác lập.** Security Rules cấm client ghi các giá trị này; client chỉ phản ánh dữ liệu máy chủ. "Đã tải lên" = đối tượng trong Storage đã hoàn tất ghi; "Đã xác minh" = Cloud Function đã tính lại SHA-256 trên đối tượng và khớp mã băm client khai báo.
+- **Bản cục bộ chỉ được giải phóng khi "Đã xác minh"** (điều kiện cần; còn chính sách an toàn và thông báo người dùng). "Đã tải lên" chưa đủ vì chưa kiểm tra mã băm — đây là cách đọc chặt của dòng "Xóa bản cục bộ" ở bảng tải lên nền.
+- **Storage không cho client truy cập trực tiếp.** Tải lên qua phiên tải có thể tiếp tục do Function cấp; đọc qua URL có thời hạn do Function cấp (có nhật ký). Không dùng URL tải xuống kèm token của SDK vì không hết hạn.
+- **Thu hồi quyền có hiệu lực ngay** nhờ Rules tra bảng thành viên ở mỗi thao tác (không dựa vào claims trong token, vốn cập nhật chậm).
+- **Thời gian**: thời gian thiết bị (`…Device`) và thời gian máy chủ (`serverTimestamp`/`request.time`, do Rules ép) lưu riêng. Mốc bắt đầu tính hạn lưu (O-06) được giữ dưới dạng cấu hình trong `retention`, không hard-code, cho tới khi O-06 được chốt.
+- **Ngoại tuyến**: dùng Firebase SDK native (không dùng JS SDK vì thiếu bộ nhớ đệm bền trên React Native). Firestore không ép duy nhất mã đơn nên đơn trùng tạo ngoại tuyến chỉ phát hiện được khi đồng bộ (câu hỏi Q-03).
+- **Xác minh mã băm cho video lớn** bị giới hạn thời gian/chi phí của Cloud Function; cần kiểm chứng trước khi cam kết SLA xác minh.

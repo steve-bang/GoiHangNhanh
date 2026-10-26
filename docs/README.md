@@ -1,6 +1,6 @@
 # Đơn Chứng — Bộ tài liệu sản phẩm
 
-Tài liệu nghiệp vụ (BRD/PRD) cho ứng dụng di động quản lý bằng chứng theo vòng đời đơn hàng. Phiên bản hiện hành: **v1.1**. Các tài liệu mô tả sản phẩm *cần làm gì*; chưa có mã nguồn, chưa có thiết kế kỹ thuật chi tiết. Các wireframe và số liệu ví dụ chỉ là minh họa, không phải ứng dụng đã triển khai.
+Tài liệu nghiệp vụ (BRD/PRD) cho ứng dụng di động quản lý bằng chứng theo vòng đời đơn hàng. Phiên bản hiện hành: **v1.1**. Các tài liệu 01–09 mô tả sản phẩm *cần làm gì*. Thiết kế kỹ thuật ở [engineering/](engineering/architecture.md) là **đề xuất, chờ duyệt** (không phải quyết định D-xx). Các wireframe và số liệu ví dụ chỉ là minh họa, không phải ứng dụng đã triển khai.
 
 ## Mục lục
 
@@ -15,6 +15,7 @@ Tài liệu nghiệp vụ (BRD/PRD) cho ứng dụng di động quản lý bằn
 | 07 | [Vai trò, phân quyền & bảo mật](07-roles-permissions-security.md) | Vai trò, quy tắc truy cập, quyền riêng tư |
 | 08 | [Nghiệm thu, kiểm thử & rủi ro](08-acceptance-qa-risks.md) | Checklist, kịch bản QA-01..14, danh mục rủi ro, điều kiện bàn giao |
 | 09 | [Thiết kế UI/UX](09-ui-ux-design.md) | Triết lý, kiến trúc thông tin (4 tab), design system, chuẩn nhãn trạng thái, danh mục màn hình `UI-A01…UI-J15`, mockup khái niệm (`docs/assets/ui/`) kèm đối chiếu với đặc tả, nghiệm thu UI/UX |
+| — | [Kỹ thuật (đề xuất, chờ duyệt)](engineering/architecture.md) | [Kiến trúc](engineering/architecture.md), [quy ước](engineering/conventions.md), [kiểm thử](engineering/testing.md), [nhật ký quyết định kỹ thuật ADR + câu hỏi](engineering/decisions.md) |
 
 ## Nhật ký quyết định
 

@@ -4,11 +4,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Trạng thái dự án
 
-Repo hiện **chỉ có tài liệu nghiệp vụ**, chưa có mã nguồn, chưa có lệnh build/lint/test. Khi mã nguồn được thêm vào, cập nhật file này với các lệnh thực tế; không suy đoán lệnh trước khi có `package.json`/cấu hình.
+Repo có tài liệu nghiệp vụ (`docs/`) và **khung kỹ thuật** (Expo + React Native + TypeScript, cấu hình Firebase, Security Rules có test, CI). Chưa có tính năng nghiệp vụ nào; chưa build native (iOS/Android) và chưa chạy trên thiết bị thật. Thiết kế kỹ thuật ở `docs/engineering/` là **đề xuất, chờ người dùng duyệt** (không phải quyết định D-xx); các thư viện native chưa chốt chờ spike trên thiết bị thật.
 
 Sản phẩm: **Đơn Chứng** (tên làm việc, có thể đổi sau khi kiểm tra nhãn hiệu; tên repo là `GoiHangNhanh`) — ứng dụng di động quản lý bằng chứng theo vòng đời đơn hàng thương mại điện tử: đóng gói → bàn giao → nhận hàng hoàn → đối chiếu → tranh chấp. Không phải "app lưu video đơn hàng".
 
 Tài liệu nằm trong `docs/`, bắt đầu từ `docs/README.md` (mục lục + nhật ký quyết định). Mọi tài liệu viết bằng tiếng Việt.
+
+## Lệnh và tài liệu kỹ thuật
+
+### Lệnh (Node 22, npm 10; đã chạy được trong môi trường khung)
+
+| Lệnh | Việc |
+|---|---|
+| `npm ci` | Cài phụ thuộc theo `package-lock.json` |
+| `npm run lint` / `npm run typecheck` / `npm run format:check` | ESLint (gồm quy tắc lớp/import, chuỗi UI, `no-console`) / `tsc --noEmit` strict / Prettier |
+| `npm test` | Unit test Jest (project `unit`); chạy một tệp: `npx jest --selectProjects unit -- <đường-dẫn>` |
+| `npm run test:rules` | Test Security Rules bằng Firebase Emulator (Firestore + Storage); cần Java 21, lần đầu tải emulator |
+| `npm run check` | lint + typecheck + format:check + unit test (chạy trước khi báo xong) |
+
+Chưa có lệnh build/chạy native (`expo prebuild`, dev build) vì chưa dựng được; sau `expo prebuild`/EAS cần bổ sung vào đây khi đã chạy thật. CI: `.github/workflows/ci.yml` (PR vào `main`): lint, typecheck, format, unit test, test Rules.
+
+### Tài liệu kỹ thuật
+
+- `docs/engineering/architecture.md` — kiến trúc, mô hình dữ liệu Firestore/Storage, máy trạng thái tệp, hàng đợi tải lên, Cloud Functions, so sánh thư viện (kiểm tra 2026-10-26), kế hoạch spike.
+- `docs/engineering/conventions.md` — cấu trúc/đặt tên, quy tắc lớp, TypeScript, lỗi, i18n/UI, log/PII, bảo mật, commit/PR, định nghĩa "xong".
+- `docs/engineering/testing.md` — chiến lược test, ánh xạ QA-01…14, phần chưa tự động hóa được.
+- `docs/engineering/decisions.md` — ADR đề xuất + câu hỏi cần duyệt (Q-xx).
+
+Mã khung đáng chú ý: `src/features/evidence/domain/file-state.ts` (máy trạng thái tệp; client không tự tới `uploaded`/`verified`), `src/core/theme/evidence-status.ts` (nhãn trạng thái docs/09 mục 3), `src/core/errors/codes.ts` (mã lỗi từ docs/04–05), `firebase/firestore.rules` + `firebase/tests/rules/` (cô lập theo shop, QA-11).
 
 ## Quyết định đã chốt (bản mới nhất thắng)
 
