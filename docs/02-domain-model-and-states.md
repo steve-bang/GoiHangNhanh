@@ -30,7 +30,8 @@ Shop (tổ chức sở hữu dữ liệu)
 |---|---|
 | Shop | Đơn vị sở hữu dữ liệu và thanh toán gói dịch vụ |
 | Thành viên | Chủ shop, quản lý, nhân viên đóng gói, nhân viên hàng hoàn, người xử lý tranh chấp, người chỉ xem |
-| Đơn hàng | Giao dịch gốc: mã tìm kiếm, sản phẩm free text, số lượng, ghi chú, trạng thái, lịch sử, nguồn dữ liệu |
+| Đơn hàng | Bản ghi **tối giản** để gắn đúng bằng chứng và đối chiếu hàng: mã đơn, nguồn bán, mã vận đơn (nếu có), các dòng sản phẩm, ghi chú, trạng thái, lịch sử, nguồn dữ liệu (xem "Thông tin đơn hàng tối giản") |
+| Dòng sản phẩm | Một dòng đối chiếu của đơn: tên sản phẩm, phân loại/variant (free text), số lượng. Không phải danh mục sản phẩm; không có SKU, giá |
 | Kiện hàng | Đơn vị vật lý được đóng gói và bàn giao; mỗi kiện có ID và lịch sử riêng |
 | Lượt vận chuyển | Một lần vận chuyển đi hoặc hoàn, gắn mã vận đơn |
 | Phiên ghi nhận / Phiên đóng gói | Một lần quay/chụp cho một công đoạn của một kiện; có thể bị gián đoạn và có phiên bổ sung liên kết |
@@ -40,6 +41,27 @@ Shop (tổ chức sở hữu dữ liệu)
 | Vụ tranh chấp | Vấn đề, bằng chứng, ghi chú, người phụ trách, thời hạn, trạng thái, phản hồi, kết quả |
 | Bộ bằng chứng xuất ra | Tập tài liệu được chọn và đóng gói để dùng ngoài ứng dụng, kèm danh mục và thông tin toàn vẹn (evidence manifest) |
 | Sự kiện kiểm toán | Lịch sử hành động quan trọng của người dùng và hệ thống |
+
+## Thông tin đơn hàng tối giản
+
+Đơn Chứng **không phải phần mềm quản lý bán hàng thu nhỏ**: người bán đã quản lý đơn trên Shopee, TikTok Shop, Lazada. Ứng dụng chỉ giữ đủ thông tin để gắn đúng bằng chứng với đúng đơn và đối chiếu hàng khi đóng gói/nhận hàng hoàn. Ít nhập liệu nhất có thể; ưu tiên quét mã, tái sử dụng dữ liệu; chỉ yêu cầu bổ sung khi thực sự cần.
+
+| Nhóm | Trường | Ghi chú |
+|---|---|---|
+| Định danh | Mã đơn, nguồn bán (Shopee / TikTok Shop / Lazada / Khác–chưa xác định), mã vận đơn nếu có | Ưu tiên lấy từ mã quét hoặc dữ liệu đồng bộ. Mã đơn + nguồn bán dùng để nhận diện đơn; không thay thế ID nội bộ |
+| Đối chiếu | Danh sách dòng sản phẩm: tên, variant, số lượng | Không bắt buộc SKU, giá bán, địa chỉ, thông tin khách hàng — cũng là thu thập dữ liệu tối thiểu |
+| Bằng chứng | Phiên quay đóng gói, video mở hàng hoàn, ảnh, ghi chú sai lệch, trạng thái tải lên | Xem [06](06-evidence-retention-policy.md) |
+
+Quy tắc:
+
+- Mã đơn và nguồn bán dùng để định danh; sản phẩm, variant, số lượng là thông tin đối chiếu.
+- **Không bắt buộc nhập sản phẩm trước khi quay.** Hồ sơ bỏ qua bước này mang nhãn **Chưa khai báo sản phẩm**; bổ sung sau được, mọi bổ sung/sửa lưu lịch sử. Nhãn này là việc còn thiếu, không chặn quay, không chặn hoàn tất phiên.
+- Không tự tạo sản phẩm chuẩn hóa/SKU/danh mục nếu người dùng không yêu cầu.
+- **Không gộp hai variant khác nhau thành một dòng** chỉ vì trùng tên sản phẩm; mỗi variant là một dòng riêng với số lượng riêng.
+- Mỗi giá trị lưu **nguồn thông tin**: *do người dùng nhập* hoặc *đồng bộ từ nguồn hợp lệ* (khi có tích hợp). Dữ liệu người dùng nhập không được thể hiện hay xuất như dữ liệu chính thức từ sàn.
+- Quét mã vận đơn **không** đồng nghĩa lấy được tên sản phẩm/variant/số lượng. Khi chưa có tích hợp hay dữ liệu đồng bộ, app chỉ dùng được: dữ liệu đã nhập trước đó (gồm gợi ý từ lịch sử gần đây của chính shop), dữ liệu đồng bộ từ nguồn hợp lệ, hoặc để người dùng nhập nhanh.
+- Dữ liệu dự kiến khi đóng gói không bị sửa khi tiếp nhận hàng hoàn; hàng thực nhận lưu thành bản ghi riêng (xem [05 — B06](05-screen-spec-returns.md)).
+- Mọi sửa đổi quan trọng sau khi phiên quay hoàn tất có lịch sử.
 
 Khi bắt đầu một phiên, lưu **ảnh chụp dữ liệu đơn tại thời điểm bắt đầu** để đối chiếu lịch sử; sửa đơn sau đó không làm thay đổi ảnh chụp này.
 

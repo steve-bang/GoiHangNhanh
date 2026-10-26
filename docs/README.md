@@ -24,12 +24,13 @@ Tài liệu nghiệp vụ (BRD/PRD) cho ứng dụng di động quản lý bằn
 | D-01 | Định vị là nền tảng quản trị bằng chứng theo vòng đời đơn hàng, không phải công cụ lưu video | Bốn mục tiêu: phòng ngừa, truy xuất, đối soát, bảo vệ quyền lợi |
 | D-02 | Mobile-first: ứng dụng iOS + Android là sản phẩm chính; website chỉ phục vụ marketing, SEO, chuyển đổi | Không xây web app nghiệp vụ cho người bán |
 | D-03 | Công nghệ: **React Native** cho mobile, **Firebase** làm backend-as-a-service, không xây backend riêng | Thay thế các đề xuất trước (NestJS/PostgreSQL/S3, Flutter, PWA) |
-| D-04 | Bắt đầu đơn bằng quét mã hoặc nhập tay; mã chưa có thì tạo đơn ngay với sản phẩm/số lượng free text; không bắt buộc tích hợp sàn | Nhập file/tích hợp sàn là giai đoạn mở rộng |
+| D-04 | Bắt đầu đơn bằng quét mã hoặc nhập tay; mã chưa có thì tạo đơn ngay; không bắt buộc tích hợp sàn | Nhập file/tích hợp sàn là giai đoạn mở rộng. Dữ liệu đơn chi tiết hơn: xem D-10 |
 | D-05 | Hỗ trợ cả đóng từng đơn và đóng theo lô trên cùng một quy trình và mô hình dữ liệu | "Theo lô" ≠ một video chung cho nhiều đơn |
 | D-06 | Video đầy đủ từ trước khi đóng gói đến khi niêm phong xong | |
 | D-07 | Tải lên nền, cho làm đơn tiếp theo, trạng thái minh bạch | Không hứa tải nền vô hạn |
 | D-08 | Thời hạn lưu bằng chứng theo gói dịch vụ, có cảnh báo, bảo toàn khi tranh chấp | Cần rà soát pháp lý trước vận hành |
 | D-09 | Tạm gác kiến trúc kỹ thuật; hoàn thiện nghiệp vụ trước | Thiết kế kỹ thuật RN + Firebase làm sau khi đặc tả màn hình xong |
+| D-10 | Dữ liệu đơn hàng **tối giản**, Đơn Chứng không phải phần mềm quản lý bán hàng: định danh = mã đơn + nguồn bán (+ mã vận đơn); đối chiếu = dòng sản phẩm (tên, variant free text, số lượng); không SKU/giá/địa chỉ/khách hàng/danh mục. Không bắt nhập sản phẩm trước khi quay (nhãn *Chưa khai báo sản phẩm*); gợi ý từ lịch sử của shop; không gộp variant; dữ liệu người dùng nhập ghi nguồn, không giả làm dữ liệu sàn | Bước xác nhận đơn–kiện (A03) gộp với nút Bắt đầu quay; kiểm tra sẵn sàng (A04) chạy ngầm. Chi tiết: [02](02-domain-model-and-states.md#thông-tin-đơn-hàng-tối-giản) |
 
 ### Đã bị thay thế — không áp dụng
 
@@ -46,7 +47,9 @@ Tài liệu nghiệp vụ (BRD/PRD) cho ứng dụng di động quản lý bằn
 | O-01 | Khách hàng trọng tâm khi ra mắt: shop nhỏ, doanh nghiệp lớn hay cả hai? | Cả hai, nhưng trải nghiệm bắt đầu phù hợp shop nhỏ (D-05 đã ngầm hỗ trợ cả hai) |
 | O-02 | Cho phép nhập video có sẵn từ thư viện điện thoại không? | Hỗ trợ cả quay trực tiếp và nhập, ưu tiên quay trực tiếp trong quy trình chuẩn. Nếu cho nhập: phải gắn nhãn nguồn "nhập từ thư viện", vì mã băm không chứng minh video chưa bị sửa trước khi đưa vào app |
 | O-03 | Một tài khoản quản lý nhiều shop? Nhân viên làm cho nhiều shop? | — |
-| O-04 | Có bắt buộc nhập số lượng? Được hoàn tất phiên khi chưa quay? Quy tắc nhiều kiện? | — |
+| O-04 | Được hoàn tất phiên khi chưa quay? Quy tắc chi tiết cho đơn nhiều kiện? (Việc nhập sản phẩm/số lượng không còn bắt buộc — D-10) | — |
+| O-12 | Chính sách xử lý khi hồ sơ *Chưa khai báo sản phẩm* tồn tại lâu (nhắc bổ sung sau bao lâu, có hiện trong báo cáo thiếu bằng chứng không) | Nhắc nhẹ trong danh sách công việc, không chặn; thời hạn cần chốt |
+| O-13 | Nguồn bán là danh sách cố định (Shopee/TikTok Shop/Lazada/Khác) hay shop tự thêm nguồn | Danh sách cố định + "Khác" cho bản đầu |
 | O-05 | Chuẩn bằng chứng: thời lượng tối thiểu, điều kiện "đầy đủ", ngưỡng cảnh báo video ngắn | — |
 | O-06 | Thời hạn lưu từng gói, mốc cảnh báo, mốc bắt đầu tính hạn (lúc quay hay lúc tải lên thành công), thời gian giữ khi tranh chấp | Phải ghi rõ trong điều khoản dịch vụ |
 | O-07 | Ai được xem, tải, xuất, sửa liên kết, yêu cầu xóa | Khung vai trò ở [07](07-roles-permissions-security.md) |

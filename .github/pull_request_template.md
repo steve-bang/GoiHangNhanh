@@ -34,6 +34,7 @@
 - [ ] Không tạo dữ liệu giả; thiếu bằng chứng được ghi nhận đúng là thiếu
 - [ ] Thay đổi quan trọng có lưu lịch sử; nhật ký kiểm toán không sửa/xóa được bởi người dùng thường
 - [ ] Cô lập dữ liệu theo shop; bằng chứng đang giữ do tranh chấp không bị xóa tự động
+- [ ] Dữ liệu đơn tối giản: thiếu thông tin sản phẩm không chặn quay; không gộp variant; dữ liệu người dùng nhập ghi rõ nguồn
 - [ ] Nội dung hiển thị không hứa quá mức (không "bằng chứng pháp lý tuyệt đối", không hứa thắng khiếu nại, không hứa tải nền luôn hoàn tất)
 - [ ] Mã lỗi, thông báo, tên trạng thái khớp `docs/04`–`05`
 

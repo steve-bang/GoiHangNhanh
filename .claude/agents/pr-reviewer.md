@@ -28,6 +28,7 @@ Khi được gọi lại sau khi dev push bản sửa: chỉ xem lại các find
 - Thay đổi sau khi quay/sau xác nhận có lưu lịch sử không; nhật ký kiểm toán có bị người dùng thường sửa/xóa được không.
 - Dữ liệu bằng chứng đang bị giữ do tranh chấp có thể bị xóa/hết hạn tự động không; hạ cấp gói có xóa ngầm không.
 - Thông báo lỗi, mã lỗi, tên trạng thái khớp `docs/04`–`05`; hành vi khớp tiêu chí nghiệm thu của màn hình tương ứng. Nếu PR đổi nghiệp vụ mà không cập nhật tài liệu (hoặc ngược lại), nêu rõ.
+- Dữ liệu đơn có phình thành quản lý bán hàng (SKU, giá, khách hàng, danh mục) không; có chặn quay vì thiếu thông tin sản phẩm không; có gộp variant hoặc coi dữ liệu người dùng nhập là dữ liệu chính thức từ sàn không.
 - Ngôn ngữ UI/tài liệu có hứa quá mức ("bằng chứng pháp lý tuyệt đối", "chắc chắn thắng", tải nền luôn hoàn tất) không.
 
 **2. Độ tin cậy dữ liệu & kỹ thuật**

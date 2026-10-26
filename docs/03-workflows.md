@@ -16,9 +16,9 @@ Mỗi giai đoạn cần: điều kiện bắt đầu, dữ liệu thu thập, t
 
 | Bước | Nội dung | Điều kiện hoàn tất |
 |---|---|---|
-| 1. Tìm hoặc tạo đơn | Quét mã, nhập tay hoặc tìm đơn có sẵn. Chưa có → tạo đơn mới, nhập sản phẩm/số lượng/ghi chú free text | Xác định được đơn hoặc tạo đơn thành công |
-| 2. Xác nhận hàng và kiện | Hiển thị sản phẩm, số lượng, ghi chú, mã kiện; cho bổ sung trước khi quay. Không có dữ liệu sản phẩm → cho xác nhận đã kiểm tra nội dung thực tế | Phiên đóng gói được tạo, gắn đúng kiện |
-| 3. Kiểm tra sẵn sàng | Quyền camera/micro, dung lượng, khả năng lưu cục bộ. Thiếu dung lượng → cảnh báo **trước** khi đóng gói | Đủ điều kiện ghi tệp |
+| 1. Tìm hoặc tạo đơn | Quét mã đơn/vận đơn → tìm đơn đã có. Chưa có → tạo nhanh: mã đơn, nguồn bán, và (tùy chọn) tên sản phẩm, variant, số lượng | Xác định được đơn hoặc tạo đơn thành công |
+| 2. Xem nhanh đơn và kiện | Hiển thị sản phẩm/variant/số lượng nếu đã có để đối chiếu bằng mắt; chỉ nhập phần còn thiếu. Không có dữ liệu sản phẩm → **Quay ngay, khai báo sau** (hồ sơ mang nhãn *Chưa khai báo sản phẩm*). Đơn mặc định có một kiện; thêm kiện là tùy chọn | Phiên đóng gói được tạo, gắn đúng kiện — xảy ra khi bấm Bắt đầu quay, không qua bước xác nhận riêng |
+| 3. Kiểm tra sẵn sàng | Quyền camera/micro, dung lượng, khả năng lưu cục bộ chạy tự động ngay khi vào bước 2; chỉ hiện màn hình riêng khi có vấn đề. Thiếu dung lượng → cảnh báo **trước** khi đóng gói | Đủ điều kiện ghi tệp |
 | 4. Quay video đầy đủ | Bắt đầu trước khi thao tác; thể hiện hàng hóa, số lượng, đưa hàng vào kiện, niêm phong | Tệp được ghi |
 | 5. Hoàn tất phiên | Dừng quay, xem trạng thái đã lưu trên thiết bị, xác nhận phiên; ghi nhận thời điểm bắt đầu/kết thúc, người thực hiện | Tệp lưu cục bộ và đọc được |
 | 6. Tải lên nền, chuyển đơn | Video vào hàng đợi; nhân viên làm tiếp; app hiển thị số video chờ, tiến độ, lỗi, xác minh | — |
@@ -27,12 +27,15 @@ Không bắt buộc có mạng để bắt đầu quay nếu thiết bị lưu c
 
 Thay đổi thông tin đơn trước khi quay: cho phép tự do. Sau khi bắt đầu quay: phải lưu lịch sử.
 
-Shop nhỏ không cần thiết lập danh mục sản phẩm. Ví dụ nhập free text:
+Nhập đơn tối thiểu — không bắt tạo danh mục sản phẩm. Mỗi dòng gồm tên sản phẩm, variant (free text) và số lượng; nhiều dòng trong cùng đơn, sửa số lượng ngay trên dòng:
 
-```
-Áo thun đen size L x 2
-Quần jean xanh size 30 x 1
-```
+| Sản phẩm | Variant | SL |
+|---|---|---|
+| Áo thun cotton | Đen / XL | 2 |
+| Áo thun cotton | Trắng / L | 1 |
+| Bình giữ nhiệt | 500 ml / Đen | 1 |
+
+Giảm gõ: gợi ý từ các dòng shop đã nhập gần đây (chọn lại một chạm); shop lớn quét liên tiếp, dữ liệu có sẵn tự điền. Gợi ý chỉ lấy từ lịch sử của chính shop. Ví dụ trên là minh họa, không phải dữ liệu thật. Quy tắc dữ liệu: [02](02-domain-model-and-states.md#thông-tin-đơn-hàng-tối-giản).
 
 ## Quy trình B — Đóng hàng theo lô
 
@@ -85,7 +88,10 @@ Tạo tranh chấp liên kết bằng chứng bằng ID/tham chiếu, không t�
 |---|---|
 | Quét mã chưa tồn tại | Cho tạo đơn mới ngay, không bắt buộc đồng bộ sàn |
 | Không có mã vận đơn | Nhập mã nội bộ hoặc hệ thống tạo ID nội bộ |
-| Sản phẩm chưa có danh mục | Nhập tên tự do, số lượng, ghi chú |
+| Sản phẩm chưa có danh mục | Nhập tên tự do, variant, số lượng |
+| Quét được mã nhưng chưa có thông tin sản phẩm | Không bắt hoàn thành form trước khi quay; cho Quay ngay, khai báo sau; gắn nhãn *Chưa khai báo sản phẩm*, bổ sung sau có lịch sử |
+| Cùng tên sản phẩm, khác variant | Hai dòng riêng, không gộp |
+| Hàng hoàn không khớp thông tin đóng gói | Giữ dữ liệu dự kiến; nhập riêng hàng thực nhận, không ghi đè |
 | Quét trùng mã | Mở đơn hiện có và cảnh báo; không tạo đơn trùng |
 | Nhiều kết quả khớp mã | Yêu cầu chọn đúng bản ghi; không tự chọn kết quả đầu |
 | Quét nhầm mã vận đơn | Hiển thị thông tin đơn để xác nhận trước khi ghi nhận |
