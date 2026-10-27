@@ -37,5 +37,23 @@
     "syncCompleted": "Đồng bộ hoàn tất",
     "storageNearlyFull": "Dung lượng sắp đầy",
     "planExpiring": "Gói sắp hết hạn"
+  },
+  "profile": {
+    "noName": "Chưa có họ tên",
+    "noShop": "Chưa có shop",
+    "shopLabel": "Cửa hàng",
+    "planLabel": "Gói dịch vụ",
+    "planUnknown": "Chưa có thông tin gói",
+    "cachedNotice": "Đang hiện dữ liệu đã lưu, có thể chưa mới nhất.",
+    "refreshFailed": "Chưa làm mới được. Đang hiện dữ liệu đã tải trước đó.",
+    "avatarLabel": "Ảnh đại diện"
+  },
+  "signOut": {
+    "action": "Đăng xuất",
+    "dialogTitle": "Đăng xuất khỏi tài khoản?",
+    "dialogMessage": "Bạn sẽ cần đăng nhập lại để dùng tiếp.",
+    "confirm": "Đăng xuất",
+    "cancel": "Ở lại",
+    "notReady": "Đăng xuất chưa dùng được ở bản này. Bản cập nhật sau sẽ có."
   }
 }

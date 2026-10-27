@@ -7,6 +7,7 @@ import type {
   ChangePasswordInput,
   NotificationPreferences,
   PersonalGateways,
+  ShopSummary,
   SettingsGateway,
   SignInMethod,
   UpdateProfileInput,
@@ -22,6 +23,8 @@ export interface FakePersonalOptions {
   /** Độ trễ mô phỏng của mỗi lời gọi (ms). Test đặt 0. */
   readonly latencyMs?: number;
   readonly profile?: Partial<UserProfile>;
+  /** `null` = chưa có shop. Mặc định: một shop minh họa (chỉ bản giả). */
+  readonly shop?: ShopSummary | null;
   readonly notificationPreferences?: NotificationPreferences;
 }
 
@@ -58,17 +61,21 @@ class FailureQueue {
 
 export class FakeAccountGateway implements AccountGateway {
   getProfileCalls = 0;
+  getShopSummaryCalls = 0;
   readonly updateCalls: UpdateProfileInput[] = [];
   /** Số lần đổi mật khẩu được gọi (không lưu nội dung mật khẩu). */
   changePasswordCalls = 0;
   signOutCalls = 0;
   private readonly latencyMs: number;
   private profile: UserProfile;
+  private readonly shop: ShopSummary | null;
   private password: string = FAKE_ACCOUNT_PASSWORD;
   private readonly failure = new FailureQueue();
 
   constructor(options: FakePersonalOptions = {}) {
     this.latencyMs = options.latencyMs ?? 0;
+    this.shop =
+      options.shop === undefined ? { id: 'fake-shop-1', name: 'Shop minh họa' } : options.shop;
     this.profile = {
       uid: 'fake-user-1',
       email: 'demo@example.com',
@@ -88,6 +95,13 @@ export class FakeAccountGateway implements AccountGateway {
     await delay(this.latencyMs);
     this.failure.consume();
     return this.profile;
+  }
+
+  async getShopSummary(): Promise<ShopSummary | null> {
+    this.getShopSummaryCalls += 1;
+    await delay(this.latencyMs);
+    this.failure.consume();
+    return this.shop;
   }
 
   async updateProfile(input: UpdateProfileInput): Promise<UserProfile> {

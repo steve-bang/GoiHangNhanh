@@ -13,6 +13,7 @@ export function createUnavailablePersonalGateways(): PersonalGateways {
   return {
     account: {
       getProfile: unavailable,
+      getShopSummary: unavailable,
       updateProfile: unavailable,
       changePassword: unavailable,
       signOut: unavailable,

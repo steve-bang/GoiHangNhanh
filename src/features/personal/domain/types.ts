@@ -16,6 +16,12 @@ export interface UserProfile {
   readonly signInMethod: SignInMethod;
 }
 
+/** Shop đang dùng, đủ để hiện thẻ shop ở tab Cá nhân. Không phải bản ghi shop đầy đủ (PR4). */
+export interface ShopSummary {
+  readonly id: string;
+  readonly name: string;
+}
+
 export interface UpdateProfileInput {
   /** Đã bỏ khoảng trắng đầu/cuối, 1-`DISPLAY_NAME_MAX_LENGTH` ký tự. */
   readonly displayName: string;
@@ -35,6 +41,8 @@ export interface ChangePasswordInput {
  */
 export interface AccountGateway {
   getProfile(): Promise<UserProfile>;
+  /** Shop đang dùng của tài khoản; `null` khi chưa có shop (không bịa tên shop). */
+  getShopSummary(): Promise<ShopSummary | null>;
   updateProfile(input: UpdateProfileInput): Promise<UserProfile>;
   /** Tài khoản không đăng nhập bằng mật khẩu: bản thật phải từ chối; UI vốn đã ẩn mục này. */
   changePassword(input: ChangePasswordInput): Promise<void>;
