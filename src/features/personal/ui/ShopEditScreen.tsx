@@ -7,7 +7,6 @@ import type { ErrorCode } from '@/core/errors/codes';
 import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
 import { useAppNavigation, useConfirmBeforeLeave, useIsScreenActive } from '@/platform';
 import {
-  Avatar,
   Button,
   Card,
   ConfirmDialog,
@@ -28,7 +27,8 @@ import { useRegion } from './use-region';
 
 /**
  * Sửa thông tin cửa hàng (PER-06), route con của UI-I02. Chỉ sửa TÊN: logo và mô tả chưa có nơi lưu
- * (chưa có backend), nên không dựng ô giả. Thành công chỉ được báo SAU KHI cổng xác nhận; lỗi (kể cả
+ * (chưa có backend), nên không dựng ô giả; cũng không dựng avatar lớn (không thao tác được, và tên trống
+ * sẽ hiện biểu tượng người dùng gây hiểu nhầm). Thành công chỉ được báo SAU KHI cổng xác nhận; lỗi (kể cả
  * thiếu quyền) hiện tại màn và giữ nguyên điều người dùng đã gõ. Gửi lặp bị chặn bằng `busyRef`.
  */
 export function ShopEditScreen() {
@@ -142,9 +142,6 @@ export function ShopEditScreen() {
       ) : null}
       {loaded && canEdit ? (
         <View style={{ gap: tokens.space.lg }}>
-          <View style={{ alignItems: 'center' }}>
-            <Avatar name={value} size="xl" shape="square" testID="edit-shop-avatar" />
-          </View>
           <FormField
             label={t('personal:fields.shopName')}
             value={value}

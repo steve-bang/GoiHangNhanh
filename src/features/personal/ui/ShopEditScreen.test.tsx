@@ -41,6 +41,11 @@ describe('ShopEditScreen (UI-I02 route con, PER-06)', () => {
     expect(isDisabled()).toBe(true);
   });
 
+  it('không dựng avatar lớn trên form sửa tên cửa hàng', async () => {
+    await renderEdit();
+    expect(screen.queryByTestId('edit-shop-avatar', { includeHiddenElements: true })).toBeNull();
+  });
+
   it('Lưu bật khi có thay đổi (kể cả xóa trống); bấm mới báo lỗi tại ô và đưa focus vào ô; quá 50 ký tự cũng vậy', async () => {
     const focusSpy = jest.spyOn(TextInput.prototype, 'focus');
     focusSpy.mockClear();
