@@ -60,10 +60,12 @@ Không thêm dependency nào, không có dependency vòng (kiểm bằng `check:
 
 | Loại | Trước (`main`) | Sau |
 |---|---|---|
-| Số thiết kế cố định (spacing, bo góc, viền, độ mờ, bóng, kích thước…) | 103 | **0** (+3 ngoại lệ có lý do) |
+| Số thiết kế cố định (spacing, bo góc, viền, độ mờ, bóng, kích thước…) | 103 | **0** (+5 ngoại lệ có lý do) |
 | Mã màu viết thẳng | 8 | **0** (+5 ngoại lệ có lý do) |
 | `fontWeight` bằng chữ | 2 | **0** |
 | Đọc bảng cũ `colors`/`spacing`/`radius` | 83 (33 + 30 + 20) | **0** (trừ Button/Text/Icon/SourceIcon, dùng chung với màn đã verify) |
+
+Ghi chú dòng "Đọc bảng cũ": số 0 chỉ tính các **bảng** `colors`/`spacing`/`radius`. Prop `color` của `Text` (`color="ink"`, `"textMuted"`, `"danger"`…) **vẫn nhận tên vai trò cũ** (nợ TD-6) vì `Text` dùng chung với màn đã verify; rule ESLint không kiểm chỗ này nên các chỗ gọi như vậy trong phạm vi chưa được chuyển sang `tokens`. Tổng ngoại lệ: 5 số + 5 màu = 10, khớp `scripts/design-token-exceptions.json` và `check:tokens`.
 | Tổng vi phạm rule | **196 / 39 tệp** | **0** |
 
 `fontSize`/`lineHeight` bằng số: 0 trước và sau (vốn đã qua `Text variant`).
@@ -80,7 +82,7 @@ Không thêm dependency nào, không có dependency vòng (kiểm bằng `check:
 | `OrderDetailScreen` | chấm trạng thái 8dp | Kích thước riêng của hàng chi tiết |
 | `OrderCard` | `opacity 0.7` khi nhấn | Độ mờ nhấn đậm hơn cho nút chữ nhỏ, không dùng ở chỗ khác |
 
-Không bị rule kiểm có chủ đích: số `0`, `opacity` bằng `1`, phép tính theo biến, `StyleSheet.hairlineWidth`, `size` của `Icon` (43 chỗ, 12 cỡ; nợ TD-5).
+Không bị rule kiểm có chủ đích: số `0`, `opacity` bằng `1`, phép tính theo biến, `StyleSheet.hairlineWidth`, `size` của `Icon` (48 chỗ gọi ghi cỡ bằng số, 13 cỡ khác nhau từ 14 đến 56; chưa tính 5 chỗ cỡ tính từ biến; nợ TD-5. Đếm 2026-10-27 trong phạm vi theo `scripts/design-token-scope.cjs`, không tính tệp test).
 
 ### Thay đổi nhìn thấy được so với `main` (toàn bộ, đã đo)
 
@@ -119,7 +121,7 @@ Build web riêng cho `main` và nhánh này (`expo export -p web`; `react-native
 - Cần xem trên máy ảo/thiết bị iOS và Android (chưa có ở dự án): đặc biệt các thay đổi 1–2dp ở mục 5, tương phản chữ trên camera ngoài sáng, vùng chạm một tay.
 - `HomeScreen` có `GradientPanel` (gradient xanh) — trái định hướng "tránh gradient", nhưng đã có từ trước và theo mockup đã duyệt; chỉ đổi màu sang token, không đổi thiết kế.
 - Chấm "đang ghi hình" (`#B3261E`) trên nền camera `#16201A` chỉ đạt tương phản khoảng 2.56:1, thấp hơn mức 3:1 cho thành phần giao diện; nền thật là khung hình camera nên còn thay đổi theo cảnh quay. Chấm luôn đi kèm chữ và đồng hồ nên không phải tín hiệu duy nhất. Mình giữ nguyên màu đang chạy; nếu muốn đạt 3:1 cần đổi sang đỏ sáng hơn (cần duyệt trực quan).
-- Hai bộ chữ chính song song (`text`/`ink`) còn tồn tại (TD-1).
+- Hai bộ chữ chính song song (`text`/`ink`) còn tồn tại (TD-1; hoãn có chủ đích theo TK-3, [D-19](README.md#đã-chốt)).
 
 ## 7. Chưa hoàn thành / hoãn có chủ đích
 
@@ -127,10 +129,10 @@ Build web riêng cho `main` và nhánh này (`expo export -p web`; `react-native
 |---|---|
 | Chế độ tối | O-17 chưa chốt. Kiến trúc đã chừa chỗ ([design-system.md](design-system.md) mục 6) |
 | Token chuyển động | Chưa có animation trong phạm vi |
-| Thang cỡ biểu tượng (TD-5) | 12 cỡ theo mockup; `Icon` mặc định 22 được màn đã verify dùng |
+| Thang cỡ biểu tượng (TD-5) | 13 cỡ (14…56) theo mockup; `Icon` mặc định 22 được màn đã verify dùng |
 | Hợp nhất `text`/`ink` (TD-1), `info.fg` (TD-2), `scrim`/`cameraControl` (TD-3), chữ số tabular (TD-4), `Text.color` tên cũ (TD-6) | Cần duyệt trực quan hoặc đụng màn đã verify |
-| UI cho *Đang ghi hình / Đang lưu trên thiết bị / Bằng chứng chưa đầy đủ hoặc bị gián đoạn* | Chưa có giao diện; sẽ thêm `status.*` cùng lúc dựng UI, không gộp vào nhãn nào. Chấm "đang ghi" đã có token riêng `camera.recordingIndicator` (đỏ), ngoại lệ được chủ sản phẩm chấp nhận (Q-2) |
-| Đưa luồng thiết lập (Welcome…) hoặc màn đã verify vào token | Ngoài yêu cầu; làm khi khách hàng đồng ý |
+| UI cho *Đang ghi hình / Đang lưu trên thiết bị / Bằng chứng chưa đầy đủ hoặc bị gián đoạn* | Chưa có giao diện; sẽ thêm `status.*` cùng lúc dựng UI, không gộp vào nhãn nào. Chấm "đang ghi" đã có token riêng `camera.recordingIndicator` (đỏ), ngoại lệ được chủ sản phẩm chấp nhận (TK-2, [D-18](README.md#đã-chốt)) |
+| Đưa luồng thiết lập (Welcome…) hoặc màn đã verify vào token | Ngoài yêu cầu (TK-1, [D-17](README.md#đã-chốt)); làm khi khách hàng đồng ý |
 
 ## 8. Phát hiện ngoài phạm vi (chỉ ghi nhận, không sửa)
 

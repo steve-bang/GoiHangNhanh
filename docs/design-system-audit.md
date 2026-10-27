@@ -1,6 +1,6 @@
 # Audit hệ thống thiết kế (Design Token) — Đơn Chứng
 
-> Trạng thái: **audit trước triển khai** (số liệu ở đây là hiện trạng `main` khi audit; kết quả sau triển khai: [design-token-migration-report.md](design-token-migration-report.md)). Q-1, Q-2, Q-3 đã được xác nhận. Đi kèm [design-token-spec.md](design-token-spec.md) (đặc tả token đề xuất). Ngày audit: 2026-10-27, nhánh `design-token`, dựa trên `main`.
+> Trạng thái: **audit trước triển khai** (số liệu ở đây là hiện trạng `main` khi audit; kết quả sau triển khai: [design-token-migration-report.md](design-token-migration-report.md)). TK-1, TK-2, TK-3 (mã "token" của tài liệu này, không phải Q-xx của `engineering/decisions.md`) đã được xác nhận và ghi ở [D-17, D-18, D-19](README.md#đã-chốt). Đi kèm [design-token-spec.md](design-token-spec.md) (đặc tả token đề xuất). Ngày audit: 2026-10-27, nhánh `design-token`, dựa trên `main`.
 > Số liệu lấy bằng quét regex trên mã nguồn (không tính tệp test); sẽ được thay bằng công cụ kiểm tra chính thức (`check:tokens`) khi triển khai. Số là gần đúng theo mẫu quét, đủ để quyết định, không phải con số nghiệm thu.
 
 ## 1. Phạm vi
@@ -18,7 +18,7 @@ Tab **Trang chủ, Đơn hàng, Thông báo, Cá nhân** và mọi màn đi ra t
 | Quên mật khẩu, OTP, Mật khẩu mới | `ForgotPasswordScreen.tsx`, `VerifyOtpScreen.tsx`, `NewPasswordScreen.tsx` |
 | Hỗ trợ riêng của các màn trên | `auth-layout.ts`, `onboarding/**`, `onboarding-layout.ts`, `onboarding-progress.ts`, `BrandLogo.tsx` |
 
-**Giả định cần bạn xác nhận (Q-1):** `WelcomeScreen`, `WelcomeIllustration`, `CreateShopScreen`, `SetupDoneScreen` cũng thuộc luồng thiết lập trước khi vào app, dùng chung bố cục/bảng màu với nhóm trên và chưa nằm trong danh sách bạn nêu. Mình **xếp vào ngoài phạm vi** theo hướng an toàn (chỉ áp dụng cho những gì "bên trong"). Nếu bạn muốn đưa vào, cần thêm một vòng kiểm tra trực quan.
+**Giả định đã được xác nhận (TK-1, [D-17](README.md#đã-chốt)):** `WelcomeScreen`, `WelcomeIllustration`, `CreateShopScreen`, `SetupDoneScreen` cũng thuộc luồng thiết lập trước khi vào app, dùng chung bố cục/bảng màu với nhóm trên và chưa nằm trong danh sách bạn nêu. Mình **xếp vào ngoài phạm vi** theo hướng an toàn (chỉ áp dụng cho những gì "bên trong"). Nếu bạn muốn đưa vào, cần thêm một vòng kiểm tra trực quan.
 
 ### 1.3. Vùng chạm nhau: component và token dùng chung với màn ngoài phạm vi
 
@@ -68,7 +68,7 @@ Toàn app có nhiều hardcode hơn rất nhiều, nhưng phần lớn nằm ở
 | `fontWeight` bằng chữ | 2 | `Text` (`'700'` cho `bold`), `RecordingFrame` (`'400'`) |
 | `fontSize` / `lineHeight` bằng số | **0** | Mọi cỡ chữ đã đi qua `typography` |
 | `opacity` bằng số | ~3 | `0.85` (nhấn), `0.45` (vô hiệu), `0.8` (đang xử lý) viết trực tiếp trong `Button`/`Card` |
-| Kích thước `Icon` (`size={n}`) | 43 | Chưa có thang cỡ biểu tượng |
+| Kích thước `Icon` (`size={n}`) | 43 (lúc audit, quét gần đúng; số đếm lại sau gộp `main`: 48 chỗ, 13 cỡ, xem [báo cáo](design-token-migration-report.md) mục 5) | Chưa có thang cỡ biểu tượng |
 | Style inline `style={{…}}` | 72 | Phần lớn **đã dùng token** (`color: colors.x`, `gap: spacing.x`) hoặc là giá trị động; không phải vi phạm |
 
 Kết luận: **mã trong phạm vi đã khá kỷ luật** (cỡ chữ 100% qua token; màu gần như 100% qua `useTheme`). Vấn đề chính **không phải rải rác hardcode** mà là: (a) thiếu cấu trúc ngữ nghĩa, (b) thiếu token cho vài nhóm thật sự có dùng, (c) **không có cơ chế ngăn tái phát**.
@@ -115,7 +115,7 @@ Kết luận: **mã trong phạm vi đã khá kỷ luật** (cỡ chữ 100% qua
 | Trạng thái | Hiện có | Ghi chú |
 |---|---|---|
 | Đã lưu trên thiết bị / Chờ tải lên / Đang tải lên / Đã tải lên / Đã xác minh / Lỗi | **Có đủ 6 nhãn** riêng (icon + màu) | Giữ nguyên, tách khóa token từng trạng thái |
-| Đang ghi hình | Có trong `RecordingFrame` (chấm + đồng hồ) | Hiện chấm màu nào chưa thống nhất với quy tắc "đỏ chỉ cho lỗi" ở docs/09 → câu hỏi Q-2 |
+| Đang ghi hình | Có trong `RecordingFrame` (chấm + đồng hồ) | Hiện chấm màu nào chưa thống nhất với quy tắc "đỏ chỉ cho lỗi" ở docs/09 → câu hỏi TK-2 |
 | Đang lưu trên thiết bị (sau khi dừng quay) | Có ở `file-state.ts`, **chưa có nhãn UI riêng** | docs/09: "màn quay hiển thị trạng thái riêng", chưa dựng |
 | Bằng chứng chưa đầy đủ / quá trình ghi bị gián đoạn | Có ở miền nghiệp vụ, **chưa có thành phần hiển thị** | Không tạo token cho UI chưa tồn tại (xem spec 3.5) |
 
@@ -152,11 +152,11 @@ Kết luận: **mã trong phạm vi đã khá kỷ luật** (cỡ chữ 100% qua
 
 | Mã | Câu hỏi | Đề xuất của mình | Cần bạn? |
 |---|---|---|---|
-| Q-1 | Welcome / Tạo shop / Setup xong có nằm ngoài phạm vi không? | Ngoài phạm vi (mục 1.2) | **Có** (xác nhận) |
-| Q-2 (**đã chốt: chấp nhận đỏ**, token `camera.recordingIndicator`) | Chấm "đang ghi hình" màu gì? docs/09 giới hạn đỏ cho lỗi/phá hủy | Chấm hiện dùng đỏ; đã chốt chấp nhận. Giữ nguyên; khi dựng token, hỏi BA có ngoại lệ "chấm ghi hình" cho đỏ không | **Có** (BA/sản phẩm) |
-| Q-3 | Hợp nhất `text/textMuted` với `ink/inkMuted`? | **Chưa hợp nhất.** Đổi sắc chữ là thay đổi nhìn thấy được trên màn form đã duyệt theo mockup. Giữ cả hai ở tầng gốc, ghi nợ TD-1, hợp nhất khi có duyệt trực quan | Không (hoãn có chủ đích) |
-| Q-4 | Chế độ tối | Không bật (O-17 mở). Kiến trúc cho phép thêm ở tầng ngữ nghĩa | Không |
-| Q-5 | Token chuyển động (animation) | **Không tạo** vì chưa có animation nào trong phạm vi | Không |
+| TK-1 ([D-17](README.md#đã-chốt)) | Welcome / Tạo shop / Setup xong có nằm ngoài phạm vi không? | Ngoài phạm vi (mục 1.2) | **Có** (xác nhận) |
+| TK-2 ([D-18](README.md#đã-chốt); **đã chốt: chấp nhận đỏ**, token `camera.recordingIndicator`) | Chấm "đang ghi hình" màu gì? docs/09 giới hạn đỏ cho lỗi/phá hủy | Chấm hiện dùng đỏ; đã chốt chấp nhận. Giữ nguyên; khi dựng token, hỏi BA có ngoại lệ "chấm ghi hình" cho đỏ không | **Có** (BA/sản phẩm) |
+| TK-3 ([D-19](README.md#đã-chốt)) | Hợp nhất `text/textMuted` với `ink/inkMuted`? | **Chưa hợp nhất.** Đổi sắc chữ là thay đổi nhìn thấy được trên màn form đã duyệt theo mockup. Giữ cả hai ở tầng gốc, ghi nợ TD-1, hợp nhất khi có duyệt trực quan | Không (hoãn có chủ đích) |
+| TK-4 | Chế độ tối | Không bật (O-17 mở). Kiến trúc cho phép thêm ở tầng ngữ nghĩa | Không |
+| TK-5 | Token chuyển động (animation) | **Không tạo** vì chưa có animation nào trong phạm vi | Không |
 
 ## 7. Rủi ro khi chuyển đổi
 

@@ -1,6 +1,6 @@
 # Đặc tả Design Token — Đơn Chứng
 
-> Trạng thái: **đã triển khai** trong `src/core/theme/` (kết quả: [design-token-migration-report.md](design-token-migration-report.md); cách dùng: [design-system.md](design-system.md)). Q-1, Q-2, Q-3 ở audit đã được xác nhận. Phạm vi: các màn **bên trong app sau đăng nhập**. Splash, Đăng nhập, Đăng ký, Quên mật khẩu, OTP, Mật khẩu mới (và các tệp hỗ trợ) **không đổi** — xem audit mục 1.
+> Trạng thái: **đã triển khai** trong `src/core/theme/` (kết quả: [design-token-migration-report.md](design-token-migration-report.md); cách dùng: [design-system.md](design-system.md)). TK-1, TK-2, TK-3 ở audit mục 6 đã được xác nhận ([D-17, D-18, D-19](README.md#đã-chốt)). Phạm vi: các màn **bên trong app sau đăng nhập**. Splash, Đăng nhập, Đăng ký, Quên mật khẩu, OTP, Mật khẩu mới (và các tệp hỗ trợ) **không đổi** — xem audit mục 1.
 > Giá trị hex bên dưới **lấy nguyên từ `core/theme/colors.ts` hiện tại**, không có màu mới. Mục tiêu của token là cấu trúc và ngăn lệch, không phải đổi giao diện.
 
 ## 1. Nguyên tắc thiết kế
@@ -48,7 +48,7 @@ src/core/theme/
 | Motion | **Không tạo** | Không có animation trong phạm vi |
 | Font family / letter spacing | **Không tạo** | Dùng font hệ thống, không có `letterSpacing` |
 | Dark mode | **Không bật** (O-17), chừa chỗ ở 8 | Chưa là yêu cầu sản phẩm |
-| Icon size | **Không tạo** | Có 12 cỡ (16…56) theo từng mockup, `Icon` mặc định 22 và được màn ngoài phạm vi dùng; gom lại đổi hiển thị. Ghi nợ TD-5 |
+| Icon size | **Không tạo** | Có 13 cỡ (14…56) theo từng mockup (48 chỗ gọi trong phạm vi, đếm 2026-10-27), `Icon` mặc định 22 và được màn ngoài phạm vi dùng; gom lại đổi hiển thị. Ghi nợ TD-5 |
 | Z-index/breakpoint | **Không** | Không cần; `useWindowDimensions` giữ logic cũ |
 
 ## 4. Giá trị cuối cùng
@@ -133,7 +133,7 @@ Mỗi nhãn có bộ `fg / bg / border` **riêng**, dù một số hôm nay trù
 
 `border` mỗi trạng thái = `fg` (đúng hành vi hiện tại). Bảng `SOFT_BACKGROUND` trong `EvidenceStatusBadge` bị xóa. Test hiện có (mỗi nhãn biểu tượng riêng; `saved_on_device` không tick/xanh; chỉ `verified` được nói "Đã lưu an toàn trên máy chủ") giữ nguyên.
 
-`camera.recordingIndicator` (đỏ `red.700`) là màu chấm *Đang ghi hình* — **ngoại lệ đã được chủ sản phẩm chấp nhận (Q-2)** của quy tắc "đỏ chỉ cho lỗi/phá hủy"; chỉ dùng cho chấm này, luôn kèm chữ và đồng hồ. **Chưa tạo token trạng thái** cho: *Đang lưu trên thiết bị*, *Bằng chứng chưa đầy đủ / ghi bị gián đoạn*. UI của ba trạng thái này chưa tồn tại hoặc chưa chốt màu (audit 3.4, Q-2). Khi dựng UI sẽ thêm khóa `status.recording`, `status.savingOnDevice`, `status.incomplete` cùng lúc, **không** gộp vào nhãn nào ở trên.
+`camera.recordingIndicator` (đỏ `red.700`) là màu chấm *Đang ghi hình* — **ngoại lệ đã được chủ sản phẩm chấp nhận (TK-2, [D-18](README.md#đã-chốt))** của quy tắc "đỏ chỉ cho lỗi/phá hủy"; chỉ dùng cho chấm này, luôn kèm chữ và đồng hồ. **Chưa tạo token trạng thái** cho: *Đang lưu trên thiết bị*, *Bằng chứng chưa đầy đủ / ghi bị gián đoạn*. UI của ba trạng thái này chưa tồn tại hoặc chưa chốt màu (audit 3.4, TK-2). Khi dựng UI sẽ thêm khóa `status.recording`, `status.savingOnDevice`, `status.incomplete` cùng lúc, **không** gộp vào nhãn nào ở trên.
 
 ### 4.5. Typography
 
@@ -176,7 +176,7 @@ Không tạo: `card.*`, `textField.*`, `orderCard.*`, `badge.*`. Chúng hôm nay
 - Màu không là tín hiệu duy nhất: token trạng thái luôn đi cùng biểu tượng + nhãn (đã có test).
 - Chữ: không khóa `allowFontScaling`; `lineHeight` đi cùng `fontSize` trong variant; chiều cao chỉ `minHeight`.
 - Vùng chạm ≥ 44 iOS / 48 Android; kích thước component token không được nhỏ hơn.
-- **Nợ thiết kế đã ghi:** TD-1 hai bộ chữ (`text/ink`); TD-2 thiếu `info.fg`; TD-3 `scrim 0.5` vs `cameraControl 0.55` gần trùng; TD-4 chữ số tabular; TD-5 cỡ biểu tượng (12 cỡ, chưa có thang); TD-6 `Text.color` còn nhận tên vai trò cũ (`'textMuted'`, `'ink'`…) vì `Text` dùng chung với màn đã verify.
+- **Nợ thiết kế đã ghi:** TD-1 hai bộ chữ (`text/ink`); TD-2 thiếu `info.fg`; TD-3 `scrim 0.5` vs `cameraControl 0.55` gần trùng; TD-4 chữ số tabular; TD-5 cỡ biểu tượng (13 cỡ, chưa có thang); TD-6 `Text.color` còn nhận tên vai trò cũ (`'textMuted'`, `'ink'`…) vì `Text` dùng chung với màn đã verify.
 
 ## 7. Cơ chế bắt buộc tuân thủ
 
