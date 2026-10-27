@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ErrorCode } from '@/core/errors/codes';
+import type { ShopId } from '@/core/ids';
 import { logger } from '@/core/logging/logger';
 import { useScreenFocused } from '@/platform';
 
@@ -47,6 +48,8 @@ interface Loaded {
   total: number | null;
   /** Khóa bộ lọc của dữ liệu này, để biết danh sách đang hiện có còn đúng bộ lọc hiện tại không. */
   filtersKey: string;
+  /** Shop của dữ liệu này: đổi shop thì dữ liệu cũ KHÔNG được hiện (bất biến 8). */
+  shopId: ShopId;
 }
 
 const READ_FAILED: ErrorCode = 'SEARCH_UNAVAILABLE';
@@ -70,7 +73,9 @@ export function useOrderList(
   const focused = useScreenFocused();
   const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
 
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [loadedAny, setLoaded] = useState<Loaded | null>(null);
+  // Dữ liệu của shop khác coi như chưa có: suy ra khi render nên không có khung hình nào lộ thẻ của shop cũ.
+  const loaded = loadedAny?.shopId === shopId ? loadedAny : null;
   const [failed, setFailed] = useState<ErrorCode | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -123,6 +128,7 @@ export function useOrderList(
           ),
           total,
           filtersKey: key,
+          shopId,
         });
       } catch (caught) {
         if (mine !== generation.current) return;

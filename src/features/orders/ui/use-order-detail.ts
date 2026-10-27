@@ -74,8 +74,12 @@ export function useOrderDetail(orderId: OrderId | undefined): {
     void load();
   }, [focused, load]);
 
+  // Chi tiết đang giữ thuộc shop khác (vừa đổi shop) thì không hiện: coi như đang nạp lại (bất biến 8).
+  const visible: OrderDetailState =
+    state.kind === 'ready' && state.details.order.shopId !== shopId ? { kind: 'loading' } : state;
+
   return {
-    state,
+    state: visible,
     reload: () => {
       setState({ kind: 'loading' });
       void load();
