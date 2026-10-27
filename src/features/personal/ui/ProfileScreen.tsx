@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -82,7 +82,7 @@ function RegionSkeleton({ testID }: { testID: string }) {
 /**
  * UI-I01 Hồ sơ tài khoản (PER-01, xem hồ sơ PER-02): hồ sơ, cửa hàng, gói, menu, Đăng xuất. Hồ sơ và
  * cửa hàng tải riêng: lỗi/chậm ở một khu vực không che khu vực kia; kéo xuống để làm mới và vẫn giữ
- * dữ liệu cũ nếu làm mới lỗi. Sửa họ tên/đổi mật khẩu chưa có (decisions.md Q-19k).
+ * dữ liệu cũ nếu làm mới lỗi. Sửa họ tên và đổi mật khẩu là route con (decisions.md Q-19k).
  */
 export function ProfileScreen() {
   const { t } = useTranslation();
@@ -96,6 +96,15 @@ export function ProfileScreen() {
 
   const profile = useRegion(() => account.getProfile(), session.key);
   const shop = useRegion(() => account.getShopSummary(), session.key);
+
+  // Sau khi sửa họ tên ở màn con, tải lại hồ sơ (giữ dữ liệu cũ trong lúc tải, không nháy khung chờ).
+  const lastRevision = useRef(session.state.profileRevision);
+  const reloadProfile = profile.reload;
+  useEffect(() => {
+    if (lastRevision.current === session.state.profileRevision) return;
+    lastRevision.current = session.state.profileRevision;
+    void reloadProfile();
+  }, [session.state.profileRevision, reloadProfile]);
 
   const refreshing = profile.refreshing || shop.refreshing;
   const refresh = () => {
@@ -136,7 +145,26 @@ export function ProfileScreen() {
         <RegionError region={profile} code={profile.state.code} testID="profile-error" />
       ) : null}
       {profile.state.status === 'ready' ? (
-        <ProfileSummaryCard profile={profile.state.data} />
+        <>
+          <ProfileSummaryCard profile={profile.state.data} />
+          <Card testID="profile-actions">
+            <ListItem
+              leadingIcon="user"
+              title={t('personal:profile.editEntry')}
+              onPress={() => navigation.push(ROUTES.editProfile)}
+              testID="edit-profile-entry"
+            />
+            {/* PER-04 chỉ có nghĩa với tài khoản đăng nhập bằng mật khẩu (D-13, Q-19c). */}
+            {profile.state.data.signInMethod === 'password' ? (
+              <ListItem
+                leadingIcon="lock"
+                title={t('personal:profile.changePasswordEntry')}
+                onPress={() => navigation.push(ROUTES.changePassword)}
+                testID="change-password-entry"
+              />
+            ) : null}
+          </Card>
+        </>
       ) : null}
 
       {shop.state.status === 'loading' ? <RegionSkeleton testID="shop-loading" /> : null}

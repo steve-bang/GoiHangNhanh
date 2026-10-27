@@ -7,7 +7,7 @@ import type { UserProfile } from '../domain/types';
 
 /**
  * Thẻ hồ sơ trên UI-I01: chữ cái đầu, họ tên (hoặc "Chưa có họ tên", không bịa tên từ email) và email.
- * Chỉ đọc: sửa họ tên chờ mã UI (decisions.md Q-19k).
+ * Chỉ đọc: sửa họ tên ở route con `editProfile` (decisions.md Q-19k).
  */
 export function ProfileSummaryCard({ profile }: { profile: UserProfile }) {
   const { t } = useTranslation();

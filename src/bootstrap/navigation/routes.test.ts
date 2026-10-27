@@ -2,7 +2,7 @@ import { readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 import nav from '@/core/i18n/locales/vi/nav.json';
-import { ROUTES, UI_CODES, isTabBarHiddenAt } from '@/core/navigation';
+import { ROUTES, UI_CODES, isTabBarHiddenAt, type RouteDef } from '@/core/navigation';
 
 import { TAB_CONFIG } from './tab-config';
 
@@ -49,13 +49,40 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     expect(fromFiles).toEqual(fromTable);
   });
 
-  it('mỗi mã UI-xx trong danh mục có route; không mã lạ; chỉ UI-A03 có hai route', () => {
+  it('mỗi mã UI-xx trong danh mục có route; không mã lạ', () => {
     const codes = Object.values(ROUTES).map((r) => r.code);
     // UI-F04 (banner ngoại tuyến) và nhóm J (ngoại lệ) không phải route; mọi mã còn lại đều có.
     expect([...new Set(codes)].sort()).toEqual([...UI_CODES].sort());
-    // UI-A03 có hai route (đăng nhập, đăng ký); mọi mã khác đúng một route.
-    const repeated = codes.filter((code, i) => codes.indexOf(code) !== i);
-    expect(repeated).toEqual(['UI-A03']);
+  });
+
+  it('một mã UI chỉ có nhiều route khi là ngoại lệ UI-A03 hoặc route con khai báo rõ parent (Q-19k)', () => {
+    const roots = Object.values(ROUTES).filter((r) => !r.parent);
+    // Route gốc: mỗi mã đúng một, trừ UI-A03 (đăng nhập + đăng ký, một màn hai chế độ).
+    const rootCodes = roots.map((r) => r.code);
+    const repeatedRoots = rootCodes.filter((code, i) => rootCodes.indexOf(code) !== i);
+    expect(repeatedRoots).toEqual(['UI-A03']);
+  });
+
+  it('route con (parent): trỏ tới route gốc có thật, cùng mã UI, cùng cờ tabBar, gốc không phải con', () => {
+    const children = Object.entries(ROUTES).filter(([, r]) => 'parent' in r && r.parent);
+    // Chỉ hai route con đã duyệt; thêm route con mới phải được người dùng duyệt và sửa danh sách này.
+    expect(children.map(([name]) => name).sort()).toEqual(['changePassword', 'editProfile']);
+    for (const [name, child] of children) {
+      const parent = (ROUTES as Record<string, RouteDef | undefined>)[child.parent ?? ''];
+      expect(parent).toBeDefined();
+      expect(parent?.parent).toBeUndefined();
+      expect(parent?.code).toBe(child.code);
+      expect(parent?.tabBar).toBe(child.tabBar);
+      expect(child.path.startsWith('/account/')).toBe(true);
+      expect(name).not.toBe(child.parent);
+    }
+    expect(ROUTES.editProfile).toMatchObject({ parent: 'profile', code: 'UI-I01' });
+    expect(ROUTES.changePassword).toMatchObject({ parent: 'security', code: 'UI-I05' });
+  });
+
+  it('route con có tiêu đề riêng trong nav.subTitles', () => {
+    expect(nav.subTitles.editProfile).toBeTruthy();
+    expect(nav.subTitles.changePassword).toBeTruthy();
   });
 
   it('mỗi mã UI-xx có tiêu đề i18n', () => {

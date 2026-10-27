@@ -111,6 +111,24 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     expectTabBarVisible(true);
   });
 
+  it('từ Cá nhân vào Sửa họ tên và Đổi mật khẩu (route con UI-I01/UI-I05) vẫn giữ thanh tab; Back về Cá nhân', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.profile.path });
+    await fireEvent.press(await screen.findByTestId('edit-profile-entry'));
+    expect(screen.getByTestId('screen-UI-I01-edit-profile')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-I01')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByTestId('change-password-entry'));
+    expect(screen.getByTestId('screen-UI-I05-change-password')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-I01')).toBeOnTheScreen();
+  });
+
   it('Hàng hoàn và Đồng bộ không còn là tab: mở được nhưng không có thanh tab', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.returns.path });
     expect(screen.getByTestId('screen-UI-D01')).toBeOnTheScreen();

@@ -102,6 +102,21 @@ describe('ProfileScreen (UI-I01)', () => {
     expect(screen.getByTestId('profile-cached-notice')).toBeOnTheScreen();
   });
 
+  it('lối vào Sửa họ tên và Đổi mật khẩu mở đúng route con', async () => {
+    await renderProfile();
+    await waitFor(() => expect(screen.getByTestId('edit-profile-entry')).toBeOnTheScreen());
+    await fireEvent.press(screen.getByTestId('edit-profile-entry'));
+    expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.editProfile);
+    await fireEvent.press(screen.getByTestId('change-password-entry'));
+    expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.changePassword);
+  });
+
+  it('tài khoản Apple/Google: ẩn mục Đổi mật khẩu, vẫn có Sửa họ tên', async () => {
+    await renderProfile(createFakePersonalGateways({ profile: { signInMethod: 'google' } }));
+    await waitFor(() => expect(screen.getByTestId('edit-profile-entry')).toBeOnTheScreen());
+    expect(screen.queryByTestId('change-password-entry')).toBeNull();
+  });
+
   it('mục menu mở đúng route', async () => {
     await renderProfile();
     await fireEvent.press(screen.getByTestId('menu-UI-I05'));

@@ -1,5 +1,7 @@
 // Public API của feature personal (tab Cá nhân). Feature khác chỉ import từ đây (@/features/personal).
 export { PersonalGatewaysProvider, usePersonalGateways } from './ui/PersonalGatewaysProvider';
+export { ChangePasswordScreen } from './ui/ChangePasswordScreen';
+export { EditProfileScreen } from './ui/EditProfileScreen';
 export { ProfileScreen } from './ui/ProfileScreen';
 export { SessionProvider, useSession } from './ui/SessionProvider';
 export type { SessionContextValue } from './ui/SessionProvider';
