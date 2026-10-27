@@ -70,5 +70,9 @@
     "UI-I05": "Bảo mật và dữ liệu",
     "UI-I06": "Trợ giúp",
     "UI-I07": "Thông báo"
+  },
+  "subTitles": {
+    "editProfile": "Sửa họ tên",
+    "changePassword": "Đổi mật khẩu"
   }
 }

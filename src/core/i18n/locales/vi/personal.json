@@ -24,7 +24,7 @@
     },
     "confirmNewPassword": {
       "required": "Hãy nhập lại mật khẩu mới.",
-      "mismatch": "Hai mật khẩu chưa giống nhau. Hãy nhập lại."
+      "mismatch": "Hai mật khẩu chưa khớp nhau. Hãy nhập lại."
     }
   },
   "status": {
@@ -46,7 +46,9 @@
     "planUnknown": "Chưa có thông tin gói",
     "cachedNotice": "Đang hiện dữ liệu đã lưu, có thể chưa mới nhất.",
     "refreshFailed": "Chưa làm mới được. Đang hiện dữ liệu đã tải trước đó.",
-    "avatarLabel": "Ảnh đại diện"
+    "avatarLabel": "Ảnh đại diện",
+    "editEntry": "Sửa họ tên",
+    "changePasswordEntry": "Đổi mật khẩu"
   },
   "signOut": {
     "action": "Đăng xuất",
@@ -55,5 +57,19 @@
     "confirm": "Đăng xuất",
     "cancel": "Ở lại",
     "notReady": "Đăng xuất chưa dùng được ở bản này. Bản cập nhật sau sẽ có."
+  },
+  "editProfile": {
+    "save": "Lưu",
+    "saved": "Đã lưu họ tên.",
+    "emailHint": "Email dùng để đăng nhập, chưa đổi được ở bản này.",
+    "leaveTitle": "Bỏ thay đổi?",
+    "leaveMessage": "Họ tên bạn vừa sửa chưa được lưu.",
+    "leaveConfirm": "Bỏ thay đổi",
+    "leaveCancel": "Tiếp tục sửa"
+  },
+  "changePassword": {
+    "submit": "Đổi mật khẩu",
+    "saved": "Đã đổi mật khẩu.",
+    "signInAgain": "Đăng nhập lại"
   }
 }
