@@ -3,6 +3,9 @@ export { PersonalGatewaysProvider, usePersonalGateways } from './ui/PersonalGate
 export { ChangePasswordScreen } from './ui/ChangePasswordScreen';
 export { EditProfileScreen } from './ui/EditProfileScreen';
 export { ProfileScreen } from './ui/ProfileScreen';
+export { ShopEditScreen } from './ui/ShopEditScreen';
+export { ShopSettingsScreen } from './ui/ShopSettingsScreen';
+export { ShopSwitchScreen } from './ui/ShopSwitchScreen';
 export { SessionHydrator } from './ui/SessionHydrator';
 export { SessionShopProvider } from './ui/SessionShopProvider';
 export { SessionProvider, useSession } from './ui/SessionProvider';
@@ -14,6 +17,8 @@ export type {
   NotificationPreferences,
   PersonalGateways,
   SettingsGateway,
+  ShopRole,
+  ShopStatus,
   ShopSummary,
   SignInMethod,
   UserProfile,

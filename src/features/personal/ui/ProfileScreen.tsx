@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { resolveErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES, type RouteDef } from '@/core/navigation';
 import { useAppNavigation, useIsOffline } from '@/platform';
 import {
@@ -10,10 +9,8 @@ import {
   Button,
   Card,
   ConfirmDialog,
-  ErrorState,
   ListItem,
   Screen,
-  Skeleton,
   StatusBadge,
   Text,
   useTheme,
@@ -24,7 +21,9 @@ import { usePersonalGateways } from './PersonalGatewaysProvider';
 import { ProfileSummaryCard } from './ProfileSummaryCard';
 import { useSession } from './SessionProvider';
 import { useSignOut } from './use-sign-out';
-import { useRegion, type Region } from './use-region';
+import { RegionError, RegionSkeleton } from './RegionParts';
+import { useRegion } from './use-region';
+import { useReloadOnShopUpdated } from './use-shop-revision-reload';
 
 interface MenuItem {
   route: RouteDef;
@@ -43,43 +42,6 @@ const MENU_ITEMS: readonly MenuItem[] = [
   { route: ROUTES.security, labelKey: 'nav:account.security', icon: 'lock' },
   { route: ROUTES.help, labelKey: 'nav:account.help', icon: 'help' },
 ];
-
-/** Khung chữ + nút thử lại cho một khu vực lỗi (câu chữ lấy theo mã lỗi, docs/09 mục 5.1). */
-function RegionError({
-  region,
-  code,
-  testID,
-}: {
-  region: Region<unknown>;
-  code: Parameters<typeof resolveErrorMessage>[1];
-  testID: string;
-}) {
-  const { t } = useTranslation();
-  const message = resolveErrorMessage(t, code);
-  return (
-    <Card>
-      <ErrorState
-        testID={testID}
-        title={message.title}
-        {...(message.hint ? { message: message.hint } : {})}
-        onRetry={() => void region.reload()}
-        retrying={region.refreshing}
-      />
-    </Card>
-  );
-}
-
-function RegionSkeleton({ testID }: { testID: string }) {
-  const { tokens } = useTheme();
-  return (
-    <Card testID={testID}>
-      <View style={{ gap: tokens.space.sm }}>
-        <Skeleton width="60%" height={20} />
-        <Skeleton width="80%" />
-      </View>
-    </Card>
-  );
-}
 
 /**
  * UI-I01 Hồ sơ tài khoản (PER-01, xem hồ sơ PER-02): hồ sơ, cửa hàng, gói, menu, Đăng xuất. Hồ sơ và
@@ -106,6 +68,9 @@ export function ProfileScreen() {
     lastRevision.current = session.state.profileRevision;
     void reloadProfile();
   }, [session.state.profileRevision, reloadProfile]);
+
+  // Sau khi đổi tên shop ở màn con, tải lại thẻ shop.
+  useReloadOnShopUpdated(shop.reload);
 
   const refreshing = profile.refreshing || shop.refreshing;
   const refresh = () => {

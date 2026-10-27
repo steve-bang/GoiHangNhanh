@@ -1,1 +1,1 @@
-export { ShopSettingsScreen as default } from '@/features/shop';
+export { ShopSettingsScreen as default } from '@/features/personal';
