@@ -1,14 +1,25 @@
-import { useState } from 'react';
-import { View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { isAppError } from '@/core/errors/app-error';
+import type { ErrorCode } from '@/core/errors/codes';
 import { ROUTES } from '@/core/navigation';
-import { ORDER_SOURCES, type OrderSource } from '@/core/orders/order-source';
-import { useAppNavigation, useRouteParams } from '@/platform';
+import { ORDER_SOURCES, toOrderSource, type OrderSource } from '@/core/orders/order-source';
 import {
+  getMinTouchTarget,
+  newOrderId,
+  newOrderLineId,
+  newPackageId,
+  useAppNavigation,
+  useRouteParams,
+} from '@/platform';
+import {
+  BottomSheet,
   Button,
+  Card,
   FilterChips,
-  QuantityStepper,
+  Icon,
   Screen,
   SourceIcon,
   Text,
@@ -17,107 +28,386 @@ import {
   type ChipOption,
 } from '@/shared/ui';
 
-/**
- * Bước sau khi tạo đơn nhanh. O-19 (số màn trước camera) CHƯA chốt: tạm đi qua Xem nhanh đơn
- * (UI-C01) như đặc tả A02 -> A03. Khi O-19 chốt (ví dụ bỏ hẳn bước này cho đơn vừa tạo) chỉ đổi hằng số này.
- */
-const AFTER_CREATE_ROUTE = ROUTES.orderPreview;
+import { useOrderStore } from '../data';
+import {
+  LOCAL_SHOP_ID,
+  buildOrder,
+  classifyMatches,
+  hasDuplicates,
+  suggestProductNames,
+  suggestVariants,
+  toCodeKey,
+  validateCode,
+  type DuplicateMatches,
+  type OrderDraft,
+  type OrderLine,
+} from '../domain';
+import { HeaderHelpButton } from './HeaderHelpButton';
+import { QuickOrderLineEditor, type LineInput } from './QuickOrderLineEditor';
+import { useStartPacking } from './use-start-packing';
+
+/** Số dòng lịch sử đọc để gợi ý (đủ cho vài chục đơn gần nhất; đọc một lần khi mở màn). */
+const HISTORY_LIMIT = 200;
+
+type Action = 'confirm' | 'record';
+type FieldError =
+  | { kind: 'invalid_code' }
+  | { kind: 'name_required'; lineIndex: number }
+  | { kind: 'invalid_quantity'; lineIndex: number };
+
+let lineKeySeq = 0;
+/** Khóa React của dòng nhập (chỉ để vẽ danh sách; không phải ID lưu trữ). */
+const newLine = (): LineInput => ({ key: (lineKeySeq += 1), name: '', variant: '', quantity: 1 });
+
+const IDS = { orderId: newOrderId, lineId: newOrderLineId, packageId: newPackageId };
 
 /**
- * UI-B04 Tạo hồ sơ đơn nhanh (đặc tả A02). Dữ liệu tối giản: mã đơn + nguồn bán (+ mã vận đơn) để
- * định danh; sản phẩm/variant/số lượng chỉ để đối chiếu, KHÔNG bắt buộc (D-10). Nguồn bán mặc định
- * "Khác / chưa xác định" thay vì đoán. Số lượng mặc định 1 (docs/09 mục 5.5, A.8). Tên và variant là
- * hai trường riêng (A.7). Gợi ý theo lịch sử shop chưa có (cần dữ liệu thật). Chưa lưu gì.
+ * UI-B04 Tạo đơn nhanh (đặc tả A02; mockup docs/assets/ui/03-quick-order-confirm-record.png). Lưu đơn
+ * + dòng + kiện 1 trên máy (SQLite, ADR-017) rồi sang Xác nhận đơn, hoặc "Bỏ qua, quay ngay" (đơn
+ * không dòng = *Chưa khai báo sản phẩm*, không chặn quay; O-19 vẫn mở). Dữ liệu tối giản: mã đơn +
+ * nguồn bán (+ mã vận đơn); sản phẩm chỉ để đối chiếu và KHÔNG bắt buộc (D-10). Nguồn bán mặc định
+ * "Khác / chưa xác định" thay vì đoán. Mã đã có thì hiện danh sách để người dùng chọn, không tự gộp,
+ * không chọn kết quả đầu (bất biến 5, ADR-011).
  */
 export function QuickOrderScreen() {
   const { t } = useTranslation();
-  const { spacing } = useTheme();
+  const { colors, spacing, radius } = useTheme();
   const navigation = useAppNavigation();
   const params = useRouteParams();
+  const store = useOrderStore();
+  const start = useStartPacking();
+  const touch = getMinTouchTarget();
 
   const [orderCode, setOrderCode] = useState(params.code ?? '');
-  const [source, setSource] = useState<OrderSource>('other');
-  const [trackingCode, setTrackingCode] = useState('');
-  const [productName, setProductName] = useState('');
-  const [variant, setVariant] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [source, setSource] = useState<OrderSource>(toOrderSource(params.source));
+  const [tracking, setTracking] = useState('');
+  const [showTracking, setShowTracking] = useState(false);
+  const [lines, setLines] = useState<LineInput[]>(() => [newLine()]);
+  const [activeKey, setActiveKey] = useState<number | null>(null);
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const [history, setHistory] = useState<readonly OrderLine[]>([]);
+  const [fieldError, setFieldError] = useState<FieldError | null>(null);
+  const [saveError, setSaveError] = useState<ErrorCode | null>(null);
+  const [dupes, setDupes] = useState<{ found: DuplicateMatches; action: Action } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+
+  useEffect(() => {
+    let alive = true;
+    store
+      .listRecentLines(LOCAL_SHOP_ID, HISTORY_LIMIT)
+      .then((rows) => alive && setHistory(rows))
+      // Không có lịch sử thì chỉ mất gợi ý; việc tạo đơn vẫn chạy bình thường.
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [store]);
 
   const sourceOptions: ChipOption<OrderSource>[] = ORDER_SOURCES.map((key) => ({
     key,
     label: t(`common:sources.${key}`),
     leading: <SourceIcon source={key} size={22} />,
   }));
-  const canSave = orderCode.trim().length > 0;
+  const working = saving || start.busy;
+  const canSubmit = validateCode(orderCode).ok && !working;
 
-  const goNext = (withProduct: boolean) => {
-    const next: Record<string, string> = { code: orderCode.trim(), source };
-    if (trackingCode.trim()) next.tracking = trackingCode.trim();
-    if (withProduct && productName.trim()) {
-      next.name = productName.trim();
-      if (variant.trim()) next.variant = variant.trim();
-      next.quantity = String(quantity);
-    }
-    navigation.push(AFTER_CREATE_ROUTE, next);
+  const patchLine = (key: number, patch: Partial<Omit<LineInput, 'key'>>) => {
+    setFieldError(null);
+    setLines((current) => current.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   };
+
+  const submit = async (action: Action, force: boolean) => {
+    if (savingRef.current) return; // chống bấm đúp: không tạo đơn hai lần
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError(null);
+    setFieldError(null);
+    try {
+      const draft: OrderDraft = {
+        orderCode,
+        source,
+        trackingCode: tracking,
+        // "Bỏ qua, quay ngay": đơn không dòng sản phẩm -> *Chưa khai báo sản phẩm*.
+        lines: action === 'record' ? [] : lines,
+      };
+      const built = buildOrder(draft, { shopId: LOCAL_SHOP_ID, ids: IDS, nowDevice: Date.now() });
+      if (!built.ok) {
+        setFieldError(built.error);
+        return;
+      }
+      const { order } = built.details;
+      if (!force) {
+        const matches = await store.findOrdersByCodes(order.shopId, {
+          orderCodeKey: toCodeKey(order.orderCode),
+          ...(order.trackingCode ? { trackingCodeKey: toCodeKey(order.trackingCode) } : {}),
+        });
+        const found = classifyMatches(matches, order);
+        if (hasDuplicates(found)) {
+          setDupes({ found, action });
+          return;
+        }
+      }
+      await store.saveNewOrder(built.details);
+      setDupes(null);
+      const packageId = built.details.packages[0]?.id;
+      if (action === 'confirm' || !packageId) {
+        navigation.push(ROUTES.orderPreview, { orderId: order.id });
+      } else {
+        start.begin(order.id, packageId);
+      }
+    } catch (caught) {
+      setSaveError(isAppError(caught) ? caught.code : 'LOCAL_SAVE_UNAVAILABLE');
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+
+  const activeLine = lines.find((l) => l.key === activeKey) ?? null;
+  const duplicateOrders = dupes
+    ? [
+        ...dupes.found.sameOrder.map((order) => ({ order, kind: 'sameOrder' as const })),
+        ...dupes.found.sameTracking
+          .filter((o) => !dupes.found.sameOrder.some((s) => s.id === o.id))
+          .map((order) => ({ order, kind: 'sameTracking' as const })),
+      ]
+    : [];
+
+  const errorFor = (lineIndex: number, kind: 'name_required' | 'invalid_quantity') =>
+    fieldError && fieldError.kind === kind && fieldError.lineIndex === lineIndex
+      ? t(
+          kind === 'name_required'
+            ? 'screens:quickOrder.nameRequired'
+            : 'screens:quickOrder.quantityInvalid',
+        )
+      : undefined;
 
   return (
     <Screen
       title={t('nav:titles.UI-B04')}
       onBack={navigation.back}
-      inTabs
+      headerRight={<HeaderHelpButton />}
       testID="screen-UI-B04"
       footer={
         <>
+          {saveError ? (
+            <Card tone="danger" testID="save-error">
+              <Text accessibilityRole="alert">{t(`errors:${saveError}`)}</Text>
+            </Card>
+          ) : null}
+          {start.error ? (
+            <Card tone="danger" testID="start-error">
+              <Text accessibilityRole="alert">{t(`errors:${start.error}`)}</Text>
+            </Card>
+          ) : null}
           <Button
-            label={t('screens:quickOrder.saveAndRecord')}
-            disabled={!canSave}
-            onPress={() => goNext(true)}
+            testID="quick-save"
+            label={t('screens:quickOrder.saveAndConfirm')}
+            disabled={!canSubmit}
+            loading={saving}
+            onPress={() => void submit('confirm', false)}
           />
           <Button
+            testID="quick-skip"
             variant="secondary"
-            label={t('screens:quickOrder.skipProducts')}
-            disabled={!canSave}
-            onPress={() => goNext(false)}
+            label={t('screens:quickOrder.skipAndRecord')}
+            disabled={!canSubmit}
+            onPress={() => void submit('record', false)}
           />
         </>
       }
     >
-      <Text color="textMuted">{t('screens:quickOrder.notFound')}</Text>
+      <Text color="textMuted">{t('screens:quickOrder.intro')}</Text>
+
+      <View
+        style={[
+          styles.sourceRow,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderRadius: radius.md,
+            padding: spacing.md,
+            gap: spacing.md,
+          },
+        ]}
+      >
+        <SourceIcon source={source} size={32} />
+        <View style={styles.flex}>
+          <Text variant="caption" color="textMuted">
+            {t('screens:quickOrder.sourceLabel')}
+          </Text>
+          <Text bold>{t(`common:sources.${source}`)}</Text>
+        </View>
+        <Pressable
+          testID="source-change"
+          accessibilityRole="button"
+          accessibilityLabel={t('screens:quickOrder.changeSourceHint')}
+          onPress={() => setSourceOpen(true)}
+          style={[
+            styles.pill,
+            { minHeight: touch, backgroundColor: colors.brandSoft, borderRadius: radius.lg },
+          ]}
+        >
+          <Text bold style={{ color: colors.brand }}>
+            {t('screens:quickOrder.changeSource')}
+          </Text>
+        </Pressable>
+      </View>
+
       <TextField
         testID="quick-order-code"
         label={t('screens:quickOrder.orderCode')}
+        placeholder={t('screens:quickOrder.orderCodePlaceholder')}
         value={orderCode}
-        onChangeText={setOrderCode}
+        onChangeText={(value) => {
+          setFieldError(null);
+          setOrderCode(value);
+        }}
         autoCapitalize="characters"
+        {...(fieldError?.kind === 'invalid_code'
+          ? { error: t('screens:quickOrder.invalidCode') }
+          : {})}
+        trailing={
+          <Pressable
+            testID="quick-scan"
+            accessibilityRole="button"
+            accessibilityLabel={t('screens:quickOrder.scanCode')}
+            onPress={() => navigation.replace(ROUTES.scan)}
+            style={[styles.iconButton, { minWidth: touch, minHeight: touch }]}
+          >
+            <Icon name="scan" size={24} color={colors.text} />
+          </Pressable>
+        }
       />
-      <View style={{ gap: spacing.sm }}>
-        <Text bold>{t('screens:quickOrder.source')}</Text>
-        <FilterChips options={sourceOptions} selectedKey={source} onSelect={setSource} />
-      </View>
-      <TextField
-        label={t('screens:quickOrder.trackingCode')}
-        value={trackingCode}
-        onChangeText={setTrackingCode}
-        autoCapitalize="characters"
-      />
-      <TextField
-        label={t('screens:quickOrder.productName')}
-        placeholder={t('screens:quickOrder.productNamePlaceholder')}
-        value={productName}
-        onChangeText={setProductName}
-        autoCapitalize="sentences"
-      />
-      <TextField
-        label={t('screens:quickOrder.variant')}
-        placeholder={t('screens:quickOrder.variantPlaceholder')}
-        value={variant}
-        onChangeText={setVariant}
-        autoCapitalize="sentences"
-      />
-      <View style={{ gap: spacing.sm }}>
-        <Text bold>{t('screens:quickOrder.quantity')}</Text>
-        <QuantityStepper value={quantity} onChange={setQuantity} />
-      </View>
+
+      {lines.map((line, index) => (
+        <QuickOrderLineEditor
+          key={line.key}
+          index={index}
+          total={lines.length}
+          line={line}
+          nameError={errorFor(index, 'name_required')}
+          quantityError={errorFor(index, 'invalid_quantity')}
+          nameSuggestions={
+            activeLine?.key === line.key ? suggestProductNames(history, line.name) : []
+          }
+          variantSuggestions={
+            activeLine?.key === line.key ? suggestVariants(history, line.name) : []
+          }
+          onActivate={() => setActiveKey(line.key)}
+          onChange={(patch) => patchLine(line.key, patch)}
+          onRemove={
+            lines.length > 1
+              ? () => setLines((current) => current.filter((l) => l.key !== line.key))
+              : undefined
+          }
+        />
+      ))}
+
+      <Pressable
+        testID="quick-add-line"
+        accessibilityRole="button"
+        onPress={() => {
+          const added = newLine();
+          setLines((current) => [...current, added]);
+          setActiveKey(added.key);
+        }}
+        style={[styles.addLine, { minHeight: touch, gap: spacing.sm }]}
+      >
+        <Icon name="add" size={20} color={colors.brand} />
+        <Text bold style={{ color: colors.brand }}>
+          {t('screens:quickOrder.addLine')}
+        </Text>
+      </Pressable>
+
+      {showTracking ? (
+        <TextField
+          testID="quick-tracking"
+          label={t('screens:quickOrder.trackingCode')}
+          value={tracking}
+          onChangeText={setTracking}
+          autoCapitalize="characters"
+        />
+      ) : (
+        <Pressable
+          testID="quick-add-tracking"
+          accessibilityRole="button"
+          onPress={() => setShowTracking(true)}
+          style={[styles.addLine, { minHeight: touch, gap: spacing.sm }]}
+        >
+          <Icon name="add" size={20} color={colors.brand} />
+          <Text bold style={{ color: colors.brand }}>
+            {t('screens:quickOrder.addTracking')}
+          </Text>
+        </Pressable>
+      )}
+
+      {start.permissionSheet}
+
+      <BottomSheet
+        visible={sourceOpen}
+        onClose={() => setSourceOpen(false)}
+        title={t('screens:quickOrder.sourceSheetTitle')}
+      >
+        <FilterChips
+          options={sourceOptions}
+          selectedKey={source}
+          onSelect={(key) => {
+            setSource(key);
+            setSourceOpen(false);
+          }}
+        />
+      </BottomSheet>
+
+      <BottomSheet
+        visible={dupes !== null}
+        onClose={() => setDupes(null)}
+        title={t('screens:quickOrder.duplicate.title')}
+      >
+        <View testID="duplicate-sheet" style={{ gap: spacing.md }}>
+          <Text>{t('screens:quickOrder.duplicate.message')}</Text>
+          {duplicateOrders.map(({ order, kind }) => (
+            <Card key={order.id} tone="warning" testID={`duplicate-${order.id}`}>
+              <View style={{ gap: spacing.sm }}>
+                <Text variant="caption" color="textMuted">
+                  {t(`screens:quickOrder.duplicate.${kind}`)}
+                </Text>
+                <Text bold>{order.orderCode}</Text>
+                <Text>{t(`common:sources.${order.source}`)}</Text>
+                {order.trackingCode ? (
+                  <Text color="textMuted">
+                    {t('screens:quickOrder.duplicate.tracking', { code: order.trackingCode })}
+                  </Text>
+                ) : null}
+                <Button
+                  variant="secondary"
+                  label={t('screens:quickOrder.duplicate.useOrder')}
+                  onPress={() => {
+                    setDupes(null);
+                    navigation.push(ROUTES.orderPreview, { orderId: order.id });
+                  }}
+                />
+              </View>
+            </Card>
+          ))}
+          <Button
+            testID="duplicate-create-new"
+            label={t('screens:quickOrder.duplicate.createNew')}
+            onPress={() => {
+              if (dupes) void submit(dupes.action, true);
+            }}
+          />
+        </View>
+      </BottomSheet>
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  sourceRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
+  pill: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  iconButton: { alignItems: 'center', justifyContent: 'center' },
+  addLine: { flexDirection: 'row', alignItems: 'center' },
+});

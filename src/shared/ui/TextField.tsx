@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -24,6 +24,10 @@ interface TextFieldProps {
   onSubmitEditing?: () => void;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   testID?: string;
+  /** Phần tử đặt bên phải trong khung ô (nút quét, nút xóa, mũi tên...). Tự chịu trách nhiệm trợ năng. */
+  trailing?: ReactNode;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 
 /** Ô nhập có nhãn luôn hiện (không dùng placeholder thay nhãn). Cao tối thiểu theo vùng chạm. */
@@ -38,39 +42,65 @@ export function TextField({
   onSubmitEditing,
   autoCapitalize = 'none',
   testID,
+  trailing,
+  onFocus,
+  onBlur,
 }: TextFieldProps) {
   const { colors, spacing, radius, typography } = useTheme();
   const [focused, setFocused] = useState(false);
+  const frameStyle = {
+    minHeight: Math.max(getMinTouchTarget(), 52),
+    backgroundColor: colors.surface,
+    borderColor: error ? colors.danger : focused ? colors.brand : colors.border,
+    borderWidth: focused || error ? 2 : 1,
+    borderRadius: radius.md,
+  } as const;
+  const input = (
+    <TextInput
+      testID={testID}
+      accessibilityLabel={label}
+      value={value}
+      onChangeText={onChangeText}
+      {...(placeholder ? { placeholder } : {})}
+      placeholderTextColor={colors.textMuted}
+      {...(keyboardType ? { keyboardType } : {})}
+      {...(returnKeyType ? { returnKeyType } : {})}
+      {...(onSubmitEditing ? { onSubmitEditing } : {})}
+      autoCapitalize={autoCapitalize}
+      autoCorrect={false}
+      onFocus={() => {
+        setFocused(true);
+        onFocus?.();
+      }}
+      onBlur={() => {
+        setFocused(false);
+        onBlur?.();
+      }}
+      style={[
+        typography.body,
+        trailing
+          ? { flex: 1, minHeight: frameStyle.minHeight - 2, color: colors.text, paddingVertical: 0 }
+          : {
+              ...frameStyle,
+              color: colors.text,
+              paddingHorizontal: spacing.lg,
+            },
+      ]}
+    />
+  );
   return (
     <View style={styles.container}>
       <Text bold>{label}</Text>
-      <TextInput
-        testID={testID}
-        accessibilityLabel={label}
-        value={value}
-        onChangeText={onChangeText}
-        {...(placeholder ? { placeholder } : {})}
-        placeholderTextColor={colors.textMuted}
-        {...(keyboardType ? { keyboardType } : {})}
-        {...(returnKeyType ? { returnKeyType } : {})}
-        {...(onSubmitEditing ? { onSubmitEditing } : {})}
-        autoCapitalize={autoCapitalize}
-        autoCorrect={false}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        style={[
-          typography.body,
-          {
-            minHeight: Math.max(getMinTouchTarget(), 52),
-            color: colors.text,
-            backgroundColor: colors.surface,
-            borderColor: error ? colors.danger : focused ? colors.brand : colors.border,
-            borderWidth: focused || error ? 2 : 1,
-            borderRadius: radius.md,
-            paddingHorizontal: spacing.lg,
-          },
-        ]}
-      />
+      {trailing ? (
+        <View
+          style={[frameStyle, styles.row, { paddingLeft: spacing.lg, paddingRight: spacing.sm }]}
+        >
+          {input}
+          {trailing}
+        </View>
+      ) : (
+        input
+      )}
       {error ? (
         <Text variant="caption" color="danger" accessibilityLiveRegion="polite">
           {error}
@@ -80,4 +110,7 @@ export function TextField({
   );
 }
 
-const styles = StyleSheet.create({ container: { gap: 6 } });
+const styles = StyleSheet.create({
+  container: { gap: 6 },
+  row: { flexDirection: 'row', alignItems: 'center' },
+});
