@@ -43,9 +43,12 @@ export function buildPackingSession(
   };
 }
 
-/** Phiên còn đang thực hiện (chưa kết thúc). Hiện chỉ có `created`; thêm trạng thái kết thúc cùng recorder. */
-export const isSessionStatusActive = (status: PackingSession['sessionStatus']): boolean =>
-  status === 'created';
+/**
+ * Phiên còn đang thực hiện (chưa kết thúc). Hiện chỉ có `created`; thêm trạng thái kết thúc cùng
+ * recorder. Nhận `string` vì giá trị đọc từ kho có thể lạ (bản app khác ghi): trạng thái lạ KHÔNG
+ * coi là đang thực hiện, để không gắn nhầm "Xác nhận đơn" vào phiên không rõ.
+ */
+export const isSessionStatusActive = (status: string): boolean => status === 'created';
 
 export const isSessionActive = (session: Pick<PackingSession, 'sessionStatus'>): boolean =>
   isSessionStatusActive(session.sessionStatus);

@@ -279,7 +279,7 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
           const lines = lineRows.filter((l) => l.order_id === row.id);
           const first = lines[0];
           const active = sessionRows.find(
-            (s) => s.order_id === row.id && isSessionStatusActive(s.session_status as 'created'),
+            (s) => s.order_id === row.id && isSessionStatusActive(s.session_status),
           );
           return {
             order: toOrder(row),

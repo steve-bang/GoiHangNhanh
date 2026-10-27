@@ -17,7 +17,7 @@ import {
   useTheme,
 } from '@/shared/ui';
 
-import { canRecordNow, formatDeviceDateTime } from '../domain';
+import { canRecordNow, formatDeviceDateTime, isSessionActive } from '../domain';
 import { CopyButton } from './CopyButton';
 import { OrderEvidenceBadge } from './OrderEvidenceBadge';
 import { useOrderDetail } from './use-order-detail';
@@ -94,7 +94,7 @@ export function OrderDetailScreen() {
 
   const { details, sessions, evidence } = state;
   const { order, lines, packages } = details;
-  const activeSession = sessions[0] ?? null; // mới nhất trước; hiện mọi phiên đều đang thực hiện
+  const activeSession = sessions.find(isSessionActive) ?? null; // mới nhất trước; cùng quy tắc với danh sách
   const record = canRecordNow(evidence);
   const recordNow = () => {
     if (activeSession) start.begin(order.id, activeSession.packageId);
