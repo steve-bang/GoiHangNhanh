@@ -44,7 +44,7 @@ const color = {
     onCameraMuted: palette.alpha.white75,
     control: palette.alpha.black55,
     scanAccent: palette.scan[400],
-    /** Chấm "đang ghi hình": NGOẠI LỆ được chấp thuận của quy tắc "đỏ chỉ cho lỗi/phá hủy" (docs/09 mục 3, Q-2). Luôn đi kèm chữ + đồng hồ. */
+    /** Chấm "đang ghi hình": NGOẠI LỆ được chấp thuận của quy tắc "đỏ chỉ cho lỗi/phá hủy" (docs/09 mục 3, D-18). Luôn đi kèm chữ + đồng hồ. */
     recordingIndicator: palette.red[700],
   },
 } as const;

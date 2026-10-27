@@ -15,7 +15,7 @@ const EXCLUDED_PATTERNS = [
   // Đăng nhập, Đăng ký, Quên mật khẩu, OTP, Mật khẩu mới
   /^src\/features\/shop\/ui\/(SignIn|SignUp|ForgotPassword|VerifyOtp|NewPassword)Screen/,
   /^src\/features\/shop\/ui\/auth-layout/,
-  // Luồng thiết lập trước khi vào app (Q-1: xác nhận ngoài phạm vi) và hạ tầng dùng chung của chúng
+  // Luồng thiết lập trước khi vào app (D-17: xác nhận ngoài phạm vi) và hạ tầng dùng chung của chúng
   /^src\/features\/shop\/ui\/(Welcome|CreateShop|SetupDone)/,
   /^src\/features\/shop\/ui\/(BrandLogo|onboarding|welcome-layout)/,
   /^src\/features\/shop\/ui\/onboarding\//,
