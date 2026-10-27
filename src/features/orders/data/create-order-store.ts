@@ -24,6 +24,8 @@ export function createLocalOrderStore(open: () => Promise<SqlDatabase | null>): 
     return resolved;
   };
   return {
+    listOrders: async (shop, q, p) => (await get()).listOrders(shop, q, p),
+    countOrders: async (shop, q) => (await get()).countOrders(shop, q),
     saveNewOrder: async (d) => (await get()).saveNewOrder(d),
     getOrder: async (shop, id) => (await get()).getOrder(shop, id),
     findOrdersByCodes: async (s, q) => (await get()).findOrdersByCodes(s, q),

@@ -33,7 +33,6 @@
     "accessibility": "{{name}}, phân loại {{variant}}, số lượng {{count}}"
   },
   "orderCard": {
-    "videoCount": "{{count}} video",
     "noVideo": "Chưa có video"
   },
   "syncBar": {

@@ -39,7 +39,8 @@ export function ScreenHeader({
       style={[
         styles.row,
         {
-          paddingHorizontal: compact ? spacing.md : spacing.lg,
+          paddingLeft: compact && onBack ? spacing.md : spacing.lg,
+          paddingRight: compact ? spacing.md : spacing.lg,
           paddingVertical: spacing.sm,
           gap: compact ? spacing.xs : spacing.sm,
         },

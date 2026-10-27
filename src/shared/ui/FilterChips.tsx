@@ -24,6 +24,11 @@ interface FilterChipsProps<K extends string> {
   appearance?: 'outlined' | 'solid';
   /** Phần tử đặt cùng hàng sau các chip (ví dụ "+ Thêm kiện"); xuống dòng khi hết chỗ. */
   trailing?: ReactNode;
+  /**
+   * `compact`: chip thấp, chữ 14sp (formButton), nhưng vùng chạm vẫn >= tối thiểu nhờ `hitSlop`
+   * (tab Đơn hàng; decisions.md Q-18). Mặc định giữ cỡ cũ cho các màn khác.
+   */
+  size?: 'regular' | 'compact';
 }
 
 /**
@@ -37,9 +42,14 @@ export function FilterChips<K extends string>({
   onSelect,
   appearance = 'outlined',
   trailing,
+  size = 'regular',
 }: FilterChipsProps<K>) {
   const { colors, spacing, radius } = useTheme();
   const solid = appearance === 'solid';
+  const compact = size === 'compact';
+  const touch = getMinTouchTarget();
+  const height = compact ? COMPACT_CHIP_HEIGHT : touch;
+  const slop = Math.max(0, Math.ceil((touch - height) / 2));
   return (
     <View style={[styles.wrap, { gap: spacing.sm }]}>
       {options.map((option) => {
@@ -70,17 +80,18 @@ export function FilterChips<K extends string>({
             accessibilityRole="button"
             accessibilityState={{ selected }}
             onPress={() => onSelect(option.key)}
+            hitSlop={slop > 0 ? { top: slop, bottom: slop } : undefined}
             style={[
               styles.chip,
               {
-                minHeight: getMinTouchTarget(),
-                paddingHorizontal: solid ? spacing.xl : spacing.lg,
+                minHeight: height,
+                paddingHorizontal: compact ? spacing.md : solid ? spacing.xl : spacing.lg,
                 ...chipStyle,
               },
             ]}
           >
             {option.leading}
-            {solid ? (
+            {solid || compact ? (
               <Text variant="formButton" style={{ color: textColor }}>
                 {option.label}
               </Text>
@@ -96,6 +107,9 @@ export function FilterChips<K extends string>({
     </View>
   );
 }
+
+/** Chiều cao nhìn thấy của chip cỡ gọn; vùng chạm được bù bằng hitSlop. */
+const COMPACT_CHIP_HEIGHT = 34;
 
 const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },

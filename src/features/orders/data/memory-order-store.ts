@@ -3,7 +3,14 @@ import { AppError } from '@/core/errors/app-error';
 
 import { toCodeKey } from '../domain/codes';
 import type { OrderStore } from '../domain/order-store';
-import { findActiveSession } from '../domain/start-session';
+import {
+  compareListItems,
+  isAfterCursor,
+  lastActivityOf,
+  matchesListQuery,
+  type OrderListItem,
+} from '../domain/order-list';
+import { findActiveSession, isSessionActive } from '../domain/start-session';
 import type { Order, OrderDetails, OrderLine, OrderPackage, PackingSession } from '../domain/types';
 
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
@@ -34,7 +41,45 @@ export function createMemoryOrderStore(): OrderStore {
       .filter((s) => s.orderId === orderId && s.shopId === shopId)
       .sort((a, b) => b.startedAtDevice - a.startedAtDevice);
 
+  const listMatching = (shopId: ShopId, query: Parameters<OrderStore['countOrders']>[1]) =>
+    [...orders.values()]
+      .filter((o) => o.shopId === shopId)
+      .filter((o) => matchesListQuery(o, linesOf(o.id).length, query))
+      .map((order): OrderListItem => {
+        const orderLines = linesOf(order.id);
+        const orderSessions = sessionsOf(shopId, order.id);
+        const first = orderLines[0];
+        const active = orderSessions.find((s) => isSessionActive(s));
+        return {
+          order,
+          firstLine: first
+            ? { name: first.name, variant: first.variant, quantity: first.quantity }
+            : null,
+          lineCount: orderLines.length,
+          activeSession: active ? { id: active.id, packageId: active.packageId } : null,
+          lastActivityDevice: lastActivityOf(order, orderSessions),
+        };
+      })
+      .sort(compareListItems);
+
   return {
+    async listOrders(shopId, query, page) {
+      const all = listMatching(shopId, query);
+      const after = page.after;
+      const rest = after ? all.filter((item) => isAfterCursor(item, after)) : all;
+      const items = rest.slice(0, page.limit);
+      const last = items[items.length - 1];
+      return copy({
+        items,
+        nextCursor:
+          rest.length > page.limit && last
+            ? { lastActivityDevice: last.lastActivityDevice, orderId: last.order.id }
+            : null,
+      });
+    },
+    async countOrders(shopId, query) {
+      return listMatching(shopId, query).length;
+    },
     async saveNewOrder(details) {
       if (orders.has(details.order.id)) throw new AppError('ORDER_SAVE_FAILED');
       const incoming = copy(details);

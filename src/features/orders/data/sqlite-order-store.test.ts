@@ -1,5 +1,7 @@
 import { AppError } from '@/core/errors/app-error';
 import { LOCAL_SHOP_ID } from '../domain/local-shop';
+import type { SessionId } from '@/core/ids';
+import { buildPackingSession } from '../domain/start-session';
 import { createNodeSqliteDatabase } from '@/test-utils/node-sqlite';
 
 import { runOrderStoreContract, makeOrder } from './order-store.contract';
@@ -88,5 +90,29 @@ describe('kho SQLite: migration và lỗi', () => {
   it('parseSnapshot từ chối dữ liệu hỏng', () => {
     expect(() => parseSnapshot('{"orderCode":1}')).toThrow();
     expect(() => parseSnapshot('null')).toThrow();
+  });
+});
+
+describe('kho SQLite: trạng thái phiên lạ trong dữ liệu', () => {
+  it('phiên có trạng thái không phải created không được coi là đang thực hiện ở danh sách', async () => {
+    const db = createNodeSqliteDatabase();
+    const store = createSqliteOrderStore(db);
+    const details = makeOrder('ST', { lines: [{ name: 'Áo' }] });
+    await store.saveNewOrder(details);
+    const pkg = details.packages[0];
+    if (!pkg) throw new Error('fixture');
+    const built = buildPackingSession(details, pkg.id, {
+      sessionId: 'sess-st' as SessionId,
+      nowDevice: 5000,
+    });
+    if (!built.ok) throw new Error('fixture');
+    await store.saveSession(built.session);
+    const page = { limit: 10 };
+    const before = await store.listOrders(LOCAL_SHOP_ID, {}, page);
+    expect(before.items[0]?.activeSession).toMatchObject({ id: 'sess-st' });
+    // Ghi thẳng trạng thái chưa có trong domain: bắt được nếu điều kiện lọc bị đảo hoặc bỏ.
+    await db.runAsync("UPDATE packing_sessions SET session_status = 'finished'");
+    const after = await store.listOrders(LOCAL_SHOP_ID, {}, page);
+    expect(after.items[0]?.activeSession).toBeNull();
   });
 });

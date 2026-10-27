@@ -18,6 +18,8 @@ interface EvidenceStatusBadgeProps {
   /** 0-100, chỉ hiển thị khi `status === 'uploading'` và đo được (không bịa tiến độ). */
   progressPercent?: number;
   testID?: string;
+  /** Nhãn gọn (padding và biểu tượng nhỏ hơn); chữ vẫn 12sp đậm như cũ. */
+  compact?: boolean;
 }
 
 const SOFT_BACKGROUND: Partial<Record<ColorRole, ColorRole>> = {
@@ -39,6 +41,7 @@ export function EvidenceStatusBadge({
   reason,
   progressPercent,
   testID,
+  compact = false,
 }: EvidenceStatusBadgeProps) {
   const { t } = useTranslation();
   const { colors, spacing, radius } = useTheme();
@@ -62,12 +65,12 @@ export function EvidenceStatusBadge({
             borderColor: foreground,
             backgroundColor: background,
             borderRadius: radius.lg,
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.xs,
+            paddingHorizontal: compact ? spacing.sm : spacing.md,
+            paddingVertical: compact ? 2 : spacing.xs,
           },
         ]}
       >
-        <Icon name={presentation.icon} size={16} color={foreground} />
+        <Icon name={presentation.icon} size={compact ? 14 : 16} color={foreground} />
         <Text variant="caption" bold style={{ color: foreground }}>
           {label + progress}
         </Text>
