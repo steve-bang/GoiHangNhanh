@@ -14,7 +14,8 @@ import type {
   PackingSession,
 } from '../domain/types';
 import { toCodeKey } from '../domain/codes';
-import { findActiveSession } from '../domain/start-session';
+import type { OrderListItem, OrderListQuery } from '../domain/order-list';
+import { findActiveSession, isSessionStatusActive } from '../domain/start-session';
 import { MIGRATIONS } from './sqlite-migrations';
 
 interface OrderRow {
@@ -48,6 +49,33 @@ interface SessionRow {
   started_at_device: number;
   snapshot_json: string;
   session_status: string;
+}
+
+/** Điều kiện WHERE (tham số hóa) cho danh sách/đếm; luôn bắt đầu bằng cô lập shop (bất biến 8). */
+function listConditions(shopId: ShopId, query: OrderListQuery) {
+  const conditions = ['o.shop_id = ?'];
+  const params: (string | number)[] = [shopId];
+  if (query.searchKey !== undefined && query.searchKey !== '') {
+    // instr (không dùng LIKE) để %, _ trong mã không thành ký tự đại diện; khóa đã viết hoa sẵn.
+    conditions.push(
+      "(instr(o.order_code_key, ?) > 0 OR instr(COALESCE(o.tracking_code_key, ''), ?) > 0)",
+    );
+    params.push(query.searchKey, query.searchKey);
+  }
+  if (query.source !== undefined) {
+    conditions.push('o.source = ?');
+    params.push(query.source);
+  }
+  if (query.createdSinceDevice !== undefined) {
+    conditions.push('o.created_at_device >= ?');
+    params.push(query.createdSinceDevice);
+  }
+  if (query.declaration !== undefined) {
+    const exists = 'EXISTS (SELECT 1 FROM order_lines l WHERE l.order_id = o.id)';
+    conditions.push(query.declaration === 'declared' ? exists : `NOT ${exists}`);
+  }
+  // query.withoutVideo: chưa có bảng bằng chứng nên không đơn nào có video thật => không điều kiện.
+  return { where: conditions.join(' AND '), params };
 }
 
 const toOrder = (r: OrderRow): Order => ({
@@ -202,7 +230,87 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
     return rows.map(toSession);
   };
 
+  const placeholders = (n: number) => Array.from({ length: n }, () => '?').join(', ');
+
   return {
+    listOrders: (shopId, query, page) =>
+      guarded('ORDER_SAVE_FAILED', async () => {
+        const { where, params } = listConditions(shopId, query);
+        // Mốc hoạt động tính một lần cho mỗi đơn (nhóm phiên theo đơn), rồi lọc keyset ở truy vấn ngoài.
+        const cursor = page.after
+          ? 'WHERE (last_activity < ? OR (last_activity = ? AND id < ?))'
+          : '';
+        const cursorParams = page.after
+          ? [page.after.lastActivityDevice, page.after.lastActivityDevice, page.after.orderId]
+          : [];
+        const rows = await db.getAllAsync<OrderRow & { last_activity: number }>(
+          `SELECT * FROM (
+             SELECT o.*, MAX(o.created_at_device, COALESCE(s.last_session, 0)) AS last_activity
+             FROM orders o
+             LEFT JOIN (
+               SELECT order_id, MAX(started_at_device) AS last_session
+               FROM packing_sessions WHERE shop_id = ? GROUP BY order_id
+             ) s ON s.order_id = o.id
+             WHERE ${where}
+           ) ${cursor}
+           ORDER BY last_activity DESC, id DESC LIMIT ?`,
+          [shopId, ...params, ...cursorParams, page.limit + 1],
+        );
+        const pageRows = rows.slice(0, page.limit);
+        const ids = pageRows.map((r) => r.id);
+        const lineRows = ids.length
+          ? await db.getAllAsync<LineRow>(
+              `SELECT * FROM order_lines WHERE order_id IN (${placeholders(ids.length)})
+               ORDER BY order_id, position`,
+              ids,
+            )
+          : [];
+        const sessionRows = ids.length
+          ? await db.getAllAsync<
+              Pick<SessionRow, 'id' | 'order_id' | 'package_id' | 'session_status'>
+            >(
+              `SELECT id, order_id, package_id, session_status FROM packing_sessions
+               WHERE shop_id = ? AND order_id IN (${placeholders(ids.length)})
+               ORDER BY started_at_device DESC`,
+              [shopId, ...ids],
+            )
+          : [];
+        const items = pageRows.map((row): OrderListItem => {
+          const lines = lineRows.filter((l) => l.order_id === row.id);
+          const first = lines[0];
+          const active = sessionRows.find(
+            (s) => s.order_id === row.id && isSessionStatusActive(s.session_status as 'created'),
+          );
+          return {
+            order: toOrder(row),
+            firstLine: first
+              ? { name: first.name, variant: first.variant, quantity: first.quantity }
+              : null,
+            lineCount: lines.length,
+            activeSession: active
+              ? { id: active.id as SessionId, packageId: active.package_id as PackageId }
+              : null,
+            lastActivityDevice: row.last_activity,
+          };
+        });
+        const last = items[items.length - 1];
+        return {
+          items,
+          nextCursor:
+            rows.length > page.limit && last
+              ? { lastActivityDevice: last.lastActivityDevice, orderId: last.order.id }
+              : null,
+        };
+      }),
+    countOrders: (shopId, query) =>
+      guarded('ORDER_SAVE_FAILED', async () => {
+        const { where, params } = listConditions(shopId, query);
+        const row = await db.getFirstAsync<{ n: number }>(
+          `SELECT COUNT(*) AS n FROM orders o WHERE ${where}`,
+          params,
+        );
+        return row?.n ?? 0;
+      }),
     saveNewOrder: (details) =>
       guarded('ORDER_SAVE_FAILED', () =>
         db.withTransactionAsync(async () => {
