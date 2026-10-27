@@ -7,7 +7,7 @@
  * Đỏ chỉ dùng cho lỗi, hành động phá hủy, nguy cơ mất dữ liệu.
  */
 export const colors = {
-  brand: '#1F5F3F', // xanh rừng
+  brand: '#157852', // xanh rừng (khớp màu nút chính trong mockup docs/assets/ui/01-onboarding.png)
   onBrand: '#FFFFFF',
   background: '#FAF8F2', // trắng ngà
   surface: '#FFFFFF',
@@ -24,6 +24,12 @@ export const colors = {
   welcomeBackground: '#F2F9F4',
   welcomeBlob: '#E1F1E6',
   borderSubtle: '#E2E7E4',
+  // Màn thiết lập tài khoản/shop (UI-A03, A04, A06; mockup 01-onboarding): nền gần trắng pha xanh,
+  // chữ tiêu đề xanh đen, chữ phụ xám xanh, viền ô nhập xanh nhạt.
+  ink: '#0E2B3F',
+  inkMuted: '#566B7C',
+  onboardingBackground: '#F8FCF9',
+  fieldBorder: '#D3E3DE',
   // Nền nhạt cho thẻ/khối thông tin; luôn đi kèm chữ + biểu tượng (màu không là tín hiệu duy nhất).
   brandSoft: '#E6F0E9',
   successSoft: '#E3F1E7',

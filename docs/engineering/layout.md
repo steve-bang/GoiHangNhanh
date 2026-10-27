@@ -35,10 +35,10 @@ Thanh tab (D-11): **Tổng quan · Đơn hàng · Hàng hoàn · Đồng bộ**.
 | `/` | UI-A01 | — | — | `src/app/index.tsx` (chuyển hướng sang `/home`) | Chuyển hướng |
 | `/welcome` | UI-A02 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `WelcomeScreen` | Màn thật theo mockup 5.1 (xem mục 2.1) |
 | `/sign-in` | UI-A03 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SignInScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/sign-up` | UI-A03 (biến thể đăng ký) | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SignUpScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/create-shop` | UI-A04 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `CreateShopScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/sign-up` | UI-A03 (biến thể đăng ký) | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SignUpScreen` | Màn thật theo mockup 5.1, cổng giả (xem mục 2.2) |
+| `/create-shop` | UI-A04 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `CreateShopScreen` | Màn thật theo mockup 5.1, cổng giả (xem mục 2.2) |
 | `/permissions` | UI-A05 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `PermissionsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/setup-done` | UI-A06 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SetupDoneScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/setup-done` | UI-A06 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SetupDoneScreen` | Màn thật theo mockup 5.1, cổng giả (xem mục 2.2) |
 | `/home` | UI-B01 | A01 | hiện | `orders`: `HomeScreen` | Khung có bố cục + dữ liệu minh họa |
 | `/home/scan` | UI-B02 | A02 | hiện | `orders`: `ScanScreen` | Khung có bố cục + dữ liệu minh họa |
 | `/home/search` | UI-B03 | A02 | hiện | `orders`: `SearchScreen` | Placeholder (route + tiêu đề + lối quay lại) |
@@ -94,6 +94,21 @@ Màn thật đầu tiên (docs/09 mục 5.1, mockup `docs/assets/ui/01-onboardin
 - **Thay hình/logo bằng tệp thật** chỉ ở `src/features/shop/ui/WelcomeIllustration.tsx` (hình giữa) và `src/features/shop/ui/BrandLogo.tsx` (`BrandMark` + chữ). Hiện dựng bằng biểu tượng Ionicons; biểu tượng Apple/Google cũng là glyph Ionicons (`logo-apple`, `logo-google`) trong `Icon.tsx`.
 - **Token mới** (`src/core/theme/colors.ts`): `brandDark`, `welcomeBackground`, `welcomeBlob`, `borderSubtle`; có test tương phản.
 
+### 2.2 Ba màn thiết lập (UI-A03 đăng ký, UI-A04, UI-A06)
+
+Mockup `docs/assets/ui/01-onboarding.png` (màn 2, 3, 4); chi tiết nghiệp vụ đã chốt ở [docs/09 mục 5.1](../09-ui-ux-design.md) và [decisions.md Q-13](decisions.md). Luồng: `/welcome` -> `/sign-up` -> `/create-shop` -> `/setup-done` -> Tổng quan (`navigation.reset`). Giai đoạn này: giao diện + logic + **cổng giả**; chưa có Firebase thật, Function, Splash, route guard, màn Đăng nhập.
+
+- **Cấu trúc** (`src/features/shop`): `domain/` (kiểm tra dữ liệu `validation.ts`, nguồn bán `selling-sources.ts`, reducer luồng `onboarding-flow.ts`, kiểu + cổng `types.ts`), `data/` (`fake-gateways.ts`, `unavailable-gateways.ts`, chọn cổng `gateways.ts`), `ui/` (ba màn, `onboarding/` gồm khung cuộn, ô nhập, thanh tiến trình, thẻ nguồn bán, hình minh họa, `OnboardingFlow.tsx`). Route ở `src/app/{sign-up,create-shop,setup-done}.tsx` chỉ re-export.
+- **Trạng thái luồng** (`OnboardingFlowProvider`, đặt trong `bootstrap/Providers.tsx`; test dùng `renderWithProviders`): giữ email, tên shop, nguồn bán, tài khoản/shop đã được cổng xác nhận khi quay lại/tiến tới. Không giữ mật khẩu. Mất khi app đóng.
+- **Cổng giả và cách bật.** Bản giả (trong bộ nhớ, trễ ~450 ms) dùng khi `__DEV__`, trong test, hoặc `EXPO_PUBLIC_USE_FAKE_BACKEND=1` (ví dụ `EXPO_PUBLIC_USE_FAKE_BACKEND=1 npx expo export --platform web` để chụp ảnh giao diện). Bản build thường (không bật) dùng cổng "chưa kết nối": mọi lời gọi trả `AUTH_SERVICE_UNAVAILABLE`, màn hiện thông báo ba phần và **không điều hướng**. Thử tay trên bản giả: `da.dung@example.com` -> email đã dùng; `mat.mang@example.com` -> mất mạng; mật khẩu `12345678`/`11111111`/`password` -> mật khẩu yếu. Thay bằng Firebase thật: sửa `createGateways()` ở `data/gateways.ts` (Firebase Auth + Function callable `createShop`, điều kiện ở decisions.md Q-13).
+- **Cờ cấu hình:** nhóm "Hoặc đăng ký với" dùng lại `SOCIAL_SIGN_IN_FLAGS` (mục 2.1): cờ tắt thì ẩn nút; cả hai tắt thì ẩn luôn đường kẻ.
+- **Bố cục** (`ui/onboarding-layout.ts`, hàm thuần có test ở 390x844, 375x667, 320x568, 412x915): mỗi màn tính cỡ chữ, khoảng cách (thu gọn dưới 700dp, lề 20 và tiêu đề nhỏ dưới 340dp) và chiều cao hình; quy tắc chung: hình co rồi **ẩn trước khi** nội dung thiết yếu bị cắt; không vừa thì cuộn (`ScrollView` + `flexGrow`). Hiện tại: 390x844 và 412x915 cả ba màn vừa không cuộn; 375x667 và 320x568 màn đăng ký vừa (ẩn hình), màn tạo shop cuộn (4 thẻ nguồn bán + trường + nút không vừa 568/667dp), màn hoàn tất vừa (320x568 ẩn hình). Hằng số "chiều cao ngoài chữ" và hệ số độ rộng chữ đã đối chiếu với bản render web, **cần đo lại trên thiết bị thật** (SF/Roboto khác font web).
+- **Bàn phím:** `KeyboardAvoidingView` (qua `@/platform`) + cuộn tới ô đang nhập khi nhận focus (`useScrollIntoView`); `keyboardShouldPersistTaps="handled"`. Email: `keyboardType=email-address`, `autoComplete=email`, `textContentType=emailAddress`, không tự viết hoa; mật khẩu: `autoComplete=new-password`, `textContentType=newPassword`, `passwordRules`; Return: email -> mật khẩu -> gửi. Viền focus mặc định của trình duyệt được bỏ qua `getInputResetStyle()` (chỉ bản web).
+- **Điều hướng:** `AppNavigation.reset(route)` (`@/platform/navigation`) xóa lịch sử rồi hiển thị route; dùng ở "Bắt đầu sử dụng". Màn Hoàn tất bật `useConfirmBeforeLeave(true, ...)` để chặn Back hệ thống/cử chỉ.
+- **Thay hình/icon bằng tệp thật:** hình khiên/hộp/bảng ghi/pháo giấy ở `ui/onboarding/OnboardingIllustrations.tsx` (hình học theo một tham số chiều cao ở `onboarding-layout.ts`); ô nguồn bán (màu + ký hiệu, không logo thương hiệu) ở `SOURCE_TILES` trong `ui/onboarding/OnboardingParts.tsx`; biểu tượng thêm vào bảng `ICON_GLYPHS` (`shared/ui/Icon.tsx`). Phông chữ vẫn là phông hệ thống (mockup dùng phông hình học khác).
+- **Token:** đổi `brand` thành `#157852` (khớp nút chính trong mockup; ảnh hưởng mọi màn); thêm `ink`, `inkMuted`, `onboardingBackground`, `fieldBorder` (có test tương phản). `Button` có thêm `loading`.
+- **Chưa kiểm chứng:** máy thật iOS/Android (bàn phím thật, Back phần cứng, autofill/gợi ý mật khẩu, bố cục với tai thỏ/thanh điều hướng, font scale), nút hiện/ẩn mật khẩu trên iOS (đổi `secureTextEntry` có thể xóa nội dung khi gõ tiếp), độ giống mockup mới kiểm bằng bản render web (không phải native).
+
 ## 3. Design system (`src/shared/ui`)
 
 Token ở `src/core/theme` (màu, chữ, khoảng cách, bo góc, vùng chạm); component lấy qua `useTheme()` (sẵn chỗ cho chế độ tối khi O-17 chốt). Chuỗi UI ở `src/core/i18n/locales/vi/{common,nav,screens,evidence}.json`.
@@ -147,7 +162,7 @@ Danh sách tab chỉ ở `src/bootstrap/navigation/tab-config.ts`; `(tabs)/_layo
 - `useIsOffline()` (`src/platform/connectivity.ts`) là **stub luôn trả `false`** (chưa chọn thư viện theo dõi mạng); `OfflineBanner` đã sẵn.
 - Camera/quét/đèn pin chưa có: khung camera là placeholder; nút *Đèn pin*, *Xem lại video*, *Ghi thêm đoạn riêng* đang tắt.
 - Gợi ý sản phẩm theo lịch sử (UI-B04), chọn nguồn/thời gian ở danh sách đơn (UI-E01), thử lại tệp (UI-F01) chưa làm vì cần dữ liệu/hàng đợi thật.
-- Splash (UI-A01) hiện chỉ chuyển hướng; chưa có luồng đăng nhập (O-15) nên chưa chặn truy cập; màn Chào mừng chưa được dùng làm màn khởi đầu.
+- Splash (UI-A01) hiện chỉ chuyển hướng; chưa có luồng đăng nhập (O-15) nên chưa chặn truy cập; màn Chào mừng chưa được dùng làm màn khởi đầu. Ba màn thiết lập (mục 2.2) chạy bằng cổng giả: chưa tạo tài khoản/shop thật.
 - Chào mừng: liên kết Điều khoản/Quyền riêng tư là chữ trong câu nên vùng chạm nhỏ hơn 44/48 (Text lồng không có `hitSlop`); cần đánh giá trên thiết bị.
 - Font icon tải bất đồng bộ lần đầu: icon có thể hiện trễ một nhịp.
 

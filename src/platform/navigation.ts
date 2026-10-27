@@ -12,6 +12,11 @@ export type RouteParams = Readonly<Record<string, string>>;
 export interface AppNavigation {
   push: (route: RouteDef, params?: RouteParams) => void;
   replace: (route: RouteDef, params?: RouteParams) => void;
+  /**
+   * Bỏ MỌI màn trong lịch sử điều hướng rồi hiển thị `route` (kết thúc một luồng, ví dụ thiết lập
+   * tài khoản xong thì vào Tổng quan và nút Back không quay lại được các màn thiết lập).
+   */
+  reset: (route: RouteDef) => void;
   /** Quay lại; không có lịch sử (mở từ liên kết sâu) thì về Tổng quan để luôn có đường lui an toàn. */
   back: () => void;
 }
@@ -22,6 +27,10 @@ export function useAppNavigation(): AppNavigation {
     () => ({
       push: (route, params) => router.push({ pathname: route.path, params: params ?? {} }),
       replace: (route, params) => router.replace({ pathname: route.path, params: params ?? {} }),
+      reset: (route) => {
+        if (router.canDismiss()) router.dismissAll();
+        router.replace({ pathname: route.path, params: {} });
+      },
       back: () => {
         if (router.canGoBack()) router.back();
         else router.replace(ROUTES.home.path);

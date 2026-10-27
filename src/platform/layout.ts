@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, type TextStyle } from 'react-native';
 
 import { MIN_TOUCH_TARGET } from '@/core/theme';
 
@@ -19,4 +19,12 @@ export function getMinTouchTarget(): number {
  */
 export function getKeyboardAvoidingBehavior(): 'padding' | 'height' | undefined {
   return 'padding';
+}
+
+/**
+ * Bỏ viền focus mặc định của trình duyệt quanh ô nhập (chỉ bản web dùng để xem/chụp giao diện; ô tự
+ * vẽ viền focus riêng). Trên iOS/Android không có tác dụng và trả về đối tượng rỗng.
+ */
+export function getInputResetStyle(): TextStyle {
+  return Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : {};
 }

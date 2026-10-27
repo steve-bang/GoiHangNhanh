@@ -1,10 +1,12 @@
 import type { SocialProvider } from '@/core/config/feature-flags';
 
+import { getDefaultGateways } from './gateways';
+
 /**
- * Cổng xác thực (stub). Đăng nhập thật CHƯA có: phương thức đăng nhập là câu hỏi mở O-15. Hàm này
- * cố ý không làm gì: không gọi dịch vụ, không đổi trạng thái, không báo thành công. Khi O-15 được
- * chốt, thay thân hàm bằng luồng đăng nhập thật (Apple trên Android cần luồng web riêng).
+ * Đăng nhập bằng Apple/Google qua cổng mặc định. Chưa có luồng thật (O-15): bản giả không làm gì,
+ * bản "chưa kết nối" ném `AUTH_SERVICE_UNAVAILABLE`. Kết quả KHÔNG có nghĩa là đã đăng nhập.
+ * Màn hình có chỗ hiển thị lỗi (Tạo tài khoản) dùng cổng từ `OnboardingFlowProvider`.
  */
 export async function signInWithProvider(provider: SocialProvider): Promise<void> {
-  void provider;
+  await getDefaultGateways().auth.signInWithProvider(provider);
 }

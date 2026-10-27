@@ -26,7 +26,8 @@ function SocialButton({ provider }: { provider: SocialProvider }) {
           ? 'screens:welcome.signInWithApple'
           : 'screens:welcome.signInWithGoogle',
       )}
-      onPress={() => void signInWithProvider(provider)}
+      // Chưa có luồng đăng nhập thật (O-15): lỗi "chưa kết nối" được bỏ qua, màn này không báo gì.
+      onPress={() => void signInWithProvider(provider).catch(() => undefined)}
       style={({ pressed }) => [
         styles.social,
         {

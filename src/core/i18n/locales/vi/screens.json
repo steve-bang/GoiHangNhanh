@@ -118,5 +118,64 @@
     "legalAnd": " và ",
     "terms": "Điều khoản sử dụng",
     "privacy": "Chính sách quyền riêng tư"
+  },
+  "signUp": {
+    "title": "Tạo tài khoản\nĐơn Chứng",
+    "subtitle": "Bắt đầu hành trình bảo vệ đơn hàng của bạn chỉ trong vài phút!",
+    "emailLabel": "Email của bạn",
+    "emailPlaceholder": "shop@example.com",
+    "passwordLabel": "Mật khẩu",
+    "passwordPlaceholder": "Ít nhất 8 ký tự",
+    "showPassword": "Hiện mật khẩu",
+    "hidePassword": "Ẩn mật khẩu",
+    "submit": "Tạo tài khoản",
+    "orSignUpWith": "Hoặc đăng ký với",
+    "apple": "Apple",
+    "google": "Google",
+    "signUpWithApple": "Đăng ký với Apple",
+    "signUpWithGoogle": "Đăng ký với Google",
+    "haveAccount": "Bạn đã có tài khoản? ",
+    "signIn": "Đăng nhập",
+    "errors": {
+      "emailRequired": "Hãy nhập email của bạn.",
+      "emailInvalid": "Email chưa đúng định dạng. Hãy kiểm tra lại, ví dụ ten@cuahang.com.",
+      "passwordRequired": "Hãy nhập mật khẩu.",
+      "passwordTooShort": "Mật khẩu cần có ít nhất 8 ký tự. Hãy nhập thêm ký tự."
+    }
+  },
+  "createShop": {
+    "progressLabel": "Bước {{current}} trên {{total}}",
+    "progressValue": "{{current}}/{{total}}",
+    "title": "Thông tin shop của bạn",
+    "subtitle": "Giúp chúng tôi hiểu rõ hơn để phục vụ bạn tốt hơn.",
+    "shopNameLabel": "Tên shop",
+    "shopNameRequired": "bắt buộc",
+    "shopNamePlaceholder": "Ví dụ: Shop Minh Anh",
+    "shopNameCounter": "{{count}}/{{max}}",
+    "sourcesLabel": "Nguồn bán",
+    "sourcesHint": "Chọn các kênh bạn đang sử dụng",
+    "sources": {
+      "shopee": "Shopee",
+      "tiktok_shop": "TikTok Shop",
+      "lazada": "Lazada",
+      "other": "Khác"
+    },
+    "submit": "Tiếp tục",
+    "skip": "Bỏ qua, để sau",
+    "errors": {
+      "nameRequired": "Hãy nhập tên shop để tiếp tục.",
+      "nameTooLong": "Tên shop tối đa 50 ký tự. Hãy rút ngắn tên."
+    }
+  },
+  "setupDone": {
+    "titleLead": "Tuyệt vời!",
+    "title": "Bạn đã sẵn sàng sử dụng Đơn\u00a0Chứng",
+    "subtitle": "Cảm ơn bạn đã hoàn tất thiết lập. Giờ đây bạn có thể bắt đầu ghi hình và bảo vệ đơn hàng của mình.",
+    "shopLabel": "Shop của bạn",
+    "shopFallback": "Chưa có tên shop",
+    "sourcesLabel": "Nguồn bán",
+    "noSources": "Chưa chọn",
+    "start": "Bắt đầu sử dụng",
+    "guide": "Xem hướng dẫn nhanh"
   }
 }

@@ -1,5 +1,6 @@
 /**
- * Mã lỗi nghiệp vụ. CHỈ chứa mã đã có trong docs/04 và docs/05.
+ * Mã lỗi nghiệp vụ. Chứa mã đã có trong docs/04 và docs/05, cộng nhóm `AUTH_*` ĐỀ XUẤT cho màn thiết
+ * lập tài khoản/shop (UI-A03, A04): tên chờ BA đặt chính thức (decisions.md Q-04, Q-13).
  * Cần mã mới -> đề xuất để BA đưa vào tài liệu trước (xem docs/engineering/decisions.md, mục
  * "Mã lỗi đề xuất"), không tự đặt rời rạc trong mã.
  */
@@ -23,6 +24,11 @@ export const ERROR_CODES = {
   SOURCE_ORDER_AMBIGUOUS: 'SOURCE_ORDER_AMBIGUOUS',
   RETURN_CODE_DUPLICATE: 'RETURN_CODE_DUPLICATE',
   RETURN_ORDER_CONFLICT: 'RETURN_ORDER_CONFLICT',
+  // Đề xuất (chờ BA, Q-04/Q-13): tạo tài khoản và tạo shop
+  AUTH_SERVICE_UNAVAILABLE: 'AUTH_SERVICE_UNAVAILABLE',
+  AUTH_NETWORK_ERROR: 'AUTH_NETWORK_ERROR',
+  AUTH_EMAIL_IN_USE: 'AUTH_EMAIL_IN_USE',
+  AUTH_WEAK_PASSWORD: 'AUTH_WEAK_PASSWORD',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

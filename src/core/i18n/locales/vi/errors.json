@@ -10,5 +10,9 @@
   "SOURCE_ORDER_NOT_FOUND": "Chưa tìm được đơn gốc. Bạn có thể tiếp tục với hồ sơ chưa liên kết.",
   "SOURCE_ORDER_AMBIGUOUS": "Có nhiều đơn phù hợp. Hãy kiểm tra thêm trước khi chọn.",
   "RETURN_CODE_DUPLICATE": "Mã này đã có hồ sơ hàng hoàn. Hãy mở hồ sơ hiện có hoặc xác nhận đây là lần tiếp nhận khác.",
-  "RETURN_ORDER_CONFLICT": "Thông tin đang chọn không khớp với hồ sơ hiện có. Hãy kiểm tra trước khi tiếp tục."
+  "RETURN_ORDER_CONFLICT": "Thông tin đang chọn không khớp với hồ sơ hiện có. Hãy kiểm tra trước khi tiếp tục.",
+  "AUTH_SERVICE_UNAVAILABLE": "Chưa kết nối được dịch vụ tài khoản. Tài khoản và shop của bạn chưa được tạo. Hãy thử lại sau ít phút.",
+  "AUTH_NETWORK_ERROR": "Kết nối mạng bị gián đoạn nên chưa gửi được yêu cầu. Tài khoản và shop của bạn chưa được tạo. Hãy kiểm tra mạng rồi bấm thử lại.",
+  "AUTH_EMAIL_IN_USE": "Chưa tạo được tài khoản với email này. Hiện chưa có tài khoản mới nào được tạo. Nếu bạn đã đăng ký trước đó, hãy đăng nhập; nếu chưa, hãy thử email khác.",
+  "AUTH_WEAK_PASSWORD": "Mật khẩu này chưa đủ khó đoán. Tài khoản của bạn chưa được tạo. Hãy chọn mật khẩu dài hơn hoặc kết hợp chữ, số và ký tự khác."
 }

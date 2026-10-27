@@ -87,10 +87,10 @@ Mỗi màn: mục đích, thành phần, hành động chính. Quy tắc nghiệ
 |---|---|---|
 | UI-A01 | Splash | Logo; kiểm tra phiên/cấu hình/đồng bộ ở nền; không đứng lâu; mất mạng vẫn vào được phần công việc cục bộ nếu phiên và dữ liệu cho phép |
 | UI-A02 | Chào mừng | "Bảo vệ bằng chứng cho từng đơn hàng"; CTA *Đăng nhập* / *Tạo tài khoản*; liên kết Điều khoản và Quyền riêng tư; không onboarding nhiều trang; nút *Apple*/*Google* (bật bằng cờ cấu hình, O-15); liên kết pháp lý hiện là URL giữ chỗ, chưa có trang thật |
-| UI-A03 | Đăng nhập / tạo tài khoản | Kiểm tra dữ liệu tại trường; quên mật khẩu, xác thực email, trạng thái đang xử lý; không báo thành công trước khi máy chủ xác nhận. Phương thức đăng nhập: O-15 |
-| UI-A04 | Tạo hồ sơ shop | Tên shop là chính; nguồn bán chọn nhiều (Shopee, TikTok Shop, Lazada, Khác), bỏ qua được; không bắt địa chỉ, mã số thuế, dữ liệu khách hàng |
+| UI-A03 | Đăng nhập / tạo tài khoản | Kiểm tra dữ liệu tại trường; quên mật khẩu, xác thực email, trạng thái đang xử lý; không báo thành công trước khi máy chủ xác nhận. Phương thức đăng nhập: O-15. **Biến thể đăng ký (`/sign-up`) đã làm** theo mockup 5.1 (chi tiết ở 5.1); biến thể đăng nhập (`/sign-in`) còn là màn khung |
+| UI-A04 | Tạo hồ sơ shop | Tên shop là chính (bắt buộc, 1-50 ký tự); nguồn bán chọn nhiều (Shopee, TikTok Shop, Lazada, Khác), bỏ qua được; không bắt địa chỉ, mã số thuế, dữ liệu khách hàng. Thanh tiến trình 3 bước (hiện 2/3). Đã làm (chi tiết ở 5.1) |
 | UI-A05 | Giải thích quyền | Vì sao cần camera/micro/ảnh–tệp/thông báo; **chỉ xin quyền khi bắt đầu tác vụ liên quan**; bị từ chối → hướng dẫn mở Cài đặt, không lặp popup; không xin danh bạ/vị trí |
-| UI-A06 | Hoàn tất thiết lập | "Quét mã đơn để bắt đầu"; CTA *Bắt đầu sử dụng*; bỏ qua hướng dẫn được |
+| UI-A06 | Hoàn tất thiết lập | "Quét mã đơn để bắt đầu"; CTA *Bắt đầu sử dụng*; bỏ qua hướng dẫn được. Thẻ tóm tắt shop + nguồn bán, **không** hiện gói dịch vụ. Đã làm (chi tiết ở 5.1) |
 
 ### Nhóm B — Tổng quan và bắt đầu công việc
 
@@ -230,6 +230,12 @@ Bốn tấm hình dưới đây là **mockup khái niệm**, lưu ở `docs/asse
 
 ![Đăng nhập, tạo tài khoản, tạo hồ sơ shop, hoàn tất thiết lập](assets/ui/01-onboarding.png)
 
+**Chi tiết đã chốt cho UI-A03 (đăng ký), UI-A04, UI-A06** (đã làm, dùng cổng giả; kỹ thuật ở [layout.md mục 2.2](engineering/layout.md#22-ba-màn-thiết-lập-ui-a03-đăng-ký-ui-a04-ui-a06) và [decisions.md Q-13](engineering/decisions.md)):
+
+- *Tạo tài khoản:* email + mật khẩu (>= 8 ký tự), nút hiện/ẩn mật khẩu có nhãn truy cập; lỗi hiện từng ô ngay khi nhập sau lần chạm đầu (không báo lỗi khi mới mở màn); nút chính khóa khi đang xử lý, chống bấm đúp; lỗi từ máy chủ theo mẫu ba phần ("email đã dùng" nói trung tính, không xác nhận email có tài khoản); *Hoặc đăng ký với* Apple/Google theo cờ cấu hình của Chào mừng; không báo thành công khi chưa có máy chủ xác nhận. Email chưa xác thực **không chặn** (chưa có UI nhắc).
+- *Tạo hồ sơ shop:* thanh tiến trình **3 đoạn** đếm theo luồng thật (Tạo tài khoản, Thông tin shop, Hoàn tất), màn này là **2/3** (mockup ghi 1/4). **Tên shop bắt buộc** (1-50 ký tự sau khi bỏ khoảng trắng đầu/cuối, có bộ đếm, chặn nhập quá 50). **Nguồn bán không có dấu `*`**, không chọn gì vẫn tiếp tục được; chọn nhiều, "Khác" là một lựa chọn; giá trị lưu là enum. *Bỏ qua, để sau* = tiếp tục không chọn nguồn bán (xóa lựa chọn) nhưng tên shop vẫn bắt buộc.
+- *Hoàn tất:* tiêu đề hai mức, thẻ tóm tắt **chỉ có hai hàng** (Shop của bạn, Nguồn bán; chưa chọn thì hiện "Chưa chọn"); **không hiện hàng Gói dịch vụ** (O-06 chưa chốt). Hai hàng dẫn tới Cài đặt shop (màn khung). *Bắt đầu sử dụng* vào Tổng quan và xóa lịch sử thiết lập (Back không quay lại màn thiết lập); không có nút Back trên màn này. *Xem hướng dẫn nhanh* mở Trợ giúp.
+
 ### 5.2 Tổng quan và quét mã — UI-B01, B02
 
 ![Màn hình Tổng quan và quét mã đơn hàng](assets/ui/02-home-and-scan.png)
@@ -262,8 +268,8 @@ Phần đúng hướng: bảng màu và phong cách khớp mục 3; Tổng quan 
 | 10 | 02, Tổng quan: hai banner quảng bá chiếm nhiều chỗ; thiếu "đơn gần đây" và "việc cần xử lý" | Mục UI-B01 ưu tiên khối đồng bộ, việc dang dở, đơn gần đây | Thay banner bằng các khối đó; hướng dẫn nhanh đặt ở Trợ giúp |
 | 11 | 03, màn quay: nút X góc trên trái | Rời phiên đang quay phải cảnh báo hậu quả | Bấm X → hộp thoại "Giữ video và quay lại" / "Kết thúc phiên" |
 | 12 | 03, tiêu đề "Kiểm tra 30 giây để tiết kiệm cả giờ" | Con số không có căn cứ | Bỏ |
-| 13 | 01: màn tạo hồ sơ shop ghi "Nguồn bán *" (bắt buộc) | UI-A04: bỏ qua được (có "Bỏ qua, để sau") | Bỏ dấu `*` |
-| 14 | 01: "Gói Tiêu chuẩn (30 ngày)" | Tên gói và thời hạn chưa chốt (O-06); khung gói là Cơ bản/Tăng trưởng/Vận hành lớn | Ghi là minh họa hoặc dùng tên gói chưa gán số liệu |
+| 13 | 01: màn tạo hồ sơ shop ghi "Nguồn bán *" (bắt buộc) | UI-A04: bỏ qua được (có "Bỏ qua, để sau") | Bỏ dấu `*` (đã làm trong UI-A04) |
+| 14 | 01: "Gói Tiêu chuẩn (30 ngày)" | Tên gói và thời hạn chưa chốt (O-06); khung gói là Cơ bản/Tăng trưởng/Vận hành lớn | Đã bỏ hàng Gói dịch vụ khỏi UI-A06 (không hiện tên gói/thời hạn) |
 | 15 | 02, màn quét: thiếu đèn pin và tìm đơn đã lưu | UI-B02 yêu cầu | Thêm |
 
 **B. Cần quyết định** (mockup khác đặc tả; chưa sửa tài liệu theo mockup):

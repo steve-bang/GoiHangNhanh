@@ -8,6 +8,7 @@
 export const mockNavigation = {
   push: jest.fn(),
   replace: jest.fn(),
+  reset: jest.fn(),
   back: jest.fn(),
   params: {} as Record<string, string | undefined>,
   /** Callback `onAttempt` mà màn hình đăng ký với useConfirmBeforeLeave (mô phỏng người dùng cố rời màn). */
@@ -19,6 +20,7 @@ export const mockNavigation = {
 export function resetMockNavigation(): void {
   mockNavigation.push.mockReset();
   mockNavigation.replace.mockReset();
+  mockNavigation.reset.mockReset();
   mockNavigation.back.mockReset();
   mockNavigation.allowLeave.mockReset();
   mockNavigation.params = {};
@@ -30,6 +32,7 @@ export const navigationMock = {
   useAppNavigation: () => ({
     push: mockNavigation.push,
     replace: mockNavigation.replace,
+    reset: mockNavigation.reset,
     back: mockNavigation.back,
   }),
   useRouteParams: () => mockNavigation.params,

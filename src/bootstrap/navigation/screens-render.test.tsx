@@ -58,7 +58,12 @@ describe('mọi route của app render được (khung giao diện)', () => {
     // Riêng Tổng quan (UI-B01) tiêu đề là tên shop (docs/09), tên tab vẫn là "Tổng quan".
     if (route.code === 'UI-B01') {
       expect(screen.getByText(ILLUSTRATIVE_SHOP_NAME)).toBeOnTheScreen();
-    } else if (!['UI-C03', 'UI-D04', 'UI-A02'].includes(route.code)) {
+    } else if (
+      !['UI-C03', 'UI-D04', 'UI-A02'].includes(route.code) &&
+      // Ba màn thiết lập thật (đăng ký, tạo shop, hoàn tất) có tiêu đề riêng theo mockup, không phải
+      // tiêu đề danh mục; `/sign-in` vẫn là màn khung.
+      !['/sign-up', '/create-shop', '/setup-done'].includes(route.path)
+    ) {
       expect(screen.getAllByText(nav.titles[route.code]).length).toBeGreaterThan(0);
     }
   });

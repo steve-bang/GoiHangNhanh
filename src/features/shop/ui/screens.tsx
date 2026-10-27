@@ -7,11 +7,10 @@ import { PlaceholderScreen } from '@/shared/ui';
  */
 export { WelcomeScreen } from './WelcomeScreen';
 export const SignInScreen = () => <PlaceholderScreen uiCode="UI-A03" />;
-/** Biến thể đăng ký của UI-A03 (cùng mã UI). Chưa có nghiệp vụ (O-15). */
-export const SignUpScreen = () => <PlaceholderScreen uiCode="UI-A03" />;
-export const CreateShopScreen = () => <PlaceholderScreen uiCode="UI-A04" />;
+export { SignUpScreen } from './SignUpScreen';
+export { CreateShopScreen } from './CreateShopScreen';
 export const PermissionsScreen = () => <PlaceholderScreen uiCode="UI-A05" />;
-export const SetupDoneScreen = () => <PlaceholderScreen uiCode="UI-A06" />;
+export { SetupDoneScreen } from './SetupDoneScreen';
 
 export const PlanScreen = () => <PlaceholderScreen uiCode="UI-H01" />;
 export const PlansScreen = () => <PlaceholderScreen uiCode="UI-H02" />;

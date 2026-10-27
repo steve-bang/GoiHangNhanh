@@ -40,6 +40,14 @@ describe('tương phản màu (WCAG AA 4.5:1 cho chữ thường)', () => {
     ['textMuted', 'welcomeBlob'],
     ['brand', 'welcomeBackground'],
     ['brand', 'surface'],
+    ['ink', 'onboardingBackground'],
+    ['ink', 'surface'],
+    ['inkMuted', 'onboardingBackground'],
+    ['inkMuted', 'surface'],
+    ['brand', 'onboardingBackground'],
+    ['danger', 'onboardingBackground'],
+    ['danger', 'dangerSoft'],
+    ['onBrand', 'brand'],
   ] as const)('%s trên %s', (fg, bg) => {
     expect(contrast(colors[fg], colors[bg])).toBeGreaterThanOrEqual(4.5);
   });
