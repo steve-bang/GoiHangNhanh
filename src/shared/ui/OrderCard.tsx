@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { OrderSource } from '@/core/orders/order-source';
 import type { EvidenceStatusLabel } from '@/core/theme';
+import { layout } from '@/core/theme';
 
 import { Card } from './Card';
 import { EvidenceStatusBadge } from './EvidenceStatusBadge';
@@ -60,7 +61,7 @@ export function OrderCard({
 }
 
 const styles = StyleSheet.create({
-  column: { gap: 4 },
-  sourceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  column: { gap: layout.space.xs },
+  sourceRow: { flexDirection: 'row', alignItems: 'center', gap: layout.space.sm },
   sourceText: { flexShrink: 1 },
 });

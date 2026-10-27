@@ -32,12 +32,14 @@ export function GradientPanel({
   );
 }
 
+// token-exception: màu hình minh họa hộp carton (không phải màu giao diện), chuyển vào token minh họa khi dùng lại
 const BOX = '#E2A95C';
+// token-exception: màu mặt tối của hộp carton minh họa
 const BOX_DARK = '#C48A3C';
 
 /** Hộp hàng có khiên tick (trang trí, ẩn khỏi trình đọc màn hình); thay bằng ảnh thật khi có. */
 export function ParcelIllustration({ size = 72 }: { size?: number }) {
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
   return (
     <View
       accessibilityElementsHidden
@@ -51,7 +53,7 @@ export function ParcelIllustration({ size = 72 }: { size?: number }) {
         <Icon name="package-solid" size={size * 0.42} color={BOX_DARK} />
       </View>
       <View style={{ position: 'absolute', right: 0, bottom: 0 }}>
-        <Icon name="brand-shield-check" size={size * 0.5} color={colors.onBrand} />
+        <Icon name="brand-shield-check" size={size * 0.5} color={tokens.color.text.onAction} />
       </View>
     </View>
   );

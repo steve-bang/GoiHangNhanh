@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { Text } from './Text';
 import { useTheme } from './theme';
+import { layout } from '@/core/theme';
 
 export interface ProductLine {
   /** ID nội bộ của dòng (không phải mã đơn/SKU). */
@@ -24,7 +25,7 @@ interface ProductLineListProps {
  */
 export function ProductLineList({ lines }: ProductLineListProps) {
   const { t } = useTranslation();
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
 
   if (lines.length === 0) {
     return (
@@ -34,15 +35,15 @@ export function ProductLineList({ lines }: ProductLineListProps) {
         style={[
           styles.undeclared,
           {
-            backgroundColor: colors.warningSoft,
-            borderColor: colors.warning,
-            borderRadius: radius.sm,
-            padding: spacing.md,
+            backgroundColor: tokens.color.feedback.warning.bg,
+            borderColor: tokens.color.feedback.warning.fg,
+            borderRadius: tokens.radius.sm,
+            padding: tokens.space.md,
           },
         ]}
       >
-        <Icon name="info" color={colors.warning} />
-        <Text bold style={{ color: colors.warning, flexShrink: 1 }}>
+        <Icon name="info" color={tokens.color.feedback.warning.fg} />
+        <Text bold style={{ color: tokens.color.feedback.warning.fg, flexShrink: 1 }}>
           {t('common:productLines.undeclared')}
         </Text>
       </View>
@@ -50,7 +51,7 @@ export function ProductLineList({ lines }: ProductLineListProps) {
   }
 
   return (
-    <View style={{ gap: spacing.md }}>
+    <View style={{ gap: tokens.space.md }}>
       {lines.map((line) => (
         <View
           key={line.id}
@@ -77,7 +78,12 @@ export function ProductLineList({ lines }: ProductLineListProps) {
 }
 
 const styles = StyleSheet.create({
-  undeclared: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  rowText: { flex: 1, gap: 2 },
+  undeclared: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: layout.space.sm,
+    borderWidth: layout.borderWidth.thin,
+  },
+  row: { flexDirection: 'row', justifyContent: 'space-between', gap: layout.space.md },
+  rowText: { flex: 1, gap: layout.space.xxs },
 });

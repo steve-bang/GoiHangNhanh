@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { getMinTouchTarget } from '@/platform';
+import { layout } from '@/core/theme';
 
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
@@ -27,10 +28,8 @@ interface ButtonProps {
   testID?: string;
 }
 
-/** Cao tối thiểu của nút chính: lớn hơn vùng chạm tối thiểu để bấm một tay. */
-const PRIMARY_MIN_HEIGHT = 56;
-/** Cao tối thiểu nút chính cỡ compact (màn form). */
-const COMPACT_MIN_HEIGHT = 50;
+/** Cao tối thiểu nút chính/compact: lớn hơn vùng chạm tối thiểu để bấm một tay (token `button`). */
+const { minHeight: MIN_HEIGHT, borderWidth: BORDER_WIDTH } = layout.component.button;
 
 /**
  * Nút chính / phụ / phá hủy. Chiều cao chỉ có `minHeight` (không cố định) để không vỡ bố cục khi
@@ -59,10 +58,10 @@ export function Button({
   const touch = getMinTouchTarget();
   const minHeight =
     size === 'regular'
-      ? Math.max(touch, variant === 'primary' ? PRIMARY_MIN_HEIGHT : 0)
+      ? Math.max(touch, variant === 'primary' ? MIN_HEIGHT.primary : 0)
       : slim
         ? touch
-        : Math.max(touch, COMPACT_MIN_HEIGHT);
+        : Math.max(touch, MIN_HEIGHT.compact);
 
   return (
     <Pressable
@@ -80,10 +79,16 @@ export function Button({
           backgroundColor: palette.bg,
           borderColor: palette.border,
           borderRadius: radius.md,
-          borderWidth: slim ? 1 : 1.5,
+          borderWidth: slim ? BORDER_WIDTH.slim : BORDER_WIDTH.regular,
           paddingHorizontal: spacing.lg,
           paddingVertical: spacing.sm,
-          opacity: disabled ? 0.45 : loading ? 0.8 : pressed ? 0.85 : 1,
+          opacity: disabled
+            ? layout.opacity.disabled
+            : loading
+              ? layout.opacity.busy
+              : pressed
+                ? layout.opacity.pressed
+                : 1,
         },
       ]}
     >
@@ -107,7 +112,17 @@ export function Button({
 }
 
 const styles = StyleSheet.create({
-  base: { borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' },
-  content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  base: {
+    borderWidth: BORDER_WIDTH.regular,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: layout.space.sm,
+  },
   label: { textAlign: 'center', flexShrink: 1 },
 });

@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 
 import { getInputResetStyle, getMinTouchTarget } from '@/platform';
+import { layout } from '@/core/theme';
 
 import { Text } from './Text';
 import { useTheme } from './theme';
@@ -49,20 +50,22 @@ export function TextField({
   onBlur,
   compact = false,
 }: TextFieldProps) {
-  const { colors, spacing, radius, typography } = useTheme();
+  const { tokens, typography } = useTheme();
   const [focused, setFocused] = useState(false);
   const frameStyle = {
-    minHeight: compact ? getMinTouchTarget() : Math.max(getMinTouchTarget(), 52),
-    backgroundColor: colors.surface,
+    minHeight: compact
+      ? getMinTouchTarget()
+      : Math.max(getMinTouchTarget(), tokens.component.field.minHeight),
+    backgroundColor: tokens.color.surface.raised,
     borderColor: error
-      ? colors.danger
+      ? tokens.color.feedback.danger.fg
       : focused
-        ? colors.brand
+        ? tokens.color.action.primary
         : compact
-          ? colors.fieldBorder
-          : colors.border,
-    borderWidth: focused || error ? 2 : 1,
-    borderRadius: radius.md,
+          ? tokens.color.border.field
+          : tokens.color.border.default,
+    borderWidth: focused || error ? tokens.borderWidth.emphasis : tokens.borderWidth.thin,
+    borderRadius: tokens.radius.md,
   } as const;
   const input = (
     <TextInput
@@ -71,7 +74,7 @@ export function TextField({
       value={value}
       onChangeText={onChangeText}
       {...(placeholder ? { placeholder } : {})}
-      placeholderTextColor={colors.textMuted}
+      placeholderTextColor={tokens.color.text.secondary}
       {...(keyboardType ? { keyboardType } : {})}
       {...(returnKeyType ? { returnKeyType } : {})}
       {...(onSubmitEditing ? { onSubmitEditing } : {})}
@@ -89,11 +92,16 @@ export function TextField({
         compact ? typography.formBody : typography.body,
         getInputResetStyle(),
         trailing
-          ? { flex: 1, minHeight: frameStyle.minHeight - 2, color: colors.text, paddingVertical: 0 }
+          ? {
+              flex: 1,
+              minHeight: frameStyle.minHeight - 2,
+              color: tokens.color.text.primary,
+              paddingVertical: 0,
+            }
           : {
               ...frameStyle,
-              color: colors.text,
-              paddingHorizontal: spacing.lg,
+              color: tokens.color.text.primary,
+              paddingHorizontal: tokens.space.lg,
             },
       ]}
     />
@@ -109,7 +117,11 @@ export function TextField({
       )}
       {trailing ? (
         <View
-          style={[frameStyle, styles.row, { paddingLeft: spacing.lg, paddingRight: spacing.sm }]}
+          style={[
+            frameStyle,
+            styles.row,
+            { paddingLeft: tokens.space.lg, paddingRight: tokens.space.sm },
+          ]}
         >
           {input}
           {trailing}
@@ -127,6 +139,6 @@ export function TextField({
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 6 },
+  container: { gap: layout.space.tight },
   row: { flexDirection: 'row', alignItems: 'center' },
 });

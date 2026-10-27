@@ -1,6 +1,6 @@
 import { Text as RNText, type TextProps as RNTextProps } from 'react-native';
 
-import type { ColorRole, typography as typographyTokens } from '@/core/theme';
+import { fontWeight, type ColorRole, type typography as typographyTokens } from '@/core/theme';
 
 import { useTheme } from './theme';
 
@@ -28,7 +28,7 @@ export function Text({ variant = 'body', color = 'text', bold, style, ...rest }:
       style={[
         typography[variant],
         { color: colors[color] },
-        bold ? { fontWeight: '700' } : null,
+        bold ? { fontWeight: fontWeight.bold } : null,
         style,
       ]}
     />

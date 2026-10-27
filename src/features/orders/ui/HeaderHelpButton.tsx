@@ -8,7 +8,7 @@ import { Icon, useTheme } from '@/shared/ui';
 /** Nút `?` ở góc phải tiêu đề: mở Trợ giúp (mockup 03). */
 export function HeaderHelpButton() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const touch = getMinTouchTarget();
   return (
@@ -19,7 +19,7 @@ export function HeaderHelpButton() {
       onPress={() => navigation.push(ROUTES.help)}
       style={{ minWidth: touch, minHeight: touch, alignItems: 'center', justifyContent: 'center' }}
     >
-      <Icon name="help" size={26} color={colors.text} />
+      <Icon name="help" size={26} color={tokens.color.text.primary} />
     </Pressable>
   );
 }

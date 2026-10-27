@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { getMinTouchTarget } from '@/platform';
 import { Icon, QuantityStepper, Text, TextField, useTheme } from '@/shared/ui';
+import { layout } from '@/core/theme';
 
 export interface LineInput {
   key: number;
@@ -44,14 +45,14 @@ export function QuickOrderLineEditor({
   onRemove,
 }: QuickOrderLineEditorProps) {
   const { t } = useTranslation();
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const touch = getMinTouchTarget();
   const variantChoices = variantSuggestions.filter(
     (v) => v.toLowerCase() !== line.variant.trim().toLowerCase(),
   );
 
   return (
-    <View testID={`line-${index}`} style={{ gap: spacing.md }}>
+    <View testID={`line-${index}`} style={{ gap: tokens.space.md }}>
       {total > 1 ? (
         <View style={styles.titleRow}>
           <Text variant="formButton" accessibilityRole="header" style={styles.flex}>
@@ -64,7 +65,7 @@ export function QuickOrderLineEditor({
               onPress={onRemove}
               style={[styles.iconButton, { minWidth: touch, minHeight: touch }]}
             >
-              <Icon name="close" size={22} color={colors.textMuted} />
+              <Icon name="close" size={22} color={tokens.color.text.secondary} />
             </Pressable>
           ) : null}
         </View>
@@ -80,7 +81,7 @@ export function QuickOrderLineEditor({
         onFocus={onActivate}
         autoCapitalize="sentences"
         {...(nameError ? { error: nameError } : {})}
-        trailing={<Icon name="forward" size={20} color={colors.inkMuted} />}
+        trailing={<Icon name="forward" size={20} color={tokens.color.text.subtle} />}
       />
 
       {nameSuggestions.length > 0 ? (
@@ -88,10 +89,14 @@ export function QuickOrderLineEditor({
           testID={`line-suggestions-${index}`}
           style={[
             styles.suggestions,
-            { backgroundColor: colors.surfaceMuted, borderRadius: radius.md, padding: spacing.sm },
+            {
+              backgroundColor: tokens.color.surface.muted,
+              borderRadius: tokens.radius.md,
+              padding: tokens.space.sm,
+            },
           ]}
         >
-          <Text variant="caption" color="inkMuted" style={{ paddingHorizontal: spacing.sm }}>
+          <Text variant="caption" color="inkMuted" style={{ paddingHorizontal: tokens.space.sm }}>
             {t('screens:quickOrder.suggestions')}
           </Text>
           {nameSuggestions.map((name) => (
@@ -100,17 +105,23 @@ export function QuickOrderLineEditor({
               accessibilityRole="button"
               accessibilityLabel={name}
               onPress={() => onChange({ name, variant: '' })}
-              style={[styles.suggestionRow, { minHeight: touch, paddingHorizontal: spacing.sm }]}
+              style={[
+                styles.suggestionRow,
+                { minHeight: touch, paddingHorizontal: tokens.space.sm },
+              ]}
             >
               <View
-                style={[styles.thumb, { backgroundColor: colors.surface, borderRadius: radius.sm }]}
+                style={[
+                  styles.thumb,
+                  { backgroundColor: tokens.color.surface.raised, borderRadius: tokens.radius.sm },
+                ]}
               >
-                <Icon name="package" size={18} color={colors.inkMuted} />
+                <Icon name="package" size={18} color={tokens.color.text.subtle} />
               </View>
               <Text variant="formBody" color="ink" style={styles.flex} numberOfLines={1}>
                 {name}
               </Text>
-              <Icon name="forward" size={18} color={colors.inkMuted} />
+              <Icon name="forward" size={18} color={tokens.color.text.subtle} />
             </Pressable>
           ))}
         </View>
@@ -134,7 +145,7 @@ export function QuickOrderLineEditor({
                   onPress={() => onChange({ variant: '' })}
                   style={[styles.iconButton, { minWidth: touch, minHeight: touch }]}
                 >
-                  <Icon name="close" size={20} color={colors.textMuted} />
+                  <Icon name="close" size={20} color={tokens.color.text.secondary} />
                 </Pressable>
               ),
             }
@@ -142,11 +153,11 @@ export function QuickOrderLineEditor({
       />
 
       {variantChoices.length > 0 ? (
-        <View style={{ gap: spacing.xs }}>
+        <View style={{ gap: tokens.space.xs }}>
           <Text variant="caption" color="inkMuted">
             {t('screens:quickOrder.variantSuggestions')}
           </Text>
-          <View style={[styles.chips, { gap: spacing.sm }]}>
+          <View style={[styles.chips, { gap: tokens.space.sm }]}>
             {variantChoices.map((variant) => (
               <Pressable
                 key={variant}
@@ -157,10 +168,10 @@ export function QuickOrderLineEditor({
                   styles.chip,
                   {
                     minHeight: touch,
-                    borderRadius: radius.lg,
-                    borderColor: colors.border,
-                    backgroundColor: colors.surface,
-                    paddingHorizontal: spacing.lg,
+                    borderRadius: tokens.radius.lg,
+                    borderColor: tokens.color.border.default,
+                    backgroundColor: tokens.color.surface.raised,
+                    paddingHorizontal: tokens.space.lg,
                   },
                 ]}
               >
@@ -173,7 +184,7 @@ export function QuickOrderLineEditor({
         </View>
       ) : null}
 
-      <View style={{ gap: spacing.sm }}>
+      <View style={{ gap: tokens.space.sm }}>
         <Text variant="formLabel" color="ink">
           {t('screens:quickOrder.quantity')}
         </Text>
@@ -192,9 +203,14 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   titleRow: { flexDirection: 'row', alignItems: 'center' },
   iconButton: { alignItems: 'center', justifyContent: 'center' },
-  suggestions: { gap: 2 },
-  thumb: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  suggestionRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  suggestions: { gap: layout.space.xxs },
+  thumb: {
+    width: layout.component.tile.sm,
+    height: layout.component.tile.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  suggestionRow: { flexDirection: 'row', alignItems: 'center', gap: layout.space.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap' },
-  chip: { alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  chip: { alignItems: 'center', justifyContent: 'center', borderWidth: layout.borderWidth.thin },
 });

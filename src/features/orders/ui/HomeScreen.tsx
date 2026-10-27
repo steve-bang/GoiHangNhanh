@@ -18,6 +18,7 @@ import {
   Text,
   useTheme,
 } from '@/shared/ui';
+import { layout } from '@/core/theme';
 
 import { GradientPanel, ParcelIllustration } from './HomeBanner';
 
@@ -30,18 +31,23 @@ import { GradientPanel, ParcelIllustration } from './HomeBanner';
  */
 export function HomeScreen() {
   const { t } = useTranslation();
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const touch = getMinTouchTarget();
 
   const header = (
-    <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }]}>
+    <View
+      style={[
+        styles.header,
+        { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm },
+      ]}
+    >
       <View
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
-        style={[styles.avatar, { backgroundColor: colors.brandSoft }]}
+        style={[styles.avatar, { backgroundColor: tokens.color.brand.soft }]}
       >
-        <Icon name="store" size={26} color={colors.brand} />
+        <Icon name="store" size={26} color={tokens.color.action.primary} />
       </View>
       <View style={styles.headerText}>
         <Text variant="sectionTitle" numberOfLines={1}>
@@ -63,7 +69,7 @@ export function HomeScreen() {
           justifyContent: 'center',
         }}
       >
-        <Icon name="notifications" size={26} color={colors.text} />
+        <Icon name="notifications" size={26} color={tokens.color.text.primary} />
       </Pressable>
     </View>
   );
@@ -82,23 +88,27 @@ export function HomeScreen() {
         accessibilityLabel={`${t('screens:home.bannerTitle')}. ${t('screens:home.bannerHint')}`}
         onPress={() => navigation.push(ROUTES.help)}
       >
-        <GradientPanel from={colors.brand} to={colors.brandDark} radius={radius.lg}>
-          <View style={[styles.banner, { padding: spacing.lg, gap: spacing.md }]}>
+        <GradientPanel
+          from={tokens.color.action.primary}
+          to={tokens.color.brand.deep}
+          radius={tokens.radius.lg}
+        >
+          <View style={[styles.banner, { padding: tokens.space.lg, gap: tokens.space.md }]}>
             <ParcelIllustration />
             <View style={styles.bannerText}>
-              <Text bold style={{ color: colors.onBrand }}>
+              <Text bold style={{ color: tokens.color.text.onAction }}>
                 {t('screens:home.bannerTitle')}
               </Text>
-              <Text variant="caption" style={{ color: colors.onBrand }}>
+              <Text variant="caption" style={{ color: tokens.color.text.onAction }}>
                 {t('screens:home.bannerHint')}
               </Text>
             </View>
-            <Icon name="forward" size={22} color={colors.onBrand} />
+            <Icon name="forward" size={22} color={tokens.color.text.onAction} />
           </View>
         </GradientPanel>
       </Pressable>
 
-      <View style={[styles.cardRow, { gap: spacing.md }]}>
+      <View style={[styles.cardRow, { gap: tokens.space.md }]}>
         <HomeActionCard
           testID="home-pack-order"
           icon="package"
@@ -123,7 +133,7 @@ export function HomeScreen() {
         onPress={() => navigation.push(ROUTES.returns)}
         style={{ minHeight: touch, justifyContent: 'center', alignSelf: 'flex-end' }}
       >
-        <Text variant="caption" bold style={{ color: colors.brand }}>
+        <Text variant="caption" bold style={{ color: tokens.color.action.primary }}>
           {t('screens:home.returnsList')}
         </Text>
       </Pressable>
@@ -155,7 +165,7 @@ export function HomeScreen() {
         />
       </View>
 
-      <View style={{ gap: spacing.md }}>
+      <View style={{ gap: tokens.space.md }}>
         <View style={styles.sectionRow}>
           <Text variant="sectionTitle" accessibilityRole="header" style={styles.flex}>
             {t('screens:home.todayTitle')}
@@ -166,12 +176,12 @@ export function HomeScreen() {
             onPress={() => navigation.push(ROUTES.sync)}
             style={{ minHeight: touch, justifyContent: 'center' }}
           >
-            <Text variant="caption" bold style={{ color: colors.brand }}>
+            <Text variant="caption" bold style={{ color: tokens.color.action.primary }}>
               {t('screens:home.todayDetail')}
             </Text>
           </Pressable>
         </View>
-        <View style={[styles.statRow, { gap: spacing.sm }]}>
+        <View style={[styles.statRow, { gap: tokens.space.sm }]}>
           <StatTile
             testID="home-stat-packed"
             tone="success"
@@ -199,12 +209,16 @@ export function HomeScreen() {
         </View>
       </View>
 
-      <GradientPanel from={colors.brandDark} to={colors.brand} radius={radius.lg}>
-        <View style={[styles.tip, { padding: spacing.lg, gap: spacing.sm }]}>
-          <Text bold style={{ color: colors.onBrand }}>
+      <GradientPanel
+        from={tokens.color.brand.deep}
+        to={tokens.color.action.primary}
+        radius={tokens.radius.lg}
+      >
+        <View style={[styles.tip, { padding: tokens.space.lg, gap: tokens.space.sm }]}>
+          <Text bold style={{ color: tokens.color.text.onAction }}>
             {t('screens:home.tipTitle')}
           </Text>
-          <Text variant="caption" style={{ color: colors.onBrand }}>
+          <Text variant="caption" style={{ color: tokens.color.text.onAction }}>
             {t('screens:home.tipHint')}
           </Text>
           <View style={styles.tipAction}>
@@ -237,7 +251,7 @@ function HomeActionCard({
   onPress: () => void;
   testID: string;
 }) {
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   return (
     <Card
       testID={testID}
@@ -245,26 +259,32 @@ function HomeActionCard({
       accessibilityLabel={`${title}. ${description}`}
       style={styles.flex}
     >
-      <View style={{ gap: spacing.sm }}>
+      <View style={{ gap: tokens.space.sm }}>
         <View
           style={[
             styles.cardIcon,
             {
-              borderRadius: radius.md,
-              backgroundColor: tone === 'success' ? colors.brand : colors.ink,
+              borderRadius: tokens.radius.md,
+              backgroundColor:
+                tone === 'success' ? tokens.color.action.primary : tokens.color.text.strong,
             },
           ]}
         >
-          <Icon name={icon} size={26} color={colors.onBrand} />
+          <Icon name={icon} size={26} color={tokens.color.text.onAction} />
         </View>
-        <Text bold style={{ color: tone === 'success' ? colors.brand : colors.ink }}>
+        <Text
+          bold
+          style={{
+            color: tone === 'success' ? tokens.color.action.primary : tokens.color.text.strong,
+          }}
+        >
           {title}
         </Text>
         <Text variant="caption" color="textMuted">
           {description}
         </Text>
         <View style={styles.cardForward}>
-          <Icon name="forward" size={20} color={colors.textMuted} />
+          <Icon name="forward" size={20} color={tokens.color.text.secondary} />
         </View>
       </View>
     </Card>
@@ -273,20 +293,25 @@ function HomeActionCard({
 
 const styles = StyleSheet.create({
   cardRow: { flexDirection: 'row', alignItems: 'stretch' },
-  cardIcon: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
+  cardIcon: {
+    width: layout.component.tile.lg,
+    height: layout.component.tile.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cardForward: { alignSelf: 'flex-end' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: layout.space.md },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: layout.component.tile.md,
+    height: layout.component.tile.md,
+    borderRadius: layout.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerText: { flex: 1 },
   banner: { flexDirection: 'row', alignItems: 'center' },
-  bannerText: { flex: 1, gap: 4 },
-  quickRow: { flexDirection: 'row', gap: 8 },
+  bannerText: { flex: 1, gap: layout.space.xs },
+  quickRow: { flexDirection: 'row', gap: layout.space.sm },
   sectionRow: { flexDirection: 'row', alignItems: 'center' },
   flex: { flex: 1 },
   statRow: { flexDirection: 'row' },

@@ -21,10 +21,10 @@ export function EmptyState({
   onAction,
   icon = 'inbox',
 }: EmptyStateProps) {
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   return (
-    <View style={[styles.container, { gap: spacing.md, padding: spacing.xl }]}>
-      <Icon name={icon} size={40} color={colors.textMuted} />
+    <View style={[styles.container, { gap: tokens.space.md, padding: tokens.space.xl }]}>
+      <Icon name={icon} size={40} color={tokens.color.text.secondary} />
       <Text variant="sectionTitle" style={styles.centered}>
         {title}
       </Text>

@@ -16,7 +16,7 @@ const TAB_LABEL_MAX_FONT_SCALE = 1.3;
  */
 export default function TabsLayout() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const hideBar = isTabBarHiddenAt(pathname);
@@ -25,11 +25,11 @@ export default function TabsLayout() {
       backBehavior="history"
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.brand,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: tokens.color.action.primary,
+        tabBarInactiveTintColor: tokens.color.text.secondary,
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
+          backgroundColor: tokens.color.surface.raised,
+          borderTopColor: tokens.color.border.default,
           display: hideBar ? 'none' : 'flex',
         },
       }}
@@ -64,7 +64,9 @@ export default function TabsLayout() {
                 <Text
                   variant="caption"
                   maxFontSizeMultiplier={TAB_LABEL_MAX_FONT_SCALE}
-                  style={{ color: focused ? colors.brand : colors.textMuted }}
+                  style={{
+                    color: focused ? tokens.color.action.primary : tokens.color.text.secondary,
+                  }}
                 >
                   {t(tab.labelKey)}
                 </Text>
@@ -73,7 +75,7 @@ export default function TabsLayout() {
                 <Icon
                   name={tab.icon}
                   size={size}
-                  color={focused ? colors.brand : colors.textMuted}
+                  color={focused ? tokens.color.action.primary : tokens.color.text.secondary}
                 />
               ),
             }}

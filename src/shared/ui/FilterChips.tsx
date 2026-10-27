@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { getMinTouchTarget } from '@/platform';
+import { layout } from '@/core/theme';
 
 import { Text } from './Text';
 import { useTheme } from './theme';
@@ -38,32 +39,32 @@ export function FilterChips<K extends string>({
   appearance = 'outlined',
   trailing,
 }: FilterChipsProps<K>) {
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const solid = appearance === 'solid';
   return (
-    <View style={[styles.wrap, { gap: spacing.sm }]}>
+    <View style={[styles.wrap, { gap: tokens.space.sm }]}>
       {options.map((option) => {
         const selected = option.key === selectedKey;
         const chipStyle = solid
           ? {
-              borderRadius: radius.lg,
+              borderRadius: tokens.radius.lg,
               borderWidth: 0,
-              borderColor: colors.brand,
-              backgroundColor: selected ? colors.brand : colors.surfaceMuted,
+              borderColor: tokens.color.action.primary,
+              backgroundColor: selected ? tokens.color.action.primary : tokens.color.surface.muted,
             }
           : {
-              borderRadius: radius.lg,
-              borderWidth: selected ? 2 : 1,
-              borderColor: selected ? colors.brand : colors.border,
-              backgroundColor: selected ? colors.brandSoft : colors.surface,
+              borderRadius: tokens.radius.lg,
+              borderWidth: selected ? tokens.borderWidth.emphasis : tokens.borderWidth.thin,
+              borderColor: selected ? tokens.color.action.primary : tokens.color.border.default,
+              backgroundColor: selected ? tokens.color.brand.soft : tokens.color.surface.raised,
             };
         const textColor = solid
           ? selected
-            ? colors.onBrand
-            : colors.ink
+            ? tokens.color.text.onAction
+            : tokens.color.text.strong
           : selected
-            ? colors.brand
-            : colors.text;
+            ? tokens.color.action.primary
+            : tokens.color.text.primary;
         return (
           <Pressable
             key={option.key}
@@ -74,7 +75,7 @@ export function FilterChips<K extends string>({
               styles.chip,
               {
                 minHeight: getMinTouchTarget(),
-                paddingHorizontal: solid ? spacing.xl : spacing.lg,
+                paddingHorizontal: solid ? tokens.space.xl : tokens.space.lg,
                 ...chipStyle,
               },
             ]}
@@ -99,5 +100,10 @@ export function FilterChips<K extends string>({
 
 const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
-  chip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: layout.space.sm,
+  },
 });

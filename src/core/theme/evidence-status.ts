@@ -1,4 +1,4 @@
-import type { ColorRole } from './colors';
+import type { StatusTokenKey } from './semantic';
 
 /**
  * Chuẩn hiển thị trạng thái bằng chứng - docs/09 mục 3 ("Chuẩn hiển thị trạng thái bằng chứng").
@@ -21,7 +21,8 @@ export interface StatusPresentation {
   readonly labelKey: `evidence:status.${EvidenceStatusLabel}`;
   readonly hintKey: `evidence:statusHint.${EvidenceStatusLabel}`;
   readonly icon: StatusIconName;
-  readonly colorRole: ColorRole;
+  /** Khóa màu trong `semantic.status` - riêng từng nhãn, không dùng chung `success`. */
+  readonly statusToken: StatusTokenKey;
 }
 
 export const EVIDENCE_STATUS_PRESENTATION: Readonly<
@@ -31,36 +32,36 @@ export const EVIDENCE_STATUS_PRESENTATION: Readonly<
     labelKey: 'evidence:status.saved_on_device',
     hintKey: 'evidence:statusHint.saved_on_device',
     icon: 'device-saved',
-    colorRole: 'textMuted',
+    statusToken: 'savedOnDevice',
   },
   waiting_upload: {
     labelKey: 'evidence:status.waiting_upload',
     hintKey: 'evidence:statusHint.waiting_upload',
     icon: 'clock',
-    colorRole: 'warning',
+    statusToken: 'waitingUpload',
   },
   uploading: {
     labelKey: 'evidence:status.uploading',
     hintKey: 'evidence:statusHint.uploading',
     icon: 'cloud-upload',
-    colorRole: 'brand',
+    statusToken: 'uploading',
   },
   uploaded: {
     labelKey: 'evidence:status.uploaded',
     hintKey: 'evidence:statusHint.uploaded',
     icon: 'cloud-done',
-    colorRole: 'success',
+    statusToken: 'uploaded',
   },
   verified: {
     labelKey: 'evidence:status.verified',
     hintKey: 'evidence:statusHint.verified',
     icon: 'shield-check',
-    colorRole: 'success',
+    statusToken: 'verified',
   },
   error: {
     labelKey: 'evidence:status.error',
     hintKey: 'evidence:statusHint.error',
     icon: 'alert-triangle',
-    colorRole: 'danger',
+    statusToken: 'error',
   },
 };

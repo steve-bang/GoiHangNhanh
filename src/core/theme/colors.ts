@@ -1,69 +1,68 @@
+import { palette } from './primitives';
+
 /**
- * Màu theo vai trò (docs/09 mục 3). Giá trị hex là TẠM THỜI: docs/09 chỉ mô tả bằng lời
- * ("xanh rừng", "trắng ngà"...) và yêu cầu kiểm tra tương phản trước khi chốt; chưa có Figma.
- * Thay giá trị tại đây khi thiết kế chốt; test tương phản (colors.test.ts) sẽ cảnh báo nếu tụt chuẩn.
+ * Bảng màu PHẲNG (cũ). Còn tồn tại vì các màn đã được khách hàng xác nhận (Splash, Đăng nhập, Đăng
+ * ký, Quên mật khẩu, OTP, Mật khẩu mới và các màn thiết lập) đọc bảng này: tên khóa và giá trị bị
+ * KHÓA bằng `colors.golden.json` (test `colors.test.ts`). Màn trong app dùng `semantic` qua
+ * `useTheme().tokens`, không đọc bảng này (ESLint chặn, xem docs/design-token-spec.md mục 7).
+ *
+ * Mọi khóa dùng chung đều lấy từ `primitives` (một nguồn hex). Khối `@frozen` ở cuối chỉ phục vụ màn
+ * đã verify nên giữ hex tại chỗ; không dùng trong màn mới.
  *
  * Quy tắc: màu không bao giờ là tín hiệu duy nhất - luôn đi kèm chữ + biểu tượng.
  * Đỏ chỉ dùng cho lỗi, hành động phá hủy, nguy cơ mất dữ liệu.
  */
 export const colors = {
-  brand: '#157852', // xanh rừng (khớp màu nút chính trong mockup docs/assets/ui/01-onboarding.png)
-  onBrand: '#FFFFFF',
-  background: '#FAF8F2', // trắng ngà
-  surface: '#FFFFFF',
-  text: '#1B1B1B',
-  textMuted: '#5A5F5C',
-  border: '#D9D6CC',
-  success: '#1E7A3C', // xanh thành công
-  onSuccess: '#FFFFFF',
-  warning: '#B45309', // cam cảnh báo / đang chờ (đủ tương phản làm chữ trên nền sáng)
-  danger: '#B3261E', // đỏ - chỉ cho lỗi / phá hủy / nguy cơ mất dữ liệu
-  onDanger: '#FFFFFF',
-  // Màn Chào mừng (docs/09 mục 5.1): nền xanh nhạt, mảng loang góc, chữ tiêu đề xanh rừng đậm.
-  brandDark: '#14382A',
+  brand: palette.jade[700],
+  onBrand: palette.neutral[0],
+  background: palette.neutral[50],
+  surface: palette.neutral[0],
+  text: palette.neutral[900],
+  textMuted: palette.neutral[600],
+  border: palette.neutral[300],
+  success: palette.green[700],
+  onSuccess: palette.neutral[0],
+  warning: palette.amber[700],
+  danger: palette.red[700],
+  onDanger: palette.neutral[0],
+  brandDark: palette.jade[950],
+  ink: palette.slate[900],
+  inkMuted: palette.slate[500],
+  fieldBorder: palette.mint[200],
+  brandSoft: palette.jade[100],
+  formBackground: palette.neutral[0],
+  surfaceMuted: palette.neutral[100],
+  infoSoft: palette.teal[50],
+  successSoft: palette.green[100],
+  warningSoft: palette.amber[50],
+  dangerSoft: palette.red[50],
+  scrim: palette.alpha.black50,
+  cameraBackground: palette.camera[900],
+  onCamera: palette.neutral[0],
+  scanAccent: palette.scan[400],
+  onCameraMuted: palette.alpha.white75,
+  cameraControl: palette.alpha.black55,
+
+  // @frozen: chỉ màn thiết lập/Splash đã verify dùng; KHÔNG dùng trong màn mới.
   welcomeBackground: '#F2F9F4',
   welcomeBlob: '#E1F1E6',
   borderSubtle: '#E2E7E4',
-  // Màn thiết lập tài khoản/shop (UI-A03, A04, A06; mockup 01-onboarding): nền gần trắng pha xanh,
-  // chữ tiêu đề xanh đen, chữ phụ xám xanh, viền ô nhập xanh nhạt.
-  ink: '#0E2B3F',
-  inkMuted: '#566B7C',
   onboardingBackground: '#F8FCF9',
-  fieldBorder: '#D3E3DE',
-  // Nền nhạt cho thẻ/khối thông tin; luôn đi kèm chữ + biểu tượng (màu không là tín hiệu duy nhất).
-  brandSoft: '#E6F0E9',
-  // Nhóm màn form/quy trình (mockup 03): nền trắng sạch, nền xám nhạt cho khối gợi/ô chưa chọn,
-  // nền xanh nhạt cho ô nhắc.
-  formBackground: '#FFFFFF',
-  surfaceMuted: '#F3F6F5',
-  infoSoft: '#EAF5F4',
-  successSoft: '#E3F1E7',
-  warningSoft: '#FDF3E7',
-  dangerSoft: '#FCEBEA',
-  // Màn Splash (UI-A01; ảnh thiết kế docs/assets/ui/06-splash-design.png, màu đo từ ảnh). Cũng là
-  // màu nền của splash hệ điều hành (app.json, plugin expo-splash-screen): đổi thì đổi cả hai nơi.
+  // Splash (UI-A01): cũng là màu nền splash hệ điều hành (app.json): đổi thì đổi cả hai nơi.
   splashBackground: '#F7FAF8',
-  splashBlob: '#EAF6EE', // hình loang nền
-  splashWave: '#14705B', // sóng đáy, đầu trên
-  splashWaveDeep: '#0C6753', // sóng đáy, đầu dưới
-  splashWaveLight: '#B8D8C3', // dải sóng sáng phía trên sóng đậm
-  onSplashWave: '#FFFFFF', // chữ viết tay trên sóng
-  splashLogo: '#026D50', // khiên (nửa sáng)
-  splashLogoDark: '#014B37', // khiên (nửa tối, nếp gấp)
+  splashBlob: '#EAF6EE',
+  splashWave: '#14705B',
+  splashWaveDeep: '#0C6753',
+  splashWaveLight: '#B8D8C3',
+  onSplashWave: '#FFFFFF',
+  splashLogo: '#026D50',
+  splashLogoDark: '#014B37',
   splashWordmark: '#055E47',
   splashTagline: '#0A6550',
   splashFeatureLabel: '#0B4A3B',
   splashFeatureIcon: '#0A6B52',
   splashFeatureDisc: '#E3F6EC',
   splashDivider: '#DCE8E1',
-  // Lớp phủ hộp thoại/bottom sheet và nền khung camera (không phải giao diện sáng/tối chung).
-  scrim: 'rgba(0, 0, 0, 0.5)',
-  cameraBackground: '#16201A',
-  onCamera: '#FFFFFF',
-  // Màn quét (UI-B02; mockup 02): khung ngắm xanh sáng, nút phụ mờ trên nền camera.
-  scanAccent: '#35E0A1',
-  onCameraMuted: 'rgba(255, 255, 255, 0.75)',
-  cameraControl: 'rgba(0, 0, 0, 0.55)',
 } as const;
 
 export type ColorRole = keyof typeof colors;

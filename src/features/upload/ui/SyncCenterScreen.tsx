@@ -35,7 +35,7 @@ const FILTERS: readonly IllustrativeSyncFilter[] = [
  */
 export function SyncCenterScreen() {
   const { t } = useTranslation();
-  const { spacing } = useTheme();
+  const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const [filter, setFilter] = useState<IllustrativeSyncFilter>('uploading');
 
@@ -54,10 +54,10 @@ export function SyncCenterScreen() {
     >
       <Text color="textMuted">{t('screens:sync.note')}</Text>
       <FilterChips options={options} selectedKey={filter} onSelect={setFilter} />
-      <View style={{ gap: spacing.md }}>
+      <View style={{ gap: tokens.space.md }}>
         {visible.map((job) => (
           <Card key={job.id}>
-            <View style={{ gap: spacing.sm }}>
+            <View style={{ gap: tokens.space.sm }}>
               <Text variant="sectionTitle">{job.recordLabel}</Text>
               <Text color="textMuted">{job.sizeLabel}</Text>
               <EvidenceStatusBadge

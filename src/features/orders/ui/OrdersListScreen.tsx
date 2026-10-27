@@ -27,7 +27,7 @@ const STATUS_ORDER = Object.keys(EVIDENCE_STATUS_PRESENTATION) as EvidenceStatus
  */
 export function OrdersListScreen() {
   const { t } = useTranslation();
-  const { spacing } = useTheme();
+  const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('all');
@@ -49,7 +49,7 @@ export function OrdersListScreen() {
     <Screen title={t('nav:titles.UI-E01')} inTabs illustrative testID="screen-UI-E01">
       <SearchField value={query} onChangeText={setQuery} placeholder={t('screens:orders.search')} />
       <FilterChips options={options} selectedKey={filter} onSelect={setFilter} />
-      <View style={{ gap: spacing.md }}>
+      <View style={{ gap: tokens.space.md }}>
         {visible.map((order) => (
           <OrderCard
             key={order.id}

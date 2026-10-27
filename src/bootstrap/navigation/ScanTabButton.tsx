@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 
 import { getMinTouchTarget } from '@/platform';
 import { Icon, useTheme } from '@/shared/ui';
+import { layout } from '@/core/theme';
 
 /** Đường kính nút Quét giữa thanh tab; nút nhô lên khỏi thanh theo mẫu thiết kế. */
-const SCAN_BUTTON_SIZE = 62;
-const SCAN_BUTTON_LIFT = 18;
+const { size: SCAN_BUTTON_SIZE, lift: SCAN_BUTTON_LIFT } = layout.component.tabBar.scanButton;
 
 type Props = Pick<ComponentProps<typeof Pressable>, 'onPress' | 'testID'> & { label: string };
 
@@ -16,7 +16,7 @@ type Props = Pick<ComponentProps<typeof Pressable>, 'onPress' | 'testID'> & { la
  * trình đọc màn hình (mẫu thiết kế không in chữ dưới nút).
  */
 export function ScanTabButton({ onPress, testID, label }: Props) {
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
   const { t } = useTranslation();
   return (
     <View style={styles.slot}>
@@ -29,14 +29,14 @@ export function ScanTabButton({ onPress, testID, label }: Props) {
         style={({ pressed }) => [
           styles.button,
           {
-            backgroundColor: colors.brand,
-            borderColor: colors.surface,
+            backgroundColor: tokens.color.action.primary,
+            borderColor: tokens.color.surface.raised,
             minWidth: Math.max(SCAN_BUTTON_SIZE, getMinTouchTarget()),
-            opacity: pressed ? 0.85 : 1,
+            opacity: pressed ? layout.opacity.pressed : 1,
           },
         ]}
       >
-        <Icon name="scan-solid" size={30} color={colors.onBrand} />
+        <Icon name="scan-solid" size={30} color={tokens.color.text.onAction} />
       </Pressable>
     </View>
   );
@@ -48,14 +48,10 @@ const styles = StyleSheet.create({
     height: SCAN_BUTTON_SIZE,
     width: SCAN_BUTTON_SIZE,
     borderRadius: SCAN_BUTTON_SIZE / 2,
-    borderWidth: 4,
+    borderWidth: layout.component.tabBar.scanButton.ring,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: -SCAN_BUTTON_LIFT,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
+    ...layout.component.tabBar.scanButton.elevation,
   },
 });

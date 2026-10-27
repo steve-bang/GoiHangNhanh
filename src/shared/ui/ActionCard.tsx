@@ -4,6 +4,7 @@ import { Card } from './Card';
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
 import { useTheme } from './theme';
+import { layout } from '@/core/theme';
 
 interface ActionCardProps {
   title: string;
@@ -24,28 +25,44 @@ export function ActionCard({
   emphasis = 'secondary',
   testID,
 }: ActionCardProps) {
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   const primary = emphasis === 'primary';
-  const fg = primary ? colors.onBrand : colors.text;
+  const fg = primary ? tokens.color.text.onAction : tokens.color.text.primary;
   return (
     <Card
       testID={testID}
       onPress={onPress}
       accessibilityLabel={`${title}. ${description}`}
       style={[
-        { minHeight: 88, justifyContent: 'center' },
-        primary ? { backgroundColor: colors.brand, borderColor: colors.brand } : null,
+        { minHeight: layout.component.actionCard.minHeight, justifyContent: 'center' },
+        primary
+          ? {
+              backgroundColor: tokens.color.action.primary,
+              borderColor: tokens.color.action.primary,
+            }
+          : null,
       ]}
     >
-      <View style={[styles.row, { gap: spacing.md }]}>
-        <Icon name={icon} size={32} color={primary ? colors.onBrand : colors.brand} />
+      <View style={[styles.row, { gap: tokens.space.md }]}>
+        <Icon
+          name={icon}
+          size={32}
+          color={primary ? tokens.color.text.onAction : tokens.color.action.primary}
+        />
         <View style={styles.text}>
           <Text variant="sectionTitle" style={{ color: fg }}>
             {title}
           </Text>
-          <Text style={{ color: primary ? colors.onBrand : colors.textMuted }}>{description}</Text>
+          <Text
+            style={{ color: primary ? tokens.color.text.onAction : tokens.color.text.secondary }}
+          >
+            {description}
+          </Text>
         </View>
-        <Icon name="forward" color={primary ? colors.onBrand : colors.textMuted} />
+        <Icon
+          name="forward"
+          color={primary ? tokens.color.text.onAction : tokens.color.text.secondary}
+        />
       </View>
     </Card>
   );
@@ -53,5 +70,5 @@ export function ActionCard({
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
-  text: { flex: 1, gap: 2 },
+  text: { flex: 1, gap: layout.space.xxs },
 });

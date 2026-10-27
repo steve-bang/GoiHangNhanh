@@ -10,6 +10,11 @@ module.exports = {
       moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
     },
     {
+      displayName: 'tooling',
+      testEnvironment: 'node',
+      testMatch: ['<rootDir>/eslint-rules/**/*.test.js'],
+    },
+    {
       displayName: 'rules',
       testEnvironment: 'node',
       testMatch: ['<rootDir>/firebase/tests/**/*.test.ts'],

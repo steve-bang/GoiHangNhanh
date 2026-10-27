@@ -27,6 +27,7 @@ import {
   useTheme,
   type ChipOption,
 } from '@/shared/ui';
+import { layout } from '@/core/theme';
 
 import { useCurrentShopId, useOrderStore } from '../data';
 import {
@@ -70,7 +71,7 @@ const IDS = { orderId: newOrderId, lineId: newOrderLineId, packageId: newPackage
  */
 export function QuickOrderScreen() {
   const { t } = useTranslation();
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const params = useRouteParams();
   const store = useOrderStore();
@@ -227,17 +228,17 @@ export function QuickOrderScreen() {
         {t('screens:quickOrder.intro')}
       </Text>
 
-      <View style={{ gap: spacing.xs }}>
+      <View style={{ gap: tokens.space.xs }}>
         <View
           style={[
             styles.sourceRow,
             {
-              backgroundColor: colors.surface,
-              borderColor: colors.fieldBorder,
-              borderRadius: radius.md,
-              paddingLeft: spacing.md,
-              paddingRight: spacing.sm,
-              gap: spacing.md,
+              backgroundColor: tokens.color.surface.raised,
+              borderColor: tokens.color.border.field,
+              borderRadius: tokens.radius.md,
+              paddingLeft: tokens.space.md,
+              paddingRight: tokens.space.sm,
+              gap: tokens.space.md,
             },
           ]}
         >
@@ -260,9 +261,12 @@ export function QuickOrderScreen() {
             style={[styles.pillHit, { minHeight: touch }]}
           >
             <View
-              style={[styles.pill, { backgroundColor: colors.brandSoft, borderRadius: radius.lg }]}
+              style={[
+                styles.pill,
+                { backgroundColor: tokens.color.brand.soft, borderRadius: tokens.radius.lg },
+              ]}
             >
-              <Text variant="caption" bold style={{ color: colors.brand }}>
+              <Text variant="caption" bold style={{ color: tokens.color.action.primary }}>
                 {t('screens:quickOrder.changeSource')}
               </Text>
             </View>
@@ -295,7 +299,7 @@ export function QuickOrderScreen() {
             onPress={() => navigation.replace(ROUTES.scan)}
             style={[styles.iconButton, { minWidth: touch, minHeight: touch }]}
           >
-            <Icon name="scan" size={24} color={colors.ink} />
+            <Icon name="scan" size={24} color={tokens.color.text.strong} />
           </Pressable>
         }
       />
@@ -332,10 +336,10 @@ export function QuickOrderScreen() {
           setLines((current) => [...current, added]);
           setActiveKey(added.key);
         }}
-        style={[styles.addLine, { minHeight: touch, gap: spacing.sm }]}
+        style={[styles.addLine, { minHeight: touch, gap: tokens.space.sm }]}
       >
-        <Icon name="add" size={18} color={colors.brand} />
-        <Text variant="formButton" style={{ color: colors.brand }}>
+        <Icon name="add" size={18} color={tokens.color.action.primary} />
+        <Text variant="formButton" style={{ color: tokens.color.action.primary }}>
           {t('screens:quickOrder.addLine')}
         </Text>
       </Pressable>
@@ -354,10 +358,10 @@ export function QuickOrderScreen() {
           testID="quick-add-tracking"
           accessibilityRole="button"
           onPress={() => setShowTracking(true)}
-          style={[styles.addLine, { minHeight: touch, gap: spacing.sm }]}
+          style={[styles.addLine, { minHeight: touch, gap: tokens.space.sm }]}
         >
-          <Icon name="add" size={18} color={colors.brand} />
-          <Text variant="formButton" style={{ color: colors.brand }}>
+          <Icon name="add" size={18} color={tokens.color.action.primary} />
+          <Text variant="formButton" style={{ color: tokens.color.action.primary }}>
             {t('screens:quickOrder.addTracking')}
           </Text>
         </Pressable>
@@ -385,11 +389,11 @@ export function QuickOrderScreen() {
         onClose={() => setDupes(null)}
         title={t('screens:quickOrder.duplicate.title')}
       >
-        <View testID="duplicate-sheet" style={{ gap: spacing.md }}>
+        <View testID="duplicate-sheet" style={{ gap: tokens.space.md }}>
           <Text>{t('screens:quickOrder.duplicate.message')}</Text>
           {duplicateOrders.map(({ order, kind }) => (
             <Card key={order.id} tone="warning" testID={`duplicate-${order.id}`}>
-              <View style={{ gap: spacing.sm }}>
+              <View style={{ gap: tokens.space.sm }}>
                 <Text variant="caption" color="textMuted">
                   {t(`screens:quickOrder.duplicate.${kind}`)}
                 </Text>
@@ -426,13 +430,17 @@ export function QuickOrderScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  sourceRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
-  pillHit: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  sourceRow: { flexDirection: 'row', alignItems: 'center', borderWidth: layout.borderWidth.thin },
+  pillHit: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: layout.space.xs,
+  },
   pill: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: layout.space.md,
+    paddingVertical: layout.space.xs,
   },
   iconButton: { alignItems: 'center', justifyContent: 'center' },
   addLine: { flexDirection: 'row', alignItems: 'center' },

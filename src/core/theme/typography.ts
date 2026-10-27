@@ -1,3 +1,5 @@
+import { radiusScale, space } from './primitives';
+
 /**
  * Cỡ chữ và vùng chạm theo docs/09 mục 3. Đơn vị: pt (iOS) / dp (Android) - React Native dùng
  * chung số. Giá trị lấy cận dưới của khoảng nêu trong tài liệu; điều chỉnh khi có thiết kế.
@@ -32,5 +34,19 @@ export const MIN_TOUCH_TARGET = {
   android: 48,
 } as const;
 
-export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 } as const;
-export const radius = { sm: 8, md: 12, lg: 16 } as const;
+/** Khoảng cách/bo góc có tên. Giá trị lấy từ `primitives` (khóa cũ giữ nguyên giá trị cho màn đã verify). */
+export const spacing = {
+  xxs: space[2],
+  xs: space[4],
+  tight: space[6],
+  sm: space[8],
+  md: space[12],
+  lg: space[16],
+  xl: space[24],
+} as const;
+export const radius = {
+  sm: radiusScale[8],
+  md: radiusScale[12],
+  lg: radiusScale[16],
+  full: radiusScale.full,
+} as const;
