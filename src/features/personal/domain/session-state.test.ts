@@ -54,6 +54,16 @@ describe('sessionReducer', () => {
     expect(c.profileRevision).toBe(0);
   });
 
+  it('cập nhật shop tăng shopRevision, không đổi epoch/khóa; đổi shop hoặc đăng nhập đặt lại về 0', () => {
+    const a = sessionReducer(INITIAL_SESSION, { type: 'signed_in', user: USER, shopId: 's1' });
+    const b = sessionReducer(a, { type: 'shop_updated' });
+    expect(b.shopRevision).toBe(1);
+    expect(b.epoch).toBe(a.epoch);
+    expect(sessionKey(b)).toBe(sessionKey(a));
+    expect(sessionReducer(b, { type: 'shop_changed', shopId: 's2' }).shopRevision).toBe(0);
+    expect(sessionReducer(b, { type: 'signed_in', user: USER, shopId: 's1' }).shopRevision).toBe(0);
+  });
+
   it('đăng xuất xóa người dùng và shop, epoch vẫn tăng (không quay về 0)', () => {
     const a = sessionReducer(INITIAL_SESSION, { type: 'signed_in', user: USER, shopId: 's1' });
     const out = sessionReducer(a, { type: 'signed_out' });
@@ -63,6 +73,7 @@ describe('sessionReducer', () => {
       shopId: null,
       epoch: a.epoch + 1,
       profileRevision: 0,
+      shopRevision: 0,
     });
     expect(sessionKey(out)).toBe('anonymous');
     expect(sessionReducer(out, { type: 'signed_out' })).toBe(out);

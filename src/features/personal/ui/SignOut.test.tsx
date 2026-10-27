@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, Text } from 'react-native';
 
 import type { ShopId } from '@/core/ids';
-import { createMemoryOrderStore, LOCAL_SHOP_ID, type OrderStore } from '@/features/orders';
+import { createMemoryOrderStore, type OrderStore } from '@/features/orders';
 import { ROUTES } from '@/core/navigation';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
@@ -115,7 +115,7 @@ describe('Đăng xuất an toàn (PER-21)', () => {
     await confirmSignOut();
     await waitFor(() => expect(screen.getByTestId('sign-out-recording')).toBeOnTheScreen());
     expect(screen.getByText(/kết thúc phiên quay trước khi đăng xuất/)).toBeOnTheScreen();
-    expect(hasRecording).toHaveBeenCalledWith(LOCAL_SHOP_ID);
+    expect(hasRecording).toHaveBeenCalledWith('shop-a');
     expect(gateways.account.signOutCalls).toBe(0);
     expect(mockNavigation.reset).not.toHaveBeenCalled();
     expect(screen.getByTestId('probe-status')).toHaveTextContent('signed_in');
@@ -192,13 +192,13 @@ describe('Đăng xuất an toàn (PER-21)', () => {
     expect(gateways.account.signOutCalls).toBe(1);
   });
 
-  it('cô lập theo shop: kiểm tra bằng shop hiện tại, không hỏi shop khác', async () => {
+  it('cô lập theo shop: kiểm tra bằng shop của phiên (shop-a), không hỏi shop khác', async () => {
     const countUnsynced = jest.fn().mockResolvedValue(0);
     await setup({ store: withStore({ countUnsynced }) });
     await openDialog();
     await confirmSignOut();
     await waitFor(() => expect(countUnsynced).toHaveBeenCalled());
     const asked = countUnsynced.mock.calls.map((c) => c[0] as ShopId);
-    expect(asked).toEqual([LOCAL_SHOP_ID]);
+    expect(asked).toEqual(['shop-a']);
   });
 });

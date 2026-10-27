@@ -26,6 +26,8 @@ export interface SessionContextValue {
   beginSession(user: SessionUser, shopId: string | null): void;
   changeShop(shopId: string | null): void;
   updateDisplayName(displayName: string | null): void;
+  /** Báo thông tin shop đang dùng đã được cập nhật (sau khi cổng xác nhận) để màn đang hiện tên cũ tải lại. */
+  notifyShopUpdated(): void;
   /**
    * Đăng xuất qua cổng. CHỈ xả state sau khi cổng xác nhận; lỗi thì ném lại và giữ nguyên phiên (không
    * báo đăng xuất giả). Gọi lặp khi đang chạy trả về cùng một lời hứa. Không xóa dữ liệu cục bộ (Q-19h).
@@ -67,6 +69,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const updateDisplayName = useCallback((displayName: string | null) => {
     dispatch({ type: 'profile_updated', displayName });
   }, []);
+  const notifyShopUpdated = useCallback(() => {
+    dispatch({ type: 'shop_updated' });
+  }, []);
   const onSessionCleared = useCallback((listener: () => void) => {
     listeners.current.add(listener);
     return () => {
@@ -92,10 +97,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       beginSession,
       changeShop,
       updateDisplayName,
+      notifyShopUpdated,
       signOut,
       onSessionCleared,
     }),
-    [state, beginSession, changeShop, updateDisplayName, signOut, onSessionCleared],
+    [
+      state,
+      beginSession,
+      changeShop,
+      updateDisplayName,
+      notifyShopUpdated,
+      signOut,
+      onSessionCleared,
+    ],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

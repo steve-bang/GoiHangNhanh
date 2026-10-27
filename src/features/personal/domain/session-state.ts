@@ -22,12 +22,18 @@ export interface SessionState {
    * theo phiên vẫn giữ, nhưng màn đang hiện hồ sơ cũ (ví dụ UI-I01 bên dưới màn Sửa) tải lại khi số này đổi.
    */
   readonly profileRevision: number;
+  /**
+   * Tăng mỗi lần thông tin shop đang dùng được cập nhật thành công (đổi tên). Cùng ý với
+   * `profileRevision`: không đổi `epoch`/`sessionKey`; màn đang hiện tên shop cũ tải lại khi số này đổi.
+   */
+  readonly shopRevision: number;
 }
 
 export type SessionAction =
   | { type: 'signed_in'; user: SessionUser; shopId: string | null }
   | { type: 'shop_changed'; shopId: string | null }
   | { type: 'profile_updated'; displayName: string | null }
+  | { type: 'shop_updated' }
   | { type: 'signed_out' };
 
 export const INITIAL_SESSION: SessionState = {
@@ -36,6 +42,7 @@ export const INITIAL_SESSION: SessionState = {
   shopId: null,
   epoch: 0,
   profileRevision: 0,
+  shopRevision: 0,
 };
 
 /** Khóa cho mọi state/cache theo phiên: đổi tài khoản hoặc shop thì khóa đổi. */
@@ -52,10 +59,13 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         shopId: action.shopId,
         epoch: state.epoch + 1,
         profileRevision: 0,
+        shopRevision: 0,
       };
     case 'shop_changed':
       if (state.status !== 'signed_in' || state.shopId === action.shopId) return state;
-      return { ...state, shopId: action.shopId, epoch: state.epoch + 1 };
+      return { ...state, shopId: action.shopId, epoch: state.epoch + 1, shopRevision: 0 };
+    case 'shop_updated':
+      return { ...state, shopRevision: state.shopRevision + 1 };
     case 'profile_updated':
       // Luôn tăng `profileRevision` kể cả khi phiên chưa biết người dùng (phiên khôi phục chưa mang danh tính).
       return {
