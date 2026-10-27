@@ -40,6 +40,17 @@ describe('tương phản màu (WCAG AA 4.5:1 cho chữ thường)', () => {
     ['textMuted', 'welcomeBlob'],
     ['brand', 'welcomeBackground'],
     ['brand', 'surface'],
+    // Nhóm màn form/quy trình (nền trắng, khối xám nhạt, ô nhắc xanh nhạt).
+    ['ink', 'formBackground'],
+    ['inkMuted', 'formBackground'],
+    ['brand', 'formBackground'],
+    ['ink', 'surfaceMuted'],
+    ['inkMuted', 'surfaceMuted'],
+    ['onBrand', 'brand'],
+    ['brand', 'infoSoft'],
+    ['ink', 'infoSoft'],
+    ['inkMuted', 'infoSoft'],
+    ['inkMuted', 'brandSoft'],
     ['ink', 'onboardingBackground'],
     ['ink', 'surface'],
     ['inkMuted', 'onboardingBackground'],
@@ -95,6 +106,12 @@ describe('nhãn trạng thái bằng chứng (docs/09 mục 3)', () => {
 describe('typography', () => {
   it('chú thích >= 12pt, nội dung >= 15pt, tiêu đề màn 24-28pt', () => {
     expect(typography.caption.fontSize).toBeGreaterThanOrEqual(12);
+    // Nhóm form/quy trình nhỏ hơn có chủ ý (mockup 03) nhưng không dưới 13sp cho chữ đọc chính; chữ
+    // lớp phủ camera tối thiểu 11sp.
+    expect(typography.formLabel.fontSize).toBeGreaterThanOrEqual(13);
+    expect(typography.formBody.fontSize).toBeGreaterThanOrEqual(14);
+    expect(typography.formButtonSmall.fontSize).toBeGreaterThanOrEqual(13);
+    expect(typography.overlay.fontSize).toBeGreaterThanOrEqual(11);
     expect(typography.body.fontSize).toBeGreaterThanOrEqual(15);
     expect(typography.screenTitle.fontSize).toBeGreaterThanOrEqual(24);
     expect(typography.screenTitle.fontSize).toBeLessThanOrEqual(28);

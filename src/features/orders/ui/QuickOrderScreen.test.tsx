@@ -1,3 +1,4 @@
+import { StyleSheet } from 'react-native';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { AppError } from '@/core/errors/app-error';
@@ -80,6 +81,25 @@ describe('UI-B04 Tạo đơn nhanh', () => {
     await renderWithProviders(<QuickOrderScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn' }));
     expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.scan);
+  });
+
+  it('mô tả ngắn; lưu ý "do bạn nhập" nằm ở dòng caption riêng; dòng nguồn có nhãn trợ năng đầy đủ', async () => {
+    await renderWithProviders(<QuickOrderScreen />);
+    expect(
+      screen.getByText('Nhập nhanh thông tin đơn hàng để bắt đầu quay video đóng gói.'),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Thông tin do bạn nhập, không lấy từ sàn.')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Nguồn bán: Khác / chưa xác định')).toBeOnTheScreen();
+    expect(screen.queryByText('Nguồn bán')).toBeNull();
+  });
+
+  it('nút chính cao hơn nút "Bỏ qua, quay ngay"; ô số lượng là một ô liền', async () => {
+    await renderWithProviders(<QuickOrderScreen />);
+    const height = (id: string) =>
+      (StyleSheet.flatten(screen.getByTestId(id).props.style as never) as { minHeight: number })
+        .minHeight;
+    expect(height('quick-save')).toBeGreaterThan(height('quick-skip'));
+    expect(screen.getByTestId('quantity-stepper')).toBeOnTheScreen();
   });
 
   it('Lưu và xác nhận đơn: ghi đơn + dòng + kiện 1 rồi sang Xác nhận bằng ID đơn (không bằng mã)', async () => {

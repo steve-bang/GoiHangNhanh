@@ -137,6 +137,7 @@ export function OrderPreviewScreen() {
     onBack: navigation.back,
     headerRight: <HeaderHelpButton />,
     testID: 'screen-UI-C01',
+    form: true,
   };
 
   if (state.kind === 'loading') {
@@ -181,7 +182,7 @@ export function OrderPreviewScreen() {
           ) : null}
           <Button
             testID="preview-start"
-            icon="camera"
+            size="compact"
             label={t('screens:preview.startRecording')}
             disabled={!selectedPackage}
             loading={start.busy}
@@ -207,23 +208,28 @@ export function OrderPreviewScreen() {
       >
         <Icon name="check-circle" size={26} color={colors.success} />
         <View style={styles.flex}>
-          <Text bold style={{ color: colors.success }}>
+          <Text variant="formButton" style={{ color: colors.success }}>
             {t('screens:preview.banner.title')}
           </Text>
-          <Text variant="caption" color="textMuted">
+          <Text variant="caption" color="inkMuted">
             {t('screens:preview.banner.message')}
           </Text>
         </View>
       </View>
 
-      <Card>
+      <Card style={{ borderColor: colors.fieldBorder }}>
         <View style={{ gap: spacing.md }}>
           <View style={styles.copyRow}>
             <View style={styles.flex}>
-              <Text variant="caption" color="textMuted">
+              <Text variant="formLabel" color="inkMuted">
                 {t('screens:preview.orderCode')}
               </Text>
-              <Text variant="sectionTitle" testID="preview-order-code">
+              <Text
+                variant="formTitle"
+                accessibilityRole="text"
+                color="ink"
+                testID="preview-order-code"
+              >
                 {order.orderCode}
               </Text>
             </View>
@@ -236,19 +242,23 @@ export function OrderPreviewScreen() {
           <View style={[styles.copyRow, { gap: spacing.sm }]}>
             <SourceIcon source={order.source} size={28} />
             <View style={styles.flex}>
-              <Text variant="caption" color="textMuted">
+              <Text variant="caption" color="ink">
                 {t('screens:preview.source')}
               </Text>
-              <Text bold>{t(`common:sources.${order.source}`)}</Text>
+              <Text variant="formButton" color="ink">
+                {t(`common:sources.${order.source}`)}
+              </Text>
             </View>
           </View>
           {order.trackingCode ? (
             <View style={styles.copyRow}>
               <View style={styles.flex}>
-                <Text variant="caption" color="textMuted">
+                <Text variant="formLabel" color="inkMuted">
                   {t('screens:preview.trackingCode')}
                 </Text>
-                <Text bold>{order.trackingCode}</Text>
+                <Text variant="formTitle" accessibilityRole="text" color="ink">
+                  {order.trackingCode}
+                </Text>
               </View>
               <CopyButton
                 testID="copy-tracking-code"
@@ -271,13 +281,15 @@ export function OrderPreviewScreen() {
       </Card>
 
       <View style={{ gap: spacing.md }}>
-        <Text variant="sectionTitle" accessibilityRole="header">
+        <Text variant="formTitle" accessibilityRole="header" color="ink">
           {t('screens:preview.products')}
         </Text>
         {lines.length === 0 ? (
           <>
             <ProductLineList lines={[]} />
-            <Text color="textMuted">{t('screens:preview.undeclaredHint')}</Text>
+            <Text variant="formBody" color="inkMuted">
+              {t('screens:preview.undeclaredHint')}
+            </Text>
           </>
         ) : (
           lines.map((line) => (
@@ -296,9 +308,15 @@ export function OrderPreviewScreen() {
               </View>
               <View style={[styles.flex, { gap: spacing.sm }]}>
                 <View>
-                  <Text bold>{line.name}</Text>
-                  {line.variant ? <Text color="textMuted">{line.variant}</Text> : null}
-                  <Text variant="caption" color="textMuted">
+                  <Text variant="formButton" color="ink">
+                    {line.name}
+                  </Text>
+                  {line.variant ? (
+                    <Text variant="formBody" color="inkMuted">
+                      {line.variant}
+                    </Text>
+                  ) : null}
+                  <Text variant="caption" color="inkMuted">
                     {t('common:productLines.userEntered')}
                   </Text>
                 </View>
@@ -315,34 +333,39 @@ export function OrderPreviewScreen() {
       </View>
 
       <View style={{ gap: spacing.md }}>
-        <Text variant="sectionTitle" accessibilityRole="header">
+        <Text variant="formTitle" accessibilityRole="header" color="ink">
           {t('screens:preview.packages')}
         </Text>
         <FilterChips
+          appearance="solid"
           options={packageOptions}
           selectedKey={selectedPackage ?? ('' as PackageId)}
           onSelect={setPackageId}
+          trailing={
+            <Pressable
+              testID="preview-add-package"
+              accessibilityRole="button"
+              onPress={() => void addPackage(details)}
+              style={[styles.addPackage, { minHeight: touch, gap: spacing.xs }]}
+            >
+              <Icon name="add" size={18} color={colors.brand} />
+              <Text variant="formButton" style={{ color: colors.brand }}>
+                {t('screens:preview.addPackage')}
+              </Text>
+            </Pressable>
+          }
         />
-        <Pressable
-          testID="preview-add-package"
-          accessibilityRole="button"
-          onPress={() => void addPackage(details)}
-          style={[styles.addPackage, { minHeight: touch, gap: spacing.sm }]}
-        >
-          <Icon name="add" size={20} color={colors.brand} />
-          <Text bold style={{ color: colors.brand }}>
-            {t('screens:preview.addPackage')}
-          </Text>
-        </Pressable>
       </View>
 
       <View
         style={[
           styles.reminder,
-          { backgroundColor: colors.brandSoft, borderRadius: radius.md, padding: spacing.md },
+          { backgroundColor: colors.infoSoft, borderRadius: radius.md, padding: spacing.md },
         ]}
       >
-        <Text color="textMuted">{t('screens:preview.reminder')}</Text>
+        <Text variant="caption" color="inkMuted">
+          {t('screens:preview.reminder')}
+        </Text>
       </View>
       {start.permissionSheet}
     </Screen>
@@ -375,7 +398,7 @@ function CopyButton({
         },
       ]}
     >
-      <Text bold variant="caption" style={{ color: colors.brand }}>
+      <Text variant="formLabel" style={{ color: colors.brand }}>
         {t('screens:preview.copy')}
       </Text>
     </Pressable>
@@ -386,9 +409,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   banner: { flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
   copyRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  copyButton: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  copyButton: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
   line: { flexDirection: 'row' },
   thumb: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
-  addPackage: { flexDirection: 'row', alignItems: 'center' },
+  addPackage: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8 },
   reminder: {},
 });

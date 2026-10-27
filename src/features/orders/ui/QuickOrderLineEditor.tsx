@@ -54,7 +54,7 @@ export function QuickOrderLineEditor({
     <View testID={`line-${index}`} style={{ gap: spacing.md }}>
       {total > 1 ? (
         <View style={styles.titleRow}>
-          <Text variant="sectionTitle" accessibilityRole="header" style={styles.flex}>
+          <Text variant="formButton" accessibilityRole="header" style={styles.flex}>
             {t('screens:quickOrder.lineTitle', { index: index + 1 })}
           </Text>
           {onRemove ? (
@@ -72,6 +72,7 @@ export function QuickOrderLineEditor({
 
       <TextField
         testID={`line-name-${index}`}
+        compact
         label={t('screens:quickOrder.product')}
         placeholder={t('screens:quickOrder.productPlaceholder')}
         value={line.name}
@@ -79,7 +80,7 @@ export function QuickOrderLineEditor({
         onFocus={onActivate}
         autoCapitalize="sentences"
         {...(nameError ? { error: nameError } : {})}
-        trailing={<Icon name="forward" size={20} color={colors.textMuted} />}
+        trailing={<Icon name="forward" size={20} color={colors.inkMuted} />}
       />
 
       {nameSuggestions.length > 0 ? (
@@ -87,10 +88,10 @@ export function QuickOrderLineEditor({
           testID={`line-suggestions-${index}`}
           style={[
             styles.suggestions,
-            { backgroundColor: colors.brandSoft, borderRadius: radius.md, padding: spacing.sm },
+            { backgroundColor: colors.surfaceMuted, borderRadius: radius.md, padding: spacing.sm },
           ]}
         >
-          <Text variant="caption" color="textMuted" style={{ paddingHorizontal: spacing.sm }}>
+          <Text variant="caption" color="inkMuted" style={{ paddingHorizontal: spacing.sm }}>
             {t('screens:quickOrder.suggestions')}
           </Text>
           {nameSuggestions.map((name) => (
@@ -101,11 +102,15 @@ export function QuickOrderLineEditor({
               onPress={() => onChange({ name, variant: '' })}
               style={[styles.suggestionRow, { minHeight: touch, paddingHorizontal: spacing.sm }]}
             >
-              <Icon name="package" size={20} color={colors.brand} />
-              <Text style={styles.flex} numberOfLines={1}>
+              <View
+                style={[styles.thumb, { backgroundColor: colors.surface, borderRadius: radius.sm }]}
+              >
+                <Icon name="package" size={18} color={colors.inkMuted} />
+              </View>
+              <Text variant="formBody" color="ink" style={styles.flex} numberOfLines={1}>
                 {name}
               </Text>
-              <Icon name="forward" size={18} color={colors.textMuted} />
+              <Icon name="forward" size={18} color={colors.inkMuted} />
             </Pressable>
           ))}
         </View>
@@ -113,6 +118,7 @@ export function QuickOrderLineEditor({
 
       <TextField
         testID={`line-variant-${index}`}
+        compact
         label={t('screens:quickOrder.variant')}
         placeholder={t('screens:quickOrder.variantPlaceholder')}
         value={line.variant}
@@ -137,7 +143,7 @@ export function QuickOrderLineEditor({
 
       {variantChoices.length > 0 ? (
         <View style={{ gap: spacing.xs }}>
-          <Text variant="caption" color="textMuted">
+          <Text variant="caption" color="inkMuted">
             {t('screens:quickOrder.variantSuggestions')}
           </Text>
           <View style={[styles.chips, { gap: spacing.sm }]}>
@@ -158,7 +164,9 @@ export function QuickOrderLineEditor({
                   },
                 ]}
               >
-                <Text>{variant}</Text>
+                <Text variant="formBody" color="ink">
+                  {variant}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -166,7 +174,9 @@ export function QuickOrderLineEditor({
       ) : null}
 
       <View style={{ gap: spacing.sm }}>
-        <Text bold>{t('screens:quickOrder.quantity')}</Text>
+        <Text variant="formLabel" color="ink">
+          {t('screens:quickOrder.quantity')}
+        </Text>
         <QuantityStepper value={line.quantity} onChange={(quantity) => onChange({ quantity })} />
         {quantityError ? (
           <Text variant="caption" color="danger" accessibilityRole="alert">
@@ -183,6 +193,7 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center' },
   iconButton: { alignItems: 'center', justifyContent: 'center' },
   suggestions: { gap: 2 },
+  thumb: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   suggestionRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap' },
   chip: { alignItems: 'center', justifyContent: 'center', borderWidth: 1 },

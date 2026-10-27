@@ -189,6 +189,7 @@ export function QuickOrderScreen() {
       onBack={navigation.back}
       headerRight={<HeaderHelpButton />}
       testID="screen-UI-B04"
+      form
       footer={
         <>
           {saveError ? (
@@ -203,6 +204,7 @@ export function QuickOrderScreen() {
           ) : null}
           <Button
             testID="quick-save"
+            size="compact"
             label={t('screens:quickOrder.saveAndConfirm')}
             disabled={!canSubmit}
             loading={saving}
@@ -211,6 +213,7 @@ export function QuickOrderScreen() {
           <Button
             testID="quick-skip"
             variant="secondary"
+            size="slim"
             label={t('screens:quickOrder.skipAndRecord')}
             disabled={!canSubmit}
             onPress={() => void submit('record', false)}
@@ -218,45 +221,59 @@ export function QuickOrderScreen() {
         </>
       }
     >
-      <Text color="textMuted">{t('screens:quickOrder.intro')}</Text>
+      <Text variant="formBody" color="inkMuted">
+        {t('screens:quickOrder.intro')}
+      </Text>
 
-      <View
-        style={[
-          styles.sourceRow,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderRadius: radius.md,
-            padding: spacing.md,
-            gap: spacing.md,
-          },
-        ]}
-      >
-        <SourceIcon source={source} size={32} />
-        <View style={styles.flex}>
-          <Text variant="caption" color="textMuted">
-            {t('screens:quickOrder.sourceLabel')}
-          </Text>
-          <Text bold>{t(`common:sources.${source}`)}</Text>
-        </View>
-        <Pressable
-          testID="source-change"
-          accessibilityRole="button"
-          accessibilityLabel={t('screens:quickOrder.changeSourceHint')}
-          onPress={() => setSourceOpen(true)}
+      <View style={{ gap: spacing.xs }}>
+        <View
           style={[
-            styles.pill,
-            { minHeight: touch, backgroundColor: colors.brandSoft, borderRadius: radius.lg },
+            styles.sourceRow,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.fieldBorder,
+              borderRadius: radius.md,
+              paddingLeft: spacing.md,
+              paddingRight: spacing.sm,
+              gap: spacing.md,
+            },
           ]}
         >
-          <Text bold style={{ color: colors.brand }}>
-            {t('screens:quickOrder.changeSource')}
+          <SourceIcon source={source} size={26} />
+          <Text
+            variant="formButton"
+            color="ink"
+            style={styles.flex}
+            accessibilityLabel={t('screens:quickOrder.sourceA11y', {
+              name: t(`common:sources.${source}`),
+            })}
+          >
+            {t(`common:sources.${source}`)}
           </Text>
-        </Pressable>
+          <Pressable
+            testID="source-change"
+            accessibilityRole="button"
+            accessibilityLabel={t('screens:quickOrder.changeSourceHint')}
+            onPress={() => setSourceOpen(true)}
+            style={[styles.pillHit, { minHeight: touch }]}
+          >
+            <View
+              style={[styles.pill, { backgroundColor: colors.brandSoft, borderRadius: radius.lg }]}
+            >
+              <Text variant="caption" bold style={{ color: colors.brand }}>
+                {t('screens:quickOrder.changeSource')}
+              </Text>
+            </View>
+          </Pressable>
+        </View>
+        <Text variant="caption" color="inkMuted" testID="quick-user-entered">
+          {t('screens:quickOrder.userEntered')}
+        </Text>
       </View>
 
       <TextField
         testID="quick-order-code"
+        compact
         label={t('screens:quickOrder.orderCode')}
         placeholder={t('screens:quickOrder.orderCodePlaceholder')}
         value={orderCode}
@@ -276,7 +293,7 @@ export function QuickOrderScreen() {
             onPress={() => navigation.replace(ROUTES.scan)}
             style={[styles.iconButton, { minWidth: touch, minHeight: touch }]}
           >
-            <Icon name="scan" size={24} color={colors.text} />
+            <Icon name="scan" size={24} color={colors.ink} />
           </Pressable>
         }
       />
@@ -315,8 +332,8 @@ export function QuickOrderScreen() {
         }}
         style={[styles.addLine, { minHeight: touch, gap: spacing.sm }]}
       >
-        <Icon name="add" size={20} color={colors.brand} />
-        <Text bold style={{ color: colors.brand }}>
+        <Icon name="add" size={18} color={colors.brand} />
+        <Text variant="formButton" style={{ color: colors.brand }}>
           {t('screens:quickOrder.addLine')}
         </Text>
       </Pressable>
@@ -324,6 +341,7 @@ export function QuickOrderScreen() {
       {showTracking ? (
         <TextField
           testID="quick-tracking"
+          compact
           label={t('screens:quickOrder.trackingCode')}
           value={tracking}
           onChangeText={setTracking}
@@ -336,8 +354,8 @@ export function QuickOrderScreen() {
           onPress={() => setShowTracking(true)}
           style={[styles.addLine, { minHeight: touch, gap: spacing.sm }]}
         >
-          <Icon name="add" size={20} color={colors.brand} />
-          <Text bold style={{ color: colors.brand }}>
+          <Icon name="add" size={18} color={colors.brand} />
+          <Text variant="formButton" style={{ color: colors.brand }}>
             {t('screens:quickOrder.addTracking')}
           </Text>
         </Pressable>
@@ -407,7 +425,13 @@ export function QuickOrderScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   sourceRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
-  pill: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  pillHit: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  pill: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
   iconButton: { alignItems: 'center', justifyContent: 'center' },
   addLine: { flexDirection: 'row', alignItems: 'center' },
 });

@@ -141,6 +141,7 @@ Mockup `docs/assets/ui/03-quick-order-confirm-record.png`; ADR-017 và [decision
 - **Tạo đơn nhanh:** hàng nguồn bán + *Thay đổi* (BottomSheet chọn nguồn); ô Mã đơn có icon quét; ô Sản phẩm + khối *Gợi ý gần đây* (chỉ tên, từ lịch sử, mỗi tên một dòng) rồi *Phân loại đã dùng* của tên đó; ô Variant có nút xóa; Số lượng mặc định 1; *Thêm sản phẩm khác* (nhiều dòng, không gộp variant); mã vận đơn thu gọn (*Thêm mã vận đơn*). Trùng mã: BottomSheet *Đã có đơn này* (Q-17g). Lỗi lưu: `LOCAL_SAVE_UNAVAILABLE`.
 - **Xác nhận đơn:** banner *Đơn đã sẵn sàng!*, thẻ Mã đơn/Nguồn/Mã vận đơn với *Sao chép*, Sản phẩm (sửa số lượng ngay trên dòng; nhãn *Chưa khai báo sản phẩm* chỉ khi chưa có dòng), Kiện hàng (chips + *Thêm kiện*, mỗi kiện ID riêng), ô nhắc, nút *Kiểm tra camera và bắt đầu*.
 - **Màn quay (`RecordingFrame` dùng chung với UI-D04):** nền camera xem trước (`CameraPreview`), nút X (hộp thoại), huy hiệu *Đang quay* + đồng hồ, khung mã đơn/Kiện (co chữ khi hẹp), dải *Bản thử giao diện: chưa ghi video*, đèn pin, ô hướng dẫn, nút dừng đỏ. **Không** nút thư viện ảnh/chụp ảnh. UI-D04 không truyền huy hiệu/xem trước nên giữ khung cũ.
+- **Nhóm màn "form/quy trình" (bản chỉnh theo ảnh mockup, Q-17l):** `Screen form` = nền trắng `formBackground` (không đổi nền toàn app) + tiêu đề header nhỏ (`ScreenHeader compact`, 17sp). Chữ dùng biến thể `formTitle/formLabel/formBody/formButton/formButtonSmall` (nhỏ và mảnh hơn nhóm chuẩn; chữ trên lớp phủ camera dùng `overlay` 11sp). Component có tùy chọn thay vì đổi mặc định: `Button size="compact|slim"`, `TextField compact`, `FilterChips appearance="solid" trailing=...`; `QuantityStepper` (đổi mặc định, chỉ có hai nơi dùng) là một ô liền "- 2 +". Các màn khác không đổi.
 - **Chưa kiểm chứng:** xem Q-17 (SQLite, camera, đèn pin, clipboard, quyền, tai thỏ, Back phần cứng trên máy thật). Ảnh chụp web (390x844, 360x800) cho thấy bố cục khớp mẫu.
 
 ## 3. Design system (`src/shared/ui`)
@@ -155,7 +156,7 @@ Token ở `src/core/theme` (màu, chữ, khoảng cách, bo góc, vùng chạm);
 | `ActionCard` | Hai nút lớn của Tổng quan | Một `primary`, một `secondary` |
 | `Card`, `OrderCard` | Thẻ; thẻ đơn (mã, nguồn, ngày, số video, một trạng thái) | Mã đơn chỉ là chuỗi hiển thị, không phải ID |
 | `ProductLineList` | Dòng sản phẩm (tên, variant, số lượng, nguồn "Do bạn nhập") | Nhãn *Chưa khai báo sản phẩm* chỉ khi chưa có dòng nào |
-| `TextField`, `SearchField`, `QuantityStepper`, `FilterChips` | Nhập, tìm, số lượng (mặc định 1), lọc | Chip xuống dòng thay vì cuộn ngang; `TextField` có `trailing` (icon quét, nút xóa) |
+| `TextField`, `SearchField`, `QuantityStepper`, `FilterChips` | Nhập, tìm, số lượng (mặc định 1), lọc | Chip xuống dòng thay vì cuộn ngang, có `appearance="solid"` và `trailing` cùng hàng; `TextField` có `trailing` (icon quét, nút xóa) và `compact`; `QuantityStepper` là ô liền "- 2 +"; `Button size` (`regular`/`compact`/`slim`) và `Screen form`: xem mục 2.5 |
 | `EvidenceStatusBadge` | 6 nhãn trạng thái bằng chứng (docs/09 mục 3) | Chữ + biểu tượng riêng + viền; *Đã lưu trên máy* không tick/màu thành công; tiến độ % chỉ khi `uploading` và có số đo |
 | `SyncStatusBar` | Khối đồng bộ (lỗi/chờ/đang tải) | Dùng nhãn chuẩn; ghi chú tải nền có thể tạm dừng |
 | `OfflineBanner` | Banner ngoại tuyến (UI-F04) | Hiện qua `Screen` khi `useIsOffline()` (hiện luôn `false`, xem mục 7) |

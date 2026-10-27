@@ -43,6 +43,23 @@ async function open(details = sampleOrder()) {
 }
 
 describe('UI-C01 Xác nhận đơn trước khi quay', () => {
+  it('nút cuối không có biểu tượng camera; chỉ có nhãn', async () => {
+    await open();
+    const start = screen.getByTestId('preview-start');
+    const texts = within(start).getAllByText(/./, { includeHiddenElements: true });
+    expect(texts.map((n) => n.props.children)).toEqual(['Kiểm tra camera và bắt đầu']);
+  });
+
+  it('chip Kiện 1 được chọn, + Thêm kiện nằm cùng hàng với các chip; thêm kiện thì chọn kiện mới', async () => {
+    await open();
+    const one = screen.getByRole('button', { name: 'Kiện 1', selected: true });
+    expect(screen.getByTestId('preview-add-package').parent).toBe(one.parent);
+    await fireEvent.press(screen.getByTestId('preview-add-package'));
+    const two = await screen.findByRole('button', { name: 'Kiện 2', selected: true });
+    expect(two.parent).toBe(screen.getByTestId('preview-add-package').parent);
+    expect(screen.getByRole('button', { name: 'Kiện 1', selected: false })).toBeOnTheScreen();
+  });
+
   it('hiện banner, mã đơn, nguồn bán, mã vận đơn, sản phẩm (tên và variant tách riêng), kiện, ô nhắc', async () => {
     await open();
     expect(screen.getByTestId('screen-UI-C01')).toBeOnTheScreen();

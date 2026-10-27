@@ -50,6 +50,14 @@ describe('UI-C03 màn quay đóng gói (bản thử giao diện)', () => {
     expect(screen.getByRole('button', { name: 'Dừng quay' })).toBeOnTheScreen();
   });
 
+  it('nút dừng chỉ có nhãn trợ năng, không có chữ "Dừng quay" hiển thị dưới nút', async () => {
+    await renderWithSession();
+    await screen.findByText('Đang quay');
+    expect(screen.getByRole('button', { name: 'Dừng quay' })).toBeOnTheScreen();
+    expect(screen.queryByText('Dừng quay')).toBeNull();
+    expect(screen.getByTestId('recording-stop')).toBeOnTheScreen();
+  });
+
   it('luôn kèm dải "chưa ghi video" khi chưa có bộ ghi thật (không nói dối Đang quay)', async () => {
     await renderWithSession();
     await screen.findByText('Đang quay');

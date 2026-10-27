@@ -24,6 +24,11 @@ interface ScreenProps {
   inTabs?: boolean;
   /** Nội dung dùng dữ liệu giả cục bộ của khung giao diện: hiện ghi chú "minh họa". */
   illustrative?: boolean;
+  /**
+   * Nhóm màn "form/quy trình" (Tạo đơn nhanh, Xác nhận đơn; mockup 03): nền trắng sạch và tiêu đề
+   * header nhỏ hơn. Không đổi nền toàn app.
+   */
+  form?: boolean;
   children: ReactNode;
   testID?: string;
 }
@@ -42,6 +47,7 @@ export function Screen({
   scroll = true,
   inTabs = false,
   illustrative = false,
+  form = false,
   children,
   testID,
 }: ScreenProps) {
@@ -60,16 +66,18 @@ export function Screen({
       ) : null}
     </>
   );
+  const background = form ? colors.formBackground : colors.background;
   const contentStyle = { padding: spacing.lg, gap: spacing.lg } as const;
 
   return (
     <View
       testID={testID}
-      style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}
+      style={[styles.root, { backgroundColor: background, paddingTop: insets.top }]}
     >
       {header ?? (
         <ScreenHeader
           title={title}
+          compact={form}
           {...(onBack ? { onBack } : {})}
           {...(headerRight ? { trailing: headerRight } : {})}
         />
@@ -95,7 +103,7 @@ export function Screen({
               paddingTop: spacing.md,
               paddingBottom: inTabs ? spacing.lg : Math.max(insets.bottom, spacing.lg),
               gap: spacing.sm,
-              backgroundColor: colors.background,
+              backgroundColor: background,
               borderTopColor: colors.border,
               borderTopWidth: StyleSheet.hairlineWidth,
             }}

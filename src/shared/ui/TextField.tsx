@@ -7,7 +7,7 @@ import {
   type ReturnKeyTypeOptions,
 } from 'react-native';
 
-import { getMinTouchTarget } from '@/platform';
+import { getInputResetStyle, getMinTouchTarget } from '@/platform';
 
 import { Text } from './Text';
 import { useTheme } from './theme';
@@ -28,6 +28,8 @@ interface TextFieldProps {
   trailing?: ReactNode;
   onFocus?: () => void;
   onBlur?: () => void;
+  /** Cỡ chữ nhỏ cho nhóm màn form/quy trình (nhãn 13sp, nội dung 14sp; mockup 03). */
+  compact?: boolean;
 }
 
 /** Ô nhập có nhãn luôn hiện (không dùng placeholder thay nhãn). Cao tối thiểu theo vùng chạm. */
@@ -45,13 +47,20 @@ export function TextField({
   trailing,
   onFocus,
   onBlur,
+  compact = false,
 }: TextFieldProps) {
   const { colors, spacing, radius, typography } = useTheme();
   const [focused, setFocused] = useState(false);
   const frameStyle = {
-    minHeight: Math.max(getMinTouchTarget(), 52),
+    minHeight: compact ? getMinTouchTarget() : Math.max(getMinTouchTarget(), 52),
     backgroundColor: colors.surface,
-    borderColor: error ? colors.danger : focused ? colors.brand : colors.border,
+    borderColor: error
+      ? colors.danger
+      : focused
+        ? colors.brand
+        : compact
+          ? colors.fieldBorder
+          : colors.border,
     borderWidth: focused || error ? 2 : 1,
     borderRadius: radius.md,
   } as const;
@@ -77,7 +86,8 @@ export function TextField({
         onBlur?.();
       }}
       style={[
-        typography.body,
+        compact ? typography.formBody : typography.body,
+        getInputResetStyle(),
         trailing
           ? { flex: 1, minHeight: frameStyle.minHeight - 2, color: colors.text, paddingVertical: 0 }
           : {
@@ -90,7 +100,13 @@ export function TextField({
   );
   return (
     <View style={styles.container}>
-      <Text bold>{label}</Text>
+      {compact ? (
+        <Text variant="formLabel" color="ink">
+          {label}
+        </Text>
+      ) : (
+        <Text bold>{label}</Text>
+      )}
       {trailing ? (
         <View
           style={[frameStyle, styles.row, { paddingLeft: spacing.lg, paddingRight: spacing.sm }]}

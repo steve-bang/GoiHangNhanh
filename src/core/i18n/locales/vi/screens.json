@@ -60,8 +60,9 @@
     }
   },
   "quickOrder": {
-    "intro": "Nhập nhanh thông tin đơn để bắt đầu quay video đóng gói. Thông tin do bạn nhập, không lấy từ sàn.",
-    "sourceLabel": "Nguồn bán",
+    "intro": "Nhập nhanh thông tin đơn hàng để bắt đầu quay video đóng gói.",
+    "userEntered": "Thông tin do bạn nhập, không lấy từ sàn.",
+    "sourceA11y": "Nguồn bán: {{name}}",
     "changeSource": "Thay đổi",
     "changeSourceHint": "Đổi nguồn bán của đơn",
     "sourceSheetTitle": "Chọn nguồn bán",

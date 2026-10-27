@@ -9,6 +9,18 @@ export const typography = {
   body: { fontSize: 15, lineHeight: 22, fontWeight: '400' },
   /** Chú thích: không dùng cho thông tin quan trọng. */
   caption: { fontSize: 12, lineHeight: 16, fontWeight: '400' },
+  /**
+   * Nhóm màn "form/quy trình" (Tạo đơn nhanh, Xác nhận đơn; mockup 03): nhỏ và mảnh hơn nhóm trên,
+   * dùng qua `Screen form`. Vẫn co giãn theo cỡ chữ hệ thống. Không dùng cho thông tin cảnh báo quan
+   * trọng ở cỡ nhỏ hơn caption (decisions.md Q-17).
+   */
+  formTitle: { fontSize: 17, lineHeight: 24, fontWeight: '600' },
+  formLabel: { fontSize: 13, lineHeight: 18, fontWeight: '500' },
+  formBody: { fontSize: 14, lineHeight: 20, fontWeight: '400' },
+  formButton: { fontSize: 14, lineHeight: 20, fontWeight: '600' },
+  formButtonSmall: { fontSize: 13, lineHeight: 18, fontWeight: '600' },
+  /** Chữ nhỏ trên lớp phủ camera (khối mã đơn/kiện); không dùng ngoài màn quay. */
+  overlay: { fontSize: 11, lineHeight: 14, fontWeight: '600' },
 } as const;
 
 export const MIN_TOUCH_TARGET = {

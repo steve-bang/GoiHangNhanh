@@ -15,13 +15,21 @@ interface ScreenHeaderProps {
   /** Vùng bên phải, ví dụ nút menu tài khoản. */
   trailing?: ReactNode;
   tone?: 'default' | 'camera';
+  /** Tiêu đề nhỏ (17sp, nửa đậm) cho nhóm màn form/quy trình; vẫn xuống dòng khi chữ lớn. */
+  compact?: boolean;
 }
 
 /**
  * Thanh tiêu đề dùng chung (thay header gốc của navigator để iOS/Android giống nhau và tràn viền
  * đúng). Tiêu đề xuống dòng được khi chữ lớn; không cố định chiều cao.
  */
-export function ScreenHeader({ title, onBack, trailing, tone = 'default' }: ScreenHeaderProps) {
+export function ScreenHeader({
+  title,
+  onBack,
+  trailing,
+  tone = 'default',
+  compact = false,
+}: ScreenHeaderProps) {
   const { t } = useTranslation();
   const { colors, spacing } = useTheme();
   const touch = getMinTouchTarget();
@@ -30,7 +38,11 @@ export function ScreenHeader({ title, onBack, trailing, tone = 'default' }: Scre
     <View
       style={[
         styles.row,
-        { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, gap: spacing.sm },
+        {
+          paddingHorizontal: compact ? spacing.md : spacing.lg,
+          paddingVertical: spacing.sm,
+          gap: compact ? spacing.xs : spacing.sm,
+        },
       ]}
     >
       {onBack ? (
@@ -40,10 +52,10 @@ export function ScreenHeader({ title, onBack, trailing, tone = 'default' }: Scre
           onPress={onBack}
           style={[styles.side, { minWidth: touch, minHeight: touch }]}
         >
-          <Icon name="back" size={26} color={color} />
+          <Icon name="back" size={compact ? 24 : 26} color={color} />
         </Pressable>
       ) : null}
-      <Text variant="screenTitle" style={[styles.title, { color }]}>
+      <Text variant={compact ? 'formTitle' : 'screenTitle'} style={[styles.title, { color }]}>
         {title}
       </Text>
       {trailing ? <View style={styles.side}>{trailing}</View> : null}
