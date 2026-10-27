@@ -12,4 +12,4 @@ Logic nằm ở `src/shop.ts` (nhận `Firestore`, test được trên emulator)
 
 - Cài: `npm --prefix firebase/functions ci`. Build: `npm --prefix firebase/functions run build`.
 - Test: `npm run test:rules` (cùng Firestore Emulator; test ở `firebase/tests/functions/`).
-- Deploy lên dự án dev (`firebase/.firebaserc`, alias `dev`): `npx firebase deploy --config firebase/firebase.json --only functions,firestore:rules --project dev` (cần `firebase login` và gói Blaze).
+- Deploy lên dự án dev (`ghn-test-67b39`; truyền `--project` rõ vì `.firebaserc` nằm trong `firebase/`, không phải gốc repo): `npx firebase deploy --config firebase/firebase.json --project ghn-test-67b39 --only functions,firestore:rules,firestore:indexes` (cần `firebase login` và gói Blaze).
