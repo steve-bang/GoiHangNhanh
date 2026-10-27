@@ -1,1 +1,3 @@
-{}
+{
+  "src/test-utils/render.tsx": "Chỉ thêm provider (cổng cá nhân, phiên, toast) quanh cây test; không đổi giao diện màn đã xác nhận."
+}

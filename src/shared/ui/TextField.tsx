@@ -31,6 +31,10 @@ interface TextFieldProps {
   onBlur?: () => void;
   /** Cỡ chữ nhỏ cho nhóm màn form/quy trình (nhãn 13sp, nội dung 14sp; mockup 03). */
   compact?: boolean;
+  /** Ẩn nội dung (mật khẩu). Chỉ dùng qua `PasswordField`, nơi có nút Hiện/Ẩn. */
+  secureTextEntry?: boolean;
+  /** Gợi ý trình quản lý mật khẩu của hệ điều hành điền/lưu đúng loại ô. */
+  autoComplete?: 'current-password' | 'new-password' | 'name' | 'email' | 'off';
 }
 
 /** Ô nhập có nhãn luôn hiện (không dùng placeholder thay nhãn). Cao tối thiểu theo vùng chạm. */
@@ -49,6 +53,8 @@ export function TextField({
   onFocus,
   onBlur,
   compact = false,
+  secureTextEntry,
+  autoComplete,
 }: TextFieldProps) {
   const { tokens, typography } = useTheme();
   const [focused, setFocused] = useState(false);
@@ -80,6 +86,8 @@ export function TextField({
       {...(onSubmitEditing ? { onSubmitEditing } : {})}
       autoCapitalize={autoCapitalize}
       autoCorrect={false}
+      {...(secureTextEntry ? { secureTextEntry } : {})}
+      {...(autoComplete ? { autoComplete } : {})}
       onFocus={() => {
         setFocused(true);
         onFocus?.();
