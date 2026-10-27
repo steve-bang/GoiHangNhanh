@@ -28,6 +28,22 @@ const COMMON_PATTERNS = [
   },
 ];
 
+// Lớp API (src/api): chỉ api/firebase được import SDK Firebase; feature chỉ thấy hợp đồng và
+// create-api (data), test của feature dùng '@/api/testing'. Xem conventions.md mục 3.
+const FEATURE_API_PATTERNS = [
+  {
+    group: [
+      '@/api/firebase',
+      '@/api/firebase/**',
+      '@/api/fake',
+      '@/api/fake/**',
+      '@/api/unavailable',
+      '@/api/unavailable/**',
+    ],
+    message: 'Feature không import hiện thực API; dùng hợp đồng (@/api/contract) và cổng mặc định.',
+  },
+];
+
 module.exports = [
   { ignores: ['node_modules/', '.expo/', 'dist/', 'coverage/', 'android/', 'ios/', 'docs/'] },
   ...expoConfig,
@@ -75,6 +91,11 @@ module.exports = [
               group: ['**/data/**', '**/ui/**', '@/platform/**'],
               message: 'domain không phụ thuộc data, ui hay platform.',
             },
+            ...FEATURE_API_PATTERNS,
+            {
+              group: ['@/api/create-api', '@/api/testing'],
+              message: 'domain chỉ import KIỂU từ @/api/contract.',
+            },
           ],
         },
       ],
@@ -112,6 +133,90 @@ module.exports = [
             {
               group: ['@react-native-firebase/*', 'firebase', 'firebase/*'],
               message: 'ui không gọi Firebase trực tiếp; đi qua hook/repository ở data/.',
+            },
+            ...FEATURE_API_PATTERNS,
+          ],
+        },
+      ],
+    },
+  },
+  // data/: dùng API qua hợp đồng; không import hiện thực hay SDK (SDK chỉ ở api/firebase).
+  {
+    files: ['src/features/*/data/**/*.{ts,tsx}'],
+    ignores: ['**/*.test.ts', '**/*.test.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            ...COMMON_PATTERNS,
+            ...FEATURE_API_PATTERNS,
+            {
+              group: ['@react-native-firebase/*', 'firebase', 'firebase/*'],
+              message: 'data của feature không gọi Firebase; Firebase chỉ nằm ở src/api/firebase.',
+            },
+            { group: ['**/ui/**'], message: 'data không phụ thuộc ui.' },
+          ],
+        },
+      ],
+    },
+  },
+  // api/contract, api/fake, api/unavailable: không SDK, không biết feature.
+  {
+    files: ['src/api/contract/**/*.ts', 'src/api/fake/**/*.ts', 'src/api/unavailable/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            ...COMMON_PATTERNS,
+            {
+              group: INFRA_PACKAGES,
+              message: 'Hợp đồng, bản giả và bản "chưa kết nối" là TypeScript thuần, không SDK.',
+            },
+            {
+              group: ['@/features/**', '@/platform/**'],
+              message: 'api không phụ thuộc feature hay platform.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // create-api và testing (src/api/*.ts): không biết feature, không import SDK Firebase.
+  {
+    files: ['src/api/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            ...COMMON_PATTERNS,
+            {
+              group: ['@react-native-firebase/*', 'firebase', 'firebase/*'],
+              message: 'SDK Firebase chỉ được import trong src/api/firebase.',
+            },
+            {
+              group: ['@/features/**', '@/platform/**'],
+              message: 'api không phụ thuộc feature hay platform.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // api/firebase: nơi DUY NHẤT được import SDK Firebase; vẫn không biết feature.
+  {
+    files: ['src/api/firebase/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            ...COMMON_PATTERNS,
+            {
+              group: ['@/features/**', '@/platform/**'],
+              message: 'api không phụ thuộc feature hay platform.',
             },
           ],
         },

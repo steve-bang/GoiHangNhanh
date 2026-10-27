@@ -6,7 +6,7 @@ import { ROUTES } from '@/core/navigation';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
-import { createFakeGateways, FAKE_DEMO_EMAIL, FAKE_VALID_CODE } from '../data/fake-gateways';
+import { createFakeApi, FAKE_DEMO_EMAIL, FAKE_VALID_CODE } from '@/api/testing';
 import { ForgotPasswordScreen } from './ForgotPasswordScreen';
 import { NewPasswordScreen } from './NewPasswordScreen';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
@@ -68,7 +68,7 @@ async function goThroughRecovery() {
 
 describe('luồng khôi phục: không vào lại các màn sau khi đã rời luồng (docs/09 mục 5.6)', () => {
   it('đang trong luồng (Quên mật khẩu còn trong ngăn xếp): Nhập mã và Mật khẩu mới vào được', async () => {
-    await renderWithProviders(<StackHarness />, { gateways: createFakeGateways() });
+    await renderWithProviders(<StackHarness />, { gateways: createFakeApi() });
     await goThroughRecovery();
     await press('open-new-password');
     expect(screen.getByTestId('screen-UI-A09')).toBeOnTheScreen();
@@ -77,7 +77,7 @@ describe('luồng khôi phục: không vào lại các màn sau khi đã rời l
   });
 
   it('Back ra khỏi Quên mật khẩu rồi vào thẳng /verify-otp: bị đẩy về /forgot-password', async () => {
-    await renderWithProviders(<StackHarness />, { gateways: createFakeGateways() });
+    await renderWithProviders(<StackHarness />, { gateways: createFakeApi() });
     await press('open-forgot');
     await fireEvent.changeText(screen.getByTestId('forgot-email'), FAKE_DEMO_EMAIL);
     await press('forgot-submit');
@@ -90,7 +90,7 @@ describe('luồng khôi phục: không vào lại các màn sau khi đã rời l
   });
 
   it('Back ra khỏi Quên mật khẩu sau khi đã có vé rồi vào thẳng /new-password: bị đẩy về /forgot-password', async () => {
-    await renderWithProviders(<StackHarness />, { gateways: createFakeGateways() });
+    await renderWithProviders(<StackHarness />, { gateways: createFakeApi() });
     await goThroughRecovery();
     await press('close-forgot');
     expect(screen.getByTestId('probe-ticket')).toHaveTextContent('(không)');
@@ -100,7 +100,7 @@ describe('luồng khôi phục: không vào lại các màn sau khi đã rời l
   });
 
   it('"Quay lại đăng nhập" cũng xóa điều kiện vào các màn sau', async () => {
-    await renderWithProviders(<StackHarness />, { gateways: createFakeGateways() });
+    await renderWithProviders(<StackHarness />, { gateways: createFakeApi() });
     await goThroughRecovery();
     await fireEvent.press(screen.getByRole('link', { name: 'Quay lại đăng nhập' }));
     expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.signIn);

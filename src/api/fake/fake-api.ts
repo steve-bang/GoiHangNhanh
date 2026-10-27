@@ -2,25 +2,24 @@ import type { SocialProvider } from '@/core/config/feature-flags';
 import { AppError } from '@/core/errors/app-error';
 import type { ErrorCode } from '@/core/errors/codes';
 
-import { normalizeSources } from '../domain/selling-sources';
-import { DEFAULT_RESEND_SECONDS } from '../domain/otp';
+import { normalizeSources } from '@/core/orders/selling-sources';
 import type {
   AuthAccount,
-  AuthGateway,
+  AuthApi,
   CreatedShop,
   CreateShopInput,
-  Gateways,
+  ApiClient,
   ResetPasswordInput,
-  SessionGateway,
+  SessionApi,
   SessionState,
-  ShopGateway,
+  ShopApi,
   SignedInAccount,
   SignInWithPasswordInput,
   SignUpWithEmailInput,
   UpdateShopInput,
   VerifiedRecovery,
   VerifyRecoveryCodeInput,
-} from '../domain/types';
+} from '../contract';
 
 /**
  * Cổng GIẢ chạy trong bộ nhớ, để dựng giao diện và test khi chưa có máy chủ. Chỉ được dùng khi
@@ -65,6 +64,8 @@ export const FAKE_LOCKED_EMAIL = 'qua.nhieu.lan@example.com';
 export const FAKE_EXPIRED_CODE_EMAIL = 'ma.het.han@example.com';
 export const FAKE_RESET_EXPIRED_EMAIL = 'phien.het.han@example.com';
 /** Số lần sai (đăng nhập, nhập mã) hoặc xin mã tối đa của bản giả trước khi báo quá nhiều lần. */
+/** Gợi ý chờ bao lâu mới được xin mã lại (giây) của bản giả. */
+export const FAKE_RESEND_SECONDS = 30;
 export const FAKE_MAX_ATTEMPTS = 5;
 /** Mật khẩu coi là quá yếu (chỉ để thử tay và test); độ dài tối thiểu do màn hình kiểm tra riêng. */
 export const FAKE_WEAK_PASSWORDS: readonly string[] = ['12345678', '11111111', 'password'];
@@ -86,7 +87,7 @@ interface PendingCode {
   wrongAttempts: number;
 }
 
-export class FakeAuthGateway implements AuthGateway {
+export class FakeAuthApi implements AuthApi {
   readonly signUpCalls: SignUpWithEmailInput[] = [];
   readonly signInCalls: SignInWithPasswordInput[] = [];
   readonly providerCalls: SocialProvider[] = [];
@@ -203,7 +204,7 @@ export class FakeAuthGateway implements AuthGateway {
       expiresAt: this.now() + (key === FAKE_EXPIRED_CODE_EMAIL ? 0 : this.codeTtlMs),
       wrongAttempts: 0,
     });
-    return { retryAfterSeconds: DEFAULT_RESEND_SECONDS };
+    return { retryAfterSeconds: FAKE_RESEND_SECONDS };
   }
 
   async verifyRecoveryCode(input: VerifyRecoveryCodeInput): Promise<VerifiedRecovery> {
@@ -249,7 +250,7 @@ export class FakeAuthGateway implements AuthGateway {
   }
 }
 
-export class FakeShopGateway implements ShopGateway {
+export class FakeShopApi implements ShopApi {
   readonly createCalls: CreateShopInput[] = [];
   readonly updateCalls: UpdateShopInput[] = [];
   private readonly latencyMs: number;
@@ -297,7 +298,7 @@ export class FakeShopGateway implements ShopGateway {
 }
 
 /** Cổng phiên giả: trả trạng thái cấu hình sẵn (xem `EXPO_PUBLIC_FAKE_SESSION` ở `gateways.ts`). */
-export class FakeSessionGateway implements SessionGateway {
+export class FakeSessionApi implements SessionApi {
   restoreCalls = 0;
   private readonly state: SessionState;
   private readonly latencyMs: number;
@@ -317,14 +318,14 @@ export class FakeSessionGateway implements SessionGateway {
   }
 }
 
-export function createFakeGateways(options: FakeBackendOptions = {}): {
-  auth: FakeAuthGateway;
-  shop: FakeShopGateway;
-  session: FakeSessionGateway;
-} & Gateways {
+export function createFakeApi(options: FakeBackendOptions = {}): {
+  auth: FakeAuthApi;
+  shop: FakeShopApi;
+  session: FakeSessionApi;
+} & ApiClient {
   return {
-    auth: new FakeAuthGateway(options),
-    shop: new FakeShopGateway(options),
-    session: new FakeSessionGateway(options),
+    auth: new FakeAuthApi(options),
+    shop: new FakeShopApi(options),
+    session: new FakeSessionApi(options),
   };
 }

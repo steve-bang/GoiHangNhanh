@@ -7,8 +7,7 @@ import { ROUTES } from '@/core/navigation';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
-import { createFakeGateways } from '../data/fake-gateways';
-import { createUnavailableGateways } from '../data/unavailable-gateways';
+import { createFakeApi, createUnavailableApi } from '@/api/testing';
 import type { CreatedShop, Gateways } from '../domain/types';
 import { CreateShopScreen } from './CreateShopScreen';
 
@@ -101,7 +100,7 @@ describe('UI-A04 Tạo hồ sơ shop: giao diện', () => {
 
 describe('UI-A04 Tạo hồ sơ shop: tên bắt buộc', () => {
   it('chưa có tên (hoặc chỉ khoảng trắng): Tiếp tục bị khóa và không gọi cổng', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<CreateShopScreen />, { gateways: fake });
     expect(isDisabled(submit())).toBe(true);
     await fireEvent.press(submit());
@@ -120,7 +119,7 @@ describe('UI-A04 Tạo hồ sơ shop: tên bắt buộc', () => {
   });
 
   it('"Bỏ qua, để sau" khi tên trống: hiện lỗi ở ô tên, KHÔNG tạo shop, không điều hướng', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<CreateShopScreen />, { gateways: fake });
     await fireEvent.press(screen.getByTestId('source-lazada'));
     await fireEvent.press(skip());
@@ -132,7 +131,7 @@ describe('UI-A04 Tạo hồ sơ shop: tên bắt buộc', () => {
 
 describe('UI-A04 Tạo hồ sơ shop: nguồn bán bỏ qua được', () => {
   it('không chọn nguồn nào vẫn bấm Tiếp tục được; gửi danh sách rỗng rồi sang /setup-done', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<CreateShopScreen />, { gateways: fake });
     await fireEvent.changeText(nameInput(), '  Shop Minh Anh  ');
     expect(isDisabled(submit())).toBe(false);
@@ -142,7 +141,7 @@ describe('UI-A04 Tạo hồ sơ shop: nguồn bán bỏ qua được', () => {
   });
 
   it('chọn nhiều nguồn, "Khác" là một lựa chọn; gửi giá trị enum chứ không phải chuỗi hiển thị', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<CreateShopScreen />, { gateways: fake });
     await fireEvent.changeText(nameInput(), 'Shop');
     await fireEvent.press(screen.getByTestId('source-other'));
@@ -176,7 +175,7 @@ describe('UI-A04 Tạo hồ sơ shop: nguồn bán bỏ qua được', () => {
   });
 
   it('"Bỏ qua, để sau" khi đã có tên: xóa lựa chọn nguồn bán và tiếp tục với danh sách rỗng', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<CreateShopScreen />, { gateways: fake });
     await fireEvent.changeText(nameInput(), 'Shop Minh Anh');
     await fireEvent.press(screen.getByTestId('source-shopee'));
@@ -200,7 +199,7 @@ describe('UI-A04 Tạo hồ sơ shop: xử lý và lỗi', () => {
           resolve = r;
         }),
     );
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     const gateways: Gateways = {
       auth: fake.auth,
       shop: { createShop, updateShop: jest.fn() },
@@ -222,7 +221,7 @@ describe('UI-A04 Tạo hồ sơ shop: xử lý và lỗi', () => {
   });
 
   it('lỗi mạng: hiện thông báo hai câu, không điều hướng, thử lại được', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<CreateShopScreen />, { gateways: fake });
     await fireEvent.changeText(nameInput(), 'Shop');
     fake.shop.failNext('AUTH_NETWORK_ERROR');
@@ -237,7 +236,7 @@ describe('UI-A04 Tạo hồ sơ shop: xử lý và lỗi', () => {
   });
 
   it('bản "chưa kết nối": báo AUTH_SERVICE_UNAVAILABLE, không báo đã tạo shop', async () => {
-    await renderWithProviders(<CreateShopScreen />, { gateways: createUnavailableGateways() });
+    await renderWithProviders(<CreateShopScreen />, { gateways: createUnavailableApi() });
     await fireEvent.changeText(nameInput(), 'Shop');
     await fireEvent.press(submit());
     expect(
@@ -306,7 +305,7 @@ describe('UI-A04 Tạo hồ sơ shop: quay lại sau khi đã tạo shop', () =>
   };
 
   it('sửa tên rồi Tiếp tục: gọi updateShop đúng một lần với shopId đã có, KHÔNG tạo shop thứ hai', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<BackHarness />, { gateways: fake });
     await fireEvent.changeText(nameInput(), 'Shop Cũ');
     await fireEvent.press(submit());
@@ -334,7 +333,7 @@ describe('UI-A04 Tạo hồ sơ shop: quay lại sau khi đã tạo shop', () =>
   });
 
   it('không sửa gì: không gọi cổng nào, đi thẳng /setup-done', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<BackHarness />, { gateways: fake });
     await fireEvent.changeText(nameInput(), 'Shop');
     await fireEvent.press(submit());
@@ -346,7 +345,7 @@ describe('UI-A04 Tạo hồ sơ shop: quay lại sau khi đã tạo shop', () =>
   });
 
   it('"Bỏ qua, để sau" sau khi đã tạo kèm nguồn bán: cập nhật về danh sách rỗng, không tạo mới', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<BackHarness />, { gateways: fake });
     await fireEvent.changeText(nameInput(), 'Shop');
     await fireEvent.press(screen.getByTestId('source-shopee'));
@@ -360,7 +359,7 @@ describe('UI-A04 Tạo hồ sơ shop: quay lại sau khi đã tạo shop', () =>
   });
 
   it('cập nhật lỗi: báo lỗi, không sang bước sau; bấm lại thì thử lại updateShop (vẫn không tạo mới)', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<BackHarness />, { gateways: fake });
     await fireEvent.changeText(nameInput(), 'Shop');
     await fireEvent.press(submit());
@@ -378,10 +377,10 @@ describe('UI-A04 Tạo hồ sơ shop: quay lại sau khi đã tạo shop', () =>
   });
 
   it('bản "chưa kết nối": cập nhật cũng báo lỗi, không báo thành công', async () => {
-    const fake = createFakeGateways();
-    const base = createUnavailableGateways();
+    const fake = createFakeApi();
+    const base = createUnavailableApi();
     const gateways: Gateways = {
-      session: createFakeGateways().session,
+      session: createFakeApi().session,
       auth: fake.auth,
       shop: { ...base.shop, createShop: fake.shop.createShop.bind(fake.shop) },
     };
@@ -406,9 +405,9 @@ describe('UI-A04 Tạo hồ sơ shop: quay lại sau khi đã tạo shop', () =>
           resolve = r;
         }),
     );
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     const gateways: Gateways = {
-      session: createFakeGateways().session,
+      session: createFakeApi().session,
       auth: fake.auth,
       shop: { createShop, updateShop: fake.shop.updateShop.bind(fake.shop) },
     };
