@@ -98,21 +98,37 @@ describe('UI-B02 Quét mã đơn hàng', () => {
     expect(mockScanner.torch).toBe(false);
   });
 
-  it('chưa cấp quyền: hiện nút xin quyền, vẫn nhập tay được, không có camera', async () => {
+  it('chưa cấp quyền: tự hiện hộp thoại xin quyền; bấm Cho phép thì gọi xin quyền', async () => {
     mockScanner.permission = 'askable';
     await renderWithProviders(<ScanScreen />);
     expect(screen.queryByTestId('scan-camera')).toBeNull();
-    expect(screen.getByText('Cần dùng camera để quét mã')).toBeOnTheScreen();
+    expect(screen.getByTestId('scan-permission-modal')).toBeOnTheScreen();
+    expect(screen.getAllByText('Cần dùng camera để quét mã').length).toBeGreaterThan(0);
+    await fireEvent.press(screen.getByTestId('scan-permission-allow'));
+    expect(mockScanner.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('đóng hộp thoại thì còn khung hướng dẫn trên màn quét, vẫn xin quyền và nhập tay được', async () => {
+    mockScanner.permission = 'askable';
+    await renderWithProviders(<ScanScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Đóng' }));
+    expect(screen.queryByTestId('scan-permission-modal')).toBeNull();
+    expect(screen.getByTestId('scan-unavailable')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'Cho phép camera' }));
     expect(mockScanner.request).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Nhập mã đơn thủ công')).toBeOnTheScreen();
   });
 
-  it('bị từ chối hẳn: nút mở Cài đặt của hệ điều hành', async () => {
+  it('đã cấp quyền thì không hiện hộp thoại', async () => {
+    await renderWithProviders(<ScanScreen />);
+    expect(screen.queryByTestId('scan-permission-modal')).toBeNull();
+  });
+
+  it('bị từ chối hẳn: hộp thoại có nút mở Cài đặt của hệ điều hành', async () => {
     mockScanner.permission = 'blocked';
     await renderWithProviders(<ScanScreen />);
-    expect(screen.getByText('Camera đang bị tắt')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('button', { name: 'Mở Cài đặt' }));
+    expect(screen.getByTestId('scan-permission-modal')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByTestId('scan-permission-allow'));
     expect(mockOpenAppSettings).toHaveBeenCalledTimes(1);
   });
 

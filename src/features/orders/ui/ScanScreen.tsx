@@ -43,12 +43,18 @@ export function ScanScreen() {
   const [code, setCode] = useState('');
   const [lastCode, setLastCode] = useState<string | null>(null);
   const [cameraFailed, setCameraFailed] = useState(false);
+  const [permissionDismissed, setPermissionDismissed] = useState(false);
   const lastScan = useRef<{ code: string; at: number } | null>(null);
   const handled = useRef(false);
 
   const frame = Math.min(FRAME_MAX, Math.round(width * FRAME_RATIO));
   const trimmed = code.trim();
   const cameraReady = permission.status === 'granted' && !cameraFailed;
+  // Hộp thoại xin quyền tự hiện khi chưa được cấp; đóng thì còn khung hướng dẫn ngay trên màn quét.
+  const permissionPromptOpen =
+    (permission.status === 'askable' || permission.status === 'blocked') &&
+    !permissionDismissed &&
+    !manualOpen;
 
   const lookup = (value: string) => {
     setManualOpen(false);
@@ -241,6 +247,38 @@ export function ScanScreen() {
           ))}
         </View>
       </View>
+
+      <BottomSheet
+        visible={permissionPromptOpen}
+        onClose={() => setPermissionDismissed(true)}
+        title={t(
+          permission.status === 'blocked'
+            ? 'screens:scan.permission.blockedTitle'
+            : 'screens:scan.permission.askTitle',
+        )}
+      >
+        <View testID="scan-permission-modal" style={{ gap: spacing.md }}>
+          <Text>
+            {t(
+              permission.status === 'blocked'
+                ? 'screens:scan.permission.blockedMessage'
+                : 'screens:scan.permission.askReason',
+            )}
+          </Text>
+          <Button
+            testID="scan-permission-allow"
+            label={t(
+              permission.status === 'blocked'
+                ? 'screens:scan.permission.blockedAction'
+                : 'screens:scan.permission.askAction',
+            )}
+            onPress={() => {
+              if (permission.status === 'blocked') void openAppSettings();
+              else void permission.request();
+            }}
+          />
+        </View>
+      </BottomSheet>
 
       <BottomSheet
         visible={manualOpen}

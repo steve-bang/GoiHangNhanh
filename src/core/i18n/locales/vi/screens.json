@@ -47,6 +47,7 @@
       "checking": "Đang mở camera…",
       "askTitle": "Cần dùng camera để quét mã",
       "askMessage": "Bạn vẫn có thể nhập mã bằng tay.",
+      "askReason": "Ứng dụng chỉ dùng camera để quét mã, chưa ghi hình ở bước này.",
       "askAction": "Cho phép camera",
       "blockedTitle": "Camera đang bị tắt",
       "blockedMessage": "Bật camera trong Cài đặt để quét mã, hoặc nhập mã bằng tay.",
