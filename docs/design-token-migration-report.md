@@ -1,7 +1,8 @@
 # Báo cáo chuyển đổi Design Token
 
 > Nhánh `design-token`, so với `main`. Phạm vi: màn bên trong app sau đăng nhập (xem [audit](design-system-audit.md) mục 1). Splash, Đăng nhập, Đăng ký, Quên mật khẩu, OTP, Mật khẩu mới và luồng thiết lập (Welcome, Tạo shop, Thiết lập xong) **không bị sửa**.
-> Mọi kết quả dưới đây là kết quả đã chạy thật trong môi trường này. Chưa build native, chưa chạy trên thiết bị hay máy ảo, chưa chụp ảnh màn hình (xem mục 6).
+> Mọi kết quả dưới đây là kết quả đã chạy thật trong môi trường này. Chưa build native, chưa chạy trên thiết bị hay máy ảo; có ảnh chụp bản web trước/sau (mục 5.1).
+> Cập nhật sau khi gộp `main` (màn Danh sách/Chi tiết đơn, PR #9): code mới của `main` đã được chuyển sang token; số liệu bên dưới là sau gộp.
 
 ## 1. Tóm tắt trạng thái
 
@@ -21,8 +22,8 @@
 | `npm run lint` (có rule token) | Sạch |
 | `npm run typecheck` | Sạch |
 | `npm run format:check` | Sạch |
-| `npm run check:tokens` | OK: 186 tệp trong phạm vi, 8 ngoại lệ có chú thích |
-| `npm test` (project `unit` + `tooling`) | 72 suite, **1410 test pass** (trước thay đổi: 69 suite, 1350 test; thêm 60 test) |
+| `npm run check:tokens` | OK: 196 tệp trong phạm vi, 10 ngoại lệ có chú thích |
+| `npm test` (project `unit` + `tooling`) | 78 suite, **1616 test pass** (gồm test mới của `main`; trước thay đổi trên `main` cũ: 69 suite, 1350 test) |
 | `npm run test:rules` (Firebase Emulator) | **Không chạy**: không liên quan UI, cần Java 21 + emulator |
 | Build native / EAS | **Không chạy được** (chưa dựng được, như `CLAUDE.md` ghi) |
 
@@ -67,7 +68,7 @@ Không thêm dependency nào, không có dependency vòng (kiểm bằng `check:
 
 `fontSize`/`lineHeight` bằng số: 0 trước và sau (vốn đã qua `Text variant`).
 
-### Hardcode còn lại (8 ngoại lệ có chú thích)
+### Hardcode còn lại (10 ngoại lệ có chú thích)
 
 | Chỗ | Giá trị | Lý do |
 |---|---|---|
@@ -76,6 +77,8 @@ Không thêm dependency nào, không có dependency vòng (kiểm bằng `check:
 | `ScanScreen` | `maxWidth 320` | Giới hạn độ rộng dòng chữ thông báo |
 | `RecordingFrame` | `maxWidth 160` | Giới hạn nhãn mã đơn trên khung quay |
 | `PackConfirmScreen` | `minHeight 180` | Khung giữ chỗ xem trước video (chưa có video thật) |
+| `OrderDetailScreen` | chấm trạng thái 8dp | Kích thước riêng của hàng chi tiết |
+| `OrderCard` | `opacity 0.7` khi nhấn | Độ mờ nhấn đậm hơn cho nút chữ nhỏ, không dùng ở chỗ khác |
 
 Không bị rule kiểm có chủ đích: số `0`, `opacity` bằng `1`, phép tính theo biến, `StyleSheet.hairlineWidth`, `size` của `Icon` (43 chỗ, 12 cỡ; nợ TD-5).
 
@@ -91,13 +94,28 @@ Bằng cách render 19 màn/nhóm component trong phạm vi cùng 9 màn ngoài 
 | `gap` 10 → 8 | Hàng gợi ý ở `ScanScreen` | 2dp |
 | `borderRadius` 22/28 → 9999 | Avatar, lối tắt tròn | Không đổi hình (hình tròn) |
 
-`gap` 10 → 8 ở hàng gợi ý của `QuickOrderLineEditor` không hiện trong các trạng thái đã render nên chỉ xác nhận qua mã, không qua so sánh.
+`gap` 10 → 8 ở hàng gợi ý của `QuickOrderLineEditor` và ở hàng "Nguồn bán" của `OrderDetailScreen` không hiện trong các trạng thái đã render nên chỉ xác nhận qua mã, không qua so sánh.
 
 **Màn ngoài phạm vi:** Welcome, Đăng nhập, Đăng ký, Quên mật khẩu, Tạo shop, Thiết lập xong, Splash: cây style **giống hệt** `main` (khác duy nhất là đường dẫn tệp ảnh trong môi trường thử). Mật khẩu mới và OTP chỉ render màn chuyển hướng khi mở không có vé nên **chưa được so sánh nội dung**; chúng không bị sửa và dùng `Button`/`Text` đã có test tương đương. Phương pháp so sánh là script dùng một lần, không lưu vào repo.
 
+### 5.1. Ảnh chụp trước/sau (bản web, 390×844 @2x)
+
+Build web riêng cho `main` và nhánh này (`expo export -p web`; `react-native-web` chỉ cài trong bản sao tạm, không vào repo), chụp bằng Chromium, so từng điểm ảnh. Kho đơn trên web là bộ nhớ nên 3 đơn mẫu được tạo qua Tạo đơn nhanh trong cùng phiên.
+
+| Màn | Kết quả so với `main` |
+|---|---|
+| Trang chủ | Giống hệt từng byte |
+| Đơn hàng (rỗng) | Giống hệt |
+| Đơn hàng (3 đơn, danh sách mới của `main`) | Giống hệt |
+| Tạo đơn nhanh | Khác ở pill "Thay đổi" (padding dọc 5 → 4) và nút "−" của bộ đếm khi vô hiệu (0.4 → 0.45) |
+| Xác nhận đơn | Chỉ khác ở nút "Sao chép" (hẹp hơn 2dp mỗi phía, 14 → 12) |
+| Chi tiết đơn | Khác ở nút "Sao chép" (14 → 12) và khoảng cách hàng "Nguồn bán" (10 → 8) |
+
+Đây đúng là các thay đổi đã liệt kê ở bảng trên, không có thay đổi ngoài dự kiến. Ảnh nằm ngoài repo (không commit). Chưa chụp: Quét mã, Quay, Hàng hoàn, Hồ sơ, và trạng thái lỗi/đang tải.
+
 ## 6. Vấn đề trực quan/tương thích còn tồn tại, chưa xác minh được
 
-- **Không có ảnh trước/sau**: dự án không có `react-native-web`, chưa build native; thêm dependency chỉ để chụp ảnh là ngoài phạm vi. Bằng chứng thay thế là so sánh cây style (mục 5) và test, không thay được việc nhìn bằng mắt.
+- **Ảnh chụp chỉ là bản web** (mục 5.1): không thay được kiểm tra trên iOS/Android thật (font, vùng an toàn, camera). Một số màn và trạng thái chưa chụp (mục 5.1).
 - Cần xem trên máy ảo/thiết bị iOS và Android (chưa có ở dự án): đặc biệt các thay đổi 1–2dp ở mục 5, tương phản chữ trên camera ngoài sáng, vùng chạm một tay.
 - `HomeScreen` có `GradientPanel` (gradient xanh) — trái định hướng "tránh gradient", nhưng đã có từ trước và theo mockup đã duyệt; chỉ đổi màu sang token, không đổi thiết kế.
 - Chấm "đang ghi hình" (`#B3261E`) trên nền camera `#16201A` chỉ đạt tương phản khoảng 2.56:1, thấp hơn mức 3:1 cho thành phần giao diện; nền thật là khung hình camera nên còn thay đổi theo cảnh quay. Chấm luôn đi kèm chữ và đồng hồ nên không phải tín hiệu duy nhất. Mình giữ nguyên màu đang chạy; nếu muốn đạt 3:1 cần đổi sang đỏ sáng hơn (cần duyệt trực quan).
