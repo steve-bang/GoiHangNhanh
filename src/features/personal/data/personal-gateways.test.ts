@@ -112,6 +112,32 @@ describe('cổng cá nhân giả', () => {
   });
 });
 
+describe('cổng cá nhân giả: đăng xuất đặt lại dữ liệu tài khoản', () => {
+  it('sau đăng xuất thành công: tên, tên shop, mật khẩu và cài đặt thông báo về mặc định', async () => {
+    const { account, settings } = createFakePersonalGateways();
+    await account.updateProfile({ displayName: 'Tên của A' });
+    await account.updateShopName((await account.listShops())[0]?.id ?? '', 'Shop của A');
+    await settings.updateNotificationPreferences({
+      uploadProblems: false,
+      syncCompleted: true,
+      storageNearlyFull: false,
+      planExpiring: false,
+    });
+    await account.signOut();
+    expect((await account.getProfile()).displayName).toBeNull();
+    expect((await account.getShopSummary())?.name).toBe('Cửa hàng minh họa');
+    expect((await settings.getNotificationPreferences()).uploadProblems).toBe(true);
+  });
+
+  it('đăng xuất lỗi thì giữ nguyên dữ liệu', async () => {
+    const { account } = createFakePersonalGateways();
+    await account.updateProfile({ displayName: 'Tên của A' });
+    account.failNext('AUTH_NETWORK_ERROR');
+    await expect(account.signOut()).rejects.toBeInstanceOf(AppError);
+    expect((await account.getProfile()).displayName).toBe('Tên của A');
+  });
+});
+
 describe('cổng cá nhân chưa kết nối', () => {
   it('mọi lời gọi trả AUTH_SERVICE_UNAVAILABLE, không bao giờ báo thành công', async () => {
     const { account, settings } = createUnavailablePersonalGateways();

@@ -90,14 +90,29 @@ export class FakeAccountGateway implements AccountGateway {
   changePasswordCalls = 0;
   signOutCalls = 0;
   private readonly latencyMs: number;
-  private profile: UserProfile;
-  private shops: ShopSummary[];
-  private currentShopId: string | null;
+  private profile!: UserProfile;
+  private shops!: ShopSummary[];
+  private currentShopId!: string | null;
   private password: string = FAKE_ACCOUNT_PASSWORD;
   private readonly failure = new FailureQueue();
 
-  constructor(options: FakePersonalOptions = {}) {
+  constructor(
+    private readonly options: FakePersonalOptions = {},
+    /** Gọi sau khi đăng xuất thành công (để cổng cài đặt cùng đặt lại). */
+    private readonly onSignedOut: () => void = () => undefined,
+  ) {
     this.latencyMs = options.latencyMs ?? 0;
+    this.resetState();
+  }
+
+  /**
+   * Đưa dữ liệu tài khoản giả về mặc định ban đầu. Bản giả không có danh tính thật theo từng tài khoản
+   * (chỉ MỘT tài khoản minh họa), nên sau đăng xuất phải xóa mọi thay đổi (tên, shop, mật khẩu) để tài
+   * khoản đăng nhập kế tiếp không thấy dữ liệu của tài khoản trước. Khi có Firebase thật, hồ sơ lấy theo `uid`.
+   */
+  private resetState(): void {
+    const options = this.options;
+    this.password = FAKE_ACCOUNT_PASSWORD;
     if (options.shops) {
       this.shops = options.shops.map((shop) => ({ ...shop }));
     } else if (options.shop === null) {
@@ -195,6 +210,9 @@ export class FakeAccountGateway implements AccountGateway {
     this.signOutCalls += 1;
     await delay(this.latencyMs);
     this.failure.consume();
+    // Chỉ đặt lại SAU KHI đăng xuất thành công; lỗi thì giữ nguyên phiên và dữ liệu.
+    this.resetState();
+    this.onSignedOut();
   }
 }
 
@@ -204,9 +222,18 @@ export class FakeSettingsGateway implements SettingsGateway {
   private preferences: NotificationPreferences;
   private readonly failure = new FailureQueue();
 
-  constructor(options: FakePersonalOptions = {}) {
+  constructor(private readonly options: FakePersonalOptions = {}) {
     this.latencyMs = options.latencyMs ?? 0;
-    this.preferences = options.notificationPreferences ?? FAKE_NOTIFICATION_DEFAULTS;
+    this.preferences = this.initialPreferences();
+  }
+
+  private initialPreferences(): NotificationPreferences {
+    return this.options.notificationPreferences ?? FAKE_NOTIFICATION_DEFAULTS;
+  }
+
+  /** Đặt lại về mặc định khi tài khoản đăng xuất (xem `FakeAccountGateway.resetState`). */
+  reset(): void {
+    this.preferences = this.initialPreferences();
   }
 
   failNext(code: ErrorCode): void {
@@ -234,5 +261,7 @@ export function createFakePersonalGateways(options: FakePersonalOptions = {}): {
   account: FakeAccountGateway;
   settings: FakeSettingsGateway;
 } & PersonalGateways {
-  return { account: new FakeAccountGateway(options), settings: new FakeSettingsGateway(options) };
+  const settings = new FakeSettingsGateway(options);
+  const account = new FakeAccountGateway(options, () => settings.reset());
+  return { account, settings };
 }
