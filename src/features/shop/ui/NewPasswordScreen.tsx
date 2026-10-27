@@ -1,10 +1,10 @@
-import { resolveErrorMessage, type ErrorMessage } from '@/core/i18n/error-message';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ErrorCode } from '@/core/errors/codes';
+import { resolveErrorMessage, type ErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Text, useTheme } from '@/shared/ui';
