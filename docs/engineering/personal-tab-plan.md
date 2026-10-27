@@ -95,6 +95,10 @@ Mỗi PR nhỏ, độc lập, `npm run check` xanh, ghi rõ "chưa kiểm chứn
 - Tệp: `ShopSettingsScreen` (UI-I02) dùng `ShopGateway.updateShop`; chọn shop chỉ hiện khi có hơn một shop; dialog xác nhận và xóa cache khi đổi shop.
 - Xong khi: đổi tên shop không đổi lịch sử bằng chứng (docs/09 UI-I02); test cô lập theo `shopId`; không biến thành trang quản lý danh mục sản phẩm.
 
+### PR4b — chỉnh giao diện tab Cá nhân theo góp ý designer
+- **Trạng thái: đã làm trên nhánh `claude/personal-tab-ui-polish` (tách từ `claude/personal-tab-screenshots`, chưa mở PR).** Đã có: màn Cá nhân gom nhóm kiểu iOS (`ListGroup`, `account-menu.ts` cấu hình một chỗ), sửa thẻ Gói bị bóp chữ (hết lề đôi), mục chưa làm khóa + "Sắp có", ẩn Thành viên và quyền, tiêu đề "Cá nhân", bỏ hàng trùng, thẻ hồ sơ bấm được + "Thêm họ tên", Đăng xuất nhóm riêng + phiên bản, hộp thoại Đăng xuất (Ở lại là nút chính), form báo lỗi khi bấm Lưu + focus ô lỗi, email chỉ đọc, yêu cầu mật khẩu thời gian thực, Cài đặt cửa hàng làm lại, thuật ngữ "cửa hàng", ẩn thanh tab trên form (`hideTabBar`), skeleton theo hình thật, avatar cửa hàng vuông, thẻ cảnh báo thay chữ xám, bỏ avatar lớn ở form. Ảnh "sau" ở `docs/assets/screens/personal-tab-v2/`. Quyết định/lệch ghi ở `decisions.md` Q-19q, r, s. Chưa kiểm chứng trên iOS/Android thật.
+- Còn lại cho PR5 trở đi: bật lại từng mục "Sắp có" bằng cách đổi `availability` trong `account-menu.ts` khi màn đích xong (Gói UI-H01 ở PR5, Trợ giúp ở PR6, Thông báo ở PR7, Bảo mật khi có đặc tả); xem trên thiết bị thật nhãn "Sắp có" bị mờ, chữ lớn, thanh tab ẩn/hiện.
+
 ### PR5 — PER-08, 11, 12 gói và dữ liệu bằng chứng
 - Tệp: `PlanScreen` (UI-H01), mục dung lượng/dữ liệu; `StatusBadge`.
 - Xong khi: hiện "Chưa khả dụng/Sắp có" đúng nơi chưa có nguồn; không số liệu, giá hay hạn giả; liên kết tới UI-F01.
