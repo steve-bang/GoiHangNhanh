@@ -1,12 +1,12 @@
 # Kế hoạch triển khai tab Cá nhân (PER-01…PER-24)
 
-> Trạng thái: **kế hoạch đã được người dùng duyệt để lập tài liệu; các quyết định ở mục 9 (Q-19, O-29) chưa chốt.** Tài liệu này không đổi mã, điều hướng hay hành vi. Triển khai theo từng PR ở mục 6, chỉ sau khi người dùng cho phép.
+> Trạng thái: **kế hoạch đã được người dùng duyệt để lập tài liệu; Q-19a đã chốt: giữ 5 tab (D-16); các câu b–h ở mục 9 (Q-19, O-29) vẫn chưa chốt.** Triển khai theo từng PR ở mục 6, chỉ sau khi người dùng cho phép.
 
 ## 1. Bối cảnh
 
 BA giao đặc tả tab Cá nhân gồm 24 màn/chức năng (PER-01…PER-24). Mã `PER-xx` **chưa tồn tại trong repo**: repo dùng mã `UI-xx` (docs/09). Tab Cá nhân hiện là khung: `ProfileScreen` (UI-I01) hiển thị tên shop minh họa và 6 mục menu, các màn UI-I02…I06 và UI-H01…H04 là màn khung. Chưa có đăng xuất, hồ sơ, đổi mật khẩu, xóa tài khoản, Firebase thật, route guard.
 
-Ràng buộc: giữ **5 tab** theo D-16 (đặc tả BA ghi "4 tab"; không đổi navigation, hỏi ở Q-19a); tuân theo các bất biến trong `CLAUDE.md` (không chức năng giả, ngôn ngữ trung thực, không xóa dữ liệu cục bộ chưa đồng bộ).
+Ràng buộc: giữ **5 tab** theo D-16 (đặc tả BA ghi "4 tab"; không đổi navigation, Q-19a đã chốt: giữ 5 tab); tuân theo các bất biến trong `CLAUDE.md` (không chức năng giả, ngôn ngữ trung thực, không xóa dữ liệu cục bộ chưa đồng bộ).
 
 ## 2. Hiện trạng đã xác minh trong mã (2026-10-27)
 
@@ -121,4 +121,4 @@ PER-09/10 (thanh toán), PER-15 (phiên/thiết bị), PER-22 (xóa tài khoản
 
 ## 9. Câu hỏi mở
 
-Ghi ở [decisions.md Q-19](decisions.md) và [README O-29](../README.md): (a) 5 tab hay 4 tab; (b) bảng ánh xạ PER ↔ UI và mã UI mới; (c) PER-04 với tài khoản Apple/Google; (d) gói và thanh toán (O-06, O-16); (e) xóa tài khoản; (f) nhiều shop/thành viên/phân quyền (O-03, O-07); (g) nội dung trợ giúp, kênh hỗ trợ, URL pháp lý; (h) chính sách dữ liệu cục bộ sau đăng xuất. Không câu nào được tự chốt trong mã.
+Ghi ở [decisions.md Q-19](decisions.md) và [README O-29](../README.md): (a) ~~5 tab hay 4 tab~~ **đã chốt: giữ 5 tab**; (b) bảng ánh xạ PER ↔ UI và mã UI mới; (c) PER-04 với tài khoản Apple/Google; (d) gói và thanh toán (O-06, O-16); (e) xóa tài khoản; (f) nhiều shop/thành viên/phân quyền (O-03, O-07); (g) nội dung trợ giúp, kênh hỗ trợ, URL pháp lý; (h) chính sách dữ liệu cục bộ sau đăng xuất. Không câu nào được tự chốt trong mã.
