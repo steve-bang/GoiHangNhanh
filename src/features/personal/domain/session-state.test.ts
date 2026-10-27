@@ -34,12 +34,36 @@ describe('sessionReducer', () => {
     expect(b.user?.displayName).toBe('Bình');
     expect(b.epoch).toBe(a.epoch);
     expect(sessionKey(b)).toBe(sessionKey(a));
+    expect(b.profileRevision).toBe(a.profileRevision + 1);
+  });
+
+  it('cập nhật họ tên khi phiên chưa biết người dùng vẫn tăng profileRevision (để màn tải lại hồ sơ)', () => {
+    const b = sessionReducer(INITIAL_SESSION, { type: 'profile_updated', displayName: 'Bình' });
+    expect(b.user).toBeNull();
+    expect(b.profileRevision).toBe(1);
+    expect(b.epoch).toBe(INITIAL_SESSION.epoch);
+  });
+
+  it('đăng nhập/đăng xuất đặt lại profileRevision về 0', () => {
+    const a = sessionReducer(INITIAL_SESSION, { type: 'profile_updated', displayName: 'Bình' });
+    const b = sessionReducer(a, { type: 'signed_in', user: USER, shopId: null });
+    expect(b.profileRevision).toBe(0);
+    const c = sessionReducer(sessionReducer(b, { type: 'profile_updated', displayName: 'X' }), {
+      type: 'signed_out',
+    });
+    expect(c.profileRevision).toBe(0);
   });
 
   it('đăng xuất xóa người dùng và shop, epoch vẫn tăng (không quay về 0)', () => {
     const a = sessionReducer(INITIAL_SESSION, { type: 'signed_in', user: USER, shopId: 's1' });
     const out = sessionReducer(a, { type: 'signed_out' });
-    expect(out).toEqual({ status: 'signed_out', user: null, shopId: null, epoch: a.epoch + 1 });
+    expect(out).toEqual({
+      status: 'signed_out',
+      user: null,
+      shopId: null,
+      epoch: a.epoch + 1,
+      profileRevision: 0,
+    });
     expect(sessionKey(out)).toBe('anonymous');
     expect(sessionReducer(out, { type: 'signed_out' })).toBe(out);
   });
