@@ -3,10 +3,10 @@ import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'rea
 import { useTranslation } from 'react-i18next';
 
 import type { ErrorCode } from '@/core/errors/codes';
+import type { OrderSource } from '@/core/orders/order-source';
 import { getInputResetStyle, getMinTouchTarget } from '@/platform';
-import { Icon, Text, useTheme, type IconName } from '@/shared/ui';
+import { Icon, SourceIcon, Text, useTheme, type IconName } from '@/shared/ui';
 
-import type { SellingSource } from '../../domain/types';
 import type { StepState } from '../onboarding-progress';
 import { useScrollIntoView } from './OnboardingScaffold';
 
@@ -195,16 +195,8 @@ export function StepProgress({ segments, current, total }: StepProgressProps) {
   );
 }
 
-/** Ô màu + ký hiệu cho từng nguồn bán. Chỉ là hình trang trí đơn giản, không dùng logo thương hiệu. */
-export const SOURCE_TILES: Record<SellingSource, { icon: IconName; tint: string }> = {
-  shopee: { icon: 'bag', tint: '#EE5A36' },
-  tiktok_shop: { icon: 'music', tint: '#16181D' },
-  lazada: { icon: 'heart', tint: '#4B3FD8' },
-  other: { icon: 'store', tint: '#8FA3B8' },
-};
-
 interface SourceCardProps {
-  source: SellingSource;
+  source: OrderSource;
   label: string;
   checked: boolean;
   onToggle: () => void;
@@ -214,7 +206,6 @@ interface SourceCardProps {
 /** Thẻ chọn nguồn bán có ô tích (chọn nhiều). Cả thẻ là một vùng chạm kiểu checkbox. */
 export function SourceCard({ source, label, checked, onToggle, height }: SourceCardProps) {
   const { colors, radius, spacing } = useTheme();
-  const tile = SOURCE_TILES[source];
   return (
     <Pressable
       testID={`source-${source}`}
@@ -235,9 +226,7 @@ export function SourceCard({ source, label, checked, onToggle, height }: SourceC
         },
       ]}
     >
-      <View style={[styles.sourceTile, { backgroundColor: tile.tint }]}>
-        <Icon name={tile.icon} size={20} color="#FFFFFF" />
-      </View>
+      <SourceIcon source={source} />
       <Text style={styles.sourceLabel} color="ink">
         {label}
       </Text>
@@ -276,13 +265,6 @@ const styles = StyleSheet.create({
   nodeDot: { width: 6, height: 6, borderRadius: 3 },
   progressLine: { flex: 1, height: 4, borderRadius: 2, marginHorizontal: 4 },
   sourceCard: { flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
-  sourceTile: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   sourceLabel: { flex: 1 },
   checkbox: {
     width: 24,

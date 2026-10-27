@@ -5,11 +5,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ErrorCode } from '@/core/errors/codes';
 import { ROUTES } from '@/core/navigation';
+import type { OrderSource } from '@/core/orders/order-source';
 import { getInputResetStyle, getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Text, useTheme } from '@/shared/ui';
 
 import { normalizeSources, SELLING_SOURCES } from '../domain/selling-sources';
-import type { SellingSource } from '../domain/types';
 import {
   normalizeShopName,
   SHOP_NAME_MAX_LENGTH,
@@ -161,7 +161,7 @@ export function CreateShopScreen() {
         )
       : undefined;
 
-  const create = async (sources: readonly SellingSource[]) => {
+  const create = async (sources: readonly OrderSource[]) => {
     if (busyRef.current) return;
     if (nameIssue) {
       setNameTouched(true);

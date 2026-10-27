@@ -62,6 +62,7 @@ export function OrdersListScreen() {
             key={order.id}
             orderCode={order.orderCode}
             sourceLabel={t(`common:sources.${order.source}`)}
+            source={order.source}
             dateLabel={order.dateLabel}
             videoCount={order.videoCount}
             {...(order.status ? { status: order.status } : {})}

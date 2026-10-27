@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { getMinTouchTarget } from '@/platform';
@@ -8,6 +9,8 @@ import { useTheme } from './theme';
 export interface ChipOption<K extends string> {
   key: K;
   label: string;
+  /** Hình nhỏ trang trí trước nhãn (nhãn chữ vẫn luôn có). */
+  leading?: ReactNode;
 }
 
 interface FilterChipsProps<K extends string> {
@@ -48,6 +51,7 @@ export function FilterChips<K extends string>({
               },
             ]}
           >
+            {option.leading}
             <Text bold={selected} style={{ color: selected ? colors.brand : colors.text }}>
               {option.label}
             </Text>
@@ -60,5 +64,5 @@ export function FilterChips<K extends string>({
 
 const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap' },
-  chip: { alignItems: 'center', justifyContent: 'center' },
+  chip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
 });

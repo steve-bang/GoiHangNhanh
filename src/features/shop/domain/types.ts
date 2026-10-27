@@ -1,13 +1,6 @@
 import type { SocialProvider } from '@/core/config/feature-flags';
 import type { OrderSource } from '@/core/orders/order-source';
 
-/**
- * Nguồn bán của shop khi thiết lập (docs/09 UI-A04): cùng tập giá trị với nguồn của đơn. Lưu dưới
- * dạng giá trị enum (shopee | tiktok_shop | lazada | other), KHÔNG lưu chuỗi hiển thị. Do người dùng
- * chọn, không phải dữ liệu xác nhận từ sàn (CLAUDE.md #10).
- */
-export type SellingSource = OrderSource;
-
 /** Tài khoản sau khi máy chủ xác nhận đã tạo. `emailVerified` false là bình thường ở bước này. */
 export interface AuthAccount {
   readonly uid: string;
@@ -38,13 +31,13 @@ export interface CreateShopInput {
   /** Đã bỏ khoảng trắng đầu/cuối, 1-50 ký tự. */
   readonly name: string;
   /** Có thể rỗng (nguồn bán bỏ qua được). Không trùng, theo thứ tự chuẩn. */
-  readonly sellingSources: readonly SellingSource[];
+  readonly sellingSources: readonly OrderSource[];
 }
 
 export interface CreatedShop {
   readonly id: string;
   readonly name: string;
-  readonly sellingSources: readonly SellingSource[];
+  readonly sellingSources: readonly OrderSource[];
 }
 
 /**

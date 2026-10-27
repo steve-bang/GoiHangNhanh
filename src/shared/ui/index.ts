@@ -22,6 +22,7 @@ export { Screen } from './Screen';
 export { ScreenHeader } from './ScreenHeader';
 export { SearchField } from './SearchField';
 export { Skeleton, SkeletonCard } from './Skeleton';
+export { SourceIcon } from './SourceIcon';
 export { SyncStatusBar } from './SyncStatusBar';
 export type { SyncCounts } from './SyncStatusBar';
 export { Text } from './Text';

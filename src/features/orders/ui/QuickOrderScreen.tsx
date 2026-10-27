@@ -10,6 +10,7 @@ import {
   FilterChips,
   QuantityStepper,
   Screen,
+  SourceIcon,
   Text,
   TextField,
   useTheme,
@@ -44,6 +45,7 @@ export function QuickOrderScreen() {
   const sourceOptions: ChipOption<OrderSource>[] = ORDER_SOURCES.map((key) => ({
     key,
     label: t(`common:sources.${key}`),
+    leading: <SourceIcon source={key} size={22} />,
   }));
   const canSave = orderCode.trim().length > 0;
 

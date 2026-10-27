@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
@@ -11,6 +11,7 @@ import {
   FilterChips,
   ProductLineList,
   Screen,
+  SourceIcon,
   Text,
   useTheme,
   type ChipOption,
@@ -72,7 +73,10 @@ export function OrderPreviewScreen() {
             {t('screens:preview.orderCode')}
           </Text>
           <Text variant="screenTitle">{orderCode}</Text>
-          <Text bold>{t(`common:sources.${sourceKey}`)}</Text>
+          <View style={[styles.sourceRow, { gap: spacing.sm }]}>
+            <SourceIcon source={sourceKey} size={24} />
+            <Text bold>{t(`common:sources.${sourceKey}`)}</Text>
+          </View>
           {params.tracking ? (
             <Text color="textMuted">{`${t('screens:preview.trackingCode')}: ${params.tracking}`}</Text>
           ) : null}
@@ -108,3 +112,5 @@ export function OrderPreviewScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({ sourceRow: { flexDirection: 'row', alignItems: 'center' } });

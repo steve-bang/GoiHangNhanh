@@ -1,6 +1,8 @@
+import type { OrderSource } from '@/core/orders/order-source';
+
 import { normalizeSources, toggleSource } from './selling-sources';
 import { SHOP_NAME_MAX_LENGTH } from './validation';
-import type { AuthAccount, CreatedShop, SellingSource } from './types';
+import type { AuthAccount, CreatedShop } from './types';
 
 /**
  * Trạng thái luồng thiết lập (Tạo tài khoản -> Thông tin shop -> Hoàn tất). Chỉ nằm trong bộ nhớ
@@ -12,7 +14,7 @@ export interface OnboardingState {
   /** Có khi máy chủ đã xác nhận tạo tài khoản. */
   readonly account: AuthAccount | null;
   readonly shopName: string;
-  readonly sources: readonly SellingSource[];
+  readonly sources: readonly OrderSource[];
   /** Có khi máy chủ đã xác nhận tạo shop. */
   readonly shop: CreatedShop | null;
 }
@@ -29,7 +31,7 @@ export type OnboardingAction =
   | { type: 'email_changed'; email: string }
   | { type: 'account_created'; account: AuthAccount }
   | { type: 'shop_name_changed'; name: string }
-  | { type: 'source_toggled'; source: SellingSource }
+  | { type: 'source_toggled'; source: OrderSource }
   | { type: 'sources_cleared' }
   | { type: 'shop_created'; shop: CreatedShop }
   | { type: 'reset' };
