@@ -1,5 +1,11 @@
-import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import type { ReactElement, ReactNode } from 'react';
+import {
+  KeyboardAvoidingView,
+  ScrollView,
+  StyleSheet,
+  View,
+  type RefreshControlProps,
+} from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -31,6 +37,8 @@ interface ScreenProps {
   form?: boolean;
   /** Khoảng cách dọc giữa các khối nội dung (mặc định `tokens.space.lg`); màn dày thông tin đặt nhỏ hơn. */
   contentGap?: number;
+  /** Kéo để làm mới (chỉ khi `scroll`). Truyền `<RefreshControl .../>`. */
+  refreshControl?: ReactElement<RefreshControlProps>;
   children: ReactNode;
   testID?: string;
 }
@@ -51,6 +59,7 @@ export function Screen({
   illustrative = false,
   form = false,
   contentGap,
+  refreshControl,
   children,
   testID,
 }: ScreenProps) {
@@ -89,10 +98,12 @@ export function Screen({
       <KeyboardAvoidingView style={styles.flex} behavior={getKeyboardAvoidingBehavior()}>
         {scroll ? (
           <ScrollView
+            {...(testID ? { testID: `${testID}-scroll` } : {})}
             style={styles.flex}
             contentContainerStyle={contentStyle}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
+            {...(refreshControl ? { refreshControl } : {})}
           >
             {content}
           </ScrollView>

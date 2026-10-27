@@ -40,5 +40,34 @@
   "AUTH_RESET_SESSION_EXPIRED": {
     "title": "Phiên xác minh đã hết hạn.",
     "hint": "Bạn cần xác minh lại để đặt mật khẩu mới."
+  },
+  "AUTH_WRONG_CURRENT_PASSWORD": "Mật khẩu hiện tại chưa đúng.",
+  "AUTH_REQUIRES_RECENT_LOGIN": {
+    "title": "Cần đăng nhập lại để xác nhận.",
+    "hint": "Bạn đăng nhập lại rồi thử lại nhé."
+  },
+  "AUTH_SESSION_EXPIRED": {
+    "title": "Phiên đăng nhập đã hết hạn.",
+    "hint": "Bạn đăng nhập lại để tiếp tục nhé."
+  },
+  "AUTH_SIGN_OUT_FAILED": {
+    "title": "Chưa đăng xuất được.",
+    "hint": "Bạn thử lại nhé."
+  },
+  "PROFILE_SAVE_FAILED": {
+    "title": "Chưa cập nhật được thông tin.",
+    "hint": "Bạn thử lại nhé."
+  },
+  "SHOP_SAVE_FAILED": {
+    "title": "Không thể cập nhật cửa hàng lúc này.",
+    "hint": "Bạn thử lại nhé."
+  },
+  "SHOP_SWITCH_FAILED": {
+    "title": "Chưa chuyển được cửa hàng.",
+    "hint": "Bạn thử lại nhé."
+  },
+  "SHOP_PERMISSION_DENIED": {
+    "title": "Bạn chưa có quyền thực hiện thao tác này.",
+    "hint": "Hãy liên hệ chủ cửa hàng."
   }
 }

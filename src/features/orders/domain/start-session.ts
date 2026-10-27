@@ -44,11 +44,23 @@ export function buildPackingSession(
 }
 
 /**
- * Phiên còn đang thực hiện (chưa kết thúc). Hiện chỉ có `created`; thêm trạng thái kết thúc cùng
- * recorder. Nhận `string` vì giá trị đọc từ kho có thể lạ (bản app khác ghi): trạng thái lạ KHÔNG
- * coi là đang thực hiện, để không gắn nhầm "Xác nhận đơn" vào phiên không rõ.
+ * Trạng thái "đang ghi video" của phiên. TÊN TẠM: chưa có recorder nên chưa phiên nào mang trạng thái
+ * này (kiểu `PackingSession.sessionStatus` mới chỉ có `created`); recorder phải đặt tên chính thức và
+ * ghi trạng thái này khi tệp bắt đầu được ghi. Đăng xuất (PER-21) dựa vào đây để chặn khi đang quay.
+ * `created` (đã mở màn quay, chưa ghi tệp) KHÔNG phải đang quay: chưa có dữ liệu video để mất.
  */
-export const isSessionStatusActive = (status: string): boolean => status === 'created';
+export const RECORDING_SESSION_STATUS = 'recording';
+
+export const isSessionStatusRecording = (status: string): boolean =>
+  status === RECORDING_SESSION_STATUS;
+
+/**
+ * Phiên còn đang thực hiện (chưa kết thúc): `created` hoặc đang ghi. Nhận `string` vì giá trị đọc từ
+ * kho có thể lạ (bản app khác ghi): trạng thái lạ KHÔNG coi là đang thực hiện, để không gắn nhầm
+ * "Xác nhận đơn" vào phiên không rõ. Thêm trạng thái kết thúc cùng recorder.
+ */
+export const isSessionStatusActive = (status: string): boolean =>
+  status === 'created' || isSessionStatusRecording(status);
 
 export const isSessionActive = (session: Pick<PackingSession, 'sessionStatus'>): boolean =>
   isSessionStatusActive(session.sessionStatus);

@@ -56,12 +56,21 @@ describe('mọi route của app render được (khung giao diện)', () => {
     const route = routeOf(file as string);
     await renderWithProviders(<Screen />);
 
-    expect(screen.getByTestId(`screen-${route.code}`)).toBeOnTheScreen();
+    // Route con (Q-20k) dùng chung mã UI với route gốc nên testID có thêm đoạn cuối của đường dẫn.
+    const testID = route.parent
+      ? `screen-${route.code}-${route.path.split('/').pop()}`
+      : `screen-${route.code}`;
+    expect(screen.getByTestId(testID)).toBeOnTheScreen();
     // Màn quay là toàn màn hình camera, Splash (UI-A01) và Chào mừng (UI-A02) là màn thương hiệu:
     // không có thanh tiêu đề; các màn còn lại hiện đúng tiêu đề.
     // Riêng Tổng quan (UI-B01) tiêu đề là tên shop (docs/09), tên tab vẫn là "Tổng quan".
     if (route.code === 'UI-B01') {
       expect(screen.getByText(ILLUSTRATIVE_SHOP_NAME)).toBeOnTheScreen();
+    } else if (route.parent) {
+      const key = Object.keys(ROUTES).find((name) => ROUTES[name as keyof typeof ROUTES] === route);
+      expect(
+        screen.getAllByText(nav.subTitles[key as keyof typeof nav.subTitles]).length,
+      ).toBeGreaterThan(0);
     } else if (
       !['UI-C03', 'UI-D04', 'UI-A01', 'UI-A02'].includes(route.code) &&
       // Các màn thiết lập/đăng nhập thật (đăng ký, tạo shop, hoàn tất, đăng nhập, quên mật khẩu) có tiêu đề riêng theo mockup, không phải

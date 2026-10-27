@@ -1,7 +1,9 @@
 // Public API của feature orders. Feature khác chỉ import từ đây (@/features/orders).
 export * from './ui';
 export {
+  CurrentShopProvider,
   OrderStoreProvider,
+  createLocalOrderStore,
   createMemoryOrderStore,
   useCurrentShopId,
   useOrderStore,

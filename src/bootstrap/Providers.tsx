@@ -4,7 +4,13 @@ import { StatusBar } from 'expo-status-bar';
 
 import { initI18n } from '@/core/i18n';
 import { OrderStoreProvider } from '@/features/orders';
+import {
+  PersonalGatewaysProvider,
+  SessionProvider,
+  SessionShopProvider,
+} from '@/features/personal';
 import { OnboardingFlowProvider } from '@/features/shop';
+import { ToastProvider } from '@/shared/ui';
 
 const i18n = initI18n();
 
@@ -17,7 +23,15 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <I18nextProvider i18n={i18n}>
       <StatusBar style="dark" />
       <OnboardingFlowProvider>
-        <OrderStoreProvider>{children}</OrderStoreProvider>
+        <PersonalGatewaysProvider>
+          <SessionProvider>
+            <ToastProvider>
+              <SessionShopProvider>
+                <OrderStoreProvider>{children}</OrderStoreProvider>
+              </SessionShopProvider>
+            </ToastProvider>
+          </SessionProvider>
+        </PersonalGatewaysProvider>
       </OnboardingFlowProvider>
     </I18nextProvider>
   );

@@ -18,9 +18,19 @@ jest.mock(
 const APP_DIR = join(__dirname, '..', '..', 'app');
 const TAB_LABELS = ['Trang chủ', 'Đơn hàng', 'Quét mã đơn hàng', 'Thông báo', 'Cá nhân'] as const;
 
+const isTabBarItem = (element: { props: { testID?: string } }) =>
+  !element.props.testID?.startsWith('menu-');
+
+/** Nút của thanh tab (không phải mục menu `menu-*`), phân biệt với mục menu trùng tên trong màn Cá nhân (ví dụ "Thông báo"). */
+function tabButton(name: string) {
+  const match = screen.getAllByRole('button', { name }).find(isTabBarItem);
+  if (!match) throw new Error(`Không thấy nút tab "${name}"`);
+  return match;
+}
+
 function expectTabBarVisible(visible: boolean) {
   for (const label of TAB_LABELS) {
-    const found = screen.queryAllByRole('button', { name: label });
+    const found = screen.queryAllByRole('button', { name: label }).filter(isTabBarItem);
     expect(found).toHaveLength(visible ? 1 : 0);
   }
 }
@@ -53,7 +63,7 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     ['Cá nhân', 'screen-UI-I01'],
   ])('bấm Quét từ tab %s rồi Back về đúng tab đó (không về Trang chủ)', async (label, testID) => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
-    await fireEvent.press(screen.getByRole('button', { name: label }));
+    await fireEvent.press(tabButton(label));
     expect(screen.getByTestId(testID)).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn hàng' }));
     expect(screen.getByTestId('screen-UI-B02')).toBeOnTheScreen();
@@ -68,7 +78,7 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
 
   it('từ màn quét sang Tạo đơn nhanh rồi Back quay về màn quét; Back tiếp về màn trước khi quét', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
-    await fireEvent.press(screen.getByRole('button', { name: 'Đơn hàng' }));
+    await fireEvent.press(tabButton('Đơn hàng'));
     await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn hàng' }));
     await fireEvent.press(screen.getByTestId('scan-manual-open'));
     await fireEvent.changeText(screen.getByTestId('scan-manual-code'), 'ABC123');
@@ -86,11 +96,11 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
 
   it('chuyển qua lại giữa các tab Đơn hàng, Thông báo, Cá nhân; thanh tab vẫn hiện', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
-    await fireEvent.press(screen.getByRole('button', { name: 'Đơn hàng' }));
+    await fireEvent.press(tabButton('Đơn hàng'));
     expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('button', { name: 'Thông báo' }));
+    await fireEvent.press(tabButton('Thông báo'));
     expect(screen.getByTestId('screen-UI-I07')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('button', { name: 'Cá nhân' }));
+    await fireEvent.press(tabButton('Cá nhân'));
     expect(screen.getByTestId('screen-UI-I01')).toBeOnTheScreen();
     expectTabBarVisible(true);
   });
@@ -99,6 +109,48 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.plan.path });
     expect(screen.getByTestId('screen-UI-H01')).toBeOnTheScreen();
     expectTabBarVisible(true);
+  });
+
+  it('từ Cá nhân vào Sửa họ tên và Đổi mật khẩu (route con UI-I01/UI-I05): thanh tab ẩn trên form, hiện lại khi Back về Cá nhân (Q-20r)', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.profile.path });
+    expectTabBarVisible(true);
+    await fireEvent.press(await screen.findByTestId('profile-summary'));
+    expect(screen.getByTestId('screen-UI-I01-edit-profile')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-I01')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+    await fireEvent.press(screen.getByTestId('change-password-entry'));
+    expect(screen.getByTestId('screen-UI-I05-change-password')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-I01')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+  });
+
+  it('Sửa tên cửa hàng và Chuyển cửa hàng ẩn thanh tab; Cài đặt cửa hàng (màn gốc) vẫn có thanh tab', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.shopSettings.path });
+    expect(screen.getByTestId('screen-UI-I02')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+    await act(async () => {
+      router.push(ROUTES.shopEdit.path);
+    });
+    expect(screen.getByTestId('screen-UI-I02-edit')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-I02')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+    await act(async () => {
+      router.push(ROUTES.shopSwitch.path);
+    });
+    expect(screen.getByTestId('screen-UI-I02-switch')).toBeOnTheScreen();
+    expectTabBarVisible(false);
   });
 
   it('Hàng hoàn và Đồng bộ không còn là tab: mở được nhưng không có thanh tab', async () => {
@@ -132,7 +184,7 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
   describe('luồng Quét -> Tạo đơn -> Xác nhận -> Quay (router thật, kho bộ nhớ)', () => {
     async function scanToQuickOrder(code: string) {
       await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
-      await fireEvent.press(screen.getByRole('button', { name: 'Đơn hàng' }));
+      await fireEvent.press(tabButton('Đơn hàng'));
       await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn hàng' }));
       await fireEvent.press(screen.getByTestId('scan-manual-open'));
       await fireEvent.changeText(screen.getByTestId('scan-manual-code'), code);
@@ -260,7 +312,7 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
 
     async function openOrdersTab() {
       await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
-      await fireEvent.press(screen.getByRole('button', { name: 'Đơn hàng' }));
+      await fireEvent.press(tabButton('Đơn hàng'));
       expect(await screen.findByTestId('orders-empty')).toBeOnTheScreen();
     }
 

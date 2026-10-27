@@ -15,6 +15,11 @@ interface CardProps {
   testID?: string | undefined;
   /** Padding nhỏ (`tokens.space.md`) cho khối thông tin dày của nhóm màn form. */
   compact?: boolean;
+  /**
+   * Không padding: dành cho thẻ chứa các hàng tự lo lề (`ListItem`, `ListGroup`). Tránh lề đôi
+   * (padding thẻ + padding hàng). Bo góc cắt nội dung con để hàng chạm không tràn khỏi viền thẻ.
+   */
+  flush?: boolean;
 }
 
 /** Thẻ: nền sáng, viền mảnh, bo vừa phải, không đổ bóng (docs/09 mục 3). */
@@ -26,6 +31,7 @@ export function Card({
   style,
   testID,
   compact = false,
+  flush = false,
 }: CardProps) {
   const { tokens } = useTheme();
   const background = {
@@ -39,7 +45,8 @@ export function Card({
     borderColor: tokens.color.border.default,
     borderWidth: tokens.borderWidth.thin,
     borderRadius: tokens.radius.md,
-    padding: compact ? tokens.space.md : tokens.space.lg,
+    padding: flush ? 0 : compact ? tokens.space.md : tokens.space.lg,
+    ...(flush ? { overflow: 'hidden' as const } : null),
   } as const;
 
   if (!onPress) {

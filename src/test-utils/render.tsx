@@ -5,7 +5,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initI18n } from '@/core/i18n';
 import { OrderStoreProvider, createMemoryOrderStore, type OrderStore } from '@/features/orders';
+import {
+  PersonalGatewaysProvider,
+  SessionProvider,
+  SessionShopProvider,
+  type PersonalGateways,
+} from '@/features/personal';
 import { OnboardingFlowProvider, type Gateways } from '@/features/shop';
+import { ToastProvider } from '@/shared/ui';
 
 const METRICS = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -18,14 +25,28 @@ const METRICS = {
  */
 export function renderWithProviders(
   ui: ReactElement,
-  options: { gateways?: Gateways; orderStore?: OrderStore } = {},
+  options: {
+    gateways?: Gateways;
+    orderStore?: OrderStore;
+    personalGateways?: PersonalGateways;
+  } = {},
 ) {
   const orderStore = options.orderStore ?? createMemoryOrderStore();
   return render(
     <SafeAreaProvider initialMetrics={METRICS}>
       <I18nextProvider i18n={initI18n()}>
         <OnboardingFlowProvider {...(options.gateways ? { gateways: options.gateways } : {})}>
-          <OrderStoreProvider store={orderStore}>{ui}</OrderStoreProvider>
+          <PersonalGatewaysProvider
+            {...(options.personalGateways ? { gateways: options.personalGateways } : {})}
+          >
+            <SessionProvider>
+              <ToastProvider>
+                <SessionShopProvider>
+                  <OrderStoreProvider store={orderStore}>{ui}</OrderStoreProvider>
+                </SessionShopProvider>
+              </ToastProvider>
+            </SessionProvider>
+          </PersonalGatewaysProvider>
         </OnboardingFlowProvider>
       </I18nextProvider>
     </SafeAreaProvider>,

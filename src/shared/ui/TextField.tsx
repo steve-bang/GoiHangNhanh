@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ComponentProps, type ElementRef, type ReactNode, type Ref } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -13,6 +13,9 @@ import { layout } from '@/core/theme';
 import { Text } from './Text';
 import { useTheme } from './theme';
 
+/** Kiểu tham chiếu của ô nhập (cho `useRef` ở màn biểu mẫu). */
+export type TextFieldInput = ElementRef<typeof TextInput>;
+
 interface TextFieldProps {
   label: string;
   value: string;
@@ -25,12 +28,18 @@ interface TextFieldProps {
   onSubmitEditing?: () => void;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   testID?: string;
+  /** Tham chiếu tới ô nhập để đưa focus vào ô lỗi đầu tiên khi kiểm tra biểu mẫu. */
+  inputRef?: Ref<TextFieldInput>;
   /** Phần tử đặt bên phải trong khung ô (nút quét, nút xóa, mũi tên...). Tự chịu trách nhiệm trợ năng. */
   trailing?: ReactNode;
   onFocus?: () => void;
   onBlur?: () => void;
   /** Cỡ chữ nhỏ cho nhóm màn form/quy trình (nhãn 13sp, nội dung 14sp; mockup 03). */
   compact?: boolean;
+  /** Ẩn nội dung (mật khẩu). Chỉ dùng qua `PasswordField`, nơi có nút Hiện/Ẩn. */
+  secureTextEntry?: boolean;
+  /** Gợi ý trình quản lý mật khẩu của hệ điều hành điền/lưu đúng loại ô. */
+  autoComplete?: 'current-password' | 'new-password' | 'name' | 'email' | 'off';
 }
 
 /** Ô nhập có nhãn luôn hiện (không dùng placeholder thay nhãn). Cao tối thiểu theo vùng chạm. */
@@ -45,10 +54,13 @@ export function TextField({
   onSubmitEditing,
   autoCapitalize = 'none',
   testID,
+  inputRef,
   trailing,
   onFocus,
   onBlur,
   compact = false,
+  secureTextEntry,
+  autoComplete,
 }: TextFieldProps) {
   const { tokens, typography } = useTheme();
   const [focused, setFocused] = useState(false);
@@ -69,6 +81,7 @@ export function TextField({
   } as const;
   const input = (
     <TextInput
+      ref={inputRef as ComponentProps<typeof TextInput>['ref']}
       testID={testID}
       accessibilityLabel={label}
       value={value}
@@ -80,6 +93,8 @@ export function TextField({
       {...(onSubmitEditing ? { onSubmitEditing } : {})}
       autoCapitalize={autoCapitalize}
       autoCorrect={false}
+      {...(secureTextEntry ? { secureTextEntry } : {})}
+      {...(autoComplete ? { autoComplete } : {})}
       onFocus={() => {
         setFocused(true);
         onFocus?.();
