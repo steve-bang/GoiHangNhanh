@@ -171,6 +171,8 @@ describe('UI-C03 màn quay đóng gói (bản thử giao diện)', () => {
     await screen.findByText('Xem trước');
     await fireEvent.press(screen.getByRole('button', { name: 'Rời màn quay' }));
     expect(screen.getByText(/Phiên này chưa ghi video/)).toBeOnTheScreen();
+    expect(screen.getByText(/quay về màn hình đơn/)).toBeOnTheScreen();
+    expect(screen.queryByText(/kiểm tra hàng/)).toBeNull();
     expect(screen.queryByText(/Phần đã ghi/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Ở lại màn quay' })).toBeOnTheScreen();
   });

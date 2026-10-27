@@ -90,6 +90,7 @@ export function PackRecordScreen() {
       badgeLabel={t('screens:record.badge')}
       previewLabel={t('screens:record.previewBadge')}
       {...(RECORDER_ENABLED ? {} : { notice: t('screens:record.notRecording') })}
+      leaveMessage={t('screens:record.packLeavePreview')}
       preview={
         cameraReady && focused ? (
           <CameraPreview

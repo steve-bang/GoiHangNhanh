@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
 import { useAppNavigation } from '@/platform';
+import { RECORDER_ENABLED } from '@/features/packing';
 import { RecordingFrame } from '@/shared/ui';
 
 const PLACEHOLDER_CLOCK = '00:00';
@@ -10,7 +11,7 @@ const PLACEHOLDER_CLOCK = '00:00';
  * UI-D04 Quay video mở kiện (đặc tả B04 + B05). Dùng chung khung với màn quay đóng gói để giảm học,
  * nhưng hướng dẫn khác: quay từ TRƯỚC khi mở niêm phong. Không có thanh tab, rời màn phải qua cảnh
  * báo. KHUNG: chưa có camera và CHƯA GHI video nên huy hiệu là "Xem trước", không "Đang quay"
- * (`recording={false}`; bất biến 3, 11); "kiện đã mở trước khi quay" (ngoại lệ B04) thuộc bước trước
+ * (`recording={RECORDER_ENABLED}`, hiện false; bất biến 3, 11) và có dải "chưa ghi video" như UI-C03; "kiện đã mở trước khi quay" (ngoại lệ B04) thuộc bước trước
  * màn này.
  */
 export function ReturnRecordScreen() {
@@ -24,9 +25,11 @@ export function ReturnRecordScreen() {
       secondaryLabel={t('screens:record.returnCase')}
       clockLabel={PLACEHOLDER_CLOCK}
       guidance={t('screens:record.returnGuidance')}
-      recording={false}
+      recording={RECORDER_ENABLED}
       badgeLabel={t('screens:record.badge')}
       previewLabel={t('screens:record.previewBadge')}
+      {...(RECORDER_ENABLED ? {} : { notice: t('screens:record.notRecording') })}
+      leaveMessage={t('screens:record.returnLeavePreview')}
       onStop={goNext}
       onEndSession={goNext}
     />

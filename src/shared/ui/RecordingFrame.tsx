@@ -42,6 +42,12 @@ interface RecordingFrameProps {
    * cùng huy hiệu cho trình đọc màn hình khi chưa ghi.
    */
   notice?: string;
+  /**
+   * Câu trong hộp thoại rời màn khi CHƯA ghi (`recording=false`); mỗi màn nói đúng đích của mình
+   * ("Kết thúc phiên" đi đâu). Không truyền thì dùng câu trung tính. Khi đang ghi luôn dùng câu
+   * "Phần đã ghi không bị xóa" chung.
+   */
+  leaveMessage?: string;
   /** Có `onToggleTorch` thì hiện nút đèn pin ở bên phải. */
   torch?: boolean;
   onToggleTorch?: () => void;
@@ -70,6 +76,7 @@ export function RecordingFrame({
   badgeLabel,
   previewLabel,
   notice,
+  leaveMessage,
   torch = false,
   onToggleTorch,
   testID,
@@ -251,9 +258,11 @@ export function RecordingFrame({
       <ConfirmDialog
         visible={leaveDialogVisible}
         title={t('common:recording.leave.title')}
-        message={t(
-          recording ? 'common:recording.leave.message' : 'common:recording.leave.messagePreview',
-        )}
+        message={
+          recording
+            ? t('common:recording.leave.message')
+            : (leaveMessage ?? t('common:recording.leave.messagePreview'))
+        }
         confirmLabel={t('common:recording.leave.end')}
         cancelLabel={t(
           recording ? 'common:recording.leave.keep' : 'common:recording.leave.keepPreview',

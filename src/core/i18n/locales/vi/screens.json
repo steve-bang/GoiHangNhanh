@@ -132,6 +132,8 @@
     "package": "Kiện {{index}}",
     "returnCase": "Hồ sơ hoàn",
     "notRecording": "Bản thử giao diện: chưa ghi video",
+    "packLeavePreview": "Phiên này chưa ghi video. Kết thúc phiên để quay về màn hình đơn.",
+    "returnLeavePreview": "Phiên này chưa ghi video. Kết thúc phiên để sang bước kiểm tra hàng.",
     "badge": "Đang quay",
     "previewBadge": "Xem trước",
     "torchOn": "Bật đèn pin",
