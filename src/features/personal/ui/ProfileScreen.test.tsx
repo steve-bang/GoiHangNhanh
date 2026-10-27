@@ -125,20 +125,13 @@ describe('ProfileScreen (UI-I01)', () => {
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.plan);
   });
 
-  it('Đăng xuất chỉ mở hộp thoại; xác nhận KHÔNG gọi cổng và nói rõ chưa dùng được (PR3)', async () => {
+  it('Đăng xuất mở hộp thoại xác nhận; "Ở lại ứng dụng" đóng và không gọi cổng (luồng đầy đủ: SignOut.test.tsx)', async () => {
     const gateways = await renderProfile();
     await fireEvent.press(screen.getByTestId('sign-out'));
-    expect(screen.getByText('Đăng xuất khỏi tài khoản?')).toBeOnTheScreen();
-
-    await fireEvent.press(screen.getByText('Ở lại'));
-    expect(screen.queryByText('Đăng xuất khỏi tài khoản?')).toBeNull();
-
-    await fireEvent.press(screen.getByTestId('sign-out'));
-    const confirm = screen.getAllByText('Đăng xuất').at(-1);
-    if (!confirm) throw new Error('Không thấy nút xác nhận');
-    await fireEvent.press(confirm);
+    expect(screen.getByText('Bạn muốn đăng xuất?')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText('Ở lại ứng dụng'));
+    expect(screen.queryByText('Bạn muốn đăng xuất?')).toBeNull();
     expect(gateways.account.signOutCalls).toBe(0);
-    expect(screen.getByText(/Đăng xuất chưa dùng được ở bản này/)).toBeOnTheScreen();
   });
 
   it('đổi phiên (tài khoản khác): bỏ dữ liệu cũ và tải lại, không rò sang phiên mới', async () => {

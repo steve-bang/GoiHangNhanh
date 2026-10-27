@@ -52,11 +52,17 @@
   },
   "signOut": {
     "action": "Đăng xuất",
-    "dialogTitle": "Đăng xuất khỏi tài khoản?",
-    "dialogMessage": "Bạn sẽ cần đăng nhập lại để dùng tiếp.",
+    "dialogTitle": "Bạn muốn đăng xuất?",
+    "dialogMessage": "Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng Đơn Chứng.",
+    "dataNote": "Video và dữ liệu đã lưu trên máy này vẫn được giữ lại, không bị xóa.",
     "confirm": "Đăng xuất",
-    "cancel": "Ở lại",
-    "notReady": "Đăng xuất chưa dùng được ở bản này. Bản cập nhật sau sẽ có."
+    "cancel": "Ở lại ứng dụng",
+    "success": "Bạn đã đăng xuất thành công.",
+    "recordingTitle": "Đang quay video",
+    "recordingMessage": "Hãy kết thúc phiên quay trước khi đăng xuất để không mất video đang ghi.",
+    "unsyncedTitle": "Còn video chưa lưu lên máy chủ",
+    "unsyncedMessage": "Còn {{count}} tệp bằng chứng trên máy chưa được máy chủ xác nhận. Hãy đồng bộ xong rồi đăng xuất.",
+    "openSync": "Xem trung tâm đồng bộ"
   },
   "editProfile": {
     "save": "Lưu",

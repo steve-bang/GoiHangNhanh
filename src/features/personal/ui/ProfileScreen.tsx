@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -6,6 +6,8 @@ import { resolveErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES, type RouteDef } from '@/core/navigation';
 import { useAppNavigation, useIsOffline } from '@/platform';
 import {
+  BottomSheet,
+  Button,
   Card,
   ConfirmDialog,
   ErrorState,
@@ -15,13 +17,13 @@ import {
   StatusBadge,
   Text,
   useTheme,
-  useToast,
   type IconName,
 } from '@/shared/ui';
 
 import { usePersonalGateways } from './PersonalGatewaysProvider';
 import { ProfileSummaryCard } from './ProfileSummaryCard';
 import { useSession } from './SessionProvider';
+import { useSignOut } from './use-sign-out';
 import { useRegion, type Region } from './use-region';
 
 interface MenuItem {
@@ -88,11 +90,10 @@ export function ProfileScreen() {
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const navigation = useAppNavigation();
-  const toast = useToast();
   const offline = useIsOffline();
   const { account } = usePersonalGateways();
   const session = useSession();
-  const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const signOut = useSignOut();
 
   const profile = useRegion(() => account.getProfile(), session.key);
   const shop = useRegion(() => account.getShopSummary(), session.key);
@@ -207,26 +208,46 @@ export function ProfileScreen() {
         <ListItem
           destructive
           title={t('personal:signOut.action')}
-          onPress={() => setConfirmSignOut(true)}
+          onPress={signOut.start}
           showChevron={false}
           testID="sign-out"
         />
       </View>
 
-      {/* PR2: chỉ mở hộp thoại. Đăng xuất an toàn (đếm tệp chưa đồng bộ, xả state) là PR3. */}
+      {/* PER-21. UI-J15 (còn tệp chưa đồng bộ) chưa có mã/route nên là BottomSheet tại chỗ (Q-19b). */}
       <ConfirmDialog
-        visible={confirmSignOut}
+        visible={signOut.step === 'confirm'}
         destructive
         title={t('personal:signOut.dialogTitle')}
-        message={t('personal:signOut.dialogMessage')}
+        message={`${t('personal:signOut.dialogMessage')} ${t('personal:signOut.dataNote')}`}
         confirmLabel={t('personal:signOut.confirm')}
         cancelLabel={t('personal:signOut.cancel')}
-        onCancel={() => setConfirmSignOut(false)}
-        onConfirm={() => {
-          setConfirmSignOut(false);
-          toast.show(t('personal:signOut.notReady'));
-        }}
+        onCancel={signOut.dismiss}
+        onConfirm={() => void signOut.confirm()}
       />
+      <BottomSheet
+        visible={signOut.step === 'blocked_recording'}
+        onClose={signOut.dismiss}
+        title={t('personal:signOut.recordingTitle')}
+      >
+        <Text testID="sign-out-recording">{t('personal:signOut.recordingMessage')}</Text>
+      </BottomSheet>
+      <BottomSheet
+        visible={signOut.step === 'unsynced'}
+        onClose={signOut.dismiss}
+        title={t('personal:signOut.unsyncedTitle')}
+      >
+        <View style={{ gap: tokens.space.md }}>
+          <Text testID="sign-out-unsynced">
+            {t('personal:signOut.unsyncedMessage', { count: signOut.unsyncedCount })}
+          </Text>
+          <Button
+            label={t('personal:signOut.openSync')}
+            onPress={signOut.openSyncCenter}
+            testID="sign-out-open-sync"
+          />
+        </View>
+      </BottomSheet>
     </Screen>
   );
 }
