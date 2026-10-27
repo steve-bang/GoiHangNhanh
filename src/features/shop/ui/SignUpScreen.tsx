@@ -109,6 +109,9 @@ export function SignUpScreen() {
     state.account !== null &&
     normalizeEmail(state.account.email).toLowerCase() === normalizeEmail(state.email).toLowerCase();
 
+  // Ô chỉ đọc khi đã tạo xong hoặc đang chờ cổng: không đổi email/mật khẩu giữa lúc đã gửi đi.
+  const readOnly = locked || busy;
+
   const emailIssue = validateEmail(state.email);
   const passwordIssue = validatePassword(password);
   const emailError =
@@ -180,6 +183,8 @@ export function SignUpScreen() {
     runGateway(async (isActive) => {
       const account = await gateways.auth.signUpWithEmail({ email, password });
       // Tài khoản đã tạo trên máy chủ: ghi nhận dù người dùng đã rời màn, nhưng không điều hướng thay họ.
+      // Email trong luồng luôn là email ĐÃ GỬI (không phải giá trị đang gõ) để màn khóa đúng và không tạo lần hai.
+      dispatch({ type: 'email_changed', email });
       dispatch({ type: 'account_created', account });
       if (!isActive()) return;
       navigation.push(ROUTES.createShop);
@@ -218,7 +223,7 @@ export function SignUpScreen() {
           height={layout.fieldHeight}
           value={state.email}
           onChangeText={(email) => {
-            if (locked) return;
+            if (readOnly) return;
             setTouched((prev) => ({ ...prev, email: true }));
             setFormError(null);
             setFieldError((prev) => (prev === 'AUTH_EMAIL_IN_USE' ? null : prev));
@@ -244,7 +249,7 @@ export function SignUpScreen() {
             returnKeyType: 'next',
             onSubmitEditing: () => passwordRef.current?.focus(),
             blurOnSubmit: false,
-            ...(locked ? { editable: false, accessibilityState: { disabled: true } } : {}),
+            ...(readOnly ? { editable: false, accessibilityState: { disabled: true } } : {}),
           }}
         />
         <IconField
@@ -255,7 +260,7 @@ export function SignUpScreen() {
           height={layout.fieldHeight}
           value={locked ? LOCKED_PASSWORD_MASK : password}
           onChangeText={(value) => {
-            if (locked) return;
+            if (readOnly) return;
             setTouched((prev) => ({ ...prev, password: true }));
             setFormError(null);
             setFieldError((prev) => (prev === 'AUTH_WEAK_PASSWORD' ? null : prev));
@@ -271,7 +276,7 @@ export function SignUpScreen() {
             passwordRules: 'minlength: 8;',
             returnKeyType: 'go',
             onSubmitEditing: submit,
-            ...(locked ? { editable: false, accessibilityState: { disabled: true } } : {}),
+            ...(readOnly ? { editable: false, accessibilityState: { disabled: true } } : {}),
           }}
           accessory={
             locked ? undefined : (

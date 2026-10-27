@@ -111,6 +111,8 @@ export function SignInScreen() {
       // Đã rời màn (Back/đi chỗ khác) trong lúc chờ: không điều hướng thay người dùng.
       if (!isActive()) return;
       if (account.hasShop) {
+        // Rời luồng thiết lập: xóa dữ liệu của tài khoản trước (nếu có) khỏi bộ nhớ luồng.
+        dispatch({ type: 'reset' });
         navigation.reset(ROUTES.home);
       } else {
         // Đã có tài khoản nhưng chưa có shop: đi tiếp bước tạo shop (cùng luồng với đăng ký).

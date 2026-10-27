@@ -161,19 +161,21 @@ export function CreateShopScreen() {
     }
     const name = normalizeShopName(state.shopName);
     const sellingSources = normalizeSources(sources);
-    const existing = state.shop;
+    // Chỉ dùng shop do CHÍNH tài khoản hiện tại tạo; shop của tài khoản khác không bao giờ được cập nhật.
+    const ownerUid = state.account?.uid ?? null;
+    const existing = state.shop !== null && state.shopOwnerUid === ownerUid ? state.shop : null;
     void run(async (isActive) => {
       if (existing === null) {
         const shop = await gateways.shop.createShop({ name, sellingSources });
         // Máy chủ đã tạo shop: luôn ghi nhận ID để không bao giờ tạo shop thứ hai trong luồng này.
-        dispatch({ type: 'shop_created', shop });
+        dispatch({ type: 'shop_created', shop, ownerUid });
       } else if (
         existing.name !== name ||
         existing.sellingSources.join() !== sellingSources.join()
       ) {
         // Đã có shop (quay lại từ bước sau) và người dùng đã sửa: cập nhật, không tạo mới.
         const shop = await gateways.shop.updateShop({ shopId: existing.id, name, sellingSources });
-        dispatch({ type: 'shop_created', shop });
+        dispatch({ type: 'shop_created', shop, ownerUid });
       }
       if (!isActive()) return;
       navigation.push(ROUTES.setupDone);

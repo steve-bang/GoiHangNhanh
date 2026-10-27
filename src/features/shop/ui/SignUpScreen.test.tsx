@@ -252,6 +252,54 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
     expect(submitButton().props.accessibilityState).toMatchObject({ disabled: false });
   });
 
+  it('đang chờ cổng: ô Email và Mật khẩu không sửa được; đổi email giữa lúc chờ không dẫn tới lần đăng ký thứ hai', async () => {
+    const { gateways, signUpWithEmail, resolve } = pendingGateways();
+    await renderWithProviders(<SignUpScreen />, { gateways });
+    await fill(VALID_EMAIL, VALID_PASSWORD);
+    await fireEvent.press(submitButton());
+    expect(screen.getByTestId('signup-email').props.editable).toBe(false);
+    expect(screen.getByTestId('signup-password').props.editable).toBe(false);
+    await fireEvent.changeText(screen.getByTestId('signup-email'), 'khac@example.com');
+    await fireEvent.changeText(screen.getByTestId('signup-password'), 'mat-khau-khac-1');
+    expect(screen.getByTestId('signup-email').props.value).toBe(VALID_EMAIL);
+    await fireEvent.press(submitButton());
+    await act(async () => {
+      resolve({ uid: 'u1', email: VALID_EMAIL, emailVerified: false });
+    });
+    // xong: ô bị khóa với email ĐÃ GỬI; bấm tiếp chỉ đi bước sau, không gọi cổng lần hai
+    expect(screen.getByTestId('signup-email').props.value).toBe(VALID_EMAIL);
+    await fireEvent.press(submitButton());
+    expect(signUpWithEmail).toHaveBeenCalledTimes(1);
+    expect(signUpWithEmail).toHaveBeenCalledWith({ email: VALID_EMAIL, password: VALID_PASSWORD });
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.createShop);
+  });
+
+  it('rời màn rồi quay lại, đổi email trong lúc lần gửi cũ còn chờ: kết quả đến thì khóa theo email ĐÃ GỬI, không tạo tài khoản thứ hai', async () => {
+    const { gateways, signUpWithEmail, resolve } = pendingGateways();
+    function Harness() {
+      const [shown, setShown] = useState(true);
+      return (
+        <>
+          <Pressable testID="toggle" onPress={() => setShown((prev) => !prev)} />
+          {shown ? <SignUpScreen /> : null}
+        </>
+      );
+    }
+    await renderWithProviders(<Harness />, { gateways });
+    await fill(VALID_EMAIL, VALID_PASSWORD);
+    await fireEvent.press(submitButton());
+    await fireEvent.press(screen.getByTestId('toggle'));
+    await fireEvent.press(screen.getByTestId('toggle'));
+    await fireEvent.changeText(screen.getByTestId('signup-email'), 'khac@example.com');
+    await act(async () => {
+      resolve({ uid: 'u1', email: VALID_EMAIL, emailVerified: false });
+    });
+    expect(screen.getByTestId('signup-email').props.value).toBe(VALID_EMAIL);
+    await fireEvent.press(submitButton());
+    expect(signUpWithEmail).toHaveBeenCalledTimes(1);
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.createShop);
+  });
+
   it('lỗi mạng: khung phía trên nút chính, câu đầu in đậm, có Thử lại; giữ nguyên giá trị đã nhập', async () => {
     const fake = createFakeGateways();
     await renderWithProviders(<SignUpScreen />, { gateways: fake });

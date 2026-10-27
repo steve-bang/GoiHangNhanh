@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, within } from '@testing-library/react-native';
-import { Text, useWindowDimensions } from 'react-native';
+import { useState } from 'react';
+import { Pressable, Text, useWindowDimensions } from 'react-native';
 
 import { resources } from '@/core/i18n/resources';
 import { ROUTES } from '@/core/navigation';
@@ -12,6 +13,7 @@ import type { Gateways } from '../domain/types';
 import { NewPasswordScreen } from './NewPasswordScreen';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import { WithRecoveryState } from './recovery-test-harness';
+import { SignInScreen } from './SignInScreen';
 
 jest.mock(
   '@/platform/navigation',
@@ -264,6 +266,60 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
     expect(mockNavigation.replace).not.toHaveBeenCalled();
     expect(mockNavigation.push).not.toHaveBeenCalled();
     expect(screen.getByTestId('probe-ticket')).toHaveTextContent('(không)');
+  });
+
+  it('kết quả đến muộn sau khi đã rời màn: banner "đã đặt lại" + email điền sẵn vẫn được ghi, hiện MỘT lần ở lần mở Đăng nhập kế tiếp (chủ ý, không toast)', async () => {
+    let resolve: () => void = () => undefined;
+    const resetPassword = jest.fn(
+      () =>
+        new Promise<void>((r) => {
+          resolve = r;
+        }),
+    );
+    const gateways: Gateways = {
+      auth: { ...createUnavailableGateways().auth, resetPassword },
+      shop: createFakeGateways().shop,
+    };
+    function Harness() {
+      const [screenName, setScreenName] = useState<'new' | 'signIn' | 'none'>('new');
+      return (
+        <>
+          <RecoveryProbe />
+          <Pressable testID="to-none" onPress={() => setScreenName('none')} />
+          <Pressable testID="to-signin" onPress={() => setScreenName('signIn')} />
+          {screenName === 'new' ? (
+            <WithRecoveryState
+              actions={() => [
+                { type: 'code_requested', email: FAKE_DEMO_EMAIL, resendAvailableAt: 0 },
+                { type: 'code_verified', ticket: 'fake-ticket-1', ticketExpiresAt: null },
+              ]}
+            >
+              <NewPasswordScreen />
+            </WithRecoveryState>
+          ) : null}
+          {screenName === 'signIn' ? <SignInScreen /> : null}
+        </>
+      );
+    }
+    await renderWithProviders(<Harness />, { gateways });
+    await fill(NEW_PASSWORD, NEW_PASSWORD);
+    await fireEvent.press(submit());
+    // người dùng Back về Quên mật khẩu (màn Mật khẩu mới bị gỡ) trong lúc chờ
+    await fireEvent.press(screen.getByTestId('to-none'));
+    mockNavigation.screenActive = false;
+    await act(async () => resolve());
+    mockNavigation.screenActive = true;
+    expect(mockNavigation.reset).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('signin-reset-success')).toBeNull();
+    expect(screen.getByTestId('probe-notice')).toHaveTextContent('true');
+    expect(screen.getByTestId('probe-signin-email')).toHaveTextContent(FAKE_DEMO_EMAIL);
+    expect(screen.getByTestId('probe-ticket')).toHaveTextContent('(không)');
+    // lần mở Đăng nhập kế tiếp: hiện banner + email điền sẵn, rồi xóa cờ (một lần)
+    await fireEvent.press(screen.getByTestId('to-signin'));
+    expect(screen.getByTestId('signin-reset-success')).toBeOnTheScreen();
+    expect(screen.getByTestId('signin-email').props.value).toBe(FAKE_DEMO_EMAIL);
+    expect(screen.getByTestId('probe-notice')).toHaveTextContent('false');
+    expect(screen.getByTestId('probe-signin-email')).toHaveTextContent('(không)');
   });
 
   it('đang xử lý: nút có vòng xoay/khóa; bấm đúp chỉ gọi cổng một lần', async () => {

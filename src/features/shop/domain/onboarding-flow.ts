@@ -17,6 +17,11 @@ export interface OnboardingState {
   readonly sources: readonly OrderSource[];
   /** Có khi máy chủ đã xác nhận tạo shop. */
   readonly shop: CreatedShop | null;
+  /**
+   * `uid` của tài khoản đã tạo `shop` (null: chưa có tài khoản lúc ghi nhận). Shop, tên shop và
+   * nguồn bán chỉ thuộc về tài khoản này: đổi tài khoản thì xóa (bất biến #8, cô lập theo shop).
+   */
+  readonly shopOwnerUid: string | null;
 }
 
 export const INITIAL_ONBOARDING_STATE: OnboardingState = {
@@ -25,6 +30,7 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   shopName: '',
   sources: [],
   shop: null,
+  shopOwnerUid: null,
 };
 
 export type OnboardingAction =
@@ -33,8 +39,17 @@ export type OnboardingAction =
   | { type: 'shop_name_changed'; name: string }
   | { type: 'source_toggled'; source: OrderSource }
   | { type: 'sources_cleared' }
-  | { type: 'shop_created'; shop: CreatedShop }
+  /**
+   * `ownerUid`: tài khoản đã gọi cổng tạo/cập nhật (chụp lúc bắt đầu gọi). Kết quả đến muộn khi luồng
+   * đã chuyển sang tài khoản khác thì bị bỏ qua. Không truyền = tài khoản hiện tại.
+   */
+  | { type: 'shop_created'; shop: CreatedShop; ownerUid?: string | null }
   | { type: 'reset' };
+
+/** Xóa mọi dữ liệu gắn với một tài khoản trước đó (shop, tên shop, nguồn bán). */
+function clearShopData(state: OnboardingState): OnboardingState {
+  return { ...state, shopName: '', sources: [], shop: null, shopOwnerUid: null };
+}
 
 export function onboardingReducer(
   state: OnboardingState,
@@ -43,8 +58,14 @@ export function onboardingReducer(
   switch (action.type) {
     case 'email_changed':
       return { ...state, email: action.email };
-    case 'account_created':
-      return { ...state, account: action.account };
+    case 'account_created': {
+      // Tài khoản khác với tài khoản đang giữ dữ liệu shop: không để rò sang tài khoản mới.
+      const uid = action.account.uid;
+      const foreign =
+        (state.account !== null && state.account.uid !== uid) ||
+        (state.shop !== null && state.shopOwnerUid !== uid);
+      return { ...(foreign ? clearShopData(state) : state), account: action.account };
+    }
     case 'shop_name_changed':
       return {
         ...state,
@@ -54,8 +75,17 @@ export function onboardingReducer(
       return { ...state, sources: toggleSource(state.sources, action.source) };
     case 'sources_cleared':
       return { ...state, sources: [] };
-    case 'shop_created':
-      return { ...state, shop: action.shop, sources: normalizeSources(action.shop.sellingSources) };
+    case 'shop_created': {
+      const current = state.account?.uid ?? null;
+      const owner = action.ownerUid === undefined ? current : action.ownerUid;
+      if (owner !== current) return state;
+      return {
+        ...state,
+        shop: action.shop,
+        shopOwnerUid: owner,
+        sources: normalizeSources(action.shop.sellingSources),
+      };
+    }
     case 'reset':
       return INITIAL_ONBOARDING_STATE;
   }
