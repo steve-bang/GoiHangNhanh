@@ -4,6 +4,7 @@ export { ChangePasswordScreen } from './ui/ChangePasswordScreen';
 export { EditProfileScreen } from './ui/EditProfileScreen';
 export { ProfileScreen } from './ui/ProfileScreen';
 export { SessionHydrator } from './ui/SessionHydrator';
+export { SessionShopProvider } from './ui/SessionShopProvider';
 export { SessionProvider, useSession } from './ui/SessionProvider';
 export type { SessionContextValue } from './ui/SessionProvider';
 export { INITIAL_SESSION, sessionKey } from './domain/session-state';

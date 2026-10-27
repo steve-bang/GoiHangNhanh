@@ -8,6 +8,7 @@ import { OrderStoreProvider, createMemoryOrderStore, type OrderStore } from '@/f
 import {
   PersonalGatewaysProvider,
   SessionProvider,
+  SessionShopProvider,
   type PersonalGateways,
 } from '@/features/personal';
 import { OnboardingFlowProvider, type Gateways } from '@/features/shop';
@@ -40,7 +41,9 @@ export function renderWithProviders(
           >
             <SessionProvider>
               <ToastProvider>
-                <OrderStoreProvider store={orderStore}>{ui}</OrderStoreProvider>
+                <SessionShopProvider>
+                  <OrderStoreProvider store={orderStore}>{ui}</OrderStoreProvider>
+                </SessionShopProvider>
               </ToastProvider>
             </SessionProvider>
           </PersonalGatewaysProvider>
