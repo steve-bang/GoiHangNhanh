@@ -1,8 +1,15 @@
-# Cloud Functions (chưa có mã)
+# Cloud Functions
 
-Thư mục dành cho Cloud Functions (TypeScript). Chỉ tạo mã cùng tính năng cần nó, kèm test hợp
-đồng (xem `docs/engineering/testing.md`). Danh sách chức năng dự kiến và lý do:
-`docs/engineering/architecture.md`, mục "Bước chạy phía máy chủ".
+TypeScript, region `asia-southeast1` (Singapore, Q-08). Phần MÁY CHỦ của hiện thực Firebase (`src/api/firebase`
+ở app); đổi backend thì phần này làm lại riêng.
 
-Khi thêm mã: tạo `package.json` riêng cho `functions/`, thêm khối `"functions"` vào
-`firebase/firebase.json`, và thêm Functions emulator vào script `test:rules`/CI nếu cần.
+| Function                | Việc                                                                                                                    |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `createShop` (callable) | Tạo shop + thành viên `owner` + chỉ mục `userShops/{uid}` + kiểm toán, trong MỘT transaction; idempotent theo tài khoản |
+| `updateShop` (callable) | Sửa tên/nguồn bán; chỉ thành viên `owner`/`manager` đang hoạt động; ghi kiểm toán trước/sau                             |
+
+Logic nằm ở `src/shop.ts` (nhận `Firestore`, test được trên emulator); `src/index.ts` chỉ nối callable.
+
+- Cài: `npm --prefix firebase/functions ci`. Build: `npm --prefix firebase/functions run build`.
+- Test: `npm run test:rules` (cùng Firestore Emulator; test ở `firebase/tests/functions/`).
+- Deploy lên dự án dev (`firebase/.firebaserc`, alias `dev`): `npx firebase deploy --config firebase/firebase.json --only functions,firestore:rules --project dev` (cần `firebase login` và gói Blaze).

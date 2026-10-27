@@ -43,3 +43,7 @@ service-account*.json
 *.log
 *.tsbuildinfo
 npm-debug.log*
+
+# Cấu hình Firebase của app (không commit; xem app.config.js)
+GoogleService-Info.plist
+google-services.json

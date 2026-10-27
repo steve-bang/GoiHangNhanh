@@ -12,15 +12,39 @@ describe('chọn cổng theo môi trường', () => {
   });
 
   it.each([undefined, '', '0', 'true', 'yes'])(
-    'bản build thường (cờ = %p) là "chưa kết nối"',
+    'bản build thường (cờ giả = %p) dùng Firebase thật',
     (flag) => {
-      expect(resolveBackendMode({ isDev: false, isTest: false, fakeFlag: flag })).toBe(
-        'unavailable',
-      );
+      expect(resolveBackendMode({ isDev: false, isTest: false, fakeFlag: flag })).toBe('firebase');
     },
   );
 
-  it('bản build thường: nhà máy trả cổng chưa kết nối, không báo thành công', async () => {
+  it('thứ tự ưu tiên: test > cờ giả > EXPO_PUBLIC_BACKEND/emulator > __DEV__', () => {
+    const base = { isDev: true, isTest: false, fakeFlag: undefined };
+    expect(resolveBackendMode({ ...base, isTest: true, backend: 'firebase' })).toBe('fake');
+    expect(resolveBackendMode({ ...base, isDev: false, fakeFlag: '1', backend: 'firebase' })).toBe(
+      'fake',
+    );
+    expect(resolveBackendMode({ ...base, backend: 'fake', isDev: false })).toBe('fake');
+    expect(resolveBackendMode({ ...base, backend: 'firebase' })).toBe('firebase');
+    expect(resolveBackendMode({ ...base, emulatorHost: 'localhost' })).toBe('firebase');
+    expect(resolveBackendMode(base)).toBe('fake');
+  });
+
+  it('chế độ Firebase: dùng hiện thực Firebase khi tạo được', () => {
+    const firebaseApi = createFakeApi();
+    const api = createApi({ isDev: false, isTest: false, fakeFlag: undefined }, () => firebaseApi);
+    expect(api).toBe(firebaseApi);
+  });
+
+  it('chế độ Firebase nhưng thiếu cấu hình/SDK: rơi về "chưa kết nối", không giả vờ thành công', async () => {
+    const api = createApi({ isDev: false, isTest: false, fakeFlag: undefined }, () => null);
+    await expect(api.session.restore()).rejects.toMatchObject({ code: 'AUTH_SERVICE_UNAVAILABLE' });
+    await expect(api.shop.createShop({ name: 'S', sellingSources: [] })).rejects.toMatchObject({
+      code: 'AUTH_SERVICE_UNAVAILABLE',
+    });
+  });
+
+  it('bản build thường không nạp được SDK (Jest không có mô-đun native): chưa kết nối', async () => {
     const gateways = createApi({ isDev: false, isTest: false, fakeFlag: undefined });
     await expect(
       gateways.auth.signUpWithEmail({ email: 'a@b.co', password: 'matkhau123' }),

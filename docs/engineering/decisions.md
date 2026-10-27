@@ -373,3 +373,15 @@ Người dùng duyệt bắt đầu P1 của kế hoạch tab Đơn hàng với 
 6. Xác minh SHA-256 phía máy chủ cho video lớn bị giới hạn thời gian/chi phí Function.
 7. Phiên bản mới nhất của một số công cụ (ESLint 10, TypeScript 7) chưa tương thích hệ sinh thái Expo; đã chọn bản tương thích.
 8. Khung giao diện chỉ mới kiểm chứng bằng Jest/router trong bộ nhớ và `expo export`; **chưa chạy trên máy ảo/thiết bị**. Cần xem: tràn viền Android (khoảng trống khi hiện bàn phím, `KeyboardAvoidingView` ở `src/platform/layout.ts`), vùng an toàn, Back phần cứng/cử chỉ ở màn quay, font scale lớn, tải font icon lần đầu.
+
+
+### Q-19 — Nối Firebase thật cho Auth/Shop/Session (lớp `src/api`, `api/firebase`)
+Trạng thái: **đã viết, qua test trên emulator và test hợp đồng với SDK mô phỏng; CHƯA chạy trên thiết bị, CHƯA deploy lên `ghn-test-67b39`, ADR-002 (RNFirebase) CHƯA được spike S4/S6 xác nhận.**
+| # | Nội dung | Ghi chú |
+|---|---|---|
+| a | **Lớp API.** `src/api/contract` (hợp đồng `ApiClient`), `fake`, `unavailable`, `firebase`, `create-api.ts` chọn hiện thực, `contract-tests` chạy cho mọi hiện thực. SDK Firebase chỉ được import trong `src/api/firebase` (ESLint). Đổi backend phía app = thêm `api/<backend>/` + đổi `create-api.ts`; `firebase/` (Rules, Functions) là phần máy chủ phải làm lại riêng | Lỗi vẫn là `AppError` mã `AUTH_*`; `api/firebase/error-map.ts` dịch mã SDK |
+| b | **Chọn backend.** Test = giả; `__DEV__` = giả; bản build thường = Firebase; thiếu cấu hình hoặc SDK không khởi tạo được = "chưa kết nối" (không báo thành công giả). `EXPO_PUBLIC_BACKEND`, `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` | Hệ quả: bản build thường trước đây luôn vào Chào mừng, nay thử nối Firebase thật |
+| c | **`userShops/{uid}`** (chỉ Function ghi, chủ tài khoản chỉ đọc) cho biết tài khoản đã có shop chưa, thay custom claims (ADR-005, O-03). Mới hỗ trợ một shop mỗi tài khoản | Khi O-03 chốt nhiều shop phải đổi lược đồ |
+| d | **`createShop` idempotent theo tài khoản** (transaction trên `userShops`), `updateShop` chỉ owner/manager đang hoạt động, cả hai ghi `auditEvents`; vùng Singapore `asia-southeast1` (Q-08) | Test: `firebase/tests/functions/shop.test.ts`, `firebase/tests/rules` |
+| e | **Khôi phục phiên không chờ mạng**: `onAuthStateChanged` lần đầu + `userShops` từ bộ nhớ đệm. **Giới hạn:** đã đăng nhập nhưng chưa có `userShops` trong bộ nhớ đệm và đang offline thì `restore` lỗi và Splash coi như chưa đăng nhập (Q-15) | Cần kiểm chứng trên thiết bị |
+| f | **Chưa làm:** đăng nhập Apple/Google (O-15), khôi phục mật khẩu qua OTP (O-22, chọn nhà cung cấp email), App Check (ADR-009), tắt "Email enumeration protection" cần đúng cho thông báo email đã dùng (Q-13 g2), môi trường staging/prod | Các hàm tương ứng trả `AUTH_SERVICE_UNAVAILABLE` |

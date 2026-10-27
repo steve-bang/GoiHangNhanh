@@ -520,3 +520,35 @@ function validEvidence(uid: string) {
     createdBy: uid,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Chỉ mục userShops: chỉ chủ tài khoản đọc, không client nào ghi
+// ---------------------------------------------------------------------------
+
+describe('userShops', () => {
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `userShops/${USERS.ownerA}`), { shopId: SHOP_A });
+    });
+  });
+
+  it('chủ tài khoản đọc được bản của mình', async () => {
+    await assertSucceeds(getDoc(doc(as(USERS.ownerA), `userShops/${USERS.ownerA}`)));
+  });
+
+  it('người khác và người chưa đăng nhập không đọc được', async () => {
+    await assertFails(getDoc(doc(as(USERS.ownerB), `userShops/${USERS.ownerA}`)));
+    await assertFails(getDoc(doc(anon(), `userShops/${USERS.ownerA}`)));
+  });
+
+  it('không liệt kê được và không client nào ghi/xóa được, kể cả chủ tài khoản', async () => {
+    await assertFails(getDocs(collection(as(USERS.ownerA), 'userShops')));
+    await assertFails(
+      setDoc(doc(as(USERS.ownerA), `userShops/${USERS.ownerA}`), { shopId: SHOP_B }),
+    );
+    await assertFails(
+      setDoc(doc(as(USERS.stranger), `userShops/${USERS.stranger}`), { shopId: SHOP_A }),
+    );
+    await assertFails(deleteDoc(doc(as(USERS.ownerA), `userShops/${USERS.ownerA}`)));
+  });
+});
