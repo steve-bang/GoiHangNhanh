@@ -68,7 +68,7 @@ Toàn app có nhiều hardcode hơn rất nhiều, nhưng phần lớn nằm ở
 | `fontWeight` bằng chữ | 2 | `Text` (`'700'` cho `bold`), `RecordingFrame` (`'400'`) |
 | `fontSize` / `lineHeight` bằng số | **0** | Mọi cỡ chữ đã đi qua `typography` |
 | `opacity` bằng số | ~3 | `0.85` (nhấn), `0.45` (vô hiệu), `0.8` (đang xử lý) viết trực tiếp trong `Button`/`Card` |
-| Kích thước `Icon` (`size={n}`) | 43 (lúc audit, quét gần đúng; số đếm lại sau gộp `main`: 48 chỗ, 13 cỡ, xem [báo cáo](design-token-migration-report.md) mục 5) | Chưa có thang cỡ biểu tượng |
+| Kích thước `Icon` (`size={n}`) | 43 (lúc audit, quét gần đúng; số đếm lại sau gộp `main`: 44 chỗ `<Icon>`, 13 cỡ, xem [báo cáo](design-token-migration-report.md) mục 5) | Chưa có thang cỡ biểu tượng |
 | Style inline `style={{…}}` | 72 | Phần lớn **đã dùng token** (`color: colors.x`, `gap: spacing.x`) hoặc là giá trị động; không phải vi phạm |
 
 Kết luận: **mã trong phạm vi đã khá kỷ luật** (cỡ chữ 100% qua token; màu gần như 100% qua `useTheme`). Vấn đề chính **không phải rải rác hardcode** mà là: (a) thiếu cấu trúc ngữ nghĩa, (b) thiếu token cho vài nhóm thật sự có dùng, (c) **không có cơ chế ngăn tái phát**.

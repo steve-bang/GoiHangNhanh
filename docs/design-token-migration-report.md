@@ -82,7 +82,7 @@ Ghi chú dòng "Đọc bảng cũ": số 0 chỉ tính các **bảng** `colors`/
 | `OrderDetailScreen` | chấm trạng thái 8dp | Kích thước riêng của hàng chi tiết |
 | `OrderCard` | `opacity 0.7` khi nhấn | Độ mờ nhấn đậm hơn cho nút chữ nhỏ, không dùng ở chỗ khác |
 
-Không bị rule kiểm có chủ đích: số `0`, `opacity` bằng `1`, phép tính theo biến, `StyleSheet.hairlineWidth`, `size` của `Icon` (48 chỗ gọi ghi cỡ bằng số, 13 cỡ khác nhau từ 14 đến 56; chưa tính 5 chỗ cỡ tính từ biến; nợ TD-5. Đếm 2026-10-27 trong phạm vi theo `scripts/design-token-scope.cjs`, không tính tệp test).
+Không bị rule kiểm có chủ đích: số `0`, `opacity` bằng `1`, phép tính theo biến, `StyleSheet.hairlineWidth`, `size` của `Icon` (44 chỗ `<Icon size={số}>`, 13 cỡ khác nhau từ 14 đến 56; chưa tính các chỗ cỡ tính từ biến; nợ TD-5. Đếm 2026-10-27 trong phạm vi theo `scripts/design-token-scope.cjs`, không tính tệp test).
 
 ### Thay đổi nhìn thấy được so với `main` (toàn bộ, đã đo)
 

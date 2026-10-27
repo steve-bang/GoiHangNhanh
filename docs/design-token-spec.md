@@ -48,7 +48,7 @@ src/core/theme/
 | Motion | **Không tạo** | Không có animation trong phạm vi |
 | Font family / letter spacing | **Không tạo** | Dùng font hệ thống, không có `letterSpacing` |
 | Dark mode | **Không bật** (O-17), chừa chỗ ở 8 | Chưa là yêu cầu sản phẩm |
-| Icon size | **Không tạo** | Có 13 cỡ (14…56) theo từng mockup (48 chỗ gọi trong phạm vi, đếm 2026-10-27), `Icon` mặc định 22 và được màn ngoài phạm vi dùng; gom lại đổi hiển thị. Ghi nợ TD-5 |
+| Icon size | **Không tạo** | Có 13 cỡ (14…56) theo từng mockup (44 chỗ `<Icon size={số}>` trong phạm vi, đếm 2026-10-27), `Icon` mặc định 22 và được màn ngoài phạm vi dùng; gom lại đổi hiển thị. Ghi nợ TD-5 |
 | Z-index/breakpoint | **Không** | Không cần; `useWindowDimensions` giữ logic cũ |
 
 ## 4. Giá trị cuối cùng
