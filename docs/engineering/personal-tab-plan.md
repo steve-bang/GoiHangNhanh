@@ -81,7 +81,7 @@ Mỗi PR nhỏ, độc lập, `npm run check` xanh, ghi rõ "chưa kiểm chứn
 - Xong khi: component có test render/a11y (vai trò, nhãn, vùng chạm tối thiểu, cỡ chữ lớn); cổng giả có test `failNext`/độ trễ; không đổi hành vi màn hiện có.
 
 ### PR2 — PER-01, 02, 03, 04
-- **Trạng thái: đang làm trên nhánh `claude/personal-tab-pr2-profile`.** Q-19i đã chốt (5 mã lỗi), họ tên tối đa 50 ký tự (tạm, Q-19j). Ánh xạ UI cho PER-02/03/04 chưa dùng được: `routes.test.ts` chỉ cho phép UI-A03 có hai route, nên màn Sửa hồ sơ/Đổi mật khẩu chờ Q-19b (xem decisions.md Q-19k).
+- **Trạng thái: đã làm PHẦN PER-01 và xem hồ sơ trên nhánh `claude/personal-tab-pr2-profile` (chưa mở PR); PER-02 sửa họ tên, PER-03, PER-04 đổi mật khẩu CHƯA làm vì chưa có mã UI (Q-19k).** Đã thêm `getShopSummary()` vào `AccountGateway` (thẻ shop), `Screen.refreshControl`, helper lỗi dùng chung ở `core/i18n/error-message`; `SignInScreen` ghi phiên (`beginSession`, `shopId` chưa biết); Splash chưa nối vì `SessionGateway.restore` không trả danh tính. Q-19i đã chốt (5 mã lỗi), họ tên tối đa 50 ký tự (tạm, Q-19j). Ánh xạ UI cho PER-02/03/04 chưa dùng được: `routes.test.ts` chỉ cho phép UI-A03 có hai route, nên màn Sửa hồ sơ/Đổi mật khẩu chờ Q-19b (xem decisions.md Q-19k).
 - Tệp: `src/features/personal/ui/{ProfileScreen,EditProfileScreen,ChangePasswordScreen}.tsx` (chuyển `ProfileScreen` từ `features/shop`); cập nhật `src/app/(tabs)/account/*.tsx`; xóa dùng `ILLUSTRATIVE_SHOP_NAME`; test `screens-render`, `app-navigation`.
 - Xong khi: skeleton, lỗi cục bộ có thử lại, dữ liệu đã lưu khi offline; kiểm tra họ tên và mật khẩu (từ 8 ký tự, D-13) bằng hàm thuần có test; PER-04 ẩn với tài khoản Apple/Google (theo Q-19c).
 

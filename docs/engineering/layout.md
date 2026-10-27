@@ -81,7 +81,7 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 | `/account/plans` | UI-H02 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `PlansScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/account/checkout` | UI-H03 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `CheckoutScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/account/limit` | UI-H04 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `PlanLimitScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/account` | UI-I01 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `ProfileScreen` | Tab Cá nhân: tên shop + danh sách mục (minh họa) |
+| `/account` | UI-I01 | chưa có đặc tả (docs/09 mục 4) | hiện | `personal`: `ProfileScreen` | Tab Cá nhân (PER-01/02 xem): thẻ hồ sơ, thẻ shop, tóm tắt gói (chỉ trạng thái trung thực), menu, Đăng xuất (chỉ mở hộp thoại, PR3 làm thật); tải riêng từng khu vực qua `AccountGateway`, kéo để làm mới |
 | `/account/shop-settings` | UI-I02 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `ShopSettingsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/account/members` | UI-I03 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `MembersScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/account/notifications` | UI-I04 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `NotificationsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
