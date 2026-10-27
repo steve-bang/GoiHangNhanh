@@ -1,5 +1,5 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
-import { Linking } from 'react-native';
+import { Linking, useWindowDimensions } from 'react-native';
 
 import { LEGAL_LINKS } from '@/core/config/legal-links';
 import { resources } from '@/core/i18n/resources';
@@ -14,6 +14,12 @@ jest.mock(
   () => jest.requireActual('@/test-utils/mock-navigation').navigationMock,
 );
 
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
+const mockWindow = jest.mocked(useWindowDimensions);
+
 const mockProviders = jest.fn();
 jest.mock('@/core/config/feature-flags', () => ({
   getEnabledSocialProviders: () => mockProviders() as string[],
@@ -25,6 +31,7 @@ jest.mock('../data/auth-gateway', () => ({
 }));
 
 beforeEach(() => {
+  mockWindow.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1 });
   resetMockNavigation();
   mockProviders.mockReset().mockReturnValue(['apple', 'google']);
   mockSignInWithProvider.mockReset().mockResolvedValue(undefined);
@@ -54,6 +61,16 @@ describe('UI-A02 Chào mừng', () => {
       includeHiddenElements: true,
     });
     expect(illustration.props.accessibilityElementsHidden).toBe(true);
+  });
+
+  it('màn thấp 320x568: không có hình nhưng vẫn đủ nút, social và dòng pháp lý', async () => {
+    mockWindow.mockReturnValue({ width: 320, height: 568, scale: 2, fontScale: 1 });
+    await renderWithProviders(<WelcomeScreen />);
+    expect(
+      screen.queryByTestId('welcome-illustration', { includeHiddenElements: true }),
+    ).toBeNull();
+    expect(screen.getByRole('button', { name: 'Đăng nhập' })).toBeOnTheScreen();
+    expect(screen.getByRole('link', { name: 'Chính sách quyền riêng tư' })).toBeOnTheScreen();
   });
 
   it('Đăng nhập và Tạo tài khoản điều hướng đúng route', async () => {

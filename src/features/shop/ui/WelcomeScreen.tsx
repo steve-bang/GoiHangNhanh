@@ -10,12 +10,8 @@ import { Button, Icon, Text, useTheme } from '@/shared/ui';
 
 import { signInWithProvider } from '../data/auth-gateway';
 import { BrandLogo } from './BrandLogo';
+import { computeWelcomeLayout } from './welcome-layout';
 import { WelcomeIllustration } from './WelcomeIllustration';
-
-/** Phần chiều cao dành cho mọi thứ trừ hình minh họa (logo, chữ, nút, social, điều khoản). */
-const CHROME_HEIGHT = 500;
-/** Dưới ngưỡng này hình không còn đủ chỗ nên ẩn (màn rất thấp, cỡ chữ lớn vẫn cuộn được). */
-const MIN_ILLUSTRATION_HEIGHT = 120;
 
 function SocialButton({ provider }: { provider: SocialProvider }) {
   const { t } = useTranslation();
@@ -60,14 +56,18 @@ export function WelcomeScreen() {
   const { t } = useTranslation();
   const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
   const providers = getEnabledSocialProviders();
 
-  const illustrationHeight = Math.min(
-    260,
-    height - insets.top - Math.max(insets.bottom, spacing.lg) - CHROME_HEIGHT,
-  );
+  const layout = computeWelcomeLayout({
+    width,
+    height,
+    insetTop: insets.top,
+    insetBottom: insets.bottom,
+    fontScale,
+  });
+  const { illustrationHeight, gaps, title } = layout;
   const link = (url: string) => () => void openExternalLink(url);
 
   return (
@@ -87,24 +87,22 @@ export function WelcomeScreen() {
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: insets.top + spacing.xl,
+          paddingTop: insets.top + gaps.top,
           paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.sm,
           paddingHorizontal: spacing.xl,
         }}
         showsVerticalScrollIndicator={false}
       >
         <BrandLogo />
-        <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
-          <Text accessibilityRole="header" style={[styles.title, { color: colors.brandDark }]} bold>
+        <View style={{ marginTop: gaps.section, gap: spacing.md }}>
+          <Text accessibilityRole="header" style={[title, { color: colors.brandDark }]} bold>
             {t('screens:welcome.title')}
           </Text>
           <Text color="textMuted">{t('screens:welcome.subtitle')}</Text>
         </View>
 
         <View style={styles.illustrationSlot}>
-          {illustrationHeight >= MIN_ILLUSTRATION_HEIGHT ? (
-            <WelcomeIllustration height={illustrationHeight} />
-          ) : null}
+          {illustrationHeight > 0 ? <WelcomeIllustration height={illustrationHeight} /> : null}
         </View>
 
         <View style={{ gap: spacing.md }}>
@@ -122,7 +120,7 @@ export function WelcomeScreen() {
         </View>
 
         {providers.length > 0 ? (
-          <View testID="welcome-social-group" style={{ marginTop: spacing.xl, gap: spacing.lg }}>
+          <View testID="welcome-social-group" style={{ marginTop: gaps.section, gap: spacing.lg }}>
             <View style={[styles.dividerRow, { gap: spacing.md }]}>
               <View style={[styles.line, { backgroundColor: colors.borderSubtle }]} />
               <Text variant="caption" color="textMuted">
@@ -138,7 +136,11 @@ export function WelcomeScreen() {
           </View>
         ) : null}
 
-        <Text variant="caption" color="textMuted" style={[styles.legal, { marginTop: spacing.xl }]}>
+        <Text
+          variant="caption"
+          color="textMuted"
+          style={[styles.legal, { marginTop: gaps.section }]}
+        >
           {t('screens:welcome.legalPrefix')}
           <Text
             variant="caption"
@@ -168,7 +170,6 @@ const styles = StyleSheet.create({
   blob: { position: 'absolute', borderRadius: 999 },
   blobTop: { width: 320, height: 320, top: -170, right: -130 },
   blobBottom: { width: 380, height: 380, bottom: -250, left: -160 },
-  title: { fontSize: 30, lineHeight: 38 },
   illustrationSlot: { flexGrow: 1, justifyContent: 'center', paddingVertical: 12 },
   socialRow: { flexDirection: 'row' },
   social: {
