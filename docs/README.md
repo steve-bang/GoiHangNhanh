@@ -16,7 +16,7 @@ Tài liệu nghiệp vụ (BRD/PRD) cho ứng dụng di động quản lý bằn
 | 08 | [Nghiệm thu, kiểm thử & rủi ro](08-acceptance-qa-risks.md) | Checklist, kịch bản QA-01..14, danh mục rủi ro, điều kiện bàn giao |
 | 09 | [Thiết kế UI/UX](09-ui-ux-design.md) | Triết lý, kiến trúc thông tin (4 tab), design system, chuẩn nhãn trạng thái, danh mục màn hình `UI-A01…UI-J15`, mockup khái niệm (`docs/assets/ui/`) kèm đối chiếu với đặc tả, nghiệm thu UI/UX |
 | — | Design Token | [Hướng dẫn dùng](design-system.md) · [Đặc tả token](design-token-spec.md) · [Audit](design-system-audit.md) · [Báo cáo chuyển đổi](design-token-migration-report.md) |
-| — | [Kỹ thuật (đề xuất, chờ duyệt)](engineering/architecture.md) | [Kiến trúc](engineering/architecture.md), [quy ước](engineering/conventions.md), [kiểm thử](engineering/testing.md), [nhật ký quyết định kỹ thuật ADR + câu hỏi](engineering/decisions.md) |
+| — | [Kỹ thuật (đề xuất, chờ duyệt)](engineering/architecture.md) | [Kiến trúc](engineering/architecture.md), [quy ước](engineering/conventions.md), [kiểm thử](engineering/testing.md), [nhật ký quyết định kỹ thuật ADR + câu hỏi](engineering/decisions.md), [Firebase: thiết lập, chạy thử, deploy](engineering/firebase-setup.md) |
 
 ## Nhật ký quyết định
 
