@@ -35,6 +35,7 @@ export function SplashHero({ width, height, scale, bottomOffset, onSettled }: Sp
     >
       <Image
         source={HERO_SOURCE}
+        testID="splash-hero-image"
         accessible={false}
         style={{ width, height }}
         resizeMode="contain"

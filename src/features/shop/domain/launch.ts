@@ -4,13 +4,16 @@ import type { SessionState } from './types';
 
 /**
  * Thời gian màn Splash (UI-A01), đặt ở MỘT nơi để chỉnh. Splash hiện mỗi lần mở app, chỉ vài giây:
- * - tối thiểu `SPLASH_MIN_VISIBLE_MS` (để người dùng kịp thấy thương hiệu, không nháy);
+ * - tối thiểu `SPLASH_MIN_VISIBLE_MS` kể từ lúc Splash của app THẬT SỰ hiện (ảnh minh họa sẵn sàng,
+ *   splash hệ điều hành đã ẩn), để người dùng kịp thấy thương hiệu, không nháy;
  * - chuyển khi cổng phiên xong VÀ đủ thời gian tối thiểu;
- * - không quá `SPLASH_MAX_WAIT_MS` kể từ khi màn hiện: quá hạn thì coi như chưa đăng nhập, không
- *   treo màn và không báo thành công giả (CLAUDE.md #3, #11).
+ * - cổng phiên không quá `SPLASH_MAX_WAIT_MS` kể từ lúc mở app (không phải lúc Splash hiện): quá
+ *   hạn thì coi như chưa đăng nhập, không treo màn và không báo thành công giả (CLAUDE.md #3, #11);
+ * - ảnh quá `SPLASH_HERO_MAX_WAIT_MS` thì coi như đã hiện (khớp đường bảo hiểm ở `_layout.tsx`).
  */
 export const SPLASH_MIN_VISIBLE_MS = 2000;
 export const SPLASH_MAX_WAIT_MS = 3000;
+export const SPLASH_HERO_MAX_WAIT_MS = 4000;
 
 /** Trạng thái dùng khi cổng phiên lỗi hoặc quá hạn: không bao giờ suy ra "đã đăng nhập". */
 export const SESSION_FALLBACK: SessionState = 'signed_out';

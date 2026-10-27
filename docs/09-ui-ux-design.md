@@ -85,7 +85,7 @@ Mỗi màn: mục đích, thành phần, hành động chính. Quy tắc nghiệ
 
 | Mã | Màn | Nội dung chính |
 |---|---|---|
-| UI-A01 | Splash | Logo; kiểm tra phiên/cấu hình/đồng bộ ở nền; không đứng lâu; mất mạng vẫn vào được phần công việc cục bộ nếu phiên và dữ liệu cho phép. **Đã làm** (cổng phiên giả): tĩnh, không nút, hiện tối thiểu 2 giây, tối đa 3 giây rồi tự chuyển theo phiên; chi tiết và điểm đã duyệt giữ nguyên theo thiết kế ở [mục 5.7](#57-splash--ui-a01) |
+| UI-A01 | Splash | Logo; kiểm tra phiên/cấu hình/đồng bộ ở nền; không đứng lâu; mất mạng vẫn vào được phần công việc cục bộ nếu phiên và dữ liệu cho phép. **Đã làm** (cổng phiên giả): tĩnh, không nút, hiện tối thiểu 2 giây (tính từ lúc Splash của app thật sự hiện), chờ phiên tối đa 3 giây từ lúc mở app, rồi tự chuyển theo phiên; chi tiết và điểm đã duyệt giữ nguyên theo thiết kế ở [mục 5.7](#57-splash--ui-a01) |
 | UI-A02 | Chào mừng | "Bảo vệ bằng chứng cho từng đơn hàng"; CTA *Đăng nhập* / *Tạo tài khoản*; liên kết Điều khoản và Quyền riêng tư; không onboarding nhiều trang; nút *Apple*/*Google* (bật bằng cờ cấu hình, O-15); liên kết pháp lý hiện là URL giữ chỗ, chưa có trang thật |
 | UI-A03 | Đăng nhập / tạo tài khoản | Kiểm tra dữ liệu tại trường; quên mật khẩu, xác thực email, trạng thái đang xử lý; không báo thành công trước khi máy chủ xác nhận. Phương thức đăng nhập: O-15. **Biến thể đăng ký (`/sign-up`) và đăng nhập (`/sign-in`) đã làm** (chi tiết ở 5.1 và 5.6) |
 | UI-A04 | Tạo hồ sơ shop | Tên shop là chính (bắt buộc, 1-50 ký tự); nguồn bán chọn nhiều (Shopee, TikTok Shop, Lazada, Khác), bỏ qua được; không bắt địa chỉ, mã số thuế, dữ liệu khách hàng. Thanh tiến trình 3 bước (hiện 2/3). Đã làm (chi tiết ở 5.1) |
@@ -286,13 +286,13 @@ Các tấm hình dưới đây là **mockup khái niệm**, lưu ở `docs/asset
 - **Mục đích:** cho thấy thương hiệu trong lúc app khôi phục phiên, rồi đưa người dùng tới đúng màn đầu. Không phải màn giới thiệu, không nhiều trang.
 - **Thành phần (theo thiết kế):** logo khiên xanh rừng có mũi tên play + chữ "Đơn Chứng"; "Ghi hình đầy đủ / Lưu bằng chứng an tâm"; hàng bốn tính năng (Quay video đóng gói, Lưu trữ đám mây, Quản lý đơn hàng, Bảo vệ quyền lợi); ảnh minh họa 3D (cô gái, bong bóng, logo sàn); sóng xanh đậm ở đáy với câu viết tay trắng "Mỗi đơn hàng đều xứng đáng được bảo vệ!"; nền xanh rất nhạt có hình loang.
 - **Hành động:** không có. Màn tự chuyển: đã đăng nhập và có shop -> Tổng quan; đã đăng nhập chưa có shop -> Tạo shop; chưa đăng nhập, cổng lỗi hoặc quá hạn -> Chào mừng. Chuyển bằng `reset` nên Back không quay lại Splash.
-- **Trạng thái / thời gian:** hiện tối thiểu 2 giây (không nháy), chuyển khi phiên xong và đủ 2 giây, **không quá 3 giây** kể từ khi hiện. Không có hiệu ứng chuyển động (nên không cần xử lý "giảm chuyển động"). Splash hệ điều hành (nền xanh nhạt + khiên) hiện trước và được giữ tới khi ảnh minh họa tải xong; không giữ để chờ phiên.
+- **Trạng thái / thời gian:** Splash của app hiện **tối thiểu 2 giây kể từ lúc thật sự hiện ra** (khi ảnh minh họa đã tải xong và splash hệ điều hành đã ẩn; không tính thời gian splash hệ điều hành còn che), không nháy. Khôi phục phiên chạy ngay khi mở app, song song với việc tải ảnh; chuyển khi phiên xong và đủ 2 giây hiển thị, còn **chờ phiên không quá 3 giây kể từ lúc mở app** (quá hạn = chưa đăng nhập, nhưng vẫn không chuyển trước khi đủ 2 giây hiển thị). Nếu ảnh quá 4 giây thì coi như đã hiện. Không có hiệu ứng chuyển động (nên không cần xử lý "giảm chuyển động"). Splash hệ điều hành (nền xanh nhạt + khiên) hiện trước và được giữ tới khi ảnh minh họa tải xong; không giữ để chờ phiên.
 - **Lỗi:** không có thông báo lỗi trên màn này. Cổng phiên lỗi hoặc quá hạn được coi là chưa đăng nhập (đi Chào mừng); không bao giờ hiện như đã đăng nhập khi chưa có xác nhận.
 - **Bố cục:** khối đầu (logo, tên, khẩu hiệu, hàng tính năng) neo trên vùng an toàn; sóng và câu viết tay neo dưới vùng an toàn; ảnh minh họa ở giữa, rộng bằng màn, bàn đè lên mép trên của sóng. Màn thấp ẩn dần: câu viết tay, hàng tính năng, khẩu hiệu, rồi thu nhỏ ảnh; logo và tên luôn hiện. Chữ hệ thống lớn (>= 125%): ẩn hàng tính năng và khẩu hiệu. Nhãn tính năng >= 12dp.
 - **Trợ năng:** toàn bộ trang trí (logo, ảnh, sóng, chữ) ẩn khỏi trình đọc màn hình; chỉ đọc tên "Đơn Chứng".
 - **Nghiệm thu (đánh dấu khi đã kiểm tra thật trên thiết bị):**
   - [ ] Giống ảnh thiết kế trên iPhone và Android (không có chấm phân trang)
-  - [ ] Hiện 2-3 giây rồi tự chuyển; không treo khi mạng chậm/mất mạng
+  - [ ] Hiện tối thiểu 2 giây (tính từ lúc thật sự thấy Splash của app, kể cả khi ảnh tải chậm) rồi tự chuyển; không treo khi mạng chậm/mất mạng
   - [ ] Splash hệ điều hành chuyển sang Splash của app không nhấp nháy (iOS và Android, gồm Android 12+)
   - [ ] Vùng an toàn, tràn viền Android, màn nhỏ (320x568) và chữ lớn không vỡ bố cục
   - [ ] Back không quay lại Splash

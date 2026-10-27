@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 
 import { router } from 'expo-router';
-import { act, renderRouter, screen } from 'expo-router/testing-library';
+import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import { ROUTES } from '@/core/navigation';
 import {
@@ -23,6 +23,10 @@ async function openApp(flag: string | undefined) {
   else process.env.EXPO_PUBLIC_FAKE_SESSION = flag;
   resetDefaultGatewaysForTests();
   await renderRouter(APP_DIR, { initialUrl: ROUTES.splash.path });
+  // Jest không tự bắn onLoad: coi như ảnh minh họa đã tải xong (Splash của app hiện từ lúc này).
+  await act(async () => {
+    fireEvent(screen.getByTestId('splash-hero-image', { includeHiddenElements: true }), 'load');
+  });
 }
 
 const advance = async (ms: number) => {

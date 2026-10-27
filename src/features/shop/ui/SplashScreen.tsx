@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
@@ -15,6 +15,7 @@ import { SplashWave } from './splash/SplashWave';
 import { computeSplashLayout, FONT_CAPS } from './splash/splash-layout';
 import { useSplashLaunch } from './splash/use-splash-launch';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
+import { SPLASH_HERO_MAX_WAIT_MS } from '../domain/launch';
 
 /**
  * UI-A01 Splash (docs/09 mục 4 và 5.7; ảnh thiết kế `docs/assets/ui/06-splash-design.png`): màn tĩnh,
@@ -42,19 +43,34 @@ export function SplashScreen() {
   });
   const { header, hero, wave } = layout;
 
-  useSplashLaunch({ session: gateways.session, onRoute: (route) => navigation.reset(route) });
-
-  // Ẩn splash hệ điều hành khi ảnh minh họa đã tải xong (hoặc lỗi/không có ảnh); luôn ẩn khi gỡ màn.
+  // Splash của app "thật sự hiện" khi ảnh minh họa xong (tải được hoặc lỗi), hoặc không cần ảnh, hoặc
+  // quá hạn bảo hiểm; lúc đó ẩn splash hệ điều hành và bắt đầu đếm thời gian hiển thị tối thiểu.
+  const [visible, setVisible] = useState(false);
   const settled = useRef(false);
   const heroSettled = useCallback(() => {
     if (settled.current) return;
     settled.current = true;
     hideNativeSplash();
+    setVisible(true);
   }, []);
+
+  useSplashLaunch({
+    session: gateways.session,
+    visible,
+    onRoute: (route) => navigation.reset(route),
+  });
+
+  // Đổi bố cục khi đang chạy (xoay màn, đổi cỡ chữ) không được ẩn splash hệ điều hành: chỉ coi là
+  // sẵn sàng khi không cần ảnh.
   useEffect(() => {
     if (!layout.showHero) heroSettled();
-    return () => hideNativeSplash();
   }, [layout.showHero, heroSettled]);
+  useEffect(() => {
+    const timer = setTimeout(heroSettled, SPLASH_HERO_MAX_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [heroSettled]);
+  // Gỡ màn: luôn ẩn splash hệ điều hành (an toàn khi gọi nhiều lần).
+  useEffect(() => () => hideNativeSplash(), []);
 
   return (
     <View
