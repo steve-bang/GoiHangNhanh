@@ -3,8 +3,9 @@ import { PlaceholderScreen } from '@/shared/ui';
 /**
  * Màn khung của shop: khởi động/thiết lập (UI-A02..A09), gói dịch vụ (UI-H01..H04), hồ sơ và cài
  * đặt (UI-I01..I06). Thành viên/gói chưa có nghiệp vụ (O-03, O-16, O-06).
- * UI-A01 (Splash) hiện là chuyển hướng ở route gốc, chưa có màn.
+ * UI-A01 (Splash) là màn thật ở route gốc, tự chuyển theo phiên (cổng phiên giả, chưa chặn truy cập).
  */
+export { SplashScreen } from './SplashScreen';
 export { WelcomeScreen } from './WelcomeScreen';
 export { SignInScreen } from './SignInScreen';
 export { ForgotPasswordScreen } from './ForgotPasswordScreen';

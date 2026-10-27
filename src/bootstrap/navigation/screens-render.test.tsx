@@ -23,11 +23,10 @@ function listFiles(dir: string): string[] {
   );
 }
 
-/** Tệp route thật của app, ngoại trừ layout và route gốc (chuyển hướng Splash). */
+/** Tệp route thật của app, ngoại trừ layout. */
 const routeFiles = listFiles(APP_DIR)
   .filter((file) => file.endsWith('.tsx'))
   .filter((file) => !/_layout\.tsx$/.test(file))
-  .filter((file) => relative(APP_DIR, file) !== 'index.tsx')
   // Hai màn có chặn vào khi chưa qua bước trước (render rỗng rồi chuyển về bước đầu): có test riêng
   // ở VerifyOtpScreen.test.tsx và NewPasswordScreen.test.tsx.
   .filter((file) => !/(verify-otp|new-password)\.tsx$/.test(file));
@@ -56,13 +55,13 @@ describe('mọi route của app render được (khung giao diện)', () => {
     await renderWithProviders(<Screen />);
 
     expect(screen.getByTestId(`screen-${route.code}`)).toBeOnTheScreen();
-    // Màn quay là toàn màn hình camera và Chào mừng (UI-A02) là màn thương hiệu: không có thanh
-    // tiêu đề; các màn còn lại hiện đúng tiêu đề.
+    // Màn quay là toàn màn hình camera, Splash (UI-A01) và Chào mừng (UI-A02) là màn thương hiệu:
+    // không có thanh tiêu đề; các màn còn lại hiện đúng tiêu đề.
     // Riêng Tổng quan (UI-B01) tiêu đề là tên shop (docs/09), tên tab vẫn là "Tổng quan".
     if (route.code === 'UI-B01') {
       expect(screen.getByText(ILLUSTRATIVE_SHOP_NAME)).toBeOnTheScreen();
     } else if (
-      !['UI-C03', 'UI-D04', 'UI-A02'].includes(route.code) &&
+      !['UI-C03', 'UI-D04', 'UI-A01', 'UI-A02'].includes(route.code) &&
       // Các màn thiết lập/đăng nhập thật (đăng ký, tạo shop, hoàn tất, đăng nhập, quên mật khẩu) có tiêu đề riêng theo mockup, không phải
       // tiêu đề danh mục; màn đăng nhập và Quên mật khẩu cũng có tiêu đề riêng theo mockup 05.
       !['/sign-up', '/create-shop', '/setup-done', '/sign-in', '/forgot-password'].includes(

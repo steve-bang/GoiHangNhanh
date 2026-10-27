@@ -73,7 +73,7 @@ export interface RouteDef {
 const route = (path: string, code: UiCode, tabBar = false): RouteDef => ({ path, code, tabBar });
 
 export const ROUTES = {
-  // Nhóm A - khởi động và thiết lập. UI-A01 (Splash) hiện chỉ là chuyển hướng sang Tổng quan.
+  // Nhóm A - khởi động và thiết lập. UI-A01 (Splash) tự chuyển theo phiên (Chào mừng / Tạo shop / Tổng quan).
   splash: route('/', 'UI-A01'),
   welcome: route('/welcome', 'UI-A02'),
   signIn: route('/sign-in', 'UI-A03'),

@@ -209,6 +209,7 @@ describe('UI-A08 Nhập mã: xác minh', () => {
         }),
     );
     const gateways: Gateways = {
+      session: createFakeGateways().session,
       auth: { ...createUnavailableGateways().auth, verifyRecoveryCode },
       shop: createFakeGateways().shop,
     };
@@ -244,6 +245,7 @@ describe('UI-A08 Nhập mã: xác minh', () => {
         }),
     );
     const gateways: Gateways = {
+      session: createFakeGateways().session,
       auth: { ...createUnavailableGateways().auth, verifyRecoveryCode },
       shop: createFakeGateways().shop,
     };

@@ -1,7 +1,7 @@
 import { AppError } from '@/core/errors/app-error';
 
 import { createFakeGateways, FAKE_OFFLINE_EMAIL } from './fake-gateways';
-import { createGateways, resolveBackendMode } from './gateways';
+import { createGateways, resolveBackendMode, resolveFakeSession } from './gateways';
 import { createUnavailableGateways } from './unavailable-gateways';
 
 describe('chọn cổng theo môi trường', () => {
@@ -105,5 +105,69 @@ describe('cổng giả', () => {
     const { auth } = createFakeGateways();
     await expect(auth.signInWithProvider('apple')).resolves.toBeUndefined();
     expect(auth.providerCalls).toEqual(['apple']);
+  });
+});
+
+describe('cổng phiên', () => {
+  const env = { isDev: false, isTest: false, fakeFlag: '1' as string | undefined };
+
+  it('EXPO_PUBLIC_FAKE_SESSION hợp lệ được dùng nguyên, kể cả ở bản xem trước', () => {
+    expect(resolveFakeSession({ ...env, fakeSession: 'signed_out' })).toBe('signed_out');
+    expect(resolveFakeSession({ ...env, fakeSession: 'no_shop' })).toBe('signed_in_no_shop');
+    expect(resolveFakeSession({ ...env, fakeSession: 'signed_in' })).toBe('signed_in');
+    expect(resolveFakeSession({ ...env, isDev: true, fakeSession: 'signed_out' })).toBe(
+      'signed_out',
+    );
+  });
+
+  it('không đặt cờ: __DEV__/test mặc định signed_in; bản xem trước (cổng giả, không dev) là signed_out', () => {
+    expect(resolveFakeSession({ ...env, isDev: true })).toBe('signed_in');
+    expect(resolveFakeSession({ ...env, isTest: true })).toBe('signed_in');
+    expect(resolveFakeSession(env)).toBe('signed_out');
+  });
+
+  it.each([undefined, '', 'true', 'SIGNED_IN', 'admin'])(
+    'giá trị cờ không hợp lệ %p -> theo mặc định',
+    (v) => {
+      expect(resolveFakeSession({ ...env, fakeSession: v })).toBe('signed_out');
+      expect(resolveFakeSession({ ...env, isDev: true, fakeSession: v })).toBe('signed_in');
+    },
+  );
+
+  it('nhà máy: cổng giả trả đúng phiên theo cờ', async () => {
+    const make = (fakeSession?: string) =>
+      createGateways({ isDev: false, isTest: true, fakeFlag: undefined, fakeSession });
+    await expect(make().session.restore()).resolves.toBe('signed_in');
+    await expect(make('no_shop').session.restore()).resolves.toBe('signed_in_no_shop');
+    await expect(make('signed_out').session.restore()).resolves.toBe('signed_out');
+  });
+
+  it('bản build thường (không cổng giả): cổng phiên luôn lỗi, kể cả khi đặt cờ phiên', async () => {
+    const gateways = createGateways({
+      isDev: false,
+      isTest: false,
+      fakeFlag: undefined,
+      fakeSession: 'signed_in',
+    });
+    await expect(gateways.session.restore()).rejects.toMatchObject({
+      code: 'AUTH_SERVICE_UNAVAILABLE',
+    });
+  });
+
+  it('cổng "chưa kết nối" không bao giờ trả thành công', async () => {
+    const { session } = createUnavailableGateways();
+    for (let i = 0; i < 3; i += 1) {
+      await expect(session.restore()).rejects.toBeInstanceOf(AppError);
+    }
+  });
+
+  it('cổng giả đếm số lần gọi và mô phỏng được lỗi', async () => {
+    const ok = createFakeGateways({ sessionState: 'signed_out' });
+    await expect(ok.session.restore()).resolves.toBe('signed_out');
+    expect(ok.session.restoreCalls).toBe(1);
+    const bad = createFakeGateways({ sessionFails: true });
+    await expect(bad.session.restore()).rejects.toMatchObject({
+      code: 'AUTH_SERVICE_UNAVAILABLE',
+    });
   });
 });

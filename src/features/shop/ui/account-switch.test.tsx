@@ -119,6 +119,7 @@ describe('đổi tài khoản giữa luồng: không rò shop (bất biến #8)'
     let resolve: (id: string) => void = () => undefined;
     const gateways = {
       auth: fake.auth,
+      session: fake.session,
       shop: {
         ...fake.shop,
         createShop: jest.fn(

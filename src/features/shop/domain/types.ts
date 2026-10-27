@@ -97,7 +97,23 @@ export interface ShopGateway {
   updateShop(input: UpdateShopInput): Promise<CreatedShop>;
 }
 
+/**
+ * Trạng thái phiên khi mở app (UI-A01): chưa đăng nhập; đã đăng nhập nhưng chưa có shop; đã đăng
+ * nhập và có shop. Chỉ phản ánh điều cổng đã xác nhận, không suy đoán.
+ */
+export type SessionState = 'signed_out' | 'signed_in_no_shop' | 'signed_in';
+
+/**
+ * Cổng phiên (port). `restore` đọc phiên đã lưu trên máy khi mở app. Bản thật (Firebase Auth +
+ * tra shop) chưa có: xem decisions.md Q-15. Lỗi hay quá hạn KHÔNG được coi là đã đăng nhập: bên gọi
+ * (màn Splash) xử lý như `signed_out`.
+ */
+export interface SessionGateway {
+  restore(): Promise<SessionState>;
+}
+
 export interface Gateways {
   readonly auth: AuthGateway;
   readonly shop: ShopGateway;
+  readonly session: SessionGateway;
 }

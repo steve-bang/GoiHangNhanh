@@ -201,7 +201,11 @@ describe('UI-A04 Tạo hồ sơ shop: xử lý và lỗi', () => {
         }),
     );
     const fake = createFakeGateways();
-    const gateways: Gateways = { auth: fake.auth, shop: { createShop, updateShop: jest.fn() } };
+    const gateways: Gateways = {
+      auth: fake.auth,
+      shop: { createShop, updateShop: jest.fn() },
+      session: fake.session,
+    };
     await renderWithProviders(<CreateShopScreen />, { gateways });
     await fireEvent.changeText(nameInput(), 'Shop');
     await fireEvent.press(submit());
@@ -377,6 +381,7 @@ describe('UI-A04 Tạo hồ sơ shop: quay lại sau khi đã tạo shop', () =>
     const fake = createFakeGateways();
     const base = createUnavailableGateways();
     const gateways: Gateways = {
+      session: createFakeGateways().session,
       auth: fake.auth,
       shop: { ...base.shop, createShop: fake.shop.createShop.bind(fake.shop) },
     };
@@ -403,6 +408,7 @@ describe('UI-A04 Tạo hồ sơ shop: quay lại sau khi đã tạo shop', () =>
     );
     const fake = createFakeGateways();
     const gateways: Gateways = {
+      session: createFakeGateways().session,
       auth: fake.auth,
       shop: { createShop, updateShop: fake.shop.updateShop.bind(fake.shop) },
     };

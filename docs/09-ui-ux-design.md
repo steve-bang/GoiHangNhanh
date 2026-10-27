@@ -85,7 +85,7 @@ Mỗi màn: mục đích, thành phần, hành động chính. Quy tắc nghiệ
 
 | Mã | Màn | Nội dung chính |
 |---|---|---|
-| UI-A01 | Splash | Logo; kiểm tra phiên/cấu hình/đồng bộ ở nền; không đứng lâu; mất mạng vẫn vào được phần công việc cục bộ nếu phiên và dữ liệu cho phép |
+| UI-A01 | Splash | Logo; kiểm tra phiên/cấu hình/đồng bộ ở nền; không đứng lâu; mất mạng vẫn vào được phần công việc cục bộ nếu phiên và dữ liệu cho phép. **Đã làm** (cổng phiên giả): tĩnh, không nút, hiện tối thiểu 2 giây, tối đa 3 giây rồi tự chuyển theo phiên; chi tiết và điểm đã duyệt giữ nguyên theo thiết kế ở [mục 5.7](#57-splash--ui-a01) |
 | UI-A02 | Chào mừng | "Bảo vệ bằng chứng cho từng đơn hàng"; CTA *Đăng nhập* / *Tạo tài khoản*; liên kết Điều khoản và Quyền riêng tư; không onboarding nhiều trang; nút *Apple*/*Google* (bật bằng cờ cấu hình, O-15); liên kết pháp lý hiện là URL giữ chỗ, chưa có trang thật |
 | UI-A03 | Đăng nhập / tạo tài khoản | Kiểm tra dữ liệu tại trường; quên mật khẩu, xác thực email, trạng thái đang xử lý; không báo thành công trước khi máy chủ xác nhận. Phương thức đăng nhập: O-15. **Biến thể đăng ký (`/sign-up`) và đăng nhập (`/sign-in`) đã làm** (chi tiết ở 5.1 và 5.6) |
 | UI-A04 | Tạo hồ sơ shop | Tên shop là chính (bắt buộc, 1-50 ký tự); nguồn bán chọn nhiều (Shopee, TikTok Shop, Lazada, Khác), bỏ qua được; không bắt địa chỉ, mã số thuế, dữ liệu khách hàng. Thanh tiến trình 3 bước (hiện 2/3). Đã làm (chi tiết ở 5.1) |
@@ -227,7 +227,7 @@ Các nhóm A (khởi động), E, F, G, H, I chưa có đặc tả quy trình ri
 
 ## 5. Bản thiết kế mẫu (concept mockups)
 
-Bốn tấm hình dưới đây là **mockup khái niệm**, lưu ở `docs/assets/ui/`. Chúng minh họa hướng thị giác (xanh rừng, bo góc, thẻ lớn) và bố cục các luồng chính; **chưa phải thiết kế cuối**: chưa có Figma, chưa kiểm thử với người dùng, và có một số chỗ trái với đặc tả (xem bảng đối chiếu bên dưới). Chữ trong ảnh có vài lỗi chính tả hoặc đoạn vô nghĩa (ví dụ "Binh giữ nhiệt", dòng quảng cáo ở màn Tổng quan) — không sao chép nguyên văn; các câu quảng bá viết tay và khẩu hiệu cạnh màn hình là phần trình bày, không phải nội dung giao diện.
+Các tấm hình dưới đây là **mockup khái niệm**, lưu ở `docs/assets/ui/`. Chúng minh họa hướng thị giác (xanh rừng, bo góc, thẻ lớn) và bố cục các luồng chính; **chưa phải thiết kế cuối**: chưa có Figma, chưa kiểm thử với người dùng, và có một số chỗ trái với đặc tả (xem bảng đối chiếu bên dưới). Chữ trong ảnh có vài lỗi chính tả hoặc đoạn vô nghĩa (ví dụ "Binh giữ nhiệt", dòng quảng cáo ở màn Tổng quan) — không sao chép nguyên văn; các câu quảng bá viết tay và khẩu hiệu cạnh màn hình là phần trình bày, không phải nội dung giao diện.
 
 ### 5.1 Khởi động và thiết lập — UI-A02, A03, A04, A06
 
@@ -277,6 +277,28 @@ Bốn tấm hình dưới đây là **mockup khái niệm**, lưu ở `docs/asse
 | 8 | Hình cô gái, ổ khóa, điện thoại, tia sáng | Dựng bằng View + Ionicons (hình ở Đăng nhập dùng lại hình khiên + hộp của Chào mừng thu nhỏ, không có nhân vật); thay bằng hình thật ở `AuthIllustrations.tsx`/`WelcomeIllustration.tsx` |
 | 9 | Câu chữ có "vui lòng", "yêu cầu" | Đổi theo quy ước 5.1 (không dùng "vui lòng"/"yêu cầu"): vd. "Hãy nhập email của bạn.", "Bạn xin mã mới nhé." |
 
+### 5.7 Splash — UI-A01
+
+![Splash: logo khiên có mũi tên play, Đơn Chứng, hàng tính năng, ảnh minh họa, sóng xanh](assets/ui/06-splash-design.png)
+
+Đã làm với **cổng phiên giả** (chưa Firebase, chưa chặn truy cập); kỹ thuật ở [layout.md mục 2.4](engineering/layout.md) và [decisions.md Q-15](engineering/decisions.md); quyết định sản phẩm D-15. Ảnh thiết kế `docs/assets/ui/06-splash-design.png` (thanh trạng thái 9:41 là của mockup, không đưa vào app; **không có 4 chấm phân trang**).
+
+- **Mục đích:** cho thấy thương hiệu trong lúc app khôi phục phiên, rồi đưa người dùng tới đúng màn đầu. Không phải màn giới thiệu, không nhiều trang.
+- **Thành phần (theo thiết kế):** logo khiên xanh rừng có mũi tên play + chữ "Đơn Chứng"; "Ghi hình đầy đủ / Lưu bằng chứng an tâm"; hàng bốn tính năng (Quay video đóng gói, Lưu trữ đám mây, Quản lý đơn hàng, Bảo vệ quyền lợi); ảnh minh họa 3D (cô gái, bong bóng, logo sàn); sóng xanh đậm ở đáy với câu viết tay trắng "Mỗi đơn hàng đều xứng đáng được bảo vệ!"; nền xanh rất nhạt có hình loang.
+- **Hành động:** không có. Màn tự chuyển: đã đăng nhập và có shop -> Tổng quan; đã đăng nhập chưa có shop -> Tạo shop; chưa đăng nhập, cổng lỗi hoặc quá hạn -> Chào mừng. Chuyển bằng `reset` nên Back không quay lại Splash.
+- **Trạng thái / thời gian:** hiện tối thiểu 2 giây (không nháy), chuyển khi phiên xong và đủ 2 giây, **không quá 3 giây** kể từ khi hiện. Không có hiệu ứng chuyển động (nên không cần xử lý "giảm chuyển động"). Splash hệ điều hành (nền xanh nhạt + khiên) hiện trước và được giữ tới khi ảnh minh họa tải xong; không giữ để chờ phiên.
+- **Lỗi:** không có thông báo lỗi trên màn này. Cổng phiên lỗi hoặc quá hạn được coi là chưa đăng nhập (đi Chào mừng); không bao giờ hiện như đã đăng nhập khi chưa có xác nhận.
+- **Bố cục:** khối đầu (logo, tên, khẩu hiệu, hàng tính năng) neo trên vùng an toàn; sóng và câu viết tay neo dưới vùng an toàn; ảnh minh họa ở giữa, rộng bằng màn, bàn đè lên mép trên của sóng. Màn thấp ẩn dần: câu viết tay, hàng tính năng, khẩu hiệu, rồi thu nhỏ ảnh; logo và tên luôn hiện. Chữ hệ thống lớn (>= 125%): ẩn hàng tính năng và khẩu hiệu. Nhãn tính năng >= 12dp.
+- **Trợ năng:** toàn bộ trang trí (logo, ảnh, sóng, chữ) ẩn khỏi trình đọc màn hình; chỉ đọc tên "Đơn Chứng".
+- **Nghiệm thu (đánh dấu khi đã kiểm tra thật trên thiết bị):**
+  - [ ] Giống ảnh thiết kế trên iPhone và Android (không có chấm phân trang)
+  - [ ] Hiện 2-3 giây rồi tự chuyển; không treo khi mạng chậm/mất mạng
+  - [ ] Splash hệ điều hành chuyển sang Splash của app không nhấp nháy (iOS và Android, gồm Android 12+)
+  - [ ] Vùng an toàn, tràn viền Android, màn nhỏ (320x568) và chữ lớn không vỡ bố cục
+  - [ ] Back không quay lại Splash
+- **Điểm trái nguyên tắc, đã được chủ sản phẩm duyệt giữ nguyên theo thiết kế (D-15):** nhãn *Quản lý đơn hàng* trái D-10 (Đơn Chứng không quản lý bán hàng); *Bảo vệ quyền lợi* (hai nơi), *Lưu bằng chứng an tâm*, *Mỗi đơn hàng đều xứng đáng được bảo vệ!* hứa hơi quá so với mục A.5 ở bảng 5.5 (không chứng minh tính chân thực, không hứa thắng khiếu nại); logo Shopee/TikTok/Lazada nằm sẵn trong ảnh minh họa có thể gợi ý đã tích hợp (chưa có tích hợp). Cần BA/pháp lý rà lại trước phát hành. Test chuỗi giữ danh sách ngoại lệ có chú thích chỉ gồm các khóa này.
+- **Bản tạm:** logo khiên-play vẽ lại bằng SVG (chưa phải tệp chuẩn), ảnh 3D là bản chính thức tạm, phông hệ thống thay cho phông trong thiết kế, icon ứng dụng tạm (O-23, O-24, O-25).
+
 ### 5.2 Tổng quan và quét mã — UI-B01, B02
 
 ![Màn hình Tổng quan và quét mã đơn hàng](assets/ui/02-home-and-scan.png)
@@ -312,6 +334,7 @@ Phần đúng hướng: bảng màu và phong cách khớp mục 3; Tổng quan 
 | 13 | 01: màn tạo hồ sơ shop ghi "Nguồn bán *" (bắt buộc) | UI-A04: bỏ qua được (có "Bỏ qua, để sau") | Bỏ dấu `*` (đã làm trong UI-A04) |
 | 14 | 01: "Gói Tiêu chuẩn (30 ngày)" | Tên gói và thời hạn chưa chốt (O-06); khung gói là Cơ bản/Tăng trưởng/Vận hành lớn | Đã bỏ hàng Gói dịch vụ khỏi UI-A06 (không hiện tên gói/thời hạn) |
 | 15 | 02, màn quét: thiếu đèn pin và tìm đơn đã lưu | UI-B02 yêu cầu | Thêm |
+| 16 | 06 (Splash): "Quản lý đơn hàng", "Bảo vệ quyền lợi" (hai nơi), "Lưu bằng chứng an tâm", "Mỗi đơn hàng đều xứng đáng được bảo vệ!"; logo sàn trong ảnh minh họa; 4 chấm phân trang | Cùng loại với dòng 5 (hứa quá) và trái D-10; logo sàn gợi ý tích hợp | **Ngoại lệ do chủ sản phẩm duyệt (D-15): giữ nguyên chữ và ảnh**, ghi rủi ro, cần rà trước phát hành ([mục 5.7](#57-splash--ui-a01)). Bỏ 4 chấm phân trang (Splash không có nhiều trang) |
 
 **B. Cần quyết định** (mockup khác đặc tả; chưa sửa tài liệu theo mockup):
 
