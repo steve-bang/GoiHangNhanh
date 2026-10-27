@@ -70,6 +70,14 @@ export const ICON_GLYPHS = {
   send: 'paper-plane',
   sparkle: 'sparkles',
   'check-circle': 'checkmark-circle',
+  // Trang chủ, thanh tab, màn quét (UI-B01, UI-B02)
+  notifications: 'notifications-outline',
+  'add-circle': 'add-circle-outline',
+  'cloud-up': 'cloud-upload',
+  flash: 'flash',
+  'flash-off': 'flash-off',
+  alert: 'alert-circle',
+  'scan-solid': 'scan',
 } as const satisfies Record<string, GlyphName>;
 
 export type IconName = keyof typeof ICON_GLYPHS;

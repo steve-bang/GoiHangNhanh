@@ -3,7 +3,6 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
-import { AccountMenuButton } from '@/features/shop';
 import { useAppNavigation } from '@/platform';
 import {
   ILLUSTRATIVE_SYNC_JOBS,
@@ -49,8 +48,7 @@ export function SyncCenterScreen() {
   return (
     <Screen
       title={t('nav:titles.UI-F01')}
-      headerRight={<AccountMenuButton />}
-      inTabs
+      onBack={navigation.back}
       illustrative
       testID="screen-UI-F01"
     >

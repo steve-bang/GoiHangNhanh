@@ -3,7 +3,6 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
-import { AccountMenuButton } from '@/features/shop';
 import { useAppNavigation } from '@/platform';
 import {
   ILLUSTRATIVE_RETURN_CASES,
@@ -61,8 +60,7 @@ export function ReturnsListScreen() {
   return (
     <Screen
       title={t('nav:titles.UI-D01')}
-      headerRight={<AccountMenuButton />}
-      inTabs
+      onBack={navigation.back}
       illustrative
       testID="screen-UI-D01"
       footer={

@@ -1,5 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { ROUTES, type RouteDef } from '@/core/navigation';
 
@@ -68,6 +68,21 @@ export function useIsScreenActive(): () => boolean {
     }, []),
   );
   return useCallback(() => activeRef.current, []);
+}
+
+/**
+ * true khi màn đang hiển thị trên cùng (focus). Màn quét dùng để TẮT camera khi có màn khác phủ lên
+ * (đang tạo đơn, mở trợ giúp) và bật lại khi quay về, thay vì quét ngầm.
+ */
+export function useScreenFocused(): boolean {
+  const [focused, setFocused] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, []),
+  );
+  return focused;
 }
 
 /**

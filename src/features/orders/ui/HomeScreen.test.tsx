@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 
 import { ROUTES } from '@/core/navigation';
+import { getMinTouchTarget } from '@/platform';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
@@ -13,7 +14,15 @@ jest.mock(
 
 beforeEach(() => resetMockNavigation());
 
-describe('UI-B01 Tổng quan', () => {
+describe('UI-B01 Trang chủ (mẫu thiết kế, D-16)', () => {
+  it('đầu trang có tên shop, lời chào và chuông thông báo dẫn tới tab Thông báo', async () => {
+    await renderWithProviders(<HomeScreen />);
+    expect(screen.getByText('Shop minh họa')).toBeOnTheScreen();
+    expect(screen.getByText('Chào mừng trở lại!')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByTestId('home-notifications'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.notificationList);
+  });
+
   it('có hai nút lớn Đóng gói đơn và Nhận hàng hoàn dẫn đúng route', async () => {
     await renderWithProviders(<HomeScreen />);
     await fireEvent.press(screen.getByTestId('home-pack-order'));
@@ -22,33 +31,68 @@ describe('UI-B01 Tổng quan', () => {
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.returnFindOrder);
   });
 
-  it('có đơn gần đây và việc cần xử lý, ghi rõ dữ liệu minh họa', async () => {
+  it('có liên kết Danh sách hàng hoàn dẫn tới UI-D01, vùng chạm đủ lớn', async () => {
     await renderWithProviders(<HomeScreen />);
-    expect(screen.getByText('Đơn gần đây')).toBeOnTheScreen();
-    expect(screen.getByText('Việc cần xử lý')).toBeOnTheScreen();
+    const link = screen.getByTestId('home-returns-list');
+    expect(screen.getByText('Danh sách hàng hoàn')).toBeOnTheScreen();
+    expect(link).toHaveStyle({ minHeight: getMinTouchTarget() });
+    await fireEvent.press(link);
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.returns);
+  });
+
+  it('có 4 lối tắt: Quét mã đơn, Tạo đơn nhanh, Danh sách đơn, Bằng chứng', async () => {
+    await renderWithProviders(<HomeScreen />);
+    const cases: [string, unknown][] = [
+      ['home-quick-scan', ROUTES.scan],
+      ['home-quick-order', ROUTES.quickOrder],
+      ['home-quick-orders', ROUTES.orders],
+      ['home-quick-evidence', ROUTES.sync],
+    ];
+    for (const [id, route] of cases) {
+      await fireEvent.press(screen.getByTestId(id));
+      expect(mockNavigation.push).toHaveBeenLastCalledWith(route);
+    }
+  });
+
+  it('thống kê hôm nay dùng nhãn trạng thái chuẩn và dẫn tới màn tương ứng', async () => {
+    await renderWithProviders(<HomeScreen />);
+    expect(screen.getByText('Thống kê hôm nay')).toBeOnTheScreen();
+    expect(screen.getByText('Đơn đã đóng gói')).toBeOnTheScreen();
+    expect(screen.getByText('Đã tải lên')).toBeOnTheScreen();
+    expect(screen.getByText('Lỗi – cần xử lý')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByTestId('home-stat-error'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.sync);
+    await fireEvent.press(screen.getByTestId('home-stat-packed'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.orders);
+    await fireEvent.press(screen.getByTestId('home-today-detail'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.sync);
+  });
+
+  it('banner và thẻ hướng dẫn mở Trợ giúp; ghi rõ dữ liệu minh họa', async () => {
+    await renderWithProviders(<HomeScreen />);
+    await fireEvent.press(screen.getByTestId('home-banner'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.help);
+    await fireEvent.press(screen.getByTestId('home-tip-guide'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.help);
     expect(screen.getByText(/Dữ liệu minh họa/)).toBeOnTheScreen();
   });
 
-  it('không có biểu đồ doanh thu, banner quảng bá hay nhãn mơ hồ của mockup', async () => {
+  it('không có biểu đồ doanh thu và không có lời hứa quá mức hay nhãn mơ hồ của mockup', async () => {
     await renderWithProviders(<HomeScreen />);
-    for (const banned of [/doanh thu/i, /lợi nhuận/i, /Đơn đã xử lý/, /Đã đồng bộ/, /uy tín/i]) {
-      expect(screen.queryByText(banned)).toBeNull();
+    const banned = [
+      /doanh thu/i,
+      /lợi nhuận/i,
+      /Đơn đã xử lý/,
+      /Đã đồng bộ/,
+      /Lỗi đồng bộ/,
+      /uy tín/i,
+      /tuyệt đối/i,
+      /chống giả mạo/i,
+      /quyền lợi/i,
+      /pháp lý/i,
+    ];
+    for (const pattern of banned) {
+      expect(screen.queryByText(pattern)).toBeNull();
     }
-  });
-
-  it('khối đồng bộ dùng nhãn trạng thái chuẩn, không hứa tự hoàn tất', async () => {
-    await renderWithProviders(<HomeScreen />);
-    expect(screen.getAllByText('Lỗi – cần xử lý').length).toBeGreaterThan(0);
-    expect(screen.getByText(/Tải nền có thể tạm dừng/)).toBeOnTheScreen();
-  });
-
-  it('menu tài khoản mở bottom sheet với hồ sơ, cài đặt, gói, trợ giúp (không phải tab)', async () => {
-    await renderWithProviders(<HomeScreen />);
-    await fireEvent.press(screen.getByTestId('account-menu-button'));
-    for (const label of ['Hồ sơ tài khoản', 'Cài đặt shop', 'Gói dịch vụ', 'Trợ giúp']) {
-      expect(screen.getByText(label)).toBeOnTheScreen();
-    }
-    await fireEvent.press(screen.getByText('Gói dịch vụ'));
-    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.plan);
   });
 });

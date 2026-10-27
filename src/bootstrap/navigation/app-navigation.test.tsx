@@ -6,7 +6,7 @@ import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-librar
 import { ROUTES } from '@/core/navigation';
 
 const APP_DIR = join(__dirname, '..', '..', 'app');
-const TAB_LABELS = ['Tổng quan', 'Đơn hàng', 'Hàng hoàn', 'Đồng bộ'] as const;
+const TAB_LABELS = ['Trang chủ', 'Đơn hàng', 'Quét mã đơn hàng', 'Thông báo', 'Cá nhân'] as const;
 
 function expectTabBarVisible(visible: boolean) {
   for (const label of TAB_LABELS) {
@@ -17,12 +17,84 @@ function expectTabBarVisible(visible: boolean) {
 
 /**
  * Chạy Expo Router thật trên thư mục `src/app` (trong bộ nhớ, không cần máy ảo): kiểm tra thanh tab
- * hiện ở Tổng quan, đủ 4 tab, và ẩn ở màn quay. Không thay thế kiểm thử trên thiết bị.
+ * hiện ở Trang chủ, đủ 5 mục, và ẩn ở màn quay. Không thay thế kiểm thử trên thiết bị.
  */
 describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
-  it('Tổng quan có thanh tab 4 mục theo D-11', async () => {
+  it('Trang chủ có thanh tab 5 mục theo mẫu thiết kế (D-16)', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
     expectTabBarVisible(true);
+  });
+
+  it('bấm nút Quét giữa mở màn quét toàn màn hình (không có thanh tab), quay lại về Trang chủ', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
+    await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn hàng' }));
+    expect(screen.getByTestId('screen-UI-B02')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-B01')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+  });
+
+  it.each([
+    ['Đơn hàng', 'screen-UI-E01'],
+    ['Thông báo', 'screen-UI-I07'],
+    ['Cá nhân', 'screen-UI-I01'],
+  ])('bấm Quét từ tab %s rồi Back về đúng tab đó (không về Trang chủ)', async (label, testID) => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
+    await fireEvent.press(screen.getByRole('button', { name: label }));
+    expect(screen.getByTestId(testID)).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn hàng' }));
+    expect(screen.getByTestId('screen-UI-B02')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId(testID)).toBeOnTheScreen();
+    expect(screen.queryByTestId('screen-UI-B01')).toBeNull();
+    expectTabBarVisible(true);
+  });
+
+  it('từ màn quét sang Tạo đơn nhanh rồi Back quay về màn quét; Back tiếp về màn trước khi quét', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
+    await fireEvent.press(screen.getByRole('button', { name: 'Đơn hàng' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn hàng' }));
+    await fireEvent.press(screen.getByTestId('scan-manual-open'));
+    await fireEvent.changeText(screen.getByTestId('scan-manual-code'), 'ABC123');
+    await fireEvent.press(screen.getByTestId('scan-manual-lookup'));
+    expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-B02')).toBeOnTheScreen();
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
+  });
+
+  it('chuyển qua lại giữa các tab Đơn hàng, Thông báo, Cá nhân; thanh tab vẫn hiện', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
+    await fireEvent.press(screen.getByRole('button', { name: 'Đơn hàng' }));
+    expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Thông báo' }));
+    expect(screen.getByTestId('screen-UI-I07')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Cá nhân' }));
+    expect(screen.getByTestId('screen-UI-I01')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+  });
+
+  it('vào Gói dịch vụ từ tab Cá nhân vẫn giữ thanh tab', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.plan.path });
+    expect(screen.getByTestId('screen-UI-H01')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+  });
+
+  it('Hàng hoàn và Đồng bộ không còn là tab: mở được nhưng không có thanh tab', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.returns.path });
+    expect(screen.getByTestId('screen-UI-D01')).toBeOnTheScreen();
+    expectTabBarVisible(false);
   });
 
   it('màn quay đóng gói không có thanh tab', async () => {

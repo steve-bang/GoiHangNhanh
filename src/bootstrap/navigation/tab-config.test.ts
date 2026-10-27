@@ -3,30 +3,36 @@ import resources from '@/core/i18n/locales/vi/nav.json';
 
 import { TAB_CONFIG } from './tab-config';
 
-describe('cấu hình thanh tab (D-11, docs/09 mục 2)', () => {
-  it('đúng 4 tab theo thứ tự: Tổng quan, Đơn hàng, Hàng hoàn, Đồng bộ', () => {
+describe('cấu hình thanh tab (D-16, theo mẫu thiết kế docs/assets/ui/02-home-and-scan.png)', () => {
+  it('đúng 5 mục theo thứ tự: Trang chủ, Đơn hàng, Quét (giữa), Thông báo, Cá nhân', () => {
     expect(
       TAB_CONFIG.map(
         (tab) =>
           resources.tabs[tab.labelKey.replace('nav:tabs.', '') as keyof typeof resources.tabs],
       ),
-    ).toEqual(['Tổng quan', 'Đơn hàng', 'Hàng hoàn', 'Đồng bộ']);
+    ).toEqual(['Trang chủ', 'Đơn hàng', 'Quét mã đơn hàng', 'Thông báo', 'Cá nhân']);
   });
 
-  it('không có tab Quét/Thông báo/Cá nhân của mockup (O-18 chưa chốt)', () => {
+  it('nút Quét ở đúng giữa và là hành động (không chuyển tab); Hàng hoàn/Đồng bộ không còn là tab', () => {
     const names = TAB_CONFIG.map((tab) => tab.name);
-    expect(names).toEqual(['home', 'orders', 'returns', 'sync']);
-    expect(names).not.toContain('scan');
+    expect(names[2]).toBe('scan-tab');
+    expect(TAB_CONFIG.filter((tab) => 'action' in tab).map((tab) => tab.name)).toEqual([
+      'scan-tab',
+    ]);
+    expect(names).not.toContain('returns');
+    expect(names).not.toContain('sync');
   });
 
-  it('mỗi tab trỏ đúng route gốc của tab và dùng biểu tượng riêng', () => {
+  it('mỗi mục trỏ đúng route và dùng biểu tượng riêng', () => {
     expect(TAB_CONFIG.map((tab) => tab.route)).toEqual([
       ROUTES.home,
       ROUTES.orders,
-      ROUTES.returns,
-      ROUTES.sync,
+      ROUTES.scan,
+      ROUTES.notificationList,
+      ROUTES.profile,
     ]);
     for (const tab of TAB_CONFIG) {
+      if ('action' in tab) continue;
       expect(tab.route.path).toBe(`/${tab.name}`);
       expect(tab.route.tabBar).toBe(true);
     }

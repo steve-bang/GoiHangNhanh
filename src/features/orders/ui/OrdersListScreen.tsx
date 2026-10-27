@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
 import { EVIDENCE_STATUS_PRESENTATION, type EvidenceStatusLabel } from '@/core/theme';
-import { AccountMenuButton } from '@/features/shop';
 import { useAppNavigation } from '@/platform';
 import { ILLUSTRATIVE_ORDERS } from '@/shared/fixtures/illustrative-data';
 import {
@@ -47,13 +46,7 @@ export function OrdersListScreen() {
   );
 
   return (
-    <Screen
-      title={t('nav:titles.UI-E01')}
-      headerRight={<AccountMenuButton />}
-      inTabs
-      illustrative
-      testID="screen-UI-E01"
-    >
+    <Screen title={t('nav:titles.UI-E01')} inTabs illustrative testID="screen-UI-E01">
       <SearchField value={query} onChangeText={setQuery} placeholder={t('screens:orders.search')} />
       <FilterChips options={options} selectedKey={filter} onSelect={setFilter} />
       <View style={{ gap: spacing.md }}>

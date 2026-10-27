@@ -40,6 +40,7 @@ export const navigationMock = {
   }),
   useRouteParams: () => mockNavigation.params,
   useIsScreenActive: () => () => mockNavigation.screenActive,
+  useScreenFocused: () => mockNavigation.screenActive,
   useConfirmBeforeLeave: (enabled: boolean, onAttempt: () => void) => {
     mockNavigation.leaveGuardEnabled = enabled;
     mockNavigation.attemptLeave = onAttempt;

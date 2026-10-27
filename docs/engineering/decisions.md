@@ -20,9 +20,10 @@ Trạng thái dùng trong bảng: **Đã áp dụng trong khung** (có mã/cấu
 | 010 | Công cụ: ESLint 9, TypeScript 6.0, Jest 30, Prettier | Đã áp dụng trong khung |
 | 011 | Không ép duy nhất cứng cho mã đơn; phát hiện trùng khi truy vấn/đồng bộ | Đề xuất — cần BA (Q-03) |
 | 012 | `src/bootstrap` làm composition root (nhường `src/app` cho Expo Router) | Đã áp dụng trong khung |
-| 013 | Khung giao diện: Expo Router 58, 4 tab cấu hình ở một nơi, bảng route↔`UI-xx`, adapter điều hướng | Đã áp dụng trong khung (chờ duyệt) |
+| 013 | Khung giao diện: Expo Router 58, thanh tab 5 mục (D-16) cấu hình ở một nơi, bảng route↔`UI-xx`, adapter điều hướng | Đã áp dụng trong khung (chờ duyệt) |
 | 014 | Icon: `@expo/vector-icons` (chỉ Ionicons) sau lớp `Icon`; token qua `useTheme()` | Đã áp dụng trong khung (chờ duyệt) |
 | 015 | Test giao diện: `@testing-library/react-native` 14 + `expo-router/testing-library` | Đã áp dụng trong khung |
+| 016 | Quét mã đơn: `expo-camera` ~58.0.12 sau adapter `src/platform/barcode-scanner.tsx` (chỉ quét, không quay video) | Đã áp dụng cho màn quét — cần spike S1 trên thiết bị |
 
 ---
 
@@ -108,7 +109,7 @@ Chi tiết cấu trúc: [layout.md](layout.md). Ngày kiểm tra phiên bản: 2
 
 - **Expo Router 58.0.26** (đúng phiên bản của Expo SDK 58 trong `expo/bundledNativeModules.json`), kèm `react-native-screens` 4.30.0, `react-native-safe-area-context` 5.10.1, `expo-linking` 58.0.14, `expo-constants` 58.0.13, `react-dom` 19.3.0 (peer bắt buộc để cây phụ thuộc của expo-router giải được; chỉ dùng cho web, app không build web). `package.json#main` = `expo-router/entry`; route ở `src/app`; `src/bootstrap/Providers.tsx` là composition root (ADR-012).
 - Môi trường tạo khung không gọi được `api.expo.dev`, nên **không chạy được `npx expo install`**; phiên bản lấy từ `bundledNativeModules.json` rồi `npm install` đúng bản đó (cùng nguồn mà `expo install` dùng). Lần cài sau nên dùng `npx expo install` thông thường.
-- **Thanh tab: 4 tab theo D-11** (Tổng quan · Đơn hàng · Hàng hoàn · Đồng bộ), cấu hình MỘT nơi ở `src/bootstrap/navigation/tab-config.ts`. Không theo mockup (O-18 chưa chốt). Chuyển sang phương án O-18 = thêm một mục + một thư mục tab (xem layout.md mục 6).
+- **Thanh tab: 5 mục theo mockup (D-16)**: Trang chủ · Đơn hàng · Quét (nút nổi giữa, không chuyển tab) · Thông báo · Cá nhân, cấu hình MỘT nơi ở `src/bootstrap/navigation/tab-config.ts` (xem layout.md mục 6). *(Ban đầu là 4 tab D-11: Tổng quan · Đơn hàng · Hàng hoàn · Đồng bộ.)*
 - **Màn quay (UI-C03, UI-D04) nằm ngoài nhóm `(tabs)`** nên thanh tab ẩn; rời màn đi qua `ConfirmDialog` nhờ `usePreventRemove` của Expo Router (bọc trong `useConfirmBeforeLeave` ở `src/platform/navigation.ts`). Đã kiểm chứng bằng router chạy trong bộ nhớ (Jest), **chưa kiểm chứng nút Back phần cứng Android và cử chỉ vuốt iOS trên thiết bị**.
 - **Một bảng route ↔ `UI-xx`** ở `src/core/navigation/routes.ts` (TypeScript thuần); test đối chiếu bảng với các tệp thật trong `src/app`. Màn hình chỉ biết `RouteDef`, không rải chuỗi đường dẫn; `src/platform/navigation.ts` là adapter duy nhất gọi Expo Router (đổi thư viện điều hướng chỉ sửa tệp này).
 - Header: dùng `Screen`/`ScreenHeader` của design system (`headerShown: false` cho navigator) để iOS và Android giống nhau và tràn viền đúng; không dùng header gốc của navigator.
@@ -122,6 +123,14 @@ Chi tiết cấu trúc: [layout.md](layout.md). Ngày kiểm tra phiên bản: 2
 
 - `@testing-library/react-native` **14.1.0** (peer `test-renderer`, đã có sẵn qua `jest-expo`; API `render`/`fireEvent` là bất đồng bộ, phải `await`) và `expo-router/testing-library` (chạy router thật trên `src/app` trong bộ nhớ). `jest.setup.ts` thay font icon bằng component hiển thị tên glyph để test biết biểu tượng nào được vẽ.
 - Giới hạn: không thay thế kiểm thử trên thiết bị (bố cục thật, bàn phím, vùng an toàn, Back phần cứng, font scale thật).
+
+## ADR-016 — Quét mã bằng `expo-camera`
+
+- **`expo-camera` ~58.0.12** (đúng dòng Expo SDK 58), **chỉ dùng để quét mã** (QR, Code128/39/93, EAN, ITF-14, UPC, Codabar, DataMatrix) ở UI-B02. Plugin trong `app.json` với chuỗi quyền camera bằng tiếng Việt; **`microphonePermission: false`, `recordAudioAndroid: false`** để không xin micro. Màn hình không import `expo-camera`: chỉ qua adapter `src/platform/barcode-scanner.tsx` (`useScannerPermission`, `BarcodeScannerView`), nên đổi thư viện (ví dụ `react-native-vision-camera`, ADR-003) chỉ sửa tệp này. Test dùng `src/test-utils/mock-barcode-scanner.tsx`.
+- **Không chốt ADR-003.** Camera quay video vẫn cần spike S1 (VisionCamera v5 so với `expo-camera`); ADR này chỉ chọn thư viện cho việc quét mã để màn UI-B02 chạy thật. Nếu spike S1 chọn VisionCamera cho quay video, nên dùng chung một thư viện camera và thay adapter.
+- `npx expo install` bị chặn (`api.expo.dev`, như ADR-013) nên cài bằng `npm install expo-camera@~58.0.12`.
+- **Quyền sau khi bật lại trong Cài đặt:** `useCameraPermissions` chỉ đọc lúc mount, nên adapter nghe `AppState` và gọi lại hàm lấy quyền khi app trở lại `active` (có unit test với `expo-camera` giả). **Thử trên thiết bị:** từ chối quyền (hoặc từ chối hẳn) -> ra Cài đặt bật lại -> quay về app: màn quét phải tự mở camera, không cần thoát màn; làm trên cả iOS và Android (Android cũng có thể đổi quyền khi app bị hệ điều hành kill: kiểm tra mở lại app).
+- **Chưa kiểm chứng trên thiết bị:** quét mã thật trên iOS/Android, đèn pin, hộp thoại xin quyền, từ chối hẳn rồi mở Cài đặt, hành vi khi ứng dụng khác chiếm camera, tốc độ/độ chính xác với nhãn vận đơn thật. Đã kiểm chứng: unit test (adapter giả), `expo export` iOS/Android, ảnh chụp bản web với camera giả của Chromium (xem được luồng, không phải hiệu năng quét).
 
 ---
 
@@ -277,6 +286,23 @@ Giai đoạn: giao diện + logic khởi động + **cổng phiên giả** (chư
 1. Hành vi build thường = `signed_out` có chấp nhận cho bản nội bộ không (mục d)? Khuyến nghị: chấp nhận; QA đặt `EXPO_PUBLIC_FAKE_SESSION=signed_in` khi cần vào khung.
 2. Khi có Firebase thật: khôi phục phiên từ bộ nhớ cục bộ (không chờ mạng) và vẫn giữ quy tắc 2-3 giây? Khuyến nghị: có; offline với phiên hợp lệ vào thẳng công việc cục bộ.
 3. Đồng bộ logo khiên-play ra toàn app, nhận diện icon/adaptive icon chính thức, phông chữ, ảnh 3D sạch (không logo sàn): O-23, O-24, O-25.
+
+### Q-16 — Thanh tab theo mockup (D-16), Trang chủ và Quét mã đơn hàng: quyết định đã duyệt và chỗ lệch
+Người dùng yêu cầu: thêm nút Quét ở giữa, làm thanh tab giống mockup 02 (Trang chủ, Đơn hàng, Thông báo, Cá nhân), và dựng hai màn Trang chủ (UI-B01), Quét mã đơn hàng (UI-B02) giống thiết kế, **camera thật**, **giữ bố cục mẫu nhưng sửa chữ vi phạm**. Kế hoạch đã duyệt trước khi làm.
+
+| # | Nội dung | Ghi chú / hệ quả |
+|---|---|---|
+| a | **Nút Quét giữa không phải tab**: `tabPress` bị chặn và `router.push('/scan')`. Màn quét là **route cấp gốc** `src/app/scan.tsx` (ngoài nhóm tab, như `returns/`, `sync/`), ẩn thanh tab (`tabBar: false`, `isTabBarHiddenAt`). Sửa lỗi review: bản đầu đặt `/home/scan` trong stack tab Trang chủ nên Back luôn về Trang chủ dù bấm Quét từ tab khác. Tạo đơn nhanh/Tìm đơn đã lưu vẫn nằm trong `(tabs)/home` và mở từ `/scan` (router đã kiểm tra: Back từ Tạo đơn nhanh về màn quét, Back tiếp về đúng màn trước khi quét). Tệp giữ chỗ `(tabs)/scan-tab.tsx` chuyển hướng tới màn quét khi mở thẳng bằng liên kết sâu | Test điều hướng thật: bấm Quét từ Trang chủ/Đơn hàng/Thông báo/Cá nhân rồi Back về đúng màn đó; Back từ Tạo đơn nhanh về màn quét. Chưa thử trên thiết bị (Back phần cứng Android, cử chỉ vuốt iOS) |
+| b | **Hàng hoàn, Đồng bộ ra khỏi nhóm tab** (`src/app/returns/*`, `src/app/sync/*`; URL không đổi, có nút quay lại, không có thanh tab). **Cá nhân**: toàn bộ `account/*` chuyển vào `(tabs)/account/` nên thanh tab còn khi vào Gói/Bảo mật. `AccountMenuButton` bị bỏ | Lối vào Hàng hoàn/Đồng bộ chỉ từ Trang chủ (O-27). Thẻ *Nhận hàng hoàn* mở thẳng Tìm đơn gốc (UI-D02) nên danh sách hàng hoàn (UI-D01) có liên kết nhỏ riêng *Danh sách hàng hoàn* dưới thẻ |
+| c | **Mã `UI-I07` Thông báo** (tab) do dự án thêm vì docs/09 chỉ có UI-I04 (cài đặt thông báo). Màn là khung rỗng; chuông ở Trang chủ **không có chấm báo** vì chưa có dữ liệu thật | O-26 |
+| d | **Chữ sửa so với mẫu** (docs/09 mục 5.5): banner "Bảo vệ đơn hàng để ảnh hơn bao giờ hết / Ghi hình – Lưu trữ – An tâm kinh doanh" → "Ghi hình đóng gói đầy đủ, lưu giữ rõ ràng / Ghi hình – Lưu trữ – Theo dõi trạng thái"; thẻ dưới "Ghi hình đủ bước, Tăng uy tín shop, Bảo vệ quyền lợi của bạn!" → "Ghi hình đủ các bước / Quay từ lúc lấy hàng đến khi dán niêm phong xong."; thống kê "Đơn đã xử lý / Đã đồng bộ / Lỗi đồng bộ" → "Đơn đã đóng gói / Đã tải lên / Lỗi – cần xử lý". Test chặn các cụm cũ | Banner và thẻ dưới đều dẫn tới Trợ giúp |
+| e | **Trang chủ bỏ** "Đơn gần đây", "Việc cần xử lý", khối đồng bộ so với docs/09 UI-B01, vì mẫu không có | O-27; lỗi tải lên vẫn thấy qua ô *Lỗi – cần xử lý* |
+| f | **Lối tắt *Bằng chứng*** mở Trung tâm đồng bộ (`/sync`): chưa có màn danh sách bằng chứng riêng. *Giả định, cần xác nhận* | O-27 |
+| g | **Màn quét thêm nút đèn pin** (mẫu thiếu; docs/09 UI-B02 yêu cầu) và hiện mã vừa quét; nhập tay mở bottom sheet (có lối *Tìm đơn đã lưu*). Quét xong tự sang Tạo đơn nhanh với mã, **chống quét lặp 2 giây**, tắt camera khi màn khác phủ lên. Ngoại lệ: chưa cấp quyền (hộp thoại xin quyền tự hiện khi vào màn; đóng thì còn khung hướng dẫn kèm nút xin), bị từ chối hẳn (hộp thoại có nút mở Cài đặt), camera không mở được: đều vẫn nhập tay được | Chưa có tra cứu thật; không tự chọn kết quả (bất biến 5) |
+| h | **Hình hộp hàng 3D của mẫu** chưa có tệp: banner dùng hình vẽ bằng biểu tượng (`ParcelIllustration`), nền chuyển màu bằng SVG (không thêm thư viện gradient). Avatar là biểu tượng cửa hàng, không phải ảnh | Thay bằng ảnh thật khi có |
+| i | **`expo-camera`** ADR-016; màu mới `scanAccent`, `onCameraMuted`, `cameraControl` (tạm) | Xin quyền camera ngay tại màn quét; màn UI-A05 vẫn là khung |
+
+**Chưa kiểm chứng:** mọi thứ trên iOS/Android thật (quét, đèn pin, quyền, tai thỏ/thanh điều hướng, nút nổi giữa trên các cỡ máy, chữ lớn). Ảnh chụp web (390x844, 360x800) cho thấy bố cục khớp mẫu; thanh tab 5 mục vừa ở 360 dp nhưng nhãn "Thông báo" khá sát.
 
 ## Rủi ro nền tảng phát hiện (tóm tắt)
 

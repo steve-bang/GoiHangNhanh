@@ -5,7 +5,10 @@ export {
   useConfirmBeforeLeave,
   useIsScreenActive,
   useRouteParams,
+  useScreenFocused,
 } from './navigation';
 export type { AppNavigation, RouteParams } from './navigation';
-export { openExternalLink } from './external-link';
+export { openAppSettings, openExternalLink } from './external-link';
+export { BarcodeScannerView, useScannerPermission } from './barcode-scanner';
+export type { ScannerPermission } from './barcode-scanner';
 export { hideNativeSplash, holdNativeSplash } from './native-splash';
