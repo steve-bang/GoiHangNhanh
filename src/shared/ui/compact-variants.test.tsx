@@ -80,7 +80,7 @@ describe('biến thể gọn (tab Đơn hàng dùng nhóm chữ form, Q-18)', ()
     );
   });
 
-  it('OrderCard: mã đơn 15sp đậm (nhỏ hơn 24sp cũ), dòng phụ >= 13sp, hành động có hitSlop đủ vùng chạm', async () => {
+  it('OrderCard: mã đơn 15sp đậm (nhỏ hơn 24sp cũ), dòng phụ >= 13sp, hành động đủ vùng chạm, không chồng lên vùng thông tin', async () => {
     await renderWithProviders(
       <OrderCard
         testID="oc"
@@ -99,9 +99,9 @@ describe('biến thể gọn (tab Đơn hàng dùng nhóm chữ form, Q-18)', ()
     expect(style(screen.getByText('DH-1')).fontSize).toBe(15);
     expect(style(screen.getByText('Shopee')).fontSize).toBeGreaterThanOrEqual(13);
     const action = screen.getByTestId('oc-action');
-    const slop = action.props.hitSlop as { top: number; bottom: number };
-    expect(Number(style(action).minHeight) + slop.top + slop.bottom).toBeGreaterThanOrEqual(
-      getMinTouchTarget(),
-    );
+    // Vùng chạm do chính nút đủ cao, không mượn hitSlop => không thể chồng lên vùng thông tin phía trên.
+    expect(action.props.hitSlop).toBeUndefined();
+    expect(Number(style(action).minHeight)).toBeGreaterThanOrEqual(getMinTouchTarget());
+    expect(screen.getByTestId('oc-body').props.hitSlop).toBeUndefined();
   });
 });

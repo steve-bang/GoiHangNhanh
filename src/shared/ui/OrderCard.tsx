@@ -41,8 +41,9 @@ interface OrderCardProps {
  * Thẻ đơn (UI-E01), cỡ gọn theo nhóm chữ form (decisions.md Q-18): hàng đầu là mã đơn (15sp đậm,
  * nổi bật nhất) + MỘT trạng thái bằng chứng; kế đó nguồn bán + mã vận đơn (13sp), sản phẩm đầu tiên
  * (hoặc *Chưa khai báo sản phẩm*); chân thẻ là thời điểm tạo + MỘT hành động. Màu không là tín hiệu
- * duy nhất: trạng thái luôn có chữ + biểu tượng (do `statusBadge`). Hành động thấp hơn vùng chạm
- * tối thiểu về mặt nhìn thấy nhưng được bù bằng `hitSlop`.
+ * duy nhất: trạng thái luôn có chữ + biểu tượng (do `statusBadge`). Chân thẻ là vùng riêng, nút hành
+ * cao đủ vùng chạm tối thiểu (`getMinTouchTarget`) và KHÔNG dùng `hitSlop` mở ra ngoài, nên không
+ * chồng lên vùng thông tin (chạm vùng đó luôn chỉ mở chi tiết, không bấm nhầm hành động).
  */
 export function OrderCard({
   orderCode,
@@ -73,7 +74,6 @@ export function OrderCard({
   ]
     .filter(Boolean)
     .join('. ');
-  const slop = Math.max(0, Math.ceil((getMinTouchTarget() - ACTION_HEIGHT) / 2));
   return (
     <View
       testID={testID}
@@ -94,8 +94,8 @@ export function OrderCard({
         style={({ pressed }) => [
           {
             paddingHorizontal: spacing.md,
-            paddingTop: spacing.md,
-            paddingBottom: spacing.xs,
+            paddingTop: spacing.sm + 2,
+            paddingBottom: 0,
             gap: spacing.xs,
             opacity: pressed ? 0.85 : 1,
           },
@@ -151,7 +151,7 @@ export function OrderCard({
           </View>
         )}
       </Pressable>
-      <View style={[styles.footer, { paddingHorizontal: spacing.md, paddingBottom: spacing.md }]}>
+      <View style={[styles.footer, { paddingLeft: spacing.md, paddingRight: spacing.xs }]}>
         <Text variant="caption" color="inkMuted" style={styles.shrink}>
           {dateLabel}
         </Text>
@@ -160,10 +160,10 @@ export function OrderCard({
           accessibilityRole="button"
           accessibilityLabel={`${actionLabel}, ${orderCode}`}
           onPress={onPressAction}
-          hitSlop={{ top: slop, bottom: slop, left: 8, right: 8 }}
           style={({ pressed }) => [
             styles.action,
-            { minHeight: ACTION_HEIGHT, opacity: pressed ? 0.7 : 1 },
+            { minHeight: getMinTouchTarget(), paddingHorizontal: spacing.sm },
+            { opacity: pressed ? 0.7 : 1 },
           ]}
         >
           <Text variant="formButtonSmall" style={{ color: colors.brand }}>
@@ -175,9 +175,6 @@ export function OrderCard({
     </View>
   );
 }
-
-/** Chiều cao nhìn thấy của nút hành động trên thẻ; vùng chạm được bù bằng hitSlop. */
-const ACTION_HEIGHT = 26;
 
 const styles = StyleSheet.create({
   card: { borderWidth: 1, overflow: 'hidden' },
