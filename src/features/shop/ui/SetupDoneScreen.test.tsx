@@ -59,7 +59,7 @@ describe('UI-A06 Hoàn tất thiết lập', () => {
     expect(screen.getByText('Bạn đã sẵn sàng sử dụng Đơn\u00a0Chứng')).toBeOnTheScreen();
     expect(
       screen.getByText(
-        'Cảm ơn bạn đã hoàn tất thiết lập. Giờ đây bạn có thể bắt đầu ghi hình và bảo vệ đơn hàng của mình.',
+        'Cảm ơn bạn đã hoàn tất thiết lập. Giờ đây bạn có thể bắt đầu ghi hình và lưu bằng chứng cho đơn hàng.',
       ),
     ).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Bắt đầu sử dụng' })).toBeOnTheScreen();

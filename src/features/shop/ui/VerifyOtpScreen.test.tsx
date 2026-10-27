@@ -58,6 +58,16 @@ const cell = (i: number) =>
   screen.getByTestId(`otp-input-cell-${i}`, { includeHiddenElements: true });
 const submit = () => screen.getByTestId('otp-submit');
 
+/**
+ * Giống một ô nhập thật: hệ điều hành cắt chuỗi theo `maxLength` (nếu có) TRƯỚC khi gọi
+ * `onChangeText`. `fireEvent.changeText` bỏ qua bước này nên phải mô phỏng tay, nếu không test
+ * không bắt được lỗi cắt chuỗi dán.
+ */
+async function typeAsNative(text: string) {
+  const max = input().props.maxLength as number | undefined;
+  await fireEvent.changeText(input(), max === undefined ? text : text.slice(0, max));
+}
+
 describe('UI-A08 Nhập mã: chặn vào khi chưa xin mã', () => {
   it('chưa có email đã gửi mã: không hiện màn, chuyển về /forgot-password', async () => {
     await renderWithProviders(<VerifyOtpScreen />);
@@ -92,10 +102,10 @@ describe('UI-A08 Nhập mã: giao diện', () => {
     ).toBeOnTheScreen();
   });
 
-  it('một ô nhập thật: bàn phím số, tối đa 6, mã tự điền, nhãn truy cập', async () => {
+  it('một ô nhập thật: bàn phím số, mã tự điền, nhãn truy cập; KHÔNG có maxLength (sẽ cắt chuỗi dán trước khi lọc)', async () => {
     await renderOtp();
     expect(input().props.keyboardType).toBe('number-pad');
-    expect(input().props.maxLength).toBe(6);
+    expect(input().props.maxLength).toBeUndefined();
     expect(input().props.textContentType).toBe('oneTimeCode');
     expect(input().props.autoComplete).toBe('one-time-code');
     expect(input().props.accessibilityLabel).toBe('Mã xác minh 6 chữ số');
@@ -122,6 +132,36 @@ describe('UI-A08 Nhập mã: nhập liệu', () => {
     expect(within(cell(0)).getByText('1', { includeHiddenElements: true })).toBeOnTheScreen();
     expect(within(cell(2)).getByText('3', { includeHiddenElements: true })).toBeOnTheScreen();
     expect(submit().props.accessibilityState).toMatchObject({ disabled: true });
+  });
+
+  it.each(['123 456', '123-456', ' 123 456 ', '123456', '1 2 3 4 5 6', '123456789'])(
+    'dán %j đi qua đúng đường xử lý của ô thật: đủ 6 ô, tự xác minh với đúng 123456',
+    async (pasted) => {
+      const fake = createFakeGateways();
+      await renderOtp({ gateways: fake, email: FAKE_DEMO_EMAIL });
+      await fake.auth.requestPasswordRecovery(FAKE_DEMO_EMAIL);
+      await typeAsNative(pasted);
+      expect(input().props.value).toBe('123456');
+      for (let i = 0; i < 6; i++) {
+        expect(
+          within(cell(i)).getByText(String(i + 1), { includeHiddenElements: true }),
+        ).toBeOnTheScreen();
+      }
+      expect(fake.auth.verifyCalls).toEqual([{ email: FAKE_DEMO_EMAIL, code: '123456' }]);
+      expect(mockNavigation.replace).toHaveBeenLastCalledWith(ROUTES.newPassword);
+    },
+  );
+
+  it('gõ/dán thêm khi đã đủ 6 số mà mã không đổi: không xác minh lại cùng một mã', async () => {
+    const fake = createFakeGateways();
+    await renderOtp({ gateways: fake, email: FAKE_DEMO_EMAIL });
+    await fake.auth.requestPasswordRecovery(FAKE_DEMO_EMAIL);
+    await typeAsNative('111111');
+    expect(fake.auth.verifyCalls).toHaveLength(1);
+    await typeAsNative('1111117');
+    await typeAsNative('111 111');
+    expect(fake.auth.verifyCalls).toHaveLength(1);
+    expect(input().props.value).toBe('111111');
   });
 
   it('nút Xác minh khóa tới khi đủ 6 số; chưa đủ thì không gọi cổng', async () => {
@@ -158,6 +198,30 @@ describe('UI-A08 Nhập mã: xác minh', () => {
     expect(screen.queryByText(/thành công/i)).toBeNull();
     // vé không đi qua tham số điều hướng
     expect(JSON.stringify(mockNavigation.replace.mock.calls)).not.toContain('ticket');
+  });
+
+  it('đã rời màn trong lúc chờ cổng: mã đúng cũng KHÔNG chuyển sang /new-password và không giữ vé', async () => {
+    let resolve: (v: { ticket: string }) => void = () => undefined;
+    const verifyRecoveryCode = jest.fn(
+      () =>
+        new Promise<{ ticket: string }>((r) => {
+          resolve = r;
+        }),
+    );
+    const gateways: Gateways = {
+      auth: { ...createUnavailableGateways().auth, verifyRecoveryCode },
+      shop: createFakeGateways().shop,
+    };
+    await renderOtp({ gateways });
+    await fireEvent.changeText(input(), '123456');
+    // người dùng bấm Back (về Quên mật khẩu) khi cổng còn chờ
+    await fireEvent.press(screen.getByRole('button', { name: 'Quay lại' }));
+    expect(mockNavigation.back).toHaveBeenCalledTimes(1);
+    mockNavigation.screenActive = false;
+    await act(async () => resolve({ ticket: 't' }));
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    expect(mockNavigation.push).not.toHaveBeenCalled();
+    expect(mockNavigation.reset).not.toHaveBeenCalled();
   });
 
   it('nút Xác minh gọi cổng khi đủ 6 số (sau khi tự xác minh lỗi rồi bấm lại)', async () => {

@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, within } from '@testing-library/react-native';
 import { useState } from 'react';
-import { Pressable, useWindowDimensions } from 'react-native';
+import { Pressable, Text, useWindowDimensions } from 'react-native';
 
 import { resources } from '@/core/i18n/resources';
 import { ROUTES } from '@/core/navigation';
@@ -71,7 +71,9 @@ describe('UI-A03 Đăng nhập: giao diện', () => {
     expect(screen.getByTestId('stacked-brand-logo')).toBeOnTheScreen();
     expect(screen.getByText('Bảo vệ đơn hàng – Vững bước kinh doanh')).toBeOnTheScreen();
     expect(screen.getByText('Chào mừng bạn trở lại!')).toBeOnTheScreen();
-    expect(screen.getByText('Cùng Đơn Chứng bảo vệ từng đơn hàng của bạn nhé!')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Cùng Đơn Chứng lưu bằng chứng cho từng đơn hàng nhé!'),
+    ).toBeOnTheScreen();
     expect(screen.getByText('Email')).toBeOnTheScreen();
     expect(screen.getByText('Mật khẩu')).toBeOnTheScreen();
     expect(screen.getByRole('link', { name: 'Quên mật khẩu?' })).toBeOnTheScreen();
@@ -192,6 +194,22 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
     expect(mockNavigation.reset).not.toHaveBeenCalled();
   });
 
+  it('đã rời màn trong lúc chờ cổng: kết quả muộn không điều hướng (không reset, không push)', async () => {
+    const { gateways, signInWithPassword, resolve } = pendingGateways();
+    await renderWithProviders(<SignInScreen />, { gateways });
+    await fill(FAKE_DEMO_EMAIL, FAKE_DEMO_PASSWORD);
+    await fireEvent.press(submit());
+    expect(signInWithPassword).toHaveBeenCalledTimes(1);
+    // người dùng bấm Back / đi chỗ khác trong lúc cổng còn chờ
+    mockNavigation.screenActive = false;
+    await act(async () => {
+      resolve({ uid: 'u', email: FAKE_DEMO_EMAIL, emailVerified: false, hasShop: true });
+    });
+    expect(mockNavigation.reset).not.toHaveBeenCalled();
+    expect(mockNavigation.push).not.toHaveBeenCalled();
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+  });
+
   it('phím Return ở ô mật khẩu gửi form', async () => {
     const fake = createFakeGateways();
     await renderWithProviders(<SignInScreen />, { gateways: fake });
@@ -298,23 +316,56 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
   });
 });
 
-describe('UI-A03 Đăng nhập: điều hướng và tham số', () => {
-  it('điền sẵn email từ tham số (chỉ email); không có tham số mật khẩu nào', async () => {
-    mockNavigation.params = { email: 'tu.dang.ky@example.com' };
-    await renderWithProviders(<SignInScreen />);
+describe('UI-A03 Đăng nhập: điều hướng và email điền sẵn', () => {
+  /** Mô phỏng: màn khác đặt email điền sẵn vào trạng thái luồng; mở/đóng màn Đăng nhập; đọc luồng. */
+  function PrefillHarness() {
+    const { dispatchRecovery, recovery } = useOnboardingFlow();
+    const [shown, setShown] = useState(false);
+    return (
+      <>
+        <Pressable
+          testID="seed"
+          onPress={() =>
+            dispatchRecovery({ type: 'signin_email_set', email: 'tu.dang.ky@example.com' })
+          }
+        />
+        <Pressable testID="toggle" onPress={() => setShown((value) => !value)} />
+        <Text testID="probe-forgot-email">{recovery.email}</Text>
+        <Text testID="probe-prefill">{recovery.signInEmail ?? '(trống)'}</Text>
+        {shown ? <SignInScreen /> : null}
+      </>
+    );
+  }
+
+  it('điền sẵn email từ trạng thái luồng MỘT lần (chỉ email, không mật khẩu, không qua tham số)', async () => {
+    await renderWithProviders(<PrefillHarness />);
+    await fireEvent.press(screen.getByTestId('seed'));
+    await fireEvent.press(screen.getByTestId('toggle'));
     expect(screen.getByTestId('signin-email').props.value).toBe('tu.dang.ky@example.com');
     expect(screen.getByTestId('signin-password').props.value).toBe('');
+    expect(screen.getByTestId('probe-prefill')).toHaveTextContent('(trống)');
+    await fireEvent.press(screen.getByTestId('toggle'));
+    await fireEvent.press(screen.getByTestId('toggle'));
+    expect(screen.getByTestId('signin-email').props.value).toBe('');
   });
 
-  it('Quên mật khẩu? mở /forgot-password, mang theo email đã gõ nếu có', async () => {
+  it('không đọc email từ tham số điều hướng', async () => {
+    mockNavigation.params = { email: 'tham.so@example.com' };
     await renderWithProviders(<SignInScreen />);
+    expect(screen.getByTestId('signin-email').props.value).toBe('');
+  });
+
+  it('Quên mật khẩu? mở /forgot-password KHÔNG kèm tham số; email đã gõ đi vào trạng thái luồng', async () => {
+    await renderWithProviders(<PrefillHarness />);
+    await fireEvent.press(screen.getByTestId('toggle'));
     await fireEvent.press(screen.getByRole('link', { name: 'Quên mật khẩu?' }));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.forgotPassword);
+    expect(screen.getByTestId('probe-forgot-email')).toHaveTextContent('');
     await fireEvent.changeText(screen.getByTestId('signin-email'), ' a@b.co ');
     await fireEvent.press(screen.getByRole('link', { name: 'Quên mật khẩu?' }));
-    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.forgotPassword, {
-      email: 'a@b.co',
-    });
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.forgotPassword);
+    expect(mockNavigation.push.mock.calls.every((call) => call.length === 1)).toBe(true);
+    expect(screen.getByTestId('probe-forgot-email')).toHaveTextContent('a@b.co');
   });
 
   it('Tạo tài khoản mở /sign-up', async () => {

@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react-native';
-import { useWindowDimensions } from 'react-native';
+import { Text, useWindowDimensions } from 'react-native';
 
 import { resources } from '@/core/i18n/resources';
 import { ROUTES } from '@/core/navigation';
@@ -10,6 +10,7 @@ import { createFakeGateways, FAKE_DEMO_EMAIL } from '../data/fake-gateways';
 import { createUnavailableGateways } from '../data/unavailable-gateways';
 import type { Gateways } from '../domain/types';
 import { NewPasswordScreen } from './NewPasswordScreen';
+import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import { WithRecoveryState } from './recovery-test-harness';
 
 jest.mock(
@@ -31,17 +32,37 @@ beforeEach(() => {
   resetMockNavigation();
 });
 
-/** Dựng màn sau khi đã qua bước nhập mã (có vé). */
-function renderNew(gateways: Gateways = createFakeGateways(), ticket = 'fake-ticket-1') {
+/** Chỉ để test đọc trạng thái luồng khôi phục. */
+function RecoveryProbe() {
+  const { recovery } = useOnboardingFlow();
+  return (
+    <>
+      <Text testID="probe-ticket">{recovery.ticket ?? '(không)'}</Text>
+      <Text testID="probe-requested">{recovery.requestedEmail ?? '(không)'}</Text>
+      <Text testID="probe-signin-email">{recovery.signInEmail ?? '(không)'}</Text>
+      <Text testID="probe-notice">{String(recovery.resetNotice)}</Text>
+    </>
+  );
+}
+
+/** Dựng màn sau khi đã qua bước nhập mã (có vé). `ticketExpiresAt` là mốc hạn cổng báo (nếu có). */
+function renderNew(
+  gateways: Gateways = createFakeGateways(),
+  ticket = 'fake-ticket-1',
+  ticketExpiresAt: number | null = null,
+) {
   return renderWithProviders(
-    <WithRecoveryState
-      actions={() => [
-        { type: 'code_requested', email: FAKE_DEMO_EMAIL, resendAvailableAt: 0 },
-        { type: 'code_verified', ticket },
-      ]}
-    >
-      <NewPasswordScreen />
-    </WithRecoveryState>,
+    <>
+      <RecoveryProbe />
+      <WithRecoveryState
+        actions={() => [
+          { type: 'code_requested', email: FAKE_DEMO_EMAIL, resendAvailableAt: 0 },
+          { type: 'code_verified', ticket, ticketExpiresAt },
+        ]}
+      >
+        <NewPasswordScreen />
+      </WithRecoveryState>
+    </>,
     { gateways },
   );
 }
@@ -79,6 +100,21 @@ describe('UI-A09 Mật khẩu mới: chặn vào khi chưa qua bước trước'
   });
 });
 
+describe('UI-A09 Mật khẩu mới: vé hết hạn theo hạn cổng báo', () => {
+  it('vé quá hạn: không hiện màn, xóa vé, về /verify-otp để nhập mã lại', async () => {
+    await renderNew(createFakeGateways(), 't', Date.now() - 1000);
+    expect(screen.queryByTestId('screen-UI-A09')).toBeNull();
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.verifyOtp);
+    expect(screen.getByTestId('probe-ticket')).toHaveTextContent('(không)');
+  });
+
+  it('vé còn hạn: vào được màn', async () => {
+    await renderNew(createFakeGateways(), 't', Date.now() + 60_000);
+    expect(screen.getByTestId('screen-UI-A09')).toBeOnTheScreen();
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+  });
+});
+
 describe('UI-A09 Mật khẩu mới: giao diện', () => {
   it('có header, hình, tiêu đề, mô tả, hai ô có hiện/ẩn, khối "Mật khẩu nên có" MỘT dòng, nút', async () => {
     await renderNew();
@@ -90,9 +126,7 @@ describe('UI-A09 Mật khẩu mới: giao diện', () => {
     ).toBeOnTheScreen();
     expect(screen.getByText('Tạo mật khẩu mới')).toBeOnTheScreen();
     expect(
-      screen.getByText(
-        'Chọn mật khẩu mạnh để bảo vệ tài khoản và những bằng chứng đơn hàng của bạn.',
-      ),
+      screen.getByText('Chọn mật khẩu mạnh để giữ tài khoản của bạn an toàn hơn.'),
     ).toBeOnTheScreen();
     expect(screen.getByText('Nhập lại mật khẩu mới')).toBeOnTheScreen();
     expect(screen.getAllByRole('button', { name: 'Hiện mật khẩu' })).toHaveLength(2);
@@ -191,13 +225,45 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
     await fill(NEW_PASSWORD, NEW_PASSWORD);
     await fireEvent.press(submit());
     expect(fake.auth.resetCalls).toEqual([{ ticket, newPassword: NEW_PASSWORD }]);
-    expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.signIn, { email: FAKE_DEMO_EMAIL });
+    // email đi qua trạng thái luồng (dùng một lần ở màn Đăng nhập), không qua tham số điều hướng
+    expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.signIn);
+    expect(mockNavigation.reset.mock.calls[0]).toHaveLength(1);
+    expect(screen.getByTestId('probe-signin-email')).toHaveTextContent(FAKE_DEMO_EMAIL);
+    expect(screen.getByTestId('probe-notice')).toHaveTextContent('true');
+    // vé và email đã xin mã bị xóa: không vào lại được màn Mật khẩu mới/Nhập mã
+    expect(screen.getByTestId('probe-ticket')).toHaveTextContent('(không)');
+    expect(screen.getByTestId('probe-requested')).toHaveTextContent('(không)');
     expect(JSON.stringify(mockNavigation.reset.mock.calls)).not.toContain(NEW_PASSWORD);
     expect(screen.queryByText(/thành công/i)).toBeNull();
     // đặt lại xong, đăng nhập bằng mật khẩu mới được
     await expect(
       fake.auth.signInWithPassword({ email: FAKE_DEMO_EMAIL, password: NEW_PASSWORD }),
     ).resolves.toBeDefined();
+  });
+
+  it('đã rời màn trong lúc chờ: mật khẩu đã đổi thì xóa vé khỏi luồng, nhưng KHÔNG điều hướng', async () => {
+    let resolve: () => void = () => undefined;
+    const resetPassword = jest.fn(
+      () =>
+        new Promise<void>((r) => {
+          resolve = r;
+        }),
+    );
+    const gateways: Gateways = {
+      auth: { ...createUnavailableGateways().auth, resetPassword },
+      shop: createFakeGateways().shop,
+    };
+    await renderNew(gateways);
+    await fill(NEW_PASSWORD, NEW_PASSWORD);
+    await fireEvent.press(submit());
+    await fireEvent.press(screen.getByRole('button', { name: 'Quay lại' }));
+    expect(mockNavigation.back).toHaveBeenCalledTimes(1);
+    mockNavigation.screenActive = false;
+    await act(async () => resolve());
+    expect(mockNavigation.reset).not.toHaveBeenCalled();
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    expect(mockNavigation.push).not.toHaveBeenCalled();
+    expect(screen.getByTestId('probe-ticket')).toHaveTextContent('(không)');
   });
 
   it('đang xử lý: nút có vòng xoay/khóa; bấm đúp chỉ gọi cổng một lần', async () => {
@@ -239,7 +305,7 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
     await fireEvent.press(within(banner).getByRole('button', { name: 'Thử lại' }));
     const same = { ticket, newPassword: NEW_PASSWORD };
     expect(fake.auth.resetCalls).toEqual([same, same]);
-    expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.signIn, { email: FAKE_DEMO_EMAIL });
+    expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.signIn);
   });
 
   it('mất mạng: câu mất mạng chuẩn + Thử lại', async () => {

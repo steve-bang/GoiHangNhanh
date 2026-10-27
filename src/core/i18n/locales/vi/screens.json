@@ -121,7 +121,7 @@
   },
   "signUp": {
     "title": "Tạo tài khoản\nĐơn Chứng",
-    "subtitle": "Bắt đầu hành trình bảo vệ đơn hàng của bạn chỉ trong vài phút!",
+    "subtitle": "Bắt đầu lưu bằng chứng cho đơn hàng của bạn chỉ trong vài phút!",
     "emailLabel": "Email của bạn",
     "emailPlaceholder": "shop@example.com",
     "passwordLabel": "Mật khẩu",
@@ -129,6 +129,7 @@
     "showPassword": "Hiện mật khẩu",
     "hidePassword": "Ẩn mật khẩu",
     "submit": "Tạo tài khoản",
+    "continue": "Tiếp tục",
     "orSignUpWith": "Hoặc đăng ký với",
     "apple": "Apple",
     "google": "Google",
@@ -170,7 +171,7 @@
   "setupDone": {
     "titleLead": "Tuyệt vời!",
     "title": "Bạn đã sẵn sàng sử dụng Đơn Chứng",
-    "subtitle": "Cảm ơn bạn đã hoàn tất thiết lập. Giờ đây bạn có thể bắt đầu ghi hình và bảo vệ đơn hàng của mình.",
+    "subtitle": "Cảm ơn bạn đã hoàn tất thiết lập. Giờ đây bạn có thể bắt đầu ghi hình và lưu bằng chứng cho đơn hàng.",
     "shopLabel": "Shop của bạn",
     "shopFallback": "Chưa có tên shop",
     "sourcesLabel": "Nguồn bán",
@@ -182,7 +183,7 @@
     "brandName": "Đơn Chứng",
     "brandTagline": "Bảo vệ đơn hàng – Vững bước kinh doanh",
     "title": "Chào mừng bạn trở lại!",
-    "subtitle": "Cùng Đơn Chứng bảo vệ từng đơn hàng của bạn nhé!",
+    "subtitle": "Cùng Đơn Chứng lưu bằng chứng cho từng đơn hàng nhé!",
     "emailLabel": "Email",
     "emailPlaceholder": "shop@example.com",
     "passwordLabel": "Mật khẩu",
@@ -238,7 +239,7 @@
   "newPassword": {
     "headerTitle": "Mật khẩu mới",
     "title": "Tạo mật khẩu mới",
-    "description": "Chọn mật khẩu mạnh để bảo vệ tài khoản và những bằng chứng đơn hàng của bạn.",
+    "description": "Chọn mật khẩu mạnh để giữ tài khoản của bạn an toàn hơn.",
     "newLabel": "Mật khẩu mới",
     "newPlaceholder": "Ít nhất 8 ký tự",
     "confirmLabel": "Nhập lại mật khẩu mới",

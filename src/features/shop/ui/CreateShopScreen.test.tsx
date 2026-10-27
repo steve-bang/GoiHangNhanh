@@ -201,7 +201,7 @@ describe('UI-A04 Tạo hồ sơ shop: xử lý và lỗi', () => {
         }),
     );
     const fake = createFakeGateways();
-    const gateways: Gateways = { auth: fake.auth, shop: { createShop } };
+    const gateways: Gateways = { auth: fake.auth, shop: { createShop, updateShop: jest.fn() } };
     await renderWithProviders(<CreateShopScreen />, { gateways });
     await fireEvent.changeText(nameInput(), 'Shop');
     await fireEvent.press(submit());
@@ -282,5 +282,143 @@ describe('UI-A04 Tạo hồ sơ shop: giữ giá trị khi quay lại', () => {
         checked: false,
       },
     );
+  });
+});
+
+describe('UI-A04 Tạo hồ sơ shop: quay lại sau khi đã tạo shop', () => {
+  /** Gỡ rồi hiện lại màn (như Back từ Hoàn tất); trạng thái luồng nằm ở Provider nên còn nguyên. */
+  function BackHarness() {
+    const [shown, setShown] = useState(true);
+    return (
+      <>
+        <Pressable testID="toggle" onPress={() => setShown((prev) => !prev)} />
+        {shown ? <CreateShopScreen /> : null}
+      </>
+    );
+  }
+  const goBackAndReturn = async () => {
+    await fireEvent.press(screen.getByTestId('toggle'));
+    await fireEvent.press(screen.getByTestId('toggle'));
+  };
+
+  it('sửa tên rồi Tiếp tục: gọi updateShop đúng một lần với shopId đã có, KHÔNG tạo shop thứ hai', async () => {
+    const fake = createFakeGateways();
+    await renderWithProviders(<BackHarness />, { gateways: fake });
+    await fireEvent.changeText(nameInput(), 'Shop Cũ');
+    await fireEvent.press(submit());
+    expect(fake.shop.createCalls).toHaveLength(1);
+    await goBackAndReturn();
+    expect(nameInput().props.value).toBe('Shop Cũ');
+    await fireEvent.changeText(nameInput(), 'Shop Mới');
+    await fireEvent.press(screen.getByTestId('source-lazada'));
+    await fireEvent.press(submit());
+    expect(fake.shop.createCalls).toHaveLength(1);
+    expect(fake.shop.updateCalls).toEqual([
+      { shopId: 'fake-shop-1', name: 'Shop Mới', sellingSources: ['lazada'] },
+    ]);
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.setupDone);
+    // sửa thêm lần nữa: vẫn là cập nhật shop cũ, không bao giờ tạo thêm
+    await goBackAndReturn();
+    await fireEvent.changeText(nameInput(), 'Shop Mới Nhất');
+    await fireEvent.press(submit());
+    expect(fake.shop.createCalls).toHaveLength(1);
+    expect(fake.shop.updateCalls).toHaveLength(2);
+    expect(fake.shop.updateCalls[1]).toMatchObject({
+      shopId: 'fake-shop-1',
+      name: 'Shop Mới Nhất',
+    });
+  });
+
+  it('không sửa gì: không gọi cổng nào, đi thẳng /setup-done', async () => {
+    const fake = createFakeGateways();
+    await renderWithProviders(<BackHarness />, { gateways: fake });
+    await fireEvent.changeText(nameInput(), 'Shop');
+    await fireEvent.press(submit());
+    await goBackAndReturn();
+    await fireEvent.press(submit());
+    expect(fake.shop.createCalls).toHaveLength(1);
+    expect(fake.shop.updateCalls).toHaveLength(0);
+    expect(mockNavigation.push).toHaveBeenCalledTimes(2);
+  });
+
+  it('"Bỏ qua, để sau" sau khi đã tạo kèm nguồn bán: cập nhật về danh sách rỗng, không tạo mới', async () => {
+    const fake = createFakeGateways();
+    await renderWithProviders(<BackHarness />, { gateways: fake });
+    await fireEvent.changeText(nameInput(), 'Shop');
+    await fireEvent.press(screen.getByTestId('source-shopee'));
+    await fireEvent.press(submit());
+    await goBackAndReturn();
+    await fireEvent.press(skip());
+    expect(fake.shop.createCalls).toHaveLength(1);
+    expect(fake.shop.updateCalls).toEqual([
+      { shopId: 'fake-shop-1', name: 'Shop', sellingSources: [] },
+    ]);
+  });
+
+  it('cập nhật lỗi: báo lỗi, không sang bước sau; bấm lại thì thử lại updateShop (vẫn không tạo mới)', async () => {
+    const fake = createFakeGateways();
+    await renderWithProviders(<BackHarness />, { gateways: fake });
+    await fireEvent.changeText(nameInput(), 'Shop');
+    await fireEvent.press(submit());
+    await goBackAndReturn();
+    mockNavigation.push.mockClear();
+    await fireEvent.changeText(nameInput(), 'Shop Đổi');
+    fake.shop.failNext('AUTH_NETWORK_ERROR');
+    await fireEvent.press(submit());
+    expect(screen.getByTestId('form-error')).toBeOnTheScreen();
+    expect(mockNavigation.push).not.toHaveBeenCalled();
+    await fireEvent.press(submit());
+    expect(fake.shop.createCalls).toHaveLength(1);
+    expect(fake.shop.updateCalls).toHaveLength(2);
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.setupDone);
+  });
+
+  it('bản "chưa kết nối": cập nhật cũng báo lỗi, không báo thành công', async () => {
+    const fake = createFakeGateways();
+    const base = createUnavailableGateways();
+    const gateways: Gateways = {
+      auth: fake.auth,
+      shop: { ...base.shop, createShop: fake.shop.createShop.bind(fake.shop) },
+    };
+    await renderWithProviders(<BackHarness />, { gateways });
+    await fireEvent.changeText(nameInput(), 'Shop');
+    await fireEvent.press(submit());
+    await goBackAndReturn();
+    mockNavigation.push.mockClear();
+    await fireEvent.changeText(nameInput(), 'Shop Đổi');
+    await fireEvent.press(submit());
+    expect(
+      within(screen.getByTestId('form-error')).getByText(fullText(errors.AUTH_SERVICE_UNAVAILABLE)),
+    ).toBeOnTheScreen();
+    expect(mockNavigation.push).not.toHaveBeenCalled();
+  });
+
+  it('rời màn trong lúc chờ tạo: shop vẫn được ghi nhận (lần sau chỉ cập nhật), không điều hướng', async () => {
+    let resolve: (shop: CreatedShop) => void = () => undefined;
+    const createShop = jest.fn(
+      () =>
+        new Promise<CreatedShop>((r) => {
+          resolve = r;
+        }),
+    );
+    const fake = createFakeGateways();
+    const gateways: Gateways = {
+      auth: fake.auth,
+      shop: { createShop, updateShop: fake.shop.updateShop.bind(fake.shop) },
+    };
+    await renderWithProviders(<BackHarness />, { gateways });
+    await fireEvent.changeText(nameInput(), 'Shop');
+    await fireEvent.press(submit());
+    mockNavigation.screenActive = false;
+    await act(async () => {
+      resolve({ id: 's1', name: 'Shop', sellingSources: [] });
+    });
+    expect(mockNavigation.push).not.toHaveBeenCalled();
+    mockNavigation.screenActive = true;
+    await goBackAndReturn();
+    await fireEvent.changeText(nameInput(), 'Shop Đổi');
+    await fireEvent.press(submit());
+    expect(createShop).toHaveBeenCalledTimes(1);
+    expect(fake.shop.updateCalls).toEqual([{ shopId: 's1', name: 'Shop Đổi', sellingSources: [] }]);
   });
 });

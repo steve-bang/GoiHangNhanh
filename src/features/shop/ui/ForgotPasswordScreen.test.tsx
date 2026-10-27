@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react-native';
-import { useWindowDimensions } from 'react-native';
+import { Text, useWindowDimensions } from 'react-native';
 
 import { resources } from '@/core/i18n/resources';
 import { ROUTES } from '@/core/navigation';
@@ -10,6 +10,7 @@ import { createFakeGateways, FAKE_DEMO_EMAIL } from '../data/fake-gateways';
 import { createUnavailableGateways } from '../data/unavailable-gateways';
 import type { Gateways } from '../domain/types';
 import { ForgotPasswordScreen } from './ForgotPasswordScreen';
+import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 
 jest.mock(
   '@/platform/navigation',
@@ -182,21 +183,84 @@ describe('UI-A07 Quên mật khẩu: gửi', () => {
   });
 });
 
+/** Chỉ để test đọc trạng thái luồng khôi phục. */
+function RecoveryProbe() {
+  const { recovery } = useOnboardingFlow();
+  return (
+    <>
+      <Text testID="probe-requested">{recovery.requestedEmail ?? '(không)'}</Text>
+      <Text testID="probe-signin-email">{recovery.signInEmail ?? '(không)'}</Text>
+    </>
+  );
+}
+
 describe('UI-A07 Quên mật khẩu: điều hướng', () => {
-  it('điền sẵn email từ tham số', async () => {
-    mockNavigation.params = { email: 'tu.dang.nhap@example.com' };
+  it('không đọc email từ tham số điều hướng (email điền sẵn đi qua trạng thái luồng)', async () => {
+    mockNavigation.params = { email: 'tham.so@example.com' };
     await renderWithProviders(<ForgotPasswordScreen />);
-    expect(email().props.value).toBe('tu.dang.nhap@example.com');
+    expect(email().props.value).toBe('');
   });
 
-  it('Quay lại đăng nhập: reset về /sign-in (kèm email nếu đã gõ); nút Back gọi back', async () => {
-    await renderWithProviders(<ForgotPasswordScreen />);
+  it('Quay lại đăng nhập: reset về /sign-in KHÔNG kèm tham số; email đã gõ đi qua trạng thái luồng; nút Back gọi back', async () => {
+    await renderWithProviders(
+      <>
+        <RecoveryProbe />
+        <ForgotPasswordScreen />
+      </>,
+    );
     await fireEvent.press(screen.getByRole('link', { name: 'Quay lại đăng nhập' }));
     expect(mockNavigation.reset).toHaveBeenLastCalledWith(ROUTES.signIn);
+    expect(screen.getByTestId('probe-signin-email')).toHaveTextContent('(không)');
     await fireEvent.changeText(email(), 'a@b.co');
     await fireEvent.press(screen.getByRole('link', { name: 'Quay lại đăng nhập' }));
-    expect(mockNavigation.reset).toHaveBeenLastCalledWith(ROUTES.signIn, { email: 'a@b.co' });
+    expect(mockNavigation.reset).toHaveBeenLastCalledWith(ROUTES.signIn);
+    expect(mockNavigation.reset.mock.calls.every((call) => call.length === 1)).toBe(true);
+    expect(screen.getByTestId('probe-signin-email')).toHaveTextContent('a@b.co');
     await fireEvent.press(screen.getByRole('button', { name: 'Quay lại' }));
     expect(mockNavigation.back).toHaveBeenCalledTimes(1);
+  });
+
+  it('đã rời màn trong lúc chờ gửi mã (Back): không sang /verify-otp, không ghi điều kiện vào màn Nhập mã', async () => {
+    let resolve: () => void = () => undefined;
+    const requestPasswordRecovery = jest.fn(
+      () =>
+        new Promise<{ retryAfterSeconds?: number }>((r) => {
+          resolve = () => r({ retryAfterSeconds: 30 });
+        }),
+    );
+    const gateways: Gateways = {
+      auth: { ...createUnavailableGateways().auth, requestPasswordRecovery },
+      shop: createFakeGateways().shop,
+    };
+    await renderWithProviders(
+      <>
+        <RecoveryProbe />
+        <ForgotPasswordScreen />
+      </>,
+      { gateways },
+    );
+    await fireEvent.changeText(email(), FAKE_DEMO_EMAIL);
+    await fireEvent.press(submit());
+    await fireEvent.press(screen.getByRole('button', { name: 'Quay lại' }));
+    expect(mockNavigation.back).toHaveBeenCalledTimes(1);
+    mockNavigation.screenActive = false;
+    await act(async () => resolve());
+    expect(mockNavigation.push).not.toHaveBeenCalled();
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    expect(screen.getByTestId('probe-requested')).toHaveTextContent('(không)');
+  });
+
+  it('gửi mã xong rồi đổi sang email khác: điều kiện vào màn Nhập mã bị xóa', async () => {
+    await renderWithProviders(
+      <>
+        <RecoveryProbe />
+        <ForgotPasswordScreen />
+      </>,
+    );
+    await fireEvent.changeText(email(), FAKE_DEMO_EMAIL);
+    await fireEvent.press(submit());
+    expect(screen.getByTestId('probe-requested')).toHaveTextContent(FAKE_DEMO_EMAIL);
+    await fireEvent.changeText(email(), 'khac@example.com');
+    expect(screen.getByTestId('probe-requested')).toHaveTextContent('(không)');
   });
 });

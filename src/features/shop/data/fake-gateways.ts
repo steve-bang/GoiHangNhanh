@@ -15,6 +15,8 @@ import type {
   SignedInAccount,
   SignInWithPasswordInput,
   SignUpWithEmailInput,
+  UpdateShopInput,
+  VerifiedRecovery,
   VerifyRecoveryCodeInput,
 } from '../domain/types';
 
@@ -196,7 +198,7 @@ export class FakeAuthGateway implements AuthGateway {
     return { retryAfterSeconds: DEFAULT_RESEND_SECONDS };
   }
 
-  async verifyRecoveryCode(input: VerifyRecoveryCodeInput): Promise<{ ticket: string }> {
+  async verifyRecoveryCode(input: VerifyRecoveryCodeInput): Promise<VerifiedRecovery> {
     this.verifyCalls.push(input);
     await delay(this.latencyMs);
     this.consumeFailure();
@@ -212,11 +214,15 @@ export class FakeAuthGateway implements AuthGateway {
     this.pending.delete(key);
     this.ticketCounter += 1;
     const ticket = `fake-ticket-${this.ticketCounter}`;
+    const expiresImmediately = key === FAKE_RESET_EXPIRED_EMAIL;
     this.tickets.set(ticket, {
       email: key,
-      expiresAt: this.now() + (key === FAKE_RESET_EXPIRED_EMAIL ? 0 : this.ticketTtlMs),
+      expiresAt: this.now() + (expiresImmediately ? 0 : this.ticketTtlMs),
     });
-    return { ticket };
+    // Kịch bản "phiên hết hạn ngay" cố ý KHÔNG báo hạn cho app, để thử đường lỗi do máy chủ trả về.
+    return expiresImmediately
+      ? { ticket }
+      : { ticket, expiresInSeconds: Math.floor(this.ticketTtlMs / 1000) };
   }
 
   async resetPassword(input: ResetPasswordInput): Promise<void> {
@@ -237,6 +243,7 @@ export class FakeAuthGateway implements AuthGateway {
 
 export class FakeShopGateway implements ShopGateway {
   readonly createCalls: CreateShopInput[] = [];
+  readonly updateCalls: UpdateShopInput[] = [];
   private readonly latencyMs: number;
   private nextFailure: ErrorCode | null = null;
   private counter = 0;
@@ -249,17 +256,32 @@ export class FakeShopGateway implements ShopGateway {
     this.nextFailure = code;
   }
 
-  async createShop(input: CreateShopInput): Promise<CreatedShop> {
-    this.createCalls.push(input);
-    await delay(this.latencyMs);
+  private consumeFailure(): void {
     if (this.nextFailure) {
       const code = this.nextFailure;
       this.nextFailure = null;
       throw new AppError(code);
     }
+  }
+
+  async createShop(input: CreateShopInput): Promise<CreatedShop> {
+    this.createCalls.push(input);
+    await delay(this.latencyMs);
+    this.consumeFailure();
     this.counter += 1;
     return {
       id: `fake-shop-${this.counter}`,
+      name: input.name,
+      sellingSources: normalizeSources(input.sellingSources),
+    };
+  }
+
+  async updateShop(input: UpdateShopInput): Promise<CreatedShop> {
+    this.updateCalls.push(input);
+    await delay(this.latencyMs);
+    this.consumeFailure();
+    return {
+      id: input.shopId,
       name: input.name,
       sellingSources: normalizeSources(input.sellingSources),
     };

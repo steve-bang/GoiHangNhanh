@@ -15,6 +15,8 @@ export const mockNavigation = {
   attemptLeave: undefined as undefined | (() => void),
   leaveGuardEnabled: undefined as undefined | boolean,
   allowLeave: jest.fn(),
+  /** false mô phỏng người dùng đã rời màn (Back/đi chỗ khác) trong lúc một thao tác còn chờ. */
+  screenActive: true,
 };
 
 export function resetMockNavigation(): void {
@@ -26,6 +28,7 @@ export function resetMockNavigation(): void {
   mockNavigation.params = {};
   mockNavigation.attemptLeave = undefined;
   mockNavigation.leaveGuardEnabled = undefined;
+  mockNavigation.screenActive = true;
 }
 
 export const navigationMock = {
@@ -36,6 +39,7 @@ export const navigationMock = {
     back: mockNavigation.back,
   }),
   useRouteParams: () => mockNavigation.params,
+  useIsScreenActive: () => () => mockNavigation.screenActive,
   useConfirmBeforeLeave: (enabled: boolean, onAttempt: () => void) => {
     mockNavigation.leaveGuardEnabled = enabled;
     mockNavigation.attemptLeave = onAttempt;

@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState, type ComponentRef, type RefObject } from 'react';
+import { useRef, useState, type ComponentRef, type RefObject } from 'react';
 import { Pressable, StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { ErrorCode } from '@/core/errors/codes';
 import { ROUTES } from '@/core/navigation';
 import type { OrderSource } from '@/core/orders/order-source';
 import { getInputResetStyle, getMinTouchTarget, useAppNavigation } from '@/platform';
@@ -30,7 +29,7 @@ import {
   SHOP_NAME_INPUT_HEIGHT,
 } from './onboarding-layout';
 import { getStepSegments, ONBOARDING_STEP, ONBOARDING_TOTAL_STEPS } from './onboarding-progress';
-import { toErrorCode } from './SignUpScreen';
+import { useGatewayTask } from './onboarding/useGatewayTask';
 
 /** Ô tên shop: nhãn có dấu * (bắt buộc) phía trên, ô nhập, lỗi bên trái và bộ đếm ký tự bên phải. */
 function ShopNameField({
@@ -119,7 +118,8 @@ function ShopNameField({
 /**
  * UI-A04 Tạo hồ sơ shop (docs/09 mục 4; mockup 01-onboarding, màn thứ ba). Tên shop bắt buộc (1-50
  * ký tự); nguồn bán chọn nhiều và BỎ QUA ĐƯỢC. "Bỏ qua, để sau" = tiếp tục không chọn nguồn bán,
- * nhưng vẫn cần tên shop. Chỉ sang bước sau khi cổng xác nhận đã tạo shop.
+ * nhưng vẫn cần tên shop. Chỉ sang bước sau khi cổng xác nhận đã tạo shop. Shop chỉ được TẠO một
+ * lần mỗi luồng: quay lại từ bước Hoàn tất rồi sửa thì gọi `updateShop` với shop đã có.
  */
 export function CreateShopScreen() {
   const { t } = useTranslation();
@@ -130,17 +130,8 @@ export function CreateShopScreen() {
   const { state, dispatch, gateways } = useOnboardingFlow();
 
   const [nameTouched, setNameTouched] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState<ErrorCode | null>(null);
-  const busyRef = useRef(false);
-  const mountedRef = useRef(true);
+  const { busy, busyRef, formError, setFormError, run } = useGatewayTask();
   const nameRef = useRef<TextInputHandle>(null);
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
 
   const layout = computeCreateShopLayout({
     width,
@@ -161,41 +152,37 @@ export function CreateShopScreen() {
         )
       : undefined;
 
-  const create = async (sources: readonly OrderSource[]) => {
+  const create = (sources: readonly OrderSource[]) => {
     if (busyRef.current) return;
     if (nameIssue) {
       setNameTouched(true);
       nameRef.current?.focus();
       return;
     }
-    busyRef.current = true;
-    setBusy(true);
-    setFormError(null);
-    try {
-      const name = normalizeShopName(state.shopName);
-      const sellingSources = normalizeSources(sources);
-      const existing = state.shop;
-      // Shop đã được máy chủ xác nhận với đúng dữ liệu này: không tạo lần hai.
-      const sameAsCreated =
-        existing !== null &&
-        existing.name === name &&
-        existing.sellingSources.join() === sellingSources.join();
-      if (!sameAsCreated) {
+    const name = normalizeShopName(state.shopName);
+    const sellingSources = normalizeSources(sources);
+    const existing = state.shop;
+    void run(async (isActive) => {
+      if (existing === null) {
         const shop = await gateways.shop.createShop({ name, sellingSources });
+        // Máy chủ đã tạo shop: luôn ghi nhận ID để không bao giờ tạo shop thứ hai trong luồng này.
+        dispatch({ type: 'shop_created', shop });
+      } else if (
+        existing.name !== name ||
+        existing.sellingSources.join() !== sellingSources.join()
+      ) {
+        // Đã có shop (quay lại từ bước sau) và người dùng đã sửa: cập nhật, không tạo mới.
+        const shop = await gateways.shop.updateShop({ shopId: existing.id, name, sellingSources });
         dispatch({ type: 'shop_created', shop });
       }
+      if (!isActive()) return;
       navigation.push(ROUTES.setupDone);
-    } catch (error) {
-      if (mountedRef.current) setFormError(toErrorCode(error));
-    } finally {
-      busyRef.current = false;
-      if (mountedRef.current) setBusy(false);
-    }
+    });
   };
 
   const skip = () => {
     dispatch({ type: 'sources_cleared' });
-    void create([]);
+    create([]);
   };
 
   return (
@@ -273,7 +260,7 @@ export function CreateShopScreen() {
           label={t('screens:createShop.submit')}
           loading={busy}
           disabled={nameIssue !== null}
-          onPress={() => void create(state.sources)}
+          onPress={() => create(state.sources)}
         />
       </View>
       <Pressable

@@ -1,5 +1,5 @@
-import { useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useFocusEffect, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
+import { useCallback, useMemo, useRef } from 'react';
 
 import { ROUTES, type RouteDef } from '@/core/navigation';
 
@@ -50,6 +50,24 @@ export function useRouteParams(): Readonly<Record<string, string | undefined>> {
     }
     return out;
   }, [raw]);
+}
+
+/**
+ * Trả hàm `isActive()`: true khi màn hình còn được hiển thị (đang focus, chưa bị gỡ). Dùng sau một
+ * thao tác bất đồng bộ để KHÔNG điều hướng/đặt trạng thái nếu người dùng đã bấm Back hoặc đi chỗ
+ * khác trong lúc chờ. Không chặn việc rời màn. Dựa trên `useFocusEffect` của Expo Router.
+ */
+export function useIsScreenActive(): () => boolean {
+  const activeRef = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      activeRef.current = true;
+      return () => {
+        activeRef.current = false;
+      };
+    }, []),
+  );
+  return useCallback(() => activeRef.current, []);
 }
 
 /**

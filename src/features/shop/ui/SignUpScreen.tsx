@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getEnabledSocialProviders, type SocialProvider } from '@/core/config/feature-flags';
-import { isAppError } from '@/core/errors/app-error';
 import type { ErrorCode } from '@/core/errors/codes';
 import { ROUTES } from '@/core/navigation';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
@@ -26,16 +25,15 @@ import {
   SOCIAL_BUTTON_HEIGHT,
   type SignUpErrorSpecs,
 } from './onboarding-layout';
+import { useGatewayTask } from './onboarding/useGatewayTask';
+
+/** Mật khẩu đã gửi đi không còn trong app: ô hiện chấm cố định, không phải mật khẩu thật. */
+const LOCKED_PASSWORD_MASK = '••••••••';
 
 /** Lỗi máy chủ gắn với một ô nhập (hiện dưới ô); các lỗi khác hiện ở khung phía trên nút chính. */
 type FieldErrorCode = 'AUTH_EMAIL_IN_USE' | 'AUTH_WEAK_PASSWORD';
 function isFieldErrorCode(code: ErrorCode): code is FieldErrorCode {
   return code === 'AUTH_EMAIL_IN_USE' || code === 'AUTH_WEAK_PASSWORD';
-}
-
-/** Lỗi lạ (không phải AppError) coi như chưa kết nối được dịch vụ: không bao giờ báo thành công. */
-export function toErrorCode(error: unknown): ErrorCode {
-  return isAppError(error) ? error.code : 'AUTH_SERVICE_UNAVAILABLE';
 }
 
 function SocialButton({
@@ -84,6 +82,9 @@ function SocialButton({
  * màn thứ hai). Dùng cổng xác thực từ `OnboardingFlowProvider`: chỉ chuyển sang bước tiếp theo khi
  * cổng xác nhận đã tạo tài khoản. Lỗi gắn với ô (email đã dùng, mật khẩu yếu) hiện dưới ô đó; lỗi chung (mạng, hệ thống) hiện ở khung trên nút chính kèm "Thử lại". Mật khẩu chỉ nằm trong state
  * cục bộ của màn này, không đưa vào trạng thái luồng.
+ *
+ * Sau khi tài khoản đã tạo, quay lại màn này KHÔNG sửa/tạo lần hai: hai ô bị khóa (chỉ đọc), nút chính
+ * là "Tiếp tục" và đi thẳng sang bước tạo shop, không gọi lại cổng đăng ký.
  */
 export function SignUpScreen() {
   const { t } = useTranslation();
@@ -91,32 +92,27 @@ export function SignUpScreen() {
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
-  const { state, dispatch, gateways } = useOnboardingFlow();
+  const { state, dispatch, dispatchRecovery, gateways } = useOnboardingFlow();
   const providers = getEnabledSocialProviders();
 
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState<ErrorCode | null>(null);
+  const { busy, busyRef, formError, setFormError, run, retry } = useGatewayTask();
   /** Lỗi máy chủ gắn với một ô: hiện dưới ô đó và mất khi người dùng sửa ô đó. */
   const [fieldError, setFieldError] = useState<FieldErrorCode | null>(null);
-  const lastTask = useRef<(() => Promise<void>) | null>(null);
-  const busyRef = useRef(false);
-  const mountedRef = useRef(true);
   const emailRef = useRef<TextInputHandle>(null);
   const passwordRef = useRef<TextInputHandle>(null);
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+
+  // Tài khoản của email này đã được máy chủ xác nhận trong luồng: khóa ô, không tạo/sửa lần hai.
+  const locked =
+    state.account !== null &&
+    normalizeEmail(state.account.email).toLowerCase() === normalizeEmail(state.email).toLowerCase();
 
   const emailIssue = validateEmail(state.email);
   const passwordIssue = validatePassword(password);
   const emailError =
-    touched.email && emailIssue
+    !locked && touched.email && emailIssue
       ? t(
           emailIssue === 'required'
             ? 'screens:signUp.errors.emailRequired'
@@ -126,7 +122,7 @@ export function SignUpScreen() {
         ? t('errors:AUTH_EMAIL_IN_USE')
         : undefined;
   const passwordError =
-    touched.password && passwordIssue
+    !locked && touched.password && passwordIssue
       ? t(
           passwordIssue === 'required'
             ? 'screens:signUp.errors.passwordRequired'
@@ -155,30 +151,22 @@ export function SignUpScreen() {
   );
   const { gaps, title } = layout;
 
-  /** Chạy một lời gọi cổng; chống bấm đúp bằng cờ ref (state chưa kịp cập nhật giữa hai lần chạm). */
-  const run = async (task: () => Promise<void>) => {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    lastTask.current = task;
-    setBusy(true);
-    setFormError(null);
+  /** Lỗi gắn với một ô hiện dưới ô đó; các lỗi khác thành khung lỗi chung (xử lý ở `useGatewayTask`). */
+  const runGateway = (task: Parameters<typeof run>[0]) => {
     setFieldError(null);
-    try {
-      await task();
-    } catch (error) {
-      if (mountedRef.current) {
-        const code = toErrorCode(error);
-        if (isFieldErrorCode(code)) setFieldError(code);
-        else setFormError(code);
-      }
-    } finally {
-      busyRef.current = false;
-      if (mountedRef.current) setBusy(false);
-    }
+    void run(task, (code) => {
+      if (!isFieldErrorCode(code)) return false;
+      setFieldError(code);
+      return true;
+    });
   };
 
   const submit = () => {
     if (busyRef.current) return;
+    if (locked) {
+      navigation.push(ROUTES.createShop);
+      return;
+    }
     setTouched({ email: true, password: true });
     if (emailIssue) {
       emailRef.current?.focus();
@@ -189,14 +177,11 @@ export function SignUpScreen() {
       return;
     }
     const email = normalizeEmail(state.email);
-    void run(async () => {
-      // Tài khoản đã được máy chủ xác nhận ở lần trước (người dùng quay lại màn này): không tạo lần hai.
-      if (state.account && state.account.email === email) {
-        navigation.push(ROUTES.createShop);
-        return;
-      }
+    runGateway(async (isActive) => {
       const account = await gateways.auth.signUpWithEmail({ email, password });
+      // Tài khoản đã tạo trên máy chủ: ghi nhận dù người dùng đã rời màn, nhưng không điều hướng thay họ.
       dispatch({ type: 'account_created', account });
+      if (!isActive()) return;
       navigation.push(ROUTES.createShop);
     });
   };
@@ -204,14 +189,8 @@ export function SignUpScreen() {
   /** Sang Đăng nhập, mang theo email đang gõ (chỉ email, không bao giờ mật khẩu). */
   const goSignIn = () => {
     const typed = normalizeEmail(state.email);
-    if (typed) navigation.push(ROUTES.signIn, { email: typed });
-    else navigation.push(ROUTES.signIn);
-  };
-
-  /** "Thử lại": chạy lại đúng thao tác vừa lỗi (cùng dữ liệu, vẫn chống bấm đúp). */
-  const retry = () => {
-    const task = lastTask.current;
-    if (task) void run(task);
+    if (typed) dispatchRecovery({ type: 'signin_email_set', email: typed });
+    navigation.push(ROUTES.signIn);
   };
 
   return (
@@ -239,6 +218,7 @@ export function SignUpScreen() {
           height={layout.fieldHeight}
           value={state.email}
           onChangeText={(email) => {
+            if (locked) return;
             setTouched((prev) => ({ ...prev, email: true }));
             setFormError(null);
             setFieldError((prev) => (prev === 'AUTH_EMAIL_IN_USE' ? null : prev));
@@ -264,6 +244,7 @@ export function SignUpScreen() {
             returnKeyType: 'next',
             onSubmitEditing: () => passwordRef.current?.focus(),
             blurOnSubmit: false,
+            ...(locked ? { editable: false, accessibilityState: { disabled: true } } : {}),
           }}
         />
         <IconField
@@ -272,8 +253,9 @@ export function SignUpScreen() {
           placeholder={t('screens:signUp.passwordPlaceholder')}
           icon="lock"
           height={layout.fieldHeight}
-          value={password}
+          value={locked ? LOCKED_PASSWORD_MASK : password}
           onChangeText={(value) => {
+            if (locked) return;
             setTouched((prev) => ({ ...prev, password: true }));
             setFormError(null);
             setFieldError((prev) => (prev === 'AUTH_WEAK_PASSWORD' ? null : prev));
@@ -283,26 +265,29 @@ export function SignUpScreen() {
           error={passwordError}
           inputRef={passwordRef}
           inputProps={{
-            secureTextEntry: !showPassword,
+            secureTextEntry: !locked && !showPassword,
             autoComplete: 'new-password',
             textContentType: 'newPassword',
             passwordRules: 'minlength: 8;',
             returnKeyType: 'go',
             onSubmitEditing: submit,
+            ...(locked ? { editable: false, accessibilityState: { disabled: true } } : {}),
           }}
           accessory={
-            <Pressable
-              testID="signup-toggle-password"
-              accessibilityRole="button"
-              accessibilityLabel={t(
-                showPassword ? 'screens:signUp.hidePassword' : 'screens:signUp.showPassword',
-              )}
-              onPress={() => setShowPassword((prev) => !prev)}
-              hitSlop={6}
-              style={[styles.eye, { minWidth: touch, minHeight: touch }]}
-            >
-              <Icon name={showPassword ? 'eye-off' : 'eye'} size={22} color={colors.inkMuted} />
-            </Pressable>
+            locked ? undefined : (
+              <Pressable
+                testID="signup-toggle-password"
+                accessibilityRole="button"
+                accessibilityLabel={t(
+                  showPassword ? 'screens:signUp.hidePassword' : 'screens:signUp.showPassword',
+                )}
+                onPress={() => setShowPassword((prev) => !prev)}
+                hitSlop={6}
+                style={[styles.eye, { minWidth: touch, minHeight: touch }]}
+              >
+                <Icon name={showPassword ? 'eye-off' : 'eye'} size={22} color={colors.inkMuted} />
+              </Pressable>
+            )
           }
         />
       </View>
@@ -316,7 +301,7 @@ export function SignUpScreen() {
       <View style={{ marginTop: gaps.fieldsToButton }}>
         <Button
           testID="signup-submit"
-          label={t('screens:signUp.submit')}
+          label={t(locked ? 'screens:signUp.continue' : 'screens:signUp.submit')}
           loading={busy}
           onPress={submit}
         />
@@ -337,7 +322,7 @@ export function SignUpScreen() {
                 key={provider}
                 provider={provider}
                 disabled={busy}
-                onPress={() => void run(() => gateways.auth.signInWithProvider(provider))}
+                onPress={() => runGateway(() => gateways.auth.signInWithProvider(provider))}
               />
             ))}
           </View>

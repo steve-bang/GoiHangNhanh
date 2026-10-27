@@ -78,12 +78,19 @@ export function VerifyOtpScreen() {
   const verify = (value: string) => {
     if (!requestedEmail || busyRef.current) return;
     void run(
-      async () => {
-        const { ticket } = await gateways.auth.verifyRecoveryCode({
+      async (isActive) => {
+        const { ticket, expiresInSeconds } = await gateways.auth.verifyRecoveryCode({
           email: requestedEmail,
           code: value,
         });
-        dispatchRecovery({ type: 'code_verified', ticket });
+        // Người dùng đã bấm Back/đi chỗ khác trong lúc chờ: không giữ vé, không điều hướng.
+        if (!isActive()) return;
+        dispatchRecovery({
+          type: 'code_verified',
+          ticket,
+          ticketExpiresAt:
+            expiresInSeconds === undefined ? null : Date.now() + expiresInSeconds * 1000,
+        });
         // replace: mã đã dùng xong, Back từ màn sau về Quên mật khẩu chứ không về màn nhập mã
         navigation.replace(ROUTES.newPassword);
       },
@@ -99,6 +106,8 @@ export function VerifyOtpScreen() {
 
   const onChange = (raw: string) => {
     const next = sanitizeOtp(raw);
+    // Gõ/dán thêm khi đã đủ 6 số không đổi mã: không xác minh lại cùng một mã (tránh tốn lượt thử).
+    if (next === code) return;
     setCode(next);
     setFieldError(null);
     setFormError(null);
@@ -118,8 +127,9 @@ export function VerifyOtpScreen() {
 
   const resend = () => {
     if (!requestedEmail || busyRef.current) return;
-    void run(async () => {
+    void run(async (isActive) => {
       const result = await gateways.auth.requestPasswordRecovery(requestedEmail);
+      if (!isActive()) return;
       dispatchRecovery({
         type: 'code_requested',
         email: requestedEmail,

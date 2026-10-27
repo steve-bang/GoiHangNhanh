@@ -18,6 +18,6 @@ export function createUnavailableGateways(): Gateways {
     verifyRecoveryCode: unavailable,
     resetPassword: unavailable,
   };
-  const shop: ShopGateway = { createShop: unavailable };
+  const shop: ShopGateway = { createShop: unavailable, updateShop: unavailable };
   return { auth, shop };
 }

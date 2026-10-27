@@ -209,8 +209,8 @@ interface OtpBoxesProps {
 
 /**
  * Một ô nhập THẬT (trong suốt, phủ kín) được vẽ thành 6 ô số: bàn phím số, dán được, gợi ý mã tự
- * điền của hệ điều hành. Ô hiện tại có viền nhấn; ô lỗi viền đỏ. Chỉ lọc chữ số ở `onChangeText`
- * của màn hình (hàm `sanitizeOtp`).
+ * điền của hệ điều hành. Ô hiện tại có viền nhấn; ô lỗi viền đỏ. Việc lọc chữ số và giới hạn 6 số do
+ * `onChangeText` của màn hình làm (hàm `sanitizeOtp`); ô này cố ý không có `maxLength`.
  */
 export function OtpBoxes({
   value,
@@ -281,7 +281,8 @@ export function OtpBoxes({
         value={value}
         onChangeText={onChangeText}
         editable={editable}
-        maxLength={OTP_LENGTH}
+        // KHÔNG đặt maxLength: hệ điều hành sẽ cắt chuỗi dán ("123 456" -> "123 45") TRƯỚC khi
+        // `sanitizeOtp` kịp bỏ dấu cách/gạch ngang. Màn hình lọc chữ số rồi tự cắt còn 6.
         keyboardType="number-pad"
         inputMode="numeric"
         textContentType="oneTimeCode"

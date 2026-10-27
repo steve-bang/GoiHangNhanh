@@ -59,7 +59,6 @@ export const ICON_GLYPHS = {
   'eye-off': 'eye-off-outline',
   'play-circle': 'play-circle',
   bag: 'bag-handle',
-  music: 'musical-notes',
   heart: 'heart',
   store: 'storefront',
   ellipsis: 'ellipsis-horizontal',

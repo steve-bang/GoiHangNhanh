@@ -35,11 +35,19 @@ export function NewPasswordScreen() {
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
   const { recovery, dispatchRecovery, gateways } = useOnboardingFlow();
-  const [ticket] = useState(recovery.ticket);
+  // Vé hết hạn theo hạn cổng báo (nếu có) thì coi như chưa có vé: phải nhập mã lại.
+  const [ticket] = useState(() =>
+    recovery.ticket !== null &&
+    recovery.ticketExpiresAt !== null &&
+    Date.now() >= recovery.ticketExpiresAt
+      ? null
+      : recovery.ticket,
+  );
   const [requestedEmail] = useState(recovery.requestedEmail);
   const allowed = ticket !== null;
   useEffect(() => {
     if (!allowed) {
+      if (recovery.ticket !== null) dispatchRecovery({ type: 'ticket_expired' });
       navigation.replace(requestedEmail ? ROUTES.verifyOtp : ROUTES.forgotPassword);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -115,11 +123,13 @@ export function NewPasswordScreen() {
       return;
     }
     void run(
-      async () => {
+      async (isActive) => {
         await gateways.auth.resetPassword({ ticket, newPassword: password });
+        // Mật khẩu đã đổi trên máy chủ: luôn xóa vé khỏi luồng (kèm email điền sẵn + banner cho
+        // màn Đăng nhập), nhưng chỉ điều hướng nếu người dùng còn ở màn này.
         dispatchRecovery({ type: 'reset_completed' });
-        if (requestedEmail) navigation.reset(ROUTES.signIn, { email: requestedEmail });
-        else navigation.reset(ROUTES.signIn);
+        if (!isActive()) return;
+        navigation.reset(ROUTES.signIn);
       },
       (code) => {
         if (code === 'AUTH_RESET_SESSION_EXPIRED') {

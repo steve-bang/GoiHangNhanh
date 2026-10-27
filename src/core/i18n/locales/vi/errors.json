@@ -20,7 +20,7 @@
     "hint": "Bạn kiểm tra mạng rồi thử lại nhé."
   },
   "AUTH_EMAIL_IN_USE": "Email này đã có tài khoản.",
-  "AUTH_WEAK_PASSWORD": "Mật khẩu này dễ đoán. Hãy dùng ít nhất 8 ký tự, có cả chữ và số.",
+  "AUTH_WEAK_PASSWORD": "Mật khẩu này dễ đoán. Hãy dùng ít nhất 8 ký tự.",
   "AUTH_INVALID_CREDENTIALS": {
     "title": "Email hoặc mật khẩu chưa chính xác.",
     "hint": "Bạn kiểm tra lại nhé!"

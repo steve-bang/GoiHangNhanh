@@ -134,6 +134,83 @@ describe('câu chữ thông báo lỗi AUTH_*, signUp.errors và lỗi các màn
   });
 });
 
+/**
+ * Quét TOÀN BỘ chuỗi giao diện (mọi locale, mọi namespace), không chỉ lỗi AUTH/signUp: không từ khó
+ * hiểu, không lời hứa quá mức (CLAUDE.md #11: không hứa thắng khiếu nại, không "tuyệt đối").
+ */
+const EVERY_UI_STRING: [string, string][] = Object.entries(resources).flatMap(
+  ([locale, namespaces]) =>
+    Object.entries(namespaces as Record<string, Json>).flatMap(([ns, tree]) =>
+      flatten(tree, `${locale}.${ns}`),
+    ),
+);
+
+/** Cụm hứa quá mức hoặc nói như đảm bảo pháp lý: cấm ở mọi chuỗi giao diện. */
+const FORBIDDEN_PROMISES = [
+  'tuyệt đối',
+  'pháp lý',
+  'chắc chắn thắng',
+  'đảm bảo thắng',
+  'thắng khiếu nại',
+  'không thể bị',
+  'vĩnh viễn',
+  'mãi mãi',
+  'không bao giờ mất',
+  'bảo đảm',
+  'đảm bảo',
+];
+
+/**
+ * "bảo vệ" chỉ được dùng ở các câu thương hiệu đã được người dùng duyệt (tiêu đề và tagline màn Chào
+ * mừng). Chỗ khác dùng "lưu bằng chứng" thay vì hứa "bảo vệ".
+ */
+const APPROVED_PROTECT_KEYS = ['vi.screens.welcome.title', 'vi.screens.signIn.brandTagline'];
+
+describe('quét toàn bộ chuỗi giao diện', () => {
+  it('có chuỗi để quét (đủ nhiều namespace)', () => {
+    expect(EVERY_UI_STRING.length).toBeGreaterThan(300);
+  });
+
+  it.each(EVERY_UI_STRING)('%s: không có từ cấm', (_key, value) => {
+    const text = value.toLowerCase();
+    for (const word of FORBIDDEN) expect(text).not.toContain(word);
+    for (const word of FORBIDDEN_PROMISES) expect(text).not.toContain(word);
+  });
+
+  it('"bảo vệ" chỉ xuất hiện ở các câu thương hiệu đã duyệt', () => {
+    const hits = EVERY_UI_STRING.filter(([, value]) => /bảo vệ/i.test(value)).map(([key]) => key);
+    expect(hits.sort()).toEqual([...APPROVED_PROTECT_KEYS].sort());
+  });
+
+  it('các câu thương hiệu đã duyệt giữ nguyên đúng từng chữ', () => {
+    expect(resources.vi.screens.welcome.title).toBe('Bảo vệ bằng chứng\ncho từng đơn hàng');
+    expect(resources.vi.screens.welcome.subtitle).toBe(
+      'Ghi hình đầy đủ – Lưu trữ an toàn – An tâm kinh doanh',
+    );
+    expect(resources.vi.screens.signIn.brandTagline).toBe('Bảo vệ đơn hàng – Vững bước kinh doanh');
+  });
+
+  it('bốn câu phụ đã chỉnh để không hứa quá: đúng từng chữ', () => {
+    const NBSP = '\u00a0';
+    expect(resources.vi.screens.signUp.subtitle).toBe(
+      'Bắt đầu lưu bằng chứng cho đơn hàng của bạn chỉ trong vài phút!',
+    );
+    expect(resources.vi.screens.setupDone.subtitle).toBe(
+      'Cảm ơn bạn đã hoàn tất thiết lập. Giờ đây bạn có thể bắt đầu ghi hình và lưu bằng chứng cho đơn hàng.',
+    );
+    expect(resources.vi.screens.signIn.subtitle).toBe(
+      `Cùng Đơn${NBSP}Chứng lưu bằng chứng cho từng đơn hàng nhé!`,
+    );
+    expect(resources.vi.screens.newPassword.description).toBe(
+      'Chọn mật khẩu mạnh để giữ tài khoản của bạn an toàn hơn.',
+    );
+  });
+
+  it('mật khẩu yếu theo D-13: đúng từng chữ, không đòi chữ và số', () => {
+    expect(errors.AUTH_WEAK_PASSWORD).toBe('Mật khẩu này dễ đoán. Hãy dùng ít nhất 8 ký tự.');
+  });
+});
+
 describe('tên thương hiệu không bị tách dòng', () => {
   const NBSP = ' ';
   const all: [string, string][] = Object.entries(resources.vi).flatMap(([ns, tree]) =>

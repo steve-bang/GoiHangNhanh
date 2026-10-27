@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getEnabledSocialProviders } from '@/core/config/feature-flags';
 import { ROUTES } from '@/core/navigation';
-import { getMinTouchTarget, useAppNavigation, useRouteParams } from '@/platform';
+import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Text, useTheme } from '@/shared/ui';
 
 import { normalizeEmail, validateEmail } from '../domain/validation';
@@ -28,7 +28,7 @@ import { WelcomeIllustration } from './WelcomeIllustration';
  * UI-A03, biến thể đăng nhập bằng email + mật khẩu (docs/09 mục 5.1; mockup 05-sign-in-and-recovery,
  * màn thứ nhất). Chỉ chuyển màn khi cổng xác nhận đăng nhập; KHÔNG hiện "đăng nhập thành công". Sai
  * thông tin báo chung (không nói cái nào sai). Mật khẩu chỉ ở state cục bộ của màn này: không vào
- * trạng thái luồng, tham số điều hướng hay log. Tham số `email` (từ màn đăng ký) chỉ để điền sẵn.
+ * trạng thái luồng, tham số điều hướng hay log. Email điền sẵn (từ màn đăng ký/đặt lại mật khẩu) đi qua trạng thái luồng trong bộ nhớ, không qua URL.
  */
 export function SignInScreen() {
   const { t } = useTranslation();
@@ -36,11 +36,10 @@ export function SignInScreen() {
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
-  const params = useRouteParams();
   const { dispatch, recovery, dispatchRecovery, gateways } = useOnboardingFlow();
   const providers = getEnabledSocialProviders();
 
-  const [email, setEmail] = useState(params.email ?? '');
+  const [email, setEmail] = useState(recovery.signInEmail ?? '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
@@ -50,6 +49,8 @@ export function SignInScreen() {
   const emailRef = useRef<TextInputHandle>(null);
   const passwordRef = useRef<TextInputHandle>(null);
   useEffect(() => {
+    // Email điền sẵn và banner chỉ dùng MỘT lần: xóa khỏi trạng thái luồng sau khi đã lấy.
+    if (recovery.signInEmail !== null) dispatchRecovery({ type: 'signin_email_consumed' });
     if (recovery.resetNotice) dispatchRecovery({ type: 'notice_consumed' });
     // chỉ chạy lúc mở màn
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,8 +106,10 @@ export function SignInScreen() {
       return;
     }
     const normalized = normalizeEmail(email);
-    void run(async () => {
+    void run(async (isActive) => {
       const account = await gateways.auth.signInWithPassword({ email: normalized, password });
+      // Đã rời màn (Back/đi chỗ khác) trong lúc chờ: không điều hướng thay người dùng.
+      if (!isActive()) return;
       if (account.hasShop) {
         navigation.reset(ROUTES.home);
       } else {
@@ -119,8 +122,9 @@ export function SignInScreen() {
 
   const goForgot = () => {
     const typed = normalizeEmail(email);
-    if (typed) navigation.push(ROUTES.forgotPassword, { email: typed });
-    else navigation.push(ROUTES.forgotPassword);
+    // Điền sẵn email ở màn Quên mật khẩu (chỉ khi chưa gõ gì ở luồng đó).
+    if (typed && !recovery.email) dispatchRecovery({ type: 'email_changed', email: typed });
+    navigation.push(ROUTES.forgotPassword);
   };
 
   return (

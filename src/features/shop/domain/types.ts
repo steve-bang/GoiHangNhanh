@@ -24,6 +24,12 @@ export interface VerifyRecoveryCodeInput {
   readonly code: string;
 }
 
+export interface VerifiedRecovery {
+  readonly ticket: string;
+  /** Vé còn dùng được bao lâu (giây). Có thì app không cho vào màn Mật khẩu mới khi vé đã quá hạn. */
+  readonly expiresInSeconds?: number;
+}
+
 export interface ResetPasswordInput {
   /** "Vé" do `verifyRecoveryCode` trả về; chỉ giữ trong bộ nhớ luồng. */
   readonly ticket: string;
@@ -56,7 +62,7 @@ export interface AuthGateway {
    */
   requestPasswordRecovery(email: string): Promise<{ retryAfterSeconds?: number }>;
   /** Mã sai/hết hạn/quá số lần: `AUTH_OTP_INVALID` / `AUTH_OTP_EXPIRED` / `AUTH_TOO_MANY_REQUESTS`. */
-  verifyRecoveryCode(input: VerifyRecoveryCodeInput): Promise<{ ticket: string }>;
+  verifyRecoveryCode(input: VerifyRecoveryCodeInput): Promise<VerifiedRecovery>;
   /** Phiên đặt lại hết hạn: `AUTH_RESET_SESSION_EXPIRED`. Máy chủ phải thu hồi phiên cũ khi thành công. */
   resetPassword(input: ResetPasswordInput): Promise<void>;
 }
@@ -68,6 +74,11 @@ export interface CreateShopInput {
   readonly sellingSources: readonly OrderSource[];
 }
 
+export interface UpdateShopInput extends CreateShopInput {
+  /** Shop đã được `createShop` xác nhận trong cùng luồng thiết lập. */
+  readonly shopId: string;
+}
+
 export interface CreatedShop {
   readonly id: string;
   readonly name: string;
@@ -76,10 +87,14 @@ export interface CreatedShop {
 
 /**
  * Cổng tạo shop (port). Bản thật là Cloud Function callable `createShop` (ghi `members` + nhật ký
- * kiểm toán, architecture.md): chỉ resolve khi máy chủ xác nhận.
+ * kiểm toán, architecture.md): chỉ resolve khi máy chủ xác nhận. Màn Tạo shop gọi `createShop` MỘT
+ * lần mỗi luồng thiết lập; người dùng quay lại sửa thì gọi `updateShop` với `shopId` đã có. Bản
+ * thật phải idempotent theo tài khoản (một tài khoản không bao giờ có hai shop từ luồng này), kể cả
+ * khi app gọi lặp do mất mạng giữa chừng (decisions.md Q-13).
  */
 export interface ShopGateway {
   createShop(input: CreateShopInput): Promise<CreatedShop>;
+  updateShop(input: UpdateShopInput): Promise<CreatedShop>;
 }
 
 export interface Gateways {

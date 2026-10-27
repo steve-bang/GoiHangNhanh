@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, within } from '@testing-library/react-native';
-import { StyleSheet, useWindowDimensions } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, useWindowDimensions } from 'react-native';
 
 import { AppError } from '@/core/errors/app-error';
 import { colors } from '@/core/theme';
@@ -11,6 +12,7 @@ import { renderWithProviders } from '@/test-utils/render';
 import { createFakeGateways } from '../data/fake-gateways';
 import { createUnavailableGateways } from '../data/unavailable-gateways';
 import type { AuthAccount, Gateways } from '../domain/types';
+import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import { SignUpScreen } from './SignUpScreen';
 
 jest.mock(
@@ -28,6 +30,29 @@ const mockProviders = jest.fn();
 jest.mock('@/core/config/feature-flags', () => ({
   getEnabledSocialProviders: () => mockProviders() as string[],
 }));
+
+/** Chỉ để test đọc trạng thái luồng: email điền sẵn cho Đăng nhập và toàn bộ trạng thái (không được chứa mật khẩu). */
+function FlowProbe() {
+  const { state, recovery } = useOnboardingFlow();
+  return (
+    <>
+      <Text testID="probe-signin-email">{recovery.signInEmail ?? ''}</Text>
+      <Text testID="probe-flow">{JSON.stringify({ state, recovery })}</Text>
+    </>
+  );
+}
+
+/** Màn Tạo tài khoản kèm nút gỡ/hiện lại (như Back rồi quay lại) và FlowProbe. */
+function Harness() {
+  const [shown, setShown] = useState(true);
+  return (
+    <>
+      <Pressable testID="toggle" onPress={() => setShown((prev) => !prev)} />
+      <FlowProbe />
+      {shown ? <SignUpScreen /> : null}
+    </>
+  );
+}
 
 const errors = resources.vi.errors;
 /** Thông báo hai câu gồm `title` (in đậm) + `hint`; một câu chỉ có chuỗi. */
@@ -83,7 +108,7 @@ describe('UI-A03 Tạo tài khoản: giao diện', () => {
     // toHaveTextContent gộp khoảng trắng nên không thấy U+00A0: so sánh chuỗi gốc
     expect(screen.getByRole('header').props.children).toBe('Tạo tài khoản\nĐơn\u00a0Chứng');
     expect(
-      screen.getByText('Bắt đầu hành trình bảo vệ đơn hàng của bạn chỉ trong vài phút!'),
+      screen.getByText('Bắt đầu lưu bằng chứng cho đơn hàng của bạn chỉ trong vài phút!'),
     ).toBeOnTheScreen();
     expect(screen.getByText('Email của bạn')).toBeOnTheScreen();
     expect(screen.getByText('Mật khẩu')).toBeOnTheScreen();
@@ -132,11 +157,14 @@ describe('UI-A03 Tạo tài khoản: giao diện', () => {
   });
 
   it('liên kết "Đăng nhập" cuối trang mang theo email đang gõ (không bao giờ mật khẩu)', async () => {
-    await renderWithProviders(<SignUpScreen />);
+    await renderWithProviders(<Harness />);
     await fill(`  ${VALID_EMAIL} `, VALID_PASSWORD);
     await fireEvent.press(screen.getByRole('link', { name: 'Đăng nhập' }));
-    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.signIn, { email: VALID_EMAIL });
-    expect(JSON.stringify(mockNavigation.push.mock.calls)).not.toContain(VALID_PASSWORD);
+    // email đi qua trạng thái luồng (không qua tham số/URL); mật khẩu không đi đâu cả
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.signIn);
+    expect(mockNavigation.push.mock.calls.every((call) => call.length === 1)).toBe(true);
+    expect(screen.getByTestId('probe-signin-email')).toHaveTextContent(VALID_EMAIL);
+    expect(screen.getByTestId('probe-flow')).not.toHaveTextContent(VALID_PASSWORD);
   });
 
   it('"Đăng nhập" mở /sign-in; nút quay lại gọi back', async () => {
@@ -302,7 +330,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
 
   it('email đã dùng: lỗi nằm DƯỚI ô Email (không phải khung chung), có nút Đăng nhập mở /sign-in', async () => {
     const fake = createFakeGateways();
-    await renderWithProviders(<SignUpScreen />, { gateways: fake });
+    await renderWithProviders(<Harness />, { gateways: fake });
     await fill(VALID_EMAIL, VALID_PASSWORD);
     fake.auth.failNext('AUTH_EMAIL_IN_USE');
     await fireEvent.press(submitButton());
@@ -312,7 +340,8 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
     expect(error.props.accessibilityRole).toBe('alert');
     expect(within(error).getByText('Email này đã có tài khoản.')).toBeOnTheScreen();
     await fireEvent.press(within(error).getByRole('button', { name: 'Đăng nhập' }));
-    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.signIn, { email: VALID_EMAIL });
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.signIn);
+    expect(screen.getByTestId('probe-signin-email')).toHaveTextContent(VALID_EMAIL);
     // giữ nguyên dữ liệu đã nhập
     expect(screen.getByTestId('signup-email').props.value).toBe(VALID_EMAIL);
     expect(screen.getByTestId('signup-password').props.value).toBe(VALID_PASSWORD);
@@ -449,5 +478,82 @@ describe('UI-A03 Tạo tài khoản: câu chữ', () => {
 
   it('tạo lỗi AppError có mã được khai báo', () => {
     expect(new AppError('AUTH_EMAIL_IN_USE').code).toBe('AUTH_EMAIL_IN_USE');
+  });
+});
+
+describe('UI-A03 Tạo tài khoản: quay lại sau khi đã tạo', () => {
+  async function createThenReturn(fake: ReturnType<typeof createFakeGateways>) {
+    await renderWithProviders(<Harness />, { gateways: fake });
+    await fill(VALID_EMAIL, VALID_PASSWORD);
+    await fireEvent.press(submitButton());
+    expect(fake.auth.signUpCalls).toHaveLength(1);
+    // Back từ bước tạo shop rồi hiện lại màn này
+    await fireEvent.press(screen.getByTestId('toggle'));
+    await fireEvent.press(screen.getByTestId('toggle'));
+  }
+
+  it('khóa hai ô (chỉ đọc), mật khẩu là chấm cố định, nút đổi thành "Tiếp tục", không có nút hiện mật khẩu', async () => {
+    await createThenReturn(createFakeGateways());
+    const email = screen.getByTestId('signup-email');
+    const password = screen.getByTestId('signup-password');
+    expect(email.props.value).toBe(VALID_EMAIL);
+    expect(email.props.editable).toBe(false);
+    expect(password.props.editable).toBe(false);
+    expect(password.props.value).toBe('••••••••');
+    expect(password.props.value).not.toContain(VALID_PASSWORD);
+    expect(password.props.secureTextEntry).toBe(false);
+    expect(screen.queryByRole('button', { name: 'Hiện mật khẩu' })).toBeNull();
+    expect(submitButton()).toHaveTextContent('Tiếp tục');
+    expect(screen.queryByText('Tạo tài khoản', { exact: true })).toBeNull();
+  });
+
+  it('gõ thêm vào ô khóa không đổi gì; không có lỗi kiểm tra dữ liệu', async () => {
+    await createThenReturn(createFakeGateways());
+    await fireEvent.changeText(screen.getByTestId('signup-email'), 'khac@example.com');
+    await fireEvent.changeText(screen.getByTestId('signup-password'), 'mat-khau-khac-1');
+    expect(screen.getByTestId('signup-email').props.value).toBe(VALID_EMAIL);
+    expect(screen.getByTestId('signup-password').props.value).toBe('••••••••');
+    expect(screen.queryByTestId('signup-email-error')).toBeNull();
+    expect(screen.queryByTestId('signup-password-error')).toBeNull();
+  });
+
+  it('"Tiếp tục" đi thẳng /create-shop và KHÔNG gọi cổng đăng ký lần hai', async () => {
+    const fake = createFakeGateways();
+    await createThenReturn(fake);
+    mockNavigation.push.mockClear();
+    await fireEvent.press(submitButton());
+    await fireEvent(screen.getByTestId('signup-password'), 'submitEditing');
+    expect(fake.auth.signUpCalls).toHaveLength(1);
+    expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.createShop);
+    expect(screen.queryByTestId('form-error')).toBeNull();
+  });
+
+  it('mật khẩu không nằm trong trạng thái luồng', async () => {
+    await createThenReturn(createFakeGateways());
+    expect(screen.getByTestId('probe-flow')).not.toHaveTextContent(VALID_PASSWORD);
+  });
+
+  it('rời màn trong lúc chờ cổng: tài khoản vẫn được ghi nhận (khóa khi quay lại) nhưng không điều hướng', async () => {
+    const { gateways, signUpWithEmail, resolve } = pendingGateways();
+    await renderWithProviders(<Harness />, { gateways });
+    await fill(VALID_EMAIL, VALID_PASSWORD);
+    await fireEvent.press(submitButton());
+    mockNavigation.screenActive = false;
+    await act(async () => {
+      resolve({ uid: 'u1', email: VALID_EMAIL, emailVerified: false });
+    });
+    expect(mockNavigation.push).not.toHaveBeenCalled();
+    mockNavigation.screenActive = true;
+    await fireEvent.press(screen.getByTestId('toggle'));
+    await fireEvent.press(screen.getByTestId('toggle'));
+    expect(screen.getByTestId('signup-email').props.editable).toBe(false);
+    await fireEvent.press(submitButton());
+    expect(signUpWithEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it('tài khoản tạo ở luồng Đăng nhập (email khác, ô email trống) không khóa màn Tạo tài khoản', async () => {
+    await renderWithProviders(<SignUpScreen />);
+    expect(screen.getByTestId('signup-email').props.editable).not.toBe(false);
+    expect(submitButton()).toHaveTextContent('Tạo tài khoản');
   });
 });

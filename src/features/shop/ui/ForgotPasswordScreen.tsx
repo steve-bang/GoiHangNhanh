@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ErrorCode } from '@/core/errors/codes';
 import { ROUTES } from '@/core/navigation';
-import { getMinTouchTarget, useAppNavigation, useRouteParams } from '@/platform';
+import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Text, useTheme } from '@/shared/ui';
 
 import { DEFAULT_RESEND_SECONDS } from '../domain/otp';
@@ -34,20 +34,19 @@ export function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
-  const params = useRouteParams();
   const { recovery, dispatchRecovery, gateways } = useOnboardingFlow();
   const [touched, setTouched] = useState(false);
   const { busy, busyRef, formError, setFormError, run, retry } = useGatewayTask();
   const emailRef = useRef<TextInputHandle>(null);
   const email = recovery.email;
-  useEffect(() => {
-    // Điền sẵn email từ màn Đăng nhập (chỉ khi chưa gõ gì ở luồng này).
-    if (!recovery.email && params.email) {
-      dispatchRecovery({ type: 'email_changed', email: params.email });
-    }
-    // chỉ chạy lúc mở màn
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Rời màn này (Back, về Đăng nhập) là rời luồng khôi phục: xóa điều kiện vào Nhập mã/Mật khẩu mới.
+  // Màn Nhập mã/Mật khẩu mới nằm TRÊN màn này trong ngăn xếp nên không làm chạy đoạn này.
+  useEffect(
+    () => () => {
+      dispatchRecovery({ type: 'left_flow' });
+    },
+    [dispatchRecovery],
+  );
 
   const issue = validateEmail(email);
   const emailError =
@@ -97,8 +96,10 @@ export function ForgotPasswordScreen() {
       return;
     }
     const normalized = normalizeEmail(email);
-    void run(async () => {
+    void run(async (isActive) => {
       const result = await gateways.auth.requestPasswordRecovery(normalized);
+      // Đã rời màn trong lúc chờ: không ghi trạng thái, không đẩy sang màn Nhập mã.
+      if (!isActive()) return;
       dispatchRecovery({
         type: 'code_requested',
         email: normalized,
@@ -110,8 +111,9 @@ export function ForgotPasswordScreen() {
 
   const backToSignIn = () => {
     const typed = normalizeEmail(email);
-    if (typed) navigation.reset(ROUTES.signIn, { email: typed });
-    else navigation.reset(ROUTES.signIn);
+    dispatchRecovery({ type: 'left_flow' });
+    if (typed) dispatchRecovery({ type: 'signin_email_set', email: typed });
+    navigation.reset(ROUTES.signIn);
   };
 
   return (
