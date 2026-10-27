@@ -7,6 +7,10 @@ export const MIN_PASSWORD_LENGTH = 8;
 /** Giới hạn họ tên: ĐỀ XUẤT (chưa có trong đặc tả BA), cùng mức với tên shop; chờ xác nhận ở Q-19b. */
 export const DISPLAY_NAME_MAX_LENGTH = 50;
 
+/** Giới hạn tên cửa hàng: cùng mức với màn tạo shop (`features/shop`), chờ BA xác nhận (Q-19j). */
+export const SHOP_NAME_MAX_LENGTH = 50;
+
+export type ShopNameIssue = 'required' | 'too_long';
 export type DisplayNameIssue = 'required' | 'too_long';
 export type CurrentPasswordIssue = 'required';
 export type NewPasswordIssue = 'required' | 'too_short' | 'same_as_current';
@@ -25,6 +29,16 @@ export function validateDisplayName(raw: string): DisplayNameIssue | null {
   const length = textLength(normalizeDisplayName(raw));
   if (length === 0) return 'required';
   return length > DISPLAY_NAME_MAX_LENGTH ? 'too_long' : null;
+}
+
+export function normalizeShopName(raw: string): string {
+  return raw.trim();
+}
+
+export function validateShopName(raw: string): ShopNameIssue | null {
+  const length = textLength(normalizeShopName(raw));
+  if (length === 0) return 'required';
+  return length > SHOP_NAME_MAX_LENGTH ? 'too_long' : null;
 }
 
 export function validateCurrentPassword(raw: string): CurrentPasswordIssue | null {

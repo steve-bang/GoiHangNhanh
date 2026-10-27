@@ -4,6 +4,8 @@ import {
   validateCurrentPassword,
   validateDisplayName,
   validateNewPassword,
+  validateShopName,
+  SHOP_NAME_MAX_LENGTH,
 } from './validation';
 
 describe('validateDisplayName', () => {
@@ -34,5 +36,18 @@ describe('mật khẩu', () => {
     expect(validateConfirmNewPassword('abcdefgh', '')).toBe('required');
     expect(validateConfirmNewPassword('abcdefgh', 'abcdefgH')).toBe('mismatch');
     expect(validateConfirmNewPassword('abcdefgh', 'abcdefgh')).toBeNull();
+  });
+});
+
+describe('validateShopName', () => {
+  it('bắt buộc và bỏ khoảng trắng đầu/cuối', () => {
+    expect(validateShopName('')).toBe('required');
+    expect(validateShopName('   ')).toBe('required');
+    expect(validateShopName('  Shop Lan  ')).toBeNull();
+  });
+  it('giới hạn theo ký tự hiển thị (emoji không đếm đôi)', () => {
+    expect(validateShopName('a'.repeat(SHOP_NAME_MAX_LENGTH))).toBeNull();
+    expect(validateShopName('a'.repeat(SHOP_NAME_MAX_LENGTH + 1))).toBe('too_long');
+    expect(validateShopName('😀'.repeat(SHOP_NAME_MAX_LENGTH))).toBeNull();
   });
 });

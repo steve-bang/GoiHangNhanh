@@ -16,10 +16,26 @@ export interface UserProfile {
   readonly signInMethod: SignInMethod;
 }
 
-/** Shop đang dùng, đủ để hiện thẻ shop ở tab Cá nhân. Không phải bản ghi shop đầy đủ (PR4). */
+/**
+ * Vai trò của người dùng trong shop. Mô hình vai trò/thành viên CHƯA chốt (O-03, O-07, Q-19f): chỉ
+ * phân biệt chủ shop và người còn lại để hiện nhãn; quyền sửa do cổng trả ở `canEdit`, không suy ra từ vai trò.
+ */
+export type ShopRole = 'owner' | 'member';
+
+/** `active`: dùng được; `suspended`: shop tạm khóa, vẫn thấy trong danh sách nhưng không chuyển vào được. */
+export type ShopStatus = 'active' | 'suspended';
+
+/** Shop của tài khoản, đủ để hiện thẻ shop và danh sách chuyển shop. Không phải bản ghi shop đầy đủ. */
 export interface ShopSummary {
   readonly id: string;
   readonly name: string;
+  readonly role: ShopRole;
+  readonly status: ShopStatus;
+  /**
+   * Người dùng có được sửa thông tin shop không, do cổng/máy chủ quyết định (Security Rules là chốt
+   * thật; UI chỉ phản ánh để không mời người dùng làm điều sẽ bị từ chối).
+   */
+  readonly canEdit: boolean;
 }
 
 export interface UpdateProfileInput {
@@ -43,6 +59,19 @@ export interface AccountGateway {
   getProfile(): Promise<UserProfile>;
   /** Shop đang dùng của tài khoản; `null` khi chưa có shop (không bịa tên shop). */
   getShopSummary(): Promise<ShopSummary | null>;
+  /** Mọi shop người dùng có quyền truy cập (kể cả shop tạm khóa), shop đang dùng nằm trong đó. */
+  listShops(): Promise<readonly ShopSummary[]>;
+  /**
+   * Đổi tên shop (PER-06). Resolve với shop sau khi máy chủ xác nhận. Thiếu quyền thì ném
+   * `SHOP_PERMISSION_DENIED`. Không đổi gì ở bằng chứng/lịch sử đã có (docs/09 UI-I02): bằng chứng
+   * gắn với ID shop, không gắn với tên.
+   */
+  updateShopName(shopId: string, name: string): Promise<ShopSummary>;
+  /**
+   * Chọn shop đang dùng (PER-07). Resolve khi máy chủ xác nhận; bên gọi mới được đổi phiên. Shop không
+   * thuộc người dùng hoặc đang tạm khóa thì ném `SHOP_SWITCH_FAILED`. Không xóa dữ liệu cục bộ của shop cũ.
+   */
+  switchShop(shopId: string): Promise<ShopSummary>;
   updateProfile(input: UpdateProfileInput): Promise<UserProfile>;
   /** Tài khoản không đăng nhập bằng mật khẩu: bản thật phải từ chối; UI vốn đã ẩn mục này. */
   changePassword(input: ChangePasswordInput): Promise<void>;
