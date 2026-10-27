@@ -88,6 +88,20 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     expect(ROUTES.shopSwitch).toMatchObject({ parent: 'shopSettings', code: 'UI-I02' });
   });
 
+  it('route form (con) ẩn thanh tab bằng hideTabBar nhưng vẫn nằm trong nhóm (tabs); màn gốc vẫn có thanh tab (Q-19r)', () => {
+    const forms = [ROUTES.editProfile, ROUTES.changePassword, ROUTES.shopEdit, ROUTES.shopSwitch];
+    for (const route of forms) {
+      expect(route).toMatchObject({ tabBar: true, hideTabBar: true });
+      expect(isTabBarHiddenAt(route.path)).toBe(true);
+    }
+    // Chỉ route con form mới có cờ; màn gốc không bao giờ.
+    const flagged = Object.values(ROUTES).filter((r) => 'hideTabBar' in r && r.hideTabBar);
+    expect(flagged).toHaveLength(forms.length);
+    for (const root of [ROUTES.profile, ROUTES.shopSettings, ROUTES.security, ROUTES.plan]) {
+      expect(isTabBarHiddenAt(root.path)).toBe(false);
+    }
+  });
+
   it('route con có tiêu đề riêng trong nav.subTitles', () => {
     expect(nav.subTitles.editProfile).toBeTruthy();
     expect(nav.subTitles.changePassword).toBeTruthy();

@@ -76,14 +76,27 @@ export interface RouteDef {
    * `routes.test.ts` kiểm tra route gốc tồn tại, cùng mã, cùng cờ `tabBar`, và gốc không phải con.
    */
   readonly parent?: string;
+  /**
+   * Chỉ route NẰM TRONG nhóm tab (`tabBar: true`) mới dùng: màn form/tác vụ ẩn thanh tab (Sửa họ tên,
+   * Đổi mật khẩu, Sửa/Chuyển cửa hàng; decisions.md Q-19r). Khác `tabBar: false`: tệp vẫn ở trong stack của
+   * tab nên Back và trạng thái cuộn của màn gốc được giữ; chỉ `isTabBarHiddenAt` ẩn thanh tab theo đường dẫn.
+   */
+  readonly hideTabBar?: true;
 }
 
 const route = (path: string, code: UiCode, tabBar = false): RouteDef => ({ path, code, tabBar });
-const subRoute = (path: string, parent: string, code: UiCode, tabBar = false): RouteDef => ({
+const subRoute = (
+  path: string,
+  parent: string,
+  code: UiCode,
+  tabBar = false,
+  hideTabBar = false,
+): RouteDef => ({
   path,
   code,
   tabBar,
   parent,
+  ...(hideTabBar ? { hideTabBar: true as const } : {}),
 });
 
 export const ROUTES = {
@@ -147,15 +160,15 @@ export const ROUTES = {
   planLimit: route('/account/limit', 'UI-H04', true),
   profile: route('/account', 'UI-I01', true),
   // PER-02/03: sửa họ tên, route con của UI-I01 (Q-19k).
-  editProfile: subRoute('/account/edit-profile', 'profile', 'UI-I01', true),
+  editProfile: subRoute('/account/edit-profile', 'profile', 'UI-I01', true, true),
   shopSettings: route('/account/shop-settings', 'UI-I02', true),
-  shopEdit: subRoute('/account/shop-settings/edit', 'shopSettings', 'UI-I02', true),
-  shopSwitch: subRoute('/account/shop-settings/switch', 'shopSettings', 'UI-I02', true),
+  shopEdit: subRoute('/account/shop-settings/edit', 'shopSettings', 'UI-I02', true, true),
+  shopSwitch: subRoute('/account/shop-settings/switch', 'shopSettings', 'UI-I02', true, true),
   members: route('/account/members', 'UI-I03', true),
   notifications: route('/account/notifications', 'UI-I04', true),
   security: route('/account/security', 'UI-I05', true),
   // PER-04: đổi mật khẩu, route con của UI-I05 (Q-19k).
-  changePassword: subRoute('/account/change-password', 'security', 'UI-I05', true),
+  changePassword: subRoute('/account/change-password', 'security', 'UI-I05', true, true),
   help: route('/account/help', 'UI-I06', true),
   // Tab Thông báo (danh sách thông báo). Mã UI-I07 do dự án thêm, chưa có trong docs/09 gốc (D-16).
   notificationList: route('/notifications', 'UI-I07', true),
@@ -171,7 +184,7 @@ const PARAM_SEGMENT = /\[[^/\]]+\]/g;
  */
 export function isTabBarHiddenAt(pathname: string): boolean {
   return Object.values(ROUTES).some((r) => {
-    if (r.tabBar) return false;
+    if (r.tabBar && !r.hideTabBar) return false;
     const pattern = new RegExp(`^${r.path.replace(PARAM_SEGMENT, '[^/]+')}/?$`);
     return pattern.test(pathname);
   });
