@@ -15,7 +15,11 @@ import type {
 } from '../domain/types';
 import { toCodeKey } from '../domain/codes';
 import type { OrderListItem, OrderListQuery } from '../domain/order-list';
-import { findActiveSession, isSessionStatusActive } from '../domain/start-session';
+import {
+  findActiveSession,
+  isSessionStatusActive,
+  RECORDING_SESSION_STATUS,
+} from '../domain/start-session';
 import { MIGRATIONS } from './sqlite-migrations';
 
 interface OrderRow {
@@ -453,5 +457,15 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
       }),
     listSessionsOfOrder: (shopId, orderId) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', () => sessionsOfOrder(shopId, orderId)),
+    // Chưa có bảng tệp bằng chứng: không có tệp nào để chưa đồng bộ (xem OrderStore.countUnsynced).
+    countUnsynced: async () => 0,
+    hasRecordingInProgress: (shopId) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        const row = await db.getFirstAsync<{ id: string }>(
+          'SELECT id FROM packing_sessions WHERE shop_id = ? AND session_status = ? LIMIT 1',
+          [shopId, RECORDING_SESSION_STATUS],
+        );
+        return row !== null;
+      }),
   };
 }

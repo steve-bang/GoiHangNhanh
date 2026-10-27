@@ -10,7 +10,11 @@ import {
   matchesListQuery,
   type OrderListItem,
 } from '../domain/order-list';
-import { findActiveSession, isSessionActive } from '../domain/start-session';
+import {
+  findActiveSession,
+  isSessionActive,
+  isSessionStatusRecording,
+} from '../domain/start-session';
 import type { Order, OrderDetails, OrderLine, OrderPackage, PackingSession } from '../domain/types';
 
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
@@ -145,6 +149,15 @@ export function createMemoryOrderStore(): OrderStore {
     },
     async listSessionsOfOrder(shopId, orderId) {
       return sessionsOf(shopId, orderId).map(copy);
+    },
+    // Chưa có kho tệp bằng chứng: không có tệp nào để chưa đồng bộ (xem OrderStore.countUnsynced).
+    async countUnsynced() {
+      return 0;
+    },
+    async hasRecordingInProgress(shopId) {
+      return [...sessions.values()].some(
+        (s) => s.shopId === shopId && isSessionStatusRecording(s.sessionStatus),
+      );
     },
   };
 }

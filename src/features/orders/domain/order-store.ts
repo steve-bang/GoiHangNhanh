@@ -48,4 +48,18 @@ export interface OrderStore {
   countOrders(shopId: ShopId, query: OrderListQuery): Promise<number>;
   /** Mọi phiên của đơn (mới nhất trước). Dùng để khóa sửa dòng và tìm phiên đang thực hiện. */
   listSessionsOfOrder(shopId: ShopId, orderId: OrderId): Promise<PackingSession[]>;
+  /**
+   * Số tệp bằng chứng trên máy này của shop mà máy chủ CHƯA xác nhận (định nghĩa trung thực): tệp
+   * cục bộ có trạng thái chưa tới `uploaded`/`verified` (docs/06; `file-state.ts`). HÔM NAY chưa có
+   * bảng tệp bằng chứng hay hàng đợi tải lên (chưa ghi video; `loadEvidenceStates` rỗng, Q-18) nên
+   * chắc chắn không có tệp nào và hàm trả 0 vì sự thật đó, không phải ước lượng. Khi có kho tệp,
+   * ĐỌC TỪ ĐÓ theo `shopId` (đổi ở đây, hợp đồng giữ nguyên). Phiên `created` không phải bằng chứng.
+   */
+  countUnsynced(shopId: ShopId): Promise<number>;
+  /**
+   * Shop có phiên đang GHI VIDEO không (`isSessionStatusRecording`), để chặn đăng xuất. Chỉ tính
+   * phiên của `shopId`. `created` không tính (xem `RECORDING_SESSION_STATUS`). Đọc lỗi ném
+   * `LOCAL_SAVE_UNAVAILABLE`: bên gọi KHÔNG được coi lỗi là "không quay" (chặn theo hướng bảo thủ).
+   */
+  hasRecordingInProgress(shopId: ShopId): Promise<boolean>;
 }

@@ -1,6 +1,7 @@
 import { createNodeSqliteDatabase } from '@/test-utils/node-sqlite';
 
 import { createLocalOrderStore } from './create-order-store';
+import { LOCAL_SHOP_ID } from '../domain/local-shop';
 import { makeOrder } from './order-store.contract';
 
 describe('createLocalOrderStore', () => {
@@ -24,5 +25,17 @@ describe('createLocalOrderStore', () => {
     await store.saveNewOrder(d);
     expect(calls).toBe(2);
     expect(await db.getAllAsync('SELECT id FROM orders')).toHaveLength(1);
+  });
+
+  it('kiểm tra trước khi đăng xuất qua kho mở lỗi thì báo lỗi, không trả "không quay"/"0" giả', async () => {
+    const store = createLocalOrderStore(async () => {
+      throw new Error('disk');
+    });
+    await expect(store.hasRecordingInProgress(LOCAL_SHOP_ID)).rejects.toMatchObject({
+      code: 'ORDER_SAVE_FAILED',
+    });
+    await expect(store.countUnsynced(LOCAL_SHOP_ID)).rejects.toMatchObject({
+      code: 'ORDER_SAVE_FAILED',
+    });
   });
 });

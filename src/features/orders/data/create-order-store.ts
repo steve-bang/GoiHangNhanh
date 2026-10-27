@@ -35,5 +35,7 @@ export function createLocalOrderStore(open: () => Promise<SqlDatabase | null>): 
     saveSession: async (s) => (await get()).saveSession(s),
     getSession: async (shop, id) => (await get()).getSession(shop, id),
     listSessionsOfOrder: async (shop, order) => (await get()).listSessionsOfOrder(shop, order),
+    countUnsynced: async (shop) => (await get()).countUnsynced(shop),
+    hasRecordingInProgress: async (shop) => (await get()).hasRecordingInProgress(shop),
   };
 }
