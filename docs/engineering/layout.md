@@ -33,8 +33,9 @@ Thanh tab (D-11): **Tổng quan · Đơn hàng · Hàng hoàn · Đồng bộ**.
 | Đường dẫn | Mã `UI-` | Đặc tả quy trình | Thanh tab | Feature / màn hình | Mức |
 |---|---|---|---|---|---|
 | `/` | UI-A01 | — | — | `src/app/index.tsx` (chuyển hướng sang `/home`) | Chuyển hướng |
-| `/welcome` | UI-A02 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `WelcomeScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/welcome` | UI-A02 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `WelcomeScreen` | Màn thật theo mockup 5.1 (xem mục 2.1) |
 | `/sign-in` | UI-A03 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SignInScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/sign-up` | UI-A03 (biến thể đăng ký) | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SignUpScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/create-shop` | UI-A04 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `CreateShopScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/permissions` | UI-A05 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `PermissionsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/setup-done` | UI-A06 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SetupDoneScreen` | Placeholder (route + tiêu đề + lối quay lại) |
@@ -81,6 +82,16 @@ Thanh tab (D-11): **Tổng quan · Đơn hàng · Hàng hoàn · Đồng bộ**.
 | `/account/help` | UI-I06 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `HelpScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 
 Màn có bố cục + dữ liệu minh họa: Tổng quan, Trung tâm quét (khung camera giả), Tạo đơn nhanh, Xem nhanh đơn, Màn quay (khung), Xác nhận video, Hoàn tất đóng gói, Danh sách hàng hoàn, Màn quay mở kiện (khung), Danh sách đơn, Trung tâm đồng bộ.
+
+### 2.1 Màn Chào mừng (UI-A02)
+
+Màn thật đầu tiên (docs/09 mục 5.1, mockup `docs/assets/ui/01-onboarding.png`, màn trái nhất). Không dùng `Screen` vì không có thanh tiêu đề; vẫn dùng vùng an toàn, cuộn được khi chữ lớn, hình minh họa thu nhỏ/ẩn khi màn thấp (iPhone SE).
+
+- **Nút**: *Đăng nhập* → `/sign-in`; *Tạo tài khoản* → `/sign-up` (cả hai là màn khung; đăng nhập thật chưa có, O-15). Nút Apple/Google gọi `signInWithProvider` (`src/features/shop/data/auth-gateway.ts`, hiện **không làm gì**, không báo thành công).
+- **Cờ cấu hình** `src/core/config/feature-flags.ts` (`SOCIAL_SIGN_IN_FLAGS`): `apple`, `google`, mặc định `true`, hiện trên cả iOS và Android. Cả hai `false` thì ẩn luôn nhóm social và đường kẻ "Hoặc đăng nhập với".
+- **URL pháp lý** `src/core/config/legal-links.ts` (`LEGAL_LINKS`): hiện là **URL giữ chỗ** (`*.invalid`, không mở được). Mở bằng `openExternalLink` (`src/platform/external-link.ts`): bắt lỗi, chỉ ghi log (không kèm URL), không văng exception. Thay bằng URL thật khi có trang.
+- **Thay hình/logo bằng tệp thật** chỉ ở `src/features/shop/ui/WelcomeIllustration.tsx` (hình giữa) và `src/features/shop/ui/BrandLogo.tsx` (`BrandMark` + chữ). Hiện dựng bằng biểu tượng Ionicons; biểu tượng Apple/Google cũng là glyph Ionicons (`logo-apple`, `logo-google`) trong `Icon.tsx`.
+- **Token mới** (`src/core/theme/colors.ts`): `brandDark`, `welcomeBackground`, `welcomeBlob`, `borderSubtle`; có test tương phản.
 
 ## 3. Design system (`src/shared/ui`)
 
@@ -135,7 +146,8 @@ Danh sách tab chỉ ở `src/bootstrap/navigation/tab-config.ts`; `(tabs)/_layo
 - `useIsOffline()` (`src/platform/connectivity.ts`) là **stub luôn trả `false`** (chưa chọn thư viện theo dõi mạng); `OfflineBanner` đã sẵn.
 - Camera/quét/đèn pin chưa có: khung camera là placeholder; nút *Đèn pin*, *Xem lại video*, *Ghi thêm đoạn riêng* đang tắt.
 - Gợi ý sản phẩm theo lịch sử (UI-B04), chọn nguồn/thời gian ở danh sách đơn (UI-E01), thử lại tệp (UI-F01) chưa làm vì cần dữ liệu/hàng đợi thật.
-- Splash (UI-A01) hiện chỉ chuyển hướng; chưa có luồng đăng nhập (O-15) nên chưa chặn truy cập.
+- Splash (UI-A01) hiện chỉ chuyển hướng; chưa có luồng đăng nhập (O-15) nên chưa chặn truy cập; màn Chào mừng chưa được dùng làm màn khởi đầu.
+- Chào mừng: liên kết Điều khoản/Quyền riêng tư là chữ trong câu nên vùng chạm nhỏ hơn 44/48 (Text lồng không có `hitSlop`); cần đánh giá trên thiết bị.
 - Font icon tải bất đồng bộ lần đầu: icon có thể hiện trễ một nhịp.
 
 ## 8. Kiểm chứng

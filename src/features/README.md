@@ -15,7 +15,7 @@ Quy tắc phụ thuộc và lý do: `docs/engineering/architecture.md` mục 2 v
 
 | Feature    | Phạm vi (docs)                                          | Trạng thái                                                 |
 | ---------- | ------------------------------------------------------- | ---------------------------------------------------------- |
-| `shop`     | Đăng nhập, shop, thành viên, vai trò (07; O-03, O-15)   | màn khung + menu tài khoản                                 |
+| `shop`     | Đăng nhập, shop, thành viên, vai trò (07; O-03, O-15)   | màn Chào mừng thật; còn lại màn khung + menu tài khoản     |
 | `orders`   | Đơn, dòng sản phẩm, kiện, tìm/quét (A01-A03)            | màn khung (Tổng quan, quét, tạo đơn, xem nhanh, danh sách) |
 | `packing`  | Phiên đóng gói, ghi hình, phục hồi phiên (A04-A06, A08) | màn khung (quay, xác nhận, hoàn tất)                       |
 | `returns`  | Hồ sơ hàng hoàn, sai lệch (B01-B08)                     | màn khung                                                  |

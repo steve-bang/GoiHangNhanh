@@ -74,6 +74,8 @@ export const ROUTES = {
   splash: route('/', 'UI-A01'),
   welcome: route('/welcome', 'UI-A02'),
   signIn: route('/sign-in', 'UI-A03'),
+  // Biến thể đăng ký của UI-A03: dùng chung mã UI-A03 với /sign-in (một màn, hai chế độ).
+  signUp: route('/sign-up', 'UI-A03'),
   createShop: route('/create-shop', 'UI-A04'),
   permissions: route('/permissions', 'UI-A05'),
   setupDone: route('/setup-done', 'UI-A06'),

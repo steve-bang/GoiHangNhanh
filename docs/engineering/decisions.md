@@ -206,6 +206,16 @@ Khung (layout.md) bám docs/09; không theo mockup ở các điểm dưới. Kh�
 | i | Nhãn *Chờ tải lên* "ghi lý do": cần danh sách mã lý do (mất mạng, chờ Wi-Fi, hệ điều hành tạm dừng...) | Khung chỉ có `waiting_network`; BA/kỹ thuật chốt danh sách cùng Q-02 |
 | j | Quyền thông báo trong menu tài khoản (UI-I04) và Thông báo (chuông ở mockup) | Không có chuông; chỉ mục *Thông báo* trong menu tài khoản theo docs/09 |
 
+### Q-12 — Màn Chào mừng (UI-A02): nút Apple/Google, liên kết pháp lý, hình minh họa
+Người dùng đã chốt; ghi lại để theo dõi. Không chốt O-15.
+| # | Nội dung | Ghi chú |
+|---|---|---|
+| a | Nút Apple/Google bật bằng cờ `SOCIAL_SIGN_IN_FLAGS` (`src/core/config/feature-flags.ts`), **mặc định bật cả hai trên iOS và Android** | Đăng nhập thật chưa có (O-15): nút gọi cổng xác thực rỗng, không báo thành công. **Apple trên Android cần luồng web (OAuth) riêng và chưa chốt**; Apple có thể bắt buộc khi có đăng nhập Google/mạng xã hội trên iOS (Quy định App Store 4.8) cần kiểm tra khi phát hành |
+| b | Dòng phụ "Ghi hình đầy đủ – Lưu trữ an toàn – An tâm kinh doanh" giữ nguyên như mockup | Không thêm cảnh báo |
+| c | Liên kết Điều khoản/Quyền riêng tư dùng URL giữ chỗ `https://don-chung.invalid/...` (`src/core/config/legal-links.ts`) | Cần URL thật và nội dung pháp lý trước khi phát hành; hiện bấm không mở được và không báo lỗi |
+| d | Hình minh họa và logo là hình dựng tạm bằng biểu tượng; thay ở `WelcomeIllustration.tsx` và `BrandLogo.tsx` | Chưa có tệp thiết kế thật (tên "Đơn chứng" ở logo theo mockup, khác viết hoa "Đơn Chứng" trong `common:app.name`; chờ O-11) |
+| e | `/sign-up` dùng chung mã `UI-A03` với `/sign-in` | Test bảng route cho phép đúng một mã lặp (UI-A03) |
+
 ## Rủi ro nền tảng phát hiện (tóm tắt)
 
 1. Tải nền không bảo đảm: iOS dừng khi vuốt tắt app; Android 15 giới hạn dịch vụ nền loại `dataSync`. Thư viện tải nền hiện có chưa kiểm chứng với giao thức resumable của Cloud Storage.

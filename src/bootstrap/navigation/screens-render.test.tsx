@@ -53,11 +53,12 @@ describe('mọi route của app render được (khung giao diện)', () => {
     await renderWithProviders(<Screen />);
 
     expect(screen.getByTestId(`screen-${route.code}`)).toBeOnTheScreen();
-    // Màn quay là toàn màn hình camera, không có thanh tiêu đề; các màn còn lại hiện đúng tiêu đề.
+    // Màn quay là toàn màn hình camera và Chào mừng (UI-A02) là màn thương hiệu: không có thanh
+    // tiêu đề; các màn còn lại hiện đúng tiêu đề.
     // Riêng Tổng quan (UI-B01) tiêu đề là tên shop (docs/09), tên tab vẫn là "Tổng quan".
     if (route.code === 'UI-B01') {
       expect(screen.getByText(ILLUSTRATIVE_SHOP_NAME)).toBeOnTheScreen();
-    } else if (route.code !== 'UI-C03' && route.code !== 'UI-D04') {
+    } else if (!['UI-C03', 'UI-D04', 'UI-A02'].includes(route.code)) {
       expect(screen.getAllByText(nav.titles[route.code]).length).toBeGreaterThan(0);
     }
   });

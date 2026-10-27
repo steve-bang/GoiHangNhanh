@@ -43,6 +43,14 @@ export const ICON_GLYPHS = {
   'wifi-off': 'cloud-offline-outline',
   info: 'information-circle-outline',
   inbox: 'file-tray-outline',
+  // đăng nhập mạng xã hội và hình thương hiệu (màn Chào mừng)
+  apple: 'logo-apple',
+  google: 'logo-google',
+  'brand-shield': 'shield',
+  'brand-shield-check': 'shield-checkmark',
+  check: 'checkmark',
+  leaf: 'leaf',
+  'package-solid': 'cube',
 } as const satisfies Record<string, GlyphName>;
 
 export type IconName = keyof typeof ICON_GLYPHS;

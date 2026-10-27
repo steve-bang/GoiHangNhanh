@@ -102,5 +102,21 @@
     "emptyMessage": "Chọn mục khác để xem các tệp còn lại, hoặc mở danh sách đơn.",
     "emptyAction": "Mở danh sách đơn",
     "waitingNetwork": "Đang chờ mạng"
+  },
+  "welcome": {
+    "brandName": "Đơn chứng",
+    "title": "Bảo vệ bằng chứng\ncho từng đơn hàng",
+    "subtitle": "Ghi hình đầy đủ – Lưu trữ an toàn – An tâm kinh doanh",
+    "signIn": "Đăng nhập",
+    "createAccount": "Tạo tài khoản",
+    "orSignInWith": "Hoặc đăng nhập với",
+    "apple": "Apple",
+    "google": "Google",
+    "signInWithApple": "Đăng nhập với Apple",
+    "signInWithGoogle": "Đăng nhập với Google",
+    "legalPrefix": "Bằng việc đăng nhập, bạn đồng ý với ",
+    "legalAnd": " và ",
+    "terms": "Điều khoản sử dụng",
+    "privacy": "Chính sách quyền riêng tư"
   }
 }

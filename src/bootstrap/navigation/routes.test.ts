@@ -41,11 +41,13 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     expect(fromFiles).toEqual(fromTable);
   });
 
-  it('mỗi mã UI-xx trong danh mục có đúng một route; không mã lạ', () => {
+  it('mỗi mã UI-xx trong danh mục có route; không mã lạ; chỉ UI-A03 có hai route', () => {
     const codes = Object.values(ROUTES).map((r) => r.code);
-    expect(new Set(codes).size).toBe(codes.length);
     // UI-F04 (banner ngoại tuyến) và nhóm J (ngoại lệ) không phải route; mọi mã còn lại đều có.
-    expect([...codes].sort()).toEqual([...UI_CODES].sort());
+    expect([...new Set(codes)].sort()).toEqual([...UI_CODES].sort());
+    // UI-A03 có hai route (đăng nhập, đăng ký); mọi mã khác đúng một route.
+    const repeated = codes.filter((code, i) => codes.indexOf(code) !== i);
+    expect(repeated).toEqual(['UI-A03']);
   });
 
   it('mỗi mã UI-xx có tiêu đề i18n', () => {

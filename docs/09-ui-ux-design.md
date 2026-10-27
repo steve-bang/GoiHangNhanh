@@ -86,7 +86,7 @@ Mỗi màn: mục đích, thành phần, hành động chính. Quy tắc nghiệ
 | Mã | Màn | Nội dung chính |
 |---|---|---|
 | UI-A01 | Splash | Logo; kiểm tra phiên/cấu hình/đồng bộ ở nền; không đứng lâu; mất mạng vẫn vào được phần công việc cục bộ nếu phiên và dữ liệu cho phép |
-| UI-A02 | Chào mừng | "Bảo vệ bằng chứng cho từng đơn hàng"; CTA *Đăng nhập* / *Tạo tài khoản*; liên kết Điều khoản và Quyền riêng tư; không onboarding nhiều trang |
+| UI-A02 | Chào mừng | "Bảo vệ bằng chứng cho từng đơn hàng"; CTA *Đăng nhập* / *Tạo tài khoản*; liên kết Điều khoản và Quyền riêng tư; không onboarding nhiều trang; nút *Apple*/*Google* (bật bằng cờ cấu hình, O-15); liên kết pháp lý hiện là URL giữ chỗ, chưa có trang thật |
 | UI-A03 | Đăng nhập / tạo tài khoản | Kiểm tra dữ liệu tại trường; quên mật khẩu, xác thực email, trạng thái đang xử lý; không báo thành công trước khi máy chủ xác nhận. Phương thức đăng nhập: O-15 |
 | UI-A04 | Tạo hồ sơ shop | Tên shop là chính; nguồn bán chọn nhiều (Shopee, TikTok Shop, Lazada, Khác), bỏ qua được; không bắt địa chỉ, mã số thuế, dữ liệu khách hàng |
 | UI-A05 | Giải thích quyền | Vì sao cần camera/micro/ảnh–tệp/thông báo; **chỉ xin quyền khi bắt đầu tác vụ liên quan**; bị từ chối → hướng dẫn mở Cài đặt, không lặp popup; không xin danh bạ/vị trí |
