@@ -64,8 +64,8 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 | `/returns/items-check` | UI-D05 | B06 | ẩn | `returns`: `ReturnItemsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/returns/review` | UI-D06 | B07 | ẩn | `returns`: `ReturnReviewScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/returns/done` | UI-D07 | B08 | ẩn | `returns`: `ReturnDoneScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/orders` | UI-E01 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `OrdersListScreen` | Khung có bố cục + dữ liệu minh họa |
-| `/orders/[orderId]` | UI-E02 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `OrderDetailScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/orders` | UI-E01 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `OrdersListScreen` | **Màn thật** (kho cục bộ, Q-18) |
+| `/orders/[orderId]` | UI-E02 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `OrderDetailScreen` | **Màn thật, chỉ đọc** (Q-18) |
 | `/orders/[orderId]/evidence` | UI-E03 | chưa có đặc tả (docs/09 mục 4) | hiện | `evidence`: `OrderEvidenceScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/orders/[orderId]/evidence/[evidenceId]` | UI-E04 | chưa có đặc tả (docs/09 mục 4) | hiện | `evidence`: `EvidenceDetailScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/orders/[orderId]/history` | UI-E05 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `OrderHistoryScreen` | Placeholder (route + tiêu đề + lối quay lại) |
@@ -144,6 +144,17 @@ Mockup `docs/assets/ui/03-quick-order-confirm-record.png`; ADR-017 và [decision
 - **Nhóm màn "form/quy trình" (bản chỉnh theo ảnh mockup, Q-17l):** `Screen form` = nền trắng `formBackground` (không đổi nền toàn app) + tiêu đề header nhỏ (`ScreenHeader compact`, 17sp). Chữ dùng biến thể `formTitle/formLabel/formBody/formButton/formButtonSmall` (nhỏ và mảnh hơn nhóm chuẩn; chữ trên lớp phủ camera dùng `overlay` 12sp). Component có tùy chọn thay vì đổi mặc định: `Button size="compact|slim"`, `TextField compact`, `FilterChips appearance="solid" trailing=...`; `QuantityStepper` (đổi mặc định, chỉ có hai nơi dùng) là một ô liền "- 2 +". Các màn khác không đổi.
 - **Chưa kiểm chứng:** xem Q-17 (SQLite, camera, đèn pin, clipboard, quyền, tai thỏ, Back phần cứng trên máy thật). Ảnh chụp web (390x844, 360x800) cho thấy bố cục khớp mẫu.
 
+### 2.6 Danh sách đơn (UI-E01) và Chi tiết đơn (UI-E02)
+
+Đặc tả nguồn là tài liệu tab Đơn hàng do người dùng cung cấp (ORD-01, ORD-07), áp dụng có điều chỉnh để không lệch bất biến; quyết định và chỗ lệch ở [decisions.md Q-18](decisions.md). Dữ liệu **thật cục bộ** (cùng kho `OrderStore` với Q-17); không còn ghi chú "minh họa" ở tab này; Trang chủ vẫn dùng dữ liệu minh họa.
+
+- **Danh sách:** tiêu đề *Đơn hàng* + nút quét (`/scan`) và nút tạo (`/quick-order`) ở header (không FAB); ô tìm; chip *Tất cả* / *Chưa có video*; hàng nhãn đếm + nút *Bộ lọc* (hiện số bộ lọc nâng cao đang bật); `FlatList` ảo hóa (Screen `scroll={false}`), kéo làm mới, trang kế bằng con trỏ keyset (20 thẻ/trang). Trạng thái: skeleton (lần đầu, không thẻ giả), *Chưa có đơn nào* (+ *Tạo đơn đầu tiên*), *Không tìm thấy đơn phù hợp* (+ *Xóa tìm kiếm và bộ lọc*), lỗi đọc (*Chưa tải được danh sách đơn* + *Thử lại*; lỗi khi đã có danh sách thì giữ danh sách và hiện dải lỗi), lỗi trang kế (nút Thử lại ở cuối). Nạp lại khi màn lấy lại focus (nạp đúng số thẻ đang hiện, không về đầu danh sách). Từ khóa, chip, bộ lọc nằm trong state của màn nên còn khi vào chi tiết rồi Back (ngăn xếp tab giữ màn; có test router thật); **vị trí cuộn** do ngăn xếp giữ màn, chưa kiểm chứng trên máy.
+- **Bộ lọc (`OrderFiltersSheet`, BottomSheet):** thời gian TẠO đơn (Hôm nay / 7 ngày qua / 30 ngày qua, ngày lịch giờ máy, gồm hôm nay), nguồn bán (`ORDER_SOURCES`, chỉ là phân loại người dùng chọn, không ngụ ý tích hợp sàn), trạng thái khai báo (suy ra từ số dòng sản phẩm: *Chưa khai báo sản phẩm* chỉ khi 0 dòng); chỉnh trên bản nháp, *Áp dụng* mới có hiệu lực, *Xóa bộ lọc* xóa bản nháp. Chưa có "Tùy chọn" (khoảng ngày) và lọc trạng thái bằng chứng.
+- **Thẻ (`OrderCard`):** mã đơn nổi bật; nguồn + mã vận đơn; sản phẩm đầu (tên, variant ở dòng riêng, "và N sản phẩm khác") hoặc *Chưa khai báo sản phẩm*; thời điểm tạo (giờ thiết bị); một trạng thái bằng chứng mức đơn (`summarizeOrderEvidence`; hôm nay luôn *Chưa có video* vì chưa có tệp bằng chứng; không hiện % tải lên); một hành động: *Quay ngay* (chỉ khi chưa có video; đơn đã có phiên đang thực hiện thì mở lại đúng phiên đó qua `useStartPacking({ navigate: 'push' })`, chưa có thì sang Xác nhận đơn) hoặc *Xem chi tiết*. Chạm vùng thông tin luôn mở chi tiết bằng ID đơn.
+- **Chi tiết (chỉ đọc):** khối Thông tin đơn (mã đơn + Sao chép, nguồn có `SourceIcon`, mã vận đơn + Sao chép hoặc "Chưa có mã vận đơn. Bạn có thể thêm sau.", thời gian tạo kèm ghi chú giờ thiết bị, "Thông tin do bạn nhập, không lấy từ sàn."), Sản phẩm (`ProductLineList`, *Do bạn nhập*; nhãn *Chưa khai báo sản phẩm* và câu bổ sung CHỈ khi 0 dòng), Kiện hàng (mỗi kiện một mục, phiên đang mở nếu có), Bằng chứng đóng gói ("Chưa có video đóng gói..."; phiên `created` không được liệt kê như bằng chứng), Lịch sử hoạt động (suy ra từ thời điểm tạo đơn và các phiên, kèm ghi chú), nút *Quay ngay* ghim đáy khi chưa có video. ID lạ hoặc thuộc shop khác = màn *Không tìm thấy đơn* (không lộ dữ liệu). Không có nút Sửa (làm ở bước sau).
+- **Mã:** `src/features/orders/{domain/order-list.ts, domain/order-evidence.ts, data/order-evidence-source.ts, ui/use-order-list.ts, ui/use-order-detail.ts, ui/OrdersListScreen.tsx, ui/OrderDetailScreen.tsx, ui/OrderFiltersSheet.tsx, ui/OrderEvidenceBadge.tsx}`. `loadEvidenceStates` là MỘT chỗ duy nhất cấp trạng thái tệp cho màn (hiện trả rỗng); thay khi có kho tệp bằng chứng.
+- **Chưa kiểm chứng:** thiết bị iOS/Android thật, hiệu năng danh sách lớn (truy vấn sắp xếp tính mốc hoạt động cho mọi đơn của shop mỗi trang, không có chỉ mục cho cột tính; ổn với vài nghìn đơn theo dự đoán, chưa đo), vị trí cuộn khi quay lại, chữ lớn hệ thống, bàn phím che ô tìm. Ảnh chụp web (390x844, 360x800) đã đối chiếu.
+
 ## 3. Design system (`src/shared/ui`)
 
 Token ở `src/core/theme` (màu, chữ, khoảng cách, bo góc, vùng chạm); component lấy qua `useTheme()` (sẵn chỗ cho chế độ tối khi O-17 chốt). Chuỗi UI ở `src/core/i18n/locales/vi/{common,nav,screens,evidence}.json`.
@@ -154,7 +165,7 @@ Token ở `src/core/theme` (màu, chữ, khoảng cách, bo góc, vùng chạm);
 | `Text` | Chữ theo `typography`, tôn trọng font scale | Không khóa `allowFontScaling` |
 | `Button` | Chính / phụ / phá hủy | `minHeight` (44 iOS / 48 Android qua `@/platform`; chính ≥ 56) chứ không cố định chiều cao; đỏ chỉ cho phá hủy; nhãn cụ thể |
 | `ActionCard` | Hai nút lớn của Tổng quan | Một `primary`, một `secondary` |
-| `Card`, `OrderCard` | Thẻ; thẻ đơn (mã, nguồn, ngày, số video, một trạng thái) | Mã đơn chỉ là chuỗi hiển thị, không phải ID |
+| `Card`, `OrderCard` | Thẻ; thẻ đơn (mã, nguồn, mã vận đơn, sản phẩm đầu hoặc *Chưa khai báo sản phẩm*, thời điểm tạo, một trạng thái bằng chứng, một hành động). Trạng thái là `ReactNode` do feature dựng (`OrderEvidenceBadge`) nên `shared/ui` không biết nghiệp vụ | Mã đơn chỉ là chuỗi hiển thị, không phải ID |
 | `ProductLineList` | Dòng sản phẩm (tên, variant, số lượng, nguồn "Do bạn nhập") | Nhãn *Chưa khai báo sản phẩm* chỉ khi chưa có dòng nào |
 | `TextField`, `SearchField`, `QuantityStepper`, `FilterChips` | Nhập, tìm, số lượng (mặc định 1), lọc | Chip xuống dòng thay vì cuộn ngang, có `appearance="solid"` và `trailing` cùng hàng; `TextField` có `trailing` (icon quét, nút xóa) và `compact`; `QuantityStepper` là ô liền "- 2 +"; `Button size` (`regular`/`compact`/`slim`) và `Screen form`: xem mục 2.5 |
 | `EvidenceStatusBadge` | 6 nhãn trạng thái bằng chứng (docs/09 mục 3) | Chữ + biểu tượng riêng + viền; *Đã lưu trên máy* không tick/màu thành công; tiến độ % chỉ khi `uploading` và có số đo |
@@ -217,10 +228,10 @@ Thêm/bớt tab: sửa `TAB_CONFIG`, tạo/xóa tệp hoặc thư mục tương 
 
 ## 7. Giới hạn đã biết của khung
 
-- Phần lớn màn vẫn là dữ liệu minh họa (tìm/lọc chạy trên dữ liệu giả cục bộ). Riêng Tạo đơn nhanh, Xác nhận đơn và màn quay (mục 2.5) đọc/ghi SQLite cục bộ; tham số route là ID nội bộ.
+- Phần lớn màn vẫn là dữ liệu minh họa (tìm/lọc chạy trên dữ liệu giả cục bộ). Riêng Danh sách đơn, Chi tiết đơn, Tạo đơn nhanh, Xác nhận đơn và màn quay (mục 2.5, 2.6) đọc/ghi SQLite cục bộ; tham số route là ID nội bộ.
 - `useIsOffline()` (`src/platform/connectivity.ts`) là **stub luôn trả `false`** (chưa chọn thư viện theo dõi mạng); `OfflineBanner` đã sẵn.
 - Camera **quét mã** (UI-B02) đã có thật (`expo-camera`, ADR-016) nhưng chưa kiểm chứng trên thiết bị; camera **quay video** chưa ghi được: màn quay (UI-C03) chỉ xem trước (Q-17b), nút *Xem lại video*, *Ghi thêm đoạn riêng* đang tắt.
-- Chọn nguồn/thời gian ở danh sách đơn (UI-E01), thử lại tệp (UI-F01) chưa làm vì cần dữ liệu/hàng đợi thật. Gợi ý sản phẩm (UI-B04) đã làm trên lịch sử cục bộ (Q-17).
+- Danh sách đơn (UI-E01) và chi tiết đơn (UI-E02) đã dùng dữ liệu thật cục bộ (Q-18); lọc theo trạng thái bằng chứng, khoảng ngày tự chọn, sửa đơn chưa làm. Thử lại tệp (UI-F01) chưa làm vì cần dữ liệu/hàng đợi thật. Gợi ý sản phẩm (UI-B04) đã làm trên lịch sử cục bộ (Q-17).
 - Splash (UI-A01, mục 2.4) chạy bằng cổng phiên giả; chưa có luồng đăng nhập thật (O-15) nên **chưa chặn truy cập** (route guard là việc sau). Bản build thường luôn vào Chào mừng (cổng "chưa kết nối"). Ba màn thiết lập (mục 2.2) chạy bằng cổng giả: chưa tạo tài khoản/shop thật. Splash hệ điều hành, icon (tạm), tải ảnh 3D, WebP alpha, tràn viền Android và vùng an toàn thật **chưa kiểm chứng trên thiết bị**; ảnh chụp đối chiếu thiết kế là render web.
 - Chào mừng: liên kết Điều khoản/Quyền riêng tư là chữ trong câu nên vùng chạm nhỏ hơn 44/48 (Text lồng không có `hitSlop`); cần đánh giá trên thiết bị.
 - Font icon tải bất đồng bộ lần đầu: icon có thể hiện trễ một nhịp.
