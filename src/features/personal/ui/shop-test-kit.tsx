@@ -30,7 +30,7 @@ export const SHOP_C: ShopSummary = {
 const USER = { uid: 'fake-user-1', email: 'demo@example.com', displayName: 'An' };
 
 /** Đưa phiên vào trạng thái đã đăng nhập vào `shopId`, và phơi trạng thái phiên ra để kiểm tra. */
-export function SessionProbe({ shopId = 'shop-a' }: { shopId?: string }) {
+export function SessionProbe({ shopId = 'shop-a' }: { shopId?: string | null }) {
   const session = useSession();
   return (
     <>

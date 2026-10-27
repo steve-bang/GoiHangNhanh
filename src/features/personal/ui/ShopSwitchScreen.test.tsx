@@ -4,6 +4,7 @@ import type { OrderId, PackageId } from '@/core/ids';
 import { ROUTES } from '@/core/navigation';
 import {
   createMemoryOrderStore,
+  LOCAL_SHOP_ID,
   OrdersListScreen,
   type OrderDetails,
   type OrderStore,
@@ -12,6 +13,7 @@ import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigatio
 import { sampleOrder } from '@/test-utils/order-fixtures';
 import { renderWithProviders } from '@/test-utils/render';
 
+import type { ShopSummary } from '../domain/types';
 import { createFakePersonalGateways } from '../data/fake-personal-gateways';
 import { ShopSwitchScreen } from './ShopSwitchScreen';
 import { beginProbeSession, SessionProbe, SHOP_A, SHOP_B, SHOP_C } from './shop-test-kit';
@@ -182,6 +184,28 @@ describe('ShopSwitchScreen (UI-I02 route con, PER-07)', () => {
     expect(gateways.account.switchShopCalls).toEqual([]);
     expect(screen.queryByText('Chuyển cửa hàng?')).toBeNull();
     expect(screen.getByTestId('probe-key')).toHaveTextContent('fake-user-1:shop-a');
+  });
+
+  it('phiên chưa biết shop (shopId null): shop hiệu lực là LOCAL_SHOP_ID, "Đang dùng" đúng và không cho chuyển sang chính nó', async () => {
+    const local: ShopSummary = { ...SHOP_A, id: LOCAL_SHOP_ID, name: 'Shop local' };
+    const gateways = createFakePersonalGateways({ shops: [local, SHOP_B] });
+    await renderWithProviders(
+      <>
+        <SessionProbe shopId={null} />
+        <ShopSwitchScreen />
+      </>,
+      { personalGateways: gateways },
+    );
+    await beginProbeSession();
+    await waitFor(() => expect(screen.getByTestId('switch-shop-list')).toBeOnTheScreen());
+    expect(screen.getByTestId('switch-shop-item-local-shop')).toHaveTextContent(/Đang dùng/);
+    expect(screen.getByTestId('switch-shop-item-shop-b')).not.toHaveTextContent(/Đang dùng/);
+    await pick('local-shop');
+    expect(screen.queryByText('Chuyển cửa hàng?')).toBeNull();
+    expect(gateways.account.switchShopCalls).toEqual([]);
+    // Shop khác vẫn chuyển được.
+    await pick('shop-b');
+    await waitFor(() => expect(screen.getByText('Chuyển cửa hàng?')).toBeOnTheScreen());
   });
 
   it('không tải được danh sách: lỗi cục bộ có Thử lại', async () => {

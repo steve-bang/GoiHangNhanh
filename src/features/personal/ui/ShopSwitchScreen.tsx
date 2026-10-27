@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { useCurrentShopId } from '@/features/orders';
 import { useAppNavigation } from '@/platform';
 import {
   Avatar,
@@ -34,7 +35,8 @@ export function ShopSwitchScreen() {
   const session = useSession();
   const shops = useRegion(() => account.listShops(), session.key);
   const flow = useSwitchShop();
-  const currentId = session.state.shopId;
+  // Shop hiệu lực (phiên chưa biết shop thì orders dùng LOCAL_SHOP_ID), cùng nguồn với kho đơn.
+  const currentId = useCurrentShopId();
 
   return (
     <Screen

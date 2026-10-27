@@ -36,18 +36,15 @@ export function useSwitchShop() {
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
 
-  const fail = useCallback(
-    (code: 'SHOP_SWITCH_FAILED' | 'SHOP_PERMISSION_DENIED' = 'SHOP_SWITCH_FAILED') => {
-      toast.show(errorText(resolveErrorMessage(t, code)), { tone: 'error' });
-    },
-    [toast, t],
-  );
+  const fail = useCallback(() => {
+    toast.show(errorText(resolveErrorMessage(t, 'SHOP_SWITCH_FAILED')), { tone: 'error' });
+  }, [toast, t]);
 
   const select = useCallback(
     async (shop: ShopSummary) => {
       if (busyRef.current || shop.status !== 'active') return;
       // Chọn chính shop đang dùng: không có gì để chuyển.
-      if (shop.id === session.state.shopId) return;
+      if (shop.id === currentShopId) return;
       busyRef.current = true;
       setBusy(true);
       try {
@@ -77,7 +74,7 @@ export function useSwitchShop() {
         setBusy(false);
       }
     },
-    [store, currentShopId, session.state.shopId, fail],
+    [store, currentShopId, fail],
   );
 
   const dismiss = useCallback(() => {
