@@ -20,5 +20,22 @@
     "hint": "Bạn kiểm tra mạng rồi thử lại nhé."
   },
   "AUTH_EMAIL_IN_USE": "Email này đã có tài khoản.",
-  "AUTH_WEAK_PASSWORD": "Mật khẩu này dễ đoán. Hãy dùng ít nhất 8 ký tự, có cả chữ và số."
+  "AUTH_WEAK_PASSWORD": "Mật khẩu này dễ đoán. Hãy dùng ít nhất 8 ký tự, có cả chữ và số.",
+  "AUTH_INVALID_CREDENTIALS": {
+    "title": "Email hoặc mật khẩu chưa chính xác.",
+    "hint": "Bạn kiểm tra lại nhé!"
+  },
+  "AUTH_TOO_MANY_REQUESTS": {
+    "title": "Bạn đã thử quá nhiều lần.",
+    "hint": "Hãy thử lại sau ít phút."
+  },
+  "AUTH_OTP_INVALID": "Mã xác minh chưa chính xác. Bạn kiểm tra lại nhé!",
+  "AUTH_OTP_EXPIRED": {
+    "title": "Mã xác minh đã hết hạn.",
+    "hint": "Bạn xin mã mới nhé."
+  },
+  "AUTH_RESET_SESSION_EXPIRED": {
+    "title": "Phiên xác minh đã hết hạn.",
+    "hint": "Bạn cần xác minh lại để đặt mật khẩu mới."
+  }
 }

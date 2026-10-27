@@ -13,6 +13,10 @@ export function createUnavailableGateways(): Gateways {
   const auth: AuthGateway = {
     signUpWithEmail: unavailable,
     signInWithProvider: unavailable,
+    signInWithPassword: unavailable,
+    requestPasswordRecovery: unavailable,
+    verifyRecoveryCode: unavailable,
+    resetPassword: unavailable,
   };
   const shop: ShopGateway = { createShop: unavailable };
   return { auth, shop };

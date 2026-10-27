@@ -11,6 +11,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
 
 export type EmailIssue = 'required' | 'invalid';
 export type PasswordIssue = 'required' | 'too_short';
+export type ConfirmPasswordIssue = 'required' | 'mismatch';
 export type ShopNameIssue = 'required' | 'too_long';
 
 /** Độ dài theo ký tự hiển thị (code point), để emoji không bị đếm thành hai. */
@@ -32,6 +33,15 @@ export function validateEmail(raw: string): EmailIssue | null {
 export function validatePassword(raw: string): PasswordIssue | null {
   if (raw.length === 0) return 'required';
   return textLength(raw) < MIN_PASSWORD_LENGTH ? 'too_short' : null;
+}
+
+/** Ô "Nhập lại mật khẩu": trống, hoặc không giống mật khẩu đã nhập (so sánh nguyên văn). */
+export function validateConfirmPassword(
+  password: string,
+  confirmation: string,
+): ConfirmPasswordIssue | null {
+  if (confirmation.length === 0) return 'required';
+  return confirmation === password ? null : 'mismatch';
 }
 
 export function normalizeShopName(raw: string): string {

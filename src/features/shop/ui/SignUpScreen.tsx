@@ -201,6 +201,13 @@ export function SignUpScreen() {
     });
   };
 
+  /** Sang Đăng nhập, mang theo email đang gõ (chỉ email, không bao giờ mật khẩu). */
+  const goSignIn = () => {
+    const typed = normalizeEmail(state.email);
+    if (typed) navigation.push(ROUTES.signIn, { email: typed });
+    else navigation.push(ROUTES.signIn);
+  };
+
   /** "Thử lại": chạy lại đúng thao tác vừa lỗi (cùng dữ liệu, vẫn chống bấm đúp). */
   const retry = () => {
     const task = lastTask.current;
@@ -243,7 +250,7 @@ export function SignUpScreen() {
             emailHasSignInAction
               ? {
                   label: t('screens:signUp.signIn'),
-                  onPress: () => navigation.push(ROUTES.signIn),
+                  onPress: goSignIn,
                   testID: 'signup-email-error-action',
                 }
               : undefined
@@ -343,7 +350,7 @@ export function SignUpScreen() {
           testID="signup-to-sign-in"
           accessibilityRole="link"
           accessibilityLabel={t('screens:signUp.signIn')}
-          onPress={() => navigation.push(ROUTES.signIn)}
+          onPress={goSignIn}
           hitSlop={8}
           style={{ minHeight: touch, justifyContent: 'center' }}
         >

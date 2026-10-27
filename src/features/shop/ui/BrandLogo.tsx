@@ -23,6 +23,27 @@ export function BrandMark({ size = 48 }: { size?: number }) {
   );
 }
 
+/** Logo xếp dọc ở màn Đăng nhập: khiên, tên, dòng khẩu hiệu nhỏ, căn giữa. */
+export function StackedBrandLogo({ compact }: { compact: boolean }) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  return (
+    <View testID="stacked-brand-logo" style={styles.stacked}>
+      <Icon name="brand-shield-check" size={compact ? 40 : 46} color={colors.brand} />
+      <Text
+        accessibilityRole="header"
+        bold
+        style={[styles.stackedName, { color: colors.brandDark }]}
+      >
+        {t('screens:signIn.brandName')}
+      </Text>
+      <Text variant="caption" style={{ color: colors.inkMuted, textAlign: 'center' }}>
+        {t('screens:signIn.brandTagline')}
+      </Text>
+    </View>
+  );
+}
+
 export function BrandLogo() {
   const { t } = useTranslation();
   const { colors, spacing } = useTheme();
@@ -40,4 +61,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   mark: { alignItems: 'center', justifyContent: 'center' },
   name: { fontSize: 24, lineHeight: 30 },
+  stacked: { alignItems: 'center', gap: 2 },
+  stackedName: { fontSize: 24, lineHeight: 30 },
 });

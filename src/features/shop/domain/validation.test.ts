@@ -4,6 +4,7 @@ import {
   normalizeShopName,
   SHOP_NAME_MAX_LENGTH,
   textLength,
+  validateConfirmPassword,
   validateEmail,
   validatePassword,
   validateShopName,
@@ -65,5 +66,14 @@ describe('kiểm tra tên shop', () => {
   it('chuẩn hóa bỏ khoảng trắng đầu/cuối, giữ nguyên chữ có dấu', () => {
     expect(normalizeShopName('  Cửa hàng Ánh  ')).toBe('Cửa hàng Ánh');
     expect(textLength('Đơn Chứng')).toBe(9);
+  });
+});
+
+describe('kiểm tra ô nhập lại mật khẩu', () => {
+  it('trống là required; khác mật khẩu là mismatch; giống nhau (kể cả có khoảng trắng) là hợp lệ', () => {
+    expect(validateConfirmPassword('matkhau-1', '')).toBe('required');
+    expect(validateConfirmPassword('matkhau-1', 'matkhau-2')).toBe('mismatch');
+    expect(validateConfirmPassword('matkhau-1', 'Matkhau-1')).toBe('mismatch');
+    expect(validateConfirmPassword('mat khau 1', 'mat khau 1')).toBeNull();
   });
 });

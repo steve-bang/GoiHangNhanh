@@ -27,7 +27,10 @@ function listFiles(dir: string): string[] {
 const routeFiles = listFiles(APP_DIR)
   .filter((file) => file.endsWith('.tsx'))
   .filter((file) => !/_layout\.tsx$/.test(file))
-  .filter((file) => relative(APP_DIR, file) !== 'index.tsx');
+  .filter((file) => relative(APP_DIR, file) !== 'index.tsx')
+  // Hai màn có chặn vào khi chưa qua bước trước (render rỗng rồi chuyển về bước đầu): có test riêng
+  // ở VerifyOtpScreen.test.tsx và NewPasswordScreen.test.tsx.
+  .filter((file) => !/(verify-otp|new-password)\.tsx$/.test(file));
 
 function routeOf(file: string): RouteDef {
   const segments = relative(APP_DIR, file)
@@ -60,9 +63,11 @@ describe('mọi route của app render được (khung giao diện)', () => {
       expect(screen.getByText(ILLUSTRATIVE_SHOP_NAME)).toBeOnTheScreen();
     } else if (
       !['UI-C03', 'UI-D04', 'UI-A02'].includes(route.code) &&
-      // Ba màn thiết lập thật (đăng ký, tạo shop, hoàn tất) có tiêu đề riêng theo mockup, không phải
-      // tiêu đề danh mục; `/sign-in` vẫn là màn khung.
-      !['/sign-up', '/create-shop', '/setup-done'].includes(route.path)
+      // Các màn thiết lập/đăng nhập thật (đăng ký, tạo shop, hoàn tất, đăng nhập, quên mật khẩu) có tiêu đề riêng theo mockup, không phải
+      // tiêu đề danh mục; màn đăng nhập và Quên mật khẩu cũng có tiêu đề riêng theo mockup 05.
+      !['/sign-up', '/create-shop', '/setup-done', '/sign-in', '/forgot-password'].includes(
+        route.path,
+      )
     ) {
       expect(screen.getAllByText(nav.titles[route.code]).length).toBeGreaterThan(0);
     }

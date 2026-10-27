@@ -8,7 +8,7 @@
 src/app/                     Route Expo Router: MỎNG, chỉ `export { XScreen as default } from '@/features/<f>'`
   _layout.tsx                Stack gốc + AppProviders (i18n); màn quay tắt cử chỉ vuốt quay lại
   index.tsx                  UI-A01: chuyển hướng sang /home
-  welcome, sign-in, ...      Thiết lập (UI-A02..A06), không có thanh tab
+  welcome, sign-in, ...      Thiết lập và khôi phục (UI-A02..A09), không có thanh tab
   (tabs)/                    NHÓM CÓ THANH TAB (tên nhóm không xuất hiện trong URL)
     _layout.tsx              <Tabs> đọc danh sách từ TAB_CONFIG
     home/ orders/ returns/ sync/   mỗi tab một Stack riêng => đi sâu trong tab vẫn thấy thanh tab
@@ -34,8 +34,11 @@ Thanh tab (D-11): **Tổng quan · Đơn hàng · Hàng hoàn · Đồng bộ**.
 |---|---|---|---|---|---|
 | `/` | UI-A01 | — | — | `src/app/index.tsx` (chuyển hướng sang `/home`) | Chuyển hướng |
 | `/welcome` | UI-A02 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `WelcomeScreen` | Màn thật theo mockup 5.1 (xem mục 2.1) |
-| `/sign-in` | UI-A03 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SignInScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/sign-in` | UI-A03 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SignInScreen` | Màn thật theo mockup 05, cổng giả (xem mục 2.3) |
 | `/sign-up` | UI-A03 (biến thể đăng ký) | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SignUpScreen` | Màn thật theo mockup 5.1, cổng giả (xem mục 2.2) |
+| `/forgot-password` | UI-A07 | chưa có đặc tả | ẩn | `shop`: `ForgotPasswordScreen` | Màn thật theo mockup 05, cổng giả (mục 2.3) |
+| `/verify-otp` | UI-A08 | chưa có đặc tả | ẩn | `shop`: `VerifyOtpScreen` | Màn thật, cổng giả; chặn vào khi chưa xin mã (mục 2.3) |
+| `/new-password` | UI-A09 | chưa có đặc tả | ẩn | `shop`: `NewPasswordScreen` | Màn thật, cổng giả; chặn vào khi chưa có vé (mục 2.3) |
 | `/create-shop` | UI-A04 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `CreateShopScreen` | Màn thật theo mockup 5.1, cổng giả (xem mục 2.2) |
 | `/permissions` | UI-A05 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `PermissionsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/setup-done` | UI-A06 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SetupDoneScreen` | Màn thật theo mockup 5.1, cổng giả (xem mục 2.2) |
@@ -96,7 +99,7 @@ Màn thật đầu tiên (docs/09 mục 5.1, mockup `docs/assets/ui/01-onboardin
 
 ### 2.2 Ba màn thiết lập (UI-A03 đăng ký, UI-A04, UI-A06)
 
-Mockup `docs/assets/ui/01-onboarding.png` (màn 2, 3, 4); chi tiết nghiệp vụ đã chốt ở [docs/09 mục 5.1](../09-ui-ux-design.md) và [decisions.md Q-13](decisions.md). Luồng: `/welcome` -> `/sign-up` -> `/create-shop` -> `/setup-done` -> Tổng quan (`navigation.reset`). Giai đoạn này: giao diện + logic + **cổng giả**; chưa có Firebase thật, Function, Splash, route guard, màn Đăng nhập.
+Mockup `docs/assets/ui/01-onboarding.png` (màn 2, 3, 4); chi tiết nghiệp vụ đã chốt ở [docs/09 mục 5.1](../09-ui-ux-design.md) và [decisions.md Q-13](decisions.md). Luồng: `/welcome` -> `/sign-up` -> `/create-shop` -> `/setup-done` -> Tổng quan (`navigation.reset`). Giai đoạn này: giao diện + logic + **cổng giả**; chưa có Firebase thật, Function, Splash, route guard (màn Đăng nhập: mục 2.3).
 
 - **Cấu trúc** (`src/features/shop`): `domain/` (kiểm tra dữ liệu `validation.ts`, nguồn bán `selling-sources.ts`, reducer luồng `onboarding-flow.ts`, kiểu + cổng `types.ts`), `data/` (`fake-gateways.ts`, `unavailable-gateways.ts`, chọn cổng `gateways.ts`), `ui/` (ba màn, `onboarding/` gồm khung cuộn, ô nhập, thanh tiến trình, thẻ nguồn bán, hình minh họa, `OnboardingFlow.tsx`). Route ở `src/app/{sign-up,create-shop,setup-done}.tsx` chỉ re-export.
 - **Trạng thái luồng** (`OnboardingFlowProvider`, đặt trong `bootstrap/Providers.tsx`; test dùng `renderWithProviders`): giữ email, tên shop, nguồn bán, tài khoản/shop đã được cổng xác nhận khi quay lại/tiến tới. Không giữ mật khẩu. Mất khi app đóng.
@@ -133,6 +136,17 @@ Token ở `src/core/theme` (màu, chữ, khoảng cách, bo góc, vùng chạm);
 | `Icon` | Tên biểu tượng trừu tượng → glyph Ionicons | Đổi bộ icon chỉ sửa `Icon.tsx` |
 
 Dữ liệu minh họa nằm ở **một tệp** `src/shared/fixtures/illustrative-data.ts` (tiền tố `ILLUSTRATIVE_*`, mã đơn `DEMO-xxxx`); khi nối dữ liệu thật thay từng chỗ import bằng hook ở `data/` của feature rồi xóa tệp này.
+
+### 2.3 Đăng nhập và khôi phục mật khẩu (UI-A03 đăng nhập, UI-A07, UI-A08, UI-A09)
+
+Mockup `docs/assets/ui/05-sign-in-and-recovery.png`; nghiệp vụ và điểm lệch: [docs/09 mục 5.6](../09-ui-ux-design.md), [decisions.md Q-14](decisions.md). Giai đoạn này: giao diện + logic + **cổng giả**; chưa Firebase thật, chưa Splash/route guard toàn app.
+
+- **Mã** (`src/features/shop`): `domain/` (`mask-email.ts`, `otp.ts` gồm lọc chữ số + đếm ngược theo mốc, `recovery-flow.ts` reducer, `validation.ts` thêm `validateConfirmPassword`), `data/` (cổng mở rộng, bản giả, bản "chưa kết nối"), `ui/` (`SignInScreen`, `ForgotPasswordScreen`, `VerifyOtpScreen`, `NewPasswordScreen`, `auth-layout.ts`, `onboarding/AuthParts.tsx` gồm `OtpBoxes`/`TipCard`/`RequirementCard`/`SocialIconRow`/`useCountdown`, `AuthIllustrations.tsx`, `useGatewayTask.ts`). Route chỉ re-export ở `src/app/{sign-in,forgot-password,verify-otp,new-password}.tsx`.
+- **Cổng `AuthGateway`:** `signInWithPassword` -> `SignedInAccount` (có `hasShop`), `requestPasswordRecovery` -> `{retryAfterSeconds?}` (trung tính), `verifyRecoveryCode` -> `{ticket}`, `resetPassword({ticket,newPassword})`. Bản "chưa kết nối" luôn `AUTH_SERVICE_UNAVAILABLE`.
+- **Trạng thái luồng** (`OnboardingFlowProvider`, thêm `recovery`): email đang gõ, email đã xin mã, mốc cho phép gửi lại, "vé", cờ banner. Chỉ trong bộ nhớ, không lưu đĩa, không log; **không** chứa mật khẩu hay mã OTP đang gõ. Chặn vào màn: `/verify-otp` cần đã xin mã (không thì về `/forgot-password`), `/new-password` cần vé (không thì về `/verify-otp` hoặc `/forgot-password`); kiểm tra một lần lúc mở màn. Nhập mã xong dùng `replace` sang Mật khẩu mới nên Back về Quên mật khẩu. Đặt lại xong dùng `reset(signIn, {email})` (adapter `reset` nhận thêm tham số).
+- **Chạy bản giả:** mặc định ở `__DEV__`/test, hoặc `EXPO_PUBLIC_USE_FAKE_BACKEND=1`. Tài khoản dev (CHỈ bản giả): `demo@example.com` / `demo-matkhau-1` (có shop), `chua.co.shop@example.com` (cùng mật khẩu, chưa có shop). Mã xác minh đúng **`123456`** (chỉ bản giả). Kịch bản theo email: `mat.mang@example.com` (mạng lỗi), `he.thong.ban@example.com` (hệ thống bận), `qua.nhieu.lan@example.com` (quá nhiều lần), `ma.het.han@example.com` (mã hết hạn ngay), `phien.het.han@example.com` (phiên đặt lại hết hạn ngay). Sai 5 lần (đăng nhập hoặc nhập mã) hoặc xin mã quá 5 lần: `AUTH_TOO_MANY_REQUESTS`. Email không tồn tại vẫn "gửi mã" nhưng mã không bao giờ đúng. Tài khoản vừa tạo ở màn đăng ký đăng nhập được trong cùng phiên chạy (coi như chưa có shop). Test dùng `failNext(code)` và đồng hồ giả (`now`).
+- **Bố cục** (`ui/auth-layout.ts`, hàm thuần có test 390x844, 412x915, 375x667, 320x568 và quét kích thước): hình co rồi ẩn trước khi nội dung bị cắt. Ước tính tại 375x667: đăng nhập ẩn hình (vừa, không cuộn), quên mật khẩu hình 150, nhập mã hình 119, mật khẩu mới hình 130; tại 320x568 cả bốn ẩn hình, riêng đăng nhập cần cuộn. Hằng số đã đối chiếu với bản render web; **cần đo lại trên thiết bị thật**.
+- **Chưa kiểm chứng:** máy thật iOS/Android; bàn phím số và gợi ý/tự điền mã (`textContentType=oneTimeCode`, `autoComplete=one-time-code`; mã gửi qua email nên iOS/Android có thể không tự điền); trình quản lý mật khẩu; VoiceOver/TalkBack (ô nhập mã trong suốt + 6 ô vẽ ẩn khỏi trình đọc).
 
 ### 3.1 Icon nguồn bán (`SourceIcon`)
 

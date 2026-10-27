@@ -159,6 +159,7 @@ Hiện docs chỉ có một số mã; nhiều tình huống chỉ có câu chữ
 | Lỗi xác thực khi tải lên; hết hạn mức; gói không cho lưu thêm (A07) | `UPLOAD_AUTH_REQUIRED`, `STORAGE_QUOTA_EXCEEDED`, `PLAN_STORAGE_BLOCKED` |
 | Tải lên thất bại / mã băm không khớp (A07, QA-09) | `UPLOAD_FAILED`, `EVIDENCE_HASH_MISMATCH` |
 | Tạo tài khoản/shop (UI-A03, UI-A04): chưa kết nối dịch vụ; mạng gián đoạn; email đã dùng; mật khẩu yếu | `AUTH_SERVICE_UNAVAILABLE`, `AUTH_NETWORK_ERROR`, `AUTH_EMAIL_IN_USE`, `AUTH_WEAK_PASSWORD` — **đã có trong mã ở dạng đề xuất** (xem Q-13), chờ BA đặt tên chính thức; đổi tên phải sửa `codes.ts`, `errors.json` và test cùng lúc |
+| Đăng nhập và đặt lại mật khẩu (UI-A03, A07-A09): sai email/mật khẩu; quá nhiều lần; mã sai; mã hết hạn; phiên đặt lại hết hạn | `AUTH_INVALID_CREDENTIALS`, `AUTH_TOO_MANY_REQUESTS`, `AUTH_OTP_INVALID`, `AUTH_OTP_EXPIRED`, `AUTH_RESET_SESSION_EXPIRED` — **đề xuất** (Q-14), chờ BA đặt tên chính thức |
 - Khuyến nghị: BA chốt danh sách và câu chữ; kỹ thuật thêm vào `src/core/errors/codes.ts` và i18n cùng lúc.
 
 ### Q-05 — Chỗ spec thiếu/mâu thuẫn phát hiện được
@@ -218,7 +219,7 @@ Người dùng đã chốt; ghi lại để theo dõi. Không chốt O-15.
 | e | `/sign-up` dùng chung mã `UI-A03` với `/sign-in` | Test bảng route cho phép đúng một mã lặp (UI-A03) |
 
 ### Q-13 — Thiết lập tài khoản và shop (UI-A03, UI-A04, UI-A06): cổng giả, Firebase thật, chính sách
-Giai đoạn 1 của onboarding: giao diện + logic + **cổng giả**; chưa có Firebase Auth, Cloud Function, Splash, route guard, màn Đăng nhập (`/sign-in` vẫn là màn khung). Người dùng đã duyệt các mục a-f; ghi lại để theo dõi. Không chốt O-xx (O-15 phương thức đăng nhập; O-06 gói; O-11 tên).
+Giai đoạn 1 của onboarding: giao diện + logic + **cổng giả**; chưa có Firebase Auth, Cloud Function, Splash, route guard (màn Đăng nhập: xem Q-14). Người dùng đã duyệt các mục a-f; ghi lại để theo dõi. Không chốt O-xx (O-15 phương thức đăng nhập; O-06 gói; O-11 tên).
 | # | Nội dung | Ghi chú |
 |---|---|---|
 | a | **Cổng (port) + bản giả.** `AuthGateway` (`signUpWithEmail`, `signInWithProvider`) và `ShopGateway` (`createShop`) là interface ở `src/features/shop/domain/types.ts`. Bản giả chạy trong bộ nhớ (`data/fake-gateways.ts`, có độ trễ mô phỏng và kịch bản lỗi) chỉ được dùng khi `__DEV__`, trong test, hoặc khi đặt `EXPO_PUBLIC_USE_FAKE_BACKEND=1` (để xuất bản web chụp ảnh). Bản build thường dùng cổng "chưa kết nối" (`data/unavailable-gateways.ts`): mọi lời gọi trả `AUTH_SERVICE_UNAVAILABLE` với thông báo ba phần; **không bao giờ báo đã tạo tài khoản/shop khi chưa có máy chủ xác nhận** | Chọn cổng ở một nơi: `data/gateways.ts` (`createGateways`, `resolveBackendMode`). Test: `data/gateways.test.ts` |
@@ -235,6 +236,22 @@ Giai đoạn 1 của onboarding: giao diện + logic + **cổng giả**; chưa c
 | k | **Tên thương hiệu** trên ba màn viết "Đơn Chứng" theo câu chữ người dùng; logo/tiêu đề Chào mừng vẫn "Đơn chứng" theo mockup | Thống nhất khi chốt O-11 |
 | l | **Hình minh họa** dựng bằng View + Ionicons (khiên, hộp, bảng ghi, pháo giấy tĩnh). Icon nguồn bán: xem dòng m | Thay bằng hình thật ở `onboarding/OnboardingIllustrations.tsx` |
 | m | **Logo nguồn bán thật** (`SourceIcon`, layout.md mục 3.1): Shopee và TikTok Shop dùng ảnh người dùng cung cấp, **chưa rõ nguồn gốc/giấy phép**, cần thay bằng bộ nhận diện chính thức nếu có. Shopee hiện là JPG nền trắng (không trong suốt, nên đặt trong ô trắng): cần bản PNG trong suốt hoặc SVG. Lazada chưa có logo, còn ô màu tạm. Trước khi phát hành phải kiểm tra hướng dẫn dùng logo/nhãn hiệu của Shopee, TikTok Shop, Lazada (được phép dùng không, cách dùng, không gợi ý đối tác/tích hợp). Kiểu `SellingSource` đã gộp vào `OrderSource` (cùng danh sách giá trị) | Không chốt O-xx. Việc sau: nhận tài sản chính thức, ghi đè tệp trong `assets/images/sources/`
+
+### Q-14 — Đăng nhập và khôi phục mật khẩu (UI-A03 đăng nhập, UI-A07, A08, A09): quyết định đã duyệt và câu hỏi O-22
+Giai đoạn 1: giao diện + logic + **cổng giả** (chưa Firebase thật, không gửi email/SMS thật). Người dùng đã duyệt các mục a-f (D-13); mục g là câu hỏi cần duyệt.
+
+| # | Nội dung | Ghi chú |
+|---|---|---|
+| a | **Chỉ Email ở bản đầu** (D-13): nhãn ô "Email", không logic số điện thoại; email ở màn Nhập mã được che (`da•••@example.com`) | Số điện thoại để sau (cần chốt O-15/O-22) |
+| b | **Mật khẩu chỉ cần >= 8 ký tự**, dùng lại đúng `validatePassword` của màn đăng ký; khối "Mật khẩu nên có" chỉ một dòng; thêm lỗi "Hai mật khẩu chưa khớp nhau" | Không nhân bản luật |
+| c | **Bỏ "Duy trì đăng nhập"** (phiên luôn giữ, vì tải nền cần phiên) và **bỏ TikTok** (chỉ Google/Apple theo `feature-flags`) | Không quên: nếu sau này cần đăng xuất khi dùng máy chung, làm ở UI-I05 Bảo mật |
+| d | **Không toast "đăng nhập thành công"**; sai thông tin báo chung, không nói cái nào sai (chống dò email) | Mã `AUTH_INVALID_CREDENTIALS` |
+| e | **Quên mật khẩu trung tính:** luôn sang màn Nhập mã, mô tả "Nếu email này đã đăng ký..."; bản giả cũng không phân biệt (mã không bao giờ đúng với email không tồn tại) | **Bất nhất có chủ ý và hợp lý** với màn đăng ký, vốn nói rõ "Email này đã có tài khoản" (Q-13 g2): đăng ký cần người dùng biết để chuyển sang đăng nhập, còn quên mật khẩu mà trả lời khác nhau thì cho phép dò email đã đăng ký từ ngoài. Cả hai vẫn cho phép dò qua màn đăng ký; biện pháp là giới hạn tần suất ở máy chủ |
+| f | **Câu chữ:** bỏ "vui lòng"/"yêu cầu" theo quy ước docs/09 5.1 (test `error-copy.test.ts` cấm): "Hãy nhập email của bạn." (dùng lại chuỗi đăng ký), "Bạn đã xin mã nhiều lần...", "Bạn xin mã mới nhé." Mã lỗi mới là đề xuất chờ BA (Q-04) | Báo người dùng vì khác chữ yêu cầu ban đầu |
+| g | **O-22 — cách gửi mã xác minh thật (chờ duyệt).** **A. Firebase Phone Auth:** cần số điện thoại, trái D-13 (chỉ email), tốn SMS. **B. OTP tự xây bằng Cloud Functions:** mã 6 số, hết hạn, giới hạn số lần ở máy chủ, gửi email qua dịch vụ gửi thư (cần chọn nhà cung cấp, chi phí, chống lạm dụng); **đúng giao diện hiện tại**. **C. Liên kết đặt lại mật khẩu qua email có sẵn của Firebase Auth (`sendPasswordResetEmail`):** ít việc nhất, an toàn, nhưng **không có màn Nhập mã (bỏ UI-A08)**, mở liên kết ra trang web/app link rồi mới nhập mật khẩu mới | Khuyến nghị: **C** để ra bản đầu nhanh và ít rủi ro; chọn **B** nếu muốn giữ đúng thiết kế 4 màn. Chưa chọn thì giữ cổng giả (mã `123456` chỉ bản giả) |
+
+**Yêu cầu khi nối thật (mọi phương án có mã):** giới hạn số lần xin mã, số lần nhập mã và thời hạn mã **ở phía máy chủ** (không tin client); mã chỉ dùng một lần; "vé" đặt lại ngắn hạn, gắn với một yêu cầu; **thu hồi phiên/token cũ sau khi đặt lại mật khẩu**; phản hồi trung tính, không phân biệt email có/không có tài khoản (kể cả thời gian phản hồi); không log email/mã/mật khẩu/vé (logger đã che `email`, `otp`, `code`, `password`, `newPassword`, `ticket`); Rules/Function có test. Nếu chọn C: bỏ màn `/verify-otp` và `/new-password` (hoặc đổi thành màn nhập mật khẩu mới mở từ liên kết), giữ `/forgot-password`.
+
 
 ## Rủi ro nền tảng phát hiện (tóm tắt)
 

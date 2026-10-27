@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getKeyboardAvoidingBehavior, getMinTouchTarget } from '@/platform';
-import { Icon, useTheme } from '@/shared/ui';
+import { Icon, Text, useTheme } from '@/shared/ui';
 
 import { BACK_ROW_HEIGHT } from '../onboarding-layout';
 
@@ -38,6 +38,8 @@ interface OnboardingScaffoldProps {
   bottomPad: number;
   /** Có thì hiện nút quay lại ở góc trên trái. */
   onBack?: () => void;
+  /** Tiêu đề nhỏ cạnh nút quay lại (màn Quên mật khẩu, Nhập mã, Mật khẩu mới). */
+  headerTitle?: string;
   children: ReactNode;
 }
 
@@ -51,6 +53,7 @@ export function OnboardingScaffold({
   padX,
   bottomPad,
   onBack,
+  headerTitle,
   children,
 }: OnboardingScaffoldProps) {
   const { t } = useTranslation();
@@ -103,20 +106,33 @@ export function OnboardingScaffold({
             }}
           >
             <View ref={contentRef} collapsable={false} style={styles.content}>
-              {onBack ? (
-                <Pressable
-                  testID="onboarding-back"
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common:actions.back')}
-                  onPress={onBack}
-                  hitSlop={8}
-                  style={[
-                    styles.back,
-                    { minWidth: touch, height: BACK_ROW_HEIGHT, marginLeft: -12 },
-                  ]}
-                >
-                  <Icon name="arrow-back" size={26} color={colors.ink} />
-                </Pressable>
+              {onBack || headerTitle ? (
+                <View style={styles.headerRow}>
+                  {onBack ? (
+                    <Pressable
+                      testID="onboarding-back"
+                      accessibilityRole="button"
+                      accessibilityLabel={t('common:actions.back')}
+                      onPress={onBack}
+                      hitSlop={8}
+                      style={[
+                        styles.back,
+                        { minWidth: touch, height: BACK_ROW_HEIGHT, marginLeft: -12 },
+                      ]}
+                    >
+                      <Icon name="arrow-back" size={26} color={colors.ink} />
+                    </Pressable>
+                  ) : null}
+                  {headerTitle ? (
+                    <Text
+                      accessibilityRole="header"
+                      bold
+                      style={{ color: colors.ink, fontSize: 17 }}
+                    >
+                      {headerTitle}
+                    </Text>
+                  ) : null}
+                </View>
               ) : null}
               {children}
             </View>
@@ -131,6 +147,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
   flex: { flex: 1 },
   content: { flexGrow: 1 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   back: { justifyContent: 'center', alignItems: 'center', alignSelf: 'flex-start' },
   blob: {
     position: 'absolute',

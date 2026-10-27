@@ -1,6 +1,7 @@
 /**
  * Mã lỗi nghiệp vụ. Chứa mã đã có trong docs/04 và docs/05, cộng nhóm `AUTH_*` ĐỀ XUẤT cho màn thiết
- * lập tài khoản/shop (UI-A03, A04): tên chờ BA đặt chính thức (decisions.md Q-04, Q-13).
+ * lập tài khoản/shop, đăng nhập và đặt lại mật khẩu (UI-A03, A04, A07-A09): tên chờ BA đặt chính
+ * thức (decisions.md Q-04, Q-13, Q-14).
  * Cần mã mới -> đề xuất để BA đưa vào tài liệu trước (xem docs/engineering/decisions.md, mục
  * "Mã lỗi đề xuất"), không tự đặt rời rạc trong mã.
  */
@@ -29,6 +30,12 @@ export const ERROR_CODES = {
   AUTH_NETWORK_ERROR: 'AUTH_NETWORK_ERROR',
   AUTH_EMAIL_IN_USE: 'AUTH_EMAIL_IN_USE',
   AUTH_WEAK_PASSWORD: 'AUTH_WEAK_PASSWORD',
+  // Đề xuất (chờ BA, Q-04/Q-14): đăng nhập và đặt lại mật khẩu
+  AUTH_INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
+  AUTH_TOO_MANY_REQUESTS: 'AUTH_TOO_MANY_REQUESTS',
+  AUTH_OTP_INVALID: 'AUTH_OTP_INVALID',
+  AUTH_OTP_EXPIRED: 'AUTH_OTP_EXPIRED',
+  AUTH_RESET_SESSION_EXPIRED: 'AUTH_RESET_SESSION_EXPIRED',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

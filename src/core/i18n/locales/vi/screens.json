@@ -120,7 +120,7 @@
     "privacy": "Chính sách quyền riêng tư"
   },
   "signUp": {
-    "title": "Tạo tài khoản\nĐơn\u00a0Chứng",
+    "title": "Tạo tài khoản\nĐơn Chứng",
     "subtitle": "Bắt đầu hành trình bảo vệ đơn hàng của bạn chỉ trong vài phút!",
     "emailLabel": "Email của bạn",
     "emailPlaceholder": "shop@example.com",
@@ -169,7 +169,7 @@
   },
   "setupDone": {
     "titleLead": "Tuyệt vời!",
-    "title": "Bạn đã sẵn sàng sử dụng Đơn\u00a0Chứng",
+    "title": "Bạn đã sẵn sàng sử dụng Đơn Chứng",
     "subtitle": "Cảm ơn bạn đã hoàn tất thiết lập. Giờ đây bạn có thể bắt đầu ghi hình và bảo vệ đơn hàng của mình.",
     "shopLabel": "Shop của bạn",
     "shopFallback": "Chưa có tên shop",
@@ -177,5 +177,85 @@
     "noSources": "Chưa chọn",
     "start": "Bắt đầu sử dụng",
     "guide": "Xem hướng dẫn nhanh"
+  },
+  "signIn": {
+    "brandName": "Đơn Chứng",
+    "brandTagline": "Bảo vệ đơn hàng – Vững bước kinh doanh",
+    "title": "Chào mừng bạn trở lại!",
+    "subtitle": "Cùng Đơn Chứng bảo vệ từng đơn hàng của bạn nhé!",
+    "emailLabel": "Email",
+    "emailPlaceholder": "shop@example.com",
+    "passwordLabel": "Mật khẩu",
+    "passwordPlaceholder": "Nhập mật khẩu",
+    "showPassword": "Hiện mật khẩu",
+    "hidePassword": "Ẩn mật khẩu",
+    "forgot": "Quên mật khẩu?",
+    "submit": "Đăng nhập",
+    "orSignInWith": "Hoặc đăng nhập bằng",
+    "signInWithApple": "Đăng nhập bằng Apple",
+    "signInWithGoogle": "Đăng nhập bằng Google",
+    "noAccount": "Bạn chưa có tài khoản? ",
+    "createAccount": "Tạo tài khoản",
+    "resetSuccess": "Mật khẩu đã được cập nhật! Bạn có thể đăng nhập bằng mật khẩu mới ngay bây giờ.",
+    "errors": {
+      "passwordRequired": "Bạn chưa nhập mật khẩu."
+    }
+  },
+  "forgot": {
+    "headerTitle": "Quên mật khẩu",
+    "title": "Đừng lo, mình cùng lấy lại nhé!",
+    "description": "Nhập email đã đăng ký. Đơn Chứng sẽ gửi mã xác minh cho bạn.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "shop@example.com",
+    "emailHint": "Dùng email bạn đã đăng ký tài khoản.",
+    "submit": "Gửi mã xác minh",
+    "backToSignIn": "Quay lại đăng nhập",
+    "tipTitle": "Mẹo nhỏ cho bạn",
+    "tipBody": "Hãy kiểm tra kỹ email bạn đã đăng ký với Đơn Chứng nhé!",
+    "errors": {
+      "emailRequired": "Bạn nhập email trước nhé.",
+      "sendFailed": "Chưa gửi được mã. Bạn thử lại sau ít phút nhé!",
+      "tooMany": "Bạn đã xin mã nhiều lần. Hãy thử lại sau ít phút."
+    }
+  },
+  "otp": {
+    "headerTitle": "Nhập mã OTP",
+    "title": "Xác minh tài khoản của bạn",
+    "description": "Nếu email này đã đăng ký, mã 6 chữ số đã được gửi đến {{email}}.",
+    "notYours": "Không phải email của bạn? ",
+    "change": "Thay đổi thông tin",
+    "codeLabel": "Mã xác minh 6 chữ số",
+    "resendIn": "Gửi lại mã sau {{time}}",
+    "resend": "Gửi lại mã",
+    "resent": "Mã mới đã được gửi. Bạn kiểm tra lại email nhé!",
+    "submit": "Xác minh",
+    "tipTitle": "Mẹo bảo mật",
+    "tipBody": "Không chia sẻ mã xác minh với bất kỳ ai, kể cả người tự xưng là nhân viên hỗ trợ.",
+    "errors": {
+      "incomplete": "Bạn nhập đủ 6 chữ số để tiếp tục nhé."
+    }
+  },
+  "newPassword": {
+    "headerTitle": "Mật khẩu mới",
+    "title": "Tạo mật khẩu mới",
+    "description": "Chọn mật khẩu mạnh để bảo vệ tài khoản và những bằng chứng đơn hàng của bạn.",
+    "newLabel": "Mật khẩu mới",
+    "newPlaceholder": "Ít nhất 8 ký tự",
+    "confirmLabel": "Nhập lại mật khẩu mới",
+    "confirmPlaceholder": "Nhập lại mật khẩu",
+    "showPassword": "Hiện mật khẩu",
+    "hidePassword": "Ẩn mật khẩu",
+    "rulesTitle": "Mật khẩu nên có",
+    "ruleLength": "Ít nhất 8 ký tự",
+    "submit": "Đặt lại mật khẩu",
+    "backToStart": "Quay lại bước đầu",
+    "errors": {
+      "newRequired": "Bạn chưa nhập mật khẩu mới.",
+      "confirmRequired": "Bạn nhập lại mật khẩu để xác nhận nhé.",
+      "mismatch": "Hai mật khẩu chưa khớp nhau. Bạn kiểm tra lại nhé!",
+      "systemBusy": "Chưa thể cập nhật mật khẩu lúc này. Bạn thử lại nhé!"
+    },
+    "ruleMetA11y": "Mật khẩu nên có ít nhất 8 ký tự: đã đạt",
+    "ruleUnmetA11y": "Mật khẩu nên có ít nhất 8 ký tự: chưa đạt"
   }
 }

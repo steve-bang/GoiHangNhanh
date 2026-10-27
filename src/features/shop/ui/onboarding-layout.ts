@@ -86,6 +86,9 @@ function base(input: OnboardingLayoutInput) {
   };
 }
 
+/** Dùng chung cho bố cục các màn đăng nhập/khôi phục (`auth-layout.ts`). */
+export { base as layoutBase, finish as finishLayout, grow as growHeight };
+
 /** Số dòng ước tính của đoạn chữ (độ rộng ký tự trung bình ~0,5 em; đậm ~0,52 em). */
 export function estimateLines(
   text: { chars: number; fontSize: number; bold?: boolean },

@@ -66,7 +66,11 @@ function pendingGateways() {
   );
   const fake = createFakeGateways();
   const gateways: Gateways = {
-    auth: { signUpWithEmail, signInWithProvider: fake.auth.signInWithProvider.bind(fake.auth) },
+    auth: {
+      ...createUnavailableGateways().auth,
+      signUpWithEmail,
+      signInWithProvider: fake.auth.signInWithProvider.bind(fake.auth),
+    },
     shop: fake.shop,
   };
   return { gateways, signUpWithEmail, resolve: (account: AuthAccount) => resolve(account) };
@@ -125,6 +129,14 @@ describe('UI-A03 Tạo tài khoản: giao diện', () => {
     expect(screen.getByTestId('signup-password').props.secureTextEntry).toBe(false);
     await fireEvent.press(screen.getByRole('button', { name: 'Ẩn mật khẩu' }));
     expect(screen.getByTestId('signup-password').props.secureTextEntry).toBe(true);
+  });
+
+  it('liên kết "Đăng nhập" cuối trang mang theo email đang gõ (không bao giờ mật khẩu)', async () => {
+    await renderWithProviders(<SignUpScreen />);
+    await fill(`  ${VALID_EMAIL} `, VALID_PASSWORD);
+    await fireEvent.press(screen.getByRole('link', { name: 'Đăng nhập' }));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.signIn, { email: VALID_EMAIL });
+    expect(JSON.stringify(mockNavigation.push.mock.calls)).not.toContain(VALID_PASSWORD);
   });
 
   it('"Đăng nhập" mở /sign-in; nút quay lại gọi back', async () => {
@@ -258,7 +270,11 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
     const fake = createFakeGateways();
     const gateways: Gateways = {
       shop: fake.shop,
-      auth: { signUpWithEmail, signInWithProvider: () => Promise.resolve() },
+      auth: {
+        ...createUnavailableGateways().auth,
+        signUpWithEmail,
+        signInWithProvider: () => Promise.resolve(),
+      },
     };
     await renderWithProviders(<SignUpScreen />, { gateways });
     await fill(VALID_EMAIL, VALID_PASSWORD);
@@ -296,7 +312,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
     expect(error.props.accessibilityRole).toBe('alert');
     expect(within(error).getByText('Email này đã có tài khoản.')).toBeOnTheScreen();
     await fireEvent.press(within(error).getByRole('button', { name: 'Đăng nhập' }));
-    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.signIn);
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.signIn, { email: VALID_EMAIL });
     // giữ nguyên dữ liệu đã nhập
     expect(screen.getByTestId('signup-email').props.value).toBe(VALID_EMAIL);
     expect(screen.getByTestId('signup-password').props.value).toBe(VALID_PASSWORD);
@@ -355,6 +371,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
     const gateways: Gateways = {
       shop: fake.shop,
       auth: {
+        ...createUnavailableGateways().auth,
         signInWithProvider: () => Promise.resolve(),
         signUpWithEmail: () => Promise.reject(new Error('boom')),
       },

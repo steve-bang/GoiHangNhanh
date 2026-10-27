@@ -31,9 +31,17 @@ function flatten(tree: Json, prefix: string): [string, string][] {
 }
 const SIGN_UP_ERRORS = flatten(resources.vi.screens.signUp.errors as Json, 'signUp.errors');
 
+const SCREEN_ERRORS: [string, string][] = [
+  ...flatten(resources.vi.screens.signIn.errors as Json, 'signIn.errors'),
+  ...flatten(resources.vi.screens.forgot.errors as Json, 'forgot.errors'),
+  ...flatten(resources.vi.screens.otp.errors as Json, 'otp.errors'),
+  ...flatten(resources.vi.screens.newPassword.errors as Json, 'newPassword.errors'),
+];
+
 const ALL: [string, Message][] = [
   ...AUTH_MESSAGES,
   ...SIGN_UP_ERRORS.map(([key, value]): [string, Message] => [key, value]),
+  ...SCREEN_ERRORS.map(([key, value]): [string, Message] => [key, value]),
 ];
 
 /** Từ khó hiểu hoặc hứa quá mức, bị cấm trong thông báo lỗi. */
@@ -51,12 +59,17 @@ const FORBIDDEN = [
   'tài khoản chưa được tạo',
 ];
 
-describe('câu chữ thông báo lỗi AUTH_* và signUp.errors', () => {
+describe('câu chữ thông báo lỗi AUTH_*, signUp.errors và lỗi các màn đăng nhập/khôi phục', () => {
   it('có đủ bốn mã AUTH_* và các lỗi của ô nhập', () => {
     expect(AUTH_MESSAGES.map(([code]) => code).sort()).toEqual([
       'AUTH_EMAIL_IN_USE',
+      'AUTH_INVALID_CREDENTIALS',
       'AUTH_NETWORK_ERROR',
+      'AUTH_OTP_EXPIRED',
+      'AUTH_OTP_INVALID',
+      'AUTH_RESET_SESSION_EXPIRED',
       'AUTH_SERVICE_UNAVAILABLE',
+      'AUTH_TOO_MANY_REQUESTS',
       'AUTH_WEAK_PASSWORD',
     ]);
     expect(SIGN_UP_ERRORS.length).toBeGreaterThanOrEqual(4);
@@ -93,6 +106,24 @@ describe('câu chữ thông báo lỗi AUTH_* và signUp.errors', () => {
     );
     expect(fullText(errors.AUTH_SERVICE_UNAVAILABLE as Message)).toBe(
       'Hệ thống đang bận. Bạn thử lại sau ít phút nhé.',
+    );
+  });
+
+  it('lời đăng nhập sai KHÔNG nói rõ cái nào sai; đúng từng chữ theo thiết kế', () => {
+    const text = fullText(errors.AUTH_INVALID_CREDENTIALS as Message);
+    expect(text).toBe('Email hoặc mật khẩu chưa chính xác. Bạn kiểm tra lại nhé!');
+  });
+
+  it('mã xác minh, quá nhiều lần, phiên hết hạn: đúng từng chữ', () => {
+    expect(errors.AUTH_OTP_INVALID).toBe('Mã xác minh chưa chính xác. Bạn kiểm tra lại nhé!');
+    expect(fullText(errors.AUTH_OTP_EXPIRED as Message)).toBe(
+      'Mã xác minh đã hết hạn. Bạn xin mã mới nhé.',
+    );
+    expect(fullText(errors.AUTH_TOO_MANY_REQUESTS as Message)).toBe(
+      'Bạn đã thử quá nhiều lần. Hãy thử lại sau ít phút.',
+    );
+    expect(fullText(errors.AUTH_RESET_SESSION_EXPIRED as Message)).toBe(
+      'Phiên xác minh đã hết hạn. Bạn cần xác minh lại để đặt mật khẩu mới.',
     );
   });
 

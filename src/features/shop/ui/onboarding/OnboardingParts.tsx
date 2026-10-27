@@ -31,6 +31,8 @@ interface IconFieldProps {
   icon: IconName;
   placeholder?: string;
   error?: string | undefined;
+  /** Gợi ý nhỏ dưới ô; ẩn khi có lỗi. */
+  hint?: string | undefined;
   /** Nút ngay trong dòng lỗi (ví dụ "Đăng nhập" khi email đã có tài khoản). */
   errorAction?: { label: string; onPress: () => void; testID?: string } | undefined;
   /** Phần bên phải ô (ví dụ nút hiện/ẩn mật khẩu). */
@@ -56,6 +58,7 @@ export function IconField({
   icon,
   placeholder,
   error,
+  hint,
   errorAction,
   accessory,
   height,
@@ -67,7 +70,6 @@ export function IconField({
   const wrapperRef = useRef<ComponentRef<typeof View>>(null);
   const scrollIntoView = useScrollIntoView();
   const [focused, setFocused] = useState(false);
-  const touch = getMinTouchTarget();
   // Lỗi mới hiện lúc bàn phím đang mở: cuộn để lỗi không bị bàn phím che.
   useEffect(() => {
     if (error && focused) scrollIntoView(wrapperRef);
@@ -119,54 +121,89 @@ export function IconField({
         </View>
         {accessory}
       </Pressable>
-      {error ? (
-        <View
-          testID={testID ? `${testID}-error` : undefined}
-          accessibilityRole="alert"
-          accessibilityLiveRegion="polite"
-          style={[
-            styles.fieldError,
-            {
-              marginTop: 6,
-              marginLeft: 4,
-              gap: spacing.xs,
-              alignItems: errorAction ? 'center' : 'flex-start',
-            },
-          ]}
+      {!error && hint ? (
+        <Text
+          variant="caption"
+          style={{ color: colors.inkMuted, marginTop: 6, marginLeft: 4 }}
+          testID={testID ? `${testID}-hint` : undefined}
         >
-          <View style={styles.fieldErrorIcon}>
-            <Icon name="alert-triangle" size={16} color={colors.danger} />
-          </View>
-          <Text
-            style={[
-              styles.fieldErrorText,
-              {
-                color: colors.ink,
-                fontSize: FIELD_ERROR_FONT_SIZE,
-                lineHeight: FIELD_ERROR_LINE_HEIGHT,
-              },
-            ]}
-          >
-            {error}
-          </Text>
-          {errorAction ? (
-            <Pressable
-              testID={errorAction.testID}
-              accessibilityRole="button"
-              accessibilityLabel={errorAction.label}
-              onPress={errorAction.onPress}
-              hitSlop={4}
-              style={[styles.fieldErrorAction, { minHeight: touch, minWidth: touch }]}
-            >
-              <Text bold style={{ color: colors.brand, fontSize: FIELD_ERROR_FONT_SIZE }}>
-                {errorAction.label}
-              </Text>
-            </Pressable>
-          ) : null}
-        </View>
+          {hint}
+        </Text>
+      ) : null}
+      {error ? (
+        <FieldError
+          message={error}
+          action={errorAction}
+          testID={testID ? `${testID}-error` : undefined}
+        />
       ) : null}
     </View>
   );
+}
+
+/** Dòng lỗi dưới một ô nhập: biểu tượng + chữ (+ nút hành động), `role=alert` để đọc khi hiện. */
+export function FieldError({
+  message,
+  action,
+  testID,
+}: {
+  message: string;
+  action?: { label: string; onPress: () => void; testID?: string } | undefined;
+  testID?: string | undefined;
+}) {
+  const { colors, spacing } = useTheme();
+  const touch = getMinTouchTarget();
+  return (
+    <View
+      testID={testID}
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+      style={[
+        styles.fieldError,
+        {
+          marginTop: 6,
+          marginLeft: 4,
+          gap: spacing.xs,
+          alignItems: action ? 'center' : 'flex-start',
+        },
+      ]}
+    >
+      <View style={styles.fieldErrorIcon}>
+        <Icon name="alert-triangle" size={16} color={colors.danger} />
+      </View>
+      <Text
+        style={[
+          styles.fieldErrorText,
+          {
+            color: colors.ink,
+            fontSize: FIELD_ERROR_FONT_SIZE,
+            lineHeight: FIELD_ERROR_LINE_HEIGHT,
+          },
+        ]}
+      >
+        {message}
+      </Text>
+      {action ? (
+        <Pressable
+          testID={action.testID}
+          accessibilityRole="button"
+          accessibilityLabel={action.label}
+          onPress={action.onPress}
+          hitSlop={4}
+          style={[styles.fieldErrorAction, { minHeight: touch, minWidth: touch }]}
+        >
+          <Text bold style={{ color: colors.brand, fontSize: FIELD_ERROR_FONT_SIZE }}>
+            {action.label}
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+/** Nối câu đầu + câu sau thành một chuỗi (lỗi dưới ô nhập không in đậm). */
+export function errorText(message: ErrorMessage): string {
+  return message.hint ? `${message.title} ${message.hint}` : message.title;
 }
 
 /** Thông báo lỗi: `title` là câu đầu (in đậm), `hint` là câu sau (có thể không có). */
@@ -192,12 +229,24 @@ export function resolveErrorMessage(t: TFunction, code: ErrorCode): ErrorMessage
  * Khung lỗi chung của form (mạng, hệ thống): nền hồng rất nhạt, chữ tối, chỉ biểu tượng và viền màu
  * đỏ. Câu đầu in đậm. Có `onRetry` thì hiện nút "Thử lại". Trình đọc màn hình đọc khi khung hiện.
  */
-export function FormErrorBanner({ code, onRetry }: { code: ErrorCode; onRetry?: () => void }) {
+export function FormErrorBanner({
+  code,
+  onRetry,
+  action,
+  message: override,
+}: {
+  code: ErrorCode;
+  onRetry?: () => void;
+  /** Nút hành động riêng (ví dụ "Gửi lại mã"); thay cho "Thử lại". */
+  action?: { label: string; onPress: () => void; testID?: string };
+  /** Câu chữ riêng của màn (thay cho `errors:<mã>`), dùng khi cùng mã cần lời khác theo ngữ cảnh. */
+  message?: ErrorMessage;
+}) {
   const { t } = useTranslation();
   const { colors, spacing, radius } = useTheme();
   const scrollIntoView = useScrollIntoView();
   const bannerRef = useRef<ComponentRef<typeof View>>(null);
-  const message = resolveErrorMessage(t, code);
+  const message = override ?? resolveErrorMessage(t, code);
   // Khung lỗi vừa hiện lúc bàn phím còn mở: cuộn để thấy nó (và nút Thử lại).
   useEffect(() => {
     scrollIntoView(bannerRef);
@@ -231,7 +280,14 @@ export function FormErrorBanner({ code, onRetry }: { code: ErrorCode; onRetry?: 
           {message.hint ? ` ${message.hint}` : ''}
         </Text>
       </View>
-      {onRetry ? (
+      {action ? (
+        <Button
+          testID={action.testID ?? 'form-error-action'}
+          variant="secondary"
+          label={action.label}
+          onPress={action.onPress}
+        />
+      ) : onRetry ? (
         <Button
           testID="form-error-retry"
           variant="secondary"
