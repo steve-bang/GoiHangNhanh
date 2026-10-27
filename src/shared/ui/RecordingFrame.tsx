@@ -141,7 +141,7 @@ export function RecordingFrame({
               <>
                 <View
                   testID="recording-dot"
-                  style={[styles.dot, { backgroundColor: tokens.color.feedback.danger.fg }]}
+                  style={[styles.dot, { backgroundColor: tokens.color.camera.recordingIndicator }]}
                 />
                 <Text variant="overlay" style={{ color: tokens.color.camera.onCamera }}>
                   {badgeLabel}

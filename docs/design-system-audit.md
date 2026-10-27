@@ -153,7 +153,7 @@ Kết luận: **mã trong phạm vi đã khá kỷ luật** (cỡ chữ 100% qua
 | Mã | Câu hỏi | Đề xuất của mình | Cần bạn? |
 |---|---|---|---|
 | Q-1 | Welcome / Tạo shop / Setup xong có nằm ngoài phạm vi không? | Ngoài phạm vi (mục 1.2) | **Có** (xác nhận) |
-| Q-2 | Chấm "đang ghi hình" màu gì? docs/09 giới hạn đỏ cho lỗi/phá hủy | Chấm hiện dùng `danger` (đỏ). Giữ nguyên; khi dựng token, hỏi BA có ngoại lệ "chấm ghi hình" cho đỏ không | **Có** (BA/sản phẩm) |
+| Q-2 (**đã chốt: chấp nhận đỏ**, token `camera.recordingIndicator`) | Chấm "đang ghi hình" màu gì? docs/09 giới hạn đỏ cho lỗi/phá hủy | Chấm hiện dùng đỏ; đã chốt chấp nhận. Giữ nguyên; khi dựng token, hỏi BA có ngoại lệ "chấm ghi hình" cho đỏ không | **Có** (BA/sản phẩm) |
 | Q-3 | Hợp nhất `text/textMuted` với `ink/inkMuted`? | **Chưa hợp nhất.** Đổi sắc chữ là thay đổi nhìn thấy được trên màn form đã duyệt theo mockup. Giữ cả hai ở tầng gốc, ghi nợ TD-1, hợp nhất khi có duyệt trực quan | Không (hoãn có chủ đích) |
 | Q-4 | Chế độ tối | Không bật (O-17 mở). Kiến trúc cho phép thêm ở tầng ngữ nghĩa | Không |
 | Q-5 | Token chuyển động (animation) | **Không tạo** vì chưa có animation nào trong phạm vi | Không |

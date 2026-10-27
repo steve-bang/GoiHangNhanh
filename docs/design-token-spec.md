@@ -133,7 +133,7 @@ Mỗi nhãn có bộ `fg / bg / border` **riêng**, dù một số hôm nay trù
 
 `border` mỗi trạng thái = `fg` (đúng hành vi hiện tại). Bảng `SOFT_BACKGROUND` trong `EvidenceStatusBadge` bị xóa. Test hiện có (mỗi nhãn biểu tượng riêng; `saved_on_device` không tick/xanh; chỉ `verified` được nói "Đã lưu an toàn trên máy chủ") giữ nguyên.
 
-**Chưa tạo token** cho: *Đang ghi hình*, *Đang lưu trên thiết bị*, *Bằng chứng chưa đầy đủ / ghi bị gián đoạn*. UI của ba trạng thái này chưa tồn tại hoặc chưa chốt màu (audit 3.4, Q-2). Khi dựng UI sẽ thêm khóa `status.recording`, `status.savingOnDevice`, `status.incomplete` cùng lúc, **không** gộp vào nhãn nào ở trên.
+`camera.recordingIndicator` (đỏ `red.700`) là màu chấm *Đang ghi hình* — **ngoại lệ đã được chủ sản phẩm chấp nhận (Q-2)** của quy tắc "đỏ chỉ cho lỗi/phá hủy"; chỉ dùng cho chấm này, luôn kèm chữ và đồng hồ. **Chưa tạo token trạng thái** cho: *Đang lưu trên thiết bị*, *Bằng chứng chưa đầy đủ / ghi bị gián đoạn*. UI của ba trạng thái này chưa tồn tại hoặc chưa chốt màu (audit 3.4, Q-2). Khi dựng UI sẽ thêm khóa `status.recording`, `status.savingOnDevice`, `status.incomplete` cùng lúc, **không** gộp vào nhãn nào ở trên.
 
 ### 4.5. Typography
 

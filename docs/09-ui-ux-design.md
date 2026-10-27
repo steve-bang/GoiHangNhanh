@@ -49,7 +49,7 @@ Luồng tổng thể: Mở app (kiểm tra phiên, shop, trạng thái lưu vide
 | Nền màn hình | Trắng ngà |
 | Thành công (đã lưu/đã xác minh) | Xanh thành công |
 | Cần chú ý / đang chờ | Cam cảnh báo |
-| Lỗi, hành động phá hủy, nguy cơ mất dữ liệu | Đỏ — chỉ dùng cho các trường hợp này |
+| Lỗi, hành động phá hủy, nguy cơ mất dữ liệu | Đỏ — chỉ dùng cho các trường hợp này, **ngoại lệ duy nhất: chấm "đang ghi hình" trên màn quay** (chủ sản phẩm chấp nhận; luôn kèm chữ và đồng hồ) |
 
 Màu không bao giờ là tín hiệu duy nhất: mọi trạng thái có **chữ + biểu tượng**. Hai trạng thái cùng sắc xanh (*Đã tải lên*, *Đã xác minh*) phải khác nhau rõ về nhãn và biểu tượng. Cần bản chế độ sáng; chế độ tối là quyết định mở.
 
