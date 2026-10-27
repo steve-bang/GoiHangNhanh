@@ -1,4 +1,5 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { TextInput } from 'react-native';
 
 import { ROUTES } from '@/core/navigation';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
@@ -52,6 +53,54 @@ describe('ChangePasswordScreen (route con của UI-I05)', () => {
     expect(screen.getByText('Hai mật khẩu chưa khớp nhau. Hãy nhập lại.')).toBeOnTheScreen();
     await submit();
     expect(gateways.account.changePasswordCalls).toBe(0);
+  });
+
+  it('có mô tả đầu trang; nút luôn bật khi chưa gửi, không bật/tắt theo nội dung', async () => {
+    await renderChange();
+    expect(
+      screen.getByText('Đặt mật khẩu mới để giữ tài khoản của bạn an toàn.'),
+    ).toBeOnTheScreen();
+    const button = screen.getByTestId('change-password-submit');
+    expect(button.props.accessibilityState?.disabled).toBe(false);
+    await fill('a', 'b', 'c');
+    expect(button.props.accessibilityState?.disabled).toBe(false);
+  });
+
+  it('chưa bấm thì chưa báo lỗi; bấm thì lỗi cụ thể tại ô và focus vào ô lỗi ĐẦU TIÊN', async () => {
+    const focusSpy = jest.spyOn(TextInput.prototype, 'focus');
+    focusSpy.mockClear();
+    await renderChange();
+    await fireEvent.changeText(screen.getByTestId('change-password-new'), 'ngan');
+    expect(screen.queryByText('Mật khẩu mới cần ít nhất 8 ký tự.')).toBeNull();
+    await fireEvent.changeText(
+      screen.getByTestId('change-password-current'),
+      FAKE_ACCOUNT_PASSWORD,
+    );
+    await submit();
+    expect(screen.getByText('Mật khẩu mới cần ít nhất 8 ký tự.')).toBeOnTheScreen();
+    expect(focusSpy).toHaveBeenCalledTimes(1);
+    // Ô hiện tại đã hợp lệ nên focus đi vào ô mật khẩu mới.
+    expect((focusSpy.mock.contexts[0] as { props: { testID: string } }).props.testID).toBe(
+      'change-password-new',
+    );
+    focusSpy.mockRestore();
+  });
+
+  it('yêu cầu "Từ 8 ký tự" đổi biểu tượng, chữ đọc và trạng thái khi đạt, không chỉ đổi màu', async () => {
+    await renderChange();
+    const row = screen.getByTestId('change-password-requirement');
+    expect(row.props.accessibilityLabel).toBe('Từ 8 ký tự. Chưa đạt');
+    expect(screen.getByTestId('icon-ellipse-outline')).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByTestId('change-password-new'), '1234567');
+    expect(screen.getByTestId('change-password-requirement').props.accessibilityLabel).toBe(
+      'Từ 8 ký tự. Chưa đạt',
+    );
+    await fireEvent.changeText(screen.getByTestId('change-password-new'), '12345678');
+    expect(screen.getByTestId('change-password-requirement').props.accessibilityLabel).toBe(
+      'Từ 8 ký tự. Đã đạt',
+    );
+    expect(screen.getByTestId('icon-checkmark-circle')).toBeOnTheScreen();
+    expect(screen.queryByTestId('icon-ellipse-outline')).toBeNull();
   });
 
   it('mật khẩu mới trùng mật khẩu cũ bị chặn', async () => {

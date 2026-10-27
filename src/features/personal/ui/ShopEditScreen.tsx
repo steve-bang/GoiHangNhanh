@@ -18,6 +18,7 @@ import {
   Text,
   useTheme,
   useToast,
+  type TextFieldInput,
 } from '@/shared/ui';
 
 import { normalizeShopName, validateShopName } from '../domain/validation';
@@ -42,10 +43,12 @@ export function ShopEditScreen() {
 
   // `null` = chưa gõ gì: ô hiện tên đang lưu.
   const [draft, setDraft] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<ErrorCode | null>(null);
   const [leaveVisible, setLeaveVisible] = useState(false);
   const busyRef = useRef(false);
+  const nameRef = useRef<TextFieldInput>(null);
 
   const loaded = shop.state.status === 'ready' ? shop.state.data : null;
   const original = loaded?.name ?? '';
@@ -54,13 +57,17 @@ export function ShopEditScreen() {
   const dirty =
     loaded !== null && draft !== null && normalizeShopName(draft) !== normalizeShopName(original);
   const canEdit = loaded?.canEdit === true;
-  const canSave = canEdit && dirty && issue === null && !saving;
+  const canSave = canEdit && dirty && !saving;
 
   const { allowLeave } = useConfirmBeforeLeave(dirty, () => setLeaveVisible(true));
 
   const save = async () => {
     if (busyRef.current || !loaded || !loaded.canEdit || draft === null) return;
-    if (validateShopName(draft) !== null) return;
+    if (validateShopName(draft) !== null) {
+      setSubmitted(true);
+      nameRef.current?.focus();
+      return;
+    }
     busyRef.current = true;
     setSaving(true);
     setSaveError(null);
@@ -80,7 +87,7 @@ export function ShopEditScreen() {
     }
   };
 
-  const nameError = issue ? t(`personal:validation.shopName.${issue}`) : undefined;
+  const nameError = submitted && issue ? t(`personal:validation.shopName.${issue}`) : undefined;
   const loadMessage = resolveErrorMessage(
     t,
     shop.state.status === 'error' ? shop.state.code : 'AUTH_SERVICE_UNAVAILABLE',
@@ -136,7 +143,7 @@ export function ShopEditScreen() {
       {loaded && canEdit ? (
         <View style={{ gap: tokens.space.lg }}>
           <View style={{ alignItems: 'center' }}>
-            <Avatar name={value} size="xl" testID="edit-shop-avatar" />
+            <Avatar name={value} size="xl" shape="square" testID="edit-shop-avatar" />
           </View>
           <FormField
             label={t('personal:fields.shopName')}
@@ -148,6 +155,7 @@ export function ShopEditScreen() {
             autoCapitalize="words"
             returnKeyType="done"
             onSubmitEditing={() => void save()}
+            inputRef={nameRef}
             {...(nameError ? { error: nameError } : {})}
             testID="edit-shop-name"
           />

@@ -7,9 +7,20 @@ import type { ErrorCode } from '@/core/errors/codes';
 import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
 import { useAppNavigation, useIsScreenActive } from '@/platform';
-import { Button, PasswordField, Screen, Text, useTheme, useToast } from '@/shared/ui';
+import {
+  Button,
+  Icon,
+  PasswordField,
+  Screen,
+  Text,
+  useTheme,
+  useToast,
+  type TextFieldInput,
+} from '@/shared/ui';
 
 import {
+  MIN_PASSWORD_LENGTH,
+  textLength,
   validateConfirmNewPassword,
   validateCurrentPassword,
   validateNewPassword,
@@ -22,7 +33,9 @@ const NEEDS_SIGN_IN: readonly ErrorCode[] = ['AUTH_REQUIRES_RECENT_LOGIN', 'AUTH
 /**
  * Đổi mật khẩu (PER-04), route con của UI-I05 (decisions.md Q-19k). Chỉ dành cho tài khoản đăng nhập
  * bằng mật khẩu (D-13, Q-19c): màn vào từ UI-I01 chỉ hiện lối vào đó khi `signInMethod === 'password'`.
- * Không log, không giữ mật khẩu ngoài state của màn; thành công chỉ báo SAU KHI cổng xác nhận.
+ * Không log, không giữ mật khẩu ngoài state của màn; thành công chỉ báo SAU KHI cổng xác nhận. Nút luôn
+ * bật khi chưa gửi; kiểm tra khi bấm, lỗi hiện tại ô và focus vào ô lỗi đầu tiên. Yêu cầu độ dài hiện
+ * theo thời gian thực (biểu tượng + chữ, không chỉ màu).
  */
 export function ChangePasswordScreen() {
   const { t } = useTranslation();
@@ -39,6 +52,9 @@ export function ChangePasswordScreen() {
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<ErrorCode | null>(null);
   const busyRef = useRef(false);
+  const currentRef = useRef<TextFieldInput>(null);
+  const nextRef = useRef<TextFieldInput>(null);
+  const confirmRef = useRef<TextFieldInput>(null);
 
   const currentIssue = validateCurrentPassword(current);
   const nextIssue = validateNewPassword(current, next);
@@ -55,11 +71,11 @@ export function ChangePasswordScreen() {
       : undefined;
   const nextError = weakNext
     ? errorText(resolveErrorMessage(t, 'AUTH_WEAK_PASSWORD'))
-    : (submitted || next.length > 0) && nextIssue
+    : submitted && nextIssue
       ? t(`personal:validation.newPassword.${nextIssue}`)
       : undefined;
   const confirmError =
-    (submitted || confirm.length > 0) && confirmIssue
+    submitted && confirmIssue
       ? t(`personal:validation.confirmNewPassword.${confirmIssue}`)
       : undefined;
 
@@ -74,7 +90,10 @@ export function ChangePasswordScreen() {
   const submit = async () => {
     if (busyRef.current) return;
     setSubmitted(true);
-    if (!valid) return;
+    if (!valid) {
+      (currentIssue ? currentRef : nextIssue ? nextRef : confirmRef).current?.focus();
+      return;
+    }
     busyRef.current = true;
     setSaving(true);
     setServerError(null);
@@ -83,7 +102,10 @@ export function ChangePasswordScreen() {
       toast.show(t('personal:changePassword.saved'), { tone: 'success' });
       if (isActive()) navigation.back();
     } catch (error) {
-      setServerError(error instanceof AppError ? error.code : 'AUTH_SERVICE_UNAVAILABLE');
+      const code = error instanceof AppError ? error.code : 'AUTH_SERVICE_UNAVAILABLE';
+      setServerError(code);
+      if (code === 'AUTH_WRONG_CURRENT_PASSWORD') currentRef.current?.focus();
+      else if (code === 'AUTH_WEAK_PASSWORD') nextRef.current?.focus();
     } finally {
       busyRef.current = false;
       setSaving(false);
@@ -105,29 +127,37 @@ export function ChangePasswordScreen() {
         />
       }
     >
+      <Text color="textMuted" testID="change-password-intro">
+        {t('personal:changePassword.intro')}
+      </Text>
       <View style={{ gap: tokens.space.lg }}>
         <PasswordField
           label={t('personal:fields.currentPassword')}
           value={current}
           onChangeText={edit(setCurrent)}
           autoComplete="current-password"
+          inputRef={currentRef}
           {...(currentError ? { error: currentError } : {})}
           testID="change-password-current"
         />
-        <PasswordField
-          label={t('personal:fields.newPassword')}
-          value={next}
-          onChangeText={edit(setNext)}
-          autoComplete="new-password"
-          hint={t('personal:hints.newPassword')}
-          {...(nextError ? { error: nextError } : {})}
-          testID="change-password-new"
-        />
+        <View style={{ gap: tokens.space.sm }}>
+          <PasswordField
+            label={t('personal:fields.newPassword')}
+            value={next}
+            onChangeText={edit(setNext)}
+            autoComplete="new-password"
+            inputRef={nextRef}
+            {...(nextError ? { error: nextError } : {})}
+            testID="change-password-new"
+          />
+          <LengthRequirement met={textLength(next) >= MIN_PASSWORD_LENGTH} />
+        </View>
         <PasswordField
           label={t('personal:fields.confirmNewPassword')}
           value={confirm}
           onChangeText={edit(setConfirm)}
           autoComplete="new-password"
+          inputRef={confirmRef}
           returnKeyType="done"
           onSubmitEditing={() => void submit()}
           {...(confirmError ? { error: confirmError } : {})}
@@ -150,5 +180,37 @@ export function ChangePasswordScreen() {
         ) : null}
       </View>
     </Screen>
+  );
+}
+
+/** Dòng yêu cầu độ dài: đổi biểu tượng và nhãn trợ năng khi đạt (không chỉ đổi màu). */
+function LengthRequirement({ met }: { met: boolean }) {
+  const { t } = useTranslation();
+  const { tokens } = useTheme();
+  const text = t('personal:changePassword.requirementLength', { min: MIN_PASSWORD_LENGTH });
+  const state = met
+    ? t('personal:changePassword.requirementMet')
+    : t('personal:changePassword.requirementUnmet');
+  return (
+    <View
+      testID="change-password-requirement"
+      accessible
+      accessibilityLabel={`${text}. ${state}`}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm }}
+    >
+      <Icon
+        name={met ? 'check-circle' : 'circle-outline'}
+        size={18}
+        color={met ? tokens.color.feedback.success.fg : tokens.color.text.secondary}
+      />
+      <Text
+        variant="caption"
+        color={met ? 'text' : 'textMuted'}
+        bold={met}
+        testID="change-password-requirement-text"
+      >
+        {text}
+      </Text>
+    </View>
   );
 }

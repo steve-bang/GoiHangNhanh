@@ -6,7 +6,6 @@ import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
 import type { ErrorCode } from '@/core/errors/codes';
 import { useAppNavigation, useConfirmBeforeLeave, useIsScreenActive } from '@/platform';
 import {
-  Avatar,
   Button,
   Card,
   ConfirmDialog,
@@ -17,16 +16,20 @@ import {
   Text,
   useTheme,
   useToast,
+  type TextFieldInput,
 } from '@/shared/ui';
 
 import { normalizeDisplayName, validateDisplayName } from '../domain/validation';
 import { usePersonalGateways } from './PersonalGatewaysProvider';
 import { useSession } from './SessionProvider';
+import { ReadOnlyField } from './ReadOnlyField';
 import { toErrorCode, useRegion } from './use-region';
 
 /**
  * Sửa hồ sơ (PER-02/03), route con của UI-I01 (decisions.md Q-19k). Chỉ sửa họ tên; email chỉ đọc
- * (chưa có xác minh đổi email); avatar chỉ là chữ cái đầu, chưa có chọn ảnh. Thành công chỉ được báo
+ * (chưa có xác minh đổi email). Không dựng avatar lớn vì chưa có chọn ảnh (không thao tác được, chỉ chiếm
+ * chỗ trên màn có bàn phím). Nút Lưu chỉ tắt khi chưa có thay đổi hoặc đang gửi; kiểm tra khi bấm Lưu,
+ * lỗi hiện tại ô và focus vào ô đó. Thành công chỉ được báo
  * SAU KHI cổng xác nhận; lỗi lưu hiện ngay tại màn và giữ nguyên điều người dùng đã gõ.
  */
 export function EditProfileScreen() {
@@ -41,10 +44,12 @@ export function EditProfileScreen() {
 
   // `null` = chưa gõ gì: ô hiện họ tên đang lưu.
   const [draft, setDraft] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<ErrorCode | null>(null);
   const [leaveVisible, setLeaveVisible] = useState(false);
   const busyRef = useRef(false);
+  const nameRef = useRef<TextFieldInput>(null);
 
   const loaded = profile.state.status === 'ready' ? profile.state.data : null;
   const original = loaded?.displayName ?? '';
@@ -54,12 +59,17 @@ export function EditProfileScreen() {
     loaded !== null &&
     draft !== null &&
     normalizeDisplayName(draft) !== normalizeDisplayName(original);
-  const canSave = loaded !== null && dirty && issue === null && !saving;
+  const canSave = loaded !== null && dirty && !saving;
 
   const { allowLeave } = useConfirmBeforeLeave(dirty, () => setLeaveVisible(true));
 
   const save = async () => {
-    if (busyRef.current || !loaded || draft === null || validateDisplayName(draft) !== null) return;
+    if (busyRef.current || !loaded || draft === null) return;
+    if (validateDisplayName(draft) !== null) {
+      setSubmitted(true);
+      nameRef.current?.focus();
+      return;
+    }
     busyRef.current = true;
     setSaving(true);
     setSaveError(null);
@@ -79,7 +89,7 @@ export function EditProfileScreen() {
     }
   };
 
-  const nameError = issue ? t(`personal:validation.displayName.${issue}`) : undefined;
+  const nameError = submitted && issue ? t(`personal:validation.displayName.${issue}`) : undefined;
   const loadMessage = resolveErrorMessage(
     t,
     profile.state.status === 'error' ? profile.state.code : 'AUTH_SERVICE_UNAVAILABLE',
@@ -122,9 +132,6 @@ export function EditProfileScreen() {
       ) : null}
       {loaded ? (
         <View style={{ gap: tokens.space.lg }}>
-          <View style={{ alignItems: 'center' }}>
-            <Avatar name={value} size="xl" testID="edit-profile-avatar" />
-          </View>
           <FormField
             label={t('personal:fields.displayName')}
             value={value}
@@ -136,22 +143,16 @@ export function EditProfileScreen() {
             autoComplete="name"
             returnKeyType="done"
             onSubmitEditing={() => void save()}
+            inputRef={nameRef}
             {...(nameError ? { error: nameError } : {})}
             testID="edit-profile-name"
           />
-          <View
-            style={{ gap: tokens.space.xs }}
-            accessible
-            accessibilityLabel={`${t('personal:fields.email')}. ${loaded.email}. ${t('personal:editProfile.emailHint')}`}
-          >
-            <Text variant="caption" color="textMuted">
-              {t('personal:fields.email')}
-            </Text>
-            <Text testID="edit-profile-email">{loaded.email}</Text>
-            <Text variant="caption" color="textMuted">
-              {t('personal:editProfile.emailHint')}
-            </Text>
-          </View>
+          <ReadOnlyField
+            label={t('personal:fields.email')}
+            value={loaded.email}
+            note={t('personal:editProfile.emailHint')}
+            testID="edit-profile-email"
+          />
           {saveMessage ? (
             <Text color="danger" accessibilityRole="alert" testID="edit-profile-save-error">
               {saveMessage}

@@ -1,4 +1,5 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { TextInput } from 'react-native';
 
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
@@ -40,15 +41,22 @@ describe('ShopEditScreen (UI-I02 route con, PER-06)', () => {
     expect(isDisabled()).toBe(true);
   });
 
-  it('tên trống: báo đúng câu và khóa Lưu; quá 50 ký tự cũng khóa', async () => {
+  it('Lưu bật khi có thay đổi (kể cả xóa trống); bấm mới báo lỗi tại ô và đưa focus vào ô; quá 50 ký tự cũng vậy', async () => {
+    const focusSpy = jest.spyOn(TextInput.prototype, 'focus');
+    focusSpy.mockClear();
     const gateways = await renderEdit();
     await fireEvent.changeText(screen.getByTestId('edit-shop-name'), '   ');
+    expect(screen.queryByText('Tên cửa hàng không được để trống.')).toBeNull();
+    expect(isDisabled()).toBe(false);
+    await fireEvent.press(saveButton());
     expect(screen.getByText('Tên cửa hàng không được để trống.')).toBeOnTheScreen();
-    expect(isDisabled()).toBe(true);
+    expect(focusSpy).toHaveBeenCalledTimes(1);
     await fireEvent.changeText(screen.getByTestId('edit-shop-name'), 'a'.repeat(51));
     expect(screen.getByText(/rút gọn xuống 50 ký tự/)).toBeOnTheScreen();
     await fireEvent.press(saveButton());
+    expect(focusSpy).toHaveBeenCalledTimes(2);
     expect(gateways.account.updateShopNameCalls).toHaveLength(0);
+    focusSpy.mockRestore();
   });
 
   it('lưu thành công: gọi cổng một lần với tên đã cắt khoảng trắng, báo phiên, toast SAU khi xác nhận, rồi quay lại', async () => {

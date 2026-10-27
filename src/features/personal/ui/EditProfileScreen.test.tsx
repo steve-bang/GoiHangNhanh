@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { Pressable } from 'react-native';
+import { Pressable, TextInput } from 'react-native';
 
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
@@ -30,25 +30,42 @@ async function renderEdit(
 }
 
 describe('EditProfileScreen (route con của UI-I01)', () => {
-  it('hiện họ tên hiện tại; email chỉ đọc (không phải ô nhập); avatar là chữ cái đầu; Lưu khóa khi chưa sửa', async () => {
+  it('hiện họ tên hiện tại; email là ô chỉ đọc có khóa và chú thích; không còn avatar lớn; Lưu tắt khi chưa sửa', async () => {
     await renderEdit();
     expect(screen.getByTestId('edit-profile-name').props.value).toBe('Lan');
     expect(screen.getByTestId('edit-profile-email')).toHaveTextContent('demo@example.com');
     expect(screen.getByTestId('edit-profile-email').props.onChangeText).toBeUndefined();
-    expect(screen.getByText('L', { includeHiddenElements: true })).toBeOnTheScreen();
+    expect(screen.getByText('Email dùng để đăng nhập, chưa đổi được ở bản này.')).toBeOnTheScreen();
+    expect(screen.getByTestId('icon-lock-closed-outline')).toBeOnTheScreen();
+    expect(screen.queryByTestId('edit-profile-avatar')).toBeNull();
+    expect(screen.queryByText('L', { includeHiddenElements: true })).toBeNull();
     expect(isDisabled()).toBe(true);
   });
 
-  it('họ tên trống hoặc quá 50 ký tự: báo lỗi và khóa Lưu', async () => {
+  it('nút Lưu chỉ tắt khi chưa có thay đổi; xóa trống thì VẪN bật, bấm mới báo lỗi tại ô và đưa focus vào ô', async () => {
+    const focusSpy = jest.spyOn(TextInput.prototype, 'focus');
+    focusSpy.mockClear();
     const gateways = await renderEdit();
     await fireEvent.changeText(screen.getByTestId('edit-profile-name'), '   ');
+    // Chưa bấm Lưu: chưa báo lỗi, nút vẫn bật.
+    expect(screen.queryByText('Hãy nhập họ và tên.')).toBeNull();
+    expect(isDisabled()).toBe(false);
+    await fireEvent.press(saveButton());
     expect(screen.getByText('Hãy nhập họ và tên.')).toBeOnTheScreen();
-    expect(isDisabled()).toBe(true);
+    expect(focusSpy).toHaveBeenCalledTimes(1);
+    expect(isDisabled()).toBe(false);
+    expect(gateways.account.updateCalls).toHaveLength(0);
+
+    // Sau lần bấm đầu, lỗi cập nhật theo lúc gõ (quá dài), vẫn không gọi cổng.
     await fireEvent.changeText(screen.getByTestId('edit-profile-name'), 'a'.repeat(51));
     expect(screen.getByText(/rút gọn xuống 50 ký tự/)).toBeOnTheScreen();
-    expect(isDisabled()).toBe(true);
     await fireEvent.press(saveButton());
     expect(gateways.account.updateCalls).toHaveLength(0);
+    expect(focusSpy).toHaveBeenCalledTimes(2);
+
+    await fireEvent.changeText(screen.getByTestId('edit-profile-name'), 'Lan Anh');
+    expect(screen.queryByText(/rút gọn xuống 50 ký tự/)).toBeNull();
+    focusSpy.mockRestore();
   });
 
   it('lưu thành công: gọi cổng một lần với tên đã cắt khoảng trắng, toast SAU khi xác nhận, rồi quay lại', async () => {
@@ -176,10 +193,10 @@ describe('EditProfileScreen (route con của UI-I01)', () => {
       </>,
       { personalGateways: gateways },
     );
-    await waitFor(() => expect(screen.getByTestId('profile-name')).toHaveTextContent('Lan'));
+    await waitFor(() => expect(screen.getByTestId('profile-summary')).toHaveTextContent(/Lan/));
     await waitFor(() => expect(screen.getByTestId('edit-profile-name')).toBeOnTheScreen());
     await fireEvent.changeText(screen.getByTestId('edit-profile-name'), 'Lan Anh');
     await fireEvent.press(saveButton());
-    await waitFor(() => expect(screen.getByTestId('profile-name')).toHaveTextContent('Lan Anh'));
+    await waitFor(() => expect(screen.getByTestId('profile-summary')).toHaveTextContent(/Lan Anh/));
   });
 });
