@@ -363,6 +363,20 @@ Người dùng duyệt bắt đầu P1 của kế hoạch tab Đơn hàng với 
 
 **Đã kiểm chứng:** unit test (hợp đồng kho trên bộ nhớ và SQLite của Node gồm phân trang không trùng khi chèn đơn giữa chừng, cô lập shop chéo; `summarizeOrderEvidence` mọi cặp; màn danh sách/chi tiết; router thật: đơn mới tạo hiện sau khi quay lại, vào chi tiết rồi Back giữ từ khóa và bộ lọc, *Quay ngay* mở đúng luồng), `npx expo export --platform ios|android`, ảnh chụp bản web (390x844, 360x800). **Chưa kiểm chứng:** thiết bị iOS/Android thật, SQLite thật trên máy, hiệu năng danh sách lớn, vị trí cuộn khi quay lại, chữ lớn, bàn phím che ô tìm.
 
+### Q-19 — Tab Cá nhân (PER-01…PER-24): kế hoạch triển khai, câu hỏi chờ duyệt
+Kế hoạch chi tiết ở [personal-tab-plan.md](personal-tab-plan.md) (trạng thái **đề xuất, chưa chốt**; chưa có mã). Không chốt O-xx; câu hỏi cho BA gom ở O-29.
+
+| # | Câu hỏi | Phương án | Khuyến nghị |
+|---|---|---|---|
+| a | Giữ 5 tab (D-16) hay 4 tab như đặc tả BA? | 1) Giữ 5 tab, BA sửa đặc tả; 2) Đổi lại 4 tab (phải sửa D-16, mockup, `tab-config.ts`) | 1: không đổi navigation |
+| b | Bảng ánh xạ PER ↔ UI-xx và mã UI mới cho PER-02/03/11/12/19/20 (PER-24 là gì) | 1) Gộp vào UI-I01/I05/I06; 2) Thêm mã UI mới vào docs/09 | 1 cho PER-02/03/19/20, 2 cho PER-11/12; BA gán mã |
+| c | PER-04 đổi mật khẩu với tài khoản đăng nhập Apple/Google (D-13: bản đầu email + mật khẩu, Apple/Google qua cờ) | 1) Ẩn mục với tài khoản social; 2) Hiện kèm giải thích | 1 |
+| d | Gói và thanh toán: mua trong ứng dụng hay kênh khác; nguồn giá, dung lượng (O-06, O-16) | 1) IAP Apple/Google; 2) Thanh toán ngoài app; 3) Chưa làm | 3 cho tới khi chốt O-16; hiện "Sắp có" |
+| e | Xóa tài khoản (PER-22): quy trình, dữ liệu giữ lại, cơ chế backend | 1) Yêu cầu qua hỗ trợ; 2) Callable Function có xác minh lại | Hoãn; không xóa bằng chứng đang giữ do tranh chấp (bất biến 9) |
+| f | Mô hình nhiều shop, thành viên, phân quyền (O-03, O-07) | 1) Một shop mỗi tài khoản ở bản đầu; 2) Nhiều shop | 1: ẩn chuyển shop (PER-07) và thành viên |
+| g | Nội dung trợ giúp tĩnh trong app hay từ CMS; kênh gửi hỗ trợ; URL điều khoản/quyền riêng tư thật | 1) Tĩnh trong app + mở email; 2) CMS/Firestore | 1 |
+| h | Chính sách dữ liệu cục bộ sau đăng xuất | 1) Giữ dữ liệu cục bộ, gắn theo tài khoản/shop; 2) Xóa khi đăng xuất | 1 và cảnh báo (UI-J15) khi còn tệp chưa đồng bộ; không bao giờ xóa trước khi máy chủ xác nhận |
+
 ## Rủi ro nền tảng phát hiện (tóm tắt)
 
 1. Tải nền không bảo đảm: iOS dừng khi vuốt tắt app; Android 15 giới hạn dịch vụ nền loại `dataSync`. Thư viện tải nền hiện có chưa kiểm chứng với giao thức resumable của Cloud Storage.

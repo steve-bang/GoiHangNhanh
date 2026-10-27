@@ -35,6 +35,7 @@ Build native (`npx expo run:ios`) **chưa chạy được trên máy có Xcode 1
 - `docs/engineering/conventions.md` — cấu trúc/đặt tên, quy tắc lớp, TypeScript, lỗi, i18n/UI, log/PII, bảo mật, commit/PR, định nghĩa "xong".
 - `docs/engineering/layout.md` — khung giao diện: cấu trúc điều hướng, bảng route ↔ mã `UI-xx`, component dùng chung, quy tắc bố cục iOS/Android, cách thêm màn hình, cách đổi thanh tab (O-18).
 - `docs/engineering/testing.md` — chiến lược test, ánh xạ QA-01…14, phần chưa tự động hóa được.
+- `docs/engineering/personal-tab-plan.md` — kế hoạch triển khai tab Cá nhân (PER-01…24): ánh xạ PER ↔ UI, chia PR, tiêu chí xong (đề xuất, chờ duyệt; Q-19, O-29).
 - `docs/engineering/decisions.md` — ADR đề xuất + câu hỏi cần duyệt (Q-xx).
 - `docs/design-system.md` (cách dùng token), `docs/design-token-spec.md` (đặc tả), `docs/design-system-audit.md`, `docs/design-token-migration-report.md` — **màn trong app dùng `useTheme().tokens`, không viết hex/số thiết kế; Splash, đăng nhập/đăng ký, khôi phục mật khẩu và luồng thiết lập đã được khách hàng xác nhận, nằm ngoài phạm vi, không được đổi giao diện** (danh sách: `scripts/design-token-scope.cjs`).
 - `docs/engineering/platform-support.md` — hỗ trợ iOS + Android: thị phần, sàn phiên bản, khác biệt nền tảng, ma trận kiểm thử.
