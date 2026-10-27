@@ -111,22 +111,46 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     expectTabBarVisible(true);
   });
 
-  it('từ Cá nhân vào Sửa họ tên và Đổi mật khẩu (route con UI-I01/UI-I05) vẫn giữ thanh tab; Back về Cá nhân', async () => {
+  it('từ Cá nhân vào Sửa họ tên và Đổi mật khẩu (route con UI-I01/UI-I05): thanh tab ẩn trên form, hiện lại khi Back về Cá nhân (Q-19r)', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.profile.path });
-    await fireEvent.press(await screen.findByTestId('edit-profile-entry'));
-    expect(screen.getByTestId('screen-UI-I01-edit-profile')).toBeOnTheScreen();
     expectTabBarVisible(true);
+    await fireEvent.press(await screen.findByTestId('profile-summary'));
+    expect(screen.getByTestId('screen-UI-I01-edit-profile')).toBeOnTheScreen();
+    expectTabBarVisible(false);
     await act(async () => {
       router.back();
     });
     expect(screen.getByTestId('screen-UI-I01')).toBeOnTheScreen();
+    expectTabBarVisible(true);
     await fireEvent.press(screen.getByTestId('change-password-entry'));
     expect(screen.getByTestId('screen-UI-I05-change-password')).toBeOnTheScreen();
-    expectTabBarVisible(true);
+    expectTabBarVisible(false);
     await act(async () => {
       router.back();
     });
     expect(screen.getByTestId('screen-UI-I01')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+  });
+
+  it('Sửa tên cửa hàng và Chuyển cửa hàng ẩn thanh tab; Cài đặt cửa hàng (màn gốc) vẫn có thanh tab', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.shopSettings.path });
+    expect(screen.getByTestId('screen-UI-I02')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+    await act(async () => {
+      router.push(ROUTES.shopEdit.path);
+    });
+    expect(screen.getByTestId('screen-UI-I02-edit')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-I02')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+    await act(async () => {
+      router.push(ROUTES.shopSwitch.path);
+    });
+    expect(screen.getByTestId('screen-UI-I02-switch')).toBeOnTheScreen();
+    expectTabBarVisible(false);
   });
 
   it('Hàng hoàn và Đồng bộ không còn là tab: mở được nhưng không có thanh tab', async () => {
