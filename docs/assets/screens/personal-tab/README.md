@@ -2,6 +2,8 @@
 
 Ảnh chụp các màn tab Cá nhân đã làm trên nhánh `claude/personal-tab-pr4-shop`, để xem và review giao diện khi chưa chạy được bản native.
 
+> Đây là ảnh "trước" của PR 4b. Ảnh sau khi chỉnh theo góp ý designer: [`../personal-tab-v2/`](../personal-tab-v2/README.md). Lỗi thẻ Gói bị bóp chữ ghi ở cuối tệp này đã được sửa ở PR 4b.
+
 **Lưu ý trung thực:** đây là ảnh render **bản web** (react-native-web trong Chromium) trên **cổng giả**, **không phải ảnh chụp trên iOS/Android thật**. Dữ liệu (họ tên, email, "Shop minh họa") là giả lập. Font, đổ bóng, vùng an toàn, bàn phím và hành vi cử chỉ trên thiết bị thật có thể khác. Hai cỡ: 360x800 và 390x844.
 
 ## Danh sách ảnh
