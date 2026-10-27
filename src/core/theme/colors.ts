@@ -19,6 +19,20 @@ export const colors = {
   warning: '#B45309', // cam cảnh báo / đang chờ (đủ tương phản làm chữ trên nền sáng)
   danger: '#B3261E', // đỏ - chỉ cho lỗi / phá hủy / nguy cơ mất dữ liệu
   onDanger: '#FFFFFF',
+  // Màn Chào mừng (docs/09 mục 5.1): nền xanh nhạt, mảng loang góc, chữ tiêu đề xanh rừng đậm.
+  brandDark: '#14382A',
+  welcomeBackground: '#F2F9F4',
+  welcomeBlob: '#E1F1E6',
+  borderSubtle: '#E2E7E4',
+  // Nền nhạt cho thẻ/khối thông tin; luôn đi kèm chữ + biểu tượng (màu không là tín hiệu duy nhất).
+  brandSoft: '#E6F0E9',
+  successSoft: '#E3F1E7',
+  warningSoft: '#FDF3E7',
+  dangerSoft: '#FCEBEA',
+  // Lớp phủ hộp thoại/bottom sheet và nền khung camera (không phải giao diện sáng/tối chung).
+  scrim: 'rgba(0, 0, 0, 0.5)',
+  cameraBackground: '#16201A',
+  onCamera: '#FFFFFF',
 } as const;
 
 export type ColorRole = keyof typeof colors;

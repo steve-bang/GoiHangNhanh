@@ -1,0 +1,122 @@
+{
+  "home": {
+    "packOrder": "Đóng gói đơn",
+    "packOrderHint": "Quét mã, rồi quay video đóng gói và niêm phong",
+    "receiveReturn": "Nhận hàng hoàn",
+    "receiveReturnHint": "Ghi nhận kiện hàng, quay video mở kiện và kiểm hàng",
+    "recentOrders": "Đơn gần đây",
+    "allOrders": "Xem tất cả đơn",
+    "tasks": "Việc cần xử lý",
+    "task": {
+      "syncError": "{{count}} video lỗi tải lên cần xử lý",
+      "unfinishedSession": "{{count}} phiên quay chưa hoàn tất",
+      "storage": "Dung lượng trên thiết bị sắp đầy"
+    }
+  },
+  "scan": {
+    "cameraPlaceholder": "Khung quét mã (minh họa, chưa kết nối camera)",
+    "instruction": "Đưa mã QR hoặc mã vạch vào khung để quét. Quét xong ứng dụng sẽ tự tra cứu.",
+    "flashlight": "Đèn pin",
+    "savedOrders": "Tìm đơn đã lưu",
+    "manualTitle": "Nhập mã thủ công",
+    "manualLabel": "Mã đơn hoặc mã vận đơn",
+    "manualPlaceholder": "Ví dụ: mã trên nhãn vận chuyển",
+    "lookup": "Tra cứu mã"
+  },
+  "quickOrder": {
+    "notFound": "Chưa có hồ sơ đơn này. Nhập nhanh vài thông tin để bắt đầu; ứng dụng không lấy dữ liệu từ sàn.",
+    "orderCode": "Mã đơn hàng",
+    "source": "Nguồn bán",
+    "trackingCode": "Mã vận đơn (nếu có)",
+    "productName": "Sản phẩm",
+    "productNamePlaceholder": "Tên sản phẩm (không bắt buộc)",
+    "variant": "Phân loại / variant",
+    "variantPlaceholder": "Ví dụ: màu, kích cỡ",
+    "quantity": "Số lượng",
+    "saveAndRecord": "Lưu và quay video",
+    "skipProducts": "Bỏ qua thông tin sản phẩm"
+  },
+  "preview": {
+    "orderCode": "Mã đơn",
+    "trackingCode": "Mã vận đơn",
+    "products": "Sản phẩm",
+    "undeclaredHint": "Bạn vẫn quay được. Việc đối chiếu sẽ bị hạn chế cho tới khi bổ sung sản phẩm.",
+    "packages": "Kiện hàng",
+    "package": "Kiện {{index}}",
+    "addPackage": "Thêm kiện",
+    "startRecording": "Bắt đầu quay"
+  },
+  "record": {
+    "packGuidance": "Quay từ trước khi đóng gói đến khi niêm phong xong.",
+    "returnGuidance": "Quay từ trước khi mở niêm phong đến khi lấy hết hàng ra.",
+    "package": "Kiện {{index}}",
+    "returnCase": "Hồ sơ hoàn"
+  },
+  "confirm": {
+    "duration": "Thời lượng",
+    "orderCode": "Mã đơn",
+    "thumbnail": "Ảnh xem trước video (minh họa)",
+    "savedMessage": "Video đã lưu trên thiết bị. Đang chờ tải lên máy chủ.",
+    "review": "Xem lại video",
+    "addSegment": "Ghi thêm đoạn riêng",
+    "save": "Lưu bằng chứng"
+  },
+  "packDone": {
+    "summary": "Phiên đóng gói đã hoàn tất. Video đã lưu trên thiết bị, đang chờ đồng bộ.",
+    "videoCount": "Số video",
+    "next": "Đóng gói đơn tiếp theo",
+    "viewEvidence": "Xem bằng chứng"
+  },
+  "returns": {
+    "search": "Tìm theo mã đơn, mã vận đơn hoặc mã hoàn",
+    "filterAll": "Tất cả",
+    "filter": {
+      "receiving": "Đang tiếp nhận",
+      "checking": "Đang kiểm tra",
+      "checked": "Đã kiểm tra",
+      "discrepancy": "Có sai lệch",
+      "unsynced": "Chưa đồng bộ"
+    },
+    "unlinked": "Chưa liên kết đơn gốc",
+    "receive": "Tiếp nhận hàng hoàn",
+    "emptyTitle": "Chưa có hồ sơ hàng hoàn nào",
+    "emptyMessage": "Khi nhận kiện hoàn, hãy tiếp nhận để ghi lại tình trạng kiện trước khi mở."
+  },
+  "orders": {
+    "search": "Tìm theo mã đơn hoặc mã vận đơn",
+    "filterAll": "Tất cả",
+    "emptyTitle": "Chưa có đơn nào",
+    "emptyMessage": "Quét mã hoặc tạo đơn nhanh để bắt đầu ghi nhận bằng chứng.",
+    "emptyAction": "Đóng gói đơn"
+  },
+  "sync": {
+    "note": "Tải nền có thể tạm dừng khi hệ điều hành giới hạn. Mở ứng dụng để tiếp tục.",
+    "filter": {
+      "uploading": "Đang tải lên",
+      "waiting_upload": "Chờ tải lên",
+      "error": "Lỗi",
+      "uploaded": "Đã tải lên"
+    },
+    "details": "Chi tiết",
+    "emptyTitle": "Không có tệp ở mục này",
+    "emptyMessage": "Chọn mục khác để xem các tệp còn lại, hoặc mở danh sách đơn.",
+    "emptyAction": "Mở danh sách đơn",
+    "waitingNetwork": "Đang chờ mạng"
+  },
+  "welcome": {
+    "brandName": "Đơn chứng",
+    "title": "Bảo vệ bằng chứng\ncho từng đơn hàng",
+    "subtitle": "Ghi hình đầy đủ – Lưu trữ an toàn – An tâm kinh doanh",
+    "signIn": "Đăng nhập",
+    "createAccount": "Tạo tài khoản",
+    "orSignInWith": "Hoặc đăng nhập với",
+    "apple": "Apple",
+    "google": "Google",
+    "signInWithApple": "Đăng nhập với Apple",
+    "signInWithGoogle": "Đăng nhập với Google",
+    "legalPrefix": "Bằng việc đăng nhập, bạn đồng ý với ",
+    "legalAnd": " và ",
+    "terms": "Điều khoản sử dụng",
+    "privacy": "Chính sách quyền riêng tư"
+  }
+}

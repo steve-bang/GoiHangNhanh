@@ -14,6 +14,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["index.ts", "src", "firebase/tests", "expo-env.d.ts", ".expo/types/**/*.ts"],
+  "include": ["jest.setup.ts", "src", "firebase/tests", "expo-env.d.ts", ".expo/types/**/*.ts"],
   "exclude": ["node_modules", "android", "ios", "dist", "coverage"]
 }

@@ -1,6 +1,55 @@
 {
   "app": {
-    "name": "Đơn Chứng",
-    "placeholder": "Khung dự án đã sẵn sàng. Chưa có tính năng nghiệp vụ."
+    "name": "Đơn Chứng"
+  },
+  "actions": {
+    "back": "Quay lại",
+    "close": "Đóng",
+    "clearText": "Xóa nội dung đã nhập",
+    "increase": "Tăng số lượng",
+    "decrease": "Giảm số lượng"
+  },
+  "illustrative": "Dữ liệu minh họa của khung giao diện, chưa phải dữ liệu thật.",
+  "loading": "Đang tải",
+  "offline": {
+    "banner": "Đang ngoại tuyến. Bằng chứng sẽ được đồng bộ khi có mạng."
+  },
+  "placeholder": {
+    "title": "Màn hình đang được dựng khung",
+    "message": "Bố cục và đường vào màn hình này đã có; nội dung sẽ được bổ sung ở bản sau.",
+    "action": "Quay lại màn hình trước"
+  },
+  "sources": {
+    "shopee": "Shopee",
+    "tiktok_shop": "TikTok Shop",
+    "lazada": "Lazada",
+    "other": "Khác / chưa xác định"
+  },
+  "productLines": {
+    "undeclared": "Chưa khai báo sản phẩm",
+    "userEntered": "Do bạn nhập",
+    "quantity": "Số lượng {{count}}",
+    "accessibility": "{{name}}, phân loại {{variant}}, số lượng {{count}}"
+  },
+  "orderCard": {
+    "videoCount": "{{count}} video",
+    "noVideo": "Chưa có video"
+  },
+  "syncBar": {
+    "title": "Bằng chứng cần theo dõi",
+    "hint": "Tải nền có thể tạm dừng khi hệ điều hành giới hạn. Mở ứng dụng để tiếp tục.",
+    "action": "Mở trung tâm đồng bộ"
+  },
+  "recording": {
+    "clock": "Thời lượng",
+    "stop": "Dừng quay",
+    "close": "Rời màn quay",
+    "cameraPlaceholder": "Khung xem trước camera (minh họa, chưa kết nối camera)",
+    "leave": {
+      "title": "Phiên quay chưa kết thúc",
+      "message": "Bạn đang trong một phiên quay. Hãy giữ video và quay lại, hoặc kết thúc phiên để chuyển sang bước xác nhận video. Phần đã ghi không bị xóa.",
+      "keep": "Giữ video và quay lại",
+      "end": "Kết thúc phiên"
+    }
   }
 }
