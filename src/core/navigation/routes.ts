@@ -149,6 +149,8 @@ export const ROUTES = {
   // PER-02/03: sửa họ tên, route con của UI-I01 (Q-19k).
   editProfile: subRoute('/account/edit-profile', 'profile', 'UI-I01', true),
   shopSettings: route('/account/shop-settings', 'UI-I02', true),
+  shopEdit: subRoute('/account/shop-settings/edit', 'shopSettings', 'UI-I02', true),
+  shopSwitch: subRoute('/account/shop-settings/switch', 'shopSettings', 'UI-I02', true),
   members: route('/account/members', 'UI-I03', true),
   notifications: route('/account/notifications', 'UI-I04', true),
   security: route('/account/security', 'UI-I05', true),

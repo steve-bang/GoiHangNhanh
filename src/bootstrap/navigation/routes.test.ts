@@ -65,8 +65,14 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
 
   it('route con (parent): trỏ tới route gốc có thật, cùng mã UI, cùng cờ tabBar, gốc không phải con', () => {
     const children = Object.entries(ROUTES).filter(([, r]) => 'parent' in r && r.parent);
-    // Chỉ hai route con đã duyệt; thêm route con mới phải được người dùng duyệt và sửa danh sách này.
-    expect(children.map(([name]) => name).sort()).toEqual(['changePassword', 'editProfile']);
+    // Chỉ các route con đã duyệt (PR2: hồ sơ, mật khẩu; PR4: sửa và chuyển cửa hàng, cùng mã UI-I02);
+    // thêm route con mới phải được người dùng duyệt và sửa danh sách này.
+    expect(children.map(([name]) => name).sort()).toEqual([
+      'changePassword',
+      'editProfile',
+      'shopEdit',
+      'shopSwitch',
+    ]);
     for (const [name, child] of children) {
       const parent = (ROUTES as Record<string, RouteDef | undefined>)[child.parent ?? ''];
       expect(parent).toBeDefined();
@@ -78,11 +84,15 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     }
     expect(ROUTES.editProfile).toMatchObject({ parent: 'profile', code: 'UI-I01' });
     expect(ROUTES.changePassword).toMatchObject({ parent: 'security', code: 'UI-I05' });
+    expect(ROUTES.shopEdit).toMatchObject({ parent: 'shopSettings', code: 'UI-I02' });
+    expect(ROUTES.shopSwitch).toMatchObject({ parent: 'shopSettings', code: 'UI-I02' });
   });
 
   it('route con có tiêu đề riêng trong nav.subTitles', () => {
     expect(nav.subTitles.editProfile).toBeTruthy();
     expect(nav.subTitles.changePassword).toBeTruthy();
+    expect(nav.subTitles.shopEdit).toBeTruthy();
+    expect(nav.subTitles.shopSwitch).toBeTruthy();
   });
 
   it('mỗi mã UI-xx có tiêu đề i18n', () => {
