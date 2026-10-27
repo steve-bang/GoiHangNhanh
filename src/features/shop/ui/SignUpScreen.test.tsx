@@ -9,8 +9,7 @@ import { ROUTES } from '@/core/navigation';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
-import { createFakeGateways } from '../data/fake-gateways';
-import { createUnavailableGateways } from '../data/unavailable-gateways';
+import { createFakeApi, createUnavailableApi } from '@/api/testing';
 import type { AuthAccount, Gateways } from '../domain/types';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import { SignUpScreen } from './SignUpScreen';
@@ -89,11 +88,11 @@ function pendingGateways() {
         resolve = r;
       }),
   );
-  const fake = createFakeGateways();
+  const fake = createFakeApi();
   const gateways: Gateways = {
-    session: createFakeGateways().session,
+    session: createFakeApi().session,
     auth: {
-      ...createUnavailableGateways().auth,
+      ...createUnavailableApi().auth,
       signUpWithEmail,
       signInWithProvider: fake.auth.signInWithProvider.bind(fake.auth),
     },
@@ -205,7 +204,7 @@ describe('UI-A03 Tạo tài khoản: kiểm tra dữ liệu', () => {
   });
 
   it('bấm Tạo tài khoản khi dữ liệu sai: hiện lỗi cả hai ô và KHÔNG gọi cổng', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignUpScreen />, { gateways: fake });
     await fireEvent.press(submitButton());
     expect(screen.getByText('Hãy nhập email của bạn.')).toBeOnTheScreen();
@@ -217,7 +216,7 @@ describe('UI-A03 Tạo tài khoản: kiểm tra dữ liệu', () => {
 
 describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
   it('thành công: gọi cổng với email đã bỏ khoảng trắng rồi sang /create-shop', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignUpScreen />, { gateways: fake });
     await fill(`  ${VALID_EMAIL} `, VALID_PASSWORD);
     await fireEvent.press(submitButton());
@@ -227,7 +226,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
   });
 
   it('phím Return ở ô mật khẩu gửi form', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignUpScreen />, { gateways: fake });
     await fill(VALID_EMAIL, VALID_PASSWORD);
     await fireEvent(screen.getByTestId('signup-password'), 'submitEditing');
@@ -302,7 +301,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
   });
 
   it('lỗi mạng: khung phía trên nút chính, câu đầu in đậm, có Thử lại; giữ nguyên giá trị đã nhập', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignUpScreen />, { gateways: fake });
     await fill(VALID_EMAIL, VALID_PASSWORD);
     fake.auth.failNext('AUTH_NETWORK_ERROR');
@@ -326,7 +325,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
   });
 
   it('Thử lại gửi lại đúng yêu cầu (cùng email, mật khẩu) rồi sang bước sau', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignUpScreen />, { gateways: fake });
     await fill(VALID_EMAIL, VALID_PASSWORD);
     fake.auth.failNext('AUTH_NETWORK_ERROR');
@@ -344,12 +343,12 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
       .fn<Promise<AuthAccount>, [unknown]>()
       .mockRejectedValueOnce(new AppError('AUTH_SERVICE_UNAVAILABLE'))
       .mockImplementation(() => new Promise<AuthAccount>(() => undefined));
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     const gateways: Gateways = {
-      session: createFakeGateways().session,
+      session: createFakeApi().session,
       shop: fake.shop,
       auth: {
-        ...createUnavailableGateways().auth,
+        ...createUnavailableApi().auth,
         signUpWithEmail,
         signInWithProvider: () => Promise.resolve(),
       },
@@ -366,7 +365,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
   });
 
   it('hệ thống bận: khung phía trên nút chính, có Thử lại', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignUpScreen />, { gateways: fake });
     await fill(VALID_EMAIL, VALID_PASSWORD);
     fake.auth.failNext('AUTH_SERVICE_UNAVAILABLE');
@@ -379,7 +378,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
   });
 
   it('email đã dùng: lỗi nằm DƯỚI ô Email (không phải khung chung), có nút Đăng nhập mở /sign-in', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<Harness />, { gateways: fake });
     await fill(VALID_EMAIL, VALID_PASSWORD);
     fake.auth.failNext('AUTH_EMAIL_IN_USE');
@@ -398,7 +397,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
   });
 
   it('mật khẩu yếu: lỗi nằm DƯỚI ô Mật khẩu, không có nút; mất khi sửa mật khẩu, giữ email', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignUpScreen />, { gateways: fake });
     await fill(VALID_EMAIL, VALID_PASSWORD);
     fake.auth.failNext('AUTH_WEAK_PASSWORD');
@@ -436,7 +435,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
   });
 
   it('bản "chưa kết nối": báo AUTH_SERVICE_UNAVAILABLE, không điều hướng, không báo đã tạo', async () => {
-    await renderWithProviders(<SignUpScreen />, { gateways: createUnavailableGateways() });
+    await renderWithProviders(<SignUpScreen />, { gateways: createUnavailableApi() });
     await fill(VALID_EMAIL, VALID_PASSWORD);
     await fireEvent.press(submitButton());
     expect(
@@ -446,12 +445,12 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
   });
 
   it('lỗi không rõ (không phải AppError) cũng coi là chưa kết nối, không báo thành công', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     const gateways: Gateways = {
-      session: createFakeGateways().session,
+      session: createFakeApi().session,
       shop: fake.shop,
       auth: {
-        ...createUnavailableGateways().auth,
+        ...createUnavailableApi().auth,
         signInWithProvider: () => Promise.resolve(),
         signUpWithEmail: () => Promise.reject(new Error('boom')),
       },
@@ -466,7 +465,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
   });
 
   it('sửa email sau lỗi "đã có tài khoản" thì lỗi mất; lỗi chung mất khi sửa bất kỳ ô nào', async () => {
-    const fake = createFakeGateways({ takenEmails: [VALID_EMAIL] });
+    const fake = createFakeApi({ takenEmails: [VALID_EMAIL] });
     await renderWithProviders(<SignUpScreen />, { gateways: fake });
     await fill(VALID_EMAIL, VALID_PASSWORD);
     await fireEvent.press(submitButton());
@@ -483,7 +482,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
 
 describe('UI-A03 Tạo tài khoản: đăng ký với Apple/Google', () => {
   it('bấm gọi cổng, không điều hướng, không báo thành công', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignUpScreen />, { gateways: fake });
     await fireEvent.press(screen.getByRole('button', { name: 'Đăng ký với Apple' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Đăng ký với Google' }));
@@ -494,7 +493,7 @@ describe('UI-A03 Tạo tài khoản: đăng ký với Apple/Google', () => {
   });
 
   it('bản "chưa kết nối": hiện lỗi chưa kết nối thay vì im lặng', async () => {
-    await renderWithProviders(<SignUpScreen />, { gateways: createUnavailableGateways() });
+    await renderWithProviders(<SignUpScreen />, { gateways: createUnavailableApi() });
     await fireEvent.press(screen.getByRole('button', { name: 'Đăng ký với Google' }));
     expect(
       within(screen.getByTestId('form-error')).getByText(fullText(errors.AUTH_SERVICE_UNAVAILABLE)),
@@ -533,7 +532,7 @@ describe('UI-A03 Tạo tài khoản: câu chữ', () => {
 });
 
 describe('UI-A03 Tạo tài khoản: quay lại sau khi đã tạo', () => {
-  async function createThenReturn(fake: ReturnType<typeof createFakeGateways>) {
+  async function createThenReturn(fake: ReturnType<typeof createFakeApi>) {
     await renderWithProviders(<Harness />, { gateways: fake });
     await fill(VALID_EMAIL, VALID_PASSWORD);
     await fireEvent.press(submitButton());
@@ -544,7 +543,7 @@ describe('UI-A03 Tạo tài khoản: quay lại sau khi đã tạo', () => {
   }
 
   it('khóa hai ô (chỉ đọc), mật khẩu là chấm cố định, nút đổi thành "Tiếp tục", không có nút hiện mật khẩu', async () => {
-    await createThenReturn(createFakeGateways());
+    await createThenReturn(createFakeApi());
     const email = screen.getByTestId('signup-email');
     const password = screen.getByTestId('signup-password');
     expect(email.props.value).toBe(VALID_EMAIL);
@@ -559,7 +558,7 @@ describe('UI-A03 Tạo tài khoản: quay lại sau khi đã tạo', () => {
   });
 
   it('gõ thêm vào ô khóa không đổi gì; không có lỗi kiểm tra dữ liệu', async () => {
-    await createThenReturn(createFakeGateways());
+    await createThenReturn(createFakeApi());
     await fireEvent.changeText(screen.getByTestId('signup-email'), 'khac@example.com');
     await fireEvent.changeText(screen.getByTestId('signup-password'), 'mat-khau-khac-1');
     expect(screen.getByTestId('signup-email').props.value).toBe(VALID_EMAIL);
@@ -569,7 +568,7 @@ describe('UI-A03 Tạo tài khoản: quay lại sau khi đã tạo', () => {
   });
 
   it('"Tiếp tục" đi thẳng /create-shop và KHÔNG gọi cổng đăng ký lần hai', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await createThenReturn(fake);
     mockNavigation.push.mockClear();
     await fireEvent.press(submitButton());
@@ -580,7 +579,7 @@ describe('UI-A03 Tạo tài khoản: quay lại sau khi đã tạo', () => {
   });
 
   it('mật khẩu không nằm trong trạng thái luồng', async () => {
-    await createThenReturn(createFakeGateways());
+    await createThenReturn(createFakeApi());
     expect(screen.getByTestId('probe-flow')).not.toHaveTextContent(VALID_PASSWORD);
   });
 

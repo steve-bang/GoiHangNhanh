@@ -25,6 +25,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - run: npm --prefix firebase/functions ci
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run format:check
@@ -46,4 +47,5 @@ jobs:
           distribution: temurin
           java-version: '21'
       - run: npm ci
+      - run: npm --prefix firebase/functions ci
       - run: npm run test:rules

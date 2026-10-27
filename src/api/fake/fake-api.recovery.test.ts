@@ -1,5 +1,5 @@
 import {
-  createFakeGateways,
+  createFakeApi,
   FAKE_BUSY_EMAIL,
   FAKE_DEMO_EMAIL,
   FAKE_DEMO_PASSWORD,
@@ -10,11 +10,10 @@ import {
   FAKE_OFFLINE_EMAIL,
   FAKE_RESET_EXPIRED_EMAIL,
   FAKE_VALID_CODE,
-} from './fake-gateways';
-import { createUnavailableGateways } from './unavailable-gateways';
+} from './fake-api';
+import { createUnavailableApi } from '../unavailable';
 
-const make = (options: Parameters<typeof createFakeGateways>[0] = {}) =>
-  createFakeGateways(options).auth;
+const make = (options: Parameters<typeof createFakeApi>[0] = {}) => createFakeApi(options).auth;
 
 describe('cổng giả: đăng nhập bằng email + mật khẩu', () => {
   it('tài khoản dev có shop vào được; tài khoản dev chưa có shop báo hasShop=false', async () => {
@@ -164,7 +163,7 @@ describe('cổng giả: quên mật khẩu, nhập mã, đặt lại', () => {
       auth.verifyRecoveryCode({ email: FAKE_EXPIRED_CODE_EMAIL, code: FAKE_VALID_CODE }),
     ).rejects.toMatchObject({ code: 'AUTH_OTP_EXPIRED' });
 
-    const gw = createFakeGateways();
+    const gw = createFakeApi();
     await gw.auth.requestPasswordRecovery(FAKE_RESET_EXPIRED_EMAIL);
     const { ticket } = await gw.auth.verifyRecoveryCode({
       email: FAKE_RESET_EXPIRED_EMAIL,
@@ -212,7 +211,7 @@ describe('cổng giả: quên mật khẩu, nhập mã, đặt lại', () => {
 
 describe('cổng "chưa kết nối": các lời gọi mới', () => {
   it('đều trả AUTH_SERVICE_UNAVAILABLE, không bao giờ báo thành công', async () => {
-    const { auth } = createUnavailableGateways();
+    const { auth } = createUnavailableApi();
     const results = await Promise.allSettled([
       auth.signInWithPassword({ email: 'a@b.co', password: '12345678' }),
       auth.requestPasswordRecovery('a@b.co'),

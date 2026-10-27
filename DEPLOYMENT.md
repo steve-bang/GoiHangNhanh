@@ -2,7 +2,7 @@
 
 Hướng dẫn từ máy phát triển đến phát hành production trên **Google Play** và **Apple App Store**, cùng Firebase phía máy chủ.
 
-> **Đọc trước.** Tại thời điểm viết (2026-10-27) repo là khung kỹ thuật chạy bằng cổng giả. **Chưa có** `eas.json`, Firebase thật, tệp `google-services.json`/`GoogleService-Info.plist`, ghi video thật, và build native chưa từng được chạy trên máy ảo hay thiết bị. Các bước dưới đây là quy trình chuẩn của Expo/EAS/Firebase/cửa hàng; những bước phụ thuộc phần chưa có được đánh dấu **[Chưa có]**. Lệnh và giao diện của Expo, Apple, Google thay đổi thường xuyên: đối chiếu tài liệu chính thức trước khi chạy và cập nhật lại tệp này khi bạn chạy thật (xem mục 11).
+> **Đọc trước.** Tại thời điểm viết (2026-10-27) repo là khung kỹ thuật chạy bằng cổng giả. **Đã có** `eas.json` (chưa chạy build nào) và mã Firebase thật (chưa deploy, chưa chạy trên thiết bị). **Chưa có** tệp `google-services.json`/`GoogleService-Info.plist`, ghi video thật, và build native chưa từng được chạy trên máy ảo hay thiết bị. Các bước dưới đây là quy trình chuẩn của Expo/EAS/Firebase/cửa hàng; những bước phụ thuộc phần chưa có được đánh dấu **[Chưa có]**. Lệnh và giao diện của Expo, Apple, Google thay đổi thường xuyên: đối chiếu tài liệu chính thức trước khi chạy và cập nhật lại tệp này khi bạn chạy thật (xem mục 11).
 
 ## Mục lục
 
@@ -229,7 +229,9 @@ Cần cập nhật khi chuẩn bị phát hành:
 - Thay `LEGAL_LINKS` (`src/core/config/legal-links.ts`) bằng URL thật.
 - `userInterfaceStyle` đang `light`; chế độ tối chưa làm (O-17).
 
-### 5.2 Cấu hình động cho Firebase **[Chưa có]**
+### 5.2 Cấu hình động cho Firebase **[Đã có `app.config.js`]**
+
+`app.config.js` (ở gốc repo) đã đọc đường dẫn tệp từ `GOOGLE_SERVICES_JSON` và `GOOGLE_SERVICE_INFO_PLIST` (hoặc `GOOGLE_SERVICES_INFO_PLIST`), nếu không có thì dùng tệp cùng tên ở gốc repo; không có tệp thì không gắn. Mẫu `app.config.ts` dưới đây là phương án ban đầu, chỉ để tham khảo:
 
 Đổi `app.json` thành `app.config.ts` để đọc đường dẫn tệp từ biến môi trường của EAS (mẫu):
 
@@ -253,7 +255,9 @@ Biến `EXPO_PUBLIC_*` được **nhúng vào gói JS và ai cũng đọc đư�
 
 ## 6. Build bằng EAS
 
-### 6.1 Khởi tạo và `eas.json` **[Chưa có]**
+### 6.1 Khởi tạo và `eas.json` **[Đã có `eas.json`, chưa chạy build]**
+
+`eas.json` ở gốc repo có 4 profile: `development` (dev client; Android APK, iOS thiết bị thật), `development-simulator` (iOS simulator), `staging` (APK nội bộ), `production` (AAB, tự tăng số bản). Chưa có khối `submit` vì chưa có ID app trên App Store Connect. Bước còn lại là `eas init` (liên kết dự án với tài khoản Expo) và tạo EAS file secret cho hai tệp Firebase (mục 4.5). Với dev client, JS do Metro trên máy bạn đóng gói nên chọn Firebase thật bằng `EXPO_PUBLIC_BACKEND=firebase npm start`; với `staging`/`production`, JS đóng gói lúc build và mặc định là Firebase.
 
 ```bash
 npx eas-cli login

@@ -1,6 +1,6 @@
 import { AppError } from '@/core/errors/app-error';
 
-import type { AuthGateway, Gateways, SessionGateway, ShopGateway } from '../domain/types';
+import type { AuthApi, ApiClient, SessionApi, ShopApi } from '../contract';
 
 /**
  * Cổng "chưa kết nối": dùng ở bản build thường khi chưa có máy chủ thật. Mọi lời gọi đều trả lỗi
@@ -9,8 +9,8 @@ import type { AuthGateway, Gateways, SessionGateway, ShopGateway } from '../doma
  */
 const unavailable = () => Promise.reject(new AppError('AUTH_SERVICE_UNAVAILABLE'));
 
-export function createUnavailableGateways(): Gateways {
-  const auth: AuthGateway = {
+export function createUnavailableApi(): ApiClient {
+  const auth: AuthApi = {
     signUpWithEmail: unavailable,
     signInWithProvider: unavailable,
     signInWithPassword: unavailable,
@@ -18,8 +18,8 @@ export function createUnavailableGateways(): Gateways {
     verifyRecoveryCode: unavailable,
     resetPassword: unavailable,
   };
-  const shop: ShopGateway = { createShop: unavailable, updateShop: unavailable };
+  const shop: ShopApi = { createShop: unavailable, updateShop: unavailable };
   // Không có máy chủ nên không có phiên nào để khôi phục: luôn lỗi, màn Splash coi như chưa đăng nhập.
-  const session: SessionGateway = { restore: unavailable };
+  const session: SessionApi = { restore: unavailable };
   return { auth, shop, session };
 }

@@ -42,11 +42,16 @@ Sơ đồ thư mục: [architecture.md mục 3](architecture.md#3-phân-lớp-m�
 | Lớp | Được import | Không được import |
 |---|---|---|
 | `features/*/domain`, `core` | `core`, kiểu của chính nó | React, React Native, `expo*`, `@react-native-firebase/*`, `firebase*`, `data/`, `ui/`, `platform/`, feature khác (domain) |
-| `features/*/data` | `domain` cùng feature, `core`, `platform`, SDK | `ui/` |
+| `features/*/data` | `domain` cùng feature, `core`, `platform`, `@/api/contract` (kiểu `ApiClient`), `@/api/create-api` | `ui/`, `api/firebase`, `api/fake`, mọi SDK Firebase |
+| `api/contract` | `core` | SDK, React, feature, platform |
+| `api/fake`, `api/unavailable` | `api/contract`, `core` | SDK, feature, platform |
+| `api/firebase` | `api/contract`, `core`, `@react-native-firebase/*` | feature, platform (**nơi DUY NHẤT gọi SDK Firebase**) |
+| `api/create-api.ts` | các hiện thực trong `api/` | feature, SDK |
 | `features/*/ui`, `shared/ui` | `domain` (kiểu, hàm thuần), hook/API của `data`, `core/theme`, i18n | SDK Firebase trực tiếp |
 | `platform` | thư viện native/Expo | `ui/` |
 | `bootstrap` | mọi thứ (composition root) | — |
 
+- Test của feature cần bản giả: import từ `@/api/testing` (không import `@/api/fake` trực tiếp). Đổi backend = thêm `api/<backend>/` + đổi chọn ở `create-api.ts`; feature không đổi. Mọi hiện thực phải qua `api/contract-tests`.
 - Import feature khác **chỉ qua** `@/features/<tên>`; cấm `@/features/*/*`.
 - Dùng alias `@/` thay cho `../../../`; trong cùng một feature dùng đường dẫn tương đối ngắn.
 - **Lý do**: giữ `domain` kiểm thử được không cần thiết bị; một chỗ gọi Firebase để kiểm soát chi phí và bảo đảm truy vấn theo shop; thay thư viện camera/tải nền (còn chờ spike) không đụng nghiệp vụ.

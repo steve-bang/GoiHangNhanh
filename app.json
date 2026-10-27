@@ -20,6 +20,15 @@
     "scheme": "doncung",
     "plugins": [
       "expo-router",
+      "@react-native-firebase/app",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic"
+          }
+        }
+      ],
       [
         "expo-camera",
         {

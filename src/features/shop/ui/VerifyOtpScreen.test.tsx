@@ -7,8 +7,12 @@ import { ROUTES } from '@/core/navigation';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
-import { createFakeGateways, FAKE_DEMO_EMAIL, FAKE_VALID_CODE } from '../data/fake-gateways';
-import { createUnavailableGateways } from '../data/unavailable-gateways';
+import {
+  createFakeApi,
+  FAKE_DEMO_EMAIL,
+  FAKE_VALID_CODE,
+  createUnavailableApi,
+} from '@/api/testing';
 import type { Gateways } from '../domain/types';
 import { WithRecoveryState } from './recovery-test-harness';
 import { VerifyOtpScreen } from './VerifyOtpScreen';
@@ -137,7 +141,7 @@ describe('UI-A08 Nhập mã: nhập liệu', () => {
   it.each(['123 456', '123-456', ' 123 456 ', '123456', '1 2 3 4 5 6', '123456789'])(
     'dán %j đi qua đúng đường xử lý của ô thật: đủ 6 ô, tự xác minh với đúng 123456',
     async (pasted) => {
-      const fake = createFakeGateways();
+      const fake = createFakeApi();
       await renderOtp({ gateways: fake, email: FAKE_DEMO_EMAIL });
       await fake.auth.requestPasswordRecovery(FAKE_DEMO_EMAIL);
       await typeAsNative(pasted);
@@ -153,7 +157,7 @@ describe('UI-A08 Nhập mã: nhập liệu', () => {
   );
 
   it('gõ/dán thêm khi đã đủ 6 số mà mã không đổi: không xác minh lại cùng một mã', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderOtp({ gateways: fake, email: FAKE_DEMO_EMAIL });
     await fake.auth.requestPasswordRecovery(FAKE_DEMO_EMAIL);
     await typeAsNative('111111');
@@ -165,7 +169,7 @@ describe('UI-A08 Nhập mã: nhập liệu', () => {
   });
 
   it('nút Xác minh khóa tới khi đủ 6 số; chưa đủ thì không gọi cổng', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderOtp({ gateways: fake });
     await fireEvent.changeText(input(), '12345');
     await fireEvent.press(submit());
@@ -186,7 +190,7 @@ describe('UI-A08 Nhập mã: nhập liệu', () => {
 
 describe('UI-A08 Nhập mã: xác minh', () => {
   it('tự xác minh khi đủ 6 số (nhập hoặc dán): sang /new-password bằng replace, không báo "thành công"', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderOtp({ gateways: fake, email: FAKE_DEMO_EMAIL });
     await fake.auth.requestPasswordRecovery(FAKE_DEMO_EMAIL);
     await fireEvent.changeText(
@@ -209,9 +213,9 @@ describe('UI-A08 Nhập mã: xác minh', () => {
         }),
     );
     const gateways: Gateways = {
-      session: createFakeGateways().session,
-      auth: { ...createUnavailableGateways().auth, verifyRecoveryCode },
-      shop: createFakeGateways().shop,
+      session: createFakeApi().session,
+      auth: { ...createUnavailableApi().auth, verifyRecoveryCode },
+      shop: createFakeApi().shop,
     };
     await renderOtp({ gateways });
     await fireEvent.changeText(input(), '123456');
@@ -226,7 +230,7 @@ describe('UI-A08 Nhập mã: xác minh', () => {
   });
 
   it('nút Xác minh gọi cổng khi đủ 6 số (sau khi tự xác minh lỗi rồi bấm lại)', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderOtp({ gateways: fake, email: FAKE_DEMO_EMAIL });
     await fake.auth.requestPasswordRecovery(FAKE_DEMO_EMAIL);
     await fireEvent.changeText(input(), '000000');
@@ -245,9 +249,9 @@ describe('UI-A08 Nhập mã: xác minh', () => {
         }),
     );
     const gateways: Gateways = {
-      session: createFakeGateways().session,
-      auth: { ...createUnavailableGateways().auth, verifyRecoveryCode },
-      shop: createFakeGateways().shop,
+      session: createFakeApi().session,
+      auth: { ...createUnavailableApi().auth, verifyRecoveryCode },
+      shop: createFakeApi().shop,
     };
     await renderOtp({ gateways });
     await fireEvent.changeText(input(), '123456');
@@ -259,7 +263,7 @@ describe('UI-A08 Nhập mã: xác minh', () => {
   });
 
   it('mã sai: lỗi dưới các ô + ô đỏ, giữ các số đã nhập; sửa thì lỗi tự mất', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderOtp({ gateways: fake, email: FAKE_DEMO_EMAIL });
     await fake.auth.requestPasswordRecovery(FAKE_DEMO_EMAIL);
     await fireEvent.changeText(input(), '111111');
@@ -280,7 +284,7 @@ describe('UI-A08 Nhập mã: xác minh', () => {
   });
 
   it('mã hết hạn: banner kèm nút Gửi lại mã; bấm thì xin mã mới, xóa các số, hiện thông báo nhẹ', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderOtp({ gateways: fake, email: FAKE_DEMO_EMAIL });
     fake.auth.failNext('AUTH_OTP_EXPIRED');
     await fireEvent.changeText(input(), '123456');
@@ -298,7 +302,7 @@ describe('UI-A08 Nhập mã: xác minh', () => {
   });
 
   it('quá số lần: banner không có nút; mất mạng: banner + Thử lại gửi lại ĐÚNG mã', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderOtp({ gateways: fake, email: FAKE_DEMO_EMAIL });
     await fake.auth.requestPasswordRecovery(FAKE_DEMO_EMAIL);
     fake.auth.failNext('AUTH_TOO_MANY_REQUESTS');
@@ -319,7 +323,7 @@ describe('UI-A08 Nhập mã: xác minh', () => {
   });
 
   it('bản "chưa kết nối": báo lỗi, không sang bước sau', async () => {
-    await renderOtp({ gateways: createUnavailableGateways() });
+    await renderOtp({ gateways: createUnavailableApi() });
     await fireEvent.changeText(input(), '123456');
     expect(screen.getByTestId('form-error')).toBeOnTheScreen();
     expect(mockNavigation.replace).not.toHaveBeenCalled();
@@ -329,7 +333,7 @@ describe('UI-A08 Nhập mã: xác minh', () => {
 describe('UI-A08 Nhập mã: đếm ngược và gửi lại', () => {
   it('đếm theo mốc thời gian; hết giờ thì thành "Gửi lại mã"; bấm thì đếm lại từ 00:30', async () => {
     jest.useFakeTimers({ now: 1_000_000 });
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderOtp({ gateways: fake, email: FAKE_DEMO_EMAIL });
     expect(screen.getByTestId('otp-countdown')).toHaveTextContent('Gửi lại mã sau 00:30');
     await act(async () => {
@@ -354,7 +358,7 @@ describe('UI-A08 Nhập mã: đếm ngược và gửi lại', () => {
   });
 
   it('gửi lại lỗi (quá nhiều lần): banner, không báo "đã gửi"', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderOtp({ gateways: fake, waitSeconds: 0 });
     fake.auth.failNext('AUTH_TOO_MANY_REQUESTS');
     await fireEvent.press(screen.getByRole('link', { name: 'Gửi lại mã' }));

@@ -11,9 +11,17 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["jest", "node"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "firebase-admin/*": ["./firebase/functions/node_modules/firebase-admin/lib/*"]
     }
   },
-  "include": ["jest.setup.ts", "src", "firebase/tests", "expo-env.d.ts", ".expo/types/**/*.ts"],
+  "include": [
+    "jest.setup.ts",
+    "src",
+    "firebase/tests",
+    "firebase/functions/src",
+    "expo-env.d.ts",
+    ".expo/types/**/*.ts"
+  ],
   "exclude": ["node_modules", "android", "ios", "dist", "coverage"]
 }

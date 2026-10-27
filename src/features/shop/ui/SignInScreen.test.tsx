@@ -9,13 +9,13 @@ import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigatio
 import { renderWithProviders } from '@/test-utils/render';
 
 import {
-  createFakeGateways,
+  createFakeApi,
   FAKE_BUSY_EMAIL,
   FAKE_DEMO_EMAIL,
   FAKE_DEMO_PASSWORD,
   FAKE_NO_SHOP_EMAIL,
-} from '../data/fake-gateways';
-import { createUnavailableGateways } from '../data/unavailable-gateways';
+  createUnavailableApi,
+} from '@/api/testing';
 import type { Gateways, SignedInAccount } from '../domain/types';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import { SignInScreen } from './SignInScreen';
@@ -59,9 +59,9 @@ function pendingGateways() {
       }),
   );
   const gateways: Gateways = {
-    session: createFakeGateways().session,
-    auth: { ...createUnavailableGateways().auth, signInWithPassword },
-    shop: createFakeGateways().shop,
+    session: createFakeApi().session,
+    auth: { ...createUnavailableApi().auth, signInWithPassword },
+    shop: createFakeApi().shop,
   };
   return { gateways, signInWithPassword, resolve: (a: SignedInAccount) => resolve(a) };
 }
@@ -149,7 +149,7 @@ describe('UI-A03 Đăng nhập: kiểm tra dữ liệu', () => {
   });
 
   it('bấm Đăng nhập khi trống: lỗi cả hai ô, KHÔNG gọi cổng, KHÔNG chuyển màn', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignInScreen />, { gateways: fake });
     await fireEvent.press(submit());
     expect(screen.getByText('Hãy nhập email của bạn.')).toBeOnTheScreen();
@@ -160,7 +160,7 @@ describe('UI-A03 Đăng nhập: kiểm tra dữ liệu', () => {
   });
 
   it('mật khẩu ngắn KHÔNG bị chặn khi đăng nhập (không nhân bản luật độ dài)', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignInScreen />, { gateways: fake });
     await fill(FAKE_DEMO_EMAIL, 'ngan');
     await fireEvent.press(submit());
@@ -170,7 +170,7 @@ describe('UI-A03 Đăng nhập: kiểm tra dữ liệu', () => {
 
 describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
   it('thành công + đã có shop: reset sang Tổng quan, không thông báo "thành công", không đưa mật khẩu vào điều hướng', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignInScreen />, { gateways: fake });
     await fill(`  ${FAKE_DEMO_EMAIL} `, FAKE_DEMO_PASSWORD);
     await fireEvent.press(submit());
@@ -193,7 +193,7 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
       const { state } = useSession();
       return <Text testID="probe-session">{JSON.stringify(state.user)}</Text>;
     }
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(
       <>
         <SessionProbe />
@@ -216,7 +216,7 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
   });
 
   it('thành công nhưng chưa có shop: sang /create-shop', async () => {
-    await renderWithProviders(<SignInScreen />, { gateways: createFakeGateways() });
+    await renderWithProviders(<SignInScreen />, { gateways: createFakeApi() });
     await fill(FAKE_NO_SHOP_EMAIL, FAKE_DEMO_PASSWORD);
     await fireEvent.press(submit());
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.createShop);
@@ -240,7 +240,7 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
   });
 
   it('phím Return ở ô mật khẩu gửi form', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignInScreen />, { gateways: fake });
     await fill(FAKE_DEMO_EMAIL, FAKE_DEMO_PASSWORD);
     await fireEvent(screen.getByTestId('signin-password'), 'submitEditing');
@@ -263,7 +263,7 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
   });
 
   it('sai thông tin: banner chung, không nói cái nào sai, không có nút; giữ nguyên dữ liệu', async () => {
-    await renderWithProviders(<SignInScreen />, { gateways: createFakeGateways() });
+    await renderWithProviders(<SignInScreen />, { gateways: createFakeApi() });
     await fill(FAKE_DEMO_EMAIL, 'sai-mat-khau-1');
     await fireEvent.press(submit());
     const banner = screen.getByTestId('form-error');
@@ -281,7 +281,7 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
   });
 
   it('quá nhiều lần: banner AUTH_TOO_MANY_REQUESTS, không có nút Thử lại', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignInScreen />, { gateways: fake });
     await fill(FAKE_DEMO_EMAIL, FAKE_DEMO_PASSWORD);
     fake.auth.failNext('AUTH_TOO_MANY_REQUESTS');
@@ -294,7 +294,7 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
   });
 
   it('lỗi mạng: banner + Thử lại gửi lại ĐÚNG dữ liệu rồi vào Tổng quan', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignInScreen />, { gateways: fake });
     await fill(FAKE_DEMO_EMAIL, FAKE_DEMO_PASSWORD);
     fake.auth.failNext('AUTH_NETWORK_ERROR');
@@ -309,7 +309,7 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
   });
 
   it('hệ thống bận (kịch bản email): banner + Thử lại; bản "chưa kết nối" không bao giờ báo thành công', async () => {
-    await renderWithProviders(<SignInScreen />, { gateways: createFakeGateways() });
+    await renderWithProviders(<SignInScreen />, { gateways: createFakeApi() });
     await fill(FAKE_BUSY_EMAIL, FAKE_DEMO_PASSWORD);
     await fireEvent.press(submit());
     expect(
@@ -318,7 +318,7 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
   });
 
   it('bản "chưa kết nối": AUTH_SERVICE_UNAVAILABLE, không điều hướng', async () => {
-    await renderWithProviders(<SignInScreen />, { gateways: createUnavailableGateways() });
+    await renderWithProviders(<SignInScreen />, { gateways: createUnavailableApi() });
     await fill(FAKE_DEMO_EMAIL, FAKE_DEMO_PASSWORD);
     await fireEvent.press(submit());
     expect(
@@ -329,12 +329,12 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
 
   it('lỗi lạ (không phải AppError) cũng coi là chưa kết nối, không báo thành công', async () => {
     const gateways: Gateways = {
-      session: createFakeGateways().session,
+      session: createFakeApi().session,
       auth: {
-        ...createUnavailableGateways().auth,
+        ...createUnavailableApi().auth,
         signInWithPassword: () => Promise.reject(new Error('boom')),
       },
-      shop: createFakeGateways().shop,
+      shop: createFakeApi().shop,
     };
     await renderWithProviders(<SignInScreen />, { gateways });
     await fill(FAKE_DEMO_EMAIL, FAKE_DEMO_PASSWORD);
@@ -443,7 +443,7 @@ describe('UI-A03 Đăng nhập: banner "vừa đặt lại mật khẩu"', () =>
 
 describe('UI-A03 Đăng nhập: Apple/Google', () => {
   it('bấm gọi cổng, không điều hướng, không báo thành công', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<SignInScreen />, { gateways: fake });
     await fireEvent.press(screen.getByRole('button', { name: 'Đăng nhập bằng Apple' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Đăng nhập bằng Google' }));
@@ -454,7 +454,7 @@ describe('UI-A03 Đăng nhập: Apple/Google', () => {
   });
 
   it('bản "chưa kết nối": hiện lỗi thay vì im lặng', async () => {
-    await renderWithProviders(<SignInScreen />, { gateways: createUnavailableGateways() });
+    await renderWithProviders(<SignInScreen />, { gateways: createUnavailableApi() });
     await fireEvent.press(screen.getByRole('button', { name: 'Đăng nhập bằng Google' }));
     expect(screen.getByTestId('form-error')).toBeOnTheScreen();
   });

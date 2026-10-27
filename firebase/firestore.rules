@@ -61,6 +61,15 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedKeys);
     }
 
+    // ---------- Chỉ mục tài khoản -> shop ----------
+    // Function createShop ghi; chủ tài khoản chỉ đọc bản của mình (để biết đã có shop chưa, kể cả
+    // ngoại tuyến từ bộ nhớ đệm). Không dùng custom claims (ADR-005, giữ trung lập với O-03).
+
+    match /userShops/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list, write: if false;
+    }
+
     // ---------- Shop và thành viên ----------
 
     match /shops/{shopId} {

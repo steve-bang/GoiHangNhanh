@@ -5,7 +5,7 @@ import { Pressable, Text, useWindowDimensions } from 'react-native';
 import { resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
-import { createFakeGateways, FAKE_DEMO_PASSWORD, FAKE_NO_SHOP_EMAIL } from '../data/fake-gateways';
+import { createFakeApi, FAKE_DEMO_PASSWORD, FAKE_NO_SHOP_EMAIL } from '@/api/testing';
 import { CreateShopScreen } from './CreateShopScreen';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import { SignInScreen } from './SignInScreen';
@@ -67,7 +67,7 @@ async function signIn(email: string, password: string) {
 
 describe('đổi tài khoản giữa luồng: không rò shop (bất biến #8)', () => {
   it('A đăng ký + tạo shop, Back, đăng nhập B chưa có shop: form rỗng, createShop (không updateShop), không bao giờ gửi shopId của A', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<Router />, { gateways: fake });
     await signUpA();
     await createShopA('Shop A');
@@ -99,7 +99,7 @@ describe('đổi tài khoản giữa luồng: không rò shop (bất biến #8)'
   });
 
   it('A quay lại đúng A (đăng nhập lại): giữ tên đã nhập và dùng updateShop', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<Router />, { gateways: fake });
     await signUpA();
     await createShopA('Shop A');
@@ -115,7 +115,7 @@ describe('đổi tài khoản giữa luồng: không rò shop (bất biến #8)'
   });
 
   it('kết quả tạo shop của A đến muộn khi luồng đã sang B: bị bỏ qua, B không nhận shop của A', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     let resolve: (id: string) => void = () => undefined;
     const gateways = {
       auth: fake.auth,

@@ -6,8 +6,7 @@ import { ROUTES } from '@/core/navigation';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
-import { createFakeGateways, FAKE_DEMO_EMAIL } from '../data/fake-gateways';
-import { createUnavailableGateways } from '../data/unavailable-gateways';
+import { createFakeApi, FAKE_DEMO_EMAIL, createUnavailableApi } from '@/api/testing';
 import type { Gateways } from '../domain/types';
 import { ForgotPasswordScreen } from './ForgotPasswordScreen';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
@@ -82,7 +81,7 @@ describe('UI-A07 Quên mật khẩu: kiểm tra dữ liệu', () => {
   });
 
   it('bấm gửi khi sai: lỗi, KHÔNG gọi cổng, KHÔNG chuyển màn', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<ForgotPasswordScreen />, { gateways: fake });
     await fireEvent.press(submit());
     expect(screen.getByText('Bạn nhập email trước nhé.')).toBeOnTheScreen();
@@ -93,7 +92,7 @@ describe('UI-A07 Quên mật khẩu: kiểm tra dữ liệu', () => {
 
 describe('UI-A07 Quên mật khẩu: gửi', () => {
   it('thành công: gọi cổng với email đã bỏ khoảng trắng rồi sang /verify-otp', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<ForgotPasswordScreen />, { gateways: fake });
     await fireEvent.changeText(email(), `  ${FAKE_DEMO_EMAIL} `);
     await fireEvent.press(submit());
@@ -102,7 +101,7 @@ describe('UI-A07 Quên mật khẩu: gửi', () => {
   });
 
   it('TRUNG TÍNH: email chưa có tài khoản cũng sang /verify-otp, không báo gì khác', async () => {
-    await renderWithProviders(<ForgotPasswordScreen />, { gateways: createFakeGateways() });
+    await renderWithProviders(<ForgotPasswordScreen />, { gateways: createFakeApi() });
     await fireEvent.changeText(email(), 'khong.co@example.com');
     await fireEvent.press(submit());
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.verifyOtp);
@@ -119,9 +118,9 @@ describe('UI-A07 Quên mật khẩu: gửi', () => {
         }),
     );
     const gateways: Gateways = {
-      session: createFakeGateways().session,
-      auth: { ...createUnavailableGateways().auth, requestPasswordRecovery },
-      shop: createFakeGateways().shop,
+      session: createFakeApi().session,
+      auth: { ...createUnavailableApi().auth, requestPasswordRecovery },
+      shop: createFakeApi().shop,
     };
     await renderWithProviders(<ForgotPasswordScreen />, { gateways });
     await fireEvent.changeText(email(), FAKE_DEMO_EMAIL);
@@ -135,7 +134,7 @@ describe('UI-A07 Quên mật khẩu: gửi', () => {
   });
 
   it('không gửi được (hệ thống bận): câu theo thiết kế + Thử lại; giữ email; Thử lại gửi lại đúng email', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<ForgotPasswordScreen />, { gateways: fake });
     await fireEvent.changeText(email(), FAKE_DEMO_EMAIL);
     fake.auth.failNext('AUTH_SERVICE_UNAVAILABLE');
@@ -152,7 +151,7 @@ describe('UI-A07 Quên mật khẩu: gửi', () => {
   });
 
   it('mất mạng: câu mất mạng chuẩn + Thử lại', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<ForgotPasswordScreen />, { gateways: fake });
     await fireEvent.changeText(email(), FAKE_DEMO_EMAIL);
     fake.auth.failNext('AUTH_NETWORK_ERROR');
@@ -163,7 +162,7 @@ describe('UI-A07 Quên mật khẩu: gửi', () => {
   });
 
   it('xin mã quá nhiều lần: câu theo thiết kế, không có Thử lại', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderWithProviders(<ForgotPasswordScreen />, { gateways: fake });
     await fireEvent.changeText(email(), FAKE_DEMO_EMAIL);
     fake.auth.failNext('AUTH_TOO_MANY_REQUESTS');
@@ -176,7 +175,7 @@ describe('UI-A07 Quên mật khẩu: gửi', () => {
   });
 
   it('bản "chưa kết nối": báo lỗi, không sang bước sau', async () => {
-    await renderWithProviders(<ForgotPasswordScreen />, { gateways: createUnavailableGateways() });
+    await renderWithProviders(<ForgotPasswordScreen />, { gateways: createUnavailableApi() });
     await fireEvent.changeText(email(), FAKE_DEMO_EMAIL);
     await fireEvent.press(submit());
     expect(screen.getByTestId('form-error')).toBeOnTheScreen();
@@ -230,9 +229,9 @@ describe('UI-A07 Quên mật khẩu: điều hướng', () => {
         }),
     );
     const gateways: Gateways = {
-      session: createFakeGateways().session,
-      auth: { ...createUnavailableGateways().auth, requestPasswordRecovery },
-      shop: createFakeGateways().shop,
+      session: createFakeApi().session,
+      auth: { ...createUnavailableApi().auth, requestPasswordRecovery },
+      shop: createFakeApi().shop,
     };
     await renderWithProviders(
       <>
