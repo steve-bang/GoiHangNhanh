@@ -8,6 +8,7 @@
     "packOrderHint": "Ghi hình đóng gói và niêm phong",
     "receiveReturn": "Nhận hàng hoàn",
     "receiveReturnHint": "Ghi hình mở kiện và kiểm tra hàng",
+    "returnsList": "Danh sách hàng hoàn",
     "quick": {
       "scan": "Quét mã đơn",
       "quickOrder": "Tạo đơn nhanh",

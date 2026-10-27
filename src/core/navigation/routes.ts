@@ -4,8 +4,8 @@
  * đối chiếu bảng này với các tệp thật trong `src/app` để hai nơi không lệch nhau.
  *
  * `tabBar`: thanh tab dưới có hiện không. Chỉ nhóm tab (Trang chủ, Đơn hàng, Thông báo, Cá nhân)
- * hiện thanh tab; màn quay (UI-C03, UI-D04) bắt buộc ẩn (docs/09 mục 2); màn quét UI-B02 nằm trong nhóm
- * tab nhưng cũng ẩn (xem `isTabBarHiddenAt`).
+ * hiện thanh tab; màn quay (UI-C03, UI-D04) bắt buộc ẩn (docs/09 mục 2); màn quét UI-B02 là route cấp gốc
+ * ngoài nhóm tab (để Back về đúng màn đứng trước khi bấm Quét) nên cũng ẩn (xem `isTabBarHiddenAt`).
  *
  * Mã `UI-` là mã danh mục giao diện, KHÁC mã đặc tả quy trình A01-A08/B01-B08 (xem CLAUDE.md).
  */
@@ -90,7 +90,8 @@ export const ROUTES = {
   newPassword: route('/new-password', 'UI-A09'),
   // Nhóm B + C01 - tab Tổng quan
   home: route('/home', 'UI-B01', true),
-  scan: route('/home/scan', 'UI-B02'),
+  // Ngoài nhóm (tabs): nút Quét giữa mở từ tab bất kỳ, Back phải về đúng tab đó (Q-16a).
+  scan: route('/scan', 'UI-B02'),
   search: route('/home/search', 'UI-B03', true),
   quickOrder: route('/home/quick-order', 'UI-B04', true),
   batch: route('/home/batch', 'UI-B05', true),

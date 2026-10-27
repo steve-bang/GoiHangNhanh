@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 
 import { ROUTES } from '@/core/navigation';
+import { getMinTouchTarget } from '@/platform';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
@@ -28,6 +29,15 @@ describe('UI-B01 Trang chủ (mẫu thiết kế, D-16)', () => {
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.scan);
     await fireEvent.press(screen.getByTestId('home-receive-return'));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.returnFindOrder);
+  });
+
+  it('có liên kết Danh sách hàng hoàn dẫn tới UI-D01, vùng chạm đủ lớn', async () => {
+    await renderWithProviders(<HomeScreen />);
+    const link = screen.getByTestId('home-returns-list');
+    expect(screen.getByText('Danh sách hàng hoàn')).toBeOnTheScreen();
+    expect(link).toHaveStyle({ minHeight: getMinTouchTarget() });
+    await fireEvent.press(link);
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.returns);
   });
 
   it('có 4 lối tắt: Quét mã đơn, Tạo đơn nhanh, Danh sách đơn, Bằng chứng', async () => {

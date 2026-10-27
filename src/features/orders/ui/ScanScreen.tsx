@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,9 +23,9 @@ const CORNER_THICKNESS = 4;
 
 /**
  * UI-B02 Quét mã đơn hàng (đặc tả A02; mockup docs/assets/ui/02-home-and-scan.png). Camera thật
- * qua adapter `@/platform` (ADR-016). Quét xong TỰ tra cứu (không nút "Tìm"); chống quét lặp; mã
- * vừa quét hiện lên. Chưa có tra cứu thật: đi sang tạo đơn nhanh với mã đã quét (UI-B04) - không
- * tự chọn kết quả nào (bất biến 5). Ngoại lệ: chưa cấp/bị chặn quyền camera, camera không mở được
+ * qua adapter `@/platform` (ADR-016). Quét xong chuyển ngay mã sang Tạo đơn nhanh (UI-B04), không
+ * nút "Tìm"; chống quét lặp; mã vừa quét hiện lên. Chưa có tra cứu thật nên không tự chọn đơn nào
+ * (bất biến 5). Là route cấp gốc (`/scan`) nên Back về đúng màn đứng trước khi bấm Quét (Q-16a). Ngoại lệ: chưa cấp/bị chặn quyền camera, camera không mở được
  * -> vẫn nhập tay được.
  */
 export function ScanScreen() {
@@ -46,6 +46,14 @@ export function ScanScreen() {
   const [permissionDismissed, setPermissionDismissed] = useState(false);
   const lastScan = useRef<{ code: string; at: number } | null>(null);
   const handled = useRef(false);
+  const unlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (unlockTimer.current) clearTimeout(unlockTimer.current);
+    },
+    [],
+  );
 
   const frame = Math.min(FRAME_MAX, Math.round(width * FRAME_RATIO));
   const trimmed = code.trim();
@@ -75,7 +83,7 @@ export function ScanScreen() {
     setLastCode(scanned);
     lookup(scanned);
     // Mở khóa sau khoảng chống lặp: quay lại màn quét thì quét được mã tiếp theo.
-    setTimeout(() => {
+    unlockTimer.current = setTimeout(() => {
       handled.current = false;
     }, REPEAT_SCAN_WINDOW_MS);
   };

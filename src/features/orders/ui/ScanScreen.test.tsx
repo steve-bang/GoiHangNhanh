@@ -44,7 +44,7 @@ describe('UI-B02 Quét mã đơn hàng', () => {
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.help);
   });
 
-  it('quét được mã thì tự tra cứu (sang tạo đơn nhanh) và hiện mã vừa quét, không cần bấm Tìm', async () => {
+  it('quét được mã thì chuyển mã sang tạo đơn nhanh và hiện mã vừa quét, không cần bấm Tìm', async () => {
     await renderWithProviders(<ScanScreen />);
     await act(async () => mockScanner.emit('SPX123456'));
     expect(mockNavigation.push).toHaveBeenCalledTimes(1);

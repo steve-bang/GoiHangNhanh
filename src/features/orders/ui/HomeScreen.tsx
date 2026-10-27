@@ -117,6 +117,17 @@ export function HomeScreen() {
         />
       </View>
 
+      <Pressable
+        testID="home-returns-list"
+        accessibilityRole="button"
+        onPress={() => navigation.push(ROUTES.returns)}
+        style={{ minHeight: touch, justifyContent: 'center', alignSelf: 'flex-end' }}
+      >
+        <Text variant="caption" bold style={{ color: colors.brand }}>
+          {t('screens:home.returnsList')}
+        </Text>
+      </Pressable>
+
       <View style={styles.quickRow}>
         <QuickAction
           testID="home-quick-scan"

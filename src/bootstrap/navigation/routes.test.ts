@@ -64,18 +64,17 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     }
   });
 
-  it('cờ tabBar khớp vị trí tệp: route ngoài nhóm (tabs) không có thanh tab; trong nhóm có, trừ màn quét', () => {
+  it('cờ tabBar khớp vị trí tệp: route ngoài nhóm (tabs) không có thanh tab; trong nhóm có', () => {
     for (const file of files) {
       const route = Object.values(ROUTES).find((r) => r.path === file.url);
-      const expected = file.inTabs && route !== ROUTES.scan;
-      expect(route?.tabBar).toBe(expected);
+      expect(route?.tabBar).toBe(file.inTabs);
     }
   });
 
-  it('màn quét UI-B02 nằm trong nhóm tab nhưng ẩn thanh tab (toàn màn hình)', () => {
-    expect(ROUTES.scan).toMatchObject({ path: '/home/scan', code: 'UI-B02', tabBar: false });
-    expect(files.find((f) => f.url === ROUTES.scan.path)?.inTabs).toBe(true);
-    expect(isTabBarHiddenAt('/home/scan')).toBe(true);
+  it('màn quét UI-B02 là route cấp gốc ngoài nhóm tab (Back về đúng màn trước) và ẩn thanh tab', () => {
+    expect(ROUTES.scan).toMatchObject({ path: '/scan', code: 'UI-B02', tabBar: false });
+    expect(files.find((f) => f.url === ROUTES.scan.path)?.inTabs).toBe(false);
+    expect(isTabBarHiddenAt('/scan')).toBe(true);
     expect(isTabBarHiddenAt('/home')).toBe(false);
     expect(isTabBarHiddenAt('/home/quick-order')).toBe(false);
     expect(isTabBarHiddenAt('/account/plan')).toBe(false);

@@ -37,6 +37,43 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     expectTabBarVisible(true);
   });
 
+  it.each([
+    ['Đơn hàng', 'screen-UI-E01'],
+    ['Thông báo', 'screen-UI-I07'],
+    ['Cá nhân', 'screen-UI-I01'],
+  ])('bấm Quét từ tab %s rồi Back về đúng tab đó (không về Trang chủ)', async (label, testID) => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
+    await fireEvent.press(screen.getByRole('button', { name: label }));
+    expect(screen.getByTestId(testID)).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn hàng' }));
+    expect(screen.getByTestId('screen-UI-B02')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId(testID)).toBeOnTheScreen();
+    expect(screen.queryByTestId('screen-UI-B01')).toBeNull();
+    expectTabBarVisible(true);
+  });
+
+  it('từ màn quét sang Tạo đơn nhanh rồi Back quay về màn quét; Back tiếp về màn trước khi quét', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
+    await fireEvent.press(screen.getByRole('button', { name: 'Đơn hàng' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn hàng' }));
+    await fireEvent.press(screen.getByTestId('scan-manual-open'));
+    await fireEvent.changeText(screen.getByTestId('scan-manual-code'), 'ABC123');
+    await fireEvent.press(screen.getByTestId('scan-manual-lookup'));
+    expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-B02')).toBeOnTheScreen();
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
+  });
+
   it('chuyển qua lại giữa các tab Đơn hàng, Thông báo, Cá nhân; thanh tab vẫn hiện', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
     await fireEvent.press(screen.getByRole('button', { name: 'Đơn hàng' }));

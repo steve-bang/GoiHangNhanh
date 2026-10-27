@@ -45,7 +45,7 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 | `/permissions` | UI-A05 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `PermissionsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/setup-done` | UI-A06 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SetupDoneScreen` | Màn thật theo mockup 5.1, cổng giả (xem mục 2.2) |
 | `/home` | UI-B01 | A01 | hiện | `orders`: `HomeScreen` | Màn dựng theo mockup 02 (D-16, Q-16) + dữ liệu minh họa |
-| `/home/scan` | UI-B02 | A02 | ẩn (trong nhóm tab, ẩn bằng `isTabBarHiddenAt`) | `orders`: `ScanScreen` | Màn thật theo mockup 02: camera thật (`expo-camera`, ADR-016), nhập tay, đèn pin, xử lý quyền (Q-16) |
+| `/scan` | UI-B02 | A02 | ẩn (route cấp gốc ngoài nhóm tab) | `orders`: `ScanScreen` | Màn thật theo mockup 02: camera thật (`expo-camera`, ADR-016), nhập tay, đèn pin, xử lý quyền (Q-16) |
 | `/home/search` | UI-B03 | A02 | hiện | `orders`: `SearchScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/home/quick-order` | UI-B04 | A02 | hiện | `orders`: `QuickOrderScreen` | Khung có bố cục + dữ liệu minh họa |
 | `/home/batch` | UI-B05 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `BatchScreen` | Placeholder (route + tiêu đề + lối quay lại) |
@@ -196,7 +196,7 @@ Mockup `docs/assets/ui/05-sign-in-and-recovery.png`; nghiệp vụ và điểm l
 
 Danh sách tab chỉ ở `src/bootstrap/navigation/tab-config.ts` (`TAB_CONFIG`); `(tabs)/_layout.tsx` lặp qua nó. Mục có `action: true` (Quét) là **nút nổi giữa**, không phải tab thật: `_layout.tsx` chặn `tabPress` và `router.push(ROUTES.scan.path)`, vẽ bằng `ScanTabButton` (`src/bootstrap/navigation/ScanTabButton.tsx`). Tệp `(tabs)/scan-tab.tsx` chỉ là chỗ giữ cho navigator (chuyển hướng tới màn quét khi mở bằng liên kết sâu); `routes.test.ts` loại nó khỏi phép đối chiếu với `ROUTES`.
 
-Màn quét `/home/scan` nằm trong stack của tab Trang chủ (để Tạo đơn nhanh quay về đúng màn quét) nhưng ẩn thanh tab: `routes.ts` đặt `tabBar: false` và `isTabBarHiddenAt(pathname)` cho layout biết; layout đặt `tabBarStyle.display = 'none'`. Muốn ẩn thanh tab ở màn khác trong nhóm tab: đặt `tabBar: false` ở `ROUTES` và cập nhật phép kiểm tra "route trong nhóm tab" ở `routes.test.ts`.
+Màn quét `/scan` là **route cấp gốc ngoài nhóm tab** (`src/app/scan.tsx`) để Back về đúng màn đứng trước khi bấm Quét, từ tab nào cũng vậy (nếu để trong stack của một tab thì Back luôn về tab đó). Tạo đơn nhanh và Tìm đơn đã lưu vẫn ở `(tabs)/home` và mở từ `/scan`; Back từ Tạo đơn nhanh quay về màn quét (có test điều hướng thật). `routes.ts` đặt `tabBar: false` cho route ngoài nhóm tab; `isTabBarHiddenAt(pathname)` vẫn là cơ chế chung để ẩn thanh tab theo đường dẫn.
 
 Thêm/bớt tab: sửa `TAB_CONFIG`, tạo/xóa tệp hoặc thư mục tương ứng trong `(tabs)/`, thêm nhãn `nav:tabs.*`, sửa `tab-config.test.ts` và `app-navigation.test.tsx`. Hàng hoàn và Đồng bộ ngoài nhóm tab: `src/app/returns/*`, `src/app/sync/*`.
 

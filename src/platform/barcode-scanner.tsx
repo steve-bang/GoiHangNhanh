@@ -1,5 +1,6 @@
 import { CameraView, useCameraPermissions, type BarcodeType } from 'expo-camera';
-import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { useEffect } from 'react';
+import { AppState, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 /**
  * Adapter mỏng trên `expo-camera` (ADR-016, chờ spike thiết bị thật): màn hình chỉ biết hai thứ ở
@@ -31,7 +32,15 @@ export function useScannerPermission(): {
   status: ScannerPermission;
   request: () => Promise<void>;
 } {
-  const [permission, requestPermission] = useCameraPermissions();
+  const [permission, requestPermission, getPermission] = useCameraPermissions();
+  // `useCameraPermissions` chỉ đọc lúc mount: người dùng bật quyền trong Cài đặt rồi quay lại app
+  // thì phải đọc lại khi app trở lại 'active', nếu không màn quét vẫn báo "bị chặn".
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void getPermission().catch(() => undefined);
+    });
+    return () => subscription.remove();
+  }, [getPermission]);
   const status: ScannerPermission = !permission
     ? 'checking'
     : permission.granted
