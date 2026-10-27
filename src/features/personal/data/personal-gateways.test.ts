@@ -159,7 +159,7 @@ describe('cổng cá nhân giả: cửa hàng', () => {
     const { account } = createFakePersonalGateways();
     const shops = await account.listShops();
     expect(shops).toHaveLength(1);
-    expect(shops[0]).toMatchObject({ name: 'Shop minh họa', canEdit: true, status: 'active' });
+    expect(shops[0]).toMatchObject({ name: 'Cửa hàng minh họa', canEdit: true, status: 'active' });
     expect(await account.getShopSummary()).toEqual(shops[0]);
   });
 

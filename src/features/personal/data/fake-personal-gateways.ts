@@ -55,7 +55,7 @@ export const FAKE_NOTIFICATION_DEFAULTS: NotificationPreferences = {
 
 const FAKE_DEFAULT_SHOP: ShopSummary = {
   id: LOCAL_SHOP_ID,
-  name: 'Shop minh họa',
+  name: 'Cửa hàng minh họa',
   role: 'owner',
   status: 'active',
   canEdit: true,

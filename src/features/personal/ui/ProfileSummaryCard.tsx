@@ -1,37 +1,29 @@
-import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { Avatar, Card, Text, useTheme } from '@/shared/ui';
+import { useAppNavigation } from '@/platform';
+import { ROUTES } from '@/core/navigation';
+import { Avatar, ListItem } from '@/shared/ui';
 
 import type { UserProfile } from '../domain/types';
 
 /**
- * Thẻ hồ sơ trên UI-I01: chữ cái đầu, họ tên (hoặc "Chưa có họ tên", không bịa tên từ email) và email.
- * Chỉ đọc: sửa họ tên ở route con `editProfile` (decisions.md Q-19k).
+ * Hàng hồ sơ trên UI-I01: chữ cái đầu, họ tên (in đậm) và email; bấm mở Sửa họ tên (route con,
+ * decisions.md Q-19k). Chưa có họ tên thì tiêu đề là lời mời "Thêm họ tên" (màu hành động), không bịa
+ * tên từ email. Đặt trong `ListGroup`.
  */
 export function ProfileSummaryCard({ profile }: { profile: UserProfile }) {
   const { t } = useTranslation();
-  const { tokens } = useTheme();
+  const navigation = useAppNavigation();
+  const hasName = profile.displayName !== null;
   return (
-    <Card testID="profile-summary">
-      <View
-        style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.md }}
-        accessible
-        accessibilityLabel={[
-          profile.displayName ?? t('personal:profile.noName'),
-          profile.email,
-        ].join('. ')}
-      >
-        <Avatar name={profile.displayName} size="lg" />
-        <View style={{ flex: 1, gap: tokens.space.xs }}>
-          <Text variant="sectionTitle" testID="profile-name">
-            {profile.displayName ?? t('personal:profile.noName')}
-          </Text>
-          <Text color="textMuted" testID="profile-email">
-            {profile.email}
-          </Text>
-        </View>
-      </View>
-    </Card>
+    <ListItem
+      leading={<Avatar name={profile.displayName} size="lg" />}
+      title={profile.displayName ?? t('personal:profile.addName')}
+      subtitle={profile.email}
+      actionTitle={!hasName}
+      accessibilityHint={t('personal:profile.editHint')}
+      onPress={() => navigation.push(ROUTES.editProfile)}
+      testID="profile-summary"
+    />
   );
 }

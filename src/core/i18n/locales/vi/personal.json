@@ -7,9 +7,6 @@
     "confirmNewPassword": "Nhập lại mật khẩu mới",
     "shopName": "Tên cửa hàng"
   },
-  "hints": {
-    "newPassword": "Từ 8 ký tự."
-  },
   "validation": {
     "displayName": {
       "required": "Hãy nhập họ và tên.",
@@ -44,22 +41,19 @@
     "planExpiring": "Gói sắp hết hạn"
   },
   "profile": {
-    "noName": "Chưa có họ tên",
-    "noShop": "Chưa có shop",
-    "shopLabel": "Cửa hàng",
-    "planLabel": "Gói dịch vụ",
-    "planUnknown": "Chưa có thông tin gói",
+    "noShop": "Chưa có cửa hàng",
     "cachedNotice": "Đang hiện dữ liệu đã lưu, có thể chưa mới nhất.",
     "refreshFailed": "Chưa làm mới được. Đang hiện dữ liệu đã tải trước đó.",
-    "avatarLabel": "Ảnh đại diện",
-    "editEntry": "Sửa họ tên",
-    "changePasswordEntry": "Đổi mật khẩu"
+    "changePasswordEntry": "Đổi mật khẩu",
+    "addName": "Thêm họ tên",
+    "editHint": "Mở trang sửa họ tên",
+    "version": "Đơn Chứng · phiên bản {{version}}"
   },
   "signOut": {
     "action": "Đăng xuất",
     "dialogTitle": "Bạn muốn đăng xuất?",
-    "dialogMessage": "Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng Đơn Chứng.",
-    "dataNote": "Video và dữ liệu đã lưu trên máy này vẫn được giữ lại, không bị xóa.",
+    "dialogMessage": "Bạn sẽ cần đăng nhập lại.",
+    "dataNote": "Video và dữ liệu trên máy này vẫn được giữ lại.",
     "confirm": "Đăng xuất",
     "cancel": "Ở lại ứng dụng",
     "success": "Bạn đã đăng xuất thành công.",
@@ -81,7 +75,11 @@
   "changePassword": {
     "submit": "Đổi mật khẩu",
     "saved": "Đã đổi mật khẩu.",
-    "signInAgain": "Đăng nhập lại"
+    "signInAgain": "Đăng nhập lại",
+    "intro": "Đặt mật khẩu mới để giữ tài khoản của bạn an toàn.",
+    "requirementLength": "Từ {{min}} ký tự",
+    "requirementMet": "Đã đạt",
+    "requirementUnmet": "Chưa đạt"
   },
   "shop": {
     "noShop": "Bạn chưa có cửa hàng.",
@@ -101,7 +99,8 @@
     "switchAction": "Chuyển cửa hàng",
     "noEditPermission": "Bạn chưa có quyền sửa thông tin cửa hàng. Hãy liên hệ chủ cửa hàng.",
     "refreshFailed": "Chưa làm mới được. Đang hiện dữ liệu đã tải trước đó.",
-    "renameNote": "Đổi tên không làm thay đổi video và lịch sử đã lưu."
+    "renameNote": "Đổi tên không làm thay đổi video và lịch sử đã lưu.",
+    "settingsIntro": "Quản lý thông tin cửa hàng đang lưu bằng chứng đơn hàng."
   },
   "editShop": {
     "save": "Lưu",
@@ -125,5 +124,11 @@
     "unsyncedContinue": "Vẫn chuyển cửa hàng",
     "openSync": "Xem trung tâm đồng bộ",
     "suspendedHint": "Cửa hàng đang tạm khóa nên chưa chuyển vào được."
+  },
+  "groups": {
+    "account": "Tài khoản",
+    "shopAndPlan": "Cửa hàng và gói",
+    "settings": "Cài đặt",
+    "support": "Hỗ trợ"
   }
 }

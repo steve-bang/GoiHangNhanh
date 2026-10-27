@@ -2,21 +2,23 @@ import { useEffect, useRef } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { ROUTES, type RouteDef } from '@/core/navigation';
-import { useAppNavigation, useIsOffline } from '@/platform';
+import { ROUTES } from '@/core/navigation';
+import { getAppVersion, useAppNavigation, useIsOffline } from '@/platform';
 import {
+  Avatar,
   BottomSheet,
   Button,
-  Card,
   ConfirmDialog,
+  ListGroup,
   ListItem,
   Screen,
-  StatusBadge,
   Text,
   useTheme,
-  type IconName,
 } from '@/shared/ui';
 
+import { visibleMenuItems } from './account-menu';
+import { MenuRow } from './MenuRow';
+import { Notice } from './Notice';
 import { usePersonalGateways } from './PersonalGatewaysProvider';
 import { ProfileSummaryCard } from './ProfileSummaryCard';
 import { useSession } from './SessionProvider';
@@ -25,28 +27,11 @@ import { RegionError, RegionSkeleton } from './RegionParts';
 import { useRegion } from './use-region';
 import { useReloadOnShopUpdated } from './use-shop-revision-reload';
 
-interface MenuItem {
-  route: RouteDef;
-  labelKey: `nav:account.${string}`;
-  icon: IconName;
-}
-
 /**
- * Các mục của tab Cá nhân (mẫu thiết kế, D-16). Gói dịch vụ có thẻ riêng phía trên; tranh chấp không
- * ở đây (vào từ hồ sơ đơn/hàng hoàn, O-14).
- */
-const MENU_ITEMS: readonly MenuItem[] = [
-  { route: ROUTES.shopSettings, labelKey: 'nav:account.shopSettings', icon: 'store' },
-  { route: ROUTES.members, labelKey: 'nav:account.members', icon: 'user' },
-  { route: ROUTES.notifications, labelKey: 'nav:account.notifications', icon: 'notifications' },
-  { route: ROUTES.security, labelKey: 'nav:account.security', icon: 'lock' },
-  { route: ROUTES.help, labelKey: 'nav:account.help', icon: 'help' },
-];
-
-/**
- * UI-I01 Hồ sơ tài khoản (PER-01, xem hồ sơ PER-02): hồ sơ, cửa hàng, gói, menu, Đăng xuất. Hồ sơ và
- * cửa hàng tải riêng: lỗi/chậm ở một khu vực không che khu vực kia; kéo xuống để làm mới và vẫn giữ
- * dữ liệu cũ nếu làm mới lỗi. Sửa họ tên và đổi mật khẩu là route con (decisions.md Q-19k).
+ * UI-I01 Cá nhân (PER-01, xem hồ sơ PER-02), gom thành nhóm kiểu iOS: Tài khoản (hồ sơ, Đổi mật khẩu),
+ * Cửa hàng và gói, Cài đặt, Hỗ trợ, rồi Đăng xuất riêng. Hồ sơ và cửa hàng tải riêng: lỗi/chậm ở một
+ * khu vực không che khu vực kia; kéo xuống để làm mới và vẫn giữ dữ liệu cũ nếu làm mới lỗi. Sửa họ tên
+ * và đổi mật khẩu là route con (decisions.md Q-19k). Mục chưa làm: cấu hình ở `account-menu.ts`.
  */
 export function ProfileScreen() {
   const { t } = useTranslation();
@@ -56,6 +41,7 @@ export function ProfileScreen() {
   const { account } = usePersonalGateways();
   const session = useSession();
   const signOut = useSignOut();
+  const version = getAppVersion();
 
   const profile = useRegion(() => account.getProfile(), session.key);
   const shop = useRegion(() => account.getShopSummary(), session.key);
@@ -88,103 +74,107 @@ export function ProfileScreen() {
       title={t('nav:titles.UI-I01')}
       inTabs
       testID="screen-UI-I01"
+      contentGap={tokens.space.xl}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
     >
       {offline && hasStaleData ? (
-        <Text variant="caption" color="textMuted" testID="profile-cached-notice">
-          {t('personal:profile.cachedNotice')}
-        </Text>
+        <Notice testID="profile-cached-notice">{t('personal:profile.cachedNotice')}</Notice>
       ) : null}
       {!offline && refreshFailed ? (
-        <Text
-          variant="caption"
-          color="textMuted"
-          accessibilityRole="alert"
-          testID="profile-refresh-failed"
-        >
+        <Notice alert testID="profile-refresh-failed">
           {t('personal:profile.refreshFailed')}
-        </Text>
+        </Notice>
       ) : null}
 
-      {profile.state.status === 'loading' ? <RegionSkeleton testID="profile-loading" /> : null}
-      {profile.state.status === 'error' ? (
-        <RegionError region={profile} code={profile.state.code} testID="profile-error" />
-      ) : null}
-      {profile.state.status === 'ready' ? (
-        <>
+      <ListGroup title={t('personal:groups.account')} testID="group-account">
+        {profile.state.status === 'loading' ? (
+          <RegionSkeleton inline testID="profile-loading" />
+        ) : null}
+        {profile.state.status === 'error' ? (
+          <RegionError inline region={profile} code={profile.state.code} testID="profile-error" />
+        ) : null}
+        {profile.state.status === 'ready' ? (
           <ProfileSummaryCard profile={profile.state.data} />
-          <Card testID="profile-actions">
-            <ListItem
-              leadingIcon="user"
-              title={t('personal:profile.editEntry')}
-              onPress={() => navigation.push(ROUTES.editProfile)}
-              testID="edit-profile-entry"
-            />
-            {/* PER-04 chỉ có nghĩa với tài khoản đăng nhập bằng mật khẩu (D-13, Q-19c). */}
-            {profile.state.data.signInMethod === 'password' ? (
-              <ListItem
-                leadingIcon="lock"
-                title={t('personal:profile.changePasswordEntry')}
-                onPress={() => navigation.push(ROUTES.changePassword)}
-                testID="change-password-entry"
-              />
-            ) : null}
-          </Card>
-        </>
-      ) : null}
-
-      {shop.state.status === 'loading' ? <RegionSkeleton testID="shop-loading" /> : null}
-      {shop.state.status === 'error' ? (
-        <RegionError region={shop} code={shop.state.code} testID="shop-error" />
-      ) : null}
-      {shop.state.status === 'ready' ? (
-        <Card testID="shop-card">
+        ) : null}
+        {/* PER-04 chỉ có nghĩa với tài khoản đăng nhập bằng mật khẩu (D-13, Q-19c). */}
+        {profile.state.status === 'ready' && profile.state.data.signInMethod === 'password' ? (
           <ListItem
-            leadingIcon="store"
+            leadingIcon="lock"
+            title={t('personal:profile.changePasswordEntry')}
+            titleWeight="regular"
+            onPress={() => navigation.push(ROUTES.changePassword)}
+            testID="change-password-entry"
+          />
+        ) : null}
+      </ListGroup>
+
+      <ListGroup title={t('personal:groups.shopAndPlan')} testID="group-shop">
+        {shop.state.status === 'loading' ? (
+          <RegionSkeleton inline shape="square" testID="shop-loading" />
+        ) : null}
+        {shop.state.status === 'error' ? (
+          <RegionError inline region={shop} code={shop.state.code} testID="shop-error" />
+        ) : null}
+        {shop.state.status === 'ready' ? (
+          <ListItem
+            leading={<Avatar name={shop.state.data?.name ?? null} size="lg" shape="square" />}
             title={shop.state.data?.name ?? t('personal:profile.noShop')}
-            subtitle={t('personal:profile.shopLabel')}
+            {...(shop.state.data
+              ? { subtitle: t(`personal:shop.role.${shop.state.data.role}`) }
+              : {})}
             onPress={() => navigation.push(ROUTES.shopSettings)}
-            testID="shop-card-item"
+            testID="shop-card"
           />
-        </Card>
-      ) : null}
-
-      <Card testID="plan-card">
-        <ListItem
-          title={t('personal:profile.planLabel')}
-          subtitle={t('personal:profile.planUnknown')}
-          trailing={<StatusBadge label={t('personal:status.unknown')} />}
-          accessibilityLabel={`${t('personal:profile.planLabel')}. ${t('personal:status.unknown')}`}
-          onPress={() => navigation.push(ROUTES.plan)}
-          testID="plan-card-item"
-        />
-      </Card>
-
-      <View style={{ gap: tokens.space.xs }}>
-        {MENU_ITEMS.map((item) => (
-          <ListItem
-            key={item.route.path}
-            leadingIcon={item.icon}
-            title={t(item.labelKey)}
-            onPress={() => navigation.push(item.route)}
-            testID={`menu-${item.route.code}`}
-          />
+        ) : null}
+        {visibleMenuItems('shopAndPlan').map((item) => (
+          <MenuRow key={item.id} item={item} />
         ))}
-        <ListItem
-          destructive
-          title={t('personal:signOut.action')}
-          onPress={signOut.start}
-          showChevron={false}
-          testID="sign-out"
-        />
+      </ListGroup>
+
+      <ListGroup title={t('personal:groups.settings')} testID="group-settings">
+        {visibleMenuItems('settings').map((item) => (
+          <MenuRow key={item.id} item={item} />
+        ))}
+      </ListGroup>
+
+      <ListGroup title={t('personal:groups.support')} testID="group-support">
+        {visibleMenuItems('support').map((item) => (
+          <MenuRow key={item.id} item={item} />
+        ))}
+      </ListGroup>
+
+      <View style={{ gap: tokens.space.md }}>
+        <ListGroup testID="group-sign-out">
+          <ListItem
+            destructive
+            leadingIcon="sign-out"
+            title={t('personal:signOut.action')}
+            titleWeight="regular"
+            onPress={signOut.start}
+            showChevron={false}
+            testID="sign-out"
+          />
+        </ListGroup>
+        {version ? (
+          <Text
+            variant="caption"
+            color="textMuted"
+            style={{ textAlign: 'center' }}
+            testID="app-version"
+          >
+            {t('personal:profile.version', { version })}
+          </Text>
+        ) : null}
       </View>
 
       {/* PER-21. UI-J15 (còn tệp chưa đồng bộ) chưa có mã/route nên là BottomSheet tại chỗ (Q-19b). */}
       <ConfirmDialog
         visible={signOut.step === 'confirm'}
         destructive
+        confirmOutlined
         title={t('personal:signOut.dialogTitle')}
-        message={`${t('personal:signOut.dialogMessage')} ${t('personal:signOut.dataNote')}`}
+        message={t('personal:signOut.dialogMessage')}
+        detail={t('personal:signOut.dataNote')}
         confirmLabel={t('personal:signOut.confirm')}
         cancelLabel={t('personal:signOut.cancel')}
         onCancel={signOut.dismiss}

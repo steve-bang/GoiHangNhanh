@@ -1,10 +1,11 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useEffect, useState } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
 import type { ShopId } from '@/core/ids';
 import { createMemoryOrderStore, type OrderStore } from '@/features/orders';
 import { ROUTES } from '@/core/navigation';
+import { colors } from '@/core/theme';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
@@ -71,10 +72,19 @@ describe('Đăng xuất an toàn (PER-21)', () => {
     const gateways = await setup();
     await openDialog();
     expect(screen.getByText('Bạn muốn đăng xuất?')).toBeOnTheScreen();
-    expect(
-      screen.getByText(/Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng Đơn\sChứng\./),
-    ).toBeOnTheScreen();
-    expect(screen.getByText(/vẫn được giữ lại, không bị xóa/)).toBeOnTheScreen();
+    expect(screen.getByText('Bạn sẽ cần đăng nhập lại.')).toBeOnTheScreen();
+    expect(screen.getByText('Video và dữ liệu trên máy này vẫn được giữ lại.')).toBeOnTheScreen();
+    // "Ở lại ứng dụng" là nút chính (xanh đặc); "Đăng xuất" là nút phụ viền và chữ đỏ.
+    const stay = StyleSheet.flatten(
+      screen.getByRole('button', { name: 'Ở lại ứng dụng' }).props.style as never,
+    ) as Record<string, unknown>;
+    expect(stay).toMatchObject({ backgroundColor: colors.brand });
+    const confirm = screen
+      .getAllByRole('button', { name: 'Đăng xuất' })
+      .map((node) => StyleSheet.flatten(node.props.style as never) as Record<string, unknown>)
+      .filter((style) => style.borderColor === colors.danger);
+    expect(confirm).toHaveLength(1);
+    expect(confirm[0]).toMatchObject({ backgroundColor: colors.surface });
     await fireEvent.press(screen.getByText('Ở lại ứng dụng'));
     expect(screen.queryByText('Bạn muốn đăng xuất?')).toBeNull();
     expect(gateways.account.signOutCalls).toBe(0);
