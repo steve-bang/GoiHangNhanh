@@ -114,5 +114,5 @@ Hợp lệ: màu thương hiệu bên thứ ba, màu hình minh họa, giới h�
 | Lệnh | Việc |
 |---|---|
 | `npm run lint` | Gồm rule `design-tokens/no-raw-design-values` |
-| `npm run check:tokens` | Cấu trúc token, nguồn hex duy nhất, kiến trúc tầng, baseline ngoại lệ, cảnh báo sửa tệp ngoài phạm vi |
+| `npm run check:tokens` | Cấu trúc token, nguồn hex duy nhất, kiến trúc tầng, baseline ngoại lệ, lỗi khi sửa tệp ngoài phạm vi (trừ allowlist `scripts/design-token-frozen-allow.json`) |
 | `npm run check` | Toàn bộ (lint, typecheck, format, check:tokens, test) |

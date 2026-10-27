@@ -5,5 +5,6 @@
   "src/features/packing/ui/PackConfirmScreen.tsx": 1,
   "src/shared/ui/OrderCard.tsx": 1,
   "src/shared/ui/RecordingFrame.tsx": 1,
-  "src/shared/ui/SourceIcon.tsx": 3
+  "src/shared/ui/SourceIcon.tsx": 3,
+  "src/shared/ui/TextField.tsx": 1
 }

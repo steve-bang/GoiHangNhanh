@@ -94,6 +94,7 @@ export function TextField({
         trailing
           ? {
               flex: 1,
+              // token-exception: 2 là số cạnh viền (trên + dưới), không phải giá trị thiết kế
               minHeight: frameStyle.minHeight - 2 * tokens.borderWidth.thin,
               color: tokens.color.text.primary,
               paddingVertical: 0,

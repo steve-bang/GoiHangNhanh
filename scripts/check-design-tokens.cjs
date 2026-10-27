@@ -7,8 +7,9 @@
  *  2. Một nguồn hex: mã màu chỉ ở primitives.ts và khối @frozen của colors.ts.
  *  3. Kiến trúc tầng: primitives không import ai; semantic/components chỉ import tầng dưới.
  *  4. Ngoại lệ không phình ra: số `token-exception` không vượt baseline đã duyệt.
- *  5. (Cảnh báo) PR chạm vào tệp ngoài phạm vi.
- * Thoát mã 1 khi vi phạm 1-4.
+ *  5. Nhánh sửa tệp ngoài phạm vi (so với merge-base với origin/main) là lỗi, trừ tệp có trong
+ *     scripts/design-token-frozen-allow.json (kèm lý do). Không có origin/main: cảnh báo (CI: lỗi).
+ * Thoát mã 1 khi vi phạm 1-5.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -85,28 +86,55 @@ for (const [f, n] of Object.entries(counts)) {
 }
 const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
-// 5. Cảnh báo: PR chạm tệp ngoài phạm vi
-try {
-  const changed = execSync('git diff --name-only origin/main...HEAD', {
-    cwd: ROOT,
-    stdio: ['ignore', 'pipe', 'ignore'],
-  })
+// 5. Sửa tệp ngoài phạm vi (màn khách hàng đã xác nhận) là LỖI, trừ tệp có trong allowlist có lý do
+const allowPath = path.join(__dirname, 'design-token-frozen-allow.json');
+const allow = fs.existsSync(allowPath) ? JSON.parse(fs.readFileSync(allowPath, 'utf8')) : {};
+for (const [f, reason] of Object.entries(allow)) {
+  if (typeof reason !== 'string' || reason.trim().length < 10)
+    errors.push(`design-token-frozen-allow.json: "${f}" phải kèm lý do (>= 10 ký tự).`);
+}
+
+function git(args) {
+  return execSync(`git ${args}`, { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] })
     .toString()
-    .split('\n')
-    .filter(Boolean);
-  const touched = changed.filter(
+    .trim();
+}
+/** Điểm gốc để so sánh: merge-base với origin/main, rồi main cục bộ; null nếu không tìm được. */
+function findBase() {
+  for (const ref of ['origin/main', 'main']) {
+    try {
+      return { ref, sha: git(`merge-base ${ref} HEAD`) };
+    } catch {
+      // thử ứng viên tiếp theo
+    }
+  }
+  return null;
+}
+
+const base = findBase();
+if (!base) {
+  const msg =
+    'KHÔNG so sánh được với origin/main (thiếu ref hoặc clone nông): bỏ qua kiểm tra "sửa tệp ngoài phạm vi". Chạy `git fetch origin main` (CI cần fetch-depth: 0).';
+  if (process.env.CI) errors.push(msg);
+  else warnings.push(msg);
+} else {
+  // So với cây làm việc (gồm cả thay đổi chưa commit) tại điểm gốc chung.
+  const changed = [
+    ...git(`diff --name-only ${base.sha}`).split('\n'),
+    ...git('ls-files -o --exclude-standard src').split('\n'),
+  ].filter(Boolean);
+  const touched = [...new Set(changed)].filter(
     (f) =>
       /^src\//.test(f) &&
       EXCLUDED_PATTERNS.some((re) => re.test(f)) &&
       !/^src\/(core\/theme\/|shared\/ui\/theme\.ts$)/.test(f) &&
-      !/\.test\./.test(f),
+      !/\.test\./.test(f) &&
+      !allow[f],
   );
   if (touched.length)
-    warnings.push(
-      `Nhánh này sửa tệp NGOÀI phạm vi Design Token (màn đã được khách hàng xác nhận):\n  ${touched.join('\n  ')}`,
+    errors.push(
+      `Nhánh này sửa tệp NGOÀI phạm vi Design Token (màn đã được khách hàng xác nhận, không được đổi hiển thị):\n  ${touched.join('\n  ')}\n  Nếu thật sự cần (ví dụ sửa lỗi không đổi giao diện), thêm tệp + lý do vào scripts/design-token-frozen-allow.json để reviewer thấy.`,
     );
-} catch {
-  warnings.push('Không so sánh được với origin/main (bỏ qua kiểm tra tệp ngoài phạm vi).');
 }
 
 for (const w of warnings) console.warn(`cảnh báo: ${w}`);

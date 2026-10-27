@@ -39,8 +39,34 @@ tester.run('design-tokens/no-raw-design-values', rule, {
       code: '// token-exception: màu thương hiệu của sàn, không thuộc palette\nconst s = { backgroundColor: "#4B3FD8" };',
       filename: inScope,
     },
+    // phép tính trên biến không phải token, tên màu trong ngữ cảnh không phải màu
+    {
+      code: 'const s = { width: size * 0.55, height: size / 2, top: insets.top + inset, zIndex: 0 };',
+      filename: inScope,
+    },
+    {
+      code: 'const s = { color: tokens.color.text.primary, borderColor: "transparent" };',
+      filename: inScope,
+    },
+    {
+      code: 'const s = { fontWeight: cond ? tokens.fontWeight.bold : tokens.fontWeight.regular };',
+      filename: inScope,
+    },
+    {
+      code: 'const s = { testID: "white", label: "red", transform: [{ scale: 1 }] };',
+      filename: inScope,
+    },
+    {
+      code: 'const s = { transform: [{ rotate: `${deg}deg` }, { translateY: offset }] };',
+      filename: inScope,
+    },
+    { code: 'const u = `${base}/path#section`; const k = `item-${id}`;', filename: inScope },
+    { code: 'const s = { top: tokens.space.md, aspectRatio: ratio };', filename: inScope },
     // màn ngoài phạm vi: không kiểm tra
-    { code: 'const s = { padding: 14, color: "#123456", fontSize: 17 };', filename: outOfScope },
+    {
+      code: 'const s = { padding: 14, color: "red", top: 3, fontWeight: "700", c: `#fff`, color: "#123456", fontSize: 17 };',
+      filename: outOfScope,
+    },
     // tệp test không kiểm tra
     {
       code: 'const s = { padding: 14 };',
@@ -77,6 +103,43 @@ tester.run('design-tokens/no-raw-design-values', rule, {
     bad('import { colors } from "@/core/theme";', 'directImport'),
     bad('import { palette } from "@/core/theme/primitives";', 'directImport'),
     bad('const c = semantic.color.text.primary;', 'staticColor'),
+    // tên màu CSS
+    bad('const s = { color: "red" };', 'color'),
+    bad('const s = { backgroundColor: "White" };', 'color'),
+    bad('const s = { borderColor: sel ? "white" : tokens.color.border.default };', 'color'),
+    bad('const x = <Icon color="red" />;', 'color'),
+    bad('const x = <Icon color={dark ? "black" : tokens.color.text.primary} />;', 'color'),
+    // nhân/chia token với số thô, hằng số tính sẵn
+    bad('const s = { padding: tokens.space.sm * 2 };', 'number'),
+    bad('const s = { gap: layout.space.sm / 2 };', 'number'),
+    bad('const s = { margin: 2 * theme.tokens.space.sm };', 'number'),
+    {
+      code: 'const s = { paddingTop: tokens.space.sm * 2 + 1 };',
+      filename: inScope,
+      errors: [{ messageId: 'number' }, { messageId: 'number' }],
+    },
+    bad('const s = { aspectRatio: 16 / 9 };', 'number'),
+    // fontWeight đi qua điều kiện / số
+    {
+      code: 'const s = { fontWeight: cond ? "700" : "400" };',
+      filename: inScope,
+      errors: [{ messageId: 'weight' }, { messageId: 'weight' }],
+    },
+    bad('const s = { fontWeight: 700 };', 'weight'),
+    // vị trí, lớp, tỉ lệ, transform
+    bad('const s = { top: 8 };', 'number'),
+    bad('const s = { left: -4 };', 'number'),
+    bad('const s = { right: insets.right + 12 };', 'number'),
+    bad('const s = { bottom: 10 };', 'number'),
+    bad('const s = { zIndex: 10 };', 'number'),
+    bad('const s = { aspectRatio: 1.5 };', 'number'),
+    bad('const s = { transform: [{ translateX: 12 }] };', 'number'),
+    bad('const s = { transform: [{ scale: 0.95 }] };', 'number'),
+    bad('const s = { transform: [{ rotate: "-4deg" }] };', 'number'),
+    // màu trong template literal
+    bad('const c = `#157852`;', 'color'),
+    bad('const c = `${a}#FFF`;', 'color'),
+    bad('const c = `rgba(${r}, 0, 0, 0.5)`;', 'color'),
     // ngoại lệ thiếu lý do
     bad('// token-exception: ngắn\nconst s = { padding: 14 };', 'badException'),
     // tệp dùng chung với màn đã verify vẫn bị chặn literal
