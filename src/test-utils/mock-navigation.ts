@@ -5,6 +5,10 @@
  *
  * Màn hình test không cần Expo Router thật; kiểm tra điều hướng bằng `mockNavigation.*`.
  */
+import { useSyncExternalStore } from 'react';
+
+const focusListeners = new Set<() => void>();
+
 export const mockNavigation = {
   push: jest.fn(),
   replace: jest.fn(),
@@ -18,6 +22,12 @@ export const mockNavigation = {
   /** false mô phỏng người dùng đã rời màn (Back/đi chỗ khác) trong lúc một thao tác còn chờ. */
   screenActive: true,
 };
+
+/** Đổi trạng thái focus của màn và báo cho màn đang hiển thị (mô phỏng rời/quay lại màn trong ngăn xếp). */
+export function setMockScreenFocused(focused: boolean): void {
+  mockNavigation.screenActive = focused;
+  focusListeners.forEach((listener) => listener());
+}
 
 export function resetMockNavigation(): void {
   mockNavigation.push.mockReset();
@@ -40,7 +50,14 @@ export const navigationMock = {
   }),
   useRouteParams: () => mockNavigation.params,
   useIsScreenActive: () => () => mockNavigation.screenActive,
-  useScreenFocused: () => mockNavigation.screenActive,
+  useScreenFocused: () =>
+    useSyncExternalStore(
+      (listener) => {
+        focusListeners.add(listener);
+        return () => focusListeners.delete(listener);
+      },
+      () => mockNavigation.screenActive,
+    ),
   useConfirmBeforeLeave: (enabled: boolean, onAttempt: () => void) => {
     mockNavigation.leaveGuardEnabled = enabled;
     mockNavigation.attemptLeave = onAttempt;

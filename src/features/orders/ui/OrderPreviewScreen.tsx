@@ -29,6 +29,7 @@ import {
 
 import { useCurrentShopId, useOrderStore } from '../data';
 import { buildNextPackage, type OrderDetails, type PackingSession } from '../domain';
+import { CopyButton } from './CopyButton';
 import { HeaderHelpButton } from './HeaderHelpButton';
 import { useStartPacking } from './use-start-packing';
 
@@ -398,44 +399,10 @@ export function OrderPreviewScreen() {
   );
 }
 
-function CopyButton({
-  label,
-  onPress,
-  testID,
-}: {
-  label: string;
-  onPress: () => void;
-  testID: string;
-}) {
-  const { t } = useTranslation();
-  const { colors, radius } = useTheme();
-  return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={[
-        styles.copyButton,
-        {
-          minHeight: getMinTouchTarget(),
-          backgroundColor: colors.brandSoft,
-          borderRadius: radius.lg,
-        },
-      ]}
-    >
-      <Text variant="formLabel" style={{ color: colors.brand }}>
-        {t('screens:preview.copy')}
-      </Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   banner: { flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
   copyRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  copyButton: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
   line: { flexDirection: 'row' },
   thumb: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
   addPackage: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8 },

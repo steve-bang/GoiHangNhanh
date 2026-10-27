@@ -176,11 +176,58 @@
     "emptyMessage": "Khi nhận kiện hoàn, hãy tiếp nhận để ghi lại tình trạng kiện trước khi mở."
   },
   "orders": {
-    "search": "Tìm theo mã đơn hoặc mã vận đơn",
+    "search": "Tìm mã đơn, mã vận đơn…",
     "filterAll": "Tất cả",
+    "filterNoVideo": "Chưa có video",
+    "scanAction": "Quét mã đơn",
+    "createAction": "Tạo đơn mới",
+    "loading": "Đang tải danh sách đơn…",
+    "loadError": "Chưa tải được danh sách đơn. Bạn thử lại nhé.",
+    "loadMoreError": "Chưa tải thêm được đơn.",
+    "loadingMore": "Đang tải thêm…",
     "emptyTitle": "Chưa có đơn nào",
-    "emptyMessage": "Quét mã hoặc tạo đơn nhanh để bắt đầu ghi nhận bằng chứng.",
-    "emptyAction": "Đóng gói đơn"
+    "emptyMessage": "Quét mã hoặc tạo đơn để bắt đầu ghi nhận bằng chứng.",
+    "emptyAction": "Tạo đơn đầu tiên",
+    "noResultsTitle": "Không tìm thấy đơn phù hợp",
+    "noResultsMessage": "Bạn kiểm tra lại mã hoặc bộ lọc nhé.",
+    "clearAll": "Xóa tìm kiếm và bộ lọc",
+    "count": {
+      "all": "{{count}} đơn",
+      "matching": "{{count}} đơn phù hợp",
+      "withPeriod": "{{period}} · {{text}}"
+    },
+    "card": {
+      "viewDetail": "Xem chi tiết",
+      "recordNow": "Quay ngay",
+      "tracking": "Mã vận đơn: {{code}}",
+      "moreLines": "và {{count}} sản phẩm khác",
+      "createdAt": "Tạo lúc {{time}}"
+    },
+    "filters": {
+      "open": "Bộ lọc",
+      "openWithCount": "Bộ lọc ({{count}})",
+      "title": "Bộ lọc đơn hàng",
+      "period": {
+        "title": "Thời gian tạo đơn",
+        "all": "Tất cả",
+        "today": "Hôm nay",
+        "last7days": "7 ngày qua",
+        "last30days": "30 ngày qua",
+        "note": "Tính theo giờ trên thiết bị của bạn."
+      },
+      "source": {
+        "title": "Nguồn bán",
+        "all": "Tất cả"
+      },
+      "declaration": {
+        "title": "Trạng thái khai báo",
+        "all": "Tất cả",
+        "declared": "Đủ thông tin cơ bản",
+        "undeclared": "Chưa khai báo sản phẩm"
+      },
+      "clear": "Xóa bộ lọc",
+      "apply": "Áp dụng"
+    }
   },
   "sync": {
     "note": "Tải nền có thể tạm dừng khi hệ điều hành giới hạn. Mở ứng dụng để tiếp tục.",
@@ -362,5 +409,35 @@
     },
     "ruleMetA11y": "Mật khẩu nên có ít nhất 8 ký tự: đã đạt",
     "ruleUnmetA11y": "Mật khẩu nên có ít nhất 8 ký tự: chưa đạt"
+  },
+  "orderDetail": {
+    "loading": "Đang mở đơn…",
+    "notFoundTitle": "Không tìm thấy đơn",
+    "notFound": "Không tìm thấy đơn này trong máy.",
+    "backToList": "Về danh sách đơn",
+    "loadError": "Chưa mở được đơn này. Bạn thử lại nhé.",
+    "identity": "Thông tin đơn",
+    "orderCode": "Mã đơn hàng",
+    "source": "Nguồn bán",
+    "enteredByYou": "Thông tin do bạn nhập, không lấy từ sàn.",
+    "trackingCode": "Mã vận đơn",
+    "noTracking": "Chưa có mã vận đơn. Bạn có thể thêm sau.",
+    "createdAt": "Thời gian tạo",
+    "deviceTime": "Theo giờ trên thiết bị của bạn.",
+    "copyOrderCode": "Sao chép mã đơn",
+    "copyTrackingCode": "Sao chép mã vận đơn",
+    "products": "Sản phẩm",
+    "undeclaredHint": "Bạn chưa khai báo sản phẩm cho đơn này. Bạn có thể bổ sung bất cứ lúc nào.",
+    "packages": "Kiện hàng",
+    "package": "Kiện {{index}}",
+    "packageActiveSession": "Có phiên quay đang mở, bắt đầu lúc {{time}}",
+    "packageNoSession": "Chưa có phiên quay",
+    "evidence": "Bằng chứng đóng gói",
+    "noEvidence": "Chưa có video đóng gói. Quay ngay để lưu lại quá trình xử lý đơn nhé!",
+    "recordNow": "Quay ngay",
+    "history": "Lịch sử hoạt động",
+    "historyCreated": "Đã tạo đơn",
+    "historySession": "Đã bắt đầu phiên quay kiện {{index}}",
+    "historyNote": "Suy ra từ dữ liệu trên máy, theo giờ của thiết bị."
   }
 }

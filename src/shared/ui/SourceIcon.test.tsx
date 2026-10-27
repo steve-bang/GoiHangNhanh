@@ -51,11 +51,16 @@ describe('OrderCard với nguồn bán', () => {
         orderCode="DH1"
         sourceLabel="Shopee"
         source="shopee"
+        product={null}
         dateLabel="Hôm nay"
-        videoCount={1}
+        statusBadge={null}
+        statusText="Chưa có video"
+        actionLabel="Xem chi tiết"
+        onPress={jest.fn()}
+        onPressAction={jest.fn()}
       />,
     );
-    expect(screen.getByText('Shopee · Hôm nay')).toBeOnTheScreen();
+    expect(screen.getByText('Shopee')).toBeOnTheScreen();
     expect(screen.getByTestId('source-icon-image-shopee', HIDDEN)).toBeTruthy();
   });
 });
