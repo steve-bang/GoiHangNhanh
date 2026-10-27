@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { colors } from './colors';
 import { EVIDENCE_STATUS_PRESENTATION } from './evidence-status';
 import { MIN_TOUCH_TARGET, typography } from './typography';
@@ -40,6 +43,17 @@ describe('tương phản màu (WCAG AA 4.5:1 cho chữ thường)', () => {
     ['textMuted', 'welcomeBlob'],
     ['brand', 'welcomeBackground'],
     ['brand', 'surface'],
+    // Nhóm màn form/quy trình (nền trắng, khối xám nhạt, ô nhắc xanh nhạt).
+    ['ink', 'formBackground'],
+    ['inkMuted', 'formBackground'],
+    ['brand', 'formBackground'],
+    ['ink', 'surfaceMuted'],
+    ['inkMuted', 'surfaceMuted'],
+    ['onBrand', 'brand'],
+    ['brand', 'infoSoft'],
+    ['ink', 'infoSoft'],
+    ['inkMuted', 'infoSoft'],
+    ['inkMuted', 'brandSoft'],
     ['ink', 'onboardingBackground'],
     ['ink', 'surface'],
     ['inkMuted', 'onboardingBackground'],
@@ -95,9 +109,25 @@ describe('nhãn trạng thái bằng chứng (docs/09 mục 3)', () => {
 describe('typography', () => {
   it('chú thích >= 12pt, nội dung >= 15pt, tiêu đề màn 24-28pt', () => {
     expect(typography.caption.fontSize).toBeGreaterThanOrEqual(12);
+    expect(typography.overlay.fontSize).toBeGreaterThanOrEqual(12); // mã đơn trên màn quay
     expect(typography.body.fontSize).toBeGreaterThanOrEqual(15);
     expect(typography.screenTitle.fontSize).toBeGreaterThanOrEqual(24);
     expect(typography.screenTitle.fontSize).toBeLessThanOrEqual(28);
+  });
+
+  // NGOẠI LỆ có ghi trong docs/09 mục 3: nhóm chữ form (theo mockup 03) nhỏ hơn mức nội dung chung.
+  // Số ở đây phải bằng đúng số trong tài liệu; đổi một bên phải đổi bên kia.
+  it('nhóm chữ form đúng bằng ngoại lệ đã ghi trong docs/09 mục 3 (không hạ ngầm)', () => {
+    expect(typography.formLabel.fontSize).toBe(13);
+    expect(typography.formBody.fontSize).toBe(14);
+    expect(typography.formButton.fontSize).toBe(14);
+    expect(typography.formButtonSmall.fontSize).toBe(13);
+    const doc = readFileSync(join(__dirname, '../../../docs/09-ui-ux-design.md'), 'utf8');
+    expect(doc).toContain('Ngoại lệ nhóm chữ form');
+    for (const token of ['formLabel 13', 'formBody 14', 'formButton 14', 'formButtonSmall 13']) {
+      expect(doc).toContain(token);
+    }
+    expect(doc).toContain('overlay 12');
   });
 
   it('vùng chạm tối thiểu 44pt iOS / 48dp Android', () => {

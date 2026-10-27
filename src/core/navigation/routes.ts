@@ -93,9 +93,11 @@ export const ROUTES = {
   // Ngoài nhóm (tabs): nút Quét giữa mở từ tab bất kỳ, Back phải về đúng tab đó (Q-16a).
   scan: route('/scan', 'UI-B02'),
   search: route('/home/search', 'UI-B03', true),
-  quickOrder: route('/home/quick-order', 'UI-B04', true),
+  // Tạo đơn nhanh và Xác nhận đơn là route cấp gốc, KHÔNG có thanh tab (mockup 03): Back đi đúng
+  // Quét -> Tạo đơn -> Xác nhận -> Quay, không bị dính stack của một tab.
+  quickOrder: route('/quick-order', 'UI-B04'),
   batch: route('/home/batch', 'UI-B05', true),
-  orderPreview: route('/home/order-preview', 'UI-C01', true),
+  orderPreview: route('/order-preview', 'UI-C01'),
   // Nhóm C - luồng quay (ngoài nhóm tab => ẩn thanh tab)
   packPrecheck: route('/pack-precheck', 'UI-C02'),
   packRecord: route('/record-pack', 'UI-C03'),

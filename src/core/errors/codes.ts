@@ -1,7 +1,8 @@
 /**
  * Mã lỗi nghiệp vụ. Chứa mã đã có trong docs/04 và docs/05, cộng nhóm `AUTH_*` ĐỀ XUẤT cho màn thiết
- * lập tài khoản/shop, đăng nhập và đặt lại mật khẩu (UI-A03, A04, A07-A09): tên chờ BA đặt chính
- * thức (decisions.md Q-04, Q-13, Q-14).
+ * lập tài khoản/shop, đăng nhập và đặt lại mật khẩu (UI-A03, A04, A07-A09), cùng `ORDER_SAVE_FAILED`,
+ * `ORDER_HAS_SESSION`, `PACKAGE_SESSION_ACTIVE` cho lưu đơn cục bộ (UI-B04, UI-C01): tên chờ BA đặt
+ * chính thức (decisions.md Q-04, Q-13, Q-14, Q-17).
  * Cần mã mới -> đề xuất để BA đưa vào tài liệu trước (xem docs/engineering/decisions.md, mục
  * "Mã lỗi đề xuất"), không tự đặt rời rạc trong mã.
  */
@@ -25,6 +26,10 @@ export const ERROR_CODES = {
   SOURCE_ORDER_AMBIGUOUS: 'SOURCE_ORDER_AMBIGUOUS',
   RETURN_CODE_DUPLICATE: 'RETURN_CODE_DUPLICATE',
   RETURN_ORDER_CONFLICT: 'RETURN_ORDER_CONFLICT',
+  // Đề xuất (chờ BA, Q-04/Q-17): lưu đơn/dòng/kiện cục bộ và quy tắc phiên (docs/04 A03)
+  ORDER_SAVE_FAILED: 'ORDER_SAVE_FAILED',
+  ORDER_HAS_SESSION: 'ORDER_HAS_SESSION',
+  PACKAGE_SESSION_ACTIVE: 'PACKAGE_SESSION_ACTIVE',
   // Đề xuất (chờ BA, Q-04/Q-13): tạo tài khoản và tạo shop
   AUTH_SERVICE_UNAVAILABLE: 'AUTH_SERVICE_UNAVAILABLE',
   AUTH_NETWORK_ERROR: 'AUTH_NETWORK_ERROR',

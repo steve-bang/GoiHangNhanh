@@ -4,6 +4,7 @@ import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initI18n } from '@/core/i18n';
+import { OrderStoreProvider, createMemoryOrderStore, type OrderStore } from '@/features/orders';
 import { OnboardingFlowProvider, type Gateways } from '@/features/shop';
 
 const METRICS = {
@@ -15,12 +16,16 @@ const METRICS = {
  * Render kèm i18n tiếng Việt, vùng an toàn (giống iPhone có tai thỏ) và trạng thái luồng thiết lập
  * (cổng giả khi test; truyền `gateways` để dùng bản giả riêng của bài test).
  */
-export function renderWithProviders(ui: ReactElement, options: { gateways?: Gateways } = {}) {
+export function renderWithProviders(
+  ui: ReactElement,
+  options: { gateways?: Gateways; orderStore?: OrderStore } = {},
+) {
+  const orderStore = options.orderStore ?? createMemoryOrderStore();
   return render(
     <SafeAreaProvider initialMetrics={METRICS}>
       <I18nextProvider i18n={initI18n()}>
         <OnboardingFlowProvider {...(options.gateways ? { gateways: options.gateways } : {})}>
-          {ui}
+          <OrderStoreProvider store={orderStore}>{ui}</OrderStoreProvider>
         </OnboardingFlowProvider>
       </I18nextProvider>
     </SafeAreaProvider>,

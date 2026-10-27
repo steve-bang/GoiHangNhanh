@@ -11,6 +11,7 @@ type Brand<T, B extends string> = T & { readonly [brand]: B };
 export type ShopId = Brand<string, 'ShopId'>;
 export type UserId = Brand<string, 'UserId'>;
 export type OrderId = Brand<string, 'OrderId'>;
+export type OrderLineId = Brand<string, 'OrderLineId'>;
 export type PackageId = Brand<string, 'PackageId'>;
 export type SessionId = Brand<string, 'SessionId'>;
 export type EvidenceId = Brand<string, 'EvidenceId'>;

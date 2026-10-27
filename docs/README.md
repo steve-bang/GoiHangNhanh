@@ -70,7 +70,7 @@ Tài liệu nghiệp vụ (BRD/PRD) cho ứng dụng di động quản lý bằn
 | O-16 | Kênh thanh toán gói dịch vụ trong app (mua trong ứng dụng của Apple/Google hay thanh toán ngoài) | Cần kiểm tra chính sách App Store/Google Play hiện hành trước khi thiết kế UI-H03; chưa kết luận |
 | O-17 | Chế độ tối; ngôn ngữ ngoài tiếng Việt | Bản đầu chế độ sáng, tiếng Việt |
 | O-18 | ~~Thanh điều hướng dưới: mockup có Trang chủ/Đơn hàng/Quét/Thông báo/Cá nhân; D-11 có Tổng quan/Đơn hàng/Hàng hoàn/Đồng bộ~~ **Đã chốt theo mockup (D-16)** | Còn mở hệ quả: O-26, O-27 |
-| O-19 | Đóng gói đơn mới đi qua 3 màn trước camera (mockup) so với một lần chạm (D-10) | Nút chính "Lưu và quay video"; chỉ dùng màn Xác nhận khi quét ra đơn có sẵn |
+| O-19 | Đóng gói đơn mới đi qua 3 màn trước camera (mockup) so với một lần chạm (D-10) | Nút chính "Lưu và quay video"; chỉ dùng màn Xác nhận khi quét ra đơn có sẵn. **Hiện trạng (chưa chốt):** theo mockup 03, nút chính *Lưu và xác nhận đơn* qua màn Xác nhận, nút phụ *Bỏ qua, quay ngay* đi thẳng tới camera ([Q-17e](engineering/decisions.md)); đổi bằng một chỗ ở `QuickOrderScreen` |
 | O-20 | Sàn phiên bản hệ điều hành tối thiểu cho iOS và Android | Đặt bằng sàn kỹ thuật cao nhất của framework và thư viện native đã chọn sau spike (hiện RN 0.88: iOS 15.1, Android 7.0); chỉ nâng khi có số liệu người dùng thật. Xem [platform-support](engineering/platform-support.md#3-sàn-phiên-bản) |
 | O-21 | Hỗ trợ máy tính bảng/màn hình gập? | Bản đầu chỉ điện thoại |
 | O-22 | ~~Cách gửi mã xác minh khi quên mật khẩu~~ **Đã chốt hướng: B** (xem D-14). Còn mở: nhà cung cấp gửi email, thời hạn mã, số lần xin/nhập tối đa, mốc chờ gửi lại | Triển khai sau khi hết giai đoạn cổng giả |

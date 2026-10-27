@@ -80,6 +80,22 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     expect(isTabBarHiddenAt('/account/plan')).toBe(false);
   });
 
+  it('Tạo đơn nhanh (UI-B04) và Xác nhận đơn (UI-C01) là route cấp gốc, ngoài nhóm tab, không có thanh tab', () => {
+    expect(ROUTES.quickOrder).toMatchObject({
+      path: '/quick-order',
+      code: 'UI-B04',
+      tabBar: false,
+    });
+    expect(ROUTES.orderPreview).toMatchObject({
+      path: '/order-preview',
+      code: 'UI-C01',
+      tabBar: false,
+    });
+    for (const route of [ROUTES.quickOrder, ROUTES.orderPreview]) {
+      expect(files.find((f) => f.url === route.path)?.inTabs).toBe(false);
+    }
+  });
+
   it('Hàng hoàn và Đồng bộ không còn là tab: nằm ngoài nhóm (tabs), không có thanh tab', () => {
     for (const route of [ROUTES.returns, ROUTES.returnFindOrder, ROUTES.sync, ROUTES.storage]) {
       expect(route.tabBar).toBe(false);

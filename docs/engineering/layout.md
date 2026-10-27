@@ -14,6 +14,8 @@ src/app/                     Route Expo Router: MỎNG, chỉ `export { XScreen 
     home/ orders/ account/   mỗi tab một Stack riêng => đi sâu trong tab vẫn thấy thanh tab
     notifications.tsx        tab Thông báo (UI-I07)
     scan-tab.tsx             chỗ giữ của nút Quét giữa thanh tab (chỉ chuyển hướng; mục 6)
+  quick-order.tsx            UI-B04 tạo đơn nhanh        (NGOÀI nhóm (tabs): Q-17)
+  order-preview.tsx          UI-C01 xác nhận đơn trước quay
   record-pack.tsx            UI-C03 quay đóng gói        (NGOÀI nhóm (tabs)
   record-return.tsx          UI-D04 quay mở kiện hoàn     => thanh tab ẩn)
   pack-confirm / pack-done ...   hậu quay (không tab)
@@ -47,12 +49,12 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 | `/home` | UI-B01 | A01 | hiện | `orders`: `HomeScreen` | Màn dựng theo mockup 02 (D-16, Q-16) + dữ liệu minh họa |
 | `/scan` | UI-B02 | A02 | ẩn (route cấp gốc ngoài nhóm tab) | `orders`: `ScanScreen` | Màn thật theo mockup 02: camera thật (`expo-camera`, ADR-016), nhập tay, đèn pin, xử lý quyền (Q-16) |
 | `/home/search` | UI-B03 | A02 | hiện | `orders`: `SearchScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/home/quick-order` | UI-B04 | A02 | hiện | `orders`: `QuickOrderScreen` | Khung có bố cục + dữ liệu minh họa |
+| `/quick-order` | UI-B04 | A02 | ẩn (route cấp gốc) | `orders`: `QuickOrderScreen` | Màn thật theo mockup 03, lưu cục bộ SQLite (mục 2.5, Q-17) |
 | `/home/batch` | UI-B05 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `BatchScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/home/order-preview` | UI-C01 | A03 | hiện | `orders`: `OrderPreviewScreen` | Khung có bố cục + dữ liệu minh họa |
+| `/order-preview` | UI-C01 | A03 | ẩn (route cấp gốc) | `orders`: `OrderPreviewScreen` | Màn thật theo mockup 03, mở bằng `orderId`, tạo phiên trước khi quay (mục 2.5) |
 | `/pack-precheck` | UI-C02 | A04 | ẩn | `packing`: `PackPrecheckScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/record-pack` | UI-C03 | A05 | ẩn | `packing`: `PackRecordScreen` | Khung có bố cục + dữ liệu minh họa |
-| `/pack-confirm` | UI-C04 | A06 | ẩn | `packing`: `PackConfirmScreen` | Khung có bố cục + dữ liệu minh họa |
+| `/record-pack` | UI-C03 | A05 | ẩn | `packing`: `PackRecordScreen` | Giao diện theo mockup 03, mở bằng `sessionId`, camera xem trước thật, **chưa ghi video** (mục 2.5) |
+| `/pack-confirm` | UI-C04 | A06 | ẩn | `packing`: `PackConfirmScreen` | Mở bằng `sessionId`; chỉ có nội dung "đã lưu" khi `RECORDER_ENABLED=true`, hiện tại chỉ báo "chưa có video nào được lưu" (Q-17m) |
 | `/pack-saved` | UI-C05 | A07 | ẩn | `upload`: `PackSavedScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/pack-done` | UI-C06 | A08 | ẩn | `packing`: `PackDoneScreen` | Khung có bố cục + dữ liệu minh họa |
 | `/returns` | UI-D01 | B01 | ẩn | `returns`: `ReturnsListScreen` | Khung có bố cục + dữ liệu minh họa |
@@ -87,7 +89,7 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 | `/account/help` | UI-I06 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `HelpScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/notifications` | UI-I07 | chưa có đặc tả (thêm theo O-26) | hiện | `shop`: `NotificationListScreen` | Placeholder, tab Thông báo |
 
-Màn có bố cục + dữ liệu minh họa: Tổng quan, Trung tâm quét (khung camera giả), Tạo đơn nhanh, Xem nhanh đơn, Màn quay (khung), Xác nhận video, Hoàn tất đóng gói, Danh sách hàng hoàn, Màn quay mở kiện (khung), Danh sách đơn, Trung tâm đồng bộ.
+Màn có bố cục + dữ liệu minh họa: Tổng quan, Xác nhận video, Hoàn tất đóng gói, Danh sách hàng hoàn, Màn quay mở kiện (khung), Danh sách đơn, Trung tâm đồng bộ.
 
 ### 2.1 Màn Chào mừng (UI-A02)
 
@@ -130,6 +132,18 @@ Mockup `docs/assets/ui/01-onboarding.png` (màn 2, 3, 4); chi tiết nghiệp v�
 - **Token:** đổi `brand` thành `#157852` (khớp nút chính trong mockup; ảnh hưởng mọi màn); thêm `ink`, `inkMuted`, `onboardingBackground`, `fieldBorder` (có test tương phản). `Button` có thêm `loading`.
 - **Chưa kiểm chứng:** máy thật iOS/Android (bàn phím thật, Back phần cứng, autofill/gợi ý mật khẩu, bố cục với tai thỏ/thanh điều hướng, font scale), nút hiện/ẩn mật khẩu trên iOS (đổi `secureTextEntry` có thể xóa nội dung khi gõ tiếp), độ giống mockup mới kiểm bằng bản render web (không phải native).
 
+### 2.5 Tạo đơn nhanh (UI-B04), Xác nhận đơn (UI-C01), Quay đóng gói (UI-C03)
+
+Mockup `docs/assets/ui/03-quick-order-confirm-record.png`; ADR-017 và [decisions.md Q-17](decisions.md). Dữ liệu lưu **cục bộ** (SQLite trên máy, kho bộ nhớ cho Jest/web); chưa Firebase, chưa đồng bộ, `shopId` tạm.
+
+- **Luồng:** Quét (`/scan`) -> `/quick-order?code=` -> (*Lưu và xác nhận đơn*) `/order-preview?orderId=` -> (*Kiểm tra camera và bắt đầu*) `replace` -> `/record-pack?sessionId=` -> (Dừng quay, hiện chưa ghi thật) quay về `/order-preview?orderId=&notice=not_recorded`; UI-C04/C06 chỉ khi có recorder thật (Q-17m). *Bỏ qua, quay ngay* đi thẳng từ Tạo đơn tới màn quay. Ba route đều ngoài nhóm tab; **tham số là ID nội bộ**, không phải mã đơn (bất biến 1, 2). Back đi đúng từng bước (test router thật trong `app-navigation.test.tsx`).
+- **Mã** (`src/features/orders`): `domain/` (kiểu `Order`/`OrderLine`/`OrderPackage`/`PackingSession`, `buildOrder`, `suggestions.ts`, `duplicates.ts`, `start-session.ts`, cổng `OrderStore`), `data/` (`sqlite-order-store.ts`, `memory-order-store.ts`, `OrderStoreProvider` + `useOrderStore`; provider đặt ở `bootstrap/Providers.tsx`), `ui/` (`QuickOrderScreen`, `QuickOrderLineEditor`, `OrderPreviewScreen`, `use-start-packing.tsx` dùng chung cho hai nút "bắt đầu quay", `HeaderHelpButton`). `features/packing`: `PackRecordScreen`, `domain/recorder.ts` (`RECORDER_ENABLED=false`), `domain/elapsed.ts`. Adapter `src/platform/`: `local-db`, `ids`, `clipboard`, `camera-preview`. Dùng chung: `CameraPermissionSheet` (`shared/ui`, cũng dùng ở màn quét), `TextField` có `trailing`.
+- **Tạo đơn nhanh:** hàng nguồn bán + *Thay đổi* (BottomSheet chọn nguồn); ô Mã đơn có icon quét; ô Sản phẩm + khối *Gợi ý gần đây* (chỉ tên, từ lịch sử, mỗi tên một dòng) rồi *Phân loại đã dùng* của tên đó; ô Variant có nút xóa; Số lượng mặc định 1; *Thêm sản phẩm khác* (nhiều dòng, không gộp variant); mã vận đơn thu gọn (*Thêm mã vận đơn*). Trùng mã: BottomSheet *Đã có đơn này* (Q-17g). Lỗi lưu: `ORDER_SAVE_FAILED` (đề xuất, Q-17q).
+- **Xác nhận đơn:** banner *Đơn đã sẵn sàng!*, thẻ Mã đơn/Nguồn/Mã vận đơn với *Sao chép*, Sản phẩm (sửa số lượng ngay trên dòng, **chỉ-đọc khi đơn đã có phiên** (Q-17h); nhãn *Chưa khai báo sản phẩm* chỉ khi chưa có dòng), Kiện hàng (chips + *Thêm kiện*, mỗi kiện ID riêng), ô nhắc, nút *Kiểm tra camera và bắt đầu*.
+- **Màn quay (`RecordingFrame` dùng chung với UI-D04):** nền camera xem trước (`CameraPreview`), nút X (hộp thoại), huy hiệu theo prop `recording`: chưa ghi thật = *Xem trước* (không chấm đỏ, không đồng hồ), ghi thật = *Đang quay* + chấm đỏ + đồng hồ (Q-17b); khung mã đơn/Kiện (cỡ cố định 12sp, cắt giữa khi hẹp, không co chữ), dải *Bản thử giao diện: chưa ghi video*, đèn pin, ô hướng dẫn, nút dừng đỏ. **Không** nút thư viện ảnh/chụp ảnh. UI-D04 dùng cùng cờ `RECORDER_ENABLED` (hiện false: "Xem trước" + dải *chưa ghi video*). Câu hộp thoại rời màn khi chưa ghi do từng màn truyền qua `leaveMessage` (C03: về Xác nhận đơn; D04: sang bước kiểm tra hàng).
+- **Nhóm màn "form/quy trình" (bản chỉnh theo ảnh mockup, Q-17l):** `Screen form` = nền trắng `formBackground` (không đổi nền toàn app) + tiêu đề header nhỏ (`ScreenHeader compact`, 17sp). Chữ dùng biến thể `formTitle/formLabel/formBody/formButton/formButtonSmall` (nhỏ và mảnh hơn nhóm chuẩn; chữ trên lớp phủ camera dùng `overlay` 12sp). Component có tùy chọn thay vì đổi mặc định: `Button size="compact|slim"`, `TextField compact`, `FilterChips appearance="solid" trailing=...`; `QuantityStepper` (đổi mặc định, chỉ có hai nơi dùng) là một ô liền "- 2 +". Các màn khác không đổi.
+- **Chưa kiểm chứng:** xem Q-17 (SQLite, camera, đèn pin, clipboard, quyền, tai thỏ, Back phần cứng trên máy thật). Ảnh chụp web (390x844, 360x800) cho thấy bố cục khớp mẫu.
+
 ## 3. Design system (`src/shared/ui`)
 
 Token ở `src/core/theme` (màu, chữ, khoảng cách, bo góc, vùng chạm); component lấy qua `useTheme()` (sẵn chỗ cho chế độ tối khi O-17 chốt). Chuỗi UI ở `src/core/i18n/locales/vi/{common,nav,screens,evidence}.json`.
@@ -142,13 +156,14 @@ Token ở `src/core/theme` (màu, chữ, khoảng cách, bo góc, vùng chạm);
 | `ActionCard` | Hai nút lớn của Tổng quan | Một `primary`, một `secondary` |
 | `Card`, `OrderCard` | Thẻ; thẻ đơn (mã, nguồn, ngày, số video, một trạng thái) | Mã đơn chỉ là chuỗi hiển thị, không phải ID |
 | `ProductLineList` | Dòng sản phẩm (tên, variant, số lượng, nguồn "Do bạn nhập") | Nhãn *Chưa khai báo sản phẩm* chỉ khi chưa có dòng nào |
-| `TextField`, `SearchField`, `QuantityStepper`, `FilterChips` | Nhập, tìm, số lượng (mặc định 1), lọc | Chip xuống dòng thay vì cuộn ngang |
+| `TextField`, `SearchField`, `QuantityStepper`, `FilterChips` | Nhập, tìm, số lượng (mặc định 1), lọc | Chip xuống dòng thay vì cuộn ngang, có `appearance="solid"` và `trailing` cùng hàng; `TextField` có `trailing` (icon quét, nút xóa) và `compact`; `QuantityStepper` là ô liền "- 2 +"; `Button size` (`regular`/`compact`/`slim`) và `Screen form`: xem mục 2.5 |
 | `EvidenceStatusBadge` | 6 nhãn trạng thái bằng chứng (docs/09 mục 3) | Chữ + biểu tượng riêng + viền; *Đã lưu trên máy* không tick/màu thành công; tiến độ % chỉ khi `uploading` và có số đo |
 | `SyncStatusBar` | Khối đồng bộ (lỗi/chờ/đang tải) | Dùng nhãn chuẩn; ghi chú tải nền có thể tạm dừng |
 | `OfflineBanner` | Banner ngoại tuyến (UI-F04) | Hiện qua `Screen` khi `useIsOffline()` (hiện luôn `false`, xem mục 7) |
 | `EmptyState`, `Skeleton`/`SkeletonCard` | Trống có hành động cụ thể; giữ chỗ khi tải | Skeleton tĩnh, không hiệu ứng |
 | `BottomSheet`, `ConfirmDialog` | Lựa chọn ngắn; xác nhận | `ConfirmDialog` có `destructive` và `primary` để lối an toàn là nút chính |
-| `RecordingFrame` | Khung màn quay dùng chung C03/D04 | Không tab, chặn rời màn, không nút thư viện (O-02), vùng xem trước là placeholder |
+| `RecordingFrame` | Khung màn quay dùng chung C03/D04 (mockup 03) | Không tab, chặn rời màn, không nút thư viện/chụp ảnh (O-02); nhận `preview` (camera), `recording` (bắt buộc) + `badgeLabel`/`previewLabel`, `notice` (dải "chưa ghi video"), `leaveMessage` (câu hộp thoại rời màn khi chưa ghi), đèn pin |
+| `CameraPermissionSheet` | Hộp thoại xin quyền camera dùng chung (quét, bắt đầu quay) | Không tự gọi hệ điều hành; nơi dùng truyền hành động; `blocked` dẫn tới Cài đặt |
 | `PlaceholderScreen` | Màn khung (route + tiêu đề + lối quay lại) | Mã `UI-xx` chỉ hiện ở bản dev |
 | `Icon` | Tên biểu tượng trừu tượng → glyph Ionicons | Đổi bộ icon chỉ sửa `Icon.tsx` |
 
@@ -202,10 +217,10 @@ Thêm/bớt tab: sửa `TAB_CONFIG`, tạo/xóa tệp hoặc thư mục tương 
 
 ## 7. Giới hạn đã biết của khung
 
-- Dữ liệu là minh họa; tìm/lọc chạy trên dữ liệu giả cục bộ. Không lưu gì; tham số route (mã đơn, sản phẩm nhập) chỉ truyền giữa màn.
+- Phần lớn màn vẫn là dữ liệu minh họa (tìm/lọc chạy trên dữ liệu giả cục bộ). Riêng Tạo đơn nhanh, Xác nhận đơn và màn quay (mục 2.5) đọc/ghi SQLite cục bộ; tham số route là ID nội bộ.
 - `useIsOffline()` (`src/platform/connectivity.ts`) là **stub luôn trả `false`** (chưa chọn thư viện theo dõi mạng); `OfflineBanner` đã sẵn.
-- Camera **quét mã** (UI-B02) đã có thật (`expo-camera`, ADR-016) nhưng chưa kiểm chứng trên thiết bị; camera **quay video** chưa có (nút *Xem lại video*, *Ghi thêm đoạn riêng* đang tắt).
-- Gợi ý sản phẩm theo lịch sử (UI-B04), chọn nguồn/thời gian ở danh sách đơn (UI-E01), thử lại tệp (UI-F01) chưa làm vì cần dữ liệu/hàng đợi thật.
+- Camera **quét mã** (UI-B02) đã có thật (`expo-camera`, ADR-016) nhưng chưa kiểm chứng trên thiết bị; camera **quay video** chưa ghi được: màn quay (UI-C03) chỉ xem trước (Q-17b), nút *Xem lại video*, *Ghi thêm đoạn riêng* đang tắt.
+- Chọn nguồn/thời gian ở danh sách đơn (UI-E01), thử lại tệp (UI-F01) chưa làm vì cần dữ liệu/hàng đợi thật. Gợi ý sản phẩm (UI-B04) đã làm trên lịch sử cục bộ (Q-17).
 - Splash (UI-A01, mục 2.4) chạy bằng cổng phiên giả; chưa có luồng đăng nhập thật (O-15) nên **chưa chặn truy cập** (route guard là việc sau). Bản build thường luôn vào Chào mừng (cổng "chưa kết nối"). Ba màn thiết lập (mục 2.2) chạy bằng cổng giả: chưa tạo tài khoản/shop thật. Splash hệ điều hành, icon (tạm), tải ảnh 3D, WebP alpha, tràn viền Android và vùng an toàn thật **chưa kiểm chứng trên thiết bị**; ảnh chụp đối chiếu thiết kế là render web.
 - Chào mừng: liên kết Điều khoản/Quyền riêng tư là chữ trong câu nên vùng chạm nhỏ hơn 44/48 (Text lồng không có `hitSlop`); cần đánh giá trên thiết bị.
 - Font icon tải bất đồng bộ lần đầu: icon có thể hiện trễ một nhịp.

@@ -12,3 +12,19 @@ jest.mock('@expo/vector-icons/Ionicons', () => {
     React.createElement(Text, { testID: `icon-${name}`, style: { color } }, name);
   return { __esModule: true, default: Ionicons };
 });
+
+// expo-crypto là mô-đun native: trong Jest `randomUUID` không chạy. Thay bằng bộ sinh có thứ tự để
+// ID trong test khác nhau và đoán được.
+jest.mock('expo-crypto', () => {
+  let counter = 0;
+  return {
+    randomUUID: () => {
+      counter += 1;
+      return `00000000-0000-4000-8000-${String(counter).padStart(12, '0')}`;
+    },
+  };
+});
+
+// Mặc định trong test không mở SQLite thật: kho bộ nhớ (null = dùng kho bộ nhớ). Kho SQLite được test
+// riêng bằng SQLite của Node (src/features/orders/data/sqlite-order-store.test.ts).
+jest.mock('@/platform/local-db', () => ({ openLocalDatabase: async () => null }));

@@ -14,11 +14,15 @@ interface QuantityStepperProps {
   min?: number;
 }
 
-/** Tăng/giảm số lượng bằng chạm, không bắt gõ. */
+/**
+ * Tăng/giảm số lượng bằng chạm, không bắt gõ. Một ô liền "- 2 +" (hai nút ở hai đầu, giá trị giữa,
+ * chung một viền bo góc; mockup 03). Mỗi nút cao/rộng >= vùng chạm tối thiểu; nút trừ mờ khi đạt tối
+ * thiểu.
+ */
 export function QuantityStepper({ value, onChange, min = 1 }: QuantityStepperProps) {
   const { t } = useTranslation();
   const { colors, radius } = useTheme();
-  const touch = Math.max(getMinTouchTarget(), 48);
+  const touch = getMinTouchTarget();
   const button = (icon: 'add' | 'remove', label: string, next: number, disabled: boolean) => (
     <Pressable
       accessibilityRole="button"
@@ -31,19 +35,24 @@ export function QuantityStepper({ value, onChange, min = 1 }: QuantityStepperPro
         {
           width: touch,
           height: touch,
-          borderColor: colors.brand,
-          borderRadius: radius.md,
+          backgroundColor: colors.brandSoft,
           opacity: disabled ? 0.4 : 1,
         },
       ]}
     >
-      <Icon name={icon} color={colors.brand} />
+      <Icon name={icon} size={20} color={colors.brand} />
     </Pressable>
   );
   return (
-    <View style={styles.row}>
+    <View
+      testID="quantity-stepper"
+      style={[
+        styles.box,
+        { borderColor: colors.brand, borderRadius: radius.md, backgroundColor: colors.surface },
+      ]}
+    >
       {button('remove', t('common:actions.decrease'), value - 1, value <= min)}
-      <Text bold accessibilityLiveRegion="polite" style={styles.value}>
+      <Text variant="formButton" accessibilityLiveRegion="polite" style={styles.value}>
         {String(value)}
       </Text>
       {button('add', t('common:actions.increase'), value + 1, false)}
@@ -52,7 +61,13 @@ export function QuantityStepper({ value, onChange, min = 1 }: QuantityStepperPro
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  button: { alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
-  value: { minWidth: 40, textAlign: 'center' },
+  box: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  button: { alignItems: 'center', justifyContent: 'center' },
+  value: { minWidth: 48, textAlign: 'center' },
 });

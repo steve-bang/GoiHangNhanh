@@ -23,7 +23,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Đơn Chứng dùng camera để quét mã trên đơn hàng.",
+          "cameraPermission": "Đơn Chứng dùng camera để quét mã trên đơn hàng và xem trước khi quay.",
           "microphonePermission": false,
           "recordAudioAndroid": false
         }

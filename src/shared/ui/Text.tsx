@@ -1,10 +1,10 @@
 import { Text as RNText, type TextProps as RNTextProps } from 'react-native';
 
-import type { ColorRole } from '@/core/theme';
+import type { ColorRole, typography as typographyTokens } from '@/core/theme';
 
 import { useTheme } from './theme';
 
-export type TextVariant = 'screenTitle' | 'sectionTitle' | 'body' | 'caption';
+export type TextVariant = keyof typeof typographyTokens;
 
 interface TextProps extends RNTextProps {
   variant?: TextVariant;
@@ -22,7 +22,8 @@ export function Text({ variant = 'body', color = 'text', bold, style, ...rest }:
     <RNText
       {...rest}
       accessibilityRole={
-        rest.accessibilityRole ?? (variant === 'screenTitle' ? 'header' : undefined)
+        rest.accessibilityRole ??
+        (variant === 'screenTitle' || variant === 'formTitle' ? 'header' : undefined)
       }
       style={[
         typography[variant],

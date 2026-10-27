@@ -12,7 +12,15 @@ import {
   useScannerPermission,
   useScreenFocused,
 } from '@/platform';
-import { BottomSheet, Button, Icon, Text, TextField, useTheme } from '@/shared/ui';
+import {
+  BottomSheet,
+  Button,
+  CameraPermissionSheet,
+  Icon,
+  Text,
+  TextField,
+  useTheme,
+} from '@/shared/ui';
 
 /** Cùng một mã đọc lại trong khoảng này (mili giây) bị bỏ qua: camera đọc liên tục cùng một mã. */
 const REPEAT_SCAN_WINDOW_MS = 2000;
@@ -256,37 +264,15 @@ export function ScanScreen() {
         </View>
       </View>
 
-      <BottomSheet
+      <CameraPermissionSheet
         visible={permissionPromptOpen}
+        status={permission.status === 'blocked' ? 'blocked' : 'askable'}
         onClose={() => setPermissionDismissed(true)}
-        title={t(
-          permission.status === 'blocked'
-            ? 'screens:scan.permission.blockedTitle'
-            : 'screens:scan.permission.askTitle',
-        )}
-      >
-        <View testID="scan-permission-modal" style={{ gap: spacing.md }}>
-          <Text>
-            {t(
-              permission.status === 'blocked'
-                ? 'screens:scan.permission.blockedMessage'
-                : 'screens:scan.permission.askReason',
-            )}
-          </Text>
-          <Button
-            testID="scan-permission-allow"
-            label={t(
-              permission.status === 'blocked'
-                ? 'screens:scan.permission.blockedAction'
-                : 'screens:scan.permission.askAction',
-            )}
-            onPress={() => {
-              if (permission.status === 'blocked') void openAppSettings();
-              else void permission.request();
-            }}
-          />
-        </View>
-      </BottomSheet>
+        onRequest={() => void permission.request()}
+        onOpenSettings={() => void openAppSettings()}
+        testID="scan-permission-modal"
+        allowTestID="scan-permission-allow"
+      />
 
       <BottomSheet
         visible={manualOpen}

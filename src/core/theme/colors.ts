@@ -32,6 +32,11 @@ export const colors = {
   fieldBorder: '#D3E3DE',
   // Nền nhạt cho thẻ/khối thông tin; luôn đi kèm chữ + biểu tượng (màu không là tín hiệu duy nhất).
   brandSoft: '#E6F0E9',
+  // Nhóm màn form/quy trình (mockup 03): nền trắng sạch, nền xám nhạt cho khối gợi/ô chưa chọn,
+  // nền xanh nhạt cho ô nhắc.
+  formBackground: '#FFFFFF',
+  surfaceMuted: '#F3F6F5',
+  infoSoft: '#EAF5F4',
   successSoft: '#E3F1E7',
   warningSoft: '#FDF3E7',
   dangerSoft: '#FCEBEA',

@@ -50,7 +50,9 @@
       "title": "Phiên quay chưa kết thúc",
       "message": "Bạn đang trong một phiên quay. Hãy giữ video và quay lại, hoặc kết thúc phiên để chuyển sang bước xác nhận video. Phần đã ghi không bị xóa.",
       "keep": "Giữ video và quay lại",
-      "end": "Kết thúc phiên"
+      "end": "Kết thúc phiên",
+      "messagePreview": "Phiên quay sẽ kết thúc và bạn quay về bước trước.",
+      "keepPreview": "Ở lại màn quay"
     }
   }
 }

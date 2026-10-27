@@ -55,6 +55,8 @@ Màu không bao giờ là tín hiệu duy nhất: mọi trạng thái có **ch�
 
 **Chữ và kích thước:** font hệ thống hoặc sans-serif hỗ trợ đầy đủ tiếng Việt; tiêu đề màn 24–28 pt, tiêu đề khu vực 17–20 pt, nội dung 15–17 pt, chú thích ≥ 12–13 pt (không dùng cho thông tin quan trọng). Vùng chạm tối thiểu 44 pt (iOS) / 48 dp (Android). Tôn trọng Dynamic Type/font scale, vùng an toàn, bàn phím hệ thống. Bo góc vừa phải, ít đổ bóng/gradient/hiệu ứng trang trí.
 
+**Ngoại lệ nhóm chữ form (chờ BA xác nhận):** theo yêu cầu bám thiết kế mockup 03 (người dùng đã duyệt), các màn dạng form/quy trình — Tạo đơn nhanh (UI-B04) và Xác nhận đơn (UI-C01) — dùng nhóm chữ nhỏ hơn mức "nội dung 15–17 pt" ở trên: `formLabel 13`, `formBody 14`, `formButton 14`, `formButtonSmall 13` (sp, vẫn co theo cỡ chữ hệ thống, không khóa `allowFontScaling`). Phạm vi: chỉ hai màn này và các thành phần dùng trong chúng (nhãn ô nhập, tên/variant sản phẩm, nút). Không dùng nhóm này cho thông báo lỗi/cảnh báo quan trọng (các thông báo đó giữ cỡ nội dung hoặc chú thích ≥ 12 pt). Chữ trên lớp phủ camera của màn quay (huy hiệu, mã đơn + kiện) là `overlay 12` (tối thiểu bằng chú thích) và **không** được co nhỏ hơn bằng tự co chữ; mã dài thì cắt giữa và xem đủ qua nhãn trợ năng. Số liệu này được khóa bằng `src/core/theme/theme.test.ts` (đổi một bên phải đổi bên kia). **Chưa kiểm chứng** với chữ lớn hệ thống trên máy thật; BA cần xác nhận hoặc bác ngoại lệ (decisions.md Q-17l).
+
 **Thành phần dùng chung:** nút chính cố định gần đáy; thanh trạng thái bằng chứng có nhãn; ô quét/tìm/nhập nhanh; thẻ đơn, dòng sản phẩm, thumbnail video; bottom sheet cho lựa chọn ngắn (trang riêng cho tác vụ phức tạp); dialog xác nhận chỉ cho hành động quan trọng; skeleton khi tải; empty state có hành động cụ thể.
 
 ### Chuẩn hiển thị trạng thái bằng chứng
@@ -309,6 +311,8 @@ Các tấm hình dưới đây là **mockup khái niệm**, lưu ở `docs/asset
 
 ![Tạo đơn nhanh, xác nhận đơn trước khi quay, màn hình quay](assets/ui/03-quick-order-confirm-record.png)
 
+**Đã dựng** (giao diện theo mẫu, lưu cục bộ; [decisions.md Q-17](engineering/decisions.md), [layout.md mục 2.5](engineering/layout.md)) với các điểm sửa ở mục 5.5 phần A đã xử lý: dòng 5 (bỏ "chống giả mạo"), 6 (nhãn *Chưa khai báo sản phẩm* chỉ khi chưa có dòng), 7 (tên và variant tách riêng, gợi ý tên rồi variant), 8 (số lượng mặc định 1), 11 (nút X qua hộp thoại), 12 (bỏ "Kiểm tra 30 giây…"). Màn quay **chưa ghi video**: camera chỉ xem trước và luôn có dải "Bản thử giao diện: chưa ghi video" (không nói dối "Đang quay"); không có nút thư viện ảnh (O-02) và nút chụp ảnh (không có đặc tả).
+
 ### 5.4 Xác nhận lưu và đồng bộ — UI-C04, C05, F01
 
 ![Xác nhận lưu video và trung tâm đồng bộ](assets/ui/04-save-confirm-and-sync.png)
@@ -343,7 +347,7 @@ Phần đúng hướng: bảng màu và phong cách khớp mục 3; Tổng quan 
 | Mã | Điểm khác | Phương án / khuyến nghị |
 |---|---|---|
 | O-18 | ~~Mockup 02 có thanh dưới: Trang chủ, Đơn hàng, **nút Quét ở giữa**, Thông báo, Cá nhân. D-11 quy định 4 tab~~ | **Đã chốt theo mockup (D-16).** Hệ quả mở: O-26, O-27 |
-| O-19 | Đóng gói đơn mới đi qua **3 màn** trước camera: Tạo đơn nhanh → nút "Lưu và xác nhận đơn" → Xác nhận đơn → "Kiểm tra camera và bắt đầu". Spec (D-10) muốn một lần chạm | Khuyến nghị: nút chính ở Tạo đơn nhanh là **Lưu và quay video**, thẳng sang màn Xem nhanh đơn đã gộp nút bắt đầu, hoặc bỏ hẳn màn Xác nhận khi vừa mới tạo đơn (người dùng vừa nhập xong). Màn Xác nhận chỉ cần khi quét ra đơn có sẵn |
+| O-19 | Đóng gói đơn mới đi qua **3 màn** trước camera: Tạo đơn nhanh → nút "Lưu và xác nhận đơn" → Xác nhận đơn → "Kiểm tra camera và bắt đầu". Spec (D-10) muốn một lần chạm | Khuyến nghị: nút chính ở Tạo đơn nhanh là **Lưu và quay video**, thẳng sang màn Xem nhanh đơn đã gộp nút bắt đầu, hoặc bỏ hẳn màn Xác nhận khi vừa mới tạo đơn (người dùng vừa nhập xong). Màn Xác nhận chỉ cần khi quét ra đơn có sẵn. **Hiện làm theo mockup 03 (chưa chốt):** *Lưu và xác nhận đơn* đi qua màn Xác nhận; *Bỏ qua, quay ngay* đi thẳng tới camera (Q-17e) |
 | O-02 | Màn quay có nút **thư viện ảnh** ở góc dưới phải | Nhập từ thư viện đang là câu hỏi mở. Nếu chưa chốt thì bỏ nút khỏi màn quay; nếu cho nhập, đặt ở nơi khác và gắn nhãn nguồn "nhập từ thư viện" |
 
 ## 6. Tương tác chi tiết

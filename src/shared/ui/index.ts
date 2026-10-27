@@ -3,6 +3,7 @@ export { ActionCard } from './ActionCard';
 export { BottomSheet } from './BottomSheet';
 export { Button } from './Button';
 export type { ButtonVariant } from './Button';
+export { CameraPermissionSheet } from './CameraPermissionSheet';
 export { Card } from './Card';
 export { ConfirmDialog } from './ConfirmDialog';
 export { EmptyState } from './EmptyState';
