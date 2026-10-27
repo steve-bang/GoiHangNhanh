@@ -27,7 +27,7 @@ describe('SessionHydrator', () => {
       { personalGateways: createFakePersonalGateways() },
     );
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('signed_in'));
-    expect(screen.getByTestId('key')).toHaveTextContent('fake-user-1:fake-shop-1');
+    expect(screen.getByTestId('key')).toHaveTextContent('fake-user-1:local-shop');
   });
 
   it('cổng lỗi: giữ nguyên chưa đăng nhập, không suy đoán phiên', async () => {

@@ -121,6 +121,9 @@ describe('cổng cá nhân chưa kết nối', () => {
       () => account.updateProfile({ displayName: 'A' }),
       () => account.changePassword({ currentPassword: 'a', newPassword: 'b' }),
       () => account.signOut(),
+      () => account.listShops(),
+      () => account.updateShopName('s', 'Tên'),
+      () => account.switchShop('s'),
       () => settings.getNotificationPreferences(),
       () =>
         settings.updateNotificationPreferences({
@@ -132,6 +135,78 @@ describe('cổng cá nhân chưa kết nối', () => {
     ]) {
       expect(await codeOf(call())).toBe('AUTH_SERVICE_UNAVAILABLE');
     }
+  });
+});
+
+const SHOP_A = { id: 'a', name: 'Shop A', role: 'owner', status: 'active', canEdit: true } as const;
+const SHOP_B = {
+  id: 'b',
+  name: 'Shop B',
+  role: 'member',
+  status: 'active',
+  canEdit: false,
+} as const;
+const SHOP_C = {
+  id: 'c',
+  name: 'Shop C',
+  role: 'owner',
+  status: 'suspended',
+  canEdit: true,
+} as const;
+
+describe('cổng cá nhân giả: cửa hàng', () => {
+  it('mặc định một shop; listShops trả bản sao (sửa kết quả không đổi cổng)', async () => {
+    const { account } = createFakePersonalGateways();
+    const shops = await account.listShops();
+    expect(shops).toHaveLength(1);
+    expect(shops[0]).toMatchObject({ name: 'Shop minh họa', canEdit: true, status: 'active' });
+    expect(await account.getShopSummary()).toEqual(shops[0]);
+  });
+
+  it('shop: null nghĩa là chưa có shop nào', async () => {
+    const { account } = createFakePersonalGateways({ shop: null });
+    expect(await account.getShopSummary()).toBeNull();
+    expect(await account.listShops()).toEqual([]);
+  });
+
+  it('đổi tên: bỏ khoảng trắng đầu/cuối, chỉ đổi shop được chọn', async () => {
+    const { account } = createFakePersonalGateways({ shops: [SHOP_A, SHOP_C] });
+    const updated = await account.updateShopName('a', '  Shop Mới  ');
+    expect(updated.name).toBe('Shop Mới');
+    const names = (await account.listShops()).map((shop) => shop.name);
+    expect(names).toEqual(['Shop Mới', 'Shop C']);
+  });
+
+  it('đổi tên: thiếu quyền -> SHOP_PERMISSION_DENIED và không đổi gì (cổng tự kiểm, không tin UI)', async () => {
+    const { account } = createFakePersonalGateways({ shops: [SHOP_A, SHOP_B] });
+    expect(await codeOf(account.updateShopName('b', 'Tên khác'))).toBe('SHOP_PERMISSION_DENIED');
+    expect((await account.listShops())[1]?.name).toBe('Shop B');
+  });
+
+  it('đổi tên: tên không hợp lệ hoặc shop lạ -> SHOP_SAVE_FAILED', async () => {
+    const { account } = createFakePersonalGateways({ shops: [SHOP_A] });
+    expect(await codeOf(account.updateShopName('a', '   '))).toBe('SHOP_SAVE_FAILED');
+    expect(await codeOf(account.updateShopName('khong-co', 'X'))).toBe('SHOP_SAVE_FAILED');
+  });
+
+  it('chuyển shop: đổi shop đang dùng; shop tạm khóa hoặc không thuộc tài khoản bị từ chối', async () => {
+    const { account } = createFakePersonalGateways({ shops: [SHOP_A, SHOP_B, SHOP_C] });
+    expect((await account.getShopSummary())?.id).toBe('a');
+    expect((await account.switchShop('b')).id).toBe('b');
+    expect((await account.getShopSummary())?.id).toBe('b');
+    expect(await codeOf(account.switchShop('c'))).toBe('SHOP_SWITCH_FAILED');
+    expect(await codeOf(account.switchShop('lạ'))).toBe('SHOP_SWITCH_FAILED');
+    expect((await account.getShopSummary())?.id).toBe('b');
+  });
+
+  it('failNext làm hỏng đúng một lần chuyển/đổi tên và không đổi dữ liệu', async () => {
+    const { account } = createFakePersonalGateways({ shops: [SHOP_A, SHOP_B] });
+    account.failNext('SHOP_SWITCH_FAILED');
+    expect(await codeOf(account.switchShop('b'))).toBe('SHOP_SWITCH_FAILED');
+    expect((await account.getShopSummary())?.id).toBe('a');
+    account.failNext('SHOP_SAVE_FAILED');
+    expect(await codeOf(account.updateShopName('a', 'Mới'))).toBe('SHOP_SAVE_FAILED');
+    expect((await account.getShopSummary())?.name).toBe('Shop A');
   });
 });
 

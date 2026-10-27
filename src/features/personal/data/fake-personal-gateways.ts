@@ -1,7 +1,13 @@
 import { AppError } from '@/core/errors/app-error';
 import type { ErrorCode } from '@/core/errors/codes';
+import { LOCAL_SHOP_ID } from '@/features/orders';
 
-import { MIN_PASSWORD_LENGTH, normalizeDisplayName } from '../domain/validation';
+import {
+  MIN_PASSWORD_LENGTH,
+  normalizeDisplayName,
+  normalizeShopName,
+  validateShopName,
+} from '../domain/validation';
 import type {
   AccountGateway,
   ChangePasswordInput,
@@ -23,8 +29,14 @@ export interface FakePersonalOptions {
   /** Độ trễ mô phỏng của mỗi lời gọi (ms). Test đặt 0. */
   readonly latencyMs?: number;
   readonly profile?: Partial<UserProfile>;
-  /** `null` = chưa có shop. Mặc định: một shop minh họa (chỉ bản giả). */
-  readonly shop?: ShopSummary | null;
+  /** `null` = chưa có shop. Mặc định: một shop minh họa (chỉ bản giả). Bị bỏ qua nếu có `shops`. */
+  readonly shop?: Partial<ShopSummary> | null;
+  /**
+   * Nhiều shop (test chuyển shop). Shop đầu tiên đang dùng, trừ khi `currentShopId` chỉ shop khác.
+   * Mặc định chỉ một shop: UI không mời chuyển shop khi chỉ có một (Q-19f).
+   */
+  readonly shops?: readonly ShopSummary[];
+  readonly currentShopId?: string;
   readonly notificationPreferences?: NotificationPreferences;
 }
 
@@ -39,6 +51,14 @@ export const FAKE_NOTIFICATION_DEFAULTS: NotificationPreferences = {
   syncCompleted: false,
   storageNearlyFull: true,
   planExpiring: true,
+};
+
+const FAKE_DEFAULT_SHOP: ShopSummary = {
+  id: LOCAL_SHOP_ID,
+  name: 'Shop minh họa',
+  role: 'owner',
+  status: 'active',
+  canEdit: true,
 };
 
 function delay(ms: number): Promise<void> {
@@ -62,20 +82,31 @@ class FailureQueue {
 export class FakeAccountGateway implements AccountGateway {
   getProfileCalls = 0;
   getShopSummaryCalls = 0;
+  listShopsCalls = 0;
+  readonly updateShopNameCalls: { shopId: string; name: string }[] = [];
+  readonly switchShopCalls: string[] = [];
   readonly updateCalls: UpdateProfileInput[] = [];
   /** Số lần đổi mật khẩu được gọi (không lưu nội dung mật khẩu). */
   changePasswordCalls = 0;
   signOutCalls = 0;
   private readonly latencyMs: number;
   private profile: UserProfile;
-  private readonly shop: ShopSummary | null;
+  private shops: ShopSummary[];
+  private currentShopId: string | null;
   private password: string = FAKE_ACCOUNT_PASSWORD;
   private readonly failure = new FailureQueue();
 
   constructor(options: FakePersonalOptions = {}) {
     this.latencyMs = options.latencyMs ?? 0;
-    this.shop =
-      options.shop === undefined ? { id: 'fake-shop-1', name: 'Shop minh họa' } : options.shop;
+    if (options.shops) {
+      this.shops = options.shops.map((shop) => ({ ...shop }));
+    } else if (options.shop === null) {
+      this.shops = [];
+    } else {
+      // Id mặc định trùng `LOCAL_SHOP_ID` để đơn đã lưu cục bộ (Q-17d) vẫn thấy được khi phiên giả có shop.
+      this.shops = [{ ...FAKE_DEFAULT_SHOP, ...options.shop }];
+    }
+    this.currentShopId = options.currentShopId ?? this.shops[0]?.id ?? null;
     this.profile = {
       uid: 'fake-user-1',
       email: 'demo@example.com',
@@ -101,7 +132,39 @@ export class FakeAccountGateway implements AccountGateway {
     this.getShopSummaryCalls += 1;
     await delay(this.latencyMs);
     this.failure.consume();
-    return this.shop;
+    return this.shops.find((shop) => shop.id === this.currentShopId) ?? null;
+  }
+
+  async listShops(): Promise<readonly ShopSummary[]> {
+    this.listShopsCalls += 1;
+    await delay(this.latencyMs);
+    this.failure.consume();
+    return this.shops.map((shop) => ({ ...shop }));
+  }
+
+  async updateShopName(shopId: string, name: string): Promise<ShopSummary> {
+    this.updateShopNameCalls.push({ shopId, name });
+    await delay(this.latencyMs);
+    this.failure.consume();
+    const index = this.shops.findIndex((shop) => shop.id === shopId);
+    const shop = this.shops[index];
+    if (!shop) throw new AppError('SHOP_SAVE_FAILED');
+    // Bản giả mô phỏng việc máy chủ tự kiểm tra quyền và dữ liệu, không tin client.
+    if (!shop.canEdit) throw new AppError('SHOP_PERMISSION_DENIED');
+    if (validateShopName(name) !== null) throw new AppError('SHOP_SAVE_FAILED');
+    const updated: ShopSummary = { ...shop, name: normalizeShopName(name) };
+    this.shops[index] = updated;
+    return { ...updated };
+  }
+
+  async switchShop(shopId: string): Promise<ShopSummary> {
+    this.switchShopCalls.push(shopId);
+    await delay(this.latencyMs);
+    this.failure.consume();
+    const shop = this.shops.find((candidate) => candidate.id === shopId);
+    if (!shop || shop.status !== 'active') throw new AppError('SHOP_SWITCH_FAILED');
+    this.currentShopId = shop.id;
+    return { ...shop };
   }
 
   async updateProfile(input: UpdateProfileInput): Promise<UserProfile> {
