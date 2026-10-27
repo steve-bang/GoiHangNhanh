@@ -7,8 +7,7 @@ import { ROUTES } from '@/core/navigation';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
-import { createFakeGateways, FAKE_DEMO_EMAIL } from '../data/fake-gateways';
-import { createUnavailableGateways } from '../data/unavailable-gateways';
+import { createFakeApi, FAKE_DEMO_EMAIL, createUnavailableApi } from '@/api/testing';
 import type { Gateways } from '../domain/types';
 import { NewPasswordScreen } from './NewPasswordScreen';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
@@ -49,7 +48,7 @@ function RecoveryProbe() {
 
 /** Dựng màn sau khi đã qua bước nhập mã (có vé). `ticketExpiresAt` là mốc hạn cổng báo (nếu có). */
 function renderNew(
-  gateways: Gateways = createFakeGateways(),
+  gateways: Gateways = createFakeApi(),
   ticket = 'fake-ticket-1',
   ticketExpiresAt: number | null = null,
 ) {
@@ -77,7 +76,7 @@ async function fill(a: string, b: string) {
 }
 
 /** Cổng thật của bản giả đã đi qua bước xin mã + nhập mã, trả vé hợp lệ. */
-async function realTicket(fake: ReturnType<typeof createFakeGateways>) {
+async function realTicket(fake: ReturnType<typeof createFakeApi>) {
   await fake.auth.requestPasswordRecovery(FAKE_DEMO_EMAIL);
   return (await fake.auth.verifyRecoveryCode({ email: FAKE_DEMO_EMAIL, code: '123456' })).ticket;
 }
@@ -104,14 +103,14 @@ describe('UI-A09 Mật khẩu mới: chặn vào khi chưa qua bước trước'
 
 describe('UI-A09 Mật khẩu mới: vé hết hạn theo hạn cổng báo', () => {
   it('vé quá hạn: không hiện màn, xóa vé, về /verify-otp để nhập mã lại', async () => {
-    await renderNew(createFakeGateways(), 't', Date.now() - 1000);
+    await renderNew(createFakeApi(), 't', Date.now() - 1000);
     expect(screen.queryByTestId('screen-UI-A09')).toBeNull();
     expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.verifyOtp);
     expect(screen.getByTestId('probe-ticket')).toHaveTextContent('(không)');
   });
 
   it('vé còn hạn: vào được màn', async () => {
-    await renderNew(createFakeGateways(), 't', Date.now() + 60_000);
+    await renderNew(createFakeApi(), 't', Date.now() + 60_000);
     expect(screen.getByTestId('screen-UI-A09')).toBeOnTheScreen();
     expect(mockNavigation.replace).not.toHaveBeenCalled();
   });
@@ -221,7 +220,7 @@ describe('UI-A09 Mật khẩu mới: kiểm tra dữ liệu', () => {
 
 describe('UI-A09 Mật khẩu mới: gửi', () => {
   it('thành công: về /sign-in bằng reset (kèm email, KHÔNG kèm mật khẩu), bật cờ banner thành công', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     const ticket = await realTicket(fake);
     await renderNew(fake, ticket);
     await fill(NEW_PASSWORD, NEW_PASSWORD);
@@ -252,9 +251,9 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
         }),
     );
     const gateways: Gateways = {
-      session: createFakeGateways().session,
-      auth: { ...createUnavailableGateways().auth, resetPassword },
-      shop: createFakeGateways().shop,
+      session: createFakeApi().session,
+      auth: { ...createUnavailableApi().auth, resetPassword },
+      shop: createFakeApi().shop,
     };
     await renderNew(gateways);
     await fill(NEW_PASSWORD, NEW_PASSWORD);
@@ -278,9 +277,9 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
         }),
     );
     const gateways: Gateways = {
-      session: createFakeGateways().session,
-      auth: { ...createUnavailableGateways().auth, resetPassword },
-      shop: createFakeGateways().shop,
+      session: createFakeApi().session,
+      auth: { ...createUnavailableApi().auth, resetPassword },
+      shop: createFakeApi().shop,
     };
     function Harness() {
       const [screenName, setScreenName] = useState<'new' | 'signIn' | 'none'>('new');
@@ -333,9 +332,9 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
         }),
     );
     const gateways: Gateways = {
-      session: createFakeGateways().session,
-      auth: { ...createUnavailableGateways().auth, resetPassword },
-      shop: createFakeGateways().shop,
+      session: createFakeApi().session,
+      auth: { ...createUnavailableApi().auth, resetPassword },
+      shop: createFakeApi().shop,
     };
     await renderNew(gateways);
     await fill(NEW_PASSWORD, NEW_PASSWORD);
@@ -349,7 +348,7 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
   });
 
   it('hệ thống bận: câu theo thiết kế + Thử lại; giữ dữ liệu; Thử lại gửi lại ĐÚNG dữ liệu', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     const ticket = await realTicket(fake);
     await renderNew(fake, ticket);
     await fill(NEW_PASSWORD, NEW_PASSWORD);
@@ -368,7 +367,7 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
   });
 
   it('mất mạng: câu mất mạng chuẩn + Thử lại', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderNew(fake, await realTicket(fake));
     await fill(NEW_PASSWORD, NEW_PASSWORD);
     fake.auth.failNext('AUTH_NETWORK_ERROR');
@@ -379,7 +378,7 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
   });
 
   it('phiên hết hạn: câu theo thiết kế, nút "Quay lại bước đầu", xóa mật khẩu đã gõ, không chuyển sang đăng nhập', async () => {
-    const fake = createFakeGateways();
+    const fake = createFakeApi();
     await renderNew(fake, 've-het-han');
     await fill(NEW_PASSWORD, NEW_PASSWORD);
     await fireEvent.press(submit());
@@ -397,7 +396,7 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
   });
 
   it('bản "chưa kết nối": báo lỗi, không về đăng nhập', async () => {
-    await renderNew(createUnavailableGateways());
+    await renderNew(createUnavailableApi());
     await fill(NEW_PASSWORD, NEW_PASSWORD);
     await fireEvent.press(submit());
     expect(screen.getByTestId('form-error')).toBeOnTheScreen();

@@ -6,8 +6,7 @@ import { ROUTES } from '@/core/navigation';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
-import { createFakeGateways } from '../data/fake-gateways';
-import { createUnavailableGateways } from '../data/unavailable-gateways';
+import { createFakeApi, createUnavailableApi } from '@/api/testing';
 import {
   SPLASH_HERO_MAX_WAIT_MS,
   SPLASH_MAX_WAIT_MS,
@@ -35,7 +34,7 @@ const mockWindow = jest.mocked(useWindowDimensions);
 
 /** Cổng với phiên giả: `restore` do bài test điều khiển. */
 function gatewaysWith(session: SessionGateway): Gateways {
-  return { ...createFakeGateways(), session };
+  return { ...createFakeApi(), session };
 }
 const restoring = (state: SessionState, latencyMs = 0): SessionGateway => ({
   restore: () => new Promise((resolve) => setTimeout(() => resolve(state), latencyMs)),
@@ -258,7 +257,7 @@ describe('UI-A01 Splash: thời gian và điều hướng', () => {
   });
 
   it('cổng lỗi: coi như chưa đăng nhập, đi Chào mừng sau thời gian tối thiểu (không báo thành công)', async () => {
-    const gateways = createFakeGateways({ sessionFails: true });
+    const gateways = createFakeApi({ sessionFails: true });
     await renderWithProviders(<SplashScreen />, { gateways });
     await settleHero();
     await advance(SPLASH_MIN_VISIBLE_MS - 1);
@@ -287,7 +286,7 @@ describe('UI-A01 Splash: thời gian và điều hướng', () => {
   });
 
   it('cổng "chưa kết nối" (bản build thường) không bao giờ đưa vào Tổng quan', async () => {
-    await renderWithProviders(<SplashScreen />, { gateways: createUnavailableGateways() });
+    await renderWithProviders(<SplashScreen />, { gateways: createUnavailableApi() });
     await settleHero();
     await advance(SPLASH_MAX_WAIT_MS + 1000);
     expect(mockNavigation.reset).toHaveBeenCalledTimes(1);
@@ -358,7 +357,7 @@ describe('UI-A01 Splash: thời gian hiển thị tính từ lúc Splash của a
 
   it('(c3) cổng lỗi, ảnh hiện lúc 1,5 s: về Chào mừng, không sớm hơn lúc hiện + 2 s', async () => {
     await renderWithProviders(<SplashScreen />, {
-      gateways: createFakeGateways({ sessionFails: true }),
+      gateways: createFakeApi({ sessionFails: true }),
     });
     await advance(1500);
     await settleHero();

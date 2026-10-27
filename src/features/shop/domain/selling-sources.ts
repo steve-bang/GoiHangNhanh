@@ -1,12 +1,7 @@
-import { ORDER_SOURCES, type OrderSource } from '@/core/orders/order-source';
+import type { OrderSource } from '@/core/orders/order-source';
+import { normalizeSources, SELLING_SOURCES } from '@/core/orders/selling-sources';
 
-/** Thứ tự hiển thị và thứ tự chuẩn khi lưu: Shopee, TikTok Shop, Lazada, Khác. */
-export const SELLING_SOURCES: readonly OrderSource[] = ORDER_SOURCES;
-
-/** Bỏ trùng và sắp theo thứ tự chuẩn; "Khác" là một lựa chọn như các nguồn còn lại. */
-export function normalizeSources(sources: readonly OrderSource[]): OrderSource[] {
-  return SELLING_SOURCES.filter((source) => sources.includes(source));
-}
+export { normalizeSources, SELLING_SOURCES };
 
 export function toggleSource(selected: readonly OrderSource[], source: OrderSource): OrderSource[] {
   return normalizeSources(

@@ -56,9 +56,11 @@ src/
   core/          TypeScript thuần dùng chung: errors, ids (branded), i18n, theme tokens, logging.
   features/<f>/
     domain/      Kiểu, quy tắc, máy trạng thái, hàm thuần. KHÔNG import React/Expo/Firebase.
-    data/        Repository/adapter: Firestore, hàng đợi, SQLite. Nơi duy nhất gọi SDK dữ liệu.
+    data/        Repository/adapter: SQLite, hàng đợi; dùng backend qua hợp đồng `ApiClient` (không gọi SDK Firebase).
     ui/          Màn hình/component/hook. Không gọi Firebase trực tiếp.
     index.ts     Public API; feature khác chỉ import từ đây.
+  api/           Lớp API: `contract/` (giao diện thuần), `firebase/` (NƠI DUY NHẤT gọi SDK Firebase), `fake/`, `unavailable/`,
+                 `create-api.ts` (chọn hiện thực), `contract-tests/` (bộ test chung cho mọi hiện thực).
   platform/      Adapter cho API native (camera, quét mã, hệ tệp, mạng, tải nền, sinh ID).
   shared/ui/     Component dùng chung theo design system (docs/09 mục 3).
 firebase/        firebase.json, firestore.rules, storage.rules, tests/rules, functions/
@@ -69,7 +71,8 @@ Hướng phụ thuộc: `ui → domain ← data → platform`; `core` không ph�
 
 - **Nghiệp vụ trọng yếu kiểm thử được không cần thiết bị**: máy trạng thái tệp, liên kết phiên–kiện, hàng đợi (logic), phục hồi phiên đều là hàm thuần trong `domain` → unit test nhanh trong CI. Mã camera/tải nền chỉ kiểm chứng đầy đủ trên máy thật (xem [testing.md](testing.md)).
 - **Thay thư viện camera/tải nền không đụng nghiệp vụ**: các lựa chọn ở mục 11 còn chờ duyệt và có khả năng đổi sau spike; `domain` định nghĩa giao diện (port), `platform` hiện thực.
-- **Một chỗ gọi Firebase** giúp kiểm soát chi phí đọc/ghi (mục 13) và đảm bảo mọi truy vấn đều có `shopId`.
+- **Lớp API tách backend khỏi app**: đổi backend phía app = viết `api/<backend>/` và đổi một dòng ở `create-api.ts`. Rules, Functions, `firebase/` ở gốc repo là phần máy chủ của hiện thực Firebase, phải làm lại riêng nếu đổi backend.
+- **Một chỗ gọi Firebase** (`api/firebase`) giúp kiểm soát chi phí đọc/ghi (mục 13) và đảm bảo mọi truy vấn đều có `shopId`.
 
 Feature dự kiến: `shop`, `orders`, `packing`, `returns`, `evidence`, `upload`, `disputes` (+ `retention`/`plans` phía hiển thị khi cần). Ánh xạ màn hình: `A01–A08`/`B01–B08` (docs/04–05) và `UI-*` (docs/09) → feature tương ứng; mã `A/B` là đặc tả quy trình, `UI-` là danh mục giao diện.
 
