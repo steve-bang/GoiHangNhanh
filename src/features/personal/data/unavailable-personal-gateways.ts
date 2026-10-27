@@ -3,7 +3,7 @@ import { AppError } from '@/core/errors/app-error';
 import type { PersonalGateways } from '../domain/types';
 
 /**
- * Cổng "chưa kết nối": dùng ở bản build thường khi chưa có máy chủ thật. Mọi lời gọi trả lỗi nghiệp
+ * Cổng "chưa kết nối": dùng ở chế độ Firebase/không kết nối: phần hợp đồng API chưa có thì chưa nối được (decisions.md Q-20t). Mọi lời gọi trả lỗi nghiệp
  * vụ `AUTH_SERVICE_UNAVAILABLE`; KHÔNG BAO GIỜ báo đã đổi tên/mật khẩu/đăng xuất khi chưa có máy chủ
  * xác nhận (CLAUDE.md #3, #11).
  */

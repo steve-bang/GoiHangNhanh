@@ -5,7 +5,6 @@ import {
   createPersonalGateways,
   getDefaultPersonalGateways,
   resetDefaultPersonalGatewaysForTests,
-  resolvePersonalBackendMode,
 } from './personal-gateways';
 import { createUnavailablePersonalGateways } from './unavailable-personal-gateways';
 
@@ -210,26 +209,29 @@ describe('cổng cá nhân giả: cửa hàng', () => {
   });
 });
 
-describe('chọn cổng theo môi trường', () => {
-  it('bản giả chỉ khi dev, test hoặc cờ rõ ràng', () => {
-    expect(resolvePersonalBackendMode({ isDev: true, isTest: false, fakeFlag: undefined })).toBe(
-      'fake',
-    );
-    expect(resolvePersonalBackendMode({ isDev: false, isTest: true, fakeFlag: undefined })).toBe(
-      'fake',
-    );
-    expect(resolvePersonalBackendMode({ isDev: false, isTest: false, fakeFlag: '1' })).toBe('fake');
-    expect(resolvePersonalBackendMode({ isDev: false, isTest: false, fakeFlag: undefined })).toBe(
-      'unavailable',
-    );
-    expect(resolvePersonalBackendMode({ isDev: false, isTest: false, fakeFlag: '0' })).toBe(
-      'unavailable',
-    );
+describe('chọn cổng theo môi trường (cùng cơ chế với src/api/create-api)', () => {
+  const prod = { isDev: false, isTest: false, fakeFlag: undefined };
+
+  it('bản giả khi dev, test hoặc cờ rõ ràng (cùng quy tắc resolveBackendMode)', async () => {
+    for (const env of [
+      { ...prod, isDev: true },
+      { ...prod, isTest: true },
+      { ...prod, fakeFlag: '1' },
+      { ...prod, backend: 'fake' },
+    ]) {
+      expect(await createPersonalGateways(env).account.getProfile()).toMatchObject({
+        uid: 'fake-user-1',
+      });
+    }
   });
 
-  it('bản build thường dùng cổng chưa kết nối', async () => {
-    const gateways = createPersonalGateways({ isDev: false, isTest: false, fakeFlag: undefined });
-    expect(await codeOf(gateways.account.getProfile())).toBe('AUTH_SERVICE_UNAVAILABLE');
+  it('bản build thường (chế độ Firebase) là "chưa kết nối", không dùng bản giả', async () => {
+    for (const env of [prod, { ...prod, backend: 'firebase' }, { ...prod, emulatorHost: 'h' }]) {
+      const { account, settings } = createPersonalGateways(env);
+      expect(await codeOf(account.getProfile())).toBe('AUTH_SERVICE_UNAVAILABLE');
+      expect(await codeOf(account.signOut())).toBe('AUTH_SERVICE_UNAVAILABLE');
+      expect(await codeOf(settings.getNotificationPreferences())).toBe('AUTH_SERVICE_UNAVAILABLE');
+    }
   });
 
   it('cổng mặc định là một thể hiện cho cả phiên', () => {
