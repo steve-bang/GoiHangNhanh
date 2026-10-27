@@ -136,6 +136,7 @@ Làm sau khi deploy và có dev build (EAS hoặc `expo prebuild` + Xcode/Androi
 | `Failed to get Firebase project` | Sai tài khoản/không có quyền: `npx firebase login:list`, đăng xuất rồi đăng nhập đúng tài khoản |
 | `Your project must be on the Blaze plan` | Nâng gói ở Console |
 | Lỗi quyền Cloud Build ở lần deploy đầu | Đợi vài phút sau khi bật API, chạy lại cùng lệnh |
+| `pod install`: `SPM + static linkage is not supported` | `@react-native-firebase` 27 dùng Swift Package nên iOS phải dùng `useFrameworks: "dynamic"` (đã đặt trong `app.json`, plugin `expo-build-properties`); sau khi đổi chạy lại `npx expo prebuild --platform ios --clean` |
 | Lỗi build TypeScript ở predeploy | `npm --prefix firebase/functions run build` để xem lỗi; kiểm tra đã `npm --prefix firebase/functions ci` |
 | App báo "Hệ thống đang bận" ngay khi mở | Thiếu tệp cấu hình Firebase (rơi về "chưa kết nối") hoặc SDK chưa khởi tạo được; kiểm tra mục 3 và log dev |
 | `npm run typecheck` hoặc `test:rules` báo không thấy `firebase-admin` | Chưa chạy `npm --prefix firebase/functions ci` |
