@@ -159,7 +159,7 @@ describe('ShopSwitchScreen (UI-I02 route con, PER-07)', () => {
     expect(gateways.account.switchShopCalls).toEqual([]);
   });
 
-  it('còn tệp chưa đồng bộ: "Vẫn chuyển cửa hàng" thì chuyển (dữ liệu cục bộ giữ nguyên, Q-19o)', async () => {
+  it('còn tệp chưa đồng bộ: "Vẫn chuyển cửa hàng" thì chuyển (dữ liệu cục bộ giữ nguyên, Q-20o)', async () => {
     const gateways = await setup({
       store: withStore({ countUnsynced: jest.fn().mockResolvedValue(2) }),
     });

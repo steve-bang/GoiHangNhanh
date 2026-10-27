@@ -3,7 +3,7 @@
  *
  * Thứ tự ưu tiên (bảo thủ): đang quay > còn bằng chứng chưa đồng bộ > không xác định được > cho phép.
  * "Không xác định được" (đọc kho cục bộ lỗi) KHÔNG được coi là an toàn: chặn như một lỗi đăng xuất,
- * không im lặng cho đi tiếp. Đăng xuất không xóa dữ liệu cục bộ (decisions.md Q-19h).
+ * không im lặng cho đi tiếp. Đăng xuất không xóa dữ liệu cục bộ (decisions.md Q-20h).
  */
 export interface SignOutFacts {
   /** Có phiên đang ghi video; `null` = không đọc được. */

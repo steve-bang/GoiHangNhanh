@@ -144,7 +144,7 @@ describe('câu chữ thông báo lỗi AUTH_*, signUp.errors và lỗi các màn
     );
   });
 
-  it('mã tab Cá nhân (Q-19i): đúng từng chữ với câu người dùng chốt', () => {
+  it('mã tab Cá nhân (Q-20i): đúng từng chữ với câu người dùng chốt', () => {
     expect(errors.AUTH_WRONG_CURRENT_PASSWORD).toBe('Mật khẩu hiện tại chưa đúng.');
     expect(fullText(msg('AUTH_SIGN_OUT_FAILED'))).toBe('Chưa đăng xuất được. Bạn thử lại nhé.');
     expect(fullText(msg('PROFILE_SAVE_FAILED'))).toBe(
@@ -154,7 +154,7 @@ describe('câu chữ thông báo lỗi AUTH_*, signUp.errors và lỗi các màn
     expect(fullText(msg('AUTH_SESSION_EXPIRED'))).toContain('đăng nhập lại');
   });
 
-  it('mã cửa hàng (Q-19n): đúng từng chữ với kế hoạch đã duyệt', () => {
+  it('mã cửa hàng (Q-20n): đúng từng chữ với kế hoạch đã duyệt', () => {
     expect(fullText(msg('SHOP_SAVE_FAILED'))).toBe(
       'Không thể cập nhật cửa hàng lúc này. Bạn thử lại nhé.',
     );

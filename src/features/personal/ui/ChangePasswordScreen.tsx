@@ -31,8 +31,8 @@ import { usePersonalGateways } from './PersonalGatewaysProvider';
 const NEEDS_SIGN_IN: readonly ErrorCode[] = ['AUTH_REQUIRES_RECENT_LOGIN', 'AUTH_SESSION_EXPIRED'];
 
 /**
- * Đổi mật khẩu (PER-04), route con của UI-I05 (decisions.md Q-19k). Chỉ dành cho tài khoản đăng nhập
- * bằng mật khẩu (D-13, Q-19c): màn vào từ UI-I01 chỉ hiện lối vào đó khi `signInMethod === 'password'`.
+ * Đổi mật khẩu (PER-04), route con của UI-I05 (decisions.md Q-20k). Chỉ dành cho tài khoản đăng nhập
+ * bằng mật khẩu (D-13, Q-20c): màn vào từ UI-I01 chỉ hiện lối vào đó khi `signInMethod === 'password'`.
  * Không log, không giữ mật khẩu ngoài state của màn; thành công chỉ báo SAU KHI cổng xác nhận. Nút luôn
  * bật khi chưa gửi; kiểm tra khi bấm, lỗi hiện tại ô và focus vào ô lỗi đầu tiên. Yêu cầu độ dài hiện
  * theo thời gian thực (biểu tượng + chữ, không chỉ màu).

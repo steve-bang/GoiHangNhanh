@@ -16,7 +16,7 @@ export type SignOutStep = 'closed' | 'confirm' | 'blocked_recording' | 'unsynced
 /**
  * Luồng đăng xuất an toàn (PER-21): xác nhận -> kiểm tra (đang quay, chưa đồng bộ) -> cổng đăng xuất
  * -> về Chào mừng. Chỉ đăng xuất khi người dùng đã xác nhận VÀ điều kiện bảo vệ dữ liệu đáp ứng; lỗi
- * (cổng hoặc đọc kho cục bộ) báo `AUTH_SIGN_OUT_FAILED` và giữ phiên. Không xóa dữ liệu cục bộ (Q-19h).
+ * (cổng hoặc đọc kho cục bộ) báo `AUTH_SIGN_OUT_FAILED` và giữ phiên. Không xóa dữ liệu cục bộ (Q-20h).
  * Chống bấm lặp bằng `busy`. Toast thành công chỉ hiện SAU khi cổng xác nhận và đã điều hướng.
  */
 export function useSignOut() {

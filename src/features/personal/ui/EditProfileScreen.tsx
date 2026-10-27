@@ -26,7 +26,7 @@ import { ReadOnlyField } from './ReadOnlyField';
 import { toErrorCode, useRegion } from './use-region';
 
 /**
- * Sửa hồ sơ (PER-02/03), route con của UI-I01 (decisions.md Q-19k). Chỉ sửa họ tên; email chỉ đọc
+ * Sửa hồ sơ (PER-02/03), route con của UI-I01 (decisions.md Q-20k). Chỉ sửa họ tên; email chỉ đọc
  * (chưa có xác minh đổi email). Không dựng avatar lớn vì chưa có chọn ảnh (không thao tác được, chỉ chiếm
  * chỗ trên màn có bàn phím). Nút Lưu chỉ tắt khi chưa có thay đổi hoặc đang gửi; kiểm tra khi bấm Lưu,
  * lỗi hiện tại ô và focus vào ô đó. Thành công chỉ được báo

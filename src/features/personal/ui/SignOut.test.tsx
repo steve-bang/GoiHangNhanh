@@ -104,7 +104,7 @@ describe('Đăng xuất an toàn (PER-21)', () => {
     expect(screen.getByText('Bạn đã đăng xuất thành công.')).toBeOnTheScreen();
   });
 
-  it('không xóa dữ liệu cục bộ khi đăng xuất (Q-19h)', async () => {
+  it('không xóa dữ liệu cục bộ khi đăng xuất (Q-20h)', async () => {
     const store = createMemoryOrderStore();
     const spy = jest.spyOn(store, 'saveNewOrder');
     await setup({ store });

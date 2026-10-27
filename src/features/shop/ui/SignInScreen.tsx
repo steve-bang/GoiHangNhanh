@@ -109,7 +109,7 @@ export function SignInScreen() {
       // Đã rời màn (Back/đi chỗ khác) trong lúc chờ: không điều hướng thay người dùng.
       if (!isActive()) return;
       // Ghi phiên toàn app (chỉ tầng logic, không đổi giao diện). `shopId` chưa biết: cổng đăng nhập
-      // chưa trả ID shop (chờ Firebase thật, decisions.md Q-17/Q-19); họ tên lấy từ hồ sơ khi cần.
+      // chưa trả ID shop (chờ Firebase thật, decisions.md Q-17/Q-20); họ tên lấy từ hồ sơ khi cần.
       session.beginSession({ uid: account.uid, email: account.email, displayName: null }, null);
       if (account.hasShop) {
         // Rời luồng thiết lập: xóa dữ liệu của tài khoản trước (nếu có) khỏi bộ nhớ luồng.

@@ -8,7 +8,7 @@ import type { UserProfile } from '../domain/types';
 
 /**
  * Hàng hồ sơ trên UI-I01: chữ cái đầu, họ tên (in đậm) và email; bấm mở Sửa họ tên (route con,
- * decisions.md Q-19k). Chưa có họ tên thì tiêu đề là lời mời "Thêm họ tên" (màu hành động), không bịa
+ * decisions.md Q-20k). Chưa có họ tên thì tiêu đề là lời mời "Thêm họ tên" (màu hành động), không bịa
  * tên từ email. Đặt trong `ListGroup`.
  */
 export function ProfileSummaryCard({ profile }: { profile: UserProfile }) {

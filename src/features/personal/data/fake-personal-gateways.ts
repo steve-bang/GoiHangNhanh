@@ -33,7 +33,7 @@ export interface FakePersonalOptions {
   readonly shop?: Partial<ShopSummary> | null;
   /**
    * Nhiều shop (test chuyển shop). Shop đầu tiên đang dùng, trừ khi `currentShopId` chỉ shop khác.
-   * Mặc định chỉ một shop: UI không mời chuyển shop khi chỉ có một (Q-19f).
+   * Mặc định chỉ một shop: UI không mời chuyển shop khi chỉ có một (Q-20f).
    */
   readonly shops?: readonly ShopSummary[];
   readonly currentShopId?: string;
@@ -179,7 +179,7 @@ export class FakeAccountGateway implements AccountGateway {
     this.changePasswordCalls += 1;
     await delay(this.latencyMs);
     this.failure.consume();
-    // Tài khoản Apple/Google không có mật khẩu hiện tại để đối chiếu (UI vốn ẩn mục này, Q-19c).
+    // Tài khoản Apple/Google không có mật khẩu hiện tại để đối chiếu (UI vốn ẩn mục này, Q-20c).
     if (this.profile.signInMethod !== 'password') throw new AppError('AUTH_WRONG_CURRENT_PASSWORD');
     if (input.currentPassword !== this.password) throw new AppError('AUTH_WRONG_CURRENT_PASSWORD');
     if (

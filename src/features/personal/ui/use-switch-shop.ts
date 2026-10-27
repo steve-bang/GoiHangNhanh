@@ -18,7 +18,7 @@ export type SwitchShopStep = 'closed' | 'confirm' | 'blocked_recording' | 'unsyn
 /**
  * Luồng chuyển cửa hàng (PER-07): chọn -> kiểm tra shop ĐANG DÙNG (đang quay, chưa đồng bộ) -> xác nhận
  * -> cổng -> đổi phiên -> về Tổng quan. Đang quay: chặn. Còn tệp chưa đồng bộ: cảnh báo có lối tới UI-F01 và
- * cho "Vẫn chuyển" (chốt tạm, Q-19o). Không đọc được kho cục bộ: chặn bảo thủ, báo `SHOP_SWITCH_FAILED`.
+ * cho "Vẫn chuyển" (chốt tạm, Q-20o). Không đọc được kho cục bộ: chặn bảo thủ, báo `SHOP_SWITCH_FAILED`.
  * Phiên chỉ đổi SAU KHI cổng xác nhận; lỗi giữ nguyên shop hiện tại. Không xóa dữ liệu cục bộ của shop cũ.
  * Chống bấm lặp bằng `busy`. Toast thành công chỉ hiện sau khi đã đổi phiên.
  */

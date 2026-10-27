@@ -25,7 +25,7 @@ import { useReloadOnShopUpdated } from './use-shop-revision-reload';
 
 /**
  * UI-I02 Cài đặt cửa hàng (PER-05): thông tin cửa hàng đang dùng (tên, vai trò, trạng thái), lối sửa tên
- * (PER-06) và chuyển cửa hàng (PER-07, chỉ khi tài khoản có từ hai cửa hàng trở lên, Q-19f). Quản lý
+ * (PER-06) và chuyển cửa hàng (PER-07, chỉ khi tài khoản có từ hai cửa hàng trở lên, Q-20f). Quản lý
  * thành viên KHÔNG ở đây (O-03, O-07 chưa chốt). Quyền sửa do cổng trả (`canEdit`): UI chỉ phản ánh,
  * cổng/Rules mới là chốt thật. Tên cửa hàng không phải định danh nên đổi tên không đụng tới bằng chứng đã lưu.
  */

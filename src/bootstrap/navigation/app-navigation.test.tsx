@@ -111,7 +111,7 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     expectTabBarVisible(true);
   });
 
-  it('từ Cá nhân vào Sửa họ tên và Đổi mật khẩu (route con UI-I01/UI-I05): thanh tab ẩn trên form, hiện lại khi Back về Cá nhân (Q-19r)', async () => {
+  it('từ Cá nhân vào Sửa họ tên và Đổi mật khẩu (route con UI-I01/UI-I05): thanh tab ẩn trên form, hiện lại khi Back về Cá nhân (Q-20r)', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.profile.path });
     expectTabBarVisible(true);
     await fireEvent.press(await screen.findByTestId('profile-summary'));

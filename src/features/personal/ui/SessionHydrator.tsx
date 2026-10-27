@@ -8,7 +8,7 @@ import { useSession } from './SessionProvider';
  * (phiên được khôi phục lúc mở app: `SessionGateway.restore` của Splash chỉ trả trạng thái, không
  * trả danh tính nên không có `beginSession`). Không đổi Splash (đã được khách xác nhận). Không hiển
  * thị gì. Chỉ chạy một lần khi gắn; lỗi (cổng chưa sẵn sàng) thì giữ nguyên, không suy đoán phiên.
- * Đăng nhập xong giữa chừng thì bỏ kết quả. Q-19m: khi có Firebase Auth, thay bằng người dùng hiện tại
+ * Đăng nhập xong giữa chừng thì bỏ kết quả. Q-20m: khi có Firebase Auth, thay bằng người dùng hiện tại
  * của SDK đọc ngay ở Splash.
  */
 export function SessionHydrator() {

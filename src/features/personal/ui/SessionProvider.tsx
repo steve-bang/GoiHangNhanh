@@ -30,7 +30,7 @@ export interface SessionContextValue {
   notifyShopUpdated(): void;
   /**
    * Đăng xuất qua cổng. CHỈ xả state sau khi cổng xác nhận; lỗi thì ném lại và giữ nguyên phiên (không
-   * báo đăng xuất giả). Gọi lặp khi đang chạy trả về cùng một lời hứa. Không xóa dữ liệu cục bộ (Q-19h).
+   * báo đăng xuất giả). Gọi lặp khi đang chạy trả về cùng một lời hứa. Không xóa dữ liệu cục bộ (Q-20h).
    */
   signOut(): Promise<void>;
   /**

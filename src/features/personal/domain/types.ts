@@ -1,10 +1,10 @@
 /**
  * Kiểu và cổng (port) của tab Cá nhân (docs/engineering/personal-tab-plan.md). TypeScript thuần:
  * không React/Expo/Firebase. Lỗi nghiệp vụ được ném dưới dạng `AppError`; màn hình không biết SDK nào
- * đứng sau. Bản thật (Firebase Auth/Firestore) chưa có: xem decisions.md Q-13, Q-19.
+ * đứng sau. Bản thật (Firebase Auth/Firestore) chưa có: xem decisions.md Q-13, Q-20.
  */
 
-/** Cách tài khoản đăng nhập. PER-04 (đổi mật khẩu) chỉ có nghĩa với `password` (Q-19c, D-13). */
+/** Cách tài khoản đăng nhập. PER-04 (đổi mật khẩu) chỉ có nghĩa với `password` (Q-20c, D-13). */
 export type SignInMethod = 'password' | 'apple' | 'google';
 
 export interface UserProfile {
@@ -17,7 +17,7 @@ export interface UserProfile {
 }
 
 /**
- * Vai trò của người dùng trong shop. Mô hình vai trò/thành viên CHƯA chốt (O-03, O-07, Q-19f): chỉ
+ * Vai trò của người dùng trong shop. Mô hình vai trò/thành viên CHƯA chốt (O-03, O-07, Q-20f): chỉ
  * phân biệt chủ shop và người còn lại để hiện nhãn; quyền sửa do cổng trả ở `canEdit`, không suy ra từ vai trò.
  */
 export type ShopRole = 'owner' | 'member';
@@ -53,7 +53,7 @@ export interface ChangePasswordInput {
  * (đã đổi tên, đã đổi mật khẩu, đã đăng xuất) trước khi promise resolve (CLAUDE.md bất biến #3, #11).
  *
  * Cố ý CHƯA có `deleteAccount`: quy trình xóa tài khoản chưa chốt và dính chính sách lưu trữ
- * (decisions.md Q-19e, bất biến #9). Thêm khi đã chốt.
+ * (decisions.md Q-20e, bất biến #9). Thêm khi đã chốt.
  */
 export interface AccountGateway {
   getProfile(): Promise<UserProfile>;
@@ -77,14 +77,14 @@ export interface AccountGateway {
   changePassword(input: ChangePasswordInput): Promise<void>;
   /**
    * Thu hồi phiên trên máy chủ/SDK. Lỗi thì ném, bên gọi KHÔNG được xả state như đã đăng xuất.
-   * Không xóa dữ liệu cục bộ (decisions.md Q-19h).
+   * Không xóa dữ liệu cục bộ (decisions.md Q-20h).
    */
   signOut(): Promise<void>;
 }
 
 /**
  * Tùy chọn loại thông báo muốn nhận (docs/09 UI-I04). Không có mục "mỗi video tải thành công": cố ý
- * không báo từng video. Giá trị mặc định do cổng/BA quyết (Q-19b), không đặt ở đây.
+ * không báo từng video. Giá trị mặc định do cổng/BA quyết (Q-20b), không đặt ở đây.
  */
 export interface NotificationPreferences {
   /** Tải lên lỗi hoặc cần xử lý. */

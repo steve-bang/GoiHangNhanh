@@ -55,7 +55,7 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     expect([...new Set(codes)].sort()).toEqual([...UI_CODES].sort());
   });
 
-  it('một mã UI chỉ có nhiều route khi là ngoại lệ UI-A03 hoặc route con khai báo rõ parent (Q-19k)', () => {
+  it('một mã UI chỉ có nhiều route khi là ngoại lệ UI-A03 hoặc route con khai báo rõ parent (Q-20k)', () => {
     const roots = Object.values(ROUTES).filter((r) => !r.parent);
     // Route gốc: mỗi mã đúng một, trừ UI-A03 (đăng nhập + đăng ký, một màn hai chế độ).
     const rootCodes = roots.map((r) => r.code);
@@ -88,7 +88,7 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     expect(ROUTES.shopSwitch).toMatchObject({ parent: 'shopSettings', code: 'UI-I02' });
   });
 
-  it('route form (con) ẩn thanh tab bằng hideTabBar nhưng vẫn nằm trong nhóm (tabs); màn gốc vẫn có thanh tab (Q-19r)', () => {
+  it('route form (con) ẩn thanh tab bằng hideTabBar nhưng vẫn nằm trong nhóm (tabs); màn gốc vẫn có thanh tab (Q-20r)', () => {
     const forms = [ROUTES.editProfile, ROUTES.changePassword, ROUTES.shopEdit, ROUTES.shopSwitch];
     for (const route of forms) {
       expect(route).toMatchObject({ tabBar: true, hideTabBar: true });

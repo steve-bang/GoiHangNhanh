@@ -4,10 +4,10 @@
  */
 
 export const MIN_PASSWORD_LENGTH = 8;
-/** Giới hạn họ tên: ĐỀ XUẤT (chưa có trong đặc tả BA), cùng mức với tên shop; chờ xác nhận ở Q-19b. */
+/** Giới hạn họ tên: ĐỀ XUẤT (chưa có trong đặc tả BA), cùng mức với tên shop; chờ xác nhận ở Q-20b. */
 export const DISPLAY_NAME_MAX_LENGTH = 50;
 
-/** Giới hạn tên cửa hàng: cùng mức với màn tạo shop (`features/shop`), chờ BA xác nhận (Q-19j). */
+/** Giới hạn tên cửa hàng: cùng mức với màn tạo shop (`features/shop`), chờ BA xác nhận (Q-20j). */
 export const SHOP_NAME_MAX_LENGTH = 50;
 
 export type ShopNameIssue = 'required' | 'too_long';

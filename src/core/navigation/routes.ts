@@ -72,13 +72,13 @@ export interface RouteDef {
   readonly tabBar: boolean;
   /**
    * Chỉ route CON mới có: tên (khóa trong `ROUTES`) của route gốc dùng chung mã `UI-xx` (decisions.md
-   * Q-19k). Cách DUY NHẤT để một mã UI có nhiều route (ngoài ngoại lệ UI-A03 đăng nhập/đăng ký);
+   * Q-20k). Cách DUY NHẤT để một mã UI có nhiều route (ngoài ngoại lệ UI-A03 đăng nhập/đăng ký);
    * `routes.test.ts` kiểm tra route gốc tồn tại, cùng mã, cùng cờ `tabBar`, và gốc không phải con.
    */
   readonly parent?: string;
   /**
    * Chỉ route NẰM TRONG nhóm tab (`tabBar: true`) mới dùng: màn form/tác vụ ẩn thanh tab (Sửa họ tên,
-   * Đổi mật khẩu, Sửa/Chuyển cửa hàng; decisions.md Q-19r). Khác `tabBar: false`: tệp vẫn ở trong stack của
+   * Đổi mật khẩu, Sửa/Chuyển cửa hàng; decisions.md Q-20r). Khác `tabBar: false`: tệp vẫn ở trong stack của
    * tab nên Back và trạng thái cuộn của màn gốc được giữ; chỉ `isTabBarHiddenAt` ẩn thanh tab theo đường dẫn.
    */
   readonly hideTabBar?: true;
@@ -159,7 +159,7 @@ export const ROUTES = {
   checkout: route('/account/checkout', 'UI-H03', true),
   planLimit: route('/account/limit', 'UI-H04', true),
   profile: route('/account', 'UI-I01', true),
-  // PER-02/03: sửa họ tên, route con của UI-I01 (Q-19k).
+  // PER-02/03: sửa họ tên, route con của UI-I01 (Q-20k).
   editProfile: subRoute('/account/edit-profile', 'profile', 'UI-I01', true, true),
   shopSettings: route('/account/shop-settings', 'UI-I02', true),
   shopEdit: subRoute('/account/shop-settings/edit', 'shopSettings', 'UI-I02', true, true),
@@ -167,7 +167,7 @@ export const ROUTES = {
   members: route('/account/members', 'UI-I03', true),
   notifications: route('/account/notifications', 'UI-I04', true),
   security: route('/account/security', 'UI-I05', true),
-  // PER-04: đổi mật khẩu, route con của UI-I05 (Q-19k).
+  // PER-04: đổi mật khẩu, route con của UI-I05 (Q-20k).
   changePassword: subRoute('/account/change-password', 'security', 'UI-I05', true, true),
   help: route('/account/help', 'UI-I06', true),
   // Tab Thông báo (danh sách thông báo). Mã UI-I07 do dự án thêm, chưa có trong docs/09 gốc (D-16).

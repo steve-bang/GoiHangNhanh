@@ -31,7 +31,7 @@ import { useReloadOnShopUpdated } from './use-shop-revision-reload';
  * UI-I01 Cá nhân (PER-01, xem hồ sơ PER-02), gom thành nhóm kiểu iOS: Tài khoản (hồ sơ, Đổi mật khẩu),
  * Cửa hàng và gói, Cài đặt, Hỗ trợ, rồi Đăng xuất riêng. Hồ sơ và cửa hàng tải riêng: lỗi/chậm ở một
  * khu vực không che khu vực kia; kéo xuống để làm mới và vẫn giữ dữ liệu cũ nếu làm mới lỗi. Sửa họ tên
- * và đổi mật khẩu là route con (decisions.md Q-19k). Mục chưa làm: cấu hình ở `account-menu.ts`.
+ * và đổi mật khẩu là route con (decisions.md Q-20k). Mục chưa làm: cấu hình ở `account-menu.ts`.
  */
 export function ProfileScreen() {
   const { t } = useTranslation();
@@ -96,7 +96,7 @@ export function ProfileScreen() {
         {profile.state.status === 'ready' ? (
           <ProfileSummaryCard profile={profile.state.data} />
         ) : null}
-        {/* PER-04 chỉ có nghĩa với tài khoản đăng nhập bằng mật khẩu (D-13, Q-19c). */}
+        {/* PER-04 chỉ có nghĩa với tài khoản đăng nhập bằng mật khẩu (D-13, Q-20c). */}
         {profile.state.status === 'ready' && profile.state.data.signInMethod === 'password' ? (
           <ListItem
             leadingIcon="lock"
@@ -167,7 +167,7 @@ export function ProfileScreen() {
         ) : null}
       </View>
 
-      {/* PER-21. UI-J15 (còn tệp chưa đồng bộ) chưa có mã/route nên là BottomSheet tại chỗ (Q-19b). */}
+      {/* PER-21. UI-J15 (còn tệp chưa đồng bộ) chưa có mã/route nên là BottomSheet tại chỗ (Q-20b). */}
       <ConfirmDialog
         visible={signOut.step === 'confirm'}
         destructive
