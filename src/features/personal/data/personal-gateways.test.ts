@@ -67,7 +67,7 @@ describe('cổng cá nhân giả', () => {
       await codeOf(
         account.changePassword({ currentPassword: 'sai', newPassword: 'matkhau-moi-1' }),
       ),
-    ).toBe('AUTH_INVALID_CREDENTIALS');
+    ).toBe('AUTH_WRONG_CURRENT_PASSWORD');
     expect(
       await codeOf(
         account.changePassword({ currentPassword: FAKE_ACCOUNT_PASSWORD, newPassword: '12345678' }),
@@ -85,7 +85,7 @@ describe('cổng cá nhân giả', () => {
           newPassword: 'matkhau-moi-2',
         }),
       ),
-    ).toBe('AUTH_INVALID_CREDENTIALS');
+    ).toBe('AUTH_WRONG_CURRENT_PASSWORD');
   });
 
   it('tài khoản Apple/Google không đổi được mật khẩu', async () => {
@@ -97,7 +97,7 @@ describe('cổng cá nhân giả', () => {
           newPassword: 'matkhau-moi-1',
         }),
       ),
-    ).toBe('AUTH_INVALID_CREDENTIALS');
+    ).toBe('AUTH_WRONG_CURRENT_PASSWORD');
   });
 
   it('cài đặt thông báo: lưu và đọc lại; lỗi thì giữ giá trị cũ', async () => {

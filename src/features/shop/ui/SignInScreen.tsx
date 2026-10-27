@@ -1,3 +1,4 @@
+import { resolveErrorMessage } from '@/core/i18n/error-message';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -15,12 +16,7 @@ import { StackedBrandLogo } from './BrandLogo';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import { OnboardingScaffold } from './onboarding/OnboardingScaffold';
 import { PasswordToggle, SocialIconRow, SuccessBanner } from './onboarding/AuthParts';
-import {
-  FormErrorBanner,
-  IconField,
-  resolveErrorMessage,
-  type TextInputHandle,
-} from './onboarding/OnboardingParts';
+import { FormErrorBanner, IconField, type TextInputHandle } from './onboarding/OnboardingParts';
 import { isRetryable, useGatewayTask } from './onboarding/useGatewayTask';
 import { WelcomeIllustration } from './WelcomeIllustration';
 

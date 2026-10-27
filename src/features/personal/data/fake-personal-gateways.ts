@@ -102,9 +102,9 @@ export class FakeAccountGateway implements AccountGateway {
     this.changePasswordCalls += 1;
     await delay(this.latencyMs);
     this.failure.consume();
-    if (this.profile.signInMethod !== 'password') throw new AppError('AUTH_INVALID_CREDENTIALS');
-    // Mã sai-mật-khẩu-hiện-tại chưa có tên chính thức: tạm dùng AUTH_INVALID_CREDENTIALS (decisions.md Q-19i).
-    if (input.currentPassword !== this.password) throw new AppError('AUTH_INVALID_CREDENTIALS');
+    // Tài khoản Apple/Google không có mật khẩu hiện tại để đối chiếu (UI vốn ẩn mục này, Q-19c).
+    if (this.profile.signInMethod !== 'password') throw new AppError('AUTH_WRONG_CURRENT_PASSWORD');
+    if (input.currentPassword !== this.password) throw new AppError('AUTH_WRONG_CURRENT_PASSWORD');
     if (
       Array.from(input.newPassword).length < MIN_PASSWORD_LENGTH ||
       FAKE_ACCOUNT_WEAK_PASSWORDS.includes(input.newPassword)

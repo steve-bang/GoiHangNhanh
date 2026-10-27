@@ -38,8 +38,11 @@ const SCREEN_ERRORS: [string, string][] = [
   ...flatten(resources.vi.screens.newPassword.errors as Json, 'newPassword.errors'),
 ];
 
+const PROFILE_MESSAGES: [string, Message][] = [['PROFILE_SAVE_FAILED', errors.PROFILE_SAVE_FAILED]];
+
 const ALL: [string, Message][] = [
   ...AUTH_MESSAGES,
+  ...PROFILE_MESSAGES,
   ...SIGN_UP_ERRORS.map(([key, value]): [string, Message] => [key, value]),
   ...SCREEN_ERRORS.map(([key, value]): [string, Message] => [key, value]),
 ];
@@ -67,10 +70,14 @@ describe('câu chữ thông báo lỗi AUTH_*, signUp.errors và lỗi các màn
       'AUTH_NETWORK_ERROR',
       'AUTH_OTP_EXPIRED',
       'AUTH_OTP_INVALID',
+      'AUTH_REQUIRES_RECENT_LOGIN',
       'AUTH_RESET_SESSION_EXPIRED',
       'AUTH_SERVICE_UNAVAILABLE',
+      'AUTH_SESSION_EXPIRED',
+      'AUTH_SIGN_OUT_FAILED',
       'AUTH_TOO_MANY_REQUESTS',
       'AUTH_WEAK_PASSWORD',
+      'AUTH_WRONG_CURRENT_PASSWORD',
     ]);
     expect(SIGN_UP_ERRORS.length).toBeGreaterThanOrEqual(4);
   });
@@ -125,6 +132,16 @@ describe('câu chữ thông báo lỗi AUTH_*, signUp.errors và lỗi các màn
     expect(fullText(errors.AUTH_RESET_SESSION_EXPIRED as Message)).toBe(
       'Phiên xác minh đã hết hạn. Bạn cần xác minh lại để đặt mật khẩu mới.',
     );
+  });
+
+  it('mã tab Cá nhân (Q-19i): đúng từng chữ với câu người dùng chốt', () => {
+    expect(errors.AUTH_WRONG_CURRENT_PASSWORD).toBe('Mật khẩu hiện tại chưa đúng.');
+    expect(fullText(errors.AUTH_SIGN_OUT_FAILED)).toBe('Chưa đăng xuất được. Bạn thử lại nhé.');
+    expect(fullText(errors.PROFILE_SAVE_FAILED)).toBe(
+      'Chưa cập nhật được thông tin. Bạn thử lại nhé.',
+    );
+    expect(fullText(errors.AUTH_REQUIRES_RECENT_LOGIN)).toContain('đăng nhập lại');
+    expect(fullText(errors.AUTH_SESSION_EXPIRED)).toContain('đăng nhập lại');
   });
 
   it('không có câu trấn an "tài khoản chưa được tạo" ở màn đăng ký', () => {

@@ -2,7 +2,7 @@
  * Mã lỗi nghiệp vụ. Chứa mã đã có trong docs/04 và docs/05, cộng nhóm `AUTH_*` ĐỀ XUẤT cho màn thiết
  * lập tài khoản/shop, đăng nhập và đặt lại mật khẩu (UI-A03, A04, A07-A09), cùng `ORDER_SAVE_FAILED`,
  * `ORDER_HAS_SESSION`, `PACKAGE_SESSION_ACTIVE` cho lưu đơn cục bộ (UI-B04, UI-C01): tên chờ BA đặt
- * chính thức (decisions.md Q-04, Q-13, Q-14, Q-17).
+ * chính thức (decisions.md Q-04, Q-13, Q-14, Q-17), và 5 mã tab Cá nhân (Q-19i).
  * Cần mã mới -> đề xuất để BA đưa vào tài liệu trước (xem docs/engineering/decisions.md, mục
  * "Mã lỗi đề xuất"), không tự đặt rời rạc trong mã.
  */
@@ -41,6 +41,12 @@ export const ERROR_CODES = {
   AUTH_OTP_INVALID: 'AUTH_OTP_INVALID',
   AUTH_OTP_EXPIRED: 'AUTH_OTP_EXPIRED',
   AUTH_RESET_SESSION_EXPIRED: 'AUTH_RESET_SESSION_EXPIRED',
+  // Đề xuất (người dùng chốt tên, Q-19i): tab Cá nhân (đổi mật khẩu, đăng xuất, sửa hồ sơ)
+  AUTH_WRONG_CURRENT_PASSWORD: 'AUTH_WRONG_CURRENT_PASSWORD',
+  AUTH_REQUIRES_RECENT_LOGIN: 'AUTH_REQUIRES_RECENT_LOGIN',
+  AUTH_SESSION_EXPIRED: 'AUTH_SESSION_EXPIRED',
+  AUTH_SIGN_OUT_FAILED: 'AUTH_SIGN_OUT_FAILED',
+  PROFILE_SAVE_FAILED: 'PROFILE_SAVE_FAILED',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
