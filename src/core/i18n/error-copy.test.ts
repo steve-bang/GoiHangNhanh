@@ -43,7 +43,12 @@ function msg(code: string): Message {
   return errors[code] ?? '';
 }
 
-const PROFILE_MESSAGES: [string, Message][] = [['PROFILE_SAVE_FAILED', msg('PROFILE_SAVE_FAILED')]];
+const PROFILE_MESSAGES: [string, Message][] = [
+  ['PROFILE_SAVE_FAILED', msg('PROFILE_SAVE_FAILED')],
+  ['SHOP_SAVE_FAILED', msg('SHOP_SAVE_FAILED')],
+  ['SHOP_SWITCH_FAILED', msg('SHOP_SWITCH_FAILED')],
+  ['SHOP_PERMISSION_DENIED', msg('SHOP_PERMISSION_DENIED')],
+];
 
 const ALL: [string, Message][] = [
   ...AUTH_MESSAGES,
@@ -147,6 +152,16 @@ describe('câu chữ thông báo lỗi AUTH_*, signUp.errors và lỗi các màn
     );
     expect(fullText(msg('AUTH_REQUIRES_RECENT_LOGIN'))).toContain('đăng nhập lại');
     expect(fullText(msg('AUTH_SESSION_EXPIRED'))).toContain('đăng nhập lại');
+  });
+
+  it('mã cửa hàng (Q-19n): đúng từng chữ với kế hoạch đã duyệt', () => {
+    expect(fullText(msg('SHOP_SAVE_FAILED'))).toBe(
+      'Không thể cập nhật cửa hàng lúc này. Bạn thử lại nhé.',
+    );
+    expect(fullText(msg('SHOP_SWITCH_FAILED'))).toBe('Chưa chuyển được cửa hàng. Bạn thử lại nhé.');
+    expect(fullText(msg('SHOP_PERMISSION_DENIED'))).toBe(
+      'Bạn chưa có quyền thực hiện thao tác này. Hãy liên hệ chủ cửa hàng.',
+    );
   });
 
   it('không có câu trấn an "tài khoản chưa được tạo" ở màn đăng ký', () => {

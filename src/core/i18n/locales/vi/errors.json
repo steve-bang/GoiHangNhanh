@@ -57,5 +57,17 @@
   "PROFILE_SAVE_FAILED": {
     "title": "Chưa cập nhật được thông tin.",
     "hint": "Bạn thử lại nhé."
+  },
+  "SHOP_SAVE_FAILED": {
+    "title": "Không thể cập nhật cửa hàng lúc này.",
+    "hint": "Bạn thử lại nhé."
+  },
+  "SHOP_SWITCH_FAILED": {
+    "title": "Chưa chuyển được cửa hàng.",
+    "hint": "Bạn thử lại nhé."
+  },
+  "SHOP_PERMISSION_DENIED": {
+    "title": "Bạn chưa có quyền thực hiện thao tác này.",
+    "hint": "Hãy liên hệ chủ cửa hàng."
   }
 }

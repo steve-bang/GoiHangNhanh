@@ -47,6 +47,10 @@ export const ERROR_CODES = {
   AUTH_SESSION_EXPIRED: 'AUTH_SESSION_EXPIRED',
   AUTH_SIGN_OUT_FAILED: 'AUTH_SIGN_OUT_FAILED',
   PROFILE_SAVE_FAILED: 'PROFILE_SAVE_FAILED',
+  // Đề xuất (chờ BA, Q-19n): quản lý cửa hàng (sửa tên, chuyển shop, thiếu quyền)
+  SHOP_SAVE_FAILED: 'SHOP_SAVE_FAILED',
+  SHOP_SWITCH_FAILED: 'SHOP_SWITCH_FAILED',
+  SHOP_PERMISSION_DENIED: 'SHOP_PERMISSION_DENIED',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
