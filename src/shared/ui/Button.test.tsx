@@ -59,4 +59,13 @@ describe('Button', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Lưu' }));
     expect(onPress).not.toHaveBeenCalled();
   });
+
+  it('đang xử lý (loading): khóa nút, báo bận, không gọi onPress', async () => {
+    const onPress = jest.fn();
+    await renderWithProviders(<Button label="Tạo" loading onPress={onPress} />);
+    const node = screen.getByRole('button', { name: 'Tạo' });
+    expect(node.props.accessibilityState).toMatchObject({ disabled: true, busy: true });
+    await fireEvent.press(node);
+    expect(onPress).not.toHaveBeenCalled();
+  });
 });

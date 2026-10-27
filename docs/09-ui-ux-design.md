@@ -87,10 +87,13 @@ Mỗi màn: mục đích, thành phần, hành động chính. Quy tắc nghiệ
 |---|---|---|
 | UI-A01 | Splash | Logo; kiểm tra phiên/cấu hình/đồng bộ ở nền; không đứng lâu; mất mạng vẫn vào được phần công việc cục bộ nếu phiên và dữ liệu cho phép |
 | UI-A02 | Chào mừng | "Bảo vệ bằng chứng cho từng đơn hàng"; CTA *Đăng nhập* / *Tạo tài khoản*; liên kết Điều khoản và Quyền riêng tư; không onboarding nhiều trang; nút *Apple*/*Google* (bật bằng cờ cấu hình, O-15); liên kết pháp lý hiện là URL giữ chỗ, chưa có trang thật |
-| UI-A03 | Đăng nhập / tạo tài khoản | Kiểm tra dữ liệu tại trường; quên mật khẩu, xác thực email, trạng thái đang xử lý; không báo thành công trước khi máy chủ xác nhận. Phương thức đăng nhập: O-15 |
-| UI-A04 | Tạo hồ sơ shop | Tên shop là chính; nguồn bán chọn nhiều (Shopee, TikTok Shop, Lazada, Khác), bỏ qua được; không bắt địa chỉ, mã số thuế, dữ liệu khách hàng |
+| UI-A03 | Đăng nhập / tạo tài khoản | Kiểm tra dữ liệu tại trường; quên mật khẩu, xác thực email, trạng thái đang xử lý; không báo thành công trước khi máy chủ xác nhận. Phương thức đăng nhập: O-15. **Biến thể đăng ký (`/sign-up`) và đăng nhập (`/sign-in`) đã làm** (chi tiết ở 5.1 và 5.6) |
+| UI-A04 | Tạo hồ sơ shop | Tên shop là chính (bắt buộc, 1-50 ký tự); nguồn bán chọn nhiều (Shopee, TikTok Shop, Lazada, Khác), bỏ qua được; không bắt địa chỉ, mã số thuế, dữ liệu khách hàng. Thanh tiến trình 3 bước (hiện 2/3). Đã làm (chi tiết ở 5.1) |
 | UI-A05 | Giải thích quyền | Vì sao cần camera/micro/ảnh–tệp/thông báo; **chỉ xin quyền khi bắt đầu tác vụ liên quan**; bị từ chối → hướng dẫn mở Cài đặt, không lặp popup; không xin danh bạ/vị trí |
-| UI-A06 | Hoàn tất thiết lập | "Quét mã đơn để bắt đầu"; CTA *Bắt đầu sử dụng*; bỏ qua hướng dẫn được |
+| UI-A06 | Hoàn tất thiết lập | "Quét mã đơn để bắt đầu"; CTA *Bắt đầu sử dụng*; bỏ qua hướng dẫn được. Thẻ tóm tắt shop + nguồn bán, **không** hiện gói dịch vụ. Đã làm (chi tiết ở 5.1) |
+| UI-A07 | Quên mật khẩu | Nhập email; gửi mã xác minh; **trung tính** (không tiết lộ email có tài khoản hay không); thẻ Mẹo. Đã làm (5.6) |
+| UI-A08 | Nhập mã xác minh | 6 chữ số, tự xác minh khi đủ, đếm ngược gửi lại, mô tả với email đã che. Không dùng nếu chọn phương án C của O-22. Đã làm với cổng giả (5.6) |
+| UI-A09 | Mật khẩu mới | Hai ô + khối "Mật khẩu nên có" (một dòng: ít nhất 8 ký tự); xong về Đăng nhập kèm banner thành công. Đã làm (5.6) |
 
 ### Nhóm B — Tổng quan và bắt đầu công việc
 
@@ -230,6 +233,50 @@ Bốn tấm hình dưới đây là **mockup khái niệm**, lưu ở `docs/asse
 
 ![Đăng nhập, tạo tài khoản, tạo hồ sơ shop, hoàn tất thiết lập](assets/ui/01-onboarding.png)
 
+**Chi tiết đã chốt cho UI-A03 (đăng ký), UI-A04, UI-A06** (đã làm, dùng cổng giả; kỹ thuật ở [layout.md mục 2.2](engineering/layout.md#22-ba-màn-thiết-lập-ui-a03-đăng-ký-ui-a04-ui-a06) và [decisions.md Q-13](engineering/decisions.md)):
+
+- *Tạo tài khoản:* email + mật khẩu (>= 8 ký tự), nút hiện/ẩn mật khẩu có nhãn truy cập; lỗi hiện từng ô ngay khi nhập sau lần chạm đầu (không báo lỗi khi mới mở màn); nút chính khóa khi đang xử lý, chống bấm đúp; **vị trí lỗi theo ô**: lỗi gắn với một ô hiện ngay DƯỚI ô đó, viền ô đỏ + biểu tượng cảnh báo nhỏ + chữ (không chỉ dựa vào màu): email trống/sai định dạng/đã dùng dưới ô Email; mật khẩu trống/ngắn/yếu dưới ô Mật khẩu; lỗi tự mất khi người dùng sửa ô đó; giá trị đã nhập luôn được giữ. **Quay lại sau khi tài khoản đã tạo** (Back từ bước tạo shop): màn **không sửa/tạo lần hai** — ô Email và Mật khẩu bị khóa (chỉ đọc; mật khẩu hiện chấm cố định vì app không còn giữ mật khẩu), nút chính đổi thành **Tiếp tục** và đi thẳng sang tạo shop, không gọi lại cổng đăng ký. **"Email đã dùng" nói rõ**: "Email này đã có tài khoản." kèm nút **Đăng nhập** (đi `/sign-in`) ngay trong dòng lỗi, vùng chạm đủ 44/48dp (thay bản trung tính trước đó; đánh đổi và biện pháp ở decisions.md Q-13 mục g). **Lỗi chung** (mất mạng, hệ thống bận) hiện trong khung phía trên nút *Tạo tài khoản*, nền hồng nhạt, chữ tối, câu đầu in đậm, có nút **Thử lại** gửi lại đúng thao tác vừa lỗi (vẫn chống bấm đúp). Thông báo là `role=alert` để trình đọc màn hình đọc khi xuất hiện; tự cuộn lỗi vào vùng nhìn khi bàn phím đang mở. Bỏ câu trấn an "tài khoản chưa được tạo" ở màn này. Tên thương hiệu "Đơn Chứng" dùng khoảng trắng không ngắt (U+00A0) để không rớt một chữ xuống dòng; *Hoặc đăng ký với* Apple/Google theo cờ cấu hình của Chào mừng; không báo thành công khi chưa có máy chủ xác nhận. Email chưa xác thực **không chặn** (chưa có UI nhắc).
+- *Tạo hồ sơ shop:* thanh tiến trình **3 đoạn** đếm theo luồng thật (Tạo tài khoản, Thông tin shop, Hoàn tất), màn này là **2/3** (mockup ghi 1/4). **Tên shop bắt buộc** (1-50 ký tự sau khi bỏ khoảng trắng đầu/cuối, có bộ đếm, chặn nhập quá 50). **Nguồn bán không có dấu `*`**, không chọn gì vẫn tiếp tục được; chọn nhiều, "Khác" là một lựa chọn; giá trị lưu là enum. *Bỏ qua, để sau* = tiếp tục không chọn nguồn bán (xóa lựa chọn) nhưng tên shop vẫn bắt buộc. **Shop chỉ được tạo một lần mỗi luồng:** quay lại từ Hoàn tất rồi sửa tên/nguồn bán thì app gọi **cập nhật** shop đã có (`updateShop`), không tạo shop thứ hai; không sửa gì thì không gọi cổng. Cổng thật phải idempotent theo tài khoản (decisions.md Q-13 b, n).
+- *Hoàn tất:* tiêu đề hai mức, thẻ tóm tắt **chỉ có hai hàng** (Shop của bạn, Nguồn bán; chưa chọn thì hiện "Chưa chọn"); **không hiện hàng Gói dịch vụ** (O-06 chưa chốt). Hai hàng dẫn tới Cài đặt shop (màn khung). *Bắt đầu sử dụng* vào Tổng quan và xóa lịch sử thiết lập (Back không quay lại màn thiết lập); không có nút Back trên màn này. *Xem hướng dẫn nhanh* mở Trợ giúp.
+
+#### Quy ước viết thông báo lỗi
+
+Áp dụng cho mọi thông báo lỗi hiển thị cho người dùng (thay quy ước "ba phần: điều gì xảy ra, ảnh hưởng, làm gì tiếp" trước đây):
+
+- **Tối đa 2 câu, dưới 20 từ, một ý.** Câu đầu nói điều đã xảy ra (in đậm khi có hai câu), câu sau nói việc làm tiếp.
+- **Từ thường ngày**, không thuật ngữ ("dịch vụ tài khoản", "yêu cầu", "xác thực"...); không đổ lỗi cho người dùng; không phủ định kép; không "Có lỗi xảy ra" khi xác định được nguyên nhân.
+- **Chỉ nêu "ảnh hưởng" khi người dùng có thể lo mất dữ liệu** (ví dụ video đã lưu trên máy nhưng chưa tải lên); lỗi nhập liệu hay mất mạng lúc đăng ký không cần câu trấn an.
+- **Có nút hành động khi có việc làm ngay** (Thử lại, Đăng nhập...) thay vì chỉ bảo người dùng "hãy thử lại".
+- **Đặt lỗi đúng chỗ:** lỗi của một ô nằm ngay dưới ô đó; lỗi chung nằm trong khung gần nút chính. Chữ tối trên nền nhạt, chỉ biểu tượng và viền màu đỏ; luôn kèm chữ.
+- Nhóm `AUTH_*` và `signUp.errors` có test chất lượng câu chữ (`src/core/i18n/error-copy.test.ts`).
+
+*Việc sau:* các thông báo của màn khác (docs/04, docs/05, mã `ORDER_*`, `CAMERA_*`, `RETURN_*`...) vẫn theo mẫu cũ, chưa viết lại theo quy ước này; cần BA rà soát từng màn.
+
+### 5.6 Đăng nhập và khôi phục mật khẩu — UI-A03 (đăng nhập), UI-A07, A08, A09
+
+![Đăng nhập, quên mật khẩu, nhập mã OTP, mật khẩu mới](assets/ui/05-sign-in-and-recovery.png)
+
+Đã làm với **cổng giả** (chưa Firebase thật, không gửi email/SMS thật); kỹ thuật ở [layout.md mục 2.3](engineering/layout.md) và [decisions.md Q-14](engineering/decisions.md). Chữ ngoài khung điện thoại (khẩu hiệu, nhãn bước, chữ viết tay) là phần trình bày, không đưa vào app.
+
+- *Đăng nhập (`/sign-in`):* logo xếp dọc, "Chào mừng bạn trở lại!", ô Email + Mật khẩu (hiện/ẩn), "Quên mật khẩu?" căn phải dưới ô mật khẩu, nút Đăng nhập (khóa + vòng xoay, chống bấm đúp), "Hoặc đăng nhập bằng" + nút chỉ có biểu tượng Google/Apple (theo cờ cấu hình của Chào mừng; cờ tắt thì ẩn cả đường kẻ), "Bạn chưa có tài khoản? Tạo tài khoản". **Không có toast "đăng nhập thành công"**: thành công thì xóa lịch sử và vào Tổng quan (chưa có shop thì sang tạo shop). Sai thông tin báo **chung** ("Email hoặc mật khẩu chưa chính xác. Bạn kiểm tra lại nhé!"), không nói cái nào sai. Email điền sẵn (từ màn đăng ký hoặc sau khi đặt lại mật khẩu) đi qua **trạng thái luồng trong bộ nhớ, dùng một lần** (không đặt vào tham số/URL); hiện banner thành công **một lần** sau khi đặt lại mật khẩu.
+- *Quên mật khẩu:* nhập email, "Gửi mã xác minh", luôn sang màn Nhập mã (trung tính), thẻ "Mẹo nhỏ cho bạn", "Quay lại đăng nhập".
+- *Nhập mã:* "Nếu email này đã đăng ký, mã 6 chữ số đã được gửi đến da•••@example.com." (email đã che, giữ 2 ký tự đầu + miền); một ô nhập thật vẽ thành 6 ô (chỉ chữ số, dán được, gợi ý mã tự điền của hệ điều hành); tự xác minh khi đủ 6 số, vẫn có nút Xác minh; đếm ngược "Gửi lại mã sau 00:30" tính theo mốc thời gian; thẻ "Mẹo bảo mật". Sai mã: ô đỏ + giữ các số đã nhập.
+- *Mật khẩu mới:* hai ô, khối "Mật khẩu nên có" **một dòng** "Ít nhất 8 ký tự" tích theo thời gian thực, nút khóa tới khi hợp lệ và khớp; lỗi "Hai mật khẩu chưa khớp nhau. Bạn kiểm tra lại nhé!"; phiên hết hạn có nút "Quay lại bước đầu". Không vào được màn Nhập mã/Mật khẩu mới bằng Back hoặc đường dẫn trực tiếp khi chưa qua bước trước, **và cũng không vào lại được sau khi đã rời luồng**: email đã xin mã, mốc gửi lại và vé bị xóa khi người dùng đổi sang email khác, đặt lại mật khẩu xong, hoặc rời luồng về Đăng nhập/Chào mừng (Back ra khỏi Quên mật khẩu, "Quay lại đăng nhập"); vé còn hết hạn theo hạn cổng báo. Kết quả từ máy chủ đến muộn sau khi người dùng đã bấm Back/đi chỗ khác **không** tự điều hướng thay họ. Nếu mật khẩu đã được đổi trong lúc đó, **chủ ý** không báo ngay (không toast): banner "đã đặt lại" và email điền sẵn được giữ và hiện một lần ở lần mở Đăng nhập kế tiếp. Ô nhập mã chấp nhận dán "123 456"/"123-456" (lọc chữ số rồi tự xác minh).
+
+**Điểm lệch có chủ ý so với mockup 05 / đặc tả gốc** (D-13, Q-14):
+
+| # | Mockup / đặc tả | App |
+|---|---|---|
+| 1 | Ô "Số điện thoại hoặc email", OTP gửi về số điện thoại | Chỉ **Email** ở bản đầu; mọi chỗ nhắc số điện thoại đổi thành email |
+| 2 | Ô "Duy trì đăng nhập" | **Bỏ**: phiên luôn được giữ (tải nền cần phiên) |
+| 3 | Ba nút Google, Apple, TikTok | Chỉ **Google và Apple** (cờ cấu hình); không TikTok |
+| 4 | Mật khẩu cần 8 ký tự + chữ hoa/thường + 1 số | Chỉ **từ 8 ký tự** (dùng đúng hàm kiểm tra của màn đăng ký); bỏ câu lỗi "chưa đáp ứng các yêu cầu bảo mật" |
+| 5 | (Đặc tả gốc) báo "Đăng nhập thành công" | Không toast; thành công thì chuyển màn |
+| 6 | "Mã xác nhận đã được gửi" khẳng định | Mô tả **trung tính** ("Nếu email này đã đăng ký..."); không tiết lộ email có tài khoản |
+| 7 | Ô nhập chỉ có chữ giữ chỗ | Giữ nhãn nhỏ luôn hiện phía trên (đồng nhất màn đăng ký, dễ đọc cho trình đọc màn hình) |
+| 8 | Hình cô gái, ổ khóa, điện thoại, tia sáng | Dựng bằng View + Ionicons (hình ở Đăng nhập dùng lại hình khiên + hộp của Chào mừng thu nhỏ, không có nhân vật); thay bằng hình thật ở `AuthIllustrations.tsx`/`WelcomeIllustration.tsx` |
+| 9 | Câu chữ có "vui lòng", "yêu cầu" | Đổi theo quy ước 5.1 (không dùng "vui lòng"/"yêu cầu"): vd. "Hãy nhập email của bạn.", "Bạn xin mã mới nhé." |
+
 ### 5.2 Tổng quan và quét mã — UI-B01, B02
 
 ![Màn hình Tổng quan và quét mã đơn hàng](assets/ui/02-home-and-scan.png)
@@ -262,8 +309,8 @@ Phần đúng hướng: bảng màu và phong cách khớp mục 3; Tổng quan 
 | 10 | 02, Tổng quan: hai banner quảng bá chiếm nhiều chỗ; thiếu "đơn gần đây" và "việc cần xử lý" | Mục UI-B01 ưu tiên khối đồng bộ, việc dang dở, đơn gần đây | Thay banner bằng các khối đó; hướng dẫn nhanh đặt ở Trợ giúp |
 | 11 | 03, màn quay: nút X góc trên trái | Rời phiên đang quay phải cảnh báo hậu quả | Bấm X → hộp thoại "Giữ video và quay lại" / "Kết thúc phiên" |
 | 12 | 03, tiêu đề "Kiểm tra 30 giây để tiết kiệm cả giờ" | Con số không có căn cứ | Bỏ |
-| 13 | 01: màn tạo hồ sơ shop ghi "Nguồn bán *" (bắt buộc) | UI-A04: bỏ qua được (có "Bỏ qua, để sau") | Bỏ dấu `*` |
-| 14 | 01: "Gói Tiêu chuẩn (30 ngày)" | Tên gói và thời hạn chưa chốt (O-06); khung gói là Cơ bản/Tăng trưởng/Vận hành lớn | Ghi là minh họa hoặc dùng tên gói chưa gán số liệu |
+| 13 | 01: màn tạo hồ sơ shop ghi "Nguồn bán *" (bắt buộc) | UI-A04: bỏ qua được (có "Bỏ qua, để sau") | Bỏ dấu `*` (đã làm trong UI-A04) |
+| 14 | 01: "Gói Tiêu chuẩn (30 ngày)" | Tên gói và thời hạn chưa chốt (O-06); khung gói là Cơ bản/Tăng trưởng/Vận hành lớn | Đã bỏ hàng Gói dịch vụ khỏi UI-A06 (không hiện tên gói/thời hạn) |
 | 15 | 02, màn quét: thiếu đèn pin và tìm đơn đã lưu | UI-B02 yêu cầu | Thêm |
 
 **B. Cần quyết định** (mockup khác đặc tả; chưa sửa tài liệu theo mockup):

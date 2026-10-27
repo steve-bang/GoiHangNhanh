@@ -51,6 +51,25 @@ export const ICON_GLYPHS = {
   check: 'checkmark',
   leaf: 'leaf',
   'package-solid': 'cube',
+  // màn thiết lập tài khoản/shop (UI-A03, A04, A06)
+  'arrow-back': 'arrow-back',
+  mail: 'mail-outline',
+  lock: 'lock-closed-outline',
+  eye: 'eye-outline',
+  'eye-off': 'eye-off-outline',
+  'play-circle': 'play-circle',
+  bag: 'bag-handle',
+  heart: 'heart',
+  store: 'storefront',
+  ellipsis: 'ellipsis-horizontal',
+  clipboard: 'clipboard',
+  // màn đăng nhập và đặt lại mật khẩu (UI-A03 đăng nhập, UI-A07..A09)
+  'lock-solid': 'lock-closed',
+  phone: 'phone-portrait-outline',
+  bulb: 'bulb',
+  send: 'paper-plane',
+  sparkle: 'sparkles',
+  'check-circle': 'checkmark-circle',
 } as const satisfies Record<string, GlyphName>;
 
 export type IconName = keyof typeof ICON_GLYPHS;

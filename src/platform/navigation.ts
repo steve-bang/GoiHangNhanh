@@ -1,5 +1,5 @@
-import { useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useFocusEffect, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
+import { useCallback, useMemo, useRef } from 'react';
 
 import { ROUTES, type RouteDef } from '@/core/navigation';
 
@@ -12,6 +12,11 @@ export type RouteParams = Readonly<Record<string, string>>;
 export interface AppNavigation {
   push: (route: RouteDef, params?: RouteParams) => void;
   replace: (route: RouteDef, params?: RouteParams) => void;
+  /**
+   * Bỏ MỌI màn trong lịch sử điều hướng rồi hiển thị `route` (kết thúc một luồng, ví dụ thiết lập
+   * tài khoản xong thì vào Tổng quan và nút Back không quay lại được các màn thiết lập).
+   */
+  reset: (route: RouteDef, params?: RouteParams) => void;
   /** Quay lại; không có lịch sử (mở từ liên kết sâu) thì về Tổng quan để luôn có đường lui an toàn. */
   back: () => void;
 }
@@ -22,6 +27,10 @@ export function useAppNavigation(): AppNavigation {
     () => ({
       push: (route, params) => router.push({ pathname: route.path, params: params ?? {} }),
       replace: (route, params) => router.replace({ pathname: route.path, params: params ?? {} }),
+      reset: (route, params) => {
+        if (router.canDismiss()) router.dismissAll();
+        router.replace({ pathname: route.path, params: params ?? {} });
+      },
       back: () => {
         if (router.canGoBack()) router.back();
         else router.replace(ROUTES.home.path);
@@ -41,6 +50,24 @@ export function useRouteParams(): Readonly<Record<string, string | undefined>> {
     }
     return out;
   }, [raw]);
+}
+
+/**
+ * Trả hàm `isActive()`: true khi màn hình còn được hiển thị (đang focus, chưa bị gỡ). Dùng sau một
+ * thao tác bất đồng bộ để KHÔNG điều hướng/đặt trạng thái nếu người dùng đã bấm Back hoặc đi chỗ
+ * khác trong lúc chờ. Không chặn việc rời màn. Dựa trên `useFocusEffect` của Expo Router.
+ */
+export function useIsScreenActive(): () => boolean {
+  const activeRef = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      activeRef.current = true;
+      return () => {
+        activeRef.current = false;
+      };
+    }, []),
+  );
+  return useCallback(() => activeRef.current, []);
 }
 
 /**

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { getMinTouchTarget } from '@/platform';
 
@@ -15,6 +15,8 @@ interface ButtonProps {
   variant?: ButtonVariant;
   icon?: IconName;
   disabled?: boolean;
+  /** Đang xử lý: khóa nút (chống bấm đúp), hiện vòng xoay, báo "đang bận" cho trình đọc màn hình. */
+  loading?: boolean;
   accessibilityHint?: string;
   testID?: string;
 }
@@ -32,6 +34,7 @@ export function Button({
   variant = 'primary',
   icon,
   disabled = false,
+  loading = false,
   accessibilityHint,
   testID,
 }: ButtonProps) {
@@ -47,11 +50,11 @@ export function Button({
     <Pressable
       testID={testID}
       onPress={onPress}
-      disabled={disabled}
+      disabled={disabled || loading}
       accessibilityRole="button"
       accessibilityLabel={label}
       {...(accessibilityHint ? { accessibilityHint } : {})}
-      accessibilityState={{ disabled }}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       style={({ pressed }) => [
         styles.base,
         {
@@ -61,12 +64,16 @@ export function Button({
           borderRadius: radius.md,
           paddingHorizontal: spacing.lg,
           paddingVertical: spacing.sm,
-          opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
+          opacity: disabled ? 0.45 : loading ? 0.8 : pressed ? 0.85 : 1,
         },
       ]}
     >
       <View style={styles.content}>
-        {icon ? <Icon name={icon} color={palette.fg} /> : null}
+        {loading ? (
+          <ActivityIndicator size="small" color={palette.fg} />
+        ) : icon ? (
+          <Icon name={icon} color={palette.fg} />
+        ) : null}
         <Text bold style={[styles.label, { color: palette.fg }]}>
           {label}
         </Text>

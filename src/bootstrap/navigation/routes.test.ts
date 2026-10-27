@@ -63,6 +63,20 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     }
   });
 
+  it('luồng khôi phục mật khẩu có mã UI-A07, UI-A08, UI-A09 và không có thanh tab', () => {
+    expect(ROUTES.forgotPassword).toMatchObject({
+      path: '/forgot-password',
+      code: 'UI-A07',
+      tabBar: false,
+    });
+    expect(ROUTES.verifyOtp).toMatchObject({ path: '/verify-otp', code: 'UI-A08', tabBar: false });
+    expect(ROUTES.newPassword).toMatchObject({
+      path: '/new-password',
+      code: 'UI-A09',
+      tabBar: false,
+    });
+  });
+
   it('màn quay (UI-C03, UI-D04) nằm ngoài nhóm tab nên ẩn thanh tab', () => {
     expect(ROUTES.packRecord.code).toBe('UI-C03');
     expect(ROUTES.returnRecord.code).toBe('UI-D04');

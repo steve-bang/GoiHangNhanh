@@ -2,6 +2,8 @@
 
 Áp dụng quy tắc chung ở cuối [04](04-screen-spec-packing.md#quy-tắc-chung-áp-dụng-cả-a-và-b). Nguyên tắc riêng của quy trình: xem [03 — Quy trình C](03-workflows.md#quy-trình-c--tiếp-nhận-hàng-hoàn).
 
+> **Quy ước thông báo lỗi:** các câu "Thông báo" trong tài liệu này còn viết theo mẫu cũ (ba phần). Quy ước hiện hành ở [docs/09 mục 5.1](09-ui-ux-design.md) (tối đa 2 câu, dưới 20 từ, chỉ nêu ảnh hưởng khi người dùng có thể lo mất dữ liệu). Chưa viết lại; việc sau, cần BA rà soát từng màn.
+
 Luồng chuẩn: **B01** Danh sách hàng hoàn → **B02** Tìm đơn gốc / tạo hồ sơ độc lập → **B03** Tiếp nhận kiện → **B04** Kiểm tra sẵn sàng → **B05** Quay mở kiện → **B06** Kiểm tra và đối chiếu → **B07** Xác nhận hồ sơ → **B08** Đồng bộ và xử lý tiếp.
 
 ## B01 — Danh sách tiếp nhận hàng hoàn

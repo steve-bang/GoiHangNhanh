@@ -10,5 +10,32 @@
   "SOURCE_ORDER_NOT_FOUND": "Chưa tìm được đơn gốc. Bạn có thể tiếp tục với hồ sơ chưa liên kết.",
   "SOURCE_ORDER_AMBIGUOUS": "Có nhiều đơn phù hợp. Hãy kiểm tra thêm trước khi chọn.",
   "RETURN_CODE_DUPLICATE": "Mã này đã có hồ sơ hàng hoàn. Hãy mở hồ sơ hiện có hoặc xác nhận đây là lần tiếp nhận khác.",
-  "RETURN_ORDER_CONFLICT": "Thông tin đang chọn không khớp với hồ sơ hiện có. Hãy kiểm tra trước khi tiếp tục."
+  "RETURN_ORDER_CONFLICT": "Thông tin đang chọn không khớp với hồ sơ hiện có. Hãy kiểm tra trước khi tiếp tục.",
+  "AUTH_SERVICE_UNAVAILABLE": {
+    "title": "Hệ thống đang bận.",
+    "hint": "Bạn thử lại sau ít phút nhé."
+  },
+  "AUTH_NETWORK_ERROR": {
+    "title": "Mất kết nối mạng.",
+    "hint": "Bạn kiểm tra mạng rồi thử lại nhé."
+  },
+  "AUTH_EMAIL_IN_USE": "Email này đã có tài khoản.",
+  "AUTH_WEAK_PASSWORD": "Mật khẩu này dễ đoán. Hãy dùng ít nhất 8 ký tự.",
+  "AUTH_INVALID_CREDENTIALS": {
+    "title": "Email hoặc mật khẩu chưa chính xác.",
+    "hint": "Bạn kiểm tra lại nhé!"
+  },
+  "AUTH_TOO_MANY_REQUESTS": {
+    "title": "Bạn đã thử quá nhiều lần.",
+    "hint": "Hãy thử lại sau ít phút."
+  },
+  "AUTH_OTP_INVALID": "Mã xác minh chưa chính xác. Bạn kiểm tra lại nhé!",
+  "AUTH_OTP_EXPIRED": {
+    "title": "Mã xác minh đã hết hạn.",
+    "hint": "Bạn xin mã mới nhé."
+  },
+  "AUTH_RESET_SESSION_EXPIRED": {
+    "title": "Phiên xác minh đã hết hạn.",
+    "hint": "Bạn cần xác minh lại để đặt mật khẩu mới."
+  }
 }

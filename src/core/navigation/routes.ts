@@ -15,6 +15,9 @@ export const UI_CODES = [
   'UI-A04',
   'UI-A05',
   'UI-A06',
+  'UI-A07',
+  'UI-A08',
+  'UI-A09',
   'UI-B01',
   'UI-B02',
   'UI-B03',
@@ -79,6 +82,10 @@ export const ROUTES = {
   createShop: route('/create-shop', 'UI-A04'),
   permissions: route('/permissions', 'UI-A05'),
   setupDone: route('/setup-done', 'UI-A06'),
+  // Quên mật khẩu -> Nhập mã xác minh -> Mật khẩu mới (docs/09; chỉ vào được theo thứ tự này)
+  forgotPassword: route('/forgot-password', 'UI-A07'),
+  verifyOtp: route('/verify-otp', 'UI-A08'),
+  newPassword: route('/new-password', 'UI-A09'),
   // Nhóm B + C01 - tab Tổng quan
   home: route('/home', 'UI-B01', true),
   scan: route('/home/scan', 'UI-B02', true),

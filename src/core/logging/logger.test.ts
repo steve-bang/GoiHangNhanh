@@ -18,6 +18,31 @@ describe('redact', () => {
     });
   });
 
+  it('che email, mật khẩu, mã xác minh (otp/code) và vé đặt lại', () => {
+    const out = redact({
+      email: 'a@b.co',
+      password: 'matkhau-1',
+      newPassword: 'matkhau-2',
+      otp: '123456',
+      code: '123456',
+      verificationCode: '123456',
+      ticket: 'fake-ticket-1',
+      resetTicket: 'x',
+      screen: 'UI-A08',
+    });
+    expect(out).toEqual({
+      email: REDACTED,
+      password: REDACTED,
+      newPassword: REDACTED,
+      otp: REDACTED,
+      code: REDACTED,
+      verificationCode: REDACTED,
+      ticket: REDACTED,
+      resetTicket: REDACTED,
+      screen: 'UI-A08',
+    });
+  });
+
   it('giữ nguyên ID nội bộ và giá trị kỹ thuật', () => {
     expect(redact({ evidenceId: 'e-1', sizeBytes: 5, state: 'queued' })).toEqual({
       evidenceId: 'e-1',

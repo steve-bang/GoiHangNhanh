@@ -1,17 +1,19 @@
 import { PlaceholderScreen } from '@/shared/ui';
 
 /**
- * Màn khung của shop: khởi động/thiết lập (UI-A02..A06), gói dịch vụ (UI-H01..H04), hồ sơ và cài
- * đặt (UI-I01..I06). Đăng nhập/thành viên/gói chưa có nghiệp vụ (O-03, O-15, O-16, O-06).
+ * Màn khung của shop: khởi động/thiết lập (UI-A02..A09), gói dịch vụ (UI-H01..H04), hồ sơ và cài
+ * đặt (UI-I01..I06). Thành viên/gói chưa có nghiệp vụ (O-03, O-16, O-06).
  * UI-A01 (Splash) hiện là chuyển hướng ở route gốc, chưa có màn.
  */
 export { WelcomeScreen } from './WelcomeScreen';
-export const SignInScreen = () => <PlaceholderScreen uiCode="UI-A03" />;
-/** Biến thể đăng ký của UI-A03 (cùng mã UI). Chưa có nghiệp vụ (O-15). */
-export const SignUpScreen = () => <PlaceholderScreen uiCode="UI-A03" />;
-export const CreateShopScreen = () => <PlaceholderScreen uiCode="UI-A04" />;
+export { SignInScreen } from './SignInScreen';
+export { ForgotPasswordScreen } from './ForgotPasswordScreen';
+export { VerifyOtpScreen } from './VerifyOtpScreen';
+export { NewPasswordScreen } from './NewPasswordScreen';
+export { SignUpScreen } from './SignUpScreen';
+export { CreateShopScreen } from './CreateShopScreen';
 export const PermissionsScreen = () => <PlaceholderScreen uiCode="UI-A05" />;
-export const SetupDoneScreen = () => <PlaceholderScreen uiCode="UI-A06" />;
+export { SetupDoneScreen } from './SetupDoneScreen';
 
 export const PlanScreen = () => <PlaceholderScreen uiCode="UI-H01" />;
 export const PlansScreen = () => <PlaceholderScreen uiCode="UI-H02" />;

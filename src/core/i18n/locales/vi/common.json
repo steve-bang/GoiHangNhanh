@@ -1,10 +1,11 @@
 {
   "app": {
-    "name": "Đơn Chứng"
+    "name": "Đơn\u00a0Chứng"
   },
   "actions": {
     "back": "Quay lại",
     "close": "Đóng",
+    "retry": "Thử lại",
     "clearText": "Xóa nội dung đã nhập",
     "increase": "Tăng số lượng",
     "decrease": "Giảm số lượng"
