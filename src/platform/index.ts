@@ -1,4 +1,5 @@
 export { getInputResetStyle, getKeyboardAvoidingBehavior, getMinTouchTarget } from './layout';
+export { getAppVersion } from './app-info';
 export { useIsOffline } from './connectivity';
 export {
   useAppNavigation,

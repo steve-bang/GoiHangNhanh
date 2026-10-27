@@ -11,13 +11,21 @@ interface AvatarProps {
   /** Họ tên để lấy chữ cái đầu; trống/null thì hiện biểu tượng người dùng (không bịa chữ từ email). */
   name?: string | null;
   size?: 'md' | 'lg' | 'xl';
+  /** `square` (bo góc) cho cửa hàng, `circle` (mặc định) cho người. */
+  shape?: 'circle' | 'square';
   /** Mặc định trang trí (ẩn khỏi trình đọc màn hình) vì tên luôn có chữ đi kèm gần đó. */
   accessibilityLabel?: string;
   testID?: string;
 }
 
 /** Ảnh đại diện dạng chữ cái đầu. Chưa hỗ trợ ảnh tải lên (chưa có đặc tả). */
-export function Avatar({ name, size = 'lg', accessibilityLabel, testID }: AvatarProps) {
+export function Avatar({
+  name,
+  size = 'lg',
+  shape = 'circle',
+  accessibilityLabel,
+  testID,
+}: AvatarProps) {
   const { tokens } = useTheme();
   const dimension = layout.component.tile[size === 'md' ? 'md' : size === 'lg' ? 'lg' : 'xl'];
   const initials = getInitials(name);
@@ -32,7 +40,7 @@ export function Avatar({ name, size = 'lg', accessibilityLabel, testID }: Avatar
         {
           width: dimension,
           height: dimension,
-          borderRadius: dimension / 2,
+          borderRadius: shape === 'square' ? tokens.radius.md : dimension / 2,
           backgroundColor: tokens.color.brand.soft,
         },
       ]}

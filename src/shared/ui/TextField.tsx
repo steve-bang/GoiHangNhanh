@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ComponentProps, type ElementRef, type ReactNode, type Ref } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -13,6 +13,9 @@ import { layout } from '@/core/theme';
 import { Text } from './Text';
 import { useTheme } from './theme';
 
+/** Kiểu tham chiếu của ô nhập (cho `useRef` ở màn biểu mẫu). */
+export type TextFieldInput = ElementRef<typeof TextInput>;
+
 interface TextFieldProps {
   label: string;
   value: string;
@@ -25,6 +28,8 @@ interface TextFieldProps {
   onSubmitEditing?: () => void;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   testID?: string;
+  /** Tham chiếu tới ô nhập để đưa focus vào ô lỗi đầu tiên khi kiểm tra biểu mẫu. */
+  inputRef?: Ref<TextFieldInput>;
   /** Phần tử đặt bên phải trong khung ô (nút quét, nút xóa, mũi tên...). Tự chịu trách nhiệm trợ năng. */
   trailing?: ReactNode;
   onFocus?: () => void;
@@ -49,6 +54,7 @@ export function TextField({
   onSubmitEditing,
   autoCapitalize = 'none',
   testID,
+  inputRef,
   trailing,
   onFocus,
   onBlur,
@@ -75,6 +81,7 @@ export function TextField({
   } as const;
   const input = (
     <TextInput
+      ref={inputRef as ComponentProps<typeof TextInput>['ref']}
       testID={testID}
       accessibilityLabel={label}
       value={value}

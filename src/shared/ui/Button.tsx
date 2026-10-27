@@ -21,6 +21,8 @@ interface ButtonProps {
    * hơn, viền mảnh, chữ nhỏ hơn (mockup 03). Mọi cỡ vẫn >= vùng chạm tối thiểu.
    */
   size?: ButtonSize;
+  /** Chỉ cho `destructive`: nền trắng, viền và chữ đỏ (nút phá hủy thứ yếu, ví dụ trong hộp xác nhận). */
+  outlined?: boolean;
   disabled?: boolean;
   /** Đang xử lý: khóa nút (chống bấm đúp), hiện vòng xoay, báo "đang bận" cho trình đọc màn hình. */
   loading?: boolean;
@@ -41,6 +43,7 @@ export function Button({
   variant = 'primary',
   icon,
   size = 'regular',
+  outlined = false,
   disabled = false,
   loading = false,
   accessibilityHint,
@@ -53,7 +56,9 @@ export function Button({
     secondary: slim
       ? { bg: colors.surface, fg: colors.ink, border: colors.fieldBorder }
       : { bg: colors.surface, fg: colors.brand, border: colors.brand },
-    destructive: { bg: colors.danger, fg: colors.onDanger, border: colors.danger },
+    destructive: outlined
+      ? { bg: colors.surface, fg: colors.danger, border: colors.danger }
+      : { bg: colors.danger, fg: colors.onDanger, border: colors.danger },
   }[variant];
   const touch = getMinTouchTarget();
   const minHeight =

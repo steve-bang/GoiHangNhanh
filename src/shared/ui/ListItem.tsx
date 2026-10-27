@@ -11,6 +11,12 @@ interface ListItemProps {
   title: string;
   subtitle?: string;
   leadingIcon?: IconName;
+  /** Phần dẫn đầu tùy ý (ví dụ `Avatar`); thay `leadingIcon` nếu có. Trang trí, không mang nghĩa riêng. */
+  leading?: ReactNode;
+  /** `regular` cho hàng menu (tên người/cửa hàng giữ in đậm). Mặc định `bold` như cũ. */
+  titleWeight?: 'bold' | 'regular';
+  /** Tiêu đề màu hành động (`action.primary`), dùng cho lời mời hành động như "Thêm họ tên". */
+  actionTitle?: boolean;
   /** Phần tử bên phải (nhãn trạng thái, giá trị...). Tự chịu trách nhiệm trợ năng. */
   trailing?: ReactNode;
   /** Có `onPress` thì cả hàng là một nút và có mũi tên (trừ khi `showChevron={false}`). */
@@ -33,6 +39,9 @@ export function ListItem({
   title,
   subtitle,
   leadingIcon,
+  leading,
+  titleWeight = 'bold',
+  actionTitle = false,
   trailing,
   onPress,
   showChevron,
@@ -45,12 +54,17 @@ export function ListItem({
   const { tokens } = useTheme();
   const interactive = onPress !== undefined;
   const chevron = showChevron ?? interactive;
-  const titleColor = destructive ? tokens.color.feedback.danger.fg : tokens.color.text.primary;
+  const titleColor = destructive
+    ? tokens.color.feedback.danger.fg
+    : actionTitle
+      ? tokens.color.action.primary
+      : tokens.color.text.primary;
   const label = accessibilityLabel ?? [title, subtitle].filter(Boolean).join('. ');
 
   const content = (
     <>
-      {leadingIcon ? (
+      {leading ?? null}
+      {!leading && leadingIcon ? (
         <Icon
           name={leadingIcon}
           size={22}
@@ -58,7 +72,7 @@ export function ListItem({
         />
       ) : null}
       <View style={styles.text}>
-        <Text bold style={{ color: titleColor }}>
+        <Text bold={titleWeight === 'bold'} style={{ color: titleColor }}>
           {title}
         </Text>
         {subtitle ? (
@@ -84,6 +98,7 @@ export function ListItem({
         testID={testID}
         accessible
         accessibilityLabel={label}
+        accessibilityState={{ disabled }}
         style={[styles.row, rowStyle, disabled ? { opacity: tokens.opacity.disabled } : null]}
       >
         {content}
