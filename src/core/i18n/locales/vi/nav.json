@@ -73,6 +73,8 @@
   },
   "subTitles": {
     "editProfile": "Sửa họ tên",
-    "changePassword": "Đổi mật khẩu"
+    "changePassword": "Đổi mật khẩu",
+    "shopEdit": "Sửa thông tin cửa hàng",
+    "shopSwitch": "Chuyển cửa hàng"
   }
 }

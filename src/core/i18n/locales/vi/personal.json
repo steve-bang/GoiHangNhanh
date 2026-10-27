@@ -4,7 +4,8 @@
     "email": "Email",
     "currentPassword": "Mật khẩu hiện tại",
     "newPassword": "Mật khẩu mới",
-    "confirmNewPassword": "Nhập lại mật khẩu mới"
+    "confirmNewPassword": "Nhập lại mật khẩu mới",
+    "shopName": "Tên cửa hàng"
   },
   "hints": {
     "newPassword": "Từ 8 ký tự."
@@ -25,6 +26,10 @@
     "confirmNewPassword": {
       "required": "Hãy nhập lại mật khẩu mới.",
       "mismatch": "Hai mật khẩu chưa khớp nhau. Hãy nhập lại."
+    },
+    "shopName": {
+      "required": "Tên cửa hàng không được để trống.",
+      "too_long": "Tên cửa hàng hơi dài. Hãy rút gọn xuống 50 ký tự."
     }
   },
   "status": {
@@ -77,5 +82,48 @@
     "submit": "Đổi mật khẩu",
     "saved": "Đã đổi mật khẩu.",
     "signInAgain": "Đăng nhập lại"
+  },
+  "shop": {
+    "noShop": "Bạn chưa có cửa hàng.",
+    "noShopHint": "Hãy tạo cửa hàng để bắt đầu lưu bằng chứng.",
+    "roleLabel": "Vai trò",
+    "statusLabel": "Trạng thái",
+    "role": {
+      "owner": "Chủ cửa hàng",
+      "member": "Thành viên"
+    },
+    "status": {
+      "active": "Đang hoạt động",
+      "suspended": "Tạm khóa"
+    },
+    "current": "Đang dùng",
+    "editAction": "Chỉnh sửa thông tin",
+    "switchAction": "Chuyển cửa hàng",
+    "noEditPermission": "Bạn chưa có quyền sửa thông tin cửa hàng. Hãy liên hệ chủ cửa hàng.",
+    "refreshFailed": "Chưa làm mới được. Đang hiện dữ liệu đã tải trước đó.",
+    "renameNote": "Đổi tên không làm thay đổi video và lịch sử đã lưu."
+  },
+  "editShop": {
+    "save": "Lưu",
+    "saved": "Đã cập nhật thông tin cửa hàng.",
+    "leaveTitle": "Bỏ thay đổi?",
+    "leaveMessage": "Tên cửa hàng bạn vừa sửa chưa được lưu.",
+    "leaveConfirm": "Bỏ thay đổi",
+    "leaveCancel": "Tiếp tục sửa"
+  },
+  "switchShop": {
+    "intro": "Chọn cửa hàng bạn muốn làm việc.",
+    "dialogTitle": "Chuyển cửa hàng?",
+    "dialogMessage": "Bạn sẽ xem đơn và video của {{name}}. Dữ liệu của cửa hàng hiện tại vẫn được giữ trên máy.",
+    "confirm": "Chuyển cửa hàng",
+    "cancel": "Ở lại",
+    "switched": "Đã chuyển sang {{name}}.",
+    "recordingTitle": "Đang quay video",
+    "recordingMessage": "Hãy kết thúc phiên quay trước khi chuyển cửa hàng để không mất video đang ghi.",
+    "unsyncedTitle": "Còn video chưa lưu lên máy chủ",
+    "unsyncedMessage": "Cửa hàng hiện tại còn {{count}} tệp bằng chứng chưa được máy chủ xác nhận. Các tệp vẫn được giữ trên máy, không bị xóa.",
+    "unsyncedContinue": "Vẫn chuyển cửa hàng",
+    "openSync": "Xem trung tâm đồng bộ",
+    "suspendedHint": "Cửa hàng đang tạm khóa nên chưa chuyển vào được."
   }
 }

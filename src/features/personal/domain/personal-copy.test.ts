@@ -1,10 +1,11 @@
 import { resources } from '@/core/i18n/resources';
-import { DISPLAY_NAME_MAX_LENGTH, MIN_PASSWORD_LENGTH } from './validation';
+import { DISPLAY_NAME_MAX_LENGTH, MIN_PASSWORD_LENGTH, SHOP_NAME_MAX_LENGTH } from './validation';
 import type {
   ConfirmPasswordIssue,
   CurrentPasswordIssue,
   DisplayNameIssue,
   NewPasswordIssue,
+  ShopNameIssue,
 } from './validation';
 
 const validation = resources.vi.personal.validation as Record<string, Record<string, string>>;
@@ -12,6 +13,7 @@ const validation = resources.vi.personal.validation as Record<string, Record<str
 /** Mọi mã vấn đề của hàm kiểm tra đều phải có câu chữ (compile-time + runtime). */
 const EXPECTED: Record<string, readonly string[]> = {
   displayName: ['required', 'too_long'] satisfies DisplayNameIssue[],
+  shopName: ['required', 'too_long'] satisfies ShopNameIssue[],
   currentPassword: ['required'] satisfies CurrentPasswordIssue[],
   newPassword: ['required', 'too_short', 'same_as_current'] satisfies NewPasswordIssue[],
   confirmNewPassword: ['required', 'mismatch'] satisfies ConfirmPasswordIssue[],
@@ -34,5 +36,6 @@ describe('personal.json', () => {
   it('con số trong câu chữ khớp hằng số kiểm tra', () => {
     expect(validation['newPassword']?.['too_short']).toContain(String(MIN_PASSWORD_LENGTH));
     expect(validation['displayName']?.['too_long']).toContain(String(DISPLAY_NAME_MAX_LENGTH));
+    expect(validation['shopName']?.['too_long']).toContain(String(SHOP_NAME_MAX_LENGTH));
   });
 });
