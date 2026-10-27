@@ -115,9 +115,7 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
     expect(screen.getByText('Kiện 1')).toBeOnTheScreen();
     expect(screen.getByTestId(`detail-package-${firstPackageId(d)}`)).toBeOnTheScreen();
     expect(screen.getByText('Chưa có phiên quay')).toBeOnTheScreen();
-    expect(screen.getByTestId('detail-no-evidence')).toHaveTextContent(
-      'Chưa có video đóng gói. Quay ngay để lưu lại quá trình xử lý đơn nhé!',
-    );
+    expect(screen.getByTestId('detail-no-evidence')).toHaveTextContent('Chưa có video đóng gói.');
     expect(screen.getByText('Đã tạo đơn')).toBeOnTheScreen();
     // chỉ đọc: không có nút Sửa
     expect(screen.queryByRole('button', { name: /Sửa|Chỉnh sửa/ })).toBeNull();
@@ -133,11 +131,9 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
     await open(store, none.order.id);
     expect(await screen.findByText('Chưa khai báo sản phẩm')).toBeOnTheScreen();
     expect(screen.getByTestId('detail-undeclared-hint')).toHaveTextContent(
-      'Bạn chưa khai báo sản phẩm cho đơn này. Bạn có thể bổ sung bất cứ lúc nào.',
+      'Bạn chưa khai báo sản phẩm cho đơn này.',
     );
-    expect(screen.getByTestId('detail-no-tracking')).toHaveTextContent(
-      'Chưa có mã vận đơn. Bạn có thể thêm sau.',
-    );
+    expect(screen.getByTestId('detail-no-tracking')).toHaveTextContent('Chưa có mã vận đơn.');
     expect(screen.queryByTestId('copy-tracking-code')).toBeNull();
   });
 
