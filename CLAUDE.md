@@ -22,11 +22,12 @@ Tài liệu nằm trong `docs/`, bắt đầu từ `docs/README.md` (mục lục
 | `npm run test:rules` | Test Security Rules bằng Firebase Emulator (Firestore + Storage); cần Java 21, lần đầu tải emulator |
 | `npm run check:tokens` | Kiểm tra cấu trúc Design Token (nguồn hex duy nhất, kiến trúc tầng, baseline ngoại lệ); rule ESLint `design-tokens/no-raw-design-values` chạy trong `npm run lint` |
 | `npm run check` | lint + typecheck + format:check + check:tokens + unit test (chạy trước khi báo xong) |
+| `npx expo start --go --ios` | **Cách chạy thử trên iOS Simulator** (đã chạy được, 2026-10-27): mở app trong Expo Go 58 và tự cài Expo Go khớp SDK nếu thiếu. Không cần build native/Xcode mới. **Không dùng `npm start`** để chạy thử: script đó có `--dev-client` và báo `No development build (vn.doncung.app.dev) ... installed` nếu chưa build. Camera quét mã không dùng được trên simulator; `expo-sqlite`/`expo-camera` chưa kiểm chứng kỹ trong Expo Go |
 | `npx expo export --platform ios` / `--platform android` | Đóng gói JS (Metro) để bắt lỗi bundle; không cần Xcode/Android SDK. Thêm `--output-dir <thư mục ngoài repo>` nếu không muốn tạo `dist/`. `npx expo install` cần truy cập `api.expo.dev` (có thể bị chặn trong môi trường hạn chế: xem ADR-013) |
 
 Cờ môi trường của cổng giả (không phải lệnh): `EXPO_PUBLIC_USE_FAKE_BACKEND=1` (bật cổng giả ở bản không phải dev, ví dụ xuất web để chụp ảnh giao diện); `EXPO_PUBLIC_FAKE_SESSION=signed_out|no_shop|signed_in` (phiên giả khi mở app, màn Splash UI-A01; không đặt: dev/test = `signed_in`, bản xem trước = `signed_out`; **bản build thường không có cổng giả nên luôn vào Chào mừng**: `layout.md` mục 2.4, `decisions.md` Q-15). `npx expo prebuild --no-install` đã chạy được trên bản sao ngoài repo (chỉ để kiểm tra cấu hình `app.json`), chưa build/chạy native.
 
-Chưa có lệnh build/chạy native (dev build) vì chưa dựng được; sau `expo prebuild`/EAS cần bổ sung vào đây khi đã chạy thật. CI: `.github/workflows/ci.yml` (PR vào `main`): lint, typecheck, format, unit test, test Rules.
+Build native (`npx expo run:ios`) **chưa chạy được trên máy có Xcode 16.4**: `ExpoModulesJSI` cần Swift tools 6.2 (Xcode 26+), lỗi `package 'apple' is using Swift tools version 6.2.0 but the installed version is 6.1.0`. CocoaPods cần `export LANG=en_US.UTF-8` (nếu không `pod install` lỗi Unicode Normalization). Thư mục `ios/` sinh ra đã được gitignore. Chưa có lệnh build/chạy native (dev build) chạy thật; sau `expo prebuild`/EAS cần bổ sung vào đây khi đã chạy thật. CI: `.github/workflows/ci.yml` (PR vào `main`): lint, typecheck, format, unit test, test Rules.
 
 ### Tài liệu kỹ thuật
 
