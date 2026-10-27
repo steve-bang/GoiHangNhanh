@@ -1,6 +1,6 @@
 # Audit hệ thống thiết kế (Design Token) — Đơn Chứng
 
-> Trạng thái: **bản audit, chưa sửa mã**. Đi kèm [design-token-spec.md](design-token-spec.md) (đặc tả token đề xuất). Ngày audit: 2026-10-27, nhánh `design-token`, dựa trên `main`.
+> Trạng thái: **audit trước triển khai** (số liệu ở đây là hiện trạng `main` khi audit; kết quả sau triển khai: [design-token-migration-report.md](design-token-migration-report.md)). Q-1, Q-2, Q-3 đã được xác nhận. Đi kèm [design-token-spec.md](design-token-spec.md) (đặc tả token đề xuất). Ngày audit: 2026-10-27, nhánh `design-token`, dựa trên `main`.
 > Số liệu lấy bằng quét regex trên mã nguồn (không tính tệp test); sẽ được thay bằng công cụ kiểm tra chính thức (`check:tokens`) khi triển khai. Số là gần đúng theo mẫu quét, đủ để quyết định, không phải con số nghiệm thu.
 
 ## 1. Phạm vi

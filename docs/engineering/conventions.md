@@ -85,7 +85,7 @@ Sơ đồ thư mục: [architecture.md mục 3](architecture.md#3-phân-lớp-m�
 - Mã băm: chỉ diễn đạt đúng nội dung "tệp không đổi kể từ lúc tính"; không nói chứng minh thời điểm quay hay tính chân thực. Thời gian thiết bị và thời gian máy chủ hiển thị riêng, có nhãn.
 - Thông tin người dùng nhập: ghi nguồn "do người dùng nhập"; không trình bày như dữ liệu từ sàn. Thiếu thông tin sản phẩm → nhãn *Chưa khai báo sản phẩm*, không chặn quay.
 - Nút chính có nhãn cụ thể (*Lưu và quay video*, *Giữ video và quay lại*), tránh "OK/Tiếp tục" mơ hồ. Hộp thoại xác nhận chỉ cho xóa, đóng hồ sơ, đổi quan trọng, rời phiên quay.
-- Cỡ chữ/vùng chạm lấy từ `core/theme` (≥ 44pt iOS / 48dp Android; không khóa font scale). Màu/typography dùng token, không hex rải rác. Giá trị màu hiện là **tạm** (docs/09 chưa có Figma).
+- Cỡ chữ/vùng chạm lấy từ `core/theme` (≥ 44pt iOS / 48dp Android; không khóa font scale). **Màn bên trong app dùng Design Token qua `useTheme().tokens`** (màu, spacing, bo góc, viền, độ mờ, bóng, kích thước thành phần); ESLint rule `design-tokens/no-raw-design-values` + `npm run check:tokens` chặn hex/số thiết kế viết thẳng. Màn đã được khách hàng xác nhận (Splash, đăng nhập/đăng ký, khôi phục mật khẩu, thiết lập) nằm ngoài phạm vi và không đổi. Hướng dẫn: [docs/design-system.md](../design-system.md); đặc tả: [docs/design-token-spec.md](../design-token-spec.md). Giá trị màu hiện là **tạm** (docs/09 chưa có Figma).
 - Không dùng mockup `docs/assets/ui/` làm căn cứ cuối: đối chiếu [docs/09 mục 5.5](../09-ui-ux-design.md#55-đối-chiếu-mockup-với-đặc-tả) trước khi làm theo.
 - Có hai bộ mã màn hình, không nhầm: `A01–A08`/`B01–B08` (đặc tả quy trình) và `UI-A01…UI-J15` (danh mục giao diện). Ghi cả hai khi tham chiếu trong PR.
 

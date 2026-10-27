@@ -1,6 +1,6 @@
 # Đặc tả Design Token — Đơn Chứng
 
-> Trạng thái: **thiết kế đã chốt để triển khai** (dựa trên [audit](design-system-audit.md)), chưa có mã. Phạm vi: các màn **bên trong app sau đăng nhập**. Splash, Đăng nhập, Đăng ký, Quên mật khẩu, OTP, Mật khẩu mới (và các tệp hỗ trợ) **không đổi** — xem audit mục 1.
+> Trạng thái: **đã triển khai** trong `src/core/theme/` (kết quả: [design-token-migration-report.md](design-token-migration-report.md); cách dùng: [design-system.md](design-system.md)). Q-1, Q-2, Q-3 ở audit đã được xác nhận. Phạm vi: các màn **bên trong app sau đăng nhập**. Splash, Đăng nhập, Đăng ký, Quên mật khẩu, OTP, Mật khẩu mới (và các tệp hỗ trợ) **không đổi** — xem audit mục 1.
 > Giá trị hex bên dưới **lấy nguyên từ `core/theme/colors.ts` hiện tại**, không có màu mới. Mục tiêu của token là cấu trúc và ngăn lệch, không phải đổi giao diện.
 
 ## 1. Nguyên tắc thiết kế
@@ -28,8 +28,9 @@ src/core/theme/
 ```
 
 - `colors.ts` hiện viết hex tay. Sau đổi, mỗi khóa là `primitives.palette.x` → **một nguồn hex**, không hai nơi. Test golden so từng khóa với giá trị hiện tại (snapshot ghi vào test từ mã hôm nay) nên bất kỳ lệch nào đều làm test đỏ.
-- `useTheme()` (`shared/ui/theme.ts`) trả **thêm** khóa `tokens` (semantic + component). Các khóa cũ `colors, spacing, radius, typography` giữ nguyên. Component trong phạm vi dùng `tokens`; màn ngoài phạm vi vẫn dùng khóa cũ.
-- Biểu tượng/hình học phụ thuộc nền tảng (hairline, Android `elevation`) nằm ở `src/platform`, không ở `core/theme`.
+- `useTheme()` (`shared/ui/theme.ts`) trả **thêm** khóa `tokens` (semantic + `component`). Các khóa cũ `colors, spacing, radius, typography` giữ nguyên. Component trong phạm vi dùng `tokens`; màn ngoài phạm vi vẫn dùng khóa cũ.
+- **Hai đường truy cập, chọn theo việc:** (1) `useTheme().tokens` cho mọi thứ trong render, **bắt buộc cho màu**; (2) `layout` (export từ `@/core/theme`) cho token không đổi theo sáng/tối (space, radius, borderWidth, opacity, elevation, `component`) khi cần trong `StyleSheet.create` ở mức module. ESLint chặn đọc `semantic.color`/`semantic.status` tĩnh để chế độ tối sau này không phải sửa từng component.
+- Giá trị do hệ điều hành cấp (`StyleSheet.hairlineWidth`, vùng chạm tối thiểu qua `getMinTouchTarget`) giữ nguyên ở lớp UI/`@/platform`, không sao chép vào `core/theme`.
 - Không thêm thư viện. Không dependency vòng: `primitives ← semantic ← components`, `colors/typography ← primitives`, `shared/ui ← core/theme`.
 
 ## 3. Nhóm token được chọn
@@ -47,7 +48,7 @@ src/core/theme/
 | Motion | **Không tạo** | Không có animation trong phạm vi |
 | Font family / letter spacing | **Không tạo** | Dùng font hệ thống, không có `letterSpacing` |
 | Dark mode | **Không bật** (O-17), chừa chỗ ở 8 | Chưa là yêu cầu sản phẩm |
-| Icon size | **Có** thang 16/20/24/30 (chốt khi triển khai theo 43 chỗ dùng) | `size={n}` rải rác |
+| Icon size | **Không tạo** | Có 12 cỡ (16…56) theo từng mockup, `Icon` mặc định 22 và được màn ngoài phạm vi dùng; gom lại đổi hiển thị. Ghi nợ TD-5 |
 | Z-index/breakpoint | **Không** | Không cần; `useWindowDimensions` giữ logic cũ |
 
 ## 4. Giá trị cuối cùng
@@ -90,8 +91,8 @@ Các khóa chỉ màn ngoài phạm vi dùng (`splash*`, `welcome*`, `onboarding
 |---|---|---|
 | `space` | `0 · 2 · 4 · 6 · 8 · 12 · 16 · 24` | Thêm 2, 6 (đang dùng ×3, ×3). **Gộp:** `10→8` (2 chỗ, khoảng cách icon–chữ), `5→4` (padding pill), `14` xử lý riêng theo ngữ cảnh khi triển khai (1 chỗ). Chênh ≤2dp, ghi trong báo cáo migration |
 | `radius` | `8 · 12 · 16 · full` | `full = 9999` thay các hình tròn viết `kích thước/2` (5, 22, 28, 34, 42) — kết quả hiển thị giống hệt |
-| `borderWidth` | `none 0 · thin 1 · strong 1.5 · ring 4` | Cạnh mảnh `hairline` do `platform` cấp |
-| `opacity` | `pressed 0.85 · busy 0.8 · disabled 0.45` | Đúng giá trị `Button`/`Card` đang dùng |
+| `borderWidth` | `none 0 · thin 1 · strong 1.5 · emphasis 2 · ring 4` | `emphasis` = viền chọn/focus/lỗi (trước đây viết `2`). Cạnh mảnh nhất vẫn là `StyleSheet.hairlineWidth` của hệ điều hành |
+| `opacity` | `pressed 0.85 · busy 0.8 · disabled 0.45` | Đúng giá trị `Button`/`Card`. `QuantityStepper` trước đây dùng `0.4` cho trạng thái vô hiệu: hợp nhất về `0.45` (chênh 0.05) |
 | `elevation.floating` | `{ elevation 6, color neutral đen, opacity 0.18, radius 8, offset (0, 3) }` | Chuyển nguyên từ `ScanTabButton` |
 
 `spacing` t-shirt cũ (`xs 4, sm 8, md 12, lg 16, xl 24`) được giữ. Thêm `xxs = 2` và `tight = 6`.
@@ -150,13 +151,15 @@ Chỉ ghi giá trị **đã có và dùng ≥2 lần hoặc có tên nghiệp v�
 | `button.minHeight.primary` | 56 | `Button` regular | Lớn hơn vùng chạm để bấm một tay (đã có chú thích) |
 | `button.minHeight.compact` | 50 | `Button` compact | |
 | `button.borderWidth` | `strong` (1.5) / `thin` (1 cho slim) | `Button` | |
-| `record.stopButton` | outer 84, inner 68, ring `ring` | `RecordingFrame` | Nút dừng quay: thao tác quan trọng nhất, tách khỏi thang chung |
-| `record.stopArea.minHeight` | 88 | `RecordingFrame`, `ActionCard` | |
-| `record.dot` | 10 | `RecordingFrame` | |
-| `tabBar.scanButton` | size 62, lift 18, ring `ring`, elevation `floating` | `ScanTabButton` | |
-| `thumb.sm / thumb.md` | 28 / 56 | `QuickOrderLineEditor`, `OrderPreviewScreen`, `QuickAction` | Ảnh/ô biểu tượng |
-| `avatar` | 44 | `HomeScreen` | |
-| `scanFrame.cornerRadius` | 14 (+ độ dài/viền theo hiện có) | `ScanScreen` | Khung ngắm |
+| `component.field.minHeight` | 52 | `TextField`, `SearchField`, hàng ở `ProfileScreen`, `ScanScreen` | Ô nhập/hàng thao tác, lớn hơn vùng chạm để gõ một tay |
+| `component.tile.{sm,md,lg,xl}` | 28 / 44 / 52 / 56 | thumbnail dòng sản phẩm; avatar; ô biểu tượng thẻ; lối tắt tròn, ảnh đơn | Ô vuông chứa biểu tượng/ảnh nhỏ |
+| `component.actionCard.minHeight` | 88 | `ActionCard` | |
+| `component.stepper.valueMinWidth` | 48 | `QuantityStepper` | |
+| `component.scanFrame.cornerRadius` | 14 | `ScanScreen` | Khung ngắm (4 góc) |
+| `component.record.{stopOuter,stopInner,stopRing,stopAreaMinHeight,dot,controlMin}` | 84 / 68 / ring / 88 / 10 / 48 | `RecordingFrame` | Nút dừng quay: thao tác quan trọng nhất, tách khỏi thang chung |
+| `component.tabBar.scanButton` | size 62, lift 18, ring `ring`, elevation `floating` | `ScanTabButton` | |
+
+Hình tròn dùng `radius.full` (9999) thay cho `kích thước/2`; kết quả hiển thị giống hệt.
 
 Không tạo: `card.*`, `textField.*`, `orderCard.*`, `badge.*`. Chúng hôm nay chỉ là `radius.md`, `border.default`, `spacing.lg` ghép lại; sao chép sang component token chỉ thêm một tầng tham chiếu không có quyết định mới.
 
@@ -173,7 +176,7 @@ Không tạo: `card.*`, `textField.*`, `orderCard.*`, `badge.*`. Chúng hôm nay
 - Màu không là tín hiệu duy nhất: token trạng thái luôn đi cùng biểu tượng + nhãn (đã có test).
 - Chữ: không khóa `allowFontScaling`; `lineHeight` đi cùng `fontSize` trong variant; chiều cao chỉ `minHeight`.
 - Vùng chạm ≥ 44 iOS / 48 Android; kích thước component token không được nhỏ hơn.
-- **Nợ thiết kế đã ghi:** TD-1 hai bộ chữ (`text/ink`); TD-2 thiếu `info.fg`; TD-3 `scrim 0.5` vs `cameraControl 0.55` gần trùng; TD-4 chữ số tabular.
+- **Nợ thiết kế đã ghi:** TD-1 hai bộ chữ (`text/ink`); TD-2 thiếu `info.fg`; TD-3 `scrim 0.5` vs `cameraControl 0.55` gần trùng; TD-4 chữ số tabular; TD-5 cỡ biểu tượng (12 cỡ, chưa có thang); TD-6 `Text.color` còn nhận tên vai trò cũ (`'textMuted'`, `'ink'`…) vì `Text` dùng chung với màn đã verify.
 
 ## 7. Cơ chế bắt buộc tuân thủ
 
@@ -181,11 +184,11 @@ Danh sách tệp ngoài phạm vi nằm ở **một nguồn** (`scripts/design-t
 
 | Cơ chế | Chặn |
 |---|---|
-| Rule ESLint nội bộ (không thêm dependency), áp cho tệp trong phạm vi | Mã màu `#…`/`rgb(a)`/tên màu trong UI; số cố định ở thuộc tính thiết kế: `fontSize, lineHeight, borderRadius*, border*Width, padding*, margin*, gap, shadow*, elevation, opacity`; import `colors` trực tiếp (phải qua `useTheme()`); import khóa `@frozen` (`splash*`, `welcome*`, `onboarding*`) trong phạm vi |
-| Cho phép | `0`, `1`; biểu thức tính (`insets.bottom + spacing.lg`, `size / 2` trong layout); giá trị động; `// token-exception: <lý do>` ngay dòng trên (rule yêu cầu có lý do, tối thiểu 10 ký tự) |
-| `npm run check:tokens` | Mọi token có tham chiếu tồn tại; hex trong `primitives.ts` là nguồn duy nhất (không hex ở nơi khác của `core/theme` ngoài `colors.ts` đóng băng); không khóa deprecated bị dùng; `colors.ts` bằng snapshot golden |
-| Test | Golden `colors`; tương phản toàn bộ cặp semantic/trạng thái; ánh xạ 6 nhãn ↔ 6 token `status.*` duy nhất; style của `Button`/`Text` tương đương trước/sau |
-| CI | Thêm `npm run check:tokens` vào `npm run check` và job `quality` hiện có (thêm 1 bước, không đổi bước cũ) |
+| Rule ESLint nội bộ `design-tokens/no-raw-design-values` (`eslint-rules/`, không thêm dependency), áp cho tệp trong phạm vi | Chuỗi màu `#…`/`rgb(a)`/`hsl(a)` ở bất cứ đâu trong giao diện; số cố định ở thuộc tính thiết kế: `fontSize, lineHeight, letterSpacing, padding*, margin*, gap, borderRadius*, border*Width, shadow*, elevation, opacity, width/height/min*/max*`; `fontWeight` bằng chữ; đọc bảng cũ `colors/spacing/radius` từ `useTheme()`; import `colors`/`palette` trực tiếp; đọc `semantic.color/status` tĩnh |
+| Cho phép | `0`; `opacity` bằng `1`; biểu thức tính (`insets.bottom + token`, `size * 2`); giá trị động; `Math.max/min` chỉ khi mọi số trong đó là token; `// token-exception: <lý do>` cùng dòng hoặc dòng ngay trên (≥10 ký tự). `Button`/`Text`/`Icon`/`SourceIcon` (dùng chung với màn đã verify) vẫn bị chặn literal nhưng được đọc bảng cũ |
+| `npm run check:tokens` (`scripts/check-design-tokens.cjs`) | Mẫu ngoài-phạm vi không bị mục; hex chỉ ở `primitives.ts` và khối `@frozen` của `colors.ts`; kiến trúc tầng (`primitives` không import ai, `semantic`/`components` chỉ import tầng dưới); số `token-exception` không vượt baseline `scripts/design-token-exceptions.json` (thêm ngoại lệ = sửa baseline trong PR để reviewer thấy); cảnh báo (không fail) khi nhánh sửa tệp ngoài phạm vi. Tham chiếu token sai (đường dẫn không tồn tại) do `tsc` bắt vì `tokens` có kiểu |
+| Test | Golden `colors` (`colors.test.ts`); tương phản các cặp semantic/trạng thái (`theme.test.ts`); 6 nhãn ↔ 6 khóa `status.*` riêng; style `Button`/`Text` bằng giá trị trước khi có token (`frozen-style-equivalence.test.tsx`); chính rule ESLint (`eslint-rules/design-tokens.test.js`, 27 ca) |
+| CI | `npm run check:tokens` thêm vào `npm run check` và job `quality` (thêm 1 bước; checkout `fetch-depth: 0` để so với `origin/main`; `npm test` chạy thêm project `tooling` cho test rule) |
 
 ## 8. Hướng mở rộng
 
@@ -204,6 +207,9 @@ Danh sách tệp ngoài phạm vi nằm ở **một nguồn** (`scripts/design-t
 | Spacing `10`, `5` | `8`, `4` | Chênh ≤2dp |
 | `'#000'` (đổ bóng) | `elevation.floating` | Cùng giá trị |
 | Hình tròn `borderRadius: n/2` | `radius.full` | Hiển thị giống hệt |
+| Opacity `0.4` (Stepper vô hiệu) | `opacity.disabled` 0.45 | Chênh 0.05 |
+| Spacing `14` (nút sao chép) | `space.md` 12 | Chênh 2dp |
+| `Math.max(touch, 52)` | `component.field.minHeight` | Cùng giá trị |
 | Import `colors` trực tiếp, nếu có, ở UI | `useTheme().tokens` | |
 
 ## 10. Ngoại lệ được chấp thuận
@@ -212,5 +218,7 @@ Danh sách tệp ngoài phạm vi nằm ở **một nguồn** (`scripts/design-t
 |---|---|---|
 | `SourceIcon` | `#4B3FD8` (Lazada), `#8FA3B8` (nguồn khác), `#D5DDD9` viền | Danh tính màu của sàn, không thuộc palette app; ghi chú ngay tại chỗ |
 | `HomeBanner` | `#E2A95C`, `#C48A3C` | Màu hình minh họa; chuyển vào `primitives.illustration.*` nếu minh họa mới cần dùng lại |
+| `ScanScreen` `maxWidth 320`, `RecordingFrame` `maxWidth 160`, `PackConfirmScreen` `minHeight 180` | | Giới hạn độ rộng đọc được / chiều cao khung giữ chỗ; không phải quyết định tái sử dụng |
+| `StyleSheet.hairlineWidth`, `Icon size={n}` | | Giá trị do hệ điều hành cấp / cỡ glyph theo mockup (TD-5); rule không kiểm |
 | Kích thước tính theo màn/font scale | `Math.round(size * 0.55)`, `*-layout.ts` | Phép tính bố cục, không phải giá trị thiết kế cố định |
 | Tệp test, `test-utils`, tệp ngoài phạm vi | tuỳ ý | Không bị kiểm tra |
