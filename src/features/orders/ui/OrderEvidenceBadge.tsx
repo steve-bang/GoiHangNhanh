@@ -20,7 +20,7 @@ export function useEvidenceSummaryText(summary: OrderEvidenceSummary): string {
 
 /**
  * Trạng thái bằng chứng của đơn: 6 nhãn chuẩn (docs/09 mục 3) qua `EvidenceStatusBadge`; "Chưa có
- * video" (mức đơn, không phải nhãn tệp) và hai pha ghi hình dùng khung riêng cùng kiểu. Luôn có
+ * video" (mức đơn, không phải nhãn tệp) và hai pha ghi hình dùng khung riêng cùng kiểu (gọn: tab Đơn hàng dùng nhóm form, Q-18). Luôn có
  * chữ + biểu tượng; không hiện % tải lên trên thẻ.
  */
 export function OrderEvidenceBadge({
@@ -33,7 +33,7 @@ export function OrderEvidenceBadge({
   const { colors, spacing, radius } = useTheme();
   const text = useEvidenceSummaryText(summary);
   if (summary.kind === 'label') {
-    return <EvidenceStatusBadge status={summary.label} {...(testID ? { testID } : {})} />;
+    return <EvidenceStatusBadge compact status={summary.label} {...(testID ? { testID } : {})} />;
   }
   const tone = summary.kind === 'capture' ? colors.brand : colors.textMuted;
   return (
@@ -47,12 +47,12 @@ export function OrderEvidenceBadge({
           borderColor: tone,
           backgroundColor: colors.surface,
           borderRadius: radius.lg,
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.xs,
+          paddingHorizontal: spacing.sm,
+          paddingVertical: 2,
         },
       ]}
     >
-      <Icon name="camera" size={16} color={tone} />
+      <Icon name="camera" size={14} color={tone} />
       <Text variant="caption" bold style={{ color: tone }}>
         {text}
       </Text>

@@ -12,6 +12,8 @@ interface EmptyStateProps {
   actionLabel: string;
   onAction: () => void;
   icon?: IconName;
+  /** Cỡ gọn của nhóm màn form: icon 32, tiêu đề 15sp đậm, mô tả 14sp, nút `slim`. */
+  compact?: boolean;
 }
 
 export function EmptyState({
@@ -20,8 +22,23 @@ export function EmptyState({
   actionLabel,
   onAction,
   icon = 'inbox',
+  compact = false,
 }: EmptyStateProps) {
   const { colors, spacing } = useTheme();
+  if (compact) {
+    return (
+      <View style={[styles.container, { gap: spacing.sm, padding: spacing.lg }]}>
+        <Icon name={icon} size={32} color={colors.textMuted} />
+        <Text bold style={styles.centered}>
+          {title}
+        </Text>
+        <Text variant="formBody" color="inkMuted" style={styles.centered}>
+          {message}
+        </Text>
+        <Button label={actionLabel} onPress={onAction} variant="secondary" size="slim" />
+      </View>
+    );
+  }
   return (
     <View style={[styles.container, { gap: spacing.md, padding: spacing.xl }]}>
       <Icon name={icon} size={40} color={colors.textMuted} />

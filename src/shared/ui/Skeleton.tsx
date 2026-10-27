@@ -22,21 +22,21 @@ export function Skeleton({ width = '100%', height = 16 }: SkeletonProps) {
   );
 }
 
-/** Thẻ giữ chỗ cho danh sách đơn/tệp. */
+/** Thẻ giữ chỗ cho danh sách đơn/tệp (cỡ gọn, cùng nhịp với thẻ đơn). */
 export function SkeletonCard() {
   const { colors, spacing, radius } = useTheme();
   return (
     <View
       style={{
         gap: spacing.sm,
-        padding: spacing.lg,
+        padding: spacing.md,
         borderRadius: radius.md,
         borderWidth: 1,
         borderColor: colors.border,
         backgroundColor: colors.surface,
       }}
     >
-      <Skeleton width="55%" height={20} />
+      <Skeleton width="45%" height={18} />
       <Skeleton width="80%" />
       <Skeleton width="35%" />
     </View>

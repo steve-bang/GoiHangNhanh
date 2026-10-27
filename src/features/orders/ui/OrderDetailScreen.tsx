@@ -44,6 +44,8 @@ export function OrderDetailScreen() {
     setCopied((await copyText(text)) ? target : 'failed');
   };
   const header = {
+    form: true,
+    contentGap: spacing.md,
     title: t('nav:titles.UI-E02'),
     onBack: navigation.back,
     inTabs: true,
@@ -53,10 +55,10 @@ export function OrderDetailScreen() {
   if (state.kind === 'loading') {
     return (
       <Screen {...header}>
-        <Text accessibilityLiveRegion="polite" color="textMuted">
+        <Text variant="formBody" accessibilityLiveRegion="polite" color="inkMuted">
           {t('screens:orderDetail.loading')}
         </Text>
-        <Skeleton height={96} />
+        <Skeleton height={72} />
       </Screen>
     );
   }
@@ -65,6 +67,7 @@ export function OrderDetailScreen() {
       <Screen {...header}>
         <View testID="order-not-found">
           <EmptyState
+            compact
             title={t('screens:orderDetail.notFoundTitle')}
             message={t('screens:orderDetail.notFound')}
             actionLabel={t('screens:orderDetail.backToList')}
@@ -77,10 +80,12 @@ export function OrderDetailScreen() {
   if (state.kind === 'error') {
     return (
       <Screen {...header}>
-        <Card tone="danger" testID="order-detail-error">
-          <View style={{ gap: spacing.md }}>
-            <Text accessibilityRole="alert">{t('screens:orderDetail.loadError')}</Text>
-            <Button label={t('common:actions.retry')} onPress={reload} />
+        <Card compact tone="danger" testID="order-detail-error">
+          <View style={{ gap: spacing.sm }}>
+            <Text variant="formBody" accessibilityRole="alert">
+              {t('screens:orderDetail.loadError')}
+            </Text>
+            <Button size="slim" label={t('common:actions.retry')} onPress={reload} />
           </View>
         </Card>
       </Screen>
@@ -112,12 +117,15 @@ export function OrderDetailScreen() {
         record || start.error ? (
           <>
             {start.error ? (
-              <Card tone="danger" testID="order-detail-start-error">
-                <Text accessibilityRole="alert">{t(`errors:${start.error}`)}</Text>
+              <Card compact tone="danger" testID="order-detail-start-error">
+                <Text variant="formBody" accessibilityRole="alert">
+                  {t(`errors:${start.error}`)}
+                </Text>
               </Card>
             ) : null}
             {record ? (
               <Button
+                size="compact"
                 testID="order-detail-record"
                 label={t('screens:orderDetail.recordNow')}
                 loading={start.busy}
@@ -128,17 +136,17 @@ export function OrderDetailScreen() {
         ) : undefined
       }
     >
-      <Card>
-        <View style={{ gap: spacing.md }}>
-          <Text variant="sectionTitle" accessibilityRole="header">
+      <Card compact>
+        <View style={{ gap: spacing.sm }}>
+          <Text variant="formButton" color="ink" accessibilityRole="header">
             {t('screens:orderDetail.identity')}
           </Text>
           <View style={styles.row}>
             <View style={styles.flex}>
-              <Text variant="caption" color="textMuted">
+              <Text variant="formLabel" color="inkMuted">
                 {t('screens:orderDetail.orderCode')}
               </Text>
-              <Text variant="screenTitle" testID="detail-order-code">
+              <Text variant="formTitle" accessibilityRole="text" testID="detail-order-code">
                 {order.orderCode}
               </Text>
             </View>
@@ -149,12 +157,12 @@ export function OrderDetailScreen() {
             />
           </View>
           <View style={styles.row}>
-            <SourceIcon source={order.source} size={28} />
+            <SourceIcon source={order.source} size={24} />
             <View style={styles.flex}>
-              <Text variant="caption" color="textMuted">
+              <Text variant="formLabel" color="inkMuted">
                 {t('screens:orderDetail.source')}
               </Text>
-              <Text bold testID="detail-source">
+              <Text variant="formButton" color="ink" testID="detail-source">
                 {t(`common:sources.${order.source}`)}
               </Text>
             </View>
@@ -162,10 +170,10 @@ export function OrderDetailScreen() {
           {order.trackingCode ? (
             <View style={styles.row}>
               <View style={styles.flex}>
-                <Text variant="caption" color="textMuted">
+                <Text variant="formLabel" color="inkMuted">
                   {t('screens:orderDetail.trackingCode')}
                 </Text>
-                <Text bold testID="detail-tracking-code">
+                <Text variant="formButton" color="ink" testID="detail-tracking-code">
                   {order.trackingCode}
                 </Text>
               </View>
@@ -176,7 +184,7 @@ export function OrderDetailScreen() {
               />
             </View>
           ) : (
-            <Text color="textMuted" testID="detail-no-tracking">
+            <Text variant="formBody" color="inkMuted" testID="detail-no-tracking">
               {t('screens:orderDetail.noTracking')}
             </Text>
           )}
@@ -191,10 +199,12 @@ export function OrderDetailScreen() {
             </Text>
           ) : null}
           <View>
-            <Text variant="caption" color="textMuted">
+            <Text variant="formLabel" color="inkMuted">
               {t('screens:orderDetail.createdAt')}
             </Text>
-            <Text testID="detail-created-at">{formatDeviceDateTime(order.createdAtDevice)}</Text>
+            <Text variant="formBody" color="ink" testID="detail-created-at">
+              {formatDeviceDateTime(order.createdAtDevice)}
+            </Text>
             <Text variant="caption" color="textMuted">
               {t('screens:orderDetail.deviceTime')}
             </Text>
@@ -205,12 +215,13 @@ export function OrderDetailScreen() {
         </View>
       </Card>
 
-      <Card>
-        <View style={{ gap: spacing.md }}>
-          <Text variant="sectionTitle" accessibilityRole="header">
+      <Card compact>
+        <View style={{ gap: spacing.sm }}>
+          <Text variant="formButton" color="ink" accessibilityRole="header">
             {t('screens:orderDetail.products')}
           </Text>
           <ProductLineList
+            compact
             lines={lines.map((l) => ({
               id: l.id,
               name: l.name,
@@ -219,24 +230,26 @@ export function OrderDetailScreen() {
             }))}
           />
           {lines.length === 0 ? (
-            <Text color="textMuted" testID="detail-undeclared-hint">
+            <Text variant="formBody" color="inkMuted" testID="detail-undeclared-hint">
               {t('screens:orderDetail.undeclaredHint')}
             </Text>
           ) : null}
         </View>
       </Card>
 
-      <Card>
-        <View style={{ gap: spacing.md }}>
-          <Text variant="sectionTitle" accessibilityRole="header">
+      <Card compact>
+        <View style={{ gap: spacing.sm }}>
+          <Text variant="formButton" color="ink" accessibilityRole="header">
             {t('screens:orderDetail.packages')}
           </Text>
           {packages.map((pkg) => {
             const session = sessions.find((s) => s.packageId === pkg.id);
             return (
               <View key={pkg.id} testID={`detail-package-${pkg.id}`}>
-                <Text bold>{t('screens:orderDetail.package', { index: pkg.index })}</Text>
-                <Text color="textMuted">
+                <Text variant="formButton" color="ink">
+                  {t('screens:orderDetail.package', { index: pkg.index })}
+                </Text>
+                <Text variant="formBody" color="inkMuted">
                   {session
                     ? t('screens:orderDetail.packageActiveSession', {
                         time: formatDeviceDateTime(session.startedAtDevice),
@@ -249,29 +262,33 @@ export function OrderDetailScreen() {
         </View>
       </Card>
 
-      <Card>
-        <View style={{ gap: spacing.md }}>
-          <Text variant="sectionTitle" accessibilityRole="header">
+      <Card compact>
+        <View style={{ gap: spacing.sm }}>
+          <Text variant="formButton" color="ink" accessibilityRole="header">
             {t('screens:orderDetail.evidence')}
           </Text>
           {evidence.kind === 'none' ? (
-            <Text testID="detail-no-evidence">{t('screens:orderDetail.noEvidence')}</Text>
+            <Text variant="formBody" color="ink" testID="detail-no-evidence">
+              {t('screens:orderDetail.noEvidence')}
+            </Text>
           ) : (
             <OrderEvidenceBadge summary={evidence} />
           )}
         </View>
       </Card>
 
-      <Card>
-        <View style={{ gap: spacing.md }}>
-          <Text variant="sectionTitle" accessibilityRole="header">
+      <Card compact>
+        <View style={{ gap: spacing.sm }}>
+          <Text variant="formButton" color="ink" accessibilityRole="header">
             {t('screens:orderDetail.history')}
           </Text>
           {history.map((event) => (
             <View key={event.key} style={styles.row} testID="detail-history-item">
               <View style={[styles.dot, { backgroundColor: colors.brand }]} />
               <View style={styles.flex}>
-                <Text>{event.text}</Text>
+                <Text variant="formBody" color="ink">
+                  {event.text}
+                </Text>
                 <Text variant="caption" color="textMuted">
                   {formatDeviceDateTime(event.at)}
                 </Text>
@@ -290,6 +307,6 @@ export function OrderDetailScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   dot: { width: 8, height: 8, borderRadius: 4 },
 });

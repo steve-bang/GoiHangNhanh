@@ -38,9 +38,11 @@ interface OrderCardProps {
 }
 
 /**
- * Thẻ đơn (UI-E01): mã đơn nổi bật nhất, nguồn bán + mã vận đơn là phụ, sản phẩm đầu tiên (hoặc
- * *Chưa khai báo sản phẩm*), thời điểm tạo, MỘT trạng thái bằng chứng và MỘT hành động. Màu không
- * là tín hiệu duy nhất: trạng thái luôn có chữ + biểu tượng (do `statusBadge`).
+ * Thẻ đơn (UI-E01), cỡ gọn theo nhóm chữ form (decisions.md Q-18): hàng đầu là mã đơn (15sp đậm,
+ * nổi bật nhất) + MỘT trạng thái bằng chứng; kế đó nguồn bán + mã vận đơn (13sp), sản phẩm đầu tiên
+ * (hoặc *Chưa khai báo sản phẩm*); chân thẻ là thời điểm tạo + MỘT hành động. Màu không là tín hiệu
+ * duy nhất: trạng thái luôn có chữ + biểu tượng (do `statusBadge`). Hành động thấp hơn vùng chạm
+ * tối thiểu về mặt nhìn thấy nhưng được bù bằng `hitSlop`.
  */
 export function OrderCard({
   orderCode,
@@ -71,6 +73,7 @@ export function OrderCard({
   ]
     .filter(Boolean)
     .join('. ');
+  const slop = Math.max(0, Math.ceil((getMinTouchTarget() - ACTION_HEIGHT) / 2));
   return (
     <View
       testID={testID}
@@ -90,97 +93,99 @@ export function OrderCard({
         onPress={onPress}
         style={({ pressed }) => [
           {
-            padding: spacing.lg,
-            paddingBottom: spacing.sm,
+            paddingHorizontal: spacing.md,
+            paddingTop: spacing.md,
+            paddingBottom: spacing.xs,
             gap: spacing.xs,
             opacity: pressed ? 0.85 : 1,
           },
         ]}
       >
-        <Text variant="sectionTitle" numberOfLines={1} ellipsizeMode="middle">
-          {orderCode}
-        </Text>
-        <View style={styles.sourceRow}>
-          {source ? <SourceIcon source={source} size={20} /> : null}
-          <Text variant="body" color="textMuted" style={styles.shrink}>
-            {sourceLabel}
+        <View style={[styles.codeRow, { gap: spacing.sm }]}>
+          <Text variant="body" bold numberOfLines={1} ellipsizeMode="middle" style={styles.code}>
+            {orderCode}
           </Text>
+          <View testID={testID ? `${testID}-status` : undefined}>{statusBadge}</View>
         </View>
-        {trackingLabel ? (
-          <Text variant="body" color="textMuted" numberOfLines={1} ellipsizeMode="middle">
-            {trackingLabel}
-          </Text>
-        ) : null}
+        <View style={[styles.wrapRow, { columnGap: spacing.md }]}>
+          <View style={styles.sourceRow}>
+            {source ? <SourceIcon source={source} size={18} /> : null}
+            <Text variant="formLabel" color="inkMuted" style={styles.shrink}>
+              {sourceLabel}
+            </Text>
+          </View>
+          {trackingLabel ? (
+            <Text
+              variant="formLabel"
+              color="inkMuted"
+              numberOfLines={1}
+              ellipsizeMode="middle"
+              style={styles.shrink}
+            >
+              {trackingLabel}
+            </Text>
+          ) : null}
+        </View>
         {product ? (
-          <View style={styles.product}>
-            <Text variant="body" bold numberOfLines={1}>
+          <View style={[styles.wrapRow, { columnGap: spacing.sm }]}>
+            <Text variant="formButton" color="ink" numberOfLines={1} style={styles.shrink}>
               {product.name}
             </Text>
             {product.variant ? (
-              <Text variant="body" color="textMuted" numberOfLines={1}>
+              <Text variant="formBody" color="inkMuted" numberOfLines={1} style={styles.shrink}>
                 {product.variant}
               </Text>
             ) : null}
             {extraProductsLabel ? (
-              <Text variant="caption" color="textMuted">
+              <Text variant="caption" color="inkMuted">
                 {extraProductsLabel}
               </Text>
             ) : null}
           </View>
         ) : (
           <View style={styles.undeclared}>
-            <Icon name="info" size={18} color={colors.warning} />
-            <Text variant="body" bold style={{ color: colors.warning }}>
+            <Icon name="info" size={16} color={colors.warning} />
+            <Text variant="formButton" style={[styles.shrink, { color: colors.warning }]}>
               {undeclared}
             </Text>
           </View>
         )}
-        <Text variant="caption" color="textMuted">
+      </Pressable>
+      <View style={[styles.footer, { paddingHorizontal: spacing.md, paddingBottom: spacing.md }]}>
+        <Text variant="caption" color="inkMuted" style={styles.shrink}>
           {dateLabel}
         </Text>
-      </Pressable>
-      <View
-        style={[
-          styles.footer,
-          {
-            paddingHorizontal: spacing.lg,
-            minHeight: getMinTouchTarget(),
-          },
-        ]}
-      >
-        <Pressable
-          testID={testID ? `${testID}-status` : undefined}
-          accessible={false}
-          onPress={onPress}
-          style={styles.shrink}
-        >
-          {statusBadge}
-        </Pressable>
         <Pressable
           testID={testID ? `${testID}-action` : undefined}
           accessibilityRole="button"
           accessibilityLabel={`${actionLabel}, ${orderCode}`}
           onPress={onPressAction}
+          hitSlop={{ top: slop, bottom: slop, left: 8, right: 8 }}
           style={({ pressed }) => [
             styles.action,
-            { minHeight: getMinTouchTarget(), opacity: pressed ? 0.7 : 1 },
+            { minHeight: ACTION_HEIGHT, opacity: pressed ? 0.7 : 1 },
           ]}
         >
-          <Text variant="body" bold style={{ color: colors.brand }}>
+          <Text variant="formButtonSmall" style={{ color: colors.brand }}>
             {actionLabel}
           </Text>
-          <Icon name="forward" size={18} color={colors.brand} />
+          <Icon name="forward" size={16} color={colors.brand} />
         </Pressable>
       </View>
     </View>
   );
 }
 
+/** Chiều cao nhìn thấy của nút hành động trên thẻ; vùng chạm được bù bằng hitSlop. */
+const ACTION_HEIGHT = 26;
+
 const styles = StyleSheet.create({
   card: { borderWidth: 1, overflow: 'hidden' },
-  sourceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  codeRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
+  code: { flexShrink: 1 },
+  wrapRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', rowGap: 0 },
+  sourceRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   shrink: { flexShrink: 1 },
-  product: { gap: 0 },
   undeclared: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   footer: {
     flexDirection: 'row',
@@ -188,5 +193,5 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
   },
-  action: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  action: { flexDirection: 'row', alignItems: 'center', gap: 2 },
 });

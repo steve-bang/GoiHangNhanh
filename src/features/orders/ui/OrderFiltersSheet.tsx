@@ -58,36 +58,44 @@ export function OrderFiltersSheet({
   ];
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} title={t('screens:orders.filters.title')}>
-      <View testID="orders-filters-sheet" style={{ gap: spacing.lg }}>
+    <BottomSheet
+      compact
+      visible={visible}
+      onClose={onClose}
+      title={t('screens:orders.filters.title')}
+    >
+      <View testID="orders-filters-sheet" style={{ gap: spacing.md }}>
         <View style={{ gap: spacing.sm }}>
-          <Text bold accessibilityRole="header">
+          <Text variant="formLabel" color="ink" accessibilityRole="header">
             {t('screens:orders.filters.period.title')}
           </Text>
           <FilterChips
+            size="compact"
             options={periodOptions}
             selectedKey={draft.period ?? 'all'}
             onSelect={(key) => setDraft({ ...draft, period: key === 'all' ? null : key })}
           />
-          <Text variant="caption" color="textMuted">
+          <Text variant="caption" color="inkMuted">
             {t('screens:orders.filters.period.note')}
           </Text>
         </View>
         <View style={{ gap: spacing.sm }}>
-          <Text bold accessibilityRole="header">
+          <Text variant="formLabel" color="ink" accessibilityRole="header">
             {t('screens:orders.filters.source.title')}
           </Text>
           <FilterChips
+            size="compact"
             options={sourceOptions}
             selectedKey={draft.source ?? 'all'}
             onSelect={(key) => setDraft({ ...draft, source: key === 'all' ? null : key })}
           />
         </View>
         <View style={{ gap: spacing.sm }}>
-          <Text bold accessibilityRole="header">
+          <Text variant="formLabel" color="ink" accessibilityRole="header">
             {t('screens:orders.filters.declaration.title')}
           </Text>
           <FilterChips
+            size="compact"
             options={declarationOptions}
             selectedKey={draft.declaration ?? 'all'}
             onSelect={(key) => setDraft({ ...draft, declaration: key === 'all' ? null : key })}
@@ -95,12 +103,14 @@ export function OrderFiltersSheet({
         </View>
         <View style={{ gap: spacing.sm }}>
           <Button
+            size="compact"
             testID="orders-filters-apply"
             label={t('screens:orders.filters.apply')}
             onPress={() => onApply(draft)}
           />
           <Button
             testID="orders-filters-clear"
+            size="slim"
             variant="secondary"
             label={t('screens:orders.filters.clear')}
             onPress={() => setDraft({ ...draft, period: null, source: null, declaration: null })}

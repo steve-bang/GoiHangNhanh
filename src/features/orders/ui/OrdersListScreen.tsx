@@ -64,7 +64,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
   const { colors, spacing, radius } = useTheme();
   const navigation = useAppNavigation();
   const start = useStartPacking({ navigate: 'push' });
-  const touch = getMinTouchTarget();
+  const filterSlop = Math.max(0, Math.ceil((getMinTouchTarget() - FILTER_BUTTON_HEIGHT) / 2));
   const [filters, setFilters] = useState<OrderListFilters>(EMPTY_FILTERS);
   const [sheetOpen, setSheetOpen] = useState(false);
   const list = useOrderList(filters, pageSize ? { pageSize } : {});
@@ -105,11 +105,8 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
       : base;
   })();
 
-  const header = (
-    <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }]}>
-      <Text variant="screenTitle" style={styles.title}>
-        {t('nav:titles.UI-E01')}
-      </Text>
+  const headerRight = (
+    <View style={styles.headerButtons}>
       <HeaderButton
         testID="orders-scan"
         icon="scan"
@@ -130,8 +127,8 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
   const emptyComponent = (() => {
     if (list.status === 'loading') {
       return (
-        <View style={{ gap: spacing.md }} testID="orders-loading">
-          <Text accessibilityLiveRegion="polite" color="textMuted">
+        <View style={{ gap: spacing.sm }} testID="orders-loading">
+          <Text variant="formBody" accessibilityLiveRegion="polite" color="inkMuted">
             {t('screens:orders.loading')}
           </Text>
           <SkeletonCard />
@@ -142,10 +139,17 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
     }
     if (list.status === 'error') {
       return (
-        <Card tone="danger" testID="orders-error">
-          <View style={{ gap: spacing.md }}>
-            <Text accessibilityRole="alert">{t('screens:orders.loadError')}</Text>
-            <Button label={t('common:actions.retry')} onPress={list.retry} testID="orders-retry" />
+        <Card compact tone="danger" testID="orders-error">
+          <View style={{ gap: spacing.sm }}>
+            <Text variant="formBody" accessibilityRole="alert">
+              {t('screens:orders.loadError')}
+            </Text>
+            <Button
+              size="slim"
+              label={t('common:actions.retry')}
+              onPress={list.retry}
+              testID="orders-retry"
+            />
           </View>
         </Card>
       );
@@ -154,6 +158,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
       return (
         <View testID="orders-no-results">
           <EmptyState
+            compact
             icon="search"
             title={t('screens:orders.noResultsTitle')}
             message={t('screens:orders.noResultsMessage')}
@@ -166,6 +171,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
     return (
       <View testID="orders-empty">
         <EmptyState
+          compact
           title={t('screens:orders.emptyTitle')}
           message={t('screens:orders.emptyMessage')}
           actionLabel={t('screens:orders.emptyAction')}
@@ -177,19 +183,23 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
 
   return (
     <Screen
+      form
       title={t('nav:titles.UI-E01')}
-      header={header}
+      headerRight={headerRight}
+      contentGap={spacing.sm}
       scroll={false}
       inTabs
       testID="screen-UI-E01"
     >
       <SearchField
+        compact
         testID="orders-search"
         value={filters.search}
         onChangeText={(search) => setFilters((prev) => ({ ...prev, search }))}
         placeholder={t('screens:orders.search')}
       />
       <FilterChips
+        size="compact"
         options={chipOptions}
         selectedKey={filters.status}
         onSelect={(status) => setFilters((prev) => ({ ...prev, status }))}
@@ -197,7 +207,8 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
       <View style={[styles.countRow, { gap: spacing.md }]}>
         <Text
           testID="orders-count"
-          color="textMuted"
+          variant="formBody"
+          color="inkMuted"
           accessibilityLiveRegion="polite"
           style={styles.flex}
         >
@@ -211,19 +222,20 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
             { count: advanced },
           )}
           onPress={() => setSheetOpen(true)}
+          hitSlop={{ top: filterSlop, bottom: filterSlop }}
           style={[
             styles.filterButton,
             {
-              minHeight: touch,
-              borderColor: advanced > 0 ? colors.brand : colors.border,
+              minHeight: FILTER_BUTTON_HEIGHT,
+              borderColor: advanced > 0 ? colors.brand : colors.fieldBorder,
               backgroundColor: advanced > 0 ? colors.brandSoft : colors.surface,
               borderRadius: radius.lg,
-              paddingHorizontal: spacing.lg,
+              paddingHorizontal: spacing.md,
             },
           ]}
         >
-          <Icon name="filter" size={18} color={advanced > 0 ? colors.brand : colors.text} />
-          <Text bold={advanced > 0} style={{ color: advanced > 0 ? colors.brand : colors.text }}>
+          <Icon name="filter" size={16} color={advanced > 0 ? colors.brand : colors.ink} />
+          <Text variant="formButton" style={{ color: advanced > 0 ? colors.brand : colors.ink }}>
             {t(
               advanced > 0 ? 'screens:orders.filters.openWithCount' : 'screens:orders.filters.open',
               {
@@ -234,9 +246,11 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
         </Pressable>
       </View>
       {list.error && list.rows.length > 0 ? (
-        <Card tone="danger" testID="orders-refresh-error">
+        <Card compact tone="danger" testID="orders-refresh-error">
           <View style={{ gap: spacing.sm }}>
-            <Text accessibilityRole="alert">{t('screens:orders.loadError')}</Text>
+            <Text variant="formBody" accessibilityRole="alert">
+              {t('screens:orders.loadError')}
+            </Text>
             <Button
               size="slim"
               variant="secondary"
@@ -247,14 +261,16 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
         </Card>
       ) : null}
       {start.error ? (
-        <Card tone="danger" testID="orders-start-error">
-          <Text accessibilityRole="alert">{t(`errors:${start.error}`)}</Text>
+        <Card compact tone="danger" testID="orders-start-error">
+          <Text variant="formBody" accessibilityRole="alert">
+            {t(`errors:${start.error}`)}
+          </Text>
         </Card>
       ) : null}
       <FlatList
         testID="orders-list"
         style={styles.flex}
-        contentContainerStyle={{ gap: spacing.md, paddingBottom: spacing.xl }}
+        contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.lg }}
         data={list.rows}
         keyExtractor={(row) => row.item.order.id}
         initialNumToRender={ORDER_LIST_PAGE_SIZE}
@@ -271,11 +287,15 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
           list.loadingMore ? (
             <View testID="orders-loading-more" style={styles.footer}>
               <ActivityIndicator color={colors.brand} />
-              <Text color="textMuted">{t('screens:orders.loadingMore')}</Text>
+              <Text variant="formBody" color="inkMuted">
+                {t('screens:orders.loadingMore')}
+              </Text>
             </View>
           ) : list.moreError ? (
             <View testID="orders-more-error" style={styles.footer}>
-              <Text color="textMuted">{t('screens:orders.loadMoreError')}</Text>
+              <Text variant="formBody" color="inkMuted">
+                {t('screens:orders.loadMoreError')}
+              </Text>
               <Button
                 size="slim"
                 variant="secondary"
@@ -359,16 +379,24 @@ function HeaderButton({
       onPress={onPress}
       style={{ minWidth: touch, minHeight: touch, alignItems: 'center', justifyContent: 'center' }}
     >
-      <Icon name={icon} size={26} color={colors.brand} />
+      <Icon name={icon} size={22} color={colors.brand} />
     </Pressable>
   );
 }
 
+/** Chiều cao nhìn thấy của nút Bộ lọc; vùng chạm được bù bằng hitSlop. */
+const FILTER_BUTTON_HEIGHT = 34;
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  title: { flex: 1 },
+  headerButtons: { flexDirection: 'row', alignItems: 'center' },
   countRow: { flexDirection: 'row', alignItems: 'center' },
-  filterButton: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1 },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+  },
   footer: { alignItems: 'center', gap: 8, padding: 12 },
 });

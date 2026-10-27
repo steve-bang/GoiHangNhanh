@@ -15,6 +15,8 @@ export interface ProductLine {
 
 interface ProductLineListProps {
   lines: readonly ProductLine[];
+  /** Chữ nhóm form (formButton/formBody) và khoảng cách nhỏ; dữ liệu không đổi. */
+  compact?: boolean;
 }
 
 /**
@@ -22,7 +24,7 @@ interface ProductLineListProps {
  * *Chưa khai báo sản phẩm* CHỈ hiện khi chưa có dòng nào (docs/09 mục 5.5, A.6). Giá trị do người
  * dùng nhập được ghi nguồn, không trình bày như dữ liệu từ sàn.
  */
-export function ProductLineList({ lines }: ProductLineListProps) {
+export function ProductLineList({ lines, compact = false }: ProductLineListProps) {
   const { t } = useTranslation();
   const { colors, spacing, radius } = useTheme();
 
@@ -37,12 +39,15 @@ export function ProductLineList({ lines }: ProductLineListProps) {
             backgroundColor: colors.warningSoft,
             borderColor: colors.warning,
             borderRadius: radius.sm,
-            padding: spacing.md,
+            padding: compact ? spacing.sm : spacing.md,
           },
         ]}
       >
-        <Icon name="info" color={colors.warning} />
-        <Text bold style={{ color: colors.warning, flexShrink: 1 }}>
+        <Icon name="info" size={compact ? 18 : 22} color={colors.warning} />
+        <Text
+          {...(compact ? { variant: 'formButton' as const } : { bold: true })}
+          style={{ color: colors.warning, flexShrink: 1 }}
+        >
           {t('common:productLines.undeclared')}
         </Text>
       </View>
@@ -50,7 +55,7 @@ export function ProductLineList({ lines }: ProductLineListProps) {
   }
 
   return (
-    <View style={{ gap: spacing.md }}>
+    <View style={{ gap: compact ? spacing.sm : spacing.md }}>
       {lines.map((line) => (
         <View
           key={line.id}
@@ -63,13 +68,21 @@ export function ProductLineList({ lines }: ProductLineListProps) {
           style={styles.row}
         >
           <View style={styles.rowText}>
-            <Text bold>{line.name}</Text>
-            {line.variant ? <Text color="textMuted">{line.variant}</Text> : null}
+            <Text {...(compact ? { variant: 'formButton' as const } : { bold: true })}>
+              {line.name}
+            </Text>
+            {line.variant ? (
+              <Text {...(compact ? { variant: 'formBody' as const } : {})} color="textMuted">
+                {line.variant}
+              </Text>
+            ) : null}
             <Text variant="caption" color="textMuted">
               {t('common:productLines.userEntered')}
             </Text>
           </View>
-          <Text bold>{t('common:productLines.quantity', { count: line.quantity })}</Text>
+          <Text {...(compact ? { variant: 'formButton' as const } : { bold: true })}>
+            {t('common:productLines.quantity', { count: line.quantity })}
+          </Text>
         </View>
       ))}
     </View>

@@ -13,6 +13,8 @@ interface SearchFieldProps {
   placeholder: string;
   onSubmitEditing?: () => void;
   testID?: string;
+  /** Cỡ gọn của nhóm màn form (chữ 14sp, cao tối thiểu bằng vùng chạm, viền xanh nhạt). */
+  compact?: boolean;
 }
 
 /** Ô tìm lớn có biểu tượng kính lúp và nút xóa nội dung. */
@@ -22,6 +24,7 @@ export function SearchField({
   placeholder,
   onSubmitEditing,
   testID,
+  compact = false,
 }: SearchFieldProps) {
   const { t } = useTranslation();
   const { colors, spacing, radius, typography } = useTheme();
@@ -31,15 +34,15 @@ export function SearchField({
       style={[
         styles.row,
         {
-          minHeight: Math.max(touch, 52),
+          minHeight: compact ? touch : Math.max(touch, 52),
           backgroundColor: colors.surface,
-          borderColor: colors.border,
+          borderColor: compact ? colors.fieldBorder : colors.border,
           borderRadius: radius.md,
           paddingLeft: spacing.md,
         },
       ]}
     >
-      <Icon name="search" color={colors.textMuted} />
+      <Icon name="search" size={compact ? 20 : 22} color={colors.textMuted} />
       <TextInput
         testID={testID}
         accessibilityLabel={placeholder}
@@ -51,7 +54,11 @@ export function SearchField({
         {...(onSubmitEditing ? { onSubmitEditing } : {})}
         autoCapitalize="none"
         autoCorrect={false}
-        style={[typography.body, styles.input, { color: colors.text }]}
+        style={[
+          compact ? typography.formBody : typography.body,
+          styles.input,
+          { color: colors.text },
+        ]}
       />
       {value.length > 0 ? (
         <Pressable

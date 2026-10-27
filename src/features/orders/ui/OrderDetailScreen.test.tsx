@@ -1,5 +1,8 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 
+import { StyleSheet } from 'react-native';
+
+import { typography } from '@/core/theme';
 import { AppError } from '@/core/errors/app-error';
 import type { PackageId, SessionId, ShopId } from '@/core/ids';
 import { ROUTES } from '@/core/navigation';
@@ -73,6 +76,17 @@ async function withSession(store: OrderStore, code: string, at = CREATED + 120_0
 }
 
 describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
+  it('bố cục gọn: tiêu đề header cỡ formTitle, mã đơn 17sp (không còn 24sp)', async () => {
+    const store = createMemoryOrderStore();
+    const d = makeOrder('DH-GON', { at: CREATED, lines: [{ name: 'Áo' }] });
+    await store.saveNewOrder(d);
+    await open(store, d.order.id);
+    const size = (el: { props: { style?: unknown } }) =>
+      (StyleSheet.flatten(el.props.style as never) as { fontSize: number }).fontSize;
+    expect(size(await screen.findByText('Chi tiết đơn'))).toBe(typography.formTitle.fontSize);
+    expect(size(screen.getByTestId('detail-order-code'))).toBe(typography.formTitle.fontSize);
+  });
+
   it('hiện đủ: mã đơn, nguồn, mã vận đơn, giờ tạo (giờ thiết bị), sản phẩm "Do bạn nhập", kiện, bằng chứng, lịch sử', async () => {
     const store = createMemoryOrderStore();
     const d = makeOrder('DH-10245', {

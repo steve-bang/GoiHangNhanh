@@ -9,6 +9,9 @@ import {
   resetMockNavigation,
   setMockScreenFocused,
 } from '@/test-utils/mock-navigation';
+import { StyleSheet } from 'react-native';
+
+import { typography } from '@/core/theme';
 import { renderWithProviders } from '@/test-utils/render';
 
 import { createMemoryOrderStore } from '../data';
@@ -98,6 +101,15 @@ describe('UI-E01 Danh sách đơn (dữ liệu thật)', () => {
     await act(async () => release());
     expect(await screen.findByTestId('orders-empty')).toBeOnTheScreen();
     expect(screen.queryByTestId('orders-loading')).toBeNull();
+  });
+
+  it('header gọn: tiêu đề cỡ formTitle (17sp), không dùng cỡ screenTitle 24sp', async () => {
+    await open(createMemoryOrderStore());
+    await screen.findByTestId('orders-empty');
+    const flat = StyleSheet.flatten(screen.getAllByText('Đơn hàng')[0]?.props.style as never) as {
+      fontSize: number;
+    };
+    expect(flat.fontSize).toBe(typography.formTitle.fontSize);
   });
 
   it('chưa có đơn nào: trạng thái rỗng có hành động tạo đơn đầu tiên', async () => {
