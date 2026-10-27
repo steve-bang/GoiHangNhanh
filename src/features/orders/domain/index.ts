@@ -5,7 +5,7 @@ export { classifyMatches, hasDuplicates } from './duplicates';
 export type { DuplicateMatches } from './duplicates';
 export { LOCAL_SHOP_ID } from './local-shop';
 export type { OrderStore } from './order-store';
-export { buildPackingSession } from './start-session';
+export { buildPackingSession, findActiveSession, isSessionActive } from './start-session';
 export type { StartSessionResult } from './start-session';
 export { suggestProductNames, suggestVariants } from './suggestions';
 export type {

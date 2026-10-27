@@ -42,3 +42,15 @@ export function buildPackingSession(
     },
   };
 }
+
+/** Phiên còn đang thực hiện (chưa kết thúc). Hiện chỉ có `created`; thêm trạng thái kết thúc cùng recorder. */
+export const isSessionActive = (session: PackingSession): boolean =>
+  session.sessionStatus === 'created';
+
+/** Phiên đang thực hiện của một kiện, nếu có (một kiện chỉ có một phiên đang thực hiện; A03). */
+export function findActiveSession(
+  sessions: readonly PackingSession[],
+  packageId: PackageId,
+): PackingSession | null {
+  return sessions.find((s) => s.packageId === packageId && isSessionActive(s)) ?? null;
+}

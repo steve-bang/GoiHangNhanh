@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
 import type { SessionId } from '@/core/ids';
-import { useOrderStore, type PackingSession } from '@/features/orders';
+import { useCurrentShopId, useOrderStore, type PackingSession } from '@/features/orders';
 import {
   CameraPreview,
   useAppNavigation,
@@ -20,17 +20,21 @@ const CLOCK_TICK_MS = 1000;
 /**
  * UI-C03 Quay video đóng gói (đặc tả A05; mockup 03). Mở bằng ID phiên (`sessionId`) đã tạo ở bước
  * bắt đầu; mã đơn/kiện lấy từ ảnh chụp của phiên, không nhận qua tham số (bất biến 2). Camera chỉ
- * XEM TRƯỚC (expo-camera, không micro, không ghi tệp): giao diện giống mẫu nhưng luôn có dải "Bản thử
- * giao diện: chưa ghi video" khi `RECORDER_ENABLED=false` (bất biến 3, 11). Route nằm ngoài nhóm tab;
- * rời màn qua hộp thoại cảnh báo. "Dừng quay" và "Kết thúc phiên" sang Xác nhận video (UI-C04; vẫn là
- * màn minh họa, không báo "đã lưu"). Chưa xử lý gián đoạn (mất focus, app nền, camera bị thu hồi)
- * vì chưa ghi: decisions.md Q-17.
+ * XEM TRƯỚC (expo-camera, không micro, không ghi tệp).
+ *
+ * Khi `RECORDER_ENABLED=false` (chưa ghi tệp): huy hiệu là "Xem trước" (không chấm đỏ, không đồng hồ
+ * chạy), kèm dải "Bản thử giao diện: chưa ghi video"; "Dừng quay"/"Kết thúc phiên" quay về Xác nhận
+ * đơn (UI-C01) của đơn trong phiên, kèm thông báo "chưa có video nào được lưu", KHÔNG sang màn nói
+ * "đã lưu" (bất biến 3, 11). Khi bật recorder thật: huy hiệu "Đang quay" + chấm đỏ + đồng hồ, và dừng
+ * sang Xác nhận video (UI-C04) bằng `sessionId`. Route nằm ngoài nhóm tab; rời màn qua hộp thoại cảnh
+ * báo. Chưa xử lý gián đoạn (mất focus, app nền, camera bị thu hồi) vì chưa ghi: decisions.md Q-17.
  */
 export function PackRecordScreen() {
   const { t } = useTranslation();
   const navigation = useAppNavigation();
   const params = useRouteParams();
   const store = useOrderStore();
+  const shopId = useCurrentShopId();
   const permission = useScannerPermission();
   const focused = useScreenFocused();
   const sessionId = params.sessionId as SessionId | undefined;
@@ -42,12 +46,12 @@ export function PackRecordScreen() {
 
   useEffect(() => {
     let alive = true;
-    const load = sessionId ? store.getSession(sessionId) : Promise.resolve(null);
+    const load = sessionId ? store.getSession(shopId, sessionId) : Promise.resolve(null);
     load.then((found) => alive && setSession(found)).catch(() => alive && setSession(null));
     return () => {
       alive = false;
     };
-  }, [sessionId, store]);
+  }, [sessionId, shopId, store]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
@@ -66,8 +70,13 @@ export function PackRecordScreen() {
     );
   }
 
-  const goConfirm = () =>
-    navigation.replace(ROUTES.packConfirm, { code: session.snapshot.orderCode });
+  const goNext = () =>
+    RECORDER_ENABLED
+      ? navigation.replace(ROUTES.packConfirm, { sessionId: session.id })
+      : navigation.replace(ROUTES.orderPreview, {
+          orderId: session.orderId,
+          notice: 'not_recorded',
+        });
   const cameraReady = permission.status === 'granted' && !cameraFailed;
 
   return (
@@ -77,7 +86,9 @@ export function PackRecordScreen() {
       secondaryLabel={t('screens:record.package', { index: session.snapshot.packageIndex })}
       clockLabel={formatElapsed(session.startedAtDevice, now)}
       guidance={t('screens:record.packGuidance')}
+      recording={RECORDER_ENABLED}
       badgeLabel={t('screens:record.badge')}
+      previewLabel={t('screens:record.previewBadge')}
       {...(RECORDER_ENABLED ? {} : { notice: t('screens:record.notRecording') })}
       preview={
         cameraReady && focused ? (
@@ -91,8 +102,8 @@ export function PackRecordScreen() {
       previewMessage={t('screens:record.cameraError')}
       torch={torch}
       {...(cameraReady ? { onToggleTorch: () => setTorch((value) => !value) } : {})}
-      onStop={goConfirm}
-      onEndSession={goConfirm}
+      onStop={goNext}
+      onEndSession={goNext}
     />
   );
 }

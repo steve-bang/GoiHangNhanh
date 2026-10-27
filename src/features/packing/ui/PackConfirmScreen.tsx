@@ -2,20 +2,47 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
-import { useAppNavigation, useRouteParams } from '@/platform';
+import { useAppNavigation } from '@/platform';
 import { Button, Card, EvidenceStatusBadge, Icon, Screen, Text, useTheme } from '@/shared/ui';
 
+import { RECORDER_ENABLED } from '../domain';
+import { PackNotRecorded } from './PackNotRecorded';
+import { usePackSession } from './use-pack-session';
+
 /**
- * UI-C04 Kết thúc và xác nhận video (đặc tả A06). Trạng thái hiện là *Đã lưu trên máy* (không tick,
- * không màu thành công) và thông báo đúng điều đang xảy ra: "Video đã lưu trên thiết bị. Đang chờ
- * tải lên máy chủ." (docs/09 mục 5.5, A.1). KHUNG: chưa có video; thumbnail/thời lượng là minh họa.
- * "Xem lại" và "Ghi thêm đoạn riêng" chưa có logic nên đang tắt.
+ * UI-C04 Kết thúc và xác nhận video (đặc tả A06). Chỉ có nghĩa khi đã ghi tệp thật
+ * (`RECORDER_ENABLED=true`): khi đó trạng thái là *Đã lưu trên máy* (không tick, không màu thành công)
+ * và thông báo "Video đã lưu trên thiết bị. Đang chờ tải lên máy chủ." (docs/09 mục 5.5, A.1). Khi chưa
+ * có recorder (hiện tại) màn này KHÔNG được hiện badge hay câu "đã lưu" (chưa có tệp nào): chỉ báo
+ * "chưa có video nào được lưu" (`PackNotRecorded`). Mở bằng `sessionId`; mã đơn lấy từ phiên (bất
+ * biến 2). Thumbnail/thời lượng vẫn là minh họa. "Xem lại" và "Ghi thêm đoạn riêng" chưa có logic.
  */
 export function PackConfirmScreen() {
   const { t } = useTranslation();
   const { colors, spacing, radius } = useTheme();
   const navigation = useAppNavigation();
-  const params = useRouteParams();
+  const session = usePackSession();
+
+  if (!RECORDER_ENABLED) {
+    return (
+      <PackNotRecorded
+        title={t('nav:titles.UI-C04')}
+        testID="screen-UI-C04"
+        message={t('screens:confirm.nothingSaved')}
+      />
+    );
+  }
+  if (session === 'loading' || session === null) {
+    return (
+      <Screen title={t('nav:titles.UI-C04')} onBack={navigation.back} testID="screen-UI-C04">
+        {session === null ? (
+          <Text accessibilityRole="alert">{t('screens:confirm.sessionMissing')}</Text>
+        ) : (
+          <Text color="textMuted">{t('screens:preview.loading')}</Text>
+        )}
+      </Screen>
+    );
+  }
 
   return (
     <Screen
@@ -26,9 +53,7 @@ export function PackConfirmScreen() {
         <>
           <Button
             label={t('screens:confirm.save')}
-            onPress={() =>
-              navigation.replace(ROUTES.packDone, params.code ? { code: params.code } : {})
-            }
+            onPress={() => navigation.replace(ROUTES.packDone, { sessionId: session.id })}
           />
           <Button
             variant="secondary"
@@ -60,7 +85,7 @@ export function PackConfirmScreen() {
       </View>
       <Card>
         <View style={{ gap: spacing.sm }}>
-          {params.code ? <Text>{`${t('screens:confirm.orderCode')}: ${params.code}`}</Text> : null}
+          <Text>{`${t('screens:confirm.orderCode')}: ${session.snapshot.orderCode}`}</Text>
           <Text>{`${t('screens:confirm.duration')}: 00:00`}</Text>
           <EvidenceStatusBadge status="saved_on_device" />
           <Text>{t('screens:confirm.savedMessage')}</Text>

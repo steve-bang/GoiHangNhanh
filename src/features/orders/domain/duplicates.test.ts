@@ -43,6 +43,34 @@ describe('tìm trùng (A02, ADR-011)', () => {
     expect(found.sameCodeOtherSource).toHaveLength(1);
     expect(hasDuplicates(found)).toBe(false);
   });
+  it('cùng mã khác nguồn NHƯNG trùng mã vận đơn: là trùng (sameTracking), không rơi vào nhóm "chỉ khác nguồn"', () => {
+    const found = classifyMatches([order('2', 'DH-1', 'lazada', 'spx 1')], {
+      orderCode: 'DH-1',
+      source: 'shopee',
+      trackingCode: 'SPX 1',
+    });
+    expect(found.sameTracking.map((o) => o.id)).toEqual(['2']);
+    expect(found.sameCodeOtherSource).toEqual([]);
+    expect(found.sameOrder).toEqual([]);
+    expect(hasDuplicates(found)).toBe(true);
+  });
+  it('cùng mã cùng nguồn và cùng mã vận đơn chỉ tính một lần (sameOrder)', () => {
+    const found = classifyMatches([order('1', 'DH-1', 'shopee', 'spx 1')], {
+      orderCode: 'DH-1',
+      source: 'shopee',
+      trackingCode: 'spx 1',
+    });
+    expect(found.sameOrder).toHaveLength(1);
+    expect(found.sameTracking).toEqual([]);
+  });
+  it('khác mã đơn, cùng nguồn, cùng mã vận đơn: trùng (sameTracking)', () => {
+    const found = classifyMatches([order('9', 'DH-9', 'shopee', 'spx 1')], {
+      orderCode: 'DH-1',
+      source: 'shopee',
+      trackingCode: 'SPX 1',
+    });
+    expect(found.sameTracking.map((o) => o.id)).toEqual(['9']);
+  });
   it('không có bản ghi thì không trùng', () => {
     expect(hasDuplicates(classifyMatches([], { orderCode: 'A', source: 'other' }))).toBe(false);
   });

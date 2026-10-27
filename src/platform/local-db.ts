@@ -1,16 +1,16 @@
 import { openDatabaseAsync } from 'expo-sqlite';
 
-import type { SqlDatabase } from './sql-database';
+import { applyConnectionSettings, type SqlDatabase } from './sql-database';
 
 const DATABASE_NAME = 'doncung.db';
 
 /**
- * Mở cơ sở dữ liệu cục bộ (expo-sqlite, ADR-017). Chưa kiểm chứng trên iOS/Android thật. Bản web
+ * Mở cơ sở dữ liệu cục bộ (expo-sqlite, ADR-017). Bật khóa ngoại tường minh (xem `applyConnectionSettings`). Chưa kiểm chứng trên iOS/Android thật. Bản web
  * (`local-db.web.ts`) trả `null` để dùng kho bộ nhớ: expo-sqlite trên web còn thử nghiệm.
  */
 export async function openLocalDatabase(): Promise<SqlDatabase | null> {
   const db = await openDatabaseAsync(DATABASE_NAME);
-  return {
+  const sql: SqlDatabase = {
     execAsync: (sql) => db.execAsync(sql),
     runAsync: async (sql, params = []) => {
       await db.runAsync(sql, [...params]);
@@ -21,4 +21,6 @@ export async function openLocalDatabase(): Promise<SqlDatabase | null> {
       db.getFirstAsync<T>(sql, [...params]),
     withTransactionAsync: (task) => db.withTransactionAsync(task),
   };
+  await applyConnectionSettings(sql);
+  return sql;
 }

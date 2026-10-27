@@ -1,8 +1,9 @@
 import type { OrderId, OrderLineId, PackageId, SessionId, ShopId } from '@/core/ids';
 import { AppError } from '@/core/errors/app-error';
+import type { ErrorCode } from '@/core/errors/codes';
 import { logger } from '@/core/logging/logger';
 import { toOrderSource } from '@/core/orders/order-source';
-import type { SqlDatabase } from '@/platform';
+import { applyConnectionSettings, type SqlDatabase } from '@/platform/sql-database';
 
 import type { OrderStore } from '../domain/order-store';
 import type {
@@ -13,6 +14,7 @@ import type {
   PackingSession,
 } from '../domain/types';
 import { toCodeKey } from '../domain/codes';
+import { findActiveSession } from '../domain/start-session';
 import { MIGRATIONS } from './sqlite-migrations';
 
 interface OrderRow {
@@ -111,13 +113,24 @@ export function parseSnapshot(json: string): OrderSnapshot {
 }
 
 /**
- * Kho SQLite cục bộ (ADR-017). Mọi lỗi cơ sở dữ liệu đổi thành `LOCAL_SAVE_UNAVAILABLE` (log chỉ
- * ghi loại lỗi, không ghi dữ liệu). Mọi truy vấn lọc theo `shop_id` (bất biến 8).
+ * Kho SQLite cục bộ (ADR-017). Mọi lỗi cơ sở dữ liệu đổi thành `AppError` (log chỉ ghi loại lỗi,
+ * không ghi dữ liệu): `ORDER_SAVE_FAILED` cho đơn/dòng/kiện, `LOCAL_SAVE_UNAVAILABLE` cho phiên.
+ *
+ * Cô lập shop (bất biến 8): mọi hàm đọc/sửa theo ID đều kèm điều kiện `shop_id` của cửa hàng được
+ * truyền vào (bảng dòng/kiện lọc qua `orders.shop_id`); ID của shop khác coi như không tồn tại. Hiện
+ * chỉ có `LOCAL_SHOP_ID` (Q-17d) nên điều kiện này chưa có tác dụng thực tế cho tới khi có đa shop.
+ *
+ * Mọi thao tác chạy tuần tự qua một hàng đợi trong JS: `withTransactionAsync` của expo-sqlite không
+ * độc quyền (truy vấn khác trên cùng kết nối có thể chen vào giữa giao dịch). Không dùng
+ * `withExclusiveTransactionAsync` vì nó mở kết nối MỚI (không có PRAGMA khóa ngoại, không dùng được
+ * trên web); hàng đợi này giữ một kết nối đã bật khóa ngoại.
  */
 export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
   let ready: Promise<void> | null = null;
+  let tail: Promise<unknown> = Promise.resolve();
 
   const migrate = async () => {
+    await applyConnectionSettings(db); // ngoài giao dịch; PRAGMA khóa ngoại là theo từng kết nối
     const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
     const current = row?.user_version ?? 0;
     for (let version = current; version < MIGRATIONS.length; version += 1) {
@@ -130,8 +143,8 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
     }
   };
 
-  const guarded = async <T>(task: () => Promise<T>): Promise<T> => {
-    try {
+  const guarded = async <T>(failure: ErrorCode, task: () => Promise<T>): Promise<T> => {
+    const run = tail.then(async () => {
       if (!ready) {
         ready = migrate().catch((error: unknown) => {
           ready = null; // lần sau thử mở lại
@@ -139,19 +152,25 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
         });
       }
       await ready;
-      return await task();
+      return task();
+    });
+    tail = run.catch(() => undefined);
+    try {
+      return await run;
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('orders.local_store_failed', {
         reason: error instanceof Error ? error.name : 'unknown',
       });
-      throw error instanceof AppError
-        ? error
-        : new AppError('LOCAL_SAVE_UNAVAILABLE', {}, { cause: error });
+      throw new AppError(failure, {}, { cause: error });
     }
   };
 
-  const orderDetails = async (id: OrderId) => {
-    const row = await db.getFirstAsync<OrderRow>('SELECT * FROM orders WHERE id = ?', [id]);
+  const orderDetails = async (shopId: ShopId, id: OrderId) => {
+    const row = await db.getFirstAsync<OrderRow>(
+      'SELECT * FROM orders WHERE id = ? AND shop_id = ?',
+      [id, shopId],
+    );
     if (!row) return null;
     const lines = await db.getAllAsync<LineRow>(
       'SELECT * FROM order_lines WHERE order_id = ? ORDER BY position',
@@ -164,9 +183,28 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
     return { order: toOrder(row), lines: lines.map(toLine), packages: packages.map(toPackage) };
   };
 
+  const toSession = (row: SessionRow): PackingSession => ({
+    id: row.id as SessionId,
+    shopId: row.shop_id as ShopId,
+    orderId: row.order_id as OrderId,
+    packageId: row.package_id as PackageId,
+    startedAtDevice: row.started_at_device,
+    snapshot: parseSnapshot(row.snapshot_json),
+    sessionStatus: 'created',
+  });
+
+  const sessionsOfOrder = async (shopId: ShopId, orderId: OrderId) => {
+    const rows = await db.getAllAsync<SessionRow>(
+      `SELECT * FROM packing_sessions WHERE order_id = ? AND shop_id = ?
+       ORDER BY started_at_device DESC`,
+      [orderId, shopId],
+    );
+    return rows.map(toSession);
+  };
+
   return {
     saveNewOrder: (details) =>
-      guarded(() =>
+      guarded('ORDER_SAVE_FAILED', () =>
         db.withTransactionAsync(async () => {
           const o = details.order;
           await db.runAsync(
@@ -208,9 +246,9 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
           }
         }),
       ),
-    getOrder: (id) => guarded(() => orderDetails(id)),
+    getOrder: (shopId, id) => guarded('ORDER_SAVE_FAILED', () => orderDetails(shopId, id)),
     findOrdersByCodes: (shopId, query) =>
-      guarded(async () => {
+      guarded('ORDER_SAVE_FAILED', async () => {
         const conditions: string[] = [];
         const params: (string | number | null)[] = [shopId];
         if (query.orderCodeKey !== undefined) {
@@ -230,7 +268,7 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
         return rows.map(toOrder);
       }),
     listRecentLines: (shopId, limit) =>
-      guarded(async () => {
+      guarded('ORDER_SAVE_FAILED', async () => {
         const rows = await db.getAllAsync<LineRow>(
           `SELECT l.* FROM order_lines l JOIN orders o ON o.id = l.order_id
            WHERE o.shop_id = ? ORDER BY l.created_at_device DESC, l.position LIMIT ?`,
@@ -238,55 +276,74 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
         );
         return rows.map(toLine);
       }),
-    updateLineQuantity: (lineId, quantity) =>
-      guarded(async () => {
-        const found = await db.getFirstAsync<{ id: string }>(
-          'SELECT id FROM order_lines WHERE id = ?',
-          [lineId],
-        );
-        if (!found) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
-        await db.runAsync('UPDATE order_lines SET quantity = ? WHERE id = ?', [quantity, lineId]);
-      }),
-    addPackage: (pkg) =>
-      guarded(() =>
-        db.runAsync(
-          'INSERT INTO packages (id, order_id, idx, created_at_device) VALUES (?, ?, ?, ?)',
-          [pkg.id, pkg.orderId, pkg.index, pkg.createdAtDevice],
-        ),
+    updateLineQuantity: (shopId, lineId, quantity) =>
+      guarded('ORDER_SAVE_FAILED', () =>
+        db.withTransactionAsync(async () => {
+          const found = await db.getFirstAsync<{ order_id: string }>(
+            `SELECT l.order_id FROM order_lines l JOIN orders o ON o.id = l.order_id
+             WHERE l.id = ? AND o.shop_id = ?`,
+            [lineId, shopId],
+          );
+          if (!found) throw new AppError('ORDER_SAVE_FAILED');
+          const session = await db.getFirstAsync<{ id: string }>(
+            'SELECT id FROM packing_sessions WHERE order_id = ? LIMIT 1',
+            [found.order_id],
+          );
+          if (session) throw new AppError('ORDER_HAS_SESSION');
+          await db.runAsync('UPDATE order_lines SET quantity = ? WHERE id = ?', [quantity, lineId]);
+        }),
+      ),
+    addPackage: (shopId, pkg) =>
+      guarded('ORDER_SAVE_FAILED', () =>
+        db.withTransactionAsync(async () => {
+          const owner = await db.getFirstAsync<{ id: string }>(
+            'SELECT id FROM orders WHERE id = ? AND shop_id = ?',
+            [pkg.orderId, shopId],
+          );
+          if (!owner) throw new AppError('ORDER_SAVE_FAILED');
+          await db.runAsync(
+            'INSERT INTO packages (id, order_id, idx, created_at_device) VALUES (?, ?, ?, ?)',
+            [pkg.id, pkg.orderId, pkg.index, pkg.createdAtDevice],
+          );
+        }),
       ),
     saveSession: (s) =>
-      guarded(() =>
-        db.runAsync(
-          `INSERT INTO packing_sessions (id, shop_id, order_id, package_id, started_at_device,
-            snapshot_json, session_status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [
-            s.id,
-            s.shopId,
-            s.orderId,
-            s.packageId,
-            s.startedAtDevice,
-            JSON.stringify(s.snapshot),
-            s.sessionStatus,
-          ],
-        ),
+      guarded('LOCAL_SAVE_UNAVAILABLE', () =>
+        db.withTransactionAsync(async () => {
+          const owned = await db.getFirstAsync<{ id: string }>(
+            `SELECT p.id FROM packages p JOIN orders o ON o.id = p.order_id
+             WHERE p.id = ? AND o.id = ? AND o.shop_id = ?`,
+            [s.packageId, s.orderId, s.shopId],
+          );
+          if (!owned) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+          const existing = await sessionsOfOrder(s.shopId, s.orderId);
+          if (findActiveSession(existing, s.packageId)) {
+            throw new AppError('PACKAGE_SESSION_ACTIVE');
+          }
+          await db.runAsync(
+            `INSERT INTO packing_sessions (id, shop_id, order_id, package_id, started_at_device,
+              snapshot_json, session_status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+              s.id,
+              s.shopId,
+              s.orderId,
+              s.packageId,
+              s.startedAtDevice,
+              JSON.stringify(s.snapshot),
+              s.sessionStatus,
+            ],
+          );
+        }),
       ),
-    getSession: (id: SessionId) =>
-      guarded(async () => {
+    getSession: (shopId, id: SessionId) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
         const row = await db.getFirstAsync<SessionRow>(
-          'SELECT * FROM packing_sessions WHERE id = ?',
-          [id],
+          'SELECT * FROM packing_sessions WHERE id = ? AND shop_id = ?',
+          [id, shopId],
         );
-        if (!row) return null;
-        const session: PackingSession = {
-          id: row.id as SessionId,
-          shopId: row.shop_id as ShopId,
-          orderId: row.order_id as OrderId,
-          packageId: row.package_id as PackageId,
-          startedAtDevice: row.started_at_device,
-          snapshot: parseSnapshot(row.snapshot_json),
-          sessionStatus: 'created',
-        };
-        return session;
+        return row ? toSession(row) : null;
       }),
+    listSessionsOfOrder: (shopId, orderId) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', () => sessionsOfOrder(shopId, orderId)),
   };
 }

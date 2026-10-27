@@ -8,10 +8,10 @@ describe('createLocalOrderStore', () => {
     const store = createLocalOrderStore(async () => null);
     const d = makeOrder('W');
     await store.saveNewOrder(d);
-    expect(await store.getOrder(d.order.id)).toEqual(d);
+    expect(await store.getOrder(d.order.shopId, d.order.id)).toEqual(d);
   });
 
-  it('mở SQLite lỗi thì báo LOCAL_SAVE_UNAVAILABLE, KHÔNG lặng lẽ chuyển sang bộ nhớ; lần sau thử lại', async () => {
+  it('mở SQLite lỗi thì báo ORDER_SAVE_FAILED, KHÔNG lặng lẽ chuyển sang bộ nhớ; lần sau thử lại', async () => {
     let calls = 0;
     const db = createNodeSqliteDatabase();
     const store = createLocalOrderStore(async () => {
@@ -20,7 +20,7 @@ describe('createLocalOrderStore', () => {
       return db;
     });
     const d = makeOrder('F');
-    await expect(store.saveNewOrder(d)).rejects.toMatchObject({ code: 'LOCAL_SAVE_UNAVAILABLE' });
+    await expect(store.saveNewOrder(d)).rejects.toMatchObject({ code: 'ORDER_SAVE_FAILED' });
     await store.saveNewOrder(d);
     expect(calls).toBe(2);
     expect(await db.getAllAsync('SELECT id FROM orders')).toHaveLength(1);

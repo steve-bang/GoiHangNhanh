@@ -7,6 +7,7 @@ import { sampleOrder, sampleSession, seedOrder } from '@/test-utils/order-fixtur
 import { renderWithProviders } from '@/test-utils/render';
 
 import { createMemoryOrderStore } from '../data';
+import { LOCAL_SHOP_ID } from '../domain';
 import { OrderPreviewScreen } from './OrderPreviewScreen';
 
 jest.mock(
@@ -116,15 +117,79 @@ describe('UI-C01 Xác nhận đơn trước khi quay', () => {
     await waitFor(() =>
       expect(within(screen.getByTestId('preview-line-line-1')).getByText('3')).toBeOnTheScreen(),
     );
-    const saved = await store.getOrder(details.order.id);
+    const saved = await store.getOrder(LOCAL_SHOP_ID, details.order.id);
     expect(saved?.lines.map((l) => l.quantity)).toEqual([3, 1]); // dòng khác không bị gộp/đổi
+  });
+
+  describe('đơn đã có phiên đóng gói (bất biến 7)', () => {
+    async function openWithSession() {
+      const details = sampleOrder();
+      const store = createMemoryOrderStore();
+      await seedOrder(store, details);
+      await store.saveSession(sampleSession(details));
+      mockNavigation.params = { orderId: details.order.id };
+      await renderWithProviders(<OrderPreviewScreen />, { orderStore: store });
+      await screen.findByTestId('preview-order-code');
+      return { store, details };
+    }
+
+    it('ẩn bộ chỉnh số lượng, hiện số lượng chỉ-đọc kèm chú thích ngắn', async () => {
+      await openWithSession();
+      const line = screen.getByTestId('preview-line-line-1');
+      expect(within(line).queryByRole('button', { name: 'Tăng số lượng' })).toBeNull();
+      expect(within(line).queryByRole('button', { name: 'Giảm số lượng' })).toBeNull();
+      expect(screen.getByTestId('preview-quantity-line-1')).toHaveTextContent('Số lượng: 2');
+      expect(screen.getByText('Đơn đã bắt đầu quay nên chưa sửa được số lượng.')).toBeOnTheScreen();
+    });
+
+    it('đơn chưa có phiên thì không có chú thích khóa', async () => {
+      await open();
+      expect(screen.queryByTestId('preview-quantity-locked')).toBeNull();
+    });
+
+    it('màn mở trước khi có phiên: bấm sửa bị kho từ chối, báo đúng lỗi, số lượng không đổi, rồi khóa lại', async () => {
+      const { store, details } = await open();
+      await store.saveSession(sampleSession(details)); // phiên được tạo ở nơi khác sau khi màn đã mở
+      const line = screen.getByTestId('preview-line-line-1');
+      await fireEvent.press(within(line).getByRole('button', { name: 'Tăng số lượng' }));
+      expect(
+        await screen.findByText('Đơn này đã bắt đầu quay nên chưa sửa được số lượng.'),
+      ).toBeOnTheScreen();
+      expect((await store.getOrder(LOCAL_SHOP_ID, details.order.id))?.lines[0]?.quantity).toBe(2);
+      await waitFor(() => expect(screen.getByTestId('preview-quantity-locked')).toBeOnTheScreen());
+    });
+
+    it('vẫn thêm được kiện mới', async () => {
+      await openWithSession();
+      await fireEvent.press(screen.getByTestId('preview-add-package'));
+      expect(
+        await screen.findByRole('button', { name: 'Kiện 2', selected: true }),
+      ).toBeOnTheScreen();
+    });
+  });
+
+  describe('quay về sau khi dừng bản thử giao diện', () => {
+    it('có thông báo "chưa có video nào được lưu" khi đến từ màn quay chưa ghi', async () => {
+      const details = sampleOrder();
+      const store = createMemoryOrderStore();
+      await seedOrder(store, details);
+      mockNavigation.params = { orderId: details.order.id, notice: 'not_recorded' };
+      await renderWithProviders(<OrderPreviewScreen />, { orderStore: store });
+      await screen.findByTestId('preview-order-code');
+      expect(screen.getByText('Bản thử giao diện: chưa có video nào được lưu.')).toBeOnTheScreen();
+    });
+
+    it('không có thông báo khi mở bình thường', async () => {
+      await open();
+      expect(screen.queryByTestId('preview-not-recorded')).toBeNull();
+    });
   });
 
   it('thêm kiện: mỗi kiện có ID riêng, được lưu, và được chọn', async () => {
     const { store, details } = await open();
     await fireEvent.press(screen.getByTestId('preview-add-package'));
     expect(await screen.findByText('Kiện 2')).toBeOnTheScreen();
-    const saved = await store.getOrder(details.order.id);
+    const saved = await store.getOrder(LOCAL_SHOP_ID, details.order.id);
     expect(saved?.packages.map((p) => p.index)).toEqual([1, 2]);
     expect(new Set(saved?.packages.map((p) => p.id)).size).toBe(2);
     expect(screen.getByRole('button', { name: 'Kiện 2', selected: true })).toBeOnTheScreen();
@@ -141,8 +206,8 @@ describe('UI-C01 Xác nhận đơn trước khi quay', () => {
       const call = mockNavigation.replace.mock.calls[0] as [unknown, { sessionId: string }];
       expect(call[0]).toBe(ROUTES.packRecord);
       expect(Object.keys(call[1])).toEqual(['sessionId']); // không truyền mã đơn
-      const session = await store.getSession(call[1].sessionId as never);
-      const saved = await store.getOrder(details.order.id);
+      const session = await store.getSession(LOCAL_SHOP_ID, call[1].sessionId as never);
+      const saved = await store.getOrder(LOCAL_SHOP_ID, details.order.id);
       expect(session).toMatchObject({
         orderId: details.order.id,
         packageId: saved?.packages[1]?.id,
@@ -155,14 +220,31 @@ describe('UI-C01 Xác nhận đơn trước khi quay', () => {
       });
     });
 
-    it('sửa đơn sau khi bắt đầu không đổi ảnh chụp của phiên', async () => {
+    it('đã bắt đầu thì KHÔNG sửa được số lượng nữa: kho từ chối, ảnh chụp và dòng đơn giữ nguyên', async () => {
       const { store } = await open();
       await fireEvent.press(screen.getByTestId('preview-start'));
       await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
       const call = mockNavigation.replace.mock.calls[0] as [unknown, { sessionId: string }];
-      await store.updateLineQuantity('line-1' as never, 9);
-      const session = await store.getSession(call[1].sessionId as never);
+      await expect(
+        store.updateLineQuantity(LOCAL_SHOP_ID, 'line-1' as never, 9),
+      ).rejects.toMatchObject({ code: 'ORDER_HAS_SESSION' });
+      const session = await store.getSession(LOCAL_SHOP_ID, call[1].sessionId as never);
       expect(session?.snapshot.lines.map((l) => l.quantity)).toEqual([2, 1]);
+      const saved = await store.getOrder(LOCAL_SHOP_ID, sampleOrder().order.id);
+      expect(saved?.lines.map((l) => l.quantity)).toEqual([2, 1]);
+    });
+
+    it('kiện đã có phiên đang thực hiện: mở lại phiên đó, KHÔNG tạo phiên chồng', async () => {
+      const { store, details } = await open();
+      await fireEvent.press(screen.getByTestId('preview-start'));
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalledTimes(1));
+      const first = mockNavigation.replace.mock.calls[0] as [unknown, { sessionId: string }];
+      await fireEvent.press(screen.getByTestId('preview-start'));
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalledTimes(2));
+      const second = mockNavigation.replace.mock.calls[1] as [unknown, { sessionId: string }];
+      expect(second[0]).toBe(ROUTES.packRecord);
+      expect(second[1].sessionId).toBe(first[1].sessionId);
+      expect(await store.listSessionsOfOrder(LOCAL_SHOP_ID, details.order.id)).toHaveLength(1);
     });
 
     it('bấm đúp chỉ tạo một phiên', async () => {
@@ -185,7 +267,7 @@ describe('UI-C01 Xác nhận đơn trước khi quay', () => {
       expect(mockNavigation.replace).not.toHaveBeenCalled();
       await fireEvent.press(screen.getByTestId('start-permission-allow'));
       expect(mockScanner.request).toHaveBeenCalled();
-      expect(await store.getSession(sampleSession().id)).toBeNull();
+      expect(await store.getSession(LOCAL_SHOP_ID, sampleSession().id)).toBeNull();
 
       mockScanner.permission = 'granted';
       await fireEvent.press(screen.getByTestId('copy-order-code')); // làm màn vẽ lại với quyền mới

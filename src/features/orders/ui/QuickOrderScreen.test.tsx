@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 
 import { AppError } from '@/core/errors/app-error';
 import { ROUTES } from '@/core/navigation';
@@ -116,7 +116,7 @@ describe('UI-B04 Tạo đơn nhanh', () => {
     expect(rest).toEqual([]);
     if (!orders) throw new Error('đơn phải được lưu');
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.orderPreview, { orderId: orders.id });
-    const saved = await store.getOrder(orders.id);
+    const saved = await store.getOrder(LOCAL_SHOP_ID, orders.id);
     expect(saved?.order).toMatchObject({
       orderCode: 'dh-77',
       source: 'other',
@@ -140,7 +140,7 @@ describe('UI-B04 Tạo đơn nhanh', () => {
     await fireEvent.press(screen.getByTestId('quick-save'));
     await waitFor(() => expect(mockNavigation.push).toHaveBeenCalled());
     const [order] = await allOrders(store, 'DH2');
-    const saved = order ? await store.getOrder(order.id) : null;
+    const saved = order ? await store.getOrder(LOCAL_SHOP_ID, order.id) : null;
     expect(saved?.lines.map((l) => l.variant)).toEqual(['Đen', 'Trắng']);
   });
 
@@ -191,7 +191,39 @@ describe('UI-B04 Tạo đơn nhanh', () => {
   });
 
   describe('Bỏ qua, quay ngay', () => {
-    it('ghi đơn KHÔNG có dòng, tạo phiên gắn đúng kiện rồi vào màn quay bằng sessionId', async () => {
+    it('KHÔNG bỏ âm thầm dòng đã nhập: lưu các dòng hợp lệ (vẫn quay ngay, không chặn)', async () => {
+      const store = createMemoryOrderStore();
+      await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
+      await typeCode('DH-KEEP');
+      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo');
+      await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'Đen');
+      await fireEvent.press(screen.getByTestId('quick-add-line'));
+      await fireEvent.changeText(screen.getByTestId('line-name-1'), 'Quần');
+      await fireEvent.press(screen.getByTestId('quick-skip'));
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      const [order] = await allOrders(store, 'DH-KEEP');
+      const details = order ? await store.getOrder(LOCAL_SHOP_ID, order.id) : null;
+      expect(details?.lines.map((l) => [l.name, l.variant])).toEqual([
+        ['Áo', 'Đen'],
+        ['Quần', null],
+      ]);
+      const call = mockNavigation.replace.mock.calls[0] as [unknown, { sessionId: string }];
+      const session = await store.getSession(LOCAL_SHOP_ID, call[1].sessionId as never);
+      expect(session?.snapshot.lines.map((l) => l.name)).toEqual(['Áo', 'Quần']);
+    });
+
+    it('dòng dở dang (có variant, thiếu tên) vẫn báo lỗi, không bị bỏ mất rồi quay', async () => {
+      const store = createMemoryOrderStore();
+      await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
+      await typeCode('DH-PART');
+      await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'Đen');
+      await fireEvent.press(screen.getByTestId('quick-skip'));
+      expect(await screen.findByText('Hãy nhập tên sản phẩm cho phân loại này.')).toBeOnTheScreen();
+      expect(await allOrders(store, 'DH-PART')).toEqual([]);
+      expect(mockNavigation.replace).not.toHaveBeenCalled();
+    });
+
+    it('ghi đơn KHÔNG có dòng (khi chưa nhập gì), tạo phiên gắn đúng kiện rồi vào màn quay bằng sessionId', async () => {
       const store = createMemoryOrderStore();
       await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
       await typeCode('DH-QUICK');
@@ -199,11 +231,11 @@ describe('UI-B04 Tạo đơn nhanh', () => {
       await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
 
       const [order] = await allOrders(store, 'DH-QUICK');
-      const details = order ? await store.getOrder(order.id) : null;
+      const details = order ? await store.getOrder(LOCAL_SHOP_ID, order.id) : null;
       expect(details?.lines).toEqual([]);
       const call = mockNavigation.replace.mock.calls[0] as [unknown, { sessionId: string }];
       expect(call[0]).toBe(ROUTES.packRecord);
-      const session = await store.getSession(call[1].sessionId as never);
+      const session = await store.getSession(LOCAL_SHOP_ID, call[1].sessionId as never);
       expect(session).toMatchObject({
         orderId: order?.id,
         packageId: details?.packages[0]?.id,
@@ -284,6 +316,20 @@ describe('UI-B04 Tạo đơn nhanh', () => {
       expect(await allOrders(store, 'DH1234567890')).toHaveLength(2);
     });
 
+    it('cùng mã đơn khác nguồn NHƯNG trùng mã vận đơn: vẫn cảnh báo, không tự gộp', async () => {
+      const store = createMemoryOrderStore();
+      const existing = await seedOrder(store, sampleOrder({ withLines: false }));
+      await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
+      await typeCode('DH1234567890'); // nguồn mặc định "Khác": khác nguồn của đơn đã có
+      await fireEvent.press(screen.getByTestId('quick-add-tracking'));
+      await fireEvent.changeText(screen.getByTestId('quick-tracking'), 'spx1234567890');
+      await fireEvent.press(screen.getByTestId('quick-save'));
+      expect(await screen.findByText('Cùng mã vận đơn')).toBeOnTheScreen();
+      expect(screen.getByTestId(`duplicate-${existing.order.id}`)).toBeOnTheScreen();
+      expect(mockNavigation.push).not.toHaveBeenCalled();
+      expect(await allOrders(store, 'DH1234567890')).toHaveLength(1);
+    });
+
     it('cùng mã vận đơn (mã đơn khác) cũng được báo để chọn', async () => {
       const store = createMemoryOrderStore();
       const existing = await seedOrder(store, sampleOrder({ withLines: false }));
@@ -297,19 +343,20 @@ describe('UI-B04 Tạo đơn nhanh', () => {
     });
   });
 
-  it('lưu lỗi: báo LOCAL_SAVE_UNAVAILABLE bằng câu thường, không rời màn, bấm lại được', async () => {
+  it('lưu lỗi: báo ORDER_SAVE_FAILED bằng câu thường, không rời màn, bấm lại được', async () => {
     const store = createMemoryOrderStore();
     const failing: OrderStore = {
       ...store,
       saveNewOrder: jest.fn(async () => {
-        throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+        throw new AppError('ORDER_SAVE_FAILED');
       }),
     };
     await renderWithProviders(<QuickOrderScreen />, { orderStore: failing });
     await typeCode('DH-ERR');
     await fireEvent.press(screen.getByTestId('quick-save'));
     expect(await screen.findByTestId('save-error')).toBeOnTheScreen();
-    expect(screen.getByText(/Không thể chuẩn bị nơi lưu video/)).toBeOnTheScreen();
+    expect(screen.getByText('Chưa xử lý được đơn trên máy. Bạn thử lại nhé.')).toBeOnTheScreen();
+    expect(within(screen.getByTestId('save-error')).queryByText(/video/)).toBeNull();
     expect(mockNavigation.push).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.getByTestId('quick-save')).toBeEnabled());
   });

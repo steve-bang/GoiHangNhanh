@@ -10,8 +10,9 @@ import type { SqlDatabase, SqlParam } from '@/platform';
 export function createNodeSqliteDatabase(): SqlDatabase & { close: () => void } {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- mô-đun chỉ có trong Node
   const { DatabaseSync } = require('node:sqlite') as typeof NodeSqlite;
-  const db = new DatabaseSync(':memory:');
-  db.exec('PRAGMA foreign_keys = ON');
+  const db = new DatabaseSync(':memory:', { enableForeignKeyConstraints: false });
+  // Node bật khóa ngoại mặc định; expo-sqlite thì không. Tắt để giống thiết bị: kho phải tự bật qua
+  // `applyConnectionSettings` (sql-database.ts), và test chứng minh điều đó.
   const bind = (params: readonly SqlParam[] | undefined) => [...(params ?? [])];
   return {
     async execAsync(sql) {

@@ -5,7 +5,7 @@
   "description": "Đơn Chứng - ứng dụng di động quản lý bằng chứng theo vòng đời đơn hàng (React Native + Firebase)",
   "main": "expo-router/entry",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13"
   },
   "scripts": {
     "start": "expo start --dev-client",

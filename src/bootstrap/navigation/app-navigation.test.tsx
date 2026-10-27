@@ -164,7 +164,7 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
       expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
     });
 
-    it('Xác nhận -> bắt đầu mở màn quay (không tab), có xem trước camera và dải "chưa ghi video"', async () => {
+    it('Xác nhận -> bắt đầu mở màn quay (không tab), có xem trước camera, huy hiệu "Xem trước" và dải "chưa ghi video"', async () => {
       await scanToQuickOrder('DH-FLOW-2');
       await fireEvent.press(screen.getByTestId('quick-save'));
       await screen.findByTestId('screen-UI-C01');
@@ -173,6 +173,8 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
       expect(screen.getByTestId('screen-UI-C03')).toBeOnTheScreen();
       expect(await screen.findByText('Bản thử giao diện: chưa ghi video')).toBeOnTheScreen();
       expect(screen.getByTestId('record-camera')).toBeOnTheScreen();
+      expect(screen.getByText('Xem trước')).toBeOnTheScreen();
+      expect(screen.queryByText('Đang quay')).toBeNull(); // chưa ghi tệp nào (bất biến 3, 11)
       expect(screen.queryByTestId('screen-UI-C01')).toBeNull(); // đã thay bằng màn quay
       expectTabBarVisible(false);
     });
@@ -185,7 +187,7 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
       expect(screen.queryByTestId('screen-UI-C01')).toBeNull();
     });
 
-    it('Back khi đang ở màn quay bị chặn và hiện cảnh báo; Giữ video ở lại; Kết thúc phiên sang Xác nhận video', async () => {
+    it('Back khi đang ở màn quay bị chặn; Ở lại màn quay ở lại; Kết thúc phiên quay về Xác nhận đơn (không qua màn "đã lưu"), bắt đầu lại mở lại đúng phiên cũ', async () => {
       await scanToQuickOrder('DH-FLOW-4');
       await fireEvent.press(screen.getByTestId('quick-skip'));
       await screen.findByTestId('record-camera');
@@ -195,7 +197,7 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
       });
       expect(screen.getByTestId('screen-UI-C03')).toBeOnTheScreen();
       expect(screen.getByText('Phiên quay chưa kết thúc')).toBeOnTheScreen();
-      await fireEvent.press(screen.getByRole('button', { name: 'Giữ video và quay lại' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Ở lại màn quay' }));
       expect(screen.queryByText('Phiên quay chưa kết thúc')).toBeNull();
       expect(screen.getByTestId('screen-UI-C03')).toBeOnTheScreen();
 
@@ -203,8 +205,38 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
         router.back();
       });
       await fireEvent.press(screen.getByRole('button', { name: 'Kết thúc phiên' }));
-      expect(screen.getByTestId('screen-UI-C04')).toBeOnTheScreen();
+      // Luồng Quét -> Tạo đơn -> Xác nhận -> Quay -> Dừng: về Xác nhận đơn với thông báo trung thực
+      expect(await screen.findByTestId('screen-UI-C01')).toBeOnTheScreen();
+      expect(screen.getByText('Bản thử giao diện: chưa có video nào được lưu.')).toBeOnTheScreen();
+      expect(screen.getByTestId('preview-order-code')).toHaveTextContent('DH-FLOW-4');
       expect(screen.queryByTestId('screen-UI-C03')).toBeNull();
+      expect(screen.queryByTestId('screen-UI-C04')).toBeNull();
+      expect(screen.queryByText('Đã lưu trên máy')).toBeNull();
+      expect(screen.queryByText(/Video đã lưu trên thiết bị/)).toBeNull();
+
+      // Bắt đầu lại: mở lại phiên đang thực hiện của kiện, không tạo phiên chồng
+      await fireEvent.press(screen.getByTestId('preview-start'));
+      expect(await screen.findByTestId('record-camera')).toBeOnTheScreen();
+      expect(screen.getByText('DH-FLOW-4')).toBeOnTheScreen();
+    });
+
+    it('bấm nút Dừng quay (không qua hộp thoại) quay về Xác nhận đơn kèm thông báo "chưa có video nào được lưu"', async () => {
+      await scanToQuickOrder('DH-FLOW-5');
+      await fireEvent.press(screen.getByTestId('quick-skip'));
+      await screen.findByTestId('record-camera');
+      await fireEvent.press(screen.getByRole('button', { name: 'Dừng quay' }));
+      expect(await screen.findByTestId('screen-UI-C01')).toBeOnTheScreen();
+      expect(screen.queryByText('Phiên quay chưa kết thúc')).toBeNull();
+      expect(screen.getByText('Bản thử giao diện: chưa có video nào được lưu.')).toBeOnTheScreen();
+      expect(screen.queryByTestId('screen-UI-C04')).toBeNull();
+      expect(screen.queryByText(/đã lưu/i)).toBeNull();
+    });
+
+    it('mở thẳng UI-C04/UI-C06 bằng liên kết sâu khi chưa ghi: không có badge hay câu "đã lưu"', async () => {
+      await renderRouter(APP_DIR, { initialUrl: `${ROUTES.packConfirm.path}?sessionId=bat-ky` });
+      expect(screen.getByTestId('screen-UI-C04')).toBeOnTheScreen();
+      expect(screen.queryByText('Đã lưu trên máy')).toBeNull();
+      expect(screen.queryByText(/đã lưu trên thiết bị/i)).toBeNull();
     });
   });
 });

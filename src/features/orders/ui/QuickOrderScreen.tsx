@@ -28,9 +28,8 @@ import {
   type ChipOption,
 } from '@/shared/ui';
 
-import { useOrderStore } from '../data';
+import { useCurrentShopId, useOrderStore } from '../data';
 import {
-  LOCAL_SHOP_ID,
   buildOrder,
   classifyMatches,
   hasDuplicates,
@@ -75,6 +74,7 @@ export function QuickOrderScreen() {
   const navigation = useAppNavigation();
   const params = useRouteParams();
   const store = useOrderStore();
+  const shopId = useCurrentShopId();
   const start = useStartPacking();
   const touch = getMinTouchTarget();
 
@@ -95,14 +95,14 @@ export function QuickOrderScreen() {
   useEffect(() => {
     let alive = true;
     store
-      .listRecentLines(LOCAL_SHOP_ID, HISTORY_LIMIT)
+      .listRecentLines(shopId, HISTORY_LIMIT)
       .then((rows) => alive && setHistory(rows))
       // Không có lịch sử thì chỉ mất gợi ý; việc tạo đơn vẫn chạy bình thường.
       .catch(() => undefined);
     return () => {
       alive = false;
     };
-  }, [store]);
+  }, [shopId, store]);
 
   const sourceOptions: ChipOption<OrderSource>[] = ORDER_SOURCES.map((key) => ({
     key,
@@ -128,10 +128,12 @@ export function QuickOrderScreen() {
         orderCode,
         source,
         trackingCode: tracking,
-        // "Bỏ qua, quay ngay": đơn không dòng sản phẩm -> *Chưa khai báo sản phẩm*.
-        lines: action === 'record' ? [] : lines,
+        // "Bỏ qua, quay ngay" KHÔNG bỏ âm thầm dòng đã nhập: có dòng hợp lệ thì lưu; chưa nhập gì thì
+        // đơn không dòng (*Chưa khai báo sản phẩm*). Dòng dở dang (có variant, thiếu tên) vẫn báo lỗi
+        // như nút kia thay vì bị bỏ mất.
+        lines,
       };
-      const built = buildOrder(draft, { shopId: LOCAL_SHOP_ID, ids: IDS, nowDevice: Date.now() });
+      const built = buildOrder(draft, { shopId, ids: IDS, nowDevice: Date.now() });
       if (!built.ok) {
         setFieldError(built.error);
         return;
@@ -157,7 +159,7 @@ export function QuickOrderScreen() {
         start.begin(order.id, packageId);
       }
     } catch (caught) {
-      setSaveError(isAppError(caught) ? caught.code : 'LOCAL_SAVE_UNAVAILABLE');
+      setSaveError(isAppError(caught) ? caught.code : 'ORDER_SAVE_FAILED');
     } finally {
       savingRef.current = false;
       setSaving(false);

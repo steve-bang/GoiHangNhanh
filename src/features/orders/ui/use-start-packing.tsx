@@ -8,8 +8,8 @@ import { ROUTES } from '@/core/navigation';
 import { newSessionId, openAppSettings, useAppNavigation, useScannerPermission } from '@/platform';
 import { CameraPermissionSheet } from '@/shared/ui';
 
-import { useOrderStore } from '../data';
-import { buildPackingSession } from '../domain';
+import { useCurrentShopId, useOrderStore } from '../data';
+import { buildPackingSession, findActiveSession } from '../domain';
 
 interface Pending {
   orderId: OrderId;
@@ -19,7 +19,9 @@ interface Pending {
 /**
  * Bắt đầu quay (đặc tả A04 rút gọn): (1) chưa có quyền camera -> hộp thoại xin quyền dùng chung;
  * (2) có quyền -> tạo phiên + giữ kiện + ảnh chụp đơn và LƯU TRƯỚC khi mở camera, rồi `replace` sang
- * màn quay bằng `sessionId` (không truyền mã đơn; bất biến 2). Dùng chung cho "Kiểm tra camera và
+ * màn quay bằng `sessionId` (không truyền mã đơn; bất biến 2). Kiện đã có phiên đang thực hiện thì
+ * mở lại phiên đó thay vì tạo phiên mới (an toàn hơn phiên chồng; hộp hỏi "tạo phiên mới" cần đặc tả
+ * cách kết thúc phiên cũ, làm cùng recorder). Dùng chung cho "Kiểm tra camera và
  * bắt đầu" (UI-C01) và "Bỏ qua, quay ngay" (UI-B04).
  *
  * CHƯA làm (chưa ghi video thật): kiểm tra dung lượng (`INSUFFICIENT_STORAGE`) và micro
@@ -35,6 +37,7 @@ export function useStartPacking(): {
   const { t } = useTranslation();
   const navigation = useAppNavigation();
   const store = useOrderStore();
+  const shopId = useCurrentShopId();
   const permission = useScannerPermission();
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false);
@@ -48,9 +51,20 @@ export function useStartPacking(): {
       setBusy(true);
       setError(null);
       try {
-        const details = await store.getOrder(target.orderId);
+        const details = await store.getOrder(shopId, target.orderId);
         if (!details) {
-          setError('LOCAL_SAVE_UNAVAILABLE');
+          setError('ORDER_SAVE_FAILED');
+          return;
+        }
+        // Kiện đã có phiên đang thực hiện: MỞ LẠI phiên đó, không tạo phiên chồng (docs/04 A03:
+        // "Kiện này đã có phiên đang thực hiện"; decisions.md Q-17).
+        const active = findActiveSession(
+          await store.listSessionsOfOrder(shopId, target.orderId),
+          target.packageId,
+        );
+        if (active) {
+          setPending(null);
+          navigation.replace(ROUTES.packRecord, { sessionId: active.id });
           return;
         }
         const built = buildPackingSession(details, target.packageId, {
@@ -71,7 +85,7 @@ export function useStartPacking(): {
         setBusy(false);
       }
     },
-    [navigation, store],
+    [navigation, shopId, store],
   );
 
   // Đã chọn "bắt đầu" mà quyền vừa được cấp (từ hộp thoại hoặc từ Cài đặt) thì tiếp tục.

@@ -113,6 +113,9 @@
     "products": "Sản phẩm",
     "undeclaredHint": "Bạn vẫn quay được. Việc đối chiếu sẽ bị hạn chế cho tới khi bổ sung sản phẩm.",
     "quantityOf": "Số lượng của {{name}}",
+    "quantityValue": "Số lượng: {{count}}",
+    "quantityLocked": "Đơn đã bắt đầu quay nên chưa sửa được số lượng.",
+    "notRecordedNotice": "Bản thử giao diện: chưa có video nào được lưu.",
     "packages": "Kiện hàng",
     "package": "Kiện {{index}}",
     "addPackage": "Thêm kiện",
@@ -130,12 +133,16 @@
     "returnCase": "Hồ sơ hoàn",
     "notRecording": "Bản thử giao diện: chưa ghi video",
     "badge": "Đang quay",
+    "previewBadge": "Xem trước",
     "torchOn": "Bật đèn pin",
     "torchOff": "Tắt đèn pin",
     "sessionMissing": "Không mở được phiên quay này.",
     "cameraError": "Không mở được camera. Có thể ứng dụng khác đang dùng camera."
   },
   "confirm": {
+    "nothingSaved": "Bản thử giao diện: chưa có video nào được lưu.",
+    "backHome": "Về Trang chủ",
+    "sessionMissing": "Không mở được phiên quay này.",
     "duration": "Thời lượng",
     "orderCode": "Mã đơn",
     "thumbnail": "Ảnh xem trước video (minh họa)",
@@ -145,6 +152,7 @@
     "save": "Lưu bằng chứng"
   },
   "packDone": {
+    "nothingSaved": "Bản thử giao diện: chưa có video nào được lưu.",
     "summary": "Phiên đóng gói đã hoàn tất. Video đã lưu trên thiết bị, đang chờ đồng bộ.",
     "videoCount": "Số video",
     "next": "Đóng gói đơn tiếp theo",

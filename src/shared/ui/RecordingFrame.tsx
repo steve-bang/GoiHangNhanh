@@ -26,11 +26,20 @@ interface RecordingFrameProps {
   preview?: ReactNode;
   /** Chữ thay cho hình xem trước khi chưa có camera (mặc định: khung minh họa). */
   previewMessage?: string;
-  /** Huy hiệu "Đang quay" (chấm đỏ + nhãn + đồng hồ). Chỉ truyền khi thật sự đang ghi, hoặc kèm `notice`. */
-  badgeLabel?: string;
   /**
-   * Dải báo trung thực dưới thanh trên (ví dụ "Bản thử giao diện: chưa ghi video"). Bắt buộc dùng
-   * khi giao diện giống đang quay mà chưa ghi tệp (bất biến 3, 11; docs/04 A05).
+   * Đang GHI THẬT ra tệp hay chỉ xem trước. `true`: huy hiệu "Đang quay" (chấm đỏ + nhãn + đồng hồ).
+   * `false`: chỉ nhãn "Xem trước" (không chấm đỏ, không đồng hồ chạy) vì chưa có tệp nào (bất biến 3,
+   * 11; docs/04 A05: không hiện "Đang quay" trước khi ghi được tệp). Bắt buộc truyền, không có mặc
+   * định, để màn nào chưa ghi thật phải nói rõ.
+   */
+  recording: boolean;
+  /** Nhãn huy hiệu khi `recording` ("Đang quay"). */
+  badgeLabel: string;
+  /** Nhãn huy hiệu khi chưa ghi ("Xem trước"). */
+  previewLabel: string;
+  /**
+   * Dải báo trung thực dưới thanh trên (ví dụ "Bản thử giao diện: chưa ghi video"); cũng được đọc
+   * cùng huy hiệu cho trình đọc màn hình khi chưa ghi.
    */
   notice?: string;
   /** Có `onToggleTorch` thì hiện nút đèn pin ở bên phải. */
@@ -57,7 +66,9 @@ export function RecordingFrame({
   onEndSession,
   preview,
   previewMessage,
+  recording,
   badgeLabel,
+  previewLabel,
   notice,
   torch = false,
   onToggleTorch,
@@ -97,24 +108,35 @@ export function RecordingFrame({
           </Pressable>
           <View
             accessible
-            accessibilityLabel={`${badgeLabel ? `${badgeLabel}, ` : ''}${t('common:recording.clock')} ${clockLabel}`}
+            accessibilityLabel={
+              recording
+                ? `${badgeLabel}, ${t('common:recording.clock')} ${clockLabel}`
+                : [previewLabel, notice].filter(Boolean).join(', ')
+            }
             style={[
               styles.badge,
               overlay,
               { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm, gap: spacing.sm },
             ]}
           >
-            {badgeLabel ? (
+            {recording ? (
               <>
-                <View style={[styles.dot, { backgroundColor: colors.danger }]} />
+                <View
+                  testID="recording-dot"
+                  style={[styles.dot, { backgroundColor: colors.danger }]}
+                />
                 <Text variant="overlay" style={{ color: colors.onCamera }}>
                   {badgeLabel}
                 </Text>
+                <Text variant="overlay" style={{ color: colors.onCamera }}>
+                  {clockLabel}
+                </Text>
               </>
-            ) : null}
-            <Text variant="overlay" style={{ color: colors.onCamera }}>
-              {clockLabel}
-            </Text>
+            ) : (
+              <Text variant="overlay" style={{ color: colors.onCamera }}>
+                {previewLabel}
+              </Text>
+            )}
           </View>
           <View style={styles.spacer} />
           <View
@@ -126,12 +148,13 @@ export function RecordingFrame({
             ]}
           >
             {primaryCode ? (
+              // Cỡ chữ cố định (>= 12sp, theo cỡ chữ hệ thống): mã dài thì cắt GIỮA, không co nhỏ
+              // hơn; xem đủ mã qua nhãn trợ năng. Đây là thông tin giúp phát hiện quay nhầm đơn.
               <Text
                 variant="overlay"
                 numberOfLines={1}
                 ellipsizeMode="middle"
-                adjustsFontSizeToFit
-                minimumFontScale={0.8}
+                accessibilityLabel={primaryCode}
                 style={{ color: colors.onCamera }}
               >
                 {primaryCode}
@@ -208,7 +231,12 @@ export function RecordingFrame({
             testID="recording-stop"
             accessibilityRole="button"
             accessibilityLabel={t('common:recording.stop')}
-            onPress={onStop}
+            onPress={() => {
+              // Dừng quay là cách kết thúc bình thường: tắt chặn rời màn trước, nếu không điều hướng
+              // đi nơi khác sẽ bị chính hộp thoại cảnh báo chặn lại.
+              allowLeave();
+              onStop();
+            }}
             style={styles.stopWrap}
           >
             <View style={[styles.stopRing, { borderColor: colors.onCamera }]}>
@@ -223,9 +251,13 @@ export function RecordingFrame({
       <ConfirmDialog
         visible={leaveDialogVisible}
         title={t('common:recording.leave.title')}
-        message={t('common:recording.leave.message')}
+        message={t(
+          recording ? 'common:recording.leave.message' : 'common:recording.leave.messagePreview',
+        )}
         confirmLabel={t('common:recording.leave.end')}
-        cancelLabel={t('common:recording.leave.keep')}
+        cancelLabel={t(
+          recording ? 'common:recording.leave.keep' : 'common:recording.leave.keepPreview',
+        )}
         primary="cancel"
         onCancel={() => setLeaveDialogVisible(false)}
         onConfirm={() => {
