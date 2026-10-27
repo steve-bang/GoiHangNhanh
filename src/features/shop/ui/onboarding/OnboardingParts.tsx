@@ -1,12 +1,25 @@
-import { useRef, useState, type ComponentRef, type ReactNode, type RefObject } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentRef,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 
 import type { ErrorCode } from '@/core/errors/codes';
 import type { OrderSource } from '@/core/orders/order-source';
 import { getInputResetStyle, getMinTouchTarget } from '@/platform';
-import { Icon, SourceIcon, Text, useTheme, type IconName } from '@/shared/ui';
+import { Button, Icon, SourceIcon, Text, useTheme, type IconName } from '@/shared/ui';
 
+import {
+  BANNER_LINE_HEIGHT,
+  FIELD_ERROR_FONT_SIZE,
+  FIELD_ERROR_LINE_HEIGHT,
+} from '../onboarding-layout';
 import type { StepState } from '../onboarding-progress';
 import { useScrollIntoView } from './OnboardingScaffold';
 
@@ -18,6 +31,8 @@ interface IconFieldProps {
   icon: IconName;
   placeholder?: string;
   error?: string | undefined;
+  /** Nút ngay trong dòng lỗi (ví dụ "Đăng nhập" khi email đã có tài khoản). */
+  errorAction?: { label: string; onPress: () => void; testID?: string } | undefined;
   /** Phần bên phải ô (ví dụ nút hiện/ẩn mật khẩu). */
   accessory?: ReactNode;
   height: number;
@@ -41,6 +56,7 @@ export function IconField({
   icon,
   placeholder,
   error,
+  errorAction,
   accessory,
   height,
   inputRef,
@@ -51,6 +67,12 @@ export function IconField({
   const wrapperRef = useRef<ComponentRef<typeof View>>(null);
   const scrollIntoView = useScrollIntoView();
   const [focused, setFocused] = useState(false);
+  const touch = getMinTouchTarget();
+  // Lỗi mới hiện lúc bàn phím đang mở: cuộn để lỗi không bị bàn phím che.
+  useEffect(() => {
+    if (error && focused) scrollIntoView(wrapperRef);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy khi lỗi đổi
+  }, [error]);
   return (
     <View ref={wrapperRef} collapsable={false} style={styles.fieldWrap}>
       <Pressable
@@ -98,24 +120,92 @@ export function IconField({
         {accessory}
       </Pressable>
       {error ? (
-        <Text
-          variant="caption"
+        <View
+          testID={testID ? `${testID}-error` : undefined}
+          accessibilityRole="alert"
           accessibilityLiveRegion="polite"
-          style={{ color: colors.danger, marginTop: 6, marginLeft: 4 }}
+          style={[
+            styles.fieldError,
+            {
+              marginTop: 6,
+              marginLeft: 4,
+              gap: spacing.xs,
+              alignItems: errorAction ? 'center' : 'flex-start',
+            },
+          ]}
         >
-          {error}
-        </Text>
+          <View style={styles.fieldErrorIcon}>
+            <Icon name="alert-triangle" size={16} color={colors.danger} />
+          </View>
+          <Text
+            style={[
+              styles.fieldErrorText,
+              {
+                color: colors.ink,
+                fontSize: FIELD_ERROR_FONT_SIZE,
+                lineHeight: FIELD_ERROR_LINE_HEIGHT,
+              },
+            ]}
+          >
+            {error}
+          </Text>
+          {errorAction ? (
+            <Pressable
+              testID={errorAction.testID}
+              accessibilityRole="button"
+              accessibilityLabel={errorAction.label}
+              onPress={errorAction.onPress}
+              hitSlop={4}
+              style={[styles.fieldErrorAction, { minHeight: touch, minWidth: touch }]}
+            >
+              <Text bold style={{ color: colors.brand, fontSize: FIELD_ERROR_FONT_SIZE }}>
+                {errorAction.label}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
     </View>
   );
 }
 
-/** Khối lỗi theo mẫu ba phần (điều gì xảy ra, ảnh hưởng, việc làm tiếp): chữ lấy từ `errors:<mã>`. */
-export function FormErrorBanner({ code }: { code: ErrorCode }) {
+/** Thông báo lỗi: `title` là câu đầu (in đậm), `hint` là câu sau (có thể không có). */
+export interface ErrorMessage {
+  title: string;
+  hint?: string;
+}
+
+/** Lấy chữ của mã lỗi từ `errors:<mã>`: chuỗi đơn (một câu) hoặc `{ title, hint }` (hai câu). */
+export function resolveErrorMessage(t: TFunction, code: ErrorCode): ErrorMessage {
+  const raw: unknown = t(`errors:${code}`, { returnObjects: true });
+  if (raw && typeof raw === 'object') {
+    const { title, hint } = raw as { title?: unknown; hint?: unknown };
+    return {
+      title: typeof title === 'string' ? title : code,
+      ...(typeof hint === 'string' ? { hint } : {}),
+    };
+  }
+  return { title: typeof raw === 'string' ? raw : code };
+}
+
+/**
+ * Khung lỗi chung của form (mạng, hệ thống): nền hồng rất nhạt, chữ tối, chỉ biểu tượng và viền màu
+ * đỏ. Câu đầu in đậm. Có `onRetry` thì hiện nút "Thử lại". Trình đọc màn hình đọc khi khung hiện.
+ */
+export function FormErrorBanner({ code, onRetry }: { code: ErrorCode; onRetry?: () => void }) {
   const { t } = useTranslation();
   const { colors, spacing, radius } = useTheme();
+  const scrollIntoView = useScrollIntoView();
+  const bannerRef = useRef<ComponentRef<typeof View>>(null);
+  const message = resolveErrorMessage(t, code);
+  // Khung lỗi vừa hiện lúc bàn phím còn mở: cuộn để thấy nó (và nút Thử lại).
+  useEffect(() => {
+    scrollIntoView(bannerRef);
+  }, [code, scrollIntoView]);
   return (
     <View
+      ref={bannerRef}
+      collapsable={false}
       testID="form-error"
       accessibilityRole="alert"
       accessibilityLiveRegion="assertive"
@@ -123,16 +213,32 @@ export function FormErrorBanner({ code }: { code: ErrorCode }) {
         styles.banner,
         {
           backgroundColor: colors.dangerSoft,
+          borderColor: colors.danger,
           borderRadius: radius.md,
           padding: spacing.md,
-          gap: spacing.sm,
+          gap: spacing.md,
         },
       ]}
     >
-      <Icon name="alert-triangle" size={20} color={colors.danger} />
-      <Text variant="caption" style={[styles.bannerText, { color: colors.danger }]}>
-        {t(`errors:${code}`)}
-      </Text>
+      <View style={[styles.bannerRow, { gap: spacing.sm }]}>
+        <View style={styles.bannerIcon}>
+          <Icon name="alert-triangle" size={20} color={colors.danger} />
+        </View>
+        <Text style={[styles.bannerText, { color: colors.ink }]}>
+          <Text bold style={{ color: colors.ink }}>
+            {message.title}
+          </Text>
+          {message.hint ? ` ${message.hint}` : ''}
+        </Text>
+      </View>
+      {onRetry ? (
+        <Button
+          testID="form-error-retry"
+          variant="secondary"
+          label={t('common:actions.retry')}
+          onPress={onRetry}
+        />
+      ) : null}
     </View>
   );
 }
@@ -250,8 +356,14 @@ const styles = StyleSheet.create({
   fieldBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
   fieldBody: { flex: 1, justifyContent: 'center', paddingVertical: 8 },
   fieldInput: { fontSize: 15, lineHeight: 22, padding: 0, margin: 0, minHeight: 22 },
-  banner: { flexDirection: 'row', alignItems: 'flex-start' },
-  bannerText: { flex: 1, fontSize: 13, lineHeight: 18 },
+  fieldError: { flexDirection: 'row' },
+  fieldErrorIcon: { height: FIELD_ERROR_LINE_HEIGHT, justifyContent: 'center' },
+  fieldErrorText: { flexShrink: 1 },
+  fieldErrorAction: { justifyContent: 'center', paddingHorizontal: 8 },
+  banner: { borderWidth: 1 },
+  bannerRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  bannerIcon: { height: BANNER_LINE_HEIGHT, justifyContent: 'center' },
+  bannerText: { flex: 1, fontSize: 15, lineHeight: BANNER_LINE_HEIGHT },
   progress: { flexDirection: 'row', alignItems: 'center', height: 28 },
   progressSegment: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   nodeActive: {

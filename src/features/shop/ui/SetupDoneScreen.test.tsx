@@ -56,7 +56,7 @@ describe('UI-A06 Hoàn tất thiết lập', () => {
     await renderDone();
     expect(screen.getByTestId('screen-UI-A06')).toBeOnTheScreen();
     expect(screen.getByText('Tuyệt vời!')).toBeOnTheScreen();
-    expect(screen.getByText('Bạn đã sẵn sàng sử dụng Đơn Chứng')).toBeOnTheScreen();
+    expect(screen.getByText('Bạn đã sẵn sàng sử dụng Đơn\u00a0Chứng')).toBeOnTheScreen();
     expect(
       screen.getByText(
         'Cảm ơn bạn đã hoàn tất thiết lập. Giờ đây bạn có thể bắt đầu ghi hình và bảo vệ đơn hàng của mình.',

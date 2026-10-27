@@ -78,7 +78,8 @@ describe('luồng thiết lập (Expo Router thật, cổng giả)', () => {
     await fireEvent.changeText(screen.getByTestId('signup-email'), 'da.dung@example.com');
     await fireEvent.changeText(screen.getByTestId('signup-password'), 'matkhau-du-dai-1');
     await fireEvent.press(screen.getByTestId('signup-submit'));
-    expect(await screen.findByTestId('form-error')).toBeOnTheScreen();
+    expect(await screen.findByText('Email này đã có tài khoản.')).toBeOnTheScreen();
+    expect(screen.getByTestId('signup-email-error')).toBeOnTheScreen();
     expect(screen.queryByTestId('shop-name-input')).toBeNull();
   });
 

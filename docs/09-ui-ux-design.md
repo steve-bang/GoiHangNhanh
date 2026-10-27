@@ -232,9 +232,22 @@ Bốn tấm hình dưới đây là **mockup khái niệm**, lưu ở `docs/asse
 
 **Chi tiết đã chốt cho UI-A03 (đăng ký), UI-A04, UI-A06** (đã làm, dùng cổng giả; kỹ thuật ở [layout.md mục 2.2](engineering/layout.md#22-ba-màn-thiết-lập-ui-a03-đăng-ký-ui-a04-ui-a06) và [decisions.md Q-13](engineering/decisions.md)):
 
-- *Tạo tài khoản:* email + mật khẩu (>= 8 ký tự), nút hiện/ẩn mật khẩu có nhãn truy cập; lỗi hiện từng ô ngay khi nhập sau lần chạm đầu (không báo lỗi khi mới mở màn); nút chính khóa khi đang xử lý, chống bấm đúp; lỗi từ máy chủ theo mẫu ba phần ("email đã dùng" nói trung tính, không xác nhận email có tài khoản); *Hoặc đăng ký với* Apple/Google theo cờ cấu hình của Chào mừng; không báo thành công khi chưa có máy chủ xác nhận. Email chưa xác thực **không chặn** (chưa có UI nhắc).
+- *Tạo tài khoản:* email + mật khẩu (>= 8 ký tự), nút hiện/ẩn mật khẩu có nhãn truy cập; lỗi hiện từng ô ngay khi nhập sau lần chạm đầu (không báo lỗi khi mới mở màn); nút chính khóa khi đang xử lý, chống bấm đúp; **vị trí lỗi theo ô**: lỗi gắn với một ô hiện ngay DƯỚI ô đó, viền ô đỏ + biểu tượng cảnh báo nhỏ + chữ (không chỉ dựa vào màu): email trống/sai định dạng/đã dùng dưới ô Email; mật khẩu trống/ngắn/yếu dưới ô Mật khẩu; lỗi tự mất khi người dùng sửa ô đó; giá trị đã nhập luôn được giữ. **"Email đã dùng" nói rõ**: "Email này đã có tài khoản." kèm nút **Đăng nhập** (đi `/sign-in`) ngay trong dòng lỗi, vùng chạm đủ 44/48dp (thay bản trung tính trước đó; đánh đổi và biện pháp ở decisions.md Q-13 mục g). **Lỗi chung** (mất mạng, hệ thống bận) hiện trong khung phía trên nút *Tạo tài khoản*, nền hồng nhạt, chữ tối, câu đầu in đậm, có nút **Thử lại** gửi lại đúng thao tác vừa lỗi (vẫn chống bấm đúp). Thông báo là `role=alert` để trình đọc màn hình đọc khi xuất hiện; tự cuộn lỗi vào vùng nhìn khi bàn phím đang mở. Bỏ câu trấn an "tài khoản chưa được tạo" ở màn này. Tên thương hiệu "Đơn Chứng" dùng khoảng trắng không ngắt (U+00A0) để không rớt một chữ xuống dòng; *Hoặc đăng ký với* Apple/Google theo cờ cấu hình của Chào mừng; không báo thành công khi chưa có máy chủ xác nhận. Email chưa xác thực **không chặn** (chưa có UI nhắc).
 - *Tạo hồ sơ shop:* thanh tiến trình **3 đoạn** đếm theo luồng thật (Tạo tài khoản, Thông tin shop, Hoàn tất), màn này là **2/3** (mockup ghi 1/4). **Tên shop bắt buộc** (1-50 ký tự sau khi bỏ khoảng trắng đầu/cuối, có bộ đếm, chặn nhập quá 50). **Nguồn bán không có dấu `*`**, không chọn gì vẫn tiếp tục được; chọn nhiều, "Khác" là một lựa chọn; giá trị lưu là enum. *Bỏ qua, để sau* = tiếp tục không chọn nguồn bán (xóa lựa chọn) nhưng tên shop vẫn bắt buộc.
 - *Hoàn tất:* tiêu đề hai mức, thẻ tóm tắt **chỉ có hai hàng** (Shop của bạn, Nguồn bán; chưa chọn thì hiện "Chưa chọn"); **không hiện hàng Gói dịch vụ** (O-06 chưa chốt). Hai hàng dẫn tới Cài đặt shop (màn khung). *Bắt đầu sử dụng* vào Tổng quan và xóa lịch sử thiết lập (Back không quay lại màn thiết lập); không có nút Back trên màn này. *Xem hướng dẫn nhanh* mở Trợ giúp.
+
+#### Quy ước viết thông báo lỗi
+
+Áp dụng cho mọi thông báo lỗi hiển thị cho người dùng (thay quy ước "ba phần: điều gì xảy ra, ảnh hưởng, làm gì tiếp" trước đây):
+
+- **Tối đa 2 câu, dưới 20 từ, một ý.** Câu đầu nói điều đã xảy ra (in đậm khi có hai câu), câu sau nói việc làm tiếp.
+- **Từ thường ngày**, không thuật ngữ ("dịch vụ tài khoản", "yêu cầu", "xác thực"...); không đổ lỗi cho người dùng; không phủ định kép; không "Có lỗi xảy ra" khi xác định được nguyên nhân.
+- **Chỉ nêu "ảnh hưởng" khi người dùng có thể lo mất dữ liệu** (ví dụ video đã lưu trên máy nhưng chưa tải lên); lỗi nhập liệu hay mất mạng lúc đăng ký không cần câu trấn an.
+- **Có nút hành động khi có việc làm ngay** (Thử lại, Đăng nhập...) thay vì chỉ bảo người dùng "hãy thử lại".
+- **Đặt lỗi đúng chỗ:** lỗi của một ô nằm ngay dưới ô đó; lỗi chung nằm trong khung gần nút chính. Chữ tối trên nền nhạt, chỉ biểu tượng và viền màu đỏ; luôn kèm chữ.
+- Nhóm `AUTH_*` và `signUp.errors` có test chất lượng câu chữ (`src/core/i18n/error-copy.test.ts`).
+
+*Việc sau:* các thông báo của màn khác (docs/04, docs/05, mã `ORDER_*`, `CAMERA_*`, `RETURN_*`...) vẫn theo mẫu cũ, chưa viết lại theo quy ước này; cần BA rà soát từng màn.
 
 ### 5.2 Tổng quan và quét mã — UI-B01, B02
 

@@ -2,6 +2,9 @@ import {
   computeCreateShopLayout,
   computeSetupDoneLayout,
   computeSignUpLayout,
+  estimateBannerHeight,
+  estimateFieldErrorHeight,
+  type SignUpErrorSpecs,
   getSetupDoneGeometry,
   getShieldClipboardGeometry,
   SETUP_ILLUSTRATION_MAX_HEIGHT,
@@ -90,6 +93,85 @@ describe('bố cục ba màn thiết lập', () => {
       const withSocial = computeSignUpLayout(IPHONE, { showSocial: true });
       const without = computeSignUpLayout(IPHONE, { showSocial: false });
       expect(without.estimatedContentHeight).toBeLessThan(withSocial.estimatedContentHeight);
+    });
+
+    describe('có dòng lỗi', () => {
+      const ALL_ERRORS: SignUpErrorSpecs = {
+        email: { chars: 40, withAction: true },
+        password: { chars: 70 },
+        banner: { chars: 70, withRetry: true },
+      };
+      const BANNER_ONLY: SignUpErrorSpecs = { banner: { chars: 70, withRetry: true } };
+
+      it('mỗi dòng lỗi làm nội dung cao thêm (lỗi dưới ô, khung có nút Thử lại)', () => {
+        // 320x568: hình đã ẩn nên chênh lệch chính là chiều cao dòng lỗi
+        const spec = { chars: 40, withAction: true };
+        const without = computeSignUpLayout(SMALL, { showSocial: false });
+        const withEmail = computeSignUpLayout(SMALL, {
+          showSocial: false,
+          errors: { email: spec },
+        });
+        expect(withEmail.estimatedContentHeight - without.estimatedContentHeight).toBeCloseTo(
+          estimateFieldErrorHeight(spec, 280, 1, 48),
+          5,
+        );
+        const banner = estimateBannerHeight(BANNER_ONLY.banner, 342, 1, 48, 12);
+        expect(banner).toBeGreaterThan(estimateFieldErrorHeight({ chars: 40 }, 342, 1, 48));
+        // khung gồm chữ + nút Thử lại cao tối thiểu 56
+        expect(banner).toBeGreaterThanOrEqual(12 + 24 + 22 + 12 + 56);
+      });
+
+      it('dòng lỗi có nút hành động cao ít nhất bằng vùng chạm 48', () => {
+        expect(
+          estimateFieldErrorHeight({ chars: 26, withAction: true }, 342, 1, 48),
+        ).toBeGreaterThanOrEqual(48);
+      });
+
+      it.each([
+        ['390x844', IPHONE],
+        ['375x667', SE],
+        ['320x568', SMALL],
+      ])(
+        '%s: có lỗi thì hình minh họa nhường chỗ, màn cuộn được, nội dung vẫn đo được',
+        (_n, i) => {
+          const plain = computeSignUpLayout(i);
+          const layout = computeSignUpLayout(i, {
+            showSocial: true,
+            touch: 48,
+            errors: ALL_ERRORS,
+          });
+          expect(layout.illustrationHeight).toBeLessThanOrEqual(plain.illustrationHeight);
+          expect(layout.estimatedContentHeight).toBeGreaterThan(
+            plain.estimatedContentHeight - plain.illustrationHeight - 1,
+          );
+          // hình ẩn hoàn toàn trước khi nội dung thiết yếu bị đẩy ra ngoài: còn hình thì phải vừa
+          if (layout.illustrationHeight > 0) expect(layout.scrollNeeded).toBe(false);
+          // không vừa thì phải cuộn (ScrollView) chứ không cắt
+          if (layout.estimatedContentHeight > layout.availableHeight) {
+            expect(layout.scrollNeeded).toBe(true);
+            expect(layout.illustrationHeight).toBe(0);
+          }
+        },
+      );
+
+      it('375x667 và 320x568 với đủ lỗi: cần cuộn, nên nút chính vẫn tới được bằng cuộn', () => {
+        for (const i of [SE, SMALL]) {
+          const layout = computeSignUpLayout(i, {
+            showSocial: true,
+            touch: 48,
+            errors: ALL_ERRORS,
+          });
+          expect(layout.scrollNeeded).toBe(true);
+          expect(layout.illustrationHeight).toBe(0);
+        }
+      });
+
+      it('chữ lớn làm lỗi nhiều dòng hơn', () => {
+        const spec = { chars: 70 };
+        expect(estimateFieldErrorHeight(spec, 300, 1.6, 48)).toBeGreaterThan(
+          estimateFieldErrorHeight(spec, 300, 1, 48),
+        );
+      });
     });
 
     it('màn hẹp dùng tiêu đề nhỏ hơn', () => {

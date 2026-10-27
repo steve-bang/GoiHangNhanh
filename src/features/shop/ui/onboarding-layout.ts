@@ -52,6 +52,16 @@ export const SOCIAL_BUTTON_HEIGHT = 48;
 export const LINK_ROW_HEIGHT = 48;
 export const BODY_LINE_HEIGHT = 22;
 export const CAPTION_LINE_HEIGHT = 16;
+/** Chữ lỗi dưới ô nhập (đủ lớn để đọc, không dùng cỡ chú thích 12). */
+export const FIELD_ERROR_FONT_SIZE = 14;
+export const FIELD_ERROR_LINE_HEIGHT = 20;
+/** Khung lỗi chung phía trên nút chính. */
+export const BANNER_LINE_HEIGHT = 22;
+export const BANNER_PADDING = 12;
+const FIELD_ERROR_MARGIN_TOP = 6;
+const BANNER_GAP = 12;
+/** Ước tính số ký tự trên một dòng để căn chỗ cho lỗi, cùng cách với estimateLines. */
+const FIELD_ERROR_ICON_AND_GAPS = 28;
 
 /** Chiều cao của widget có chữ: không nhỏ hơn mức cơ bản, nở ra theo cỡ chữ hệ thống. */
 function grow(baseHeight: number, textHeight: number, padding: number, scale: number): number {
@@ -136,11 +146,74 @@ const SIGN_UP_TITLE = {
 const SIGN_UP_SUBTITLE_CHARS = 62;
 const SIGN_UP_TITLE_CHARS = 23;
 
+/** Lỗi dưới một ô nhập: số ký tự của chữ và có nút hành động hay không. */
+export interface FieldErrorSpec {
+  chars: number;
+  withAction?: boolean;
+}
+
+/** Khung lỗi chung: ký tự của câu đầu, câu sau (nếu có) và có nút "Thử lại" hay không. */
+export interface BannerErrorSpec {
+  chars: number;
+  withRetry?: boolean;
+}
+
+export interface SignUpErrorSpecs {
+  email?: FieldErrorSpec | undefined;
+  password?: FieldErrorSpec | undefined;
+  banner?: BannerErrorSpec | undefined;
+}
+
+/** Chiều cao dòng lỗi dưới ô nhập (gồm khoảng cách trên). Nút hành động nằm cùng dòng, cao `touch`. */
+export function estimateFieldErrorHeight(
+  spec: FieldErrorSpec | undefined,
+  contentWidth: number,
+  scale: number,
+  touch: number,
+): number {
+  if (!spec) return 0;
+  const textWidth = contentWidth - FIELD_ERROR_ICON_AND_GAPS - (spec.withAction ? 96 : 0);
+  const lines = estimateLines(
+    { chars: spec.chars, fontSize: FIELD_ERROR_FONT_SIZE },
+    textWidth,
+    scale,
+  );
+  const textHeight = lines * FIELD_ERROR_LINE_HEIGHT * scale;
+  return FIELD_ERROR_MARGIN_TOP + (spec.withAction ? Math.max(textHeight, touch) : textHeight);
+}
+
+/** Chiều cao khung lỗi chung (gồm khoảng cách trên là `marginTop`). */
+export function estimateBannerHeight(
+  spec: BannerErrorSpec | undefined,
+  contentWidth: number,
+  scale: number,
+  touch: number,
+  marginTop: number,
+): number {
+  if (!spec) return 0;
+  const lines = estimateLines(
+    { chars: spec.chars, fontSize: 15 },
+    contentWidth - 2 * BANNER_PADDING - 28 - 2,
+    scale,
+  );
+  return (
+    marginTop +
+    2 * BANNER_PADDING +
+    2 +
+    lines * BANNER_LINE_HEIGHT * scale +
+    (spec.withRetry ? BANNER_GAP + Math.max(touch, BUTTON_HEIGHT) : 0)
+  );
+}
+
 export function computeSignUpLayout(
   input: OnboardingLayoutInput,
-  options: { showSocial: boolean } = { showSocial: true },
+  options: { showSocial: boolean; touch?: number; errors?: SignUpErrorSpecs } = {
+    showSocial: true,
+  },
 ): SignUpLayout {
   const b = base(input);
+  const touch = options.touch ?? 48;
+  const errors = options.errors ?? {};
   const title = b.narrow ? SIGN_UP_TITLE.narrow : SIGN_UP_TITLE.regular;
   const gaps = b.compact
     ? {
@@ -182,7 +255,10 @@ export function computeSignUpLayout(
     subtitleLines * BODY_LINE_HEIGHT * b.scale +
     gaps.subtitleToFields +
     2 * grow(fieldHeight, CAPTION_LINE_HEIGHT + BODY_LINE_HEIGHT, 16, b.scale) +
+    estimateFieldErrorHeight(errors.email, b.contentWidth, b.scale, touch) +
+    estimateFieldErrorHeight(errors.password, b.contentWidth, b.scale, touch) +
     gaps.betweenFields +
+    estimateBannerHeight(errors.banner, b.contentWidth, b.scale, touch, 12) +
     gaps.fieldsToButton +
     grow(BUTTON_HEIGHT, BODY_LINE_HEIGHT, 20, b.scale) +
     (options.showSocial

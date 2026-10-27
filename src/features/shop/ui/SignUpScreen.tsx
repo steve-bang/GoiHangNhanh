@@ -11,11 +11,27 @@ import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Icon, Text, useTheme } from '@/shared/ui';
 
 import { normalizeEmail, validateEmail, validatePassword } from '../domain/validation';
-import { FormErrorBanner, IconField, type TextInputHandle } from './onboarding/OnboardingParts';
+import {
+  FormErrorBanner,
+  IconField,
+  resolveErrorMessage,
+  type TextInputHandle,
+} from './onboarding/OnboardingParts';
 import { ShieldClipboardIllustration } from './onboarding/OnboardingIllustrations';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import { OnboardingScaffold } from './onboarding/OnboardingScaffold';
-import { computeSignUpLayout, LINK_ROW_HEIGHT, SOCIAL_BUTTON_HEIGHT } from './onboarding-layout';
+import {
+  computeSignUpLayout,
+  LINK_ROW_HEIGHT,
+  SOCIAL_BUTTON_HEIGHT,
+  type SignUpErrorSpecs,
+} from './onboarding-layout';
+
+/** Lỗi máy chủ gắn với một ô nhập (hiện dưới ô); các lỗi khác hiện ở khung phía trên nút chính. */
+type FieldErrorCode = 'AUTH_EMAIL_IN_USE' | 'AUTH_WEAK_PASSWORD';
+function isFieldErrorCode(code: ErrorCode): code is FieldErrorCode {
+  return code === 'AUTH_EMAIL_IN_USE' || code === 'AUTH_WEAK_PASSWORD';
+}
 
 /** Lỗi lạ (không phải AppError) coi như chưa kết nối được dịch vụ: không bao giờ báo thành công. */
 export function toErrorCode(error: unknown): ErrorCode {
@@ -66,7 +82,7 @@ function SocialButton({
 /**
  * UI-A03, biến thể tạo tài khoản bằng email + mật khẩu (docs/09 mục 4, 5.1; mockup 01-onboarding,
  * màn thứ hai). Dùng cổng xác thực từ `OnboardingFlowProvider`: chỉ chuyển sang bước tiếp theo khi
- * cổng xác nhận đã tạo tài khoản. Lỗi từ cổng hiện theo mẫu ba phần. Mật khẩu chỉ nằm trong state
+ * cổng xác nhận đã tạo tài khoản. Lỗi gắn với ô (email đã dùng, mật khẩu yếu) hiện dưới ô đó; lỗi chung (mạng, hệ thống) hiện ở khung trên nút chính kèm "Thử lại". Mật khẩu chỉ nằm trong state
  * cục bộ của màn này, không đưa vào trạng thái luồng.
  */
 export function SignUpScreen() {
@@ -83,6 +99,9 @@ export function SignUpScreen() {
   const [touched, setTouched] = useState({ email: false, password: false });
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<ErrorCode | null>(null);
+  /** Lỗi máy chủ gắn với một ô: hiện dưới ô đó và mất khi người dùng sửa ô đó. */
+  const [fieldError, setFieldError] = useState<FieldErrorCode | null>(null);
+  const lastTask = useRef<(() => Promise<void>) | null>(null);
   const busyRef = useRef(false);
   const mountedRef = useRef(true);
   const emailRef = useRef<TextInputHandle>(null);
@@ -94,12 +113,6 @@ export function SignUpScreen() {
     };
   }, []);
 
-  const layout = computeSignUpLayout(
-    { width, height, insetTop: insets.top, insetBottom: insets.bottom, fontScale },
-    { showSocial: providers.length > 0 },
-  );
-  const { gaps, title } = layout;
-
   const emailIssue = validateEmail(state.email);
   const passwordIssue = validatePassword(password);
   const emailError =
@@ -109,7 +122,9 @@ export function SignUpScreen() {
             ? 'screens:signUp.errors.emailRequired'
             : 'screens:signUp.errors.emailInvalid',
         )
-      : undefined;
+      : fieldError === 'AUTH_EMAIL_IN_USE'
+        ? t('errors:AUTH_EMAIL_IN_USE')
+        : undefined;
   const passwordError =
     touched.password && passwordIssue
       ? t(
@@ -117,18 +132,45 @@ export function SignUpScreen() {
             ? 'screens:signUp.errors.passwordRequired'
             : 'screens:signUp.errors.passwordTooShort',
         )
-      : undefined;
+      : fieldError === 'AUTH_WEAK_PASSWORD'
+        ? t('errors:AUTH_WEAK_PASSWORD')
+        : undefined;
+  const emailHasSignInAction = !(touched.email && emailIssue) && fieldError === 'AUTH_EMAIL_IN_USE';
+  const bannerMessage = formError ? resolveErrorMessage(t, formError) : null;
+
+  const touch = getMinTouchTarget();
+  const errorSpecs: SignUpErrorSpecs = {
+    email: emailError ? { chars: emailError.length, withAction: emailHasSignInAction } : undefined,
+    password: passwordError ? { chars: passwordError.length } : undefined,
+    banner: bannerMessage
+      ? {
+          chars: bannerMessage.title.length + 1 + (bannerMessage.hint?.length ?? 0),
+          withRetry: true,
+        }
+      : undefined,
+  };
+  const layout = computeSignUpLayout(
+    { width, height, insetTop: insets.top, insetBottom: insets.bottom, fontScale },
+    { showSocial: providers.length > 0, touch, errors: errorSpecs },
+  );
+  const { gaps, title } = layout;
 
   /** Chạy một lời gọi cổng; chống bấm đúp bằng cờ ref (state chưa kịp cập nhật giữa hai lần chạm). */
   const run = async (task: () => Promise<void>) => {
     if (busyRef.current) return;
     busyRef.current = true;
+    lastTask.current = task;
     setBusy(true);
     setFormError(null);
+    setFieldError(null);
     try {
       await task();
     } catch (error) {
-      if (mountedRef.current) setFormError(toErrorCode(error));
+      if (mountedRef.current) {
+        const code = toErrorCode(error);
+        if (isFieldErrorCode(code)) setFieldError(code);
+        else setFormError(code);
+      }
     } finally {
       busyRef.current = false;
       if (mountedRef.current) setBusy(false);
@@ -159,7 +201,11 @@ export function SignUpScreen() {
     });
   };
 
-  const touch = getMinTouchTarget();
+  /** "Thử lại": chạy lại đúng thao tác vừa lỗi (cùng dữ liệu, vẫn chống bấm đúp). */
+  const retry = () => {
+    const task = lastTask.current;
+    if (task) void run(task);
+  };
 
   return (
     <OnboardingScaffold
@@ -188,10 +234,20 @@ export function SignUpScreen() {
           onChangeText={(email) => {
             setTouched((prev) => ({ ...prev, email: true }));
             setFormError(null);
+            setFieldError((prev) => (prev === 'AUTH_EMAIL_IN_USE' ? null : prev));
             dispatch({ type: 'email_changed', email });
           }}
           onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
           error={emailError}
+          errorAction={
+            emailHasSignInAction
+              ? {
+                  label: t('screens:signUp.signIn'),
+                  onPress: () => navigation.push(ROUTES.signIn),
+                  testID: 'signup-email-error-action',
+                }
+              : undefined
+          }
           inputRef={emailRef}
           inputProps={{
             keyboardType: 'email-address',
@@ -213,6 +269,7 @@ export function SignUpScreen() {
           onChangeText={(value) => {
             setTouched((prev) => ({ ...prev, password: true }));
             setFormError(null);
+            setFieldError((prev) => (prev === 'AUTH_WEAK_PASSWORD' ? null : prev));
             setPassword(value);
           }}
           onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
@@ -245,7 +302,7 @@ export function SignUpScreen() {
 
       {formError ? (
         <View style={{ marginTop: spacing.md }}>
-          <FormErrorBanner code={formError} />
+          <FormErrorBanner code={formError} onRetry={retry} />
         </View>
       ) : null}
 

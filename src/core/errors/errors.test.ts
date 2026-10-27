@@ -11,12 +11,13 @@ describe('mã lỗi nghiệp vụ', () => {
   });
 
   it('mỗi mã có thông báo i18n, trừ mã docs chưa định nghĩa câu thông báo', () => {
-    const messages = resources.vi.errors as Record<string, string>;
+    const messages = resources.vi.errors as Record<string, unknown>;
     for (const code of Object.values(ERROR_CODES)) {
       if (CODES_WITHOUT_DOCUMENTED_MESSAGE.includes(code)) {
         expect(messages[code]).toBeUndefined();
       } else {
-        expect(messages[code]).toEqual(expect.any(String));
+        expect(messages[code]).toEqual(expect.anything());
+        expect(['string', 'object']).toContain(typeof messages[code]);
       }
     }
   });

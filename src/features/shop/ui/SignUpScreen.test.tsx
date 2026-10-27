@@ -1,7 +1,8 @@
 import { act, fireEvent, screen, within } from '@testing-library/react-native';
-import { useWindowDimensions } from 'react-native';
+import { StyleSheet, useWindowDimensions } from 'react-native';
 
 import { AppError } from '@/core/errors/app-error';
+import { colors } from '@/core/theme';
 import { resources } from '@/core/i18n/resources';
 import { ROUTES } from '@/core/navigation';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
@@ -29,6 +30,9 @@ jest.mock('@/core/config/feature-flags', () => ({
 }));
 
 const errors = resources.vi.errors;
+/** Thông báo hai câu gồm `title` (in đậm) + `hint`; một câu chỉ có chuỗi. */
+const fullText = (m: string | { title: string; hint: string }) =>
+  typeof m === 'string' ? m : `${m.title} ${m.hint}`;
 
 type Tree = { [key: string]: string | Tree };
 /** Chỉ các giá trị chữ (hiển thị cho người dùng), không gồm tên khóa. */
@@ -72,7 +76,8 @@ describe('UI-A03 Tạo tài khoản: giao diện', () => {
   it('hiện tiêu đề, dòng phụ, hai ô, nút chính, nhóm social, liên kết đăng nhập, hình và nút quay lại', async () => {
     await renderWithProviders(<SignUpScreen />);
     expect(screen.getByTestId('screen-UI-A03')).toBeOnTheScreen();
-    expect(screen.getByRole('header')).toHaveTextContent(/Tạo tài khoản\s*Đơn Chứng/);
+    // toHaveTextContent gộp khoảng trắng nên không thấy U+00A0: so sánh chuỗi gốc
+    expect(screen.getByRole('header').props.children).toBe('Tạo tài khoản\nĐơn\u00a0Chứng');
     expect(
       screen.getByText('Bắt đầu hành trình bảo vệ đơn hàng của bạn chỉ trong vài phút!'),
     ).toBeOnTheScreen();
@@ -142,10 +147,10 @@ describe('UI-A03 Tạo tài khoản: kiểm tra dữ liệu', () => {
   it('hiện lỗi từng ô ngay khi nhập; sửa đúng thì lỗi biến mất', async () => {
     await renderWithProviders(<SignUpScreen />);
     await fireEvent.changeText(screen.getByTestId('signup-email'), 'abc');
-    expect(screen.getByText(/Email chưa đúng định dạng/)).toBeOnTheScreen();
+    expect(screen.getByText('Email chưa đúng. Ví dụ: ten@cuahang.com')).toBeOnTheScreen();
     expect(screen.queryByText(/Mật khẩu cần/)).toBeNull();
     await fireEvent.changeText(screen.getByTestId('signup-password'), '1234567');
-    expect(screen.getByText(/Mật khẩu cần có ít nhất 8 ký tự/)).toBeOnTheScreen();
+    expect(screen.getByText('Mật khẩu cần ít nhất 8 ký tự.')).toBeOnTheScreen();
     await fireEvent.changeText(screen.getByTestId('signup-email'), VALID_EMAIL);
     await fireEvent.changeText(screen.getByTestId('signup-password'), '12345678');
     expect(screen.queryByText(/Email chưa đúng/)).toBeNull();
@@ -207,41 +212,132 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
     expect(submitButton().props.accessibilityState).toMatchObject({ disabled: false });
   });
 
-  it('lỗi từ cổng: hiện thông báo ba phần, không điều hướng, nút mở lại để thử lại', async () => {
+  it('lỗi mạng: khung phía trên nút chính, câu đầu in đậm, có Thử lại; giữ nguyên giá trị đã nhập', async () => {
     const fake = createFakeGateways();
     await renderWithProviders(<SignUpScreen />, { gateways: fake });
     await fill(VALID_EMAIL, VALID_PASSWORD);
     fake.auth.failNext('AUTH_NETWORK_ERROR');
     await fireEvent.press(submitButton());
-    expect(
-      within(screen.getByTestId('form-error')).getByText(errors.AUTH_NETWORK_ERROR),
-    ).toBeOnTheScreen();
+    const banner = screen.getByTestId('form-error');
+    expect(banner.props.accessibilityRole).toBe('alert');
+    expect(banner.props.accessibilityLiveRegion).toBe('assertive');
+    expect(within(banner).getByText(fullText(errors.AUTH_NETWORK_ERROR))).toBeOnTheScreen();
+    expect(within(banner).getByText('Mất kết nối mạng.').props.style).toEqual(
+      expect.arrayContaining([expect.objectContaining({ fontWeight: '700' })]),
+    );
+    expect(within(banner).getByRole('button', { name: 'Thử lại' })).toBeOnTheScreen();
+    // không phải lỗi theo ô
+    expect(screen.queryByTestId('signup-email-error')).toBeNull();
+    expect(screen.queryByTestId('signup-password-error')).toBeNull();
+    // giữ nguyên dữ liệu
+    expect(screen.getByTestId('signup-email').props.value).toBe(VALID_EMAIL);
+    expect(screen.getByTestId('signup-password').props.value).toBe(VALID_PASSWORD);
     expect(mockNavigation.push).not.toHaveBeenCalled();
     expect(submitButton().props.accessibilityState).toMatchObject({ disabled: false });
-    await fireEvent.press(submitButton());
-    expect(screen.queryByTestId('form-error')).toBeNull();
-    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.createShop);
   });
 
-  it.each(['AUTH_EMAIL_IN_USE', 'AUTH_WEAK_PASSWORD', 'AUTH_SERVICE_UNAVAILABLE'] as const)(
-    'mã %s hiện đúng thông báo, mỗi thông báo có ít nhất ba câu',
-    async (code) => {
-      const fake = createFakeGateways();
-      await renderWithProviders(<SignUpScreen />, { gateways: fake });
-      await fill(VALID_EMAIL, VALID_PASSWORD);
-      fake.auth.failNext(code);
-      await fireEvent.press(submitButton());
-      const text = errors[code];
-      expect(within(screen.getByTestId('form-error')).getByText(text)).toBeOnTheScreen();
-      expect(text.split(/(?<=\.)\s+/).length).toBeGreaterThanOrEqual(3);
-    },
-  );
+  it('Thử lại gửi lại đúng yêu cầu (cùng email, mật khẩu) rồi sang bước sau', async () => {
+    const fake = createFakeGateways();
+    await renderWithProviders(<SignUpScreen />, { gateways: fake });
+    await fill(VALID_EMAIL, VALID_PASSWORD);
+    fake.auth.failNext('AUTH_NETWORK_ERROR');
+    await fireEvent.press(submitButton());
+    await fireEvent.press(screen.getByRole('button', { name: 'Thử lại' }));
+    // lần đầu lỗi + lần Thử lại: hai lời gọi, cùng dữ liệu
+    const same = { email: VALID_EMAIL, password: VALID_PASSWORD };
+    expect(fake.auth.signUpCalls).toEqual([same, same]);
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.createShop);
+    expect(screen.queryByTestId('form-error')).toBeNull();
+  });
 
-  it('"email đã dùng" không xác nhận tài khoản có tồn tại', () => {
-    const text = errors.AUTH_EMAIL_IN_USE.toLowerCase();
-    for (const leak of ['đã được đăng ký', 'đã tồn tại', 'đã có tài khoản', 'đã được sử dụng']) {
-      expect(text).not.toContain(leak);
-    }
+  it('Thử lại chống bấm đúp: chỉ một lần gọi cổng khi đang xử lý', async () => {
+    const signUpWithEmail = jest
+      .fn<Promise<AuthAccount>, [unknown]>()
+      .mockRejectedValueOnce(new AppError('AUTH_SERVICE_UNAVAILABLE'))
+      .mockImplementation(() => new Promise<AuthAccount>(() => undefined));
+    const fake = createFakeGateways();
+    const gateways: Gateways = {
+      shop: fake.shop,
+      auth: { signUpWithEmail, signInWithProvider: () => Promise.resolve() },
+    };
+    await renderWithProviders(<SignUpScreen />, { gateways });
+    await fill(VALID_EMAIL, VALID_PASSWORD);
+    await fireEvent.press(submitButton());
+    expect(signUpWithEmail).toHaveBeenCalledTimes(1);
+    const retry = screen.getByRole('button', { name: 'Thử lại' });
+    await fireEvent.press(retry);
+    await fireEvent.press(retry);
+    await fireEvent.press(submitButton());
+    expect(signUpWithEmail).toHaveBeenCalledTimes(2);
+  });
+
+  it('hệ thống bận: khung phía trên nút chính, có Thử lại', async () => {
+    const fake = createFakeGateways();
+    await renderWithProviders(<SignUpScreen />, { gateways: fake });
+    await fill(VALID_EMAIL, VALID_PASSWORD);
+    fake.auth.failNext('AUTH_SERVICE_UNAVAILABLE');
+    await fireEvent.press(submitButton());
+    const banner = screen.getByTestId('form-error');
+    expect(
+      within(banner).getByText('Hệ thống đang bận. Bạn thử lại sau ít phút nhé.'),
+    ).toBeOnTheScreen();
+    expect(within(banner).getByRole('button', { name: 'Thử lại' })).toBeOnTheScreen();
+  });
+
+  it('email đã dùng: lỗi nằm DƯỚI ô Email (không phải khung chung), có nút Đăng nhập mở /sign-in', async () => {
+    const fake = createFakeGateways();
+    await renderWithProviders(<SignUpScreen />, { gateways: fake });
+    await fill(VALID_EMAIL, VALID_PASSWORD);
+    fake.auth.failNext('AUTH_EMAIL_IN_USE');
+    await fireEvent.press(submitButton());
+    expect(screen.queryByTestId('form-error')).toBeNull();
+    expect(screen.queryByTestId('signup-password-error')).toBeNull();
+    const error = screen.getByTestId('signup-email-error');
+    expect(error.props.accessibilityRole).toBe('alert');
+    expect(within(error).getByText('Email này đã có tài khoản.')).toBeOnTheScreen();
+    await fireEvent.press(within(error).getByRole('button', { name: 'Đăng nhập' }));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.signIn);
+    // giữ nguyên dữ liệu đã nhập
+    expect(screen.getByTestId('signup-email').props.value).toBe(VALID_EMAIL);
+    expect(screen.getByTestId('signup-password').props.value).toBe(VALID_PASSWORD);
+  });
+
+  it('mật khẩu yếu: lỗi nằm DƯỚI ô Mật khẩu, không có nút; mất khi sửa mật khẩu, giữ email', async () => {
+    const fake = createFakeGateways();
+    await renderWithProviders(<SignUpScreen />, { gateways: fake });
+    await fill(VALID_EMAIL, VALID_PASSWORD);
+    fake.auth.failNext('AUTH_WEAK_PASSWORD');
+    await fireEvent.press(submitButton());
+    expect(screen.queryByTestId('form-error')).toBeNull();
+    expect(screen.queryByTestId('signup-email-error')).toBeNull();
+    const error = screen.getByTestId('signup-password-error');
+    expect(error.props.accessibilityRole).toBe('alert');
+    expect(within(error).getByText(errors.AUTH_WEAK_PASSWORD as string)).toBeOnTheScreen();
+    expect(within(error).queryByRole('button')).toBeNull();
+    expect(screen.getByTestId('signup-email').props.value).toBe(VALID_EMAIL);
+    await fireEvent.changeText(screen.getByTestId('signup-email'), 'khac@example.com');
+    expect(screen.getByTestId('signup-password-error')).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByTestId('signup-password'), 'mat-khau-moi-9');
+    expect(screen.queryByTestId('signup-password-error')).toBeNull();
+  });
+
+  it('lỗi theo ô dùng chữ tối + biểu tượng cảnh báo, viền ô đổi đỏ', async () => {
+    await renderWithProviders(<SignUpScreen />);
+    await fireEvent.changeText(screen.getByTestId('signup-email'), 'abc');
+    const error = screen.getByTestId('signup-email-error');
+    expect(within(error).getByText('Email chưa đúng. Ví dụ: ten@cuahang.com')).toBeOnTheScreen();
+    expect(error.props.accessibilityRole).toBe('alert');
+    const text = within(error).getByText('Email chưa đúng. Ví dụ: ten@cuahang.com');
+    expect(StyleSheet.flatten(text.props.style)).toMatchObject({ color: colors.ink });
+  });
+
+  it.each([
+    ['mật khẩu quá ngắn', '1234567', 'signup-password-error', 'Mật khẩu cần ít nhất 8 ký tự.'],
+  ])('%s hiện dưới ô Mật khẩu', async (_n, value, testID, text) => {
+    await renderWithProviders(<SignUpScreen />);
+    await fireEvent.changeText(screen.getByTestId('signup-password'), value);
+    expect(within(screen.getByTestId(testID)).getByText(text)).toBeOnTheScreen();
+    expect(screen.queryByTestId('form-error')).toBeNull();
   });
 
   it('bản "chưa kết nối": báo AUTH_SERVICE_UNAVAILABLE, không điều hướng, không báo đã tạo', async () => {
@@ -249,7 +345,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
     await fill(VALID_EMAIL, VALID_PASSWORD);
     await fireEvent.press(submitButton());
     expect(
-      within(screen.getByTestId('form-error')).getByText(errors.AUTH_SERVICE_UNAVAILABLE),
+      within(screen.getByTestId('form-error')).getByText(fullText(errors.AUTH_SERVICE_UNAVAILABLE)),
     ).toBeOnTheScreen();
     expect(mockNavigation.push).not.toHaveBeenCalled();
   });
@@ -267,18 +363,23 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
     await fill(VALID_EMAIL, VALID_PASSWORD);
     await fireEvent.press(submitButton());
     expect(
-      within(screen.getByTestId('form-error')).getByText(errors.AUTH_SERVICE_UNAVAILABLE),
+      within(screen.getByTestId('form-error')).getByText(fullText(errors.AUTH_SERVICE_UNAVAILABLE)),
     ).toBeOnTheScreen();
     expect(mockNavigation.push).not.toHaveBeenCalled();
   });
 
-  it('sửa email sau lỗi thì xóa thông báo lỗi', async () => {
+  it('sửa email sau lỗi "đã có tài khoản" thì lỗi mất; lỗi chung mất khi sửa bất kỳ ô nào', async () => {
     const fake = createFakeGateways({ takenEmails: [VALID_EMAIL] });
     await renderWithProviders(<SignUpScreen />, { gateways: fake });
     await fill(VALID_EMAIL, VALID_PASSWORD);
     await fireEvent.press(submitButton());
-    expect(screen.getByTestId('form-error')).toBeOnTheScreen();
+    expect(screen.getByTestId('signup-email-error')).toBeOnTheScreen();
     await fireEvent.changeText(screen.getByTestId('signup-email'), 'khac@example.com');
+    expect(screen.queryByTestId('signup-email-error')).toBeNull();
+    fake.auth.failNext('AUTH_NETWORK_ERROR');
+    await fireEvent.press(submitButton());
+    expect(screen.getByTestId('form-error')).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByTestId('signup-password'), 'mat-khau-khac-1');
     expect(screen.queryByTestId('form-error')).toBeNull();
   });
 });
@@ -299,7 +400,7 @@ describe('UI-A03 Tạo tài khoản: đăng ký với Apple/Google', () => {
     await renderWithProviders(<SignUpScreen />, { gateways: createUnavailableGateways() });
     await fireEvent.press(screen.getByRole('button', { name: 'Đăng ký với Google' }));
     expect(
-      within(screen.getByTestId('form-error')).getByText(errors.AUTH_SERVICE_UNAVAILABLE),
+      within(screen.getByTestId('form-error')).getByText(fullText(errors.AUTH_SERVICE_UNAVAILABLE)),
     ).toBeOnTheScreen();
     expect(mockNavigation.push).not.toHaveBeenCalled();
   });

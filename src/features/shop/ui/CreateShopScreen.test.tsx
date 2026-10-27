@@ -24,6 +24,8 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
 const mockWindow = jest.mocked(useWindowDimensions);
 
 const errors = resources.vi.errors;
+const fullText = (m: string | { title: string; hint: string }) =>
+  typeof m === 'string' ? m : `${m.title} ${m.hint}`;
 
 beforeEach(() => {
   mockWindow.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1 });
@@ -215,14 +217,14 @@ describe('UI-A04 Tạo hồ sơ shop: xử lý và lỗi', () => {
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.setupDone);
   });
 
-  it('lỗi mạng: thông báo ba phần, không điều hướng, thử lại được', async () => {
+  it('lỗi mạng: hiện thông báo hai câu, không điều hướng, thử lại được', async () => {
     const fake = createFakeGateways();
     await renderWithProviders(<CreateShopScreen />, { gateways: fake });
     await fireEvent.changeText(nameInput(), 'Shop');
     fake.shop.failNext('AUTH_NETWORK_ERROR');
     await fireEvent.press(submit());
     expect(
-      within(screen.getByTestId('form-error')).getByText(errors.AUTH_NETWORK_ERROR),
+      within(screen.getByTestId('form-error')).getByText(fullText(errors.AUTH_NETWORK_ERROR)),
     ).toBeOnTheScreen();
     expect(mockNavigation.push).not.toHaveBeenCalled();
     await fireEvent.press(submit());
@@ -235,7 +237,7 @@ describe('UI-A04 Tạo hồ sơ shop: xử lý và lỗi', () => {
     await fireEvent.changeText(nameInput(), 'Shop');
     await fireEvent.press(submit());
     expect(
-      within(screen.getByTestId('form-error')).getByText(errors.AUTH_SERVICE_UNAVAILABLE),
+      within(screen.getByTestId('form-error')).getByText(fullText(errors.AUTH_SERVICE_UNAVAILABLE)),
     ).toBeOnTheScreen();
     expect(mockNavigation.push).not.toHaveBeenCalled();
   });

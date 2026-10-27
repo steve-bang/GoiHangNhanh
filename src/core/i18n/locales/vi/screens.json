@@ -120,7 +120,7 @@
     "privacy": "Chính sách quyền riêng tư"
   },
   "signUp": {
-    "title": "Tạo tài khoản\nĐơn Chứng",
+    "title": "Tạo tài khoản\nĐơn\u00a0Chứng",
     "subtitle": "Bắt đầu hành trình bảo vệ đơn hàng của bạn chỉ trong vài phút!",
     "emailLabel": "Email của bạn",
     "emailPlaceholder": "shop@example.com",
@@ -138,9 +138,9 @@
     "signIn": "Đăng nhập",
     "errors": {
       "emailRequired": "Hãy nhập email của bạn.",
-      "emailInvalid": "Email chưa đúng định dạng. Hãy kiểm tra lại, ví dụ ten@cuahang.com.",
+      "emailInvalid": "Email chưa đúng. Ví dụ: ten@cuahang.com",
       "passwordRequired": "Hãy nhập mật khẩu.",
-      "passwordTooShort": "Mật khẩu cần có ít nhất 8 ký tự. Hãy nhập thêm ký tự."
+      "passwordTooShort": "Mật khẩu cần ít nhất 8 ký tự."
     }
   },
   "createShop": {
