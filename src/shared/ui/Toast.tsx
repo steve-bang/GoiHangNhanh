@@ -27,6 +27,11 @@ export interface ToastOptions {
    * giữ lại (người dùng cần đọc kịp, trình đọc màn hình cần thời gian).
    */
   durationMs?: number;
+  /**
+   * Vị trí: `bottom` (mặc định, gần đáy) hoặc `top` (dưới vùng an toàn phía trên). Dùng `top` khi đáy
+   * màn có nút/liên kết mà thông báo không được che (ví dụ Chào mừng sau khi đăng xuất).
+   */
+  placement?: 'bottom' | 'top';
 }
 
 /** Thời gian hiện mặc định của thông báo tự ẩn (ms). */
@@ -43,6 +48,7 @@ interface ToastState {
   id: number;
   message: string;
   tone: ToastTone;
+  placement: 'bottom' | 'top';
 }
 
 /**
@@ -67,7 +73,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       clearTimer();
       const tone = options.tone ?? 'info';
       counter.current += 1;
-      setToast({ id: counter.current, message, tone });
+      setToast({ id: counter.current, message, tone, placement: options.placement ?? 'bottom' });
       const duration = options.durationMs ?? (tone === 'error' ? 0 : TOAST_DEFAULT_DURATION_MS);
       if (duration > 0) timer.current = setTimeout(dismiss, duration);
     },
@@ -113,7 +119,12 @@ function ToastView({ toast, onDismiss }: { toast: ToastState; onDismiss: () => v
       pointerEvents="box-none"
       style={[
         styles.host,
-        { paddingHorizontal: tokens.space.lg, bottom: insets.bottom + tokens.space.lg },
+        {
+          paddingHorizontal: tokens.space.lg,
+          ...(toast.placement === 'top'
+            ? { top: insets.top + tokens.space.lg }
+            : { bottom: insets.bottom + tokens.space.lg }),
+        },
       ]}
     >
       <View

@@ -74,7 +74,8 @@ export function useSignOut() {
       }
       setStep('closed');
       navigation.reset(ROUTES.welcome);
-      toast.show(t('personal:signOut.success'), { tone: 'success' });
+      // Đặt ở đầu màn: đáy Chào mừng có liên kết Điều khoản/Chính sách mà thông báo ở đáy sẽ che mất.
+      toast.show(t('personal:signOut.success'), { tone: 'success', placement: 'top' });
     } finally {
       busyRef.current = false;
       setBusy(false);

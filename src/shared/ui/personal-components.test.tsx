@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { Text as RNText } from 'react-native';
+import { StyleSheet, Text as RNText } from 'react-native';
 import { useState } from 'react';
 
 import { getMinTouchTarget } from '@/platform';
@@ -211,6 +211,33 @@ describe('Toast', () => {
     expect(screen.getByTestId('toast')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'Đóng thông báo' }));
     expect(screen.queryByTestId('toast')).toBeNull();
+  });
+
+  it('vị trí: mặc định gần đáy; placement top thì neo ở đầu màn (không che nút ở đáy)', async () => {
+    function Placed() {
+      const toast = useToast();
+      return (
+        <>
+          <RNText testID="bottom" onPress={() => toast.show('Đáy')}>
+            a
+          </RNText>
+          <RNText testID="top" onPress={() => toast.show('Đầu', { placement: 'top' })}>
+            b
+          </RNText>
+        </>
+      );
+    }
+    const hostStyle = () => {
+      const host = screen.getByTestId('toast').parent;
+      return StyleSheet.flatten(host?.props.style as never) as Record<string, unknown>;
+    };
+    await renderWithProviders(<Placed />);
+    await fireEvent.press(screen.getByTestId('bottom'));
+    expect(hostStyle()).toHaveProperty('bottom');
+    expect(hostStyle()).not.toHaveProperty('top');
+    await fireEvent.press(screen.getByTestId('top'));
+    expect(hostStyle()).toHaveProperty('top');
+    expect(hostStyle()).not.toHaveProperty('bottom');
   });
 
   it('thông báo mới thay thông báo cũ', async () => {
