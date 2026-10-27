@@ -1,27 +1,61 @@
 {
   "home": {
+    "greeting": "Chào mừng trở lại!",
+    "notifications": "Xem thông báo",
+    "bannerTitle": "Ghi hình đóng gói đầy đủ, lưu giữ rõ ràng",
+    "bannerHint": "Ghi hình – Lưu trữ – Theo dõi trạng thái",
     "packOrder": "Đóng gói đơn",
-    "packOrderHint": "Quét mã, rồi quay video đóng gói và niêm phong",
+    "packOrderHint": "Ghi hình đóng gói và niêm phong",
     "receiveReturn": "Nhận hàng hoàn",
-    "receiveReturnHint": "Ghi nhận kiện hàng, quay video mở kiện và kiểm hàng",
-    "recentOrders": "Đơn gần đây",
-    "allOrders": "Xem tất cả đơn",
-    "tasks": "Việc cần xử lý",
-    "task": {
-      "syncError": "{{count}} video lỗi tải lên cần xử lý",
-      "unfinishedSession": "{{count}} phiên quay chưa hoàn tất",
-      "storage": "Dung lượng trên thiết bị sắp đầy"
-    }
+    "receiveReturnHint": "Ghi hình mở kiện và kiểm tra hàng",
+    "quick": {
+      "scan": "Quét mã đơn",
+      "quickOrder": "Tạo đơn nhanh",
+      "orders": "Danh sách đơn",
+      "evidence": "Bằng chứng"
+    },
+    "todayTitle": "Thống kê hôm nay",
+    "todayDetail": "Xem chi tiết",
+    "stat": {
+      "packed": "Đơn đã đóng gói",
+      "uploaded": "Đã tải lên",
+      "error": "Lỗi – cần xử lý"
+    },
+    "tipTitle": "Ghi hình đủ các bước",
+    "tipHint": "Quay từ lúc lấy hàng đến khi dán niêm phong xong.",
+    "tipAction": "Xem hướng dẫn"
   },
   "scan": {
-    "cameraPlaceholder": "Khung quét mã (minh họa, chưa kết nối camera)",
-    "instruction": "Đưa mã QR hoặc mã vạch vào khung để quét. Quét xong ứng dụng sẽ tự tra cứu.",
-    "flashlight": "Đèn pin",
-    "savedOrders": "Tìm đơn đã lưu",
+    "hint": "Đưa mã QR / mã vạch vào khung hình để quét tự động",
+    "manualButton": "Nhập mã đơn thủ công",
     "manualTitle": "Nhập mã thủ công",
     "manualLabel": "Mã đơn hoặc mã vận đơn",
     "manualPlaceholder": "Ví dụ: mã trên nhãn vận chuyển",
-    "lookup": "Tra cứu mã"
+    "lookup": "Tra cứu mã",
+    "savedOrders": "Tìm đơn đã lưu",
+    "flashlightOn": "Bật đèn pin",
+    "flashlightOff": "Tắt đèn pin",
+    "help": "Trợ giúp quét mã",
+    "lastScanned": "Vừa quét: {{code}}",
+    "tips": {
+      "title": "Mẹo nhỏ cho bạn",
+      "one": "Quét mã trên kiện hàng hoặc nhãn đơn",
+      "two": "Ánh sáng đủ, mã rõ nét",
+      "three": "Nếu không quét được, hãy nhập tay nhé!"
+    },
+    "permission": {
+      "checking": "Đang mở camera…",
+      "askTitle": "Cần dùng camera để quét mã",
+      "askMessage": "Bạn vẫn có thể nhập mã bằng tay.",
+      "askAction": "Cho phép camera",
+      "blockedTitle": "Camera đang bị tắt",
+      "blockedMessage": "Bật camera trong Cài đặt để quét mã, hoặc nhập mã bằng tay.",
+      "blockedAction": "Mở Cài đặt"
+    },
+    "cameraError": {
+      "title": "Không mở được camera",
+      "message": "Có thể ứng dụng khác đang dùng camera. Bạn vẫn có thể nhập mã bằng tay."
+    }
   },
   "quickOrder": {
     "notFound": "Chưa có hồ sơ đơn này. Nhập nhanh vài thông tin để bắt đầu; ứng dụng không lấy dữ liệu từ sàn.",

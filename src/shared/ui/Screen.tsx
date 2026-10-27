@@ -14,6 +14,8 @@ interface ScreenProps {
   title: string;
   onBack?: () => void;
   headerRight?: ReactNode;
+  /** Thay thanh tiêu đề chuẩn bằng phần đầu riêng của màn (Trang chủ: avatar + lời chào + chuông). */
+  header?: ReactNode;
   /** Nút chính ghim gần đáy; được đẩy lên khỏi bàn phím. */
   footer?: ReactNode;
   /** `false` cho màn cố định không cuộn (ví dụ màn camera). Mặc định cuộn được. */
@@ -35,6 +37,7 @@ export function Screen({
   title,
   onBack,
   headerRight,
+  header,
   footer,
   scroll = true,
   inTabs = false,
@@ -64,11 +67,13 @@ export function Screen({
       testID={testID}
       style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}
     >
-      <ScreenHeader
-        title={title}
-        {...(onBack ? { onBack } : {})}
-        {...(headerRight ? { trailing: headerRight } : {})}
-      />
+      {header ?? (
+        <ScreenHeader
+          title={title}
+          {...(onBack ? { onBack } : {})}
+          {...(headerRight ? { trailing: headerRight } : {})}
+        />
+      )}
       <OfflineBanner visible={offline} />
       <KeyboardAvoidingView style={styles.flex} behavior={getKeyboardAvoidingBehavior()}>
         {scroll ? (

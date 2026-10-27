@@ -21,9 +21,10 @@ export const PlansScreen = () => <PlaceholderScreen uiCode="UI-H02" />;
 export const CheckoutScreen = () => <PlaceholderScreen uiCode="UI-H03" />;
 export const PlanLimitScreen = () => <PlaceholderScreen uiCode="UI-H04" />;
 
-export const ProfileScreen = () => <PlaceholderScreen uiCode="UI-I01" />;
 export const ShopSettingsScreen = () => <PlaceholderScreen uiCode="UI-I02" />;
 export const MembersScreen = () => <PlaceholderScreen uiCode="UI-I03" />;
 export const NotificationsScreen = () => <PlaceholderScreen uiCode="UI-I04" />;
 export const SecurityScreen = () => <PlaceholderScreen uiCode="UI-I05" />;
 export const HelpScreen = () => <PlaceholderScreen uiCode="UI-I06" />;
+/** Tab Thông báo (danh sách): khung, chưa có dữ liệu thông báo thật (D-16). */
+export const NotificationListScreen = () => <PlaceholderScreen uiCode="UI-I07" hideBack inTabs />;

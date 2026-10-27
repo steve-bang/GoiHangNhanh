@@ -3,8 +3,9 @@
  * dẫn: màn hình điều hướng bằng `ROUTES.<tên>`, không rải chuỗi đường dẫn. Một test (routes.test.ts)
  * đối chiếu bảng này với các tệp thật trong `src/app` để hai nơi không lệch nhau.
  *
- * `tabBar`: thanh tab dưới có hiện không. Chỉ nhóm tab (Tổng quan, Đơn hàng, Hàng hoàn, Đồng bộ)
- * hiện thanh tab; màn quay (UI-C03, UI-D04) bắt buộc ẩn (docs/09 mục 2).
+ * `tabBar`: thanh tab dưới có hiện không. Chỉ nhóm tab (Trang chủ, Đơn hàng, Thông báo, Cá nhân)
+ * hiện thanh tab; màn quay (UI-C03, UI-D04) bắt buộc ẩn (docs/09 mục 2); màn quét UI-B02 nằm trong nhóm
+ * tab nhưng cũng ẩn (xem `isTabBarHiddenAt`).
  *
  * Mã `UI-` là mã danh mục giao diện, KHÁC mã đặc tả quy trình A01-A08/B01-B08 (xem CLAUDE.md).
  */
@@ -59,6 +60,7 @@ export const UI_CODES = [
   'UI-I04',
   'UI-I05',
   'UI-I06',
+  'UI-I07',
 ] as const;
 
 export type UiCode = (typeof UI_CODES)[number];
@@ -88,7 +90,7 @@ export const ROUTES = {
   newPassword: route('/new-password', 'UI-A09'),
   // Nhóm B + C01 - tab Tổng quan
   home: route('/home', 'UI-B01', true),
-  scan: route('/home/scan', 'UI-B02', true),
+  scan: route('/home/scan', 'UI-B02'),
   search: route('/home/search', 'UI-B03', true),
   quickOrder: route('/home/quick-order', 'UI-B04', true),
   batch: route('/home/batch', 'UI-B05', true),
@@ -100,13 +102,13 @@ export const ROUTES = {
   packSaved: route('/pack-saved', 'UI-C05'),
   packDone: route('/pack-done', 'UI-C06'),
   // Nhóm D - tab Hàng hoàn (riêng UI-D04 là màn quay, ẩn thanh tab)
-  returns: route('/returns', 'UI-D01', true),
-  returnFindOrder: route('/returns/find-order', 'UI-D02', true),
-  returnExterior: route('/returns/package-exterior', 'UI-D03', true),
+  returns: route('/returns', 'UI-D01'),
+  returnFindOrder: route('/returns/find-order', 'UI-D02'),
+  returnExterior: route('/returns/package-exterior', 'UI-D03'),
   returnRecord: route('/record-return', 'UI-D04'),
-  returnItems: route('/returns/items-check', 'UI-D05', true),
-  returnReview: route('/returns/review', 'UI-D06', true),
-  returnDone: route('/returns/done', 'UI-D07', true),
+  returnItems: route('/returns/items-check', 'UI-D05'),
+  returnReview: route('/returns/review', 'UI-D06'),
+  returnDone: route('/returns/done', 'UI-D07'),
   // Nhóm E - tab Đơn hàng
   orders: route('/orders', 'UI-E01', true),
   orderDetail: route('/orders/[orderId]', 'UI-E02', true),
@@ -114,9 +116,9 @@ export const ROUTES = {
   evidenceDetail: route('/orders/[orderId]/evidence/[evidenceId]', 'UI-E04', true),
   orderHistory: route('/orders/[orderId]/history', 'UI-E05', true),
   // Nhóm F - tab Đồng bộ
-  sync: route('/sync', 'UI-F01', true),
-  syncError: route('/sync/[jobId]', 'UI-F02', true),
-  storage: route('/sync/storage', 'UI-F03', true),
+  sync: route('/sync', 'UI-F01'),
+  syncError: route('/sync/[jobId]', 'UI-F02'),
+  storage: route('/sync/storage', 'UI-F03'),
   // Nhóm G - tranh chấp: không phải tab (O-14), vào từ hồ sơ đơn/hàng hoàn/việc cần xử lý
   disputes: route('/disputes', 'UI-G01'),
   disputeNew: route('/disputes/new', 'UI-G02'),
@@ -124,16 +126,32 @@ export const ROUTES = {
   disputeExport: route('/disputes/export', 'UI-G04'),
   disputeDetail: route('/disputes/[disputeId]', 'UI-G05'),
   // Nhóm H, I - mở từ menu tài khoản
-  plan: route('/account/plan', 'UI-H01'),
-  plans: route('/account/plans', 'UI-H02'),
-  checkout: route('/account/checkout', 'UI-H03'),
-  planLimit: route('/account/limit', 'UI-H04'),
-  profile: route('/account', 'UI-I01'),
-  shopSettings: route('/account/shop-settings', 'UI-I02'),
-  members: route('/account/members', 'UI-I03'),
-  notifications: route('/account/notifications', 'UI-I04'),
-  security: route('/account/security', 'UI-I05'),
-  help: route('/account/help', 'UI-I06'),
+  plan: route('/account/plan', 'UI-H01', true),
+  plans: route('/account/plans', 'UI-H02', true),
+  checkout: route('/account/checkout', 'UI-H03', true),
+  planLimit: route('/account/limit', 'UI-H04', true),
+  profile: route('/account', 'UI-I01', true),
+  shopSettings: route('/account/shop-settings', 'UI-I02', true),
+  members: route('/account/members', 'UI-I03', true),
+  notifications: route('/account/notifications', 'UI-I04', true),
+  security: route('/account/security', 'UI-I05', true),
+  help: route('/account/help', 'UI-I06', true),
+  // Tab Thông báo (danh sách thông báo). Mã UI-I07 do dự án thêm, chưa có trong docs/09 gốc (D-16).
+  notificationList: route('/notifications', 'UI-I07', true),
 } as const;
 
 export type RouteName = keyof typeof ROUTES;
+
+const PARAM_SEGMENT = /\[[^/\]]+\]/g;
+
+/**
+ * Màn nằm TRONG nhóm tab nhưng phải ẩn thanh tab (màn quét UI-B02, toàn màn hình như mẫu thiết kế).
+ * Khớp theo đường dẫn thực (`usePathname`), hỗ trợ segment động `[x]`.
+ */
+export function isTabBarHiddenAt(pathname: string): boolean {
+  return Object.values(ROUTES).some((r) => {
+    if (r.tabBar) return false;
+    const pattern = new RegExp(`^${r.path.replace(PARAM_SEGMENT, '[^/]+')}/?$`);
+    return pattern.test(pathname);
+  });
+}

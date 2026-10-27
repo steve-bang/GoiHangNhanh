@@ -2,7 +2,9 @@ import { readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 import nav from '@/core/i18n/locales/vi/nav.json';
-import { ROUTES, UI_CODES } from '@/core/navigation';
+import { ROUTES, UI_CODES, isTabBarHiddenAt } from '@/core/navigation';
+
+import { TAB_CONFIG } from './tab-config';
 
 const APP_DIR = join(__dirname, '..', '..', 'app');
 
@@ -30,8 +32,14 @@ function screenFiles() {
     });
 }
 
+/** Tệp giữ chỗ của nút Quét giữa thanh tab (chỉ chuyển hướng, không phải route trong ROUTES). */
+const TAB_ACTION_FILES = TAB_CONFIG.filter((tab) => 'action' in tab).map(
+  (tab) => `(tabs)/${tab.name}.tsx`,
+);
+
 describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
-  const files = screenFiles();
+  const allFiles = screenFiles();
+  const files = allFiles.filter((f) => !TAB_ACTION_FILES.includes(f.file));
 
   it('mỗi route trong ROUTES có đúng một tệp route và ngược lại', () => {
     const fromFiles = files.map((f) => f.url).sort();
@@ -56,10 +64,27 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     }
   });
 
-  it('cờ tabBar khớp vị trí tệp: chỉ route trong nhóm (tabs) có thanh tab', () => {
+  it('cờ tabBar khớp vị trí tệp: route ngoài nhóm (tabs) không có thanh tab; trong nhóm có, trừ màn quét', () => {
     for (const file of files) {
       const route = Object.values(ROUTES).find((r) => r.path === file.url);
-      expect(route?.tabBar).toBe(file.inTabs);
+      const expected = file.inTabs && route !== ROUTES.scan;
+      expect(route?.tabBar).toBe(expected);
+    }
+  });
+
+  it('màn quét UI-B02 nằm trong nhóm tab nhưng ẩn thanh tab (toàn màn hình)', () => {
+    expect(ROUTES.scan).toMatchObject({ path: '/home/scan', code: 'UI-B02', tabBar: false });
+    expect(files.find((f) => f.url === ROUTES.scan.path)?.inTabs).toBe(true);
+    expect(isTabBarHiddenAt('/home/scan')).toBe(true);
+    expect(isTabBarHiddenAt('/home')).toBe(false);
+    expect(isTabBarHiddenAt('/home/quick-order')).toBe(false);
+    expect(isTabBarHiddenAt('/account/plan')).toBe(false);
+  });
+
+  it('Hàng hoàn và Đồng bộ không còn là tab: nằm ngoài nhóm (tabs), không có thanh tab', () => {
+    for (const route of [ROUTES.returns, ROUTES.returnFindOrder, ROUTES.sync, ROUTES.storage]) {
+      expect(route.tabBar).toBe(false);
+      expect(files.find((f) => f.url === route.path)?.inTabs).toBe(false);
     }
   });
 
@@ -89,7 +114,11 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
   });
 
   it('thư mục tab của app khớp danh sách tab', () => {
-    const tabDirs = new Set(files.filter((f) => f.inTabs).map((f) => f.file.split('/')[1]));
-    expect([...tabDirs].sort()).toEqual(['home', 'orders', 'returns', 'sync']);
+    const tabEntries = new Set(
+      allFiles
+        .filter((f) => f.inTabs)
+        .map((f) => (f.file.split('/')[1] ?? '').replace(/\.tsx$/, '')),
+    );
+    expect([...tabEntries].sort()).toEqual([...TAB_CONFIG.map((tab) => tab.name)].sort());
   });
 });

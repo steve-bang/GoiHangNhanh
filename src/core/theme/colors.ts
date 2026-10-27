@@ -55,6 +55,10 @@ export const colors = {
   scrim: 'rgba(0, 0, 0, 0.5)',
   cameraBackground: '#16201A',
   onCamera: '#FFFFFF',
+  // Màn quét (UI-B02; mockup 02): khung ngắm xanh sáng, nút phụ mờ trên nền camera.
+  scanAccent: '#35E0A1',
+  onCameraMuted: 'rgba(255, 255, 255, 0.75)',
+  cameraControl: 'rgba(0, 0, 0, 0.55)',
 } as const;
 
 export type ColorRole = keyof typeof colors;

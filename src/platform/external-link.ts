@@ -15,3 +15,14 @@ export async function openExternalLink(url: string): Promise<boolean> {
     return false;
   }
 }
+
+/** Mở màn Cài đặt của ứng dụng (bật lại quyền đã từ chối). Không bao giờ ném lỗi. */
+export async function openAppSettings(): Promise<boolean> {
+  try {
+    await Linking.openSettings();
+    return true;
+  } catch {
+    logger.warn('app_settings_open_failed');
+    return false;
+  }
+}

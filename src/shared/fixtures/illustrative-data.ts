@@ -81,6 +81,9 @@ export const ILLUSTRATIVE_ORDERS: readonly IllustrativeOrder[] = [
 
 export const ILLUSTRATIVE_SYNC_COUNTS = { uploading: 1, waiting_upload: 1, error: 1 } as const;
 
+/** Số liệu "hôm nay" của Trang chủ (minh họa; nhãn theo docs/09 mục 3, không phải "Đã đồng bộ"). */
+export const ILLUSTRATIVE_TODAY_STATS = { packed: 12, uploaded: 11, error: 1 } as const;
+
 export type IllustrativeReturnStage =
   'receiving' | 'checking' | 'checked' | 'discrepancy' | 'unsynced';
 

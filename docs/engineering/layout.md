@@ -1,6 +1,6 @@
 # Khung giao diện (app shell) — Đơn Chứng
 
-> Trạng thái: **khung đã dựng, chờ người dùng duyệt** (ADR-013/014/015 trong [decisions.md](decisions.md)). Chỉ có điều hướng, bố cục, component dùng chung và màn hình khung; **chưa có logic nghiệp vụ, camera, tải lên hay Firebase**. Nguồn thiết kế: [docs/09](../09-ui-ux-design.md) (mục 2 kiến trúc thông tin, 3 design system, 4 danh mục màn hình, 5.5 đối chiếu mockup). Chưa chạy trên máy ảo/thiết bị thật (xem mục 8).
+> Trạng thái: **khung đã dựng, chờ người dùng duyệt** (ADR-013/014/015 trong [decisions.md](decisions.md)). Điều hướng, bố cục, component dùng chung, màn hình khung và hai màn dựng theo mockup 02 (Trang chủ, Quét mã đơn hàng với camera quét thật, Q-16); **chưa có logic nghiệp vụ, quay video, tải lên hay Firebase**. Nguồn thiết kế: [docs/09](../09-ui-ux-design.md) (mục 2 kiến trúc thông tin, 3 design system, 4 danh mục màn hình, 5.5 đối chiếu mockup). Chưa chạy trên máy ảo/thiết bị thật (xem mục 8).
 
 ## 1. Cấu trúc điều hướng
 
@@ -11,20 +11,22 @@ src/app/                     Route Expo Router: MỎNG, chỉ `export { XScreen 
   welcome, sign-in, ...      Thiết lập và khôi phục (UI-A02..A09), không có thanh tab
   (tabs)/                    NHÓM CÓ THANH TAB (tên nhóm không xuất hiện trong URL)
     _layout.tsx              <Tabs> đọc danh sách từ TAB_CONFIG
-    home/ orders/ returns/ sync/   mỗi tab một Stack riêng => đi sâu trong tab vẫn thấy thanh tab
+    home/ orders/ account/   mỗi tab một Stack riêng => đi sâu trong tab vẫn thấy thanh tab
+    notifications.tsx        tab Thông báo (UI-I07)
+    scan-tab.tsx             chỗ giữ của nút Quét giữa thanh tab (chỉ chuyển hướng; mục 6)
   record-pack.tsx            UI-C03 quay đóng gói        (NGOÀI nhóm (tabs)
   record-return.tsx          UI-D04 quay mở kiện hoàn     => thanh tab ẩn)
   pack-confirm / pack-done ...   hậu quay (không tab)
-  account/                   Hồ sơ, cài đặt, gói (UI-H*, UI-I*): mở từ menu tài khoản
+  returns/ sync/             Hàng hoàn (UI-D*), Đồng bộ (UI-F*): ngoài nhóm tab từ D-16, vào từ Trang chủ
   disputes/                  Tranh chấp (UI-G*): không phải tab (O-14)
 src/bootstrap/navigation/tab-config.ts   CẤU HÌNH TAB (một nơi duy nhất)
 src/core/navigation/routes.ts            Bảng route <-> UI-xx (nguồn duy nhất cho đường dẫn)
 src/platform/navigation.ts               Adapter duy nhất gọi Expo Router
 ```
 
-Quy tắc điều hướng (docs/09 mục 2): bắt đầu tác vụ chính trong ≤ 2–3 thao tác (Tổng quan → *Đóng gói đơn* → quét → quay); **màn quay không có thanh tab**, rời màn bằng nút X, nút Back hoặc cử chỉ đều qua hộp thoại *Giữ video và quay lại* / *Kết thúc phiên* (khung chỉ dẫn sang Xác nhận video, không có đường làm mất phần đã ghi); mỗi màn một hành động chính; luôn có đường quay lại (`useAppNavigation().back` về Tổng quan nếu không có lịch sử).
+Quy tắc điều hướng (docs/09 mục 2): bắt đầu tác vụ chính trong ≤ 2–3 thao tác (Trang chủ → *Đóng gói đơn* → quét → quay); **màn quay không có thanh tab**, rời màn bằng nút X, nút Back hoặc cử chỉ đều qua hộp thoại *Giữ video và quay lại* / *Kết thúc phiên* (khung chỉ dẫn sang Xác nhận video, không có đường làm mất phần đã ghi); mỗi màn một hành động chính; luôn có đường quay lại (`useAppNavigation().back` về Tổng quan nếu không có lịch sử).
 
-Thanh tab (D-11): **Tổng quan · Đơn hàng · Hàng hoàn · Đồng bộ**. Hồ sơ, cài đặt, thành viên, thông báo, bảo mật, gói dịch vụ, trợ giúp ở **menu tài khoản** (`AccountMenuButton`, góc trên các màn gốc của tab). Tranh chấp không có tab và hiện **chưa có nút dẫn tới** (cần hồ sơ đơn/hàng hoàn thật; O-14).
+Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thông báo · Cá nhân**. **Quét** là nút tròn nổi giữa thanh: không chuyển tab, mở màn quét (UI-B02) toàn màn hình, ẩn thanh tab. **Hàng hoàn và Đồng bộ không còn là tab**: nằm ngoài nhóm `(tabs)`, vào từ Trang chủ. Hồ sơ, cài đặt shop, thành viên, cài đặt thông báo, bảo mật, gói dịch vụ, trợ giúp là các mục của tab **Cá nhân** (UI-I01; thư mục `(tabs)/account/`). Tranh chấp không có tab và hiện **chưa có nút dẫn tới** (cần hồ sơ đơn/hàng hoàn thật; O-14).
 
 ## 2. Bảng route ↔ mã `UI-xx`
 
@@ -42,8 +44,8 @@ Thanh tab (D-11): **Tổng quan · Đơn hàng · Hàng hoàn · Đồng bộ**.
 | `/create-shop` | UI-A04 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `CreateShopScreen` | Màn thật theo mockup 5.1, cổng giả (xem mục 2.2) |
 | `/permissions` | UI-A05 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `PermissionsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/setup-done` | UI-A06 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SetupDoneScreen` | Màn thật theo mockup 5.1, cổng giả (xem mục 2.2) |
-| `/home` | UI-B01 | A01 | hiện | `orders`: `HomeScreen` | Khung có bố cục + dữ liệu minh họa |
-| `/home/scan` | UI-B02 | A02 | hiện | `orders`: `ScanScreen` | Khung có bố cục + dữ liệu minh họa |
+| `/home` | UI-B01 | A01 | hiện | `orders`: `HomeScreen` | Màn dựng theo mockup 02 (D-16, Q-16) + dữ liệu minh họa |
+| `/home/scan` | UI-B02 | A02 | ẩn (trong nhóm tab, ẩn bằng `isTabBarHiddenAt`) | `orders`: `ScanScreen` | Màn thật theo mockup 02: camera thật (`expo-camera`, ADR-016), nhập tay, đèn pin, xử lý quyền (Q-16) |
 | `/home/search` | UI-B03 | A02 | hiện | `orders`: `SearchScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/home/quick-order` | UI-B04 | A02 | hiện | `orders`: `QuickOrderScreen` | Khung có bố cục + dữ liệu minh họa |
 | `/home/batch` | UI-B05 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `BatchScreen` | Placeholder (route + tiêu đề + lối quay lại) |
@@ -53,36 +55,37 @@ Thanh tab (D-11): **Tổng quan · Đơn hàng · Hàng hoàn · Đồng bộ**.
 | `/pack-confirm` | UI-C04 | A06 | ẩn | `packing`: `PackConfirmScreen` | Khung có bố cục + dữ liệu minh họa |
 | `/pack-saved` | UI-C05 | A07 | ẩn | `upload`: `PackSavedScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/pack-done` | UI-C06 | A08 | ẩn | `packing`: `PackDoneScreen` | Khung có bố cục + dữ liệu minh họa |
-| `/returns` | UI-D01 | B01 | hiện | `returns`: `ReturnsListScreen` | Khung có bố cục + dữ liệu minh họa |
-| `/returns/find-order` | UI-D02 | B02 | hiện | `returns`: `ReturnFindOrderScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/returns/package-exterior` | UI-D03 | B03 | hiện | `returns`: `ReturnExteriorScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/returns` | UI-D01 | B01 | ẩn | `returns`: `ReturnsListScreen` | Khung có bố cục + dữ liệu minh họa |
+| `/returns/find-order` | UI-D02 | B02 | ẩn | `returns`: `ReturnFindOrderScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/returns/package-exterior` | UI-D03 | B03 | ẩn | `returns`: `ReturnExteriorScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/record-return` | UI-D04 | B04, B05 | ẩn | `returns`: `ReturnRecordScreen` | Khung có bố cục + dữ liệu minh họa |
-| `/returns/items-check` | UI-D05 | B06 | hiện | `returns`: `ReturnItemsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/returns/review` | UI-D06 | B07 | hiện | `returns`: `ReturnReviewScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/returns/done` | UI-D07 | B08 | hiện | `returns`: `ReturnDoneScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/returns/items-check` | UI-D05 | B06 | ẩn | `returns`: `ReturnItemsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/returns/review` | UI-D06 | B07 | ẩn | `returns`: `ReturnReviewScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/returns/done` | UI-D07 | B08 | ẩn | `returns`: `ReturnDoneScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/orders` | UI-E01 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `OrdersListScreen` | Khung có bố cục + dữ liệu minh họa |
 | `/orders/[orderId]` | UI-E02 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `OrderDetailScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/orders/[orderId]/evidence` | UI-E03 | chưa có đặc tả (docs/09 mục 4) | hiện | `evidence`: `OrderEvidenceScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/orders/[orderId]/evidence/[evidenceId]` | UI-E04 | chưa có đặc tả (docs/09 mục 4) | hiện | `evidence`: `EvidenceDetailScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/orders/[orderId]/history` | UI-E05 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `OrderHistoryScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/sync` | UI-F01 | chưa có đặc tả (docs/09 mục 4) | hiện | `upload`: `SyncCenterScreen` | Khung có bố cục + dữ liệu minh họa |
-| `/sync/[jobId]` | UI-F02 | chưa có đặc tả (docs/09 mục 4) | hiện | `upload`: `SyncErrorScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/sync/storage` | UI-F03 | chưa có đặc tả (docs/09 mục 4) | hiện | `upload`: `StorageScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/sync` | UI-F01 | chưa có đặc tả (docs/09 mục 4) | ẩn | `upload`: `SyncCenterScreen` | Khung có bố cục + dữ liệu minh họa |
+| `/sync/[jobId]` | UI-F02 | chưa có đặc tả (docs/09 mục 4) | ẩn | `upload`: `SyncErrorScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/sync/storage` | UI-F03 | chưa có đặc tả (docs/09 mục 4) | ẩn | `upload`: `StorageScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/disputes` | UI-G01 | chưa có đặc tả (docs/09 mục 4) | ẩn | `disputes`: `DisputesScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/disputes/new` | UI-G02 | chưa có đặc tả (docs/09 mục 4) | ẩn | `disputes`: `DisputeNewScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/disputes/select-evidence` | UI-G03 | chưa có đặc tả (docs/09 mục 4) | ẩn | `disputes`: `DisputeSelectEvidenceScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/disputes/export` | UI-G04 | chưa có đặc tả (docs/09 mục 4) | ẩn | `disputes`: `DisputeExportScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/disputes/[disputeId]` | UI-G05 | chưa có đặc tả (docs/09 mục 4) | ẩn | `disputes`: `DisputeDetailScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/account/plan` | UI-H01 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `PlanScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/account/plans` | UI-H02 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `PlansScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/account/checkout` | UI-H03 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `CheckoutScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/account/limit` | UI-H04 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `PlanLimitScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/account` | UI-I01 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `ProfileScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/account/shop-settings` | UI-I02 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `ShopSettingsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/account/members` | UI-I03 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `MembersScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/account/notifications` | UI-I04 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `NotificationsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/account/security` | UI-I05 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SecurityScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/account/help` | UI-I06 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `HelpScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/account/plan` | UI-H01 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `PlanScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/account/plans` | UI-H02 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `PlansScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/account/checkout` | UI-H03 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `CheckoutScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/account/limit` | UI-H04 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `PlanLimitScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/account` | UI-I01 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `ProfileScreen` | Tab Cá nhân: tên shop + danh sách mục (minh họa) |
+| `/account/shop-settings` | UI-I02 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `ShopSettingsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/account/members` | UI-I03 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `MembersScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/account/notifications` | UI-I04 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `NotificationsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/account/security` | UI-I05 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `SecurityScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/account/help` | UI-I06 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `HelpScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/notifications` | UI-I07 | chưa có đặc tả (thêm theo O-26) | hiện | `shop`: `NotificationListScreen` | Placeholder, tab Thông báo |
 
 Màn có bố cục + dữ liệu minh họa: Tổng quan, Trung tâm quét (khung camera giả), Tạo đơn nhanh, Xem nhanh đơn, Màn quay (khung), Xác nhận video, Hoàn tất đóng gói, Danh sách hàng hoàn, Màn quay mở kiện (khung), Danh sách đơn, Trung tâm đồng bộ.
 
@@ -189,15 +192,19 @@ Mockup `docs/assets/ui/05-sign-in-and-recovery.png`; nghiệp vụ và điểm l
 5. Chạy `npm run check`: `routes.test.ts` bắt route lệch bảng, `screens-render.test.tsx` render mọi route.
 6. Cần màn quay mới: đặt **ngoài** `(tabs)`, dùng `RecordingFrame`, thêm `gestureEnabled: false` ở `_layout.tsx` gốc.
 
-## 6. Đổi thanh tab (O-18)
+## 6. Thanh tab và nút Quét giữa (D-16)
 
-Danh sách tab chỉ ở `src/bootstrap/navigation/tab-config.ts`; `(tabs)/_layout.tsx` lặp qua nó. Chuyển sang phương án khuyến nghị (*Tổng quan · Đơn hàng · Quét · Hàng hoàn · Đồng bộ*): thêm mục `scan` vào giữa `TAB_CONFIG`, tạo thư mục `(tabs)/scan/` (Stack) và chuyển `home/scan.tsx` sang đó (cập nhật `ROUTES.scan`), thêm nhãn `nav:tabs.scan`, sửa `tab-config.test.ts` và `app-navigation.test.tsx`. Không phải sửa component.
+Danh sách tab chỉ ở `src/bootstrap/navigation/tab-config.ts` (`TAB_CONFIG`); `(tabs)/_layout.tsx` lặp qua nó. Mục có `action: true` (Quét) là **nút nổi giữa**, không phải tab thật: `_layout.tsx` chặn `tabPress` và `router.push(ROUTES.scan.path)`, vẽ bằng `ScanTabButton` (`src/bootstrap/navigation/ScanTabButton.tsx`). Tệp `(tabs)/scan-tab.tsx` chỉ là chỗ giữ cho navigator (chuyển hướng tới màn quét khi mở bằng liên kết sâu); `routes.test.ts` loại nó khỏi phép đối chiếu với `ROUTES`.
+
+Màn quét `/home/scan` nằm trong stack của tab Trang chủ (để Tạo đơn nhanh quay về đúng màn quét) nhưng ẩn thanh tab: `routes.ts` đặt `tabBar: false` và `isTabBarHiddenAt(pathname)` cho layout biết; layout đặt `tabBarStyle.display = 'none'`. Muốn ẩn thanh tab ở màn khác trong nhóm tab: đặt `tabBar: false` ở `ROUTES` và cập nhật phép kiểm tra "route trong nhóm tab" ở `routes.test.ts`.
+
+Thêm/bớt tab: sửa `TAB_CONFIG`, tạo/xóa tệp hoặc thư mục tương ứng trong `(tabs)/`, thêm nhãn `nav:tabs.*`, sửa `tab-config.test.ts` và `app-navigation.test.tsx`. Hàng hoàn và Đồng bộ ngoài nhóm tab: `src/app/returns/*`, `src/app/sync/*`.
 
 ## 7. Giới hạn đã biết của khung
 
 - Dữ liệu là minh họa; tìm/lọc chạy trên dữ liệu giả cục bộ. Không lưu gì; tham số route (mã đơn, sản phẩm nhập) chỉ truyền giữa màn.
 - `useIsOffline()` (`src/platform/connectivity.ts`) là **stub luôn trả `false`** (chưa chọn thư viện theo dõi mạng); `OfflineBanner` đã sẵn.
-- Camera/quét/đèn pin chưa có: khung camera là placeholder; nút *Đèn pin*, *Xem lại video*, *Ghi thêm đoạn riêng* đang tắt.
+- Camera **quét mã** (UI-B02) đã có thật (`expo-camera`, ADR-016) nhưng chưa kiểm chứng trên thiết bị; camera **quay video** chưa có (nút *Xem lại video*, *Ghi thêm đoạn riêng* đang tắt).
 - Gợi ý sản phẩm theo lịch sử (UI-B04), chọn nguồn/thời gian ở danh sách đơn (UI-E01), thử lại tệp (UI-F01) chưa làm vì cần dữ liệu/hàng đợi thật.
 - Splash (UI-A01, mục 2.4) chạy bằng cổng phiên giả; chưa có luồng đăng nhập thật (O-15) nên **chưa chặn truy cập** (route guard là việc sau). Bản build thường luôn vào Chào mừng (cổng "chưa kết nối"). Ba màn thiết lập (mục 2.2) chạy bằng cổng giả: chưa tạo tài khoản/shop thật. Splash hệ điều hành, icon (tạm), tải ảnh 3D, WebP alpha, tràn viền Android và vùng an toàn thật **chưa kiểm chứng trên thiết bị**; ảnh chụp đối chiếu thiết kế là render web.
 - Chào mừng: liên kết Điều khoản/Quyền riêng tư là chữ trong câu nên vùng chạm nhỏ hơn 44/48 (Text lồng không có `hitSlop`); cần đánh giá trên thiết bị.

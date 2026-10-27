@@ -18,16 +18,17 @@ Danh mục màn hình dùng tiền tố **`UI-`** (UI-A01…UI-J15) để không
 
 ## 2. Kiến trúc thông tin
 
-Thanh tab dưới, 4 tab:
+Thanh tab dưới, 5 mục (**D-16**, theo mockup 02; thay phương án 4 tab của D-11):
 
-| Tab | Vai trò |
+| Mục | Vai trò |
 |---|---|
-| **Tổng quan** | Điểm bắt đầu: *Đóng gói đơn*, *Nhận hàng hoàn*, việc dang dở, cảnh báo đồng bộ/dung lượng |
+| **Trang chủ** | Điểm bắt đầu: *Đóng gói đơn*, *Nhận hàng hoàn*, lối tắt, thống kê hôm nay; lối vào Hàng hoàn và Đồng bộ |
 | **Đơn hàng** | Tìm, lọc, mở hồ sơ đơn và bằng chứng liên quan |
-| **Hàng hoàn** | Danh sách và tiếp nhận hàng hoàn, kiểm đếm, đối chiếu |
-| **Đồng bộ** | Video đang tải, lỗi, dung lượng, trạng thái lưu trữ |
+| **Quét** (nút tròn nổi ở giữa) | Không phải tab: mở màn quét mã đơn hàng toàn màn hình, ẩn thanh tab |
+| **Thông báo** | Danh sách thông báo (UI-I07, khung; O-26) |
+| **Cá nhân** | Hồ sơ shop, thành viên, gói dịch vụ, lưu trữ, cài đặt, trợ giúp |
 
-Hồ sơ shop, thành viên, gói dịch vụ, lưu trữ, cài đặt, trợ giúp nằm trong **menu tài khoản** (góc trên) / mục Hồ sơ. Tranh chấp (nhóm G) không phải tab: đi vào từ hồ sơ đơn, hồ sơ hàng hoàn hoặc "việc cần xử lý" — xem O-14.
+Hàng hoàn (nhóm D) và Đồng bộ (nhóm F) **không còn là tab**: mở từ Trang chủ, không có thanh tab, có nút quay lại. Tranh chấp (nhóm G) không phải tab: đi vào từ hồ sơ đơn, hồ sơ hàng hoàn hoặc "việc cần xử lý" — xem O-14.
 
 Quy tắc điều hướng:
 - Bắt đầu tác vụ chính trong ≤ 2–3 thao tác (Tổng quan → *Đóng gói đơn* → quét → quay).
@@ -182,6 +183,7 @@ Lưu ý: xuất PDF/ZIP/chia sẻ phải được xác định trong đặc tả
 | UI-I04 | Thông báo | Chọn: upload lỗi/cần xử lý; đồng bộ hoàn tất (tùy chọn); dung lượng sắp đầy; gói sắp hết hạn. Không báo từng video tải thành công |
 | UI-I05 | Bảo mật và dữ liệu | Đăng xuất thiết bị; quản lý phiên/thiết bị nếu hỗ trợ; chính sách lưu trữ và xóa; yêu cầu tải dữ liệu/xóa tài khoản; **cảnh báo dữ liệu chưa đồng bộ trước khi đăng xuất hoặc xóa app** |
 | UI-I06 | Trợ giúp | Hướng dẫn đóng gói đúng cách; ghi hình hàng hoàn; giải thích trạng thái upload; xử lý mất mạng/hết dung lượng; liên hệ + báo lỗi |
+| UI-I07 | Thông báo (tab) | **Thêm theo D-16/O-26.** Danh sách thông báo của shop; hiện là khung có trạng thái rỗng, chưa có nội dung đặc tả. Khác UI-I04 (chọn loại thông báo muốn nhận) |
 
 ### Nhóm J — Trạng thái ngoại lệ bắt buộc thiết kế
 
@@ -340,7 +342,7 @@ Phần đúng hướng: bảng màu và phong cách khớp mục 3; Tổng quan 
 
 | Mã | Điểm khác | Phương án / khuyến nghị |
 |---|---|---|
-| O-18 | Mockup 02 có thanh dưới: Trang chủ, Đơn hàng, **nút Quét ở giữa**, Thông báo, Cá nhân. D-11 quy định 4 tab: Tổng quan, Đơn hàng, Hàng hoàn, Đồng bộ | Khuyến nghị: *Tổng quan · Đơn hàng · **Quét** · Hàng hoàn · Đồng bộ*. Giữ nút Quét giữa (hợp "scan first") và giữ Đồng bộ trên thanh để lỗi tải lên luôn thấy. Thông báo (chuông) và Cá nhân (avatar) đã nằm ở thanh trên của Tổng quan nên không cần chiếm tab |
+| O-18 | ~~Mockup 02 có thanh dưới: Trang chủ, Đơn hàng, **nút Quét ở giữa**, Thông báo, Cá nhân. D-11 quy định 4 tab~~ | **Đã chốt theo mockup (D-16).** Hệ quả mở: O-26, O-27 |
 | O-19 | Đóng gói đơn mới đi qua **3 màn** trước camera: Tạo đơn nhanh → nút "Lưu và xác nhận đơn" → Xác nhận đơn → "Kiểm tra camera và bắt đầu". Spec (D-10) muốn một lần chạm | Khuyến nghị: nút chính ở Tạo đơn nhanh là **Lưu và quay video**, thẳng sang màn Xem nhanh đơn đã gộp nút bắt đầu, hoặc bỏ hẳn màn Xác nhận khi vừa mới tạo đơn (người dùng vừa nhập xong). Màn Xác nhận chỉ cần khi quét ra đơn có sẵn |
 | O-02 | Màn quay có nút **thư viện ảnh** ở góc dưới phải | Nhập từ thư viện đang là câu hỏi mở. Nếu chưa chốt thì bỏ nút khỏi màn quay; nếu cho nhập, đặt ở nơi khác và gắn nhãn nguồn "nhập từ thư viện" |
 
