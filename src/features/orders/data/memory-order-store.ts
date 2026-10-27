@@ -154,6 +154,12 @@ export function createMemoryOrderStore(): OrderStore {
     async countUnsynced() {
       return 0;
     },
+    async countUnsyncedOnDevice() {
+      return 0;
+    },
+    async hasRecordingOnDevice() {
+      return [...sessions.values()].some((s) => isSessionStatusRecording(s.sessionStatus));
+    },
     async hasRecordingInProgress(shopId) {
       return [...sessions.values()].some(
         (s) => s.shopId === shopId && isSessionStatusRecording(s.sessionStatus),

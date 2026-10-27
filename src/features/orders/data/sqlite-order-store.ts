@@ -459,6 +459,15 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
       guarded('LOCAL_SAVE_UNAVAILABLE', () => sessionsOfOrder(shopId, orderId)),
     // Chưa có bảng tệp bằng chứng: không có tệp nào để chưa đồng bộ (xem OrderStore.countUnsynced).
     countUnsynced: async () => 0,
+    countUnsyncedOnDevice: async () => 0,
+    hasRecordingOnDevice: () =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        const row = await db.getFirstAsync<{ id: string }>(
+          'SELECT id FROM packing_sessions WHERE session_status = ? LIMIT 1',
+          [RECORDING_SESSION_STATUS],
+        );
+        return row !== null;
+      }),
     hasRecordingInProgress: (shopId) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
         const row = await db.getFirstAsync<{ id: string }>(

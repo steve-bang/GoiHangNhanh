@@ -230,6 +230,30 @@ export function runOrderStoreContract(name: string, create: () => Promise<OrderS
       expect(await store.hasRecordingInProgress(other)).toBe(false);
     });
 
+    it('toàn thiết bị: thấy phiên đang quay của MỌI shop và chưa đồng bộ là 0; phiên created không tính', async () => {
+      const store = await create();
+      const other = 'shop-khac' as ShopId;
+      expect(await store.hasRecordingOnDevice()).toBe(false);
+      expect(await store.countUnsyncedOnDevice()).toBe(0);
+      await startSession(store, makeOrder('DEV-0'), 'sess-dev-0', undefined, true);
+      expect(await store.hasRecordingOnDevice()).toBe(false);
+
+      // Phiên đang ghi của shop KHÁC shop hiện dùng: kiểm tra theo shop không thấy, toàn thiết bị thấy.
+      const details = makeOrder('DEV-1', { shopId: other });
+      await store.saveNewOrder(details);
+      const pkg = details.packages[0];
+      if (!pkg) throw new Error('fixture');
+      const built = buildPackingSession(details, pkg.id, {
+        sessionId: 'sess-dev-1' as SessionId,
+        nowDevice: 7000,
+      });
+      if (!built.ok) throw new Error('fixture');
+      await store.saveSession({ ...built.session, sessionStatus: 'recording' as never });
+      expect(await store.hasRecordingInProgress(LOCAL_SHOP_ID)).toBe(false);
+      expect(await store.hasRecordingInProgress(other)).toBe(true);
+      expect(await store.hasRecordingOnDevice()).toBe(true);
+    });
+
     it('cô lập shop: shop khác không đọc, không sửa, không thêm kiện, không tạo phiên dù biết ID', async () => {
       const store = await create();
       const other = 'shop-khac' as ShopId;

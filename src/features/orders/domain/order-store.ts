@@ -62,4 +62,12 @@ export interface OrderStore {
    * `LOCAL_SAVE_UNAVAILABLE`: bên gọi KHÔNG được coi lỗi là "không quay" (chặn theo hướng bảo thủ).
    */
   hasRecordingInProgress(shopId: ShopId): Promise<boolean>;
+  /**
+   * Như `countUnsynced` nhưng cho MỌI shop có dữ liệu trên máy này. CHỈ để bảo vệ dữ liệu khi đăng xuất
+   * (đăng xuất rời cả tài khoản, không chỉ shop đang dùng; Q-20o). Không dùng để hiển thị dữ liệu của
+   * shop khác: mọi truy vấn còn lại vẫn theo `shopId`. Hôm nay chưa có tệp bằng chứng nên luôn 0.
+   */
+  countUnsyncedOnDevice(): Promise<number>;
+  /** Như `hasRecordingInProgress` nhưng cho mọi shop trên máy này (chỉ để chặn đăng xuất). Lỗi đọc ném `LOCAL_SAVE_UNAVAILABLE`. */
+  hasRecordingOnDevice(): Promise<boolean>;
 }
