@@ -81,13 +81,17 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 | `/account/plans` | UI-H02 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `PlansScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/account/checkout` | UI-H03 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `CheckoutScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/account/limit` | UI-H04 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `PlanLimitScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/account` | UI-I01 | chưa có đặc tả (docs/09 mục 4) | hiện | `personal`: `ProfileScreen` | Tab Cá nhân (PER-01/02 xem): thẻ hồ sơ, thẻ shop, tóm tắt gói (chỉ trạng thái trung thực), menu, Đăng xuất (chỉ mở hộp thoại, PR3 làm thật); tải riêng từng khu vực qua `AccountGateway`, kéo để làm mới |
+| `/account` | UI-I01 | chưa có đặc tả (docs/09 mục 4) | hiện | `personal`: `ProfileScreen` | Tab Cá nhân (PER-01 và xem hồ sơ; lối vào Sửa họ tên và Đổi mật khẩu, mục sau chỉ với tài khoản đăng nhập bằng mật khẩu): thẻ hồ sơ, thẻ shop, tóm tắt gói (chỉ trạng thái trung thực), menu, Đăng xuất (chỉ mở hộp thoại, PR3 làm thật); tải riêng từng khu vực qua `AccountGateway`, kéo để làm mới |
+| `/account/edit-profile` | UI-I01 (route con, `parent: profile`) | chưa có đặc tả (Q-19k) | hiện | `personal`: `EditProfileScreen` | PER-02/03: sửa họ tên (bắt buộc, tối đa 50 ký tự tạm, Q-19j), email chỉ đọc, hủy khi có thay đổi thì hỏi xác nhận, toast chỉ sau khi cổng xác nhận; testID `screen-UI-I01-edit-profile` |
 | `/account/shop-settings` | UI-I02 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `ShopSettingsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/account/members` | UI-I03 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `MembersScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/account/notifications` | UI-I04 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `NotificationsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/account/security` | UI-I05 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `SecurityScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/account/change-password` | UI-I05 (route con, `parent: security`) | chưa có đặc tả (Q-19k) | hiện | `personal`: `ChangePasswordScreen` | PER-04: đổi mật khẩu (từ 8 ký tự, D-13); vào từ UI-I01 (UI-I05 vẫn là placeholder); lỗi `AUTH_*` tại màn, yêu cầu đăng nhập lại về `ROUTES.signIn`; testID `screen-UI-I05-change-password` |
 | `/account/help` | UI-I06 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `HelpScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/notifications` | UI-I07 | chưa có đặc tả (thêm theo O-26) | hiện | `shop`: `NotificationListScreen` | Placeholder, tab Thông báo |
+
+**Route con (Q-19k):** một mã `UI-xx` chỉ có nhiều route khi route con khai báo `parent` trong `ROUTES` (`subRoute`), trỏ tới route gốc cùng mã và cùng cờ thanh tab; ngoại lệ duy nhất còn lại là UI-A03 (đăng nhập/đăng ký). `routes.test.ts` bắt lệch bảng ↔ tệp `src/app` và giới hạn danh sách route con (hiện: `editProfile`, `changePassword`). Route con có testID `screen-<mã>-<đoạn cuối đường dẫn>` và tiêu đề ở `nav:subTitles`. Thêm route con mới phải được người dùng duyệt.
 
 Màn có bố cục + dữ liệu minh họa: Tổng quan, Xác nhận video, Hoàn tất đóng gói, Danh sách hàng hoàn, Màn quay mở kiện (khung), Danh sách đơn, Trung tâm đồng bộ.
 
