@@ -2,11 +2,17 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import type { ShopId } from '@/core/ids';
-import { createMemoryOrderStore, type OrderStore } from '@/features/orders';
+import {
+  createLocalOrderStore,
+  createMemoryOrderStore,
+  LOCAL_SHOP_ID,
+  type OrderStore,
+} from '@/features/orders';
 import { ROUTES } from '@/core/navigation';
 import { colors } from '@/core/theme';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
+import { createNodeSqliteDatabase } from '@/test-utils/node-sqlite';
+import { sampleOrder, sampleSession } from '@/test-utils/order-fixtures';
 import { renderWithProviders } from '@/test-utils/render';
 
 import { createFakePersonalGateways } from '../data/fake-personal-gateways';
@@ -22,6 +28,7 @@ jest.mock('@/platform/connectivity', () => ({ useIsOffline: () => false }));
 beforeEach(() => resetMockNavigation());
 
 const USER_A = { uid: 'user-a', email: 'a@example.com', displayName: 'Lan Anh' };
+const USER_B = { uid: 'user-b', email: 'b@example.com', displayName: null };
 
 /** Đưa phiên vào trạng thái đã đăng nhập, mô phỏng cache trong bộ nhớ gắn với phiên (mẫu account-switch). */
 function SessionProbe() {
@@ -35,6 +42,7 @@ function SessionProbe() {
       <Text testID="probe-cache">{cache ?? '(đã xả)'}</Text>
       <Pressable testID="probe-fill" onPress={() => setCache('du-lieu-tai-khoan-A')} />
       <Pressable testID="probe-begin" onPress={() => session.beginSession(USER_A, 'shop-a')} />
+      <Pressable testID="probe-begin-b" onPress={() => session.beginSession(USER_B, 'shop-b')} />
     </>
   );
 }
@@ -104,28 +112,57 @@ describe('Đăng xuất an toàn (PER-21)', () => {
     expect(screen.getByText('Bạn đã đăng xuất thành công.')).toBeOnTheScreen();
   });
 
-  it('không xóa dữ liệu cục bộ khi đăng xuất (Q-20h)', async () => {
-    const store = createMemoryOrderStore();
-    const spy = jest.spyOn(store, 'saveNewOrder');
-    await setup({ store });
+  it.each([
+    ['bộ nhớ', async () => createMemoryOrderStore()],
+    [
+      'SQLite (node:sqlite)',
+      async () => createLocalOrderStore(async () => createNodeSqliteDatabase()),
+    ],
+  ] as const)(
+    'không xóa dữ liệu cục bộ khi đăng xuất (Q-20h): đơn và phiên còn nguyên (%s)',
+    async (_name, create) => {
+      const store = await create();
+      const details = sampleOrder();
+      await store.saveNewOrder(details);
+      const session = sampleSession(details);
+      await store.saveSession(session);
+
+      await setup({ store });
+      await openDialog();
+      await confirmSignOut();
+      await waitFor(() => expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.welcome));
+      expect(screen.getByTestId('probe-status')).toHaveTextContent('signed_out');
+
+      expect(await store.getOrder(LOCAL_SHOP_ID, details.order.id)).toEqual(details);
+      expect(await store.getSession(LOCAL_SHOP_ID, session.id)).toEqual(session);
+      expect(await store.listSessionsOfOrder(LOCAL_SHOP_ID, details.order.id)).toHaveLength(1);
+    },
+  );
+
+  it('tài khoản A sửa tên rồi đăng xuất, tài khoản B vào: không thấy tên của A (cổng giả không giữ dữ liệu A)', async () => {
+    const gateways = await setup();
+    await gateways.account.updateProfile({ displayName: 'Tên riêng của A' });
     await openDialog();
     await confirmSignOut();
-    await waitFor(() => expect(mockNavigation.reset).toHaveBeenCalled());
-    // Kho chỉ được hỏi (đếm/kiểm tra), không có thao tác ghi/xóa nào.
-    expect(spy).not.toHaveBeenCalled();
-    expect(Object.keys(store)).not.toContain('deleteAll');
+    await waitFor(() => expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.welcome));
+    expect((await gateways.account.getProfile()).displayName).toBeNull();
+
+    await fireEvent.press(screen.getByTestId('probe-begin-b'));
+    await waitFor(() => expect(screen.getByTestId('probe-key')).toHaveTextContent('user-b:shop-b'));
+    await waitFor(() => expect(screen.getByTestId('profile-summary')).toBeOnTheScreen());
+    expect(screen.queryByText('Tên riêng của A')).toBeNull();
   });
 
   it('đang quay: chặn, KHÔNG gọi cổng đăng xuất, giữ phiên, không điều hướng', async () => {
     const hasRecording = jest.fn().mockResolvedValue(true);
     const gateways = await setup({
-      store: withStore({ hasRecordingInProgress: hasRecording }),
+      store: withStore({ hasRecordingOnDevice: hasRecording }),
     });
     await openDialog();
     await confirmSignOut();
     await waitFor(() => expect(screen.getByTestId('sign-out-recording')).toBeOnTheScreen());
     expect(screen.getByText(/kết thúc phiên quay trước khi đăng xuất/)).toBeOnTheScreen();
-    expect(hasRecording).toHaveBeenCalledWith('shop-a');
+    expect(hasRecording).toHaveBeenCalledTimes(1);
     expect(gateways.account.signOutCalls).toBe(0);
     expect(mockNavigation.reset).not.toHaveBeenCalled();
     expect(screen.getByTestId('probe-status')).toHaveTextContent('signed_in');
@@ -134,7 +171,7 @@ describe('Đăng xuất an toàn (PER-21)', () => {
 
   it('còn bằng chứng chưa đồng bộ: cảnh báo cụ thể, có lối tới trung tâm đồng bộ, KHÔNG đăng xuất', async () => {
     const gateways = await setup({
-      store: withStore({ countUnsynced: jest.fn().mockResolvedValue(3) }),
+      store: withStore({ countUnsyncedOnDevice: jest.fn().mockResolvedValue(3) }),
     });
     await openDialog();
     await confirmSignOut();
@@ -150,7 +187,7 @@ describe('Đăng xuất an toàn (PER-21)', () => {
 
   it('kho cục bộ không đọc được: không coi là an toàn, báo AUTH_SIGN_OUT_FAILED và giữ phiên', async () => {
     const gateways = await setup({
-      store: withStore({ countUnsynced: jest.fn().mockRejectedValue(new Error('x')) }),
+      store: withStore({ countUnsyncedOnDevice: jest.fn().mockRejectedValue(new Error('x')) }),
     });
     await openDialog();
     await confirmSignOut();
@@ -183,32 +220,41 @@ describe('Đăng xuất an toàn (PER-21)', () => {
 
   it('chống bấm lặp: bấm xác nhận nhiều lần khi đang kiểm tra chỉ đăng xuất một lần', async () => {
     let release: (n: number) => void = () => undefined;
-    const countUnsynced = jest.fn(
+    const countUnsyncedOnDevice = jest.fn(
       () =>
         new Promise<number>((resolve) => {
           release = resolve;
         }),
     );
-    const gateways = await setup({ store: withStore({ countUnsynced }) });
+    const gateways = await setup({ store: withStore({ countUnsyncedOnDevice }) });
     await openDialog();
     const confirm = screen.getAllByText('Đăng xuất').at(-1);
     if (!confirm) throw new Error('Không thấy nút xác nhận');
     await fireEvent.press(confirm);
     await fireEvent.press(confirm);
     await fireEvent.press(confirm);
-    expect(countUnsynced).toHaveBeenCalledTimes(1);
+    expect(countUnsyncedOnDevice).toHaveBeenCalledTimes(1);
     await act(async () => release(0));
     await waitFor(() => expect(mockNavigation.reset).toHaveBeenCalledTimes(1));
     expect(gateways.account.signOutCalls).toBe(1);
   });
 
-  it('cô lập theo shop: kiểm tra bằng shop của phiên (shop-a), không hỏi shop khác', async () => {
-    const countUnsynced = jest.fn().mockResolvedValue(0);
-    await setup({ store: withStore({ countUnsynced }) });
+  it('đăng xuất kiểm tra TOÀN THIẾT BỊ: phiên đang quay của shop khác (không phải shop đang dùng) vẫn chặn', async () => {
+    const store = createMemoryOrderStore();
+    const other = sampleOrder();
+    const details = {
+      ...other,
+      order: { ...other.order, shopId: 'shop-khac' as never },
+    };
+    await store.saveNewOrder(details);
+    await store.saveSession({ ...sampleSession(details), sessionStatus: 'recording' as never });
+    // Phiên đăng nhập đang dùng shop-a: kiểm tra theo shop không thấy, nhưng đăng xuất vẫn bị chặn.
+    expect(await store.hasRecordingInProgress('shop-a' as never)).toBe(false);
+
+    const gateways = await setup({ store });
     await openDialog();
     await confirmSignOut();
-    await waitFor(() => expect(countUnsynced).toHaveBeenCalled());
-    const asked = countUnsynced.mock.calls.map((c) => c[0] as ShopId);
-    expect(asked).toEqual(['shop-a']);
+    await waitFor(() => expect(screen.getByTestId('sign-out-recording')).toBeOnTheScreen());
+    expect(gateways.account.signOutCalls).toBe(0);
   });
 });

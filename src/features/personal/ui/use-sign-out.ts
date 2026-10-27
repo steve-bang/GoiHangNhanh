@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { resolveErrorMessage, errorText } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
-import { useCurrentShopId, useOrderStore } from '@/features/orders';
+import { useOrderStore } from '@/features/orders';
 import { useAppNavigation } from '@/platform';
 import { useToast } from '@/shared/ui';
 
@@ -17,6 +17,7 @@ export type SignOutStep = 'closed' | 'confirm' | 'blocked_recording' | 'unsynced
  * Luồng đăng xuất an toàn (PER-21): xác nhận -> kiểm tra (đang quay, chưa đồng bộ) -> cổng đăng xuất
  * -> về Chào mừng. Chỉ đăng xuất khi người dùng đã xác nhận VÀ điều kiện bảo vệ dữ liệu đáp ứng; lỗi
  * (cổng hoặc đọc kho cục bộ) báo `AUTH_SIGN_OUT_FAILED` và giữ phiên. Không xóa dữ liệu cục bộ (Q-20h).
+ * Kiểm tra theo TOÀN THIẾT BỊ (mọi shop trên máy), vì đăng xuất rời cả tài khoản (Q-20o, bổ sung).
  * Chống bấm lặp bằng `busy`. Toast thành công chỉ hiện SAU khi cổng xác nhận và đã điều hướng.
  */
 export function useSignOut() {
@@ -25,7 +26,6 @@ export function useSignOut() {
   const toast = useToast();
   const session = useSession();
   const store = useOrderStore();
-  const shopId = useCurrentShopId();
   const [step, setStep] = useState<SignOutStep>('closed');
   const [unsyncedCount, setUnsyncedCount] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -50,8 +50,8 @@ export function useSignOut() {
       let guard: SignOutGuard;
       try {
         const [recording, unsynced] = await Promise.all([
-          store.hasRecordingInProgress(shopId).catch(() => null),
-          store.countUnsynced(shopId).catch(() => null),
+          store.hasRecordingOnDevice().catch(() => null),
+          store.countUnsyncedOnDevice().catch(() => null),
         ]);
         guard = evaluateSignOutGuard({ recording, unsynced });
       } catch {
@@ -79,7 +79,7 @@ export function useSignOut() {
       busyRef.current = false;
       setBusy(false);
     }
-  }, [store, shopId, session, navigation, toast, t, fail]);
+  }, [store, session, navigation, toast, t, fail]);
 
   const openSyncCenter = useCallback(() => {
     setStep('closed');
