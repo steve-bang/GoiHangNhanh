@@ -1,11 +1,22 @@
+import type { ReactNode } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
 import { useAppNavigation } from '@/platform';
-import { Avatar, Button, Card, ListItem, Screen, StatusBadge, Text, useTheme } from '@/shared/ui';
+import {
+  Avatar,
+  Card,
+  ListGroup,
+  ListItem,
+  Screen,
+  StatusBadge,
+  Text,
+  useTheme,
+} from '@/shared/ui';
 
 import type { ShopSummary } from '../domain/types';
+import { Notice } from './Notice';
 import { usePersonalGateways } from './PersonalGatewaysProvider';
 import { RegionError, RegionSkeleton } from './RegionParts';
 import { useSession } from './SessionProvider';
@@ -13,10 +24,10 @@ import { useRegion } from './use-region';
 import { useReloadOnShopUpdated } from './use-shop-revision-reload';
 
 /**
- * UI-I02 Quản lý cửa hàng (PER-05): thẻ shop đang dùng (tên, vai trò, trạng thái), lối sửa tên (PER-06)
- * và chuyển cửa hàng (PER-07, chỉ khi tài khoản có từ hai cửa hàng trở lên, Q-19f). Quản lý thành viên
- * KHÔNG ở đây (O-03, O-07 chưa chốt). Quyền sửa do cổng trả (`canEdit`): UI chỉ phản ánh, cổng/Rules
- * mới là chốt thật. Tên shop không phải định danh nên đổi tên không đụng tới bằng chứng đã lưu.
+ * UI-I02 Cài đặt cửa hàng (PER-05): thông tin cửa hàng đang dùng (tên, vai trò, trạng thái), lối sửa tên
+ * (PER-06) và chuyển cửa hàng (PER-07, chỉ khi tài khoản có từ hai cửa hàng trở lên, Q-19f). Quản lý
+ * thành viên KHÔNG ở đây (O-03, O-07 chưa chốt). Quyền sửa do cổng trả (`canEdit`): UI chỉ phản ánh,
+ * cổng/Rules mới là chốt thật. Tên cửa hàng không phải định danh nên đổi tên không đụng tới bằng chứng đã lưu.
  */
 export function ShopSettingsScreen() {
   const { t } = useTranslation();
@@ -43,20 +54,21 @@ export function ShopSettingsScreen() {
       title={t('nav:titles.UI-I02')}
       onBack={navigation.back}
       testID="screen-UI-I02"
+      contentGap={tokens.space.xl}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
     >
+      <Text color="textMuted" testID="shop-settings-intro">
+        {t('personal:shop.settingsIntro')}
+      </Text>
       {refreshFailed ? (
-        <Text
-          variant="caption"
-          color="textMuted"
-          accessibilityRole="alert"
-          testID="shop-refresh-failed"
-        >
+        <Notice alert testID="shop-refresh-failed">
           {t('personal:shop.refreshFailed')}
-        </Text>
+        </Notice>
       ) : null}
 
-      {shop.state.status === 'loading' ? <RegionSkeleton testID="shop-settings-loading" /> : null}
+      {shop.state.status === 'loading' ? (
+        <RegionSkeleton shape="square" testID="shop-settings-loading" />
+      ) : null}
       {shop.state.status === 'error' ? (
         <RegionError region={shop} code={shop.state.code} testID="shop-settings-error" />
       ) : null}
@@ -93,55 +105,100 @@ function ShopDetails({
 }) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
+  const status = t(`personal:shop.status.${shop.status}`);
+  const hasActions = shop.canEdit || canSwitch;
   return (
-    <View style={{ gap: tokens.space.lg }}>
-      <Card testID="shop-settings-card">
-        <View style={{ alignItems: 'center', gap: tokens.space.sm }}>
-          <Avatar name={shop.name} size="xl" testID="shop-settings-avatar" />
-          <Text variant="sectionTitle" testID="shop-settings-name">
-            {shop.name}
-          </Text>
-        </View>
+    <View style={{ gap: tokens.space.xl }}>
+      <ListGroup testID="shop-settings-card">
         <ListItem
-          title={t('personal:shop.roleLabel')}
-          subtitle={t(`personal:shop.role.${shop.role}`)}
-          showChevron={false}
-          testID="shop-settings-role"
-        />
-        <ListItem
-          title={t('personal:shop.statusLabel')}
-          trailing={
-            <StatusBadge
-              label={t(`personal:shop.status.${shop.status}`)}
-              tone={shop.status === 'active' ? 'neutral' : 'warning'}
-            />
+          leading={
+            <Avatar name={shop.name} size="lg" shape="square" testID="shop-settings-avatar" />
           }
-          accessibilityLabel={`${t('personal:shop.statusLabel')}. ${t(`personal:shop.status.${shop.status}`)}`}
+          title={shop.name}
           showChevron={false}
+          testID="shop-settings-name"
+        />
+        <InfoRow
+          label={t('personal:shop.roleLabel')}
+          testID="shop-settings-role"
+          accessibilityValue={t(`personal:shop.role.${shop.role}`)}
+        >
+          <Text>{t(`personal:shop.role.${shop.role}`)}</Text>
+        </InfoRow>
+        <InfoRow
+          label={t('personal:shop.statusLabel')}
           testID="shop-settings-status"
-        />
-      </Card>
-      {shop.canEdit ? (
-        <Button
-          label={t('personal:shop.editAction')}
-          onPress={onEdit}
-          testID="shop-settings-edit"
-        />
-      ) : (
+          accessibilityValue={status}
+        >
+          <StatusBadge label={status} tone={shop.status === 'active' ? 'neutral' : 'warning'} />
+        </InfoRow>
+      </ListGroup>
+      {hasActions ? (
+        <ListGroup testID="shop-settings-actions">
+          {shop.canEdit ? (
+            <ListItem
+              leadingIcon="edit"
+              title={t('personal:shop.editAction')}
+              titleWeight="regular"
+              onPress={onEdit}
+              testID="shop-settings-edit"
+            />
+          ) : null}
+          {canSwitch ? (
+            <ListItem
+              leadingIcon="swap"
+              title={t('personal:shop.switchAction')}
+              titleWeight="regular"
+              onPress={onSwitch}
+              testID="shop-settings-switch"
+            />
+          ) : null}
+        </ListGroup>
+      ) : null}
+      {!shop.canEdit ? (
         <Text color="textMuted" testID="shop-settings-no-permission">
           {t('personal:shop.noEditPermission')}
         </Text>
-      )}
-      {canSwitch ? (
-        <Card>
-          <ListItem
-            leadingIcon="store"
-            title={t('personal:shop.switchAction')}
-            onPress={onSwitch}
-            testID="shop-settings-switch"
-          />
-        </Card>
       ) : null}
+    </View>
+  );
+}
+
+/**
+ * Hàng thông tin chỉ đọc: nhãn (caption, mờ) bên trái, giá trị cỡ thường bên phải; xuống dòng khi
+ * hẹp hoặc chữ lớn thay vì ép cột chữ. Một phần tử trợ năng đọc "nhãn. giá trị".
+ */
+function InfoRow({
+  label,
+  accessibilityValue,
+  testID,
+  children,
+}: {
+  label: string;
+  accessibilityValue: string;
+  testID: string;
+  children: ReactNode;
+}) {
+  const { tokens } = useTheme();
+  return (
+    <View
+      testID={testID}
+      accessible
+      accessibilityLabel={`${label}. ${accessibilityValue}`}
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: tokens.space.sm,
+        paddingHorizontal: tokens.space.lg,
+        paddingVertical: tokens.space.md,
+      }}
+    >
+      <Text variant="caption" color="textMuted">
+        {label}
+      </Text>
+      {children}
     </View>
   );
 }

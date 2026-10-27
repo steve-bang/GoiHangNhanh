@@ -35,13 +35,16 @@ describe('ShopSettingsScreen (UI-I02, PER-05)', () => {
     });
     expect(screen.getByTestId('shop-settings-loading')).toBeOnTheScreen();
     await waitFor(() =>
-      expect(screen.getByTestId('shop-settings-name')).toHaveTextContent('Shop A'),
+      expect(screen.getByTestId('shop-settings-name')).toHaveTextContent(/Shop A/),
     );
     expect(screen.getByTestId('shop-settings-role')).toHaveTextContent(/Chủ cửa hàng/);
     expect(screen.getByTestId('shop-settings-status')).toHaveTextContent(/Đang hoạt động/);
     expect(
       screen.getByTestId('shop-settings-avatar', { includeHiddenElements: true }),
     ).toHaveTextContent(/^S/);
+    expect(
+      screen.getByText('Quản lý thông tin cửa hàng đang lưu bằng chứng đơn hàng.'),
+    ).toBeOnTheScreen();
     expect(screen.queryByText(/Thành viên và quyền/)).toBeNull();
     expect(screen.queryByTestId('shop-settings-members')).toBeNull();
   });
@@ -59,6 +62,31 @@ describe('ShopSettingsScreen (UI-I02, PER-05)', () => {
       /chưa có quyền sửa thông tin cửa hàng.*liên hệ chủ cửa hàng/,
     );
     expect(screen.getByTestId('shop-settings-role')).toHaveTextContent(/Thành viên/);
+  });
+
+  it('hàng thông tin: nhãn bên này, giá trị bên kia, đọc thành "nhãn. giá trị"', async () => {
+    await open();
+    expect(screen.getByTestId('shop-settings-role').props.accessibilityLabel).toBe(
+      'Vai trò. Chủ cửa hàng',
+    );
+    expect(screen.getByTestId('shop-settings-status').props.accessibilityLabel).toBe(
+      'Trạng thái. Đang hoạt động',
+    );
+  });
+
+  it('thao tác là nhóm hàng có mũi tên (không còn nút xanh to): Chỉnh sửa thông tin, Chuyển cửa hàng khi từ hai cửa hàng', async () => {
+    await open(createFakePersonalGateways({ shops: [SHOP_A, SHOP_B] }));
+    await waitFor(() => expect(screen.getByTestId('shop-settings-switch')).toBeOnTheScreen());
+    const actions = screen.getByTestId('shop-settings-actions');
+    expect(actions).toContainElement(screen.getByTestId('shop-settings-edit'));
+    expect(actions).toContainElement(screen.getByTestId('shop-settings-switch'));
+    expect(screen.getByTestId('shop-settings-edit')).toHaveTextContent(/Chỉnh sửa thông tin/);
+    expect(screen.getByTestId('shop-settings-edit')).toHaveTextContent(/chevron-forward/);
+  });
+
+  it('không có hành động nào (không quyền sửa, một cửa hàng): không dựng nhóm hàng rỗng', async () => {
+    await open(createFakePersonalGateways({ shops: [SHOP_B] }));
+    expect(screen.queryByTestId('shop-settings-actions')).toBeNull();
   });
 
   it('chỉ một shop: ẩn Chuyển cửa hàng', async () => {
@@ -97,7 +125,7 @@ describe('ShopSettingsScreen (UI-I02, PER-05)', () => {
     await gateways.account.updateShopName('shop-a', 'Shop Mới');
     await fireEvent.press(screen.getByTestId('probe-shop-updated'));
     await waitFor(() =>
-      expect(screen.getByTestId('shop-settings-name')).toHaveTextContent('Shop Mới'),
+      expect(screen.getByTestId('shop-settings-name')).toHaveTextContent(/Shop Mới/),
     );
   });
 });

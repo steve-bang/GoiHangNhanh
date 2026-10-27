@@ -3,10 +3,11 @@ import { useTranslation } from 'react-i18next';
 
 import { useAppNavigation } from '@/platform';
 import {
+  Avatar,
   BottomSheet,
   Button,
-  Card,
   ConfirmDialog,
+  ListGroup,
   ListItem,
   Screen,
   StatusBadge,
@@ -47,7 +48,7 @@ export function ShopSwitchScreen() {
         <RegionError region={shops} code={shops.state.code} testID="switch-shop-error" />
       ) : null}
       {shops.state.status === 'ready' ? (
-        <Card testID="switch-shop-list">
+        <ListGroup testID="switch-shop-list">
           {shops.state.data.map((shop) => {
             const isCurrent = shop.id === currentId;
             const suspended = shop.status !== 'active';
@@ -59,7 +60,7 @@ export function ShopSwitchScreen() {
             return (
               <ListItem
                 key={shop.id}
-                leadingIcon="store"
+                leading={<Avatar name={shop.name} size="md" shape="square" />}
                 title={shop.name}
                 subtitle={t(`personal:shop.role.${shop.role}`)}
                 trailing={
@@ -82,7 +83,7 @@ export function ShopSwitchScreen() {
               />
             );
           })}
-        </Card>
+        </ListGroup>
       ) : null}
 
       <ConfirmDialog
