@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getMinTouchTarget, useConfirmBeforeLeave } from '@/platform';
+import { fontWeight, layout } from '@/core/theme';
 
 import { ConfirmDialog } from './ConfirmDialog';
 import { Icon } from './Icon';
@@ -82,15 +83,21 @@ export function RecordingFrame({
   testID,
 }: RecordingFrameProps) {
   const { t } = useTranslation();
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
   const [leaveDialogVisible, setLeaveDialogVisible] = useState(false);
   const { allowLeave } = useConfirmBeforeLeave(true, () => setLeaveDialogVisible(true));
   const touch = getMinTouchTarget();
-  const overlay = { backgroundColor: colors.cameraControl, borderRadius: radius.md } as const;
+  const overlay = {
+    backgroundColor: tokens.color.camera.control,
+    borderRadius: tokens.radius.md,
+  } as const;
 
   return (
-    <View testID={testID} style={[styles.root, { backgroundColor: colors.cameraBackground }]}>
+    <View
+      testID={testID}
+      style={[styles.root, { backgroundColor: tokens.color.camera.background }]}
+    >
       <StatusBar style="light" />
       <View style={StyleSheet.absoluteFill}>{preview}</View>
 
@@ -98,20 +105,20 @@ export function RecordingFrame({
         style={[
           styles.content,
           {
-            paddingTop: insets.top + spacing.sm,
-            paddingBottom: Math.max(insets.bottom, spacing.lg),
-            paddingHorizontal: spacing.md,
+            paddingTop: insets.top + tokens.space.sm,
+            paddingBottom: Math.max(insets.bottom, tokens.space.lg),
+            paddingHorizontal: tokens.space.md,
           },
         ]}
       >
-        <View style={[styles.top, { gap: spacing.sm }]}>
+        <View style={[styles.top, { gap: tokens.space.sm }]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('common:recording.close')}
             onPress={() => setLeaveDialogVisible(true)}
             style={[styles.close, { minWidth: touch, minHeight: touch }]}
           >
-            <Icon name="close" size={28} color={colors.onCamera} />
+            <Icon name="close" size={28} color={tokens.color.camera.onCamera} />
           </Pressable>
           <View
             accessible
@@ -123,24 +130,28 @@ export function RecordingFrame({
             style={[
               styles.badge,
               overlay,
-              { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm, gap: spacing.sm },
+              {
+                paddingHorizontal: tokens.space.sm,
+                paddingVertical: tokens.space.sm,
+                gap: tokens.space.sm,
+              },
             ]}
           >
             {recording ? (
               <>
                 <View
                   testID="recording-dot"
-                  style={[styles.dot, { backgroundColor: colors.danger }]}
+                  style={[styles.dot, { backgroundColor: tokens.color.camera.recordingIndicator }]}
                 />
-                <Text variant="overlay" style={{ color: colors.onCamera }}>
+                <Text variant="overlay" style={{ color: tokens.color.camera.onCamera }}>
                   {badgeLabel}
                 </Text>
-                <Text variant="overlay" style={{ color: colors.onCamera }}>
+                <Text variant="overlay" style={{ color: tokens.color.camera.onCamera }}>
                   {clockLabel}
                 </Text>
               </>
             ) : (
-              <Text variant="overlay" style={{ color: colors.onCamera }}>
+              <Text variant="overlay" style={{ color: tokens.color.camera.onCamera }}>
                 {previewLabel}
               </Text>
             )}
@@ -151,7 +162,7 @@ export function RecordingFrame({
             style={[
               styles.identity,
               overlay,
-              { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs + 2 },
+              { paddingHorizontal: tokens.space.sm, paddingVertical: tokens.space.tight },
             ]}
           >
             {primaryCode ? (
@@ -162,7 +173,7 @@ export function RecordingFrame({
                 numberOfLines={1}
                 ellipsizeMode="middle"
                 accessibilityLabel={primaryCode}
-                style={{ color: colors.onCamera }}
+                style={{ color: tokens.color.camera.onCamera }}
               >
                 {primaryCode}
               </Text>
@@ -170,7 +181,7 @@ export function RecordingFrame({
             <Text
               variant="overlay"
               numberOfLines={1}
-              style={{ color: colors.onCamera, fontWeight: '400' }}
+              style={{ color: tokens.color.camera.onCamera, fontWeight: fontWeight.regular }}
             >
               {secondaryLabel}
             </Text>
@@ -184,16 +195,20 @@ export function RecordingFrame({
             style={[
               styles.notice,
               {
-                backgroundColor: colors.warningSoft,
-                borderRadius: radius.md,
-                padding: spacing.sm,
-                gap: spacing.sm,
-                marginTop: spacing.sm,
+                backgroundColor: tokens.color.feedback.warning.bg,
+                borderRadius: tokens.radius.md,
+                padding: tokens.space.sm,
+                gap: tokens.space.sm,
+                marginTop: tokens.space.sm,
               },
             ]}
           >
-            <Icon name="info" size={18} color={colors.warning} />
-            <Text variant="caption" bold style={[styles.noticeText, { color: colors.warning }]}>
+            <Icon name="info" size={18} color={tokens.color.feedback.warning.fg} />
+            <Text
+              variant="caption"
+              bold
+              style={[styles.noticeText, { color: tokens.color.feedback.warning.fg }]}
+            >
               {notice}
             </Text>
           </View>
@@ -210,27 +225,41 @@ export function RecordingFrame({
               style={[
                 styles.torch,
                 overlay,
-                { width: Math.max(touch, 48), height: Math.max(touch, 48) },
+                {
+                  width: Math.max(touch, layout.component.record.controlMin),
+                  height: Math.max(touch, layout.component.record.controlMin),
+                },
               ]}
             >
-              <Icon name={torch ? 'flash' : 'flash-off'} size={24} color={colors.onCamera} />
+              <Icon
+                name={torch ? 'flash' : 'flash-off'}
+                size={24}
+                color={tokens.color.camera.onCamera}
+              />
             </Pressable>
           ) : null}
           {!preview ? (
-            <Text style={[styles.previewText, { color: colors.onCamera }]}>
+            <Text style={[styles.previewText, { color: tokens.color.camera.onCamera }]}>
               {previewMessage ?? t('common:recording.cameraPlaceholder')}
             </Text>
           ) : null}
         </View>
 
-        <View style={[styles.bottom, { gap: spacing.lg }]}>
+        <View style={[styles.bottom, { gap: tokens.space.lg }]}>
           <View
             style={[
               styles.guidance,
-              { backgroundColor: colors.scrim, borderRadius: radius.md, padding: spacing.md },
+              {
+                backgroundColor: tokens.color.overlay.scrim,
+                borderRadius: tokens.radius.md,
+                padding: tokens.space.md,
+              },
             ]}
           >
-            <Text variant="formBody" style={[styles.previewText, { color: colors.onCamera }]}>
+            <Text
+              variant="formBody"
+              style={[styles.previewText, { color: tokens.color.camera.onCamera }]}
+            >
               {guidance}
             </Text>
           </View>
@@ -246,9 +275,11 @@ export function RecordingFrame({
             }}
             style={styles.stopWrap}
           >
-            <View style={[styles.stopRing, { borderColor: colors.onCamera }]}>
-              <View style={[styles.stopInner, { backgroundColor: colors.danger }]}>
-                <Icon name="stop" size={28} color={colors.onCamera} />
+            <View style={[styles.stopRing, { borderColor: tokens.color.camera.onCamera }]}>
+              <View
+                style={[styles.stopInner, { backgroundColor: tokens.color.feedback.danger.fg }]}
+              >
+                <Icon name="stop" size={28} color={tokens.color.camera.onCamera} />
               </View>
             </View>
           </Pressable>
@@ -285,29 +316,43 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center' },
   close: { alignItems: 'center', justifyContent: 'center' },
   badge: { flexDirection: 'row', alignItems: 'center' },
-  dot: { width: 10, height: 10, borderRadius: 5 },
+  dot: {
+    width: layout.component.record.dot,
+    height: layout.component.record.dot,
+    borderRadius: layout.radius.full,
+  },
   spacer: { flex: 1 },
+  // token-exception: giới hạn độ rộng nhãn mã đơn trên khung quay để không đẩy nút khác
   identity: { flexShrink: 1, maxWidth: 160 },
   notice: { flexDirection: 'row', alignItems: 'center' },
   noticeText: { flex: 1 },
-  middle: { flex: 1, alignItems: 'flex-end', justifyContent: 'flex-start', paddingTop: 12 },
+  middle: {
+    flex: 1,
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
+    paddingTop: layout.space.md,
+  },
   torch: { alignItems: 'center', justifyContent: 'center' },
   previewText: { textAlign: 'center', alignSelf: 'stretch' },
   bottom: { alignItems: 'center' },
   guidance: { alignSelf: 'stretch' },
-  stopWrap: { alignItems: 'center', minHeight: 88, justifyContent: 'center' },
+  stopWrap: {
+    alignItems: 'center',
+    minHeight: layout.component.record.stopAreaMinHeight,
+    justifyContent: 'center',
+  },
   stopRing: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    borderWidth: 4,
+    width: layout.component.record.stopOuter,
+    height: layout.component.record.stopOuter,
+    borderRadius: layout.radius.full,
+    borderWidth: layout.component.record.stopRing,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stopInner: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: layout.component.record.stopInner,
+    height: layout.component.record.stopInner,
+    borderRadius: layout.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },

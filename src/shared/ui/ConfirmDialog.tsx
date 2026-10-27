@@ -35,7 +35,7 @@ export function ConfirmDialog({
   destructive = false,
   primary = destructive ? 'cancel' : 'confirm',
 }: ConfirmDialogProps) {
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   return (
     <Modal
       visible={visible}
@@ -44,22 +44,27 @@ export function ConfirmDialog({
       statusBarTranslucent
       onRequestClose={onCancel}
     >
-      <View style={[styles.root, { backgroundColor: colors.scrim, padding: spacing.xl }]}>
+      <View
+        style={[
+          styles.root,
+          { backgroundColor: tokens.color.overlay.scrim, padding: tokens.space.xl },
+        ]}
+      >
         <View
           accessibilityViewIsModal
           style={{
-            backgroundColor: colors.surface,
-            borderRadius: radius.lg,
-            padding: spacing.xl,
+            backgroundColor: tokens.color.surface.raised,
+            borderRadius: tokens.radius.lg,
+            padding: tokens.space.xl,
             maxHeight: '90%',
           }}
         >
-          <ScrollView contentContainerStyle={{ gap: spacing.md }}>
+          <ScrollView contentContainerStyle={{ gap: tokens.space.md }}>
             <Text variant="sectionTitle" accessibilityRole="header">
               {title}
             </Text>
             <Text>{message}</Text>
-            <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
+            <View style={{ gap: tokens.space.sm, marginTop: tokens.space.sm }}>
               {primary === 'cancel' ? (
                 <>
                   <Button label={cancelLabel} onPress={onCancel} variant="primary" />

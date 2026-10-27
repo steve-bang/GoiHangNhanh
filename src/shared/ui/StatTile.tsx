@@ -19,21 +19,26 @@ interface StatTileProps {
 
 /** Ô thống kê nhỏ (Trang chủ): số lớn + nhãn trạng thái; chạm để xem chi tiết. */
 export function StatTile({ value, label, icon, tone, onPress, testID }: StatTileProps) {
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   const palette = {
-    success: { fg: colors.success, bg: colors.successSoft },
-    brand: { fg: colors.brand, bg: colors.brandSoft },
-    danger: { fg: colors.danger, bg: colors.dangerSoft },
+    success: { fg: tokens.color.feedback.success.fg, bg: tokens.color.feedback.success.bg },
+    brand: { fg: tokens.color.action.primary, bg: tokens.color.brand.soft },
+    danger: { fg: tokens.color.feedback.danger.fg, bg: tokens.color.feedback.danger.bg },
   }[tone];
   return (
     <Card
       testID={testID}
       {...(onPress ? { onPress } : {})}
       accessibilityLabel={`${label}: ${value}`}
-      style={{ flex: 1, backgroundColor: palette.bg, borderColor: palette.bg, padding: spacing.md }}
+      style={{
+        flex: 1,
+        backgroundColor: palette.bg,
+        borderColor: palette.bg,
+        padding: tokens.space.md,
+      }}
     >
-      <View style={{ gap: spacing.xs }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+      <View style={{ gap: tokens.space.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs }}>
           <Icon name={icon} size={20} color={palette.fg} />
           <Text variant="screenTitle" style={{ color: palette.fg }}>
             {value}

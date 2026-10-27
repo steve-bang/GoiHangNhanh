@@ -28,7 +28,7 @@ export function BottomSheet({
   compact = false,
 }: BottomSheetProps) {
   const { t } = useTranslation();
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <Modal
@@ -38,7 +38,7 @@ export function BottomSheet({
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <View style={[styles.root, { backgroundColor: colors.scrim }]}>
+      <View style={[styles.root, { backgroundColor: tokens.color.overlay.scrim }]}>
         <Pressable
           style={styles.backdrop}
           onPress={onClose}
@@ -50,12 +50,12 @@ export function BottomSheet({
           style={[
             styles.sheet,
             {
-              backgroundColor: colors.surface,
-              borderTopLeftRadius: radius.lg,
-              borderTopRightRadius: radius.lg,
-              padding: compact ? spacing.md : spacing.lg,
-              paddingBottom: Math.max(insets.bottom, compact ? spacing.md : spacing.lg),
-              gap: compact ? spacing.sm : spacing.md,
+              backgroundColor: tokens.color.surface.raised,
+              borderTopLeftRadius: tokens.radius.lg,
+              borderTopRightRadius: tokens.radius.lg,
+              padding: compact ? tokens.space.md : tokens.space.lg,
+              paddingBottom: Math.max(insets.bottom, compact ? tokens.space.md : tokens.space.lg),
+              gap: compact ? tokens.space.sm : tokens.space.md,
             },
           ]}
         >

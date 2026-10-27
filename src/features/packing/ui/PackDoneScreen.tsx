@@ -18,7 +18,7 @@ import { usePackSession } from './use-pack-session';
  */
 export function PackDoneScreen() {
   const { t } = useTranslation();
-  const { spacing } = useTheme();
+  const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const session = usePackSession();
 
@@ -63,7 +63,7 @@ export function PackDoneScreen() {
       }
     >
       <Card>
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: tokens.space.sm }}>
           <Text>{`${t('screens:confirm.orderCode')}: ${session.snapshot.orderCode}`}</Text>
           <Text>{t('screens:packDone.summary')}</Text>
           <Text>{`${t('screens:packDone.videoCount')}: 1`}</Text>

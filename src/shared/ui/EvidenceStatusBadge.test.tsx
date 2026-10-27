@@ -44,7 +44,8 @@ describe('EvidenceStatusBadge (docs/09 mục 3)', () => {
     expect(glyph).not.toMatch(/check|done|tick/);
     expect(screen.getByTestId(`icon-${glyph}`)).toBeOnTheScreen();
     expect(screen.queryByTestId(/icon-.*(check|done)/)).toBeNull();
-    expect(presentation.colorRole).not.toBe('success');
+    expect(presentation.statusToken).not.toBe('uploaded');
+    expect(presentation.statusToken).not.toBe('verified');
   });
 
   it('Đã tải lên và Đã xác minh khác chữ và khác glyph', () => {

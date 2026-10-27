@@ -18,6 +18,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # check:tokens so sánh với origin/main để cảnh báo sửa tệp ngoài phạm vi Design Token
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -26,6 +28,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run format:check
+      - run: npm run check:tokens
       - run: npm test
 
   rules:

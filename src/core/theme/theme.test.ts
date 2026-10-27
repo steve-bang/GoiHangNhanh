@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { colors } from './colors';
+import { semantic } from './semantic';
 import { EVIDENCE_STATUS_PRESENTATION } from './evidence-status';
 import { MIN_TOUCH_TARGET, typography } from './typography';
 
@@ -79,6 +80,35 @@ describe('tương phản màu (WCAG AA 4.5:1 cho chữ thường)', () => {
   });
 });
 
+describe('tương phản token ngữ nghĩa (WCAG AA)', () => {
+  const { color, status } = semantic;
+  it.each([
+    ['text.primary/screen', color.text.primary, color.surface.screen],
+    ['text.primary/raised', color.text.primary, color.surface.raised],
+    ['text.primary/muted', color.text.primary, color.surface.muted],
+    ['text.secondary/screen', color.text.secondary, color.surface.screen],
+    ['text.secondary/raised', color.text.secondary, color.surface.raised],
+    ['text.strong/raised', color.text.strong, color.surface.raised],
+    ['text.subtle/raised', color.text.subtle, color.surface.raised],
+    ['text.onAction/primary', color.text.onAction, color.action.primary],
+    ['text.onAction/destructive', color.text.onAction, color.action.destructive],
+    ['action.primary/screen', color.action.primary, color.surface.screen],
+    ['action.primary/brandSoft', color.action.primary, color.brand.soft],
+    ['text.primary/brandSoft', color.text.primary, color.brand.soft],
+    ['text.primary/info', color.text.primary, color.feedback.info.bg],
+    ['text.primary/dangerBg', color.text.primary, color.feedback.danger.bg],
+    ['success', color.feedback.success.fg, color.feedback.success.bg],
+    ['warning', color.feedback.warning.fg, color.feedback.warning.bg],
+    ['danger', color.feedback.danger.fg, color.feedback.danger.bg],
+    ['warning/screen', color.feedback.warning.fg, color.surface.screen],
+    ['danger/screen', color.feedback.danger.fg, color.surface.screen],
+    ['camera', color.camera.onCamera, color.camera.background],
+    ...Object.entries(status).map(([k, v]) => [`status.${k}`, v.fg, v.bg] as const),
+  ] as const)('%s', (_name, fg, bg) => {
+    expect(contrast(fg, bg)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
 describe('nhãn trạng thái bằng chứng (docs/09 mục 3)', () => {
   const entries = Object.entries(EVIDENCE_STATUS_PRESENTATION);
 
@@ -87,21 +117,27 @@ describe('nhãn trạng thái bằng chứng (docs/09 mục 3)', () => {
     expect(new Set(entries.map(([, p]) => p.icon)).size).toBe(6);
   });
 
+  it('mỗi nhãn có khóa màu riêng trong semantic.status (không dùng chung)', () => {
+    expect(new Set(entries.map(([, p]) => p.statusToken)).size).toBe(6);
+    for (const [, p] of entries) expect(semantic.status[p.statusToken]).toBeDefined();
+  });
+
   it('Đã tải lên và Đã xác minh cùng sắc xanh nhưng khác biểu tượng', () => {
     const { uploaded, verified } = EVIDENCE_STATUS_PRESENTATION;
-    expect(uploaded.colorRole).toBe(verified.colorRole);
+    expect(semantic.status[uploaded.statusToken].fg).toBe(semantic.status[verified.statusToken].fg);
     expect(uploaded.icon).not.toBe(verified.icon);
   });
 
   it('Đã lưu trên máy không dùng màu thành công hay biểu tượng tick', () => {
     const p = EVIDENCE_STATUS_PRESENTATION.saved_on_device;
-    expect(p.colorRole).not.toBe('success');
+    expect(semantic.status[p.statusToken].fg).not.toBe(semantic.color.feedback.success.fg);
     expect(p.icon).not.toMatch(/check|done|tick/);
   });
 
   it('chỉ trạng thái lỗi dùng màu đỏ', () => {
     for (const [label, p] of entries) {
-      expect(p.colorRole === 'danger').toBe(label === 'error');
+      const isRed = semantic.status[p.statusToken].fg === semantic.color.feedback.danger.fg;
+      expect(isRed).toBe(label === 'error');
     }
   });
 });

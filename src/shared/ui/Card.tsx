@@ -13,7 +13,7 @@ interface CardProps {
   tone?: 'default' | 'brand' | 'warning' | 'danger';
   style?: StyleProp<ViewStyle>;
   testID?: string | undefined;
-  /** Padding nhỏ (`spacing.md`) cho khối thông tin dày của nhóm màn form. */
+  /** Padding nhỏ (`tokens.space.md`) cho khối thông tin dày của nhóm màn form. */
   compact?: boolean;
 }
 
@@ -27,19 +27,19 @@ export function Card({
   testID,
   compact = false,
 }: CardProps) {
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const background = {
-    default: colors.surface,
-    brand: colors.brandSoft,
-    warning: colors.warningSoft,
-    danger: colors.dangerSoft,
+    default: tokens.color.surface.raised,
+    brand: tokens.color.brand.soft,
+    warning: tokens.color.feedback.warning.bg,
+    danger: tokens.color.feedback.danger.bg,
   }[tone];
   const base = {
     backgroundColor: background,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    padding: compact ? spacing.md : spacing.lg,
+    borderColor: tokens.color.border.default,
+    borderWidth: tokens.borderWidth.thin,
+    borderRadius: tokens.radius.md,
+    padding: compact ? tokens.space.md : tokens.space.lg,
   } as const;
 
   if (!onPress) {
@@ -57,7 +57,7 @@ export function Card({
       {...(accessibilityLabel ? { accessibilityLabel } : {})}
       style={({ pressed }) => [
         base,
-        { minHeight: getMinTouchTarget(), opacity: pressed ? 0.85 : 1 },
+        { minHeight: getMinTouchTarget(), opacity: pressed ? tokens.opacity.pressed : 1 },
         style,
       ]}
     >

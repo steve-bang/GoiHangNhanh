@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { OrderSource } from '@/core/orders/order-source';
 import { getMinTouchTarget } from '@/platform';
+import { layout } from '@/core/theme';
 
 import { Icon } from './Icon';
 import { SourceIcon } from './SourceIcon';
@@ -61,7 +62,7 @@ export function OrderCard({
   testID,
 }: OrderCardProps) {
   const { t } = useTranslation();
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const undeclared = t('common:productLines.undeclared');
   const spoken = [
     orderCode,
@@ -80,9 +81,9 @@ export function OrderCard({
       style={[
         styles.card,
         {
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-          borderRadius: radius.md,
+          backgroundColor: tokens.color.surface.raised,
+          borderColor: tokens.color.border.default,
+          borderRadius: tokens.radius.md,
         },
       ]}
     >
@@ -93,21 +94,21 @@ export function OrderCard({
         onPress={onPress}
         style={({ pressed }) => [
           {
-            paddingHorizontal: spacing.md,
-            paddingTop: spacing.sm + 2,
+            paddingHorizontal: tokens.space.md,
+            paddingTop: tokens.space.sm + tokens.space.xxs,
             paddingBottom: 0,
-            gap: spacing.xs,
-            opacity: pressed ? 0.85 : 1,
+            gap: tokens.space.xs,
+            opacity: pressed ? tokens.opacity.pressed : 1,
           },
         ]}
       >
-        <View style={[styles.codeRow, { gap: spacing.sm }]}>
+        <View style={[styles.codeRow, { gap: tokens.space.sm }]}>
           <Text variant="body" bold numberOfLines={1} ellipsizeMode="middle" style={styles.code}>
             {orderCode}
           </Text>
           <View testID={testID ? `${testID}-status` : undefined}>{statusBadge}</View>
         </View>
-        <View style={[styles.wrapRow, { columnGap: spacing.md }]}>
+        <View style={[styles.wrapRow, { columnGap: tokens.space.md }]}>
           <View style={styles.sourceRow}>
             {source ? <SourceIcon source={source} size={18} /> : null}
             <Text variant="formLabel" color="inkMuted" style={styles.shrink}>
@@ -127,7 +128,7 @@ export function OrderCard({
           ) : null}
         </View>
         {product ? (
-          <View style={[styles.wrapRow, { columnGap: spacing.sm }]}>
+          <View style={[styles.wrapRow, { columnGap: tokens.space.sm }]}>
             <Text variant="formButton" color="ink" numberOfLines={1} style={styles.shrink}>
               {product.name}
             </Text>
@@ -144,14 +145,19 @@ export function OrderCard({
           </View>
         ) : (
           <View style={styles.undeclared}>
-            <Icon name="info" size={16} color={colors.warning} />
-            <Text variant="formButton" style={[styles.shrink, { color: colors.warning }]}>
+            <Icon name="info" size={16} color={tokens.color.feedback.warning.fg} />
+            <Text
+              variant="formButton"
+              style={[styles.shrink, { color: tokens.color.feedback.warning.fg }]}
+            >
               {undeclared}
             </Text>
           </View>
         )}
       </Pressable>
-      <View style={[styles.footer, { paddingLeft: spacing.md, paddingRight: spacing.xs }]}>
+      <View
+        style={[styles.footer, { paddingLeft: tokens.space.md, paddingRight: tokens.space.xs }]}
+      >
         <Text variant="caption" color="inkMuted" style={styles.shrink}>
           {dateLabel}
         </Text>
@@ -162,14 +168,15 @@ export function OrderCard({
           onPress={onPressAction}
           style={({ pressed }) => [
             styles.action,
-            { minHeight: getMinTouchTarget(), paddingHorizontal: spacing.sm },
+            { minHeight: getMinTouchTarget(), paddingHorizontal: tokens.space.sm },
+            // token-exception: độ mờ nhấn đậm hơn cho nút chữ nhỏ, không dùng ở chỗ khác
             { opacity: pressed ? 0.7 : 1 },
           ]}
         >
-          <Text variant="formButtonSmall" style={{ color: colors.brand }}>
+          <Text variant="formButtonSmall" style={{ color: tokens.color.action.primary }}>
             {actionLabel}
           </Text>
-          <Icon name="forward" size={16} color={colors.brand} />
+          <Icon name="forward" size={16} color={tokens.color.action.primary} />
         </Pressable>
       </View>
     </View>
@@ -177,18 +184,18 @@ export function OrderCard({
 }
 
 const styles = StyleSheet.create({
-  card: { borderWidth: 1, overflow: 'hidden' },
+  card: { borderWidth: layout.borderWidth.thin, overflow: 'hidden' },
   codeRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
   code: { flexShrink: 1 },
   wrapRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', rowGap: 0 },
-  sourceRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  sourceRow: { flexDirection: 'row', alignItems: 'center', gap: layout.space.tight, flexShrink: 1 },
   shrink: { flexShrink: 1 },
-  undeclared: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  undeclared: { flexDirection: 'row', alignItems: 'center', gap: layout.space.tight },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: layout.space.sm,
   },
-  action: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  action: { flexDirection: 'row', alignItems: 'center', gap: layout.space.xxs },
 });

@@ -34,7 +34,7 @@ export function CameraPermissionSheet({
   allowTestID,
 }: CameraPermissionSheetProps) {
   const { t } = useTranslation();
-  const { spacing } = useTheme();
+  const { tokens } = useTheme();
   const blocked = status === 'blocked';
   return (
     <BottomSheet
@@ -44,7 +44,7 @@ export function CameraPermissionSheet({
         blocked ? 'screens:scan.permission.blockedTitle' : 'screens:scan.permission.askTitle',
       )}
     >
-      <View testID={testID} style={{ gap: spacing.md }}>
+      <View testID={testID} style={{ gap: tokens.space.md }}>
         <Text>
           {blocked
             ? t('screens:scan.permission.blockedMessage')

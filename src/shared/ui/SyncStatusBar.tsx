@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from './Card';
 import { EvidenceStatusBadge } from './EvidenceStatusBadge';
 import { Text } from './Text';
+import { layout } from '@/core/theme';
 
 /** Số tệp theo ba nhóm cần theo dõi. Nhóm có 0 tệp không hiển thị. */
 export interface SyncCounts {
@@ -54,6 +55,11 @@ export function SyncStatusBar({ counts, onPress }: SyncStatusBarProps) {
 }
 
 const styles = StyleSheet.create({
-  column: { gap: 8 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  column: { gap: layout.space.sm },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: layout.space.md,
+  },
 });

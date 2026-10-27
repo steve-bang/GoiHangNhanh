@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { getMinTouchTarget } from '@/platform';
+import { layout } from '@/core/theme';
 
 import { Icon } from './Icon';
 import { useTheme } from './theme';
@@ -27,29 +28,29 @@ export function SearchField({
   compact = false,
 }: SearchFieldProps) {
   const { t } = useTranslation();
-  const { colors, spacing, radius, typography } = useTheme();
+  const { tokens, typography } = useTheme();
   const touch = getMinTouchTarget();
   return (
     <View
       style={[
         styles.row,
         {
-          minHeight: compact ? touch : Math.max(touch, 52),
-          backgroundColor: colors.surface,
-          borderColor: compact ? colors.fieldBorder : colors.border,
-          borderRadius: radius.md,
-          paddingLeft: spacing.md,
+          minHeight: compact ? touch : Math.max(touch, tokens.component.field.minHeight),
+          backgroundColor: tokens.color.surface.raised,
+          borderColor: compact ? tokens.color.border.field : tokens.color.border.default,
+          borderRadius: tokens.radius.md,
+          paddingLeft: tokens.space.md,
         },
       ]}
     >
-      <Icon name="search" size={compact ? 20 : 22} color={colors.textMuted} />
+      <Icon name="search" size={compact ? 20 : 22} color={tokens.color.text.secondary} />
       <TextInput
         testID={testID}
         accessibilityLabel={placeholder}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
+        placeholderTextColor={tokens.color.text.secondary}
         returnKeyType="search"
         {...(onSubmitEditing ? { onSubmitEditing } : {})}
         autoCapitalize="none"
@@ -57,7 +58,7 @@ export function SearchField({
         style={[
           compact ? typography.formBody : typography.body,
           styles.input,
-          { color: colors.text },
+          { color: tokens.color.text.primary },
         ]}
       />
       {value.length > 0 ? (
@@ -67,7 +68,7 @@ export function SearchField({
           onPress={() => onChangeText('')}
           style={[styles.clear, { minWidth: touch, minHeight: touch }]}
         >
-          <Icon name="close" color={colors.textMuted} />
+          <Icon name="close" color={tokens.color.text.secondary} />
         </Pressable>
       ) : null}
     </View>
@@ -75,7 +76,12 @@ export function SearchField({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1 },
-  input: { flex: 1, paddingVertical: 8 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: layout.space.sm,
+    borderWidth: layout.borderWidth.thin,
+  },
+  input: { flex: 1, paddingVertical: layout.space.sm },
   clear: { alignItems: 'center', justifyContent: 'center' },
 });

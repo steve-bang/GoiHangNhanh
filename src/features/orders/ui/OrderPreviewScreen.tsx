@@ -26,6 +26,7 @@ import {
   useTheme,
   type ChipOption,
 } from '@/shared/ui';
+import { layout } from '@/core/theme';
 
 import { useCurrentShopId, useOrderStore } from '../data';
 import { buildNextPackage, type OrderDetails, type PackingSession } from '../domain';
@@ -44,7 +45,7 @@ type CopyTarget = 'orderCode' | 'trackingCode';
  */
 export function OrderPreviewScreen() {
   const { t } = useTranslation();
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const params = useRouteParams();
   const store = useOrderStore();
@@ -212,17 +213,17 @@ export function OrderPreviewScreen() {
         style={[
           styles.banner,
           {
-            backgroundColor: colors.successSoft,
-            borderColor: colors.success,
-            borderRadius: radius.md,
-            padding: spacing.md,
-            gap: spacing.md,
+            backgroundColor: tokens.color.feedback.success.bg,
+            borderColor: tokens.color.feedback.success.fg,
+            borderRadius: tokens.radius.md,
+            padding: tokens.space.md,
+            gap: tokens.space.md,
           },
         ]}
       >
-        <Icon name="check-circle" size={26} color={colors.success} />
+        <Icon name="check-circle" size={26} color={tokens.color.feedback.success.fg} />
         <View style={styles.flex}>
-          <Text variant="formButton" style={{ color: colors.success }}>
+          <Text variant="formButton" style={{ color: tokens.color.feedback.success.fg }}>
             {t('screens:preview.banner.title')}
           </Text>
           <Text variant="caption" color="inkMuted">
@@ -231,8 +232,8 @@ export function OrderPreviewScreen() {
         </View>
       </View>
 
-      <Card style={{ borderColor: colors.fieldBorder }}>
-        <View style={{ gap: spacing.md }}>
+      <Card style={{ borderColor: tokens.color.border.field }}>
+        <View style={{ gap: tokens.space.md }}>
           <View style={styles.copyRow}>
             <View style={styles.flex}>
               <Text variant="formLabel" color="inkMuted">
@@ -253,7 +254,7 @@ export function OrderPreviewScreen() {
               onPress={() => void copy('orderCode', order.orderCode)}
             />
           </View>
-          <View style={[styles.copyRow, { gap: spacing.sm }]}>
+          <View style={[styles.copyRow, { gap: tokens.space.sm }]}>
             <SourceIcon source={order.source} size={28} />
             <View style={styles.flex}>
               <Text variant="caption" color="ink">
@@ -294,7 +295,7 @@ export function OrderPreviewScreen() {
         </View>
       </Card>
 
-      <View style={{ gap: spacing.md }}>
+      <View style={{ gap: tokens.space.md }}>
         <Text variant="formTitle" accessibilityRole="header" color="ink">
           {t('screens:preview.products')}
         </Text>
@@ -316,17 +317,17 @@ export function OrderPreviewScreen() {
               <View
                 key={line.id}
                 testID={`preview-line-${line.id}`}
-                style={[styles.line, { gap: spacing.md }]}
+                style={[styles.line, { gap: tokens.space.md }]}
               >
                 <View
                   style={[
                     styles.thumb,
-                    { backgroundColor: colors.brandSoft, borderRadius: radius.md },
+                    { backgroundColor: tokens.color.brand.soft, borderRadius: tokens.radius.md },
                   ]}
                 >
-                  <Icon name="package" size={26} color={colors.brand} />
+                  <Icon name="package" size={26} color={tokens.color.action.primary} />
                 </View>
-                <View style={[styles.flex, { gap: spacing.sm }]}>
+                <View style={[styles.flex, { gap: tokens.space.sm }]}>
                   <View>
                     <Text variant="formButton" color="ink">
                       {line.name}
@@ -359,7 +360,7 @@ export function OrderPreviewScreen() {
         )}
       </View>
 
-      <View style={{ gap: spacing.md }}>
+      <View style={{ gap: tokens.space.md }}>
         <Text variant="formTitle" accessibilityRole="header" color="ink">
           {t('screens:preview.packages')}
         </Text>
@@ -373,10 +374,10 @@ export function OrderPreviewScreen() {
               testID="preview-add-package"
               accessibilityRole="button"
               onPress={() => void addPackage(details)}
-              style={[styles.addPackage, { minHeight: touch, gap: spacing.xs }]}
+              style={[styles.addPackage, { minHeight: touch, gap: tokens.space.xs }]}
             >
-              <Icon name="add" size={18} color={colors.brand} />
-              <Text variant="formButton" style={{ color: colors.brand }}>
+              <Icon name="add" size={18} color={tokens.color.action.primary} />
+              <Text variant="formButton" style={{ color: tokens.color.action.primary }}>
                 {t('screens:preview.addPackage')}
               </Text>
             </Pressable>
@@ -387,7 +388,11 @@ export function OrderPreviewScreen() {
       <View
         style={[
           styles.reminder,
-          { backgroundColor: colors.infoSoft, borderRadius: radius.md, padding: spacing.md },
+          {
+            backgroundColor: tokens.color.feedback.info.bg,
+            borderRadius: tokens.radius.md,
+            padding: tokens.space.md,
+          },
         ]}
       >
         <Text variant="caption" color="inkMuted">
@@ -401,10 +406,15 @@ export function OrderPreviewScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  banner: { flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
-  copyRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  banner: { flexDirection: 'row', alignItems: 'center', borderWidth: layout.borderWidth.thin },
+  copyRow: { flexDirection: 'row', alignItems: 'center', gap: layout.space.md },
   line: { flexDirection: 'row' },
-  thumb: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
-  addPackage: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8 },
+  thumb: {
+    width: layout.component.tile.xl,
+    height: layout.component.tile.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addPackage: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: layout.space.sm },
   reminder: {},
 });

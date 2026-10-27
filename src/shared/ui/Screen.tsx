@@ -29,7 +29,7 @@ interface ScreenProps {
    * header nhỏ hơn. Không đổi nền toàn app.
    */
   form?: boolean;
-  /** Khoảng cách dọc giữa các khối nội dung (mặc định `spacing.lg`); màn dày thông tin đặt nhỏ hơn. */
+  /** Khoảng cách dọc giữa các khối nội dung (mặc định `tokens.space.lg`); màn dày thông tin đặt nhỏ hơn. */
   contentGap?: number;
   children: ReactNode;
   testID?: string;
@@ -55,7 +55,7 @@ export function Screen({
   testID,
 }: ScreenProps) {
   const { t } = useTranslation();
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
   const offline = useIsOffline();
 
@@ -69,8 +69,8 @@ export function Screen({
       ) : null}
     </>
   );
-  const background = form ? colors.formBackground : colors.background;
-  const contentStyle = { padding: spacing.lg, gap: contentGap ?? spacing.lg } as const;
+  const background = form ? tokens.color.surface.raised : tokens.color.surface.screen;
+  const contentStyle = { padding: tokens.space.lg, gap: contentGap ?? tokens.space.lg } as const;
 
   return (
     <View
@@ -102,12 +102,12 @@ export function Screen({
         {footer ? (
           <View
             style={{
-              paddingHorizontal: spacing.lg,
-              paddingTop: spacing.md,
-              paddingBottom: inTabs ? spacing.lg : Math.max(insets.bottom, spacing.lg),
-              gap: spacing.sm,
+              paddingHorizontal: tokens.space.lg,
+              paddingTop: tokens.space.md,
+              paddingBottom: inTabs ? tokens.space.lg : Math.max(insets.bottom, tokens.space.lg),
+              gap: tokens.space.sm,
               backgroundColor: background,
-              borderTopColor: colors.border,
+              borderTopColor: tokens.color.border.default,
               borderTopWidth: StyleSheet.hairlineWidth,
             }}
           >

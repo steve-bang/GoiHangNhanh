@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { getMinTouchTarget } from '@/platform';
 import { Text, useTheme } from '@/shared/ui';
+import { layout } from '@/core/theme';
 
 /** Nút "Sao chép" cạnh mã đơn/mã vận đơn (Xác nhận đơn, Chi tiết đơn). `label` là nhãn đọc màn hình. */
 export function CopyButton({
@@ -15,7 +16,7 @@ export function CopyButton({
   testID: string;
 }) {
   const { t } = useTranslation();
-  const { colors, radius } = useTheme();
+  const { tokens } = useTheme();
   return (
     <Pressable
       testID={testID}
@@ -26,12 +27,12 @@ export function CopyButton({
         styles.button,
         {
           minHeight: getMinTouchTarget(),
-          backgroundColor: colors.brandSoft,
-          borderRadius: radius.lg,
+          backgroundColor: tokens.color.brand.soft,
+          borderRadius: tokens.radius.lg,
         },
       ]}
     >
-      <Text variant="formLabel" style={{ color: colors.brand }}>
+      <Text variant="formLabel" style={{ color: tokens.color.action.primary }}>
         {t('screens:preview.copy')}
       </Text>
     </Pressable>
@@ -39,5 +40,5 @@ export function CopyButton({
 }
 
 const styles = StyleSheet.create({
-  button: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
+  button: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: layout.space.md },
 });

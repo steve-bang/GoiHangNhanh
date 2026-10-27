@@ -39,7 +39,7 @@ const STAGES: readonly IllustrativeReturnStage[] = [
  */
 export function ReturnsListScreen() {
   const { t } = useTranslation();
-  const { spacing } = useTheme();
+  const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StageFilter>('all');
@@ -76,10 +76,10 @@ export function ReturnsListScreen() {
         placeholder={t('screens:returns.search')}
       />
       <FilterChips options={options} selectedKey={filter} onSelect={setFilter} />
-      <View style={{ gap: spacing.md }}>
+      <View style={{ gap: tokens.space.md }}>
         {visible.map((item) => (
           <Card key={item.id}>
-            <View style={{ gap: spacing.xs }}>
+            <View style={{ gap: tokens.space.xs }}>
               <Text variant="sectionTitle">{item.code}</Text>
               <Text color="textMuted">
                 {item.originalOrderCode ?? t('screens:returns.unlinked')}

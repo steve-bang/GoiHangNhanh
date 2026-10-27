@@ -1,6 +1,7 @@
 // ESLint flat config. Quy tắc lớp/import: xem docs/engineering/conventions.md.
 const expoConfig = require('eslint-config-expo/flat');
 const prettierConfig = require('eslint-config-prettier');
+const designTokens = require('./eslint-rules/design-tokens.cjs');
 
 // Thư viện chỉ được phép ở lớp data/platform, không được vào domain (domain là TypeScript thuần).
 const INFRA_PACKAGES = [
@@ -117,6 +118,25 @@ module.exports = [
         },
       ],
     },
+  },
+  {
+    files: ['eslint-rules/**/*.js', 'eslint-rules/**/*.cjs', 'scripts/**/*.cjs'],
+    languageOptions: {
+      globals: {
+        __dirname: 'readonly',
+        require: 'readonly',
+        module: 'writable',
+        process: 'readonly',
+        console: 'readonly',
+      },
+    },
+    rules: { 'no-console': 'off' },
+  },
+  // Design Token: chặn giá trị thiết kế viết thẳng trong giao diện (phạm vi: scripts/design-token-scope.cjs).
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    plugins: { 'design-tokens': designTokens },
+    rules: { 'design-tokens/no-raw-design-values': 'error' },
   },
   // Test được phép dùng devDependencies; test Rules chạy trong Node.
   {

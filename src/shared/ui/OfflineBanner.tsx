@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { Text } from './Text';
 import { useTheme } from './theme';
+import { layout } from '@/core/theme';
 
 interface OfflineBannerProps {
   visible: boolean;
@@ -15,7 +16,7 @@ interface OfflineBannerProps {
  */
 export function OfflineBanner({ visible }: OfflineBannerProps) {
   const { t } = useTranslation();
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   if (!visible) return null;
   return (
     <View
@@ -24,18 +25,24 @@ export function OfflineBanner({ visible }: OfflineBannerProps) {
       style={[
         styles.row,
         {
-          backgroundColor: colors.warningSoft,
-          paddingHorizontal: spacing.lg,
-          paddingVertical: spacing.sm,
+          backgroundColor: tokens.color.feedback.warning.bg,
+          paddingHorizontal: tokens.space.lg,
+          paddingVertical: tokens.space.sm,
         },
       ]}
     >
-      <Icon name="wifi-off" size={18} color={colors.warning} />
-      <Text variant="caption" bold style={{ color: colors.warning, flexShrink: 1 }}>
+      <Icon name="wifi-off" size={18} color={tokens.color.feedback.warning.fg} />
+      <Text
+        variant="caption"
+        bold
+        style={{ color: tokens.color.feedback.warning.fg, flexShrink: 1 }}
+      >
         {t('common:offline.banner')}
       </Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({ row: { flexDirection: 'row', alignItems: 'center', gap: 8 } });
+const styles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: layout.space.sm },
+});

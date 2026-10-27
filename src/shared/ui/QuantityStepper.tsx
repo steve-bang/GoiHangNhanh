@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { getMinTouchTarget } from '@/platform';
+import { layout } from '@/core/theme';
 
 import { Icon } from './Icon';
 import { Text } from './Text';
@@ -21,7 +22,7 @@ interface QuantityStepperProps {
  */
 export function QuantityStepper({ value, onChange, min = 1 }: QuantityStepperProps) {
   const { t } = useTranslation();
-  const { colors, radius } = useTheme();
+  const { tokens } = useTheme();
   const touch = getMinTouchTarget();
   const button = (icon: 'add' | 'remove', label: string, next: number, disabled: boolean) => (
     <Pressable
@@ -35,12 +36,12 @@ export function QuantityStepper({ value, onChange, min = 1 }: QuantityStepperPro
         {
           width: touch,
           height: touch,
-          backgroundColor: colors.brandSoft,
-          opacity: disabled ? 0.4 : 1,
+          backgroundColor: tokens.color.brand.soft,
+          opacity: disabled ? tokens.opacity.disabled : 1,
         },
       ]}
     >
-      <Icon name={icon} size={20} color={colors.brand} />
+      <Icon name={icon} size={20} color={tokens.color.action.primary} />
     </Pressable>
   );
   return (
@@ -48,7 +49,11 @@ export function QuantityStepper({ value, onChange, min = 1 }: QuantityStepperPro
       testID="quantity-stepper"
       style={[
         styles.box,
-        { borderColor: colors.brand, borderRadius: radius.md, backgroundColor: colors.surface },
+        {
+          borderColor: tokens.color.action.primary,
+          borderRadius: tokens.radius.md,
+          backgroundColor: tokens.color.surface.raised,
+        },
       ]}
     >
       {button('remove', t('common:actions.decrease'), value - 1, value <= min)}
@@ -65,9 +70,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    borderWidth: 1,
+    borderWidth: layout.borderWidth.thin,
     overflow: 'hidden',
   },
   button: { alignItems: 'center', justifyContent: 'center' },
-  value: { minWidth: 48, textAlign: 'center' },
+  value: { minWidth: layout.component.stepper.valueMinWidth, textAlign: 'center' },
 });

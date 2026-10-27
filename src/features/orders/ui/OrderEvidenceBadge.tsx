@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { EvidenceStatusBadge, Icon, Text, useTheme } from '@/shared/ui';
+import { layout } from '@/core/theme';
 
 import type { OrderEvidenceSummary } from '../domain';
 
@@ -30,12 +31,13 @@ export function OrderEvidenceBadge({
   summary: OrderEvidenceSummary;
   testID?: string;
 }) {
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const text = useEvidenceSummaryText(summary);
   if (summary.kind === 'label') {
     return <EvidenceStatusBadge compact status={summary.label} {...(testID ? { testID } : {})} />;
   }
-  const tone = summary.kind === 'capture' ? colors.brand : colors.textMuted;
+  const tone =
+    summary.kind === 'capture' ? tokens.color.action.primary : tokens.color.text.secondary;
   return (
     <View
       testID={testID}
@@ -45,10 +47,10 @@ export function OrderEvidenceBadge({
         styles.pill,
         {
           borderColor: tone,
-          backgroundColor: colors.surface,
-          borderRadius: radius.lg,
-          paddingHorizontal: spacing.sm,
-          paddingVertical: 2,
+          backgroundColor: tokens.color.surface.raised,
+          borderRadius: tokens.radius.lg,
+          paddingHorizontal: tokens.space.sm,
+          paddingVertical: tokens.space.xxs,
         },
       ]}
     >
@@ -65,7 +67,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
+    gap: layout.space.tight,
+    borderWidth: layout.borderWidth.thin,
   },
 });

@@ -24,11 +24,11 @@ export function EmptyState({
   icon = 'inbox',
   compact = false,
 }: EmptyStateProps) {
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   if (compact) {
     return (
-      <View style={[styles.container, { gap: spacing.sm, padding: spacing.lg }]}>
-        <Icon name={icon} size={32} color={colors.textMuted} />
+      <View style={[styles.container, { gap: tokens.space.sm, padding: tokens.space.lg }]}>
+        <Icon name={icon} size={32} color={tokens.color.text.secondary} />
         <Text bold style={styles.centered}>
           {title}
         </Text>
@@ -40,8 +40,8 @@ export function EmptyState({
     );
   }
   return (
-    <View style={[styles.container, { gap: spacing.md, padding: spacing.xl }]}>
-      <Icon name={icon} size={40} color={colors.textMuted} />
+    <View style={[styles.container, { gap: tokens.space.md, padding: tokens.space.xl }]}>
+      <Icon name={icon} size={40} color={tokens.color.text.secondary} />
       <Text variant="sectionTitle" style={styles.centered}>
         {title}
       </Text>

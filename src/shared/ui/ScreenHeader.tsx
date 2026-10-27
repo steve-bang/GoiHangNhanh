@@ -31,18 +31,18 @@ export function ScreenHeader({
   compact = false,
 }: ScreenHeaderProps) {
   const { t } = useTranslation();
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   const touch = getMinTouchTarget();
-  const color = tone === 'camera' ? colors.onCamera : colors.text;
+  const color = tone === 'camera' ? tokens.color.camera.onCamera : tokens.color.text.primary;
   return (
     <View
       style={[
         styles.row,
         {
-          paddingLeft: compact && onBack ? spacing.md : spacing.lg,
-          paddingRight: compact ? spacing.md : spacing.lg,
-          paddingVertical: spacing.sm,
-          gap: compact ? spacing.xs : spacing.sm,
+          paddingLeft: compact && onBack ? tokens.space.md : tokens.space.lg,
+          paddingRight: compact ? tokens.space.md : tokens.space.lg,
+          paddingVertical: tokens.space.sm,
+          gap: compact ? tokens.space.xs : tokens.space.sm,
         },
       ]}
     >

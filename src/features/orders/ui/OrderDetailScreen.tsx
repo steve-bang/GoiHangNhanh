@@ -16,6 +16,7 @@ import {
   Text,
   useTheme,
 } from '@/shared/ui';
+import { layout } from '@/core/theme';
 
 import { canRecordNow, formatDeviceDateTime, isSessionActive } from '../domain';
 import { CopyButton } from './CopyButton';
@@ -33,7 +34,7 @@ type CopyTarget = 'orderCode' | 'trackingCode';
  */
 export function OrderDetailScreen() {
   const { t } = useTranslation();
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const params = useRouteParams();
   const start = useStartPacking({ navigate: 'push' });
@@ -45,7 +46,7 @@ export function OrderDetailScreen() {
   };
   const header = {
     form: true,
-    contentGap: spacing.md,
+    contentGap: tokens.space.md,
     title: t('nav:titles.UI-E02'),
     onBack: navigation.back,
     inTabs: true,
@@ -81,7 +82,7 @@ export function OrderDetailScreen() {
     return (
       <Screen {...header}>
         <Card compact tone="danger" testID="order-detail-error">
-          <View style={{ gap: spacing.sm }}>
+          <View style={{ gap: tokens.space.sm }}>
             <Text variant="formBody" accessibilityRole="alert">
               {t('screens:orderDetail.loadError')}
             </Text>
@@ -137,7 +138,7 @@ export function OrderDetailScreen() {
       }
     >
       <Card compact>
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: tokens.space.sm }}>
           <Text variant="formButton" color="ink" accessibilityRole="header">
             {t('screens:orderDetail.identity')}
           </Text>
@@ -216,7 +217,7 @@ export function OrderDetailScreen() {
       </Card>
 
       <Card compact>
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: tokens.space.sm }}>
           <Text variant="formButton" color="ink" accessibilityRole="header">
             {t('screens:orderDetail.products')}
           </Text>
@@ -238,7 +239,7 @@ export function OrderDetailScreen() {
       </Card>
 
       <Card compact>
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: tokens.space.sm }}>
           <Text variant="formButton" color="ink" accessibilityRole="header">
             {t('screens:orderDetail.packages')}
           </Text>
@@ -263,7 +264,7 @@ export function OrderDetailScreen() {
       </Card>
 
       <Card compact>
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: tokens.space.sm }}>
           <Text variant="formButton" color="ink" accessibilityRole="header">
             {t('screens:orderDetail.evidence')}
           </Text>
@@ -278,13 +279,13 @@ export function OrderDetailScreen() {
       </Card>
 
       <Card compact>
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: tokens.space.sm }}>
           <Text variant="formButton" color="ink" accessibilityRole="header">
             {t('screens:orderDetail.history')}
           </Text>
           {history.map((event) => (
             <View key={event.key} style={styles.row} testID="detail-history-item">
-              <View style={[styles.dot, { backgroundColor: colors.brand }]} />
+              <View style={[styles.dot, { backgroundColor: tokens.color.action.primary }]} />
               <View style={styles.flex}>
                 <Text variant="formBody" color="ink">
                   {event.text}
@@ -307,6 +308,7 @@ export function OrderDetailScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: layout.space.sm },
+  // token-exception: chấm trạng thái nhỏ 8dp trong dòng chi tiết, kích thước riêng của hàng này
+  dot: { width: 8, height: 8, borderRadius: layout.radius.full },
 });

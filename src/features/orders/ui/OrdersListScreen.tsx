@@ -25,6 +25,7 @@ import {
   useTheme,
   type ChipOption,
 } from '@/shared/ui';
+import { layout } from '@/core/theme';
 
 import {
   EMPTY_FILTERS,
@@ -61,7 +62,7 @@ const CHIP_LABEL_KEYS: Record<StatusChip, string> = {
  */
 export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
   const { t } = useTranslation();
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const start = useStartPacking({ navigate: 'push' });
   const filterSlop = Math.max(0, Math.ceil((getMinTouchTarget() - FILTER_BUTTON_HEIGHT) / 2));
@@ -127,7 +128,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
   const emptyComponent = (() => {
     if (list.status === 'loading') {
       return (
-        <View style={{ gap: spacing.sm }} testID="orders-loading">
+        <View style={{ gap: tokens.space.sm }} testID="orders-loading">
           <Text variant="formBody" accessibilityLiveRegion="polite" color="inkMuted">
             {t('screens:orders.loading')}
           </Text>
@@ -140,7 +141,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
     if (list.status === 'error') {
       return (
         <Card compact tone="danger" testID="orders-error">
-          <View style={{ gap: spacing.sm }}>
+          <View style={{ gap: tokens.space.sm }}>
             <Text variant="formBody" accessibilityRole="alert">
               {t('screens:orders.loadError')}
             </Text>
@@ -186,7 +187,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
       form
       title={t('nav:titles.UI-E01')}
       headerRight={headerRight}
-      contentGap={spacing.sm}
+      contentGap={tokens.space.sm}
       scroll={false}
       inTabs
       testID="screen-UI-E01"
@@ -204,7 +205,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
         selectedKey={filters.status}
         onSelect={(status) => setFilters((prev) => ({ ...prev, status }))}
       />
-      <View style={[styles.countRow, { gap: spacing.md }]}>
+      <View style={[styles.countRow, { gap: tokens.space.md }]}>
         <Text
           testID="orders-count"
           variant="formBody"
@@ -227,15 +228,22 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
             styles.filterButton,
             {
               minHeight: FILTER_BUTTON_HEIGHT,
-              borderColor: advanced > 0 ? colors.brand : colors.fieldBorder,
-              backgroundColor: advanced > 0 ? colors.brandSoft : colors.surface,
-              borderRadius: radius.lg,
-              paddingHorizontal: spacing.md,
+              borderColor: advanced > 0 ? tokens.color.action.primary : tokens.color.border.field,
+              backgroundColor: advanced > 0 ? tokens.color.brand.soft : tokens.color.surface.raised,
+              borderRadius: tokens.radius.lg,
+              paddingHorizontal: tokens.space.md,
             },
           ]}
         >
-          <Icon name="filter" size={16} color={advanced > 0 ? colors.brand : colors.ink} />
-          <Text variant="formButton" style={{ color: advanced > 0 ? colors.brand : colors.ink }}>
+          <Icon
+            name="filter"
+            size={16}
+            color={advanced > 0 ? tokens.color.action.primary : tokens.color.text.strong}
+          />
+          <Text
+            variant="formButton"
+            style={{ color: advanced > 0 ? tokens.color.action.primary : tokens.color.text.strong }}
+          >
             {t(
               advanced > 0 ? 'screens:orders.filters.openWithCount' : 'screens:orders.filters.open',
               {
@@ -247,7 +255,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
       </View>
       {list.error && list.rows.length > 0 ? (
         <Card compact tone="danger" testID="orders-refresh-error">
-          <View style={{ gap: spacing.sm }}>
+          <View style={{ gap: tokens.space.sm }}>
             <Text variant="formBody" accessibilityRole="alert">
               {t('screens:orders.loadError')}
             </Text>
@@ -270,7 +278,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
       <FlatList
         testID="orders-list"
         style={styles.flex}
-        contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.lg }}
+        contentContainerStyle={{ gap: tokens.space.sm, paddingBottom: tokens.space.lg }}
         data={list.rows}
         keyExtractor={(row) => row.item.order.id}
         initialNumToRender={ORDER_LIST_PAGE_SIZE}
@@ -286,7 +294,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
         ListFooterComponent={
           list.loadingMore ? (
             <View testID="orders-loading-more" style={styles.footer}>
-              <ActivityIndicator color={colors.brand} />
+              <ActivityIndicator color={tokens.color.action.primary} />
               <Text variant="formBody" color="inkMuted">
                 {t('screens:orders.loadingMore')}
               </Text>
@@ -369,7 +377,7 @@ function HeaderButton({
   onPress: () => void;
   testID: string;
 }) {
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
   const touch = getMinTouchTarget();
   return (
     <Pressable
@@ -379,7 +387,7 @@ function HeaderButton({
       onPress={onPress}
       style={{ minWidth: touch, minHeight: touch, alignItems: 'center', justifyContent: 'center' }}
     >
-      <Icon name={icon} size={22} color={colors.brand} />
+      <Icon name={icon} size={22} color={tokens.color.action.primary} />
     </Pressable>
   );
 }
@@ -395,8 +403,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    borderWidth: 1,
+    gap: layout.space.tight,
+    borderWidth: layout.borderWidth.thin,
   },
-  footer: { alignItems: 'center', gap: 8, padding: 12 },
+  footer: { alignItems: 'center', gap: layout.space.sm, padding: layout.space.md },
 });

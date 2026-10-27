@@ -1,11 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import {
-  EVIDENCE_STATUS_PRESENTATION,
-  type ColorRole,
-  type EvidenceStatusLabel,
-} from '@/core/theme';
+import { EVIDENCE_STATUS_PRESENTATION, type EvidenceStatusLabel } from '@/core/theme';
 
 import { Icon } from './Icon';
 import { Text } from './Text';
@@ -22,14 +18,6 @@ interface EvidenceStatusBadgeProps {
   compact?: boolean;
 }
 
-const SOFT_BACKGROUND: Partial<Record<ColorRole, ColorRole>> = {
-  brand: 'brandSoft',
-  success: 'successSoft',
-  warning: 'warningSoft',
-  danger: 'dangerSoft',
-  textMuted: 'surface',
-};
-
 /**
  * Nhãn trạng thái bằng chứng, 6 nhãn thống nhất toàn app (docs/09 mục 3). Luôn có CHỮ + BIỂU
  * TƯỢNG + viền (màu không là tín hiệu duy nhất). Nhãn/biểu tượng/màu lấy từ
@@ -44,10 +32,9 @@ export function EvidenceStatusBadge({
   compact = false,
 }: EvidenceStatusBadgeProps) {
   const { t } = useTranslation();
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const presentation = EVIDENCE_STATUS_PRESENTATION[status];
-  const foreground = colors[presentation.colorRole];
-  const background = colors[SOFT_BACKGROUND[presentation.colorRole] ?? 'surface'];
+  const { fg: foreground, bg: background, border } = tokens.status[presentation.statusToken];
 
   const label = t(presentation.labelKey);
   const progress =
@@ -57,16 +44,23 @@ export function EvidenceStatusBadge({
   const spoken = [label + progress, reason].filter(Boolean).join('. ');
 
   return (
-    <View testID={testID} accessible accessibilityLabel={spoken} style={styles.wrapper}>
+    <View
+      testID={testID}
+      accessible
+      accessibilityLabel={spoken}
+      style={[styles.wrapper, { gap: tokens.space.xs }]}
+    >
       <View
         style={[
           styles.pill,
           {
-            borderColor: foreground,
+            borderColor: border,
+            borderWidth: tokens.borderWidth.thin,
+            gap: tokens.space.tight,
             backgroundColor: background,
-            borderRadius: radius.lg,
-            paddingHorizontal: compact ? spacing.sm : spacing.md,
-            paddingVertical: compact ? 2 : spacing.xs,
+            borderRadius: tokens.radius.lg,
+            paddingHorizontal: compact ? tokens.space.sm : tokens.space.md,
+            paddingVertical: compact ? tokens.space.xxs : tokens.space.xs,
           },
         ]}
       >
@@ -85,6 +79,6 @@ export function EvidenceStatusBadge({
 }
 
 const styles = StyleSheet.create({
-  wrapper: { alignItems: 'flex-start', gap: 4 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1 },
+  wrapper: { alignItems: 'flex-start' },
+  pill: { flexDirection: 'row', alignItems: 'center' },
 });

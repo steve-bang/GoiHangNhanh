@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { getMinTouchTarget } from '@/platform';
+import { layout } from '@/core/theme';
 
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
@@ -15,7 +16,7 @@ interface QuickActionProps {
 
 /** Lối tắt tròn kèm nhãn bên dưới (hàng 4 lối tắt ở Trang chủ). */
 export function QuickAction({ label, icon, onPress, testID }: QuickActionProps) {
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
   return (
     <Pressable
       testID={testID}
@@ -24,8 +25,8 @@ export function QuickAction({ label, icon, onPress, testID }: QuickActionProps) 
       onPress={onPress}
       style={[styles.item, { minHeight: getMinTouchTarget() }]}
     >
-      <View style={[styles.disc, { backgroundColor: colors.brandSoft }]}>
-        <Icon name={icon} size={26} color={colors.brand} />
+      <View style={[styles.disc, { backgroundColor: tokens.color.brand.soft }]}>
+        <Icon name={icon} size={26} color={tokens.color.action.primary} />
       </View>
       <Text variant="caption" style={styles.label} maxFontSizeMultiplier={1.3}>
         {label}
@@ -35,7 +36,13 @@ export function QuickAction({ label, icon, onPress, testID }: QuickActionProps) 
 }
 
 const styles = StyleSheet.create({
-  item: { flex: 1, alignItems: 'center', gap: 6 },
-  disc: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  item: { flex: 1, alignItems: 'center', gap: layout.space.tight },
+  disc: {
+    width: layout.component.tile.xl,
+    height: layout.component.tile.xl,
+    borderRadius: layout.radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   label: { textAlign: 'center' },
 });

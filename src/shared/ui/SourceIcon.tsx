@@ -2,6 +2,8 @@ import { Image, StyleSheet, View, type ImageSourcePropType } from 'react-native'
 
 import type { OrderSource } from '@/core/orders/order-source';
 
+import { palette } from '@/core/theme';
+
 import { Icon, type IconName } from './Icon';
 
 /** Kích thước mặc định (khớp ô nguồn bán ở màn Tạo hồ sơ shop). */
@@ -17,11 +19,13 @@ const LOGOS: Partial<Record<OrderSource, ImageSourcePropType>> = {
 };
 
 /** Nguồn chưa có logo: ô màu + ký hiệu trung tính (Lazada chờ logo; Khác = cửa hàng). */
+// token-exception: màu trung tính của ô "nguồn khác", danh tính riêng của nhóm nguồn bán
 const OTHER_TILE = { icon: 'store', tint: '#8FA3B8' } as const satisfies {
   icon: IconName;
   tint: string;
 };
 const FALLBACK_TILES: Partial<Record<OrderSource, { icon: IconName; tint: string }>> = {
+  // token-exception: màu thương hiệu Lazada (danh tính bên thứ ba, không thuộc palette app)
   lazada: { icon: 'heart', tint: '#4B3FD8' },
   other: OTHER_TILE,
 };
@@ -75,7 +79,7 @@ export function SourceIcon({ source, size = DEFAULT_SIZE }: SourceIconProps) {
         { width: size, height: size, borderRadius: radius, backgroundColor: tile.tint },
       ]}
     >
-      <Icon name={tile.icon} size={Math.round(size * 0.55)} color="#FFFFFF" />
+      <Icon name={tile.icon} size={Math.round(size * 0.55)} color={palette.neutral[0]} />
     </View>
   );
 }
@@ -83,8 +87,9 @@ export function SourceIcon({ source, size = DEFAULT_SIZE }: SourceIconProps) {
 const styles = StyleSheet.create({
   box: { alignItems: 'center', justifyContent: 'center' },
   logoBox: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: palette.neutral[0],
     borderWidth: StyleSheet.hairlineWidth,
+    // token-exception: viền mảnh quanh logo sàn, tông riêng không thuộc palette app
     borderColor: '#D5DDD9',
   },
   image: { width: '100%', height: '100%' },

@@ -5,6 +5,7 @@ import { ROUTES, type RouteDef } from '@/core/navigation';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { ILLUSTRATIVE_SHOP_NAME } from '@/shared/fixtures/illustrative-data';
 import { Card, Icon, Screen, Text, useTheme } from '@/shared/ui';
+import { layout } from '@/core/theme';
 
 interface MenuItem {
   route: RouteDef;
@@ -27,7 +28,7 @@ const MENU_ITEMS: readonly MenuItem[] = [
 /** UI-I01 Hồ sơ tài khoản (tab Cá nhân): tên shop và danh sách mục cài đặt. */
 export function ProfileScreen() {
   const { t } = useTranslation();
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const touch = getMinTouchTarget();
 
@@ -35,11 +36,11 @@ export function ProfileScreen() {
     <Screen title={t('nav:titles.UI-I01')} inTabs illustrative testID="screen-UI-I01">
       <Card>
         <View style={styles.header}>
-          <Icon name="store" size={32} color={colors.brand} />
+          <Icon name="store" size={32} color={tokens.color.action.primary} />
           <Text variant="sectionTitle">{ILLUSTRATIVE_SHOP_NAME}</Text>
         </View>
       </Card>
-      <View style={{ gap: spacing.sm }}>
+      <View style={{ gap: tokens.space.sm }}>
         {MENU_ITEMS.map((item) => (
           <Pressable
             key={item.route.code}
@@ -47,11 +48,14 @@ export function ProfileScreen() {
             onPress={() => navigation.push(item.route)}
             style={[
               styles.item,
-              { minHeight: Math.max(touch, 52), borderBottomColor: colors.border },
+              {
+                minHeight: Math.max(touch, layout.component.field.minHeight),
+                borderBottomColor: tokens.color.border.default,
+              },
             ]}
           >
             <Text style={styles.itemLabel}>{t(item.labelKey)}</Text>
-            <Icon name="forward" color={colors.textMuted} />
+            <Icon name="forward" color={tokens.color.text.secondary} />
           </Pressable>
         ))}
       </View>
@@ -60,11 +64,11 @@ export function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: layout.space.md },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: layout.space.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   itemLabel: { flex: 1 },

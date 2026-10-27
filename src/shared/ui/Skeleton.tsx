@@ -11,29 +11,34 @@ interface SkeletonProps {
 /** Khối giữ chỗ khi đang tải. Tĩnh (không hiệu ứng lấp lánh): không thêm hiệu ứng trang trí. */
 export function Skeleton({ width = '100%', height = 16 }: SkeletonProps) {
   const { t } = useTranslation();
-  const { colors, radius } = useTheme();
+  const { tokens } = useTheme();
   return (
     <View
       accessible
       accessibilityLabel={t('common:loading')}
       accessibilityState={{ busy: true }}
-      style={{ width, height, borderRadius: radius.sm, backgroundColor: colors.border }}
+      style={{
+        width,
+        height,
+        borderRadius: tokens.radius.sm,
+        backgroundColor: tokens.color.border.default,
+      }}
     />
   );
 }
 
 /** Thẻ giữ chỗ cho danh sách đơn/tệp (cỡ gọn, cùng nhịp với thẻ đơn). */
 export function SkeletonCard() {
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   return (
     <View
       style={{
-        gap: spacing.sm,
-        padding: spacing.md,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surface,
+        gap: tokens.space.sm,
+        padding: tokens.space.md,
+        borderRadius: tokens.radius.md,
+        borderWidth: tokens.borderWidth.thin,
+        borderColor: tokens.color.border.default,
+        backgroundColor: tokens.color.surface.raised,
       }}
     >
       <Skeleton width="45%" height={18} />

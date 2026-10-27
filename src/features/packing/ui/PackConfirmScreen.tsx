@@ -19,7 +19,7 @@ import { usePackSession } from './use-pack-session';
  */
 export function PackConfirmScreen() {
   const { t } = useTranslation();
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const session = usePackSession();
 
@@ -74,17 +74,18 @@ export function PackConfirmScreen() {
         accessible
         accessibilityLabel={t('screens:confirm.thumbnail')}
         style={{
+          // token-exception: khung xem trước video giữ chỗ, chiều cao minh họa (chưa có video thật)
           minHeight: 180,
-          backgroundColor: colors.cameraBackground,
-          borderRadius: radius.lg,
+          backgroundColor: tokens.color.camera.background,
+          borderRadius: tokens.radius.lg,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Icon name="camera" size={48} color={colors.onCamera} />
+        <Icon name="camera" size={48} color={tokens.color.camera.onCamera} />
       </View>
       <Card>
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: tokens.space.sm }}>
           <Text>{`${t('screens:confirm.orderCode')}: ${session.snapshot.orderCode}`}</Text>
           <Text>{`${t('screens:confirm.duration')}: 00:00`}</Text>
           <EvidenceStatusBadge status="saved_on_device" />

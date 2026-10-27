@@ -32,7 +32,7 @@ export function OrderFiltersSheet({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const { spacing } = useTheme();
+  const { tokens } = useTheme();
   const [draft, setDraft] = useState(filters);
 
   // Mỗi lần mở lại, bản nháp bắt đầu từ bộ lọc đang áp dụng.
@@ -64,8 +64,8 @@ export function OrderFiltersSheet({
       onClose={onClose}
       title={t('screens:orders.filters.title')}
     >
-      <View testID="orders-filters-sheet" style={{ gap: spacing.md }}>
-        <View style={{ gap: spacing.sm }}>
+      <View testID="orders-filters-sheet" style={{ gap: tokens.space.md }}>
+        <View style={{ gap: tokens.space.sm }}>
           <Text variant="formLabel" color="ink" accessibilityRole="header">
             {t('screens:orders.filters.period.title')}
           </Text>
@@ -79,7 +79,7 @@ export function OrderFiltersSheet({
             {t('screens:orders.filters.period.note')}
           </Text>
         </View>
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: tokens.space.sm }}>
           <Text variant="formLabel" color="ink" accessibilityRole="header">
             {t('screens:orders.filters.source.title')}
           </Text>
@@ -90,7 +90,7 @@ export function OrderFiltersSheet({
             onSelect={(key) => setDraft({ ...draft, source: key === 'all' ? null : key })}
           />
         </View>
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: tokens.space.sm }}>
           <Text variant="formLabel" color="ink" accessibilityRole="header">
             {t('screens:orders.filters.declaration.title')}
           </Text>
@@ -101,7 +101,7 @@ export function OrderFiltersSheet({
             onSelect={(key) => setDraft({ ...draft, declaration: key === 'all' ? null : key })}
           />
         </View>
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: tokens.space.sm }}>
           <Button
             size="compact"
             testID="orders-filters-apply"
