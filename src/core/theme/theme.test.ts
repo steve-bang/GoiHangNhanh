@@ -52,6 +52,14 @@ describe('tương phản màu (WCAG AA 4.5:1 cho chữ thường)', () => {
     ['ink', 'dangerSoft'],
     ['brand', 'dangerSoft'],
     ['danger', 'surface'],
+    // Màn Splash: chữ trắng trên sóng (cả hai đầu của dải màu) và chữ xanh trên nền Splash.
+    ['onSplashWave', 'splashWave'],
+    ['onSplashWave', 'splashWaveDeep'],
+    ['splashWordmark', 'splashBackground'],
+    ['splashTagline', 'splashBackground'],
+    ['splashFeatureLabel', 'splashBackground'],
+    ['splashFeatureLabel', 'splashFeatureDisc'],
+    ['splashFeatureIcon', 'splashFeatureDisc'],
   ] as const)('%s trên %s', (fg, bg) => {
     expect(contrast(colors[fg], colors[bg])).toBeGreaterThanOrEqual(4.5);
   });

@@ -91,6 +91,7 @@ function pendingGateways() {
   );
   const fake = createFakeGateways();
   const gateways: Gateways = {
+    session: createFakeGateways().session,
     auth: {
       ...createUnavailableGateways().auth,
       signUpWithEmail,
@@ -345,6 +346,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
       .mockImplementation(() => new Promise<AuthAccount>(() => undefined));
     const fake = createFakeGateways();
     const gateways: Gateways = {
+      session: createFakeGateways().session,
       shop: fake.shop,
       auth: {
         ...createUnavailableGateways().auth,
@@ -446,6 +448,7 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
   it('lỗi không rõ (không phải AppError) cũng coi là chưa kết nối, không báo thành công', async () => {
     const fake = createFakeGateways();
     const gateways: Gateways = {
+      session: createFakeGateways().session,
       shop: fake.shop,
       auth: {
         ...createUnavailableGateways().auth,

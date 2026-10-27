@@ -252,6 +252,7 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
         }),
     );
     const gateways: Gateways = {
+      session: createFakeGateways().session,
       auth: { ...createUnavailableGateways().auth, resetPassword },
       shop: createFakeGateways().shop,
     };
@@ -277,6 +278,7 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
         }),
     );
     const gateways: Gateways = {
+      session: createFakeGateways().session,
       auth: { ...createUnavailableGateways().auth, resetPassword },
       shop: createFakeGateways().shop,
     };
@@ -331,6 +333,7 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
         }),
     );
     const gateways: Gateways = {
+      session: createFakeGateways().session,
       auth: { ...createUnavailableGateways().auth, resetPassword },
       shop: createFakeGateways().shop,
     };

@@ -8,3 +8,4 @@ export {
 } from './navigation';
 export type { AppNavigation, RouteParams } from './navigation';
 export { openExternalLink } from './external-link';
+export { hideNativeSplash, holdNativeSplash } from './native-splash';

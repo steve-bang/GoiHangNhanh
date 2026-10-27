@@ -119,6 +119,7 @@ describe('UI-A07 Quên mật khẩu: gửi', () => {
         }),
     );
     const gateways: Gateways = {
+      session: createFakeGateways().session,
       auth: { ...createUnavailableGateways().auth, requestPasswordRecovery },
       shop: createFakeGateways().shop,
     };
@@ -229,6 +230,7 @@ describe('UI-A07 Quên mật khẩu: điều hướng', () => {
         }),
     );
     const gateways: Gateways = {
+      session: createFakeGateways().session,
       auth: { ...createUnavailableGateways().auth, requestPasswordRecovery },
       shop: createFakeGateways().shop,
     };

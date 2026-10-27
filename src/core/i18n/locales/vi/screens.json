@@ -103,6 +103,17 @@
     "emptyAction": "Mở danh sách đơn",
     "waitingNetwork": "Đang chờ mạng"
   },
+  "splash": {
+    "brandName": "Đơn Chứng",
+    "tagline": "Ghi hình đầy đủ\nLưu bằng chứng an tâm",
+    "features": {
+      "record": "Quay video\nđóng gói",
+      "cloud": "Lưu trữ\nđám mây",
+      "orders": "Quản lý\nđơn hàng",
+      "protect": "Bảo vệ\nquyền lợi"
+    },
+    "slogan": "Mỗi đơn hàng\nđều xứng đáng được bảo vệ!"
+  },
   "welcome": {
     "brandName": "Đơn chứng",
     "title": "Bảo vệ bằng chứng\ncho từng đơn hàng",

@@ -164,7 +164,14 @@ const FORBIDDEN_PROMISES = [
  * "bảo vệ" chỉ được dùng ở các câu thương hiệu đã được người dùng duyệt (tiêu đề và tagline màn Chào
  * mừng). Chỗ khác dùng "lưu bằng chứng" thay vì hứa "bảo vệ".
  */
-const APPROVED_PROTECT_KEYS = ['vi.screens.welcome.title', 'vi.screens.signIn.brandTagline'];
+const APPROVED_PROTECT_KEYS = [
+  'vi.screens.welcome.title',
+  'vi.screens.signIn.brandTagline',
+  // Splash (UI-A01): nhãn "Bảo vệ quyền lợi" và câu viết tay "...đều xứng đáng được bảo vệ!" giữ
+  // nguyên theo ảnh thiết kế, NGOẠI LỆ CÓ CHỦ ĐÍCH do người dùng duyệt (decisions.md Q-15, D-15).
+  'vi.screens.splash.features.protect',
+  'vi.screens.splash.slogan',
+];
 
 describe('quét toàn bộ chuỗi giao diện', () => {
   it('có chuỗi để quét (đủ nhiều namespace)', () => {
@@ -188,6 +195,18 @@ describe('quét toàn bộ chuỗi giao diện', () => {
       'Ghi hình đầy đủ – Lưu trữ an toàn – An tâm kinh doanh',
     );
     expect(resources.vi.screens.signIn.brandTagline).toBe('Bảo vệ đơn hàng – Vững bước kinh doanh');
+  });
+
+  it('câu chữ Splash giữ nguyên theo thiết kế đã duyệt (Q-15): đúng từng chữ', () => {
+    const splash = resources.vi.screens.splash;
+    expect(splash.tagline).toBe('Ghi hình đầy đủ\nLưu bằng chứng an tâm');
+    expect(splash.features).toEqual({
+      record: 'Quay video\nđóng gói',
+      cloud: 'Lưu trữ\nđám mây',
+      orders: 'Quản lý\nđơn hàng',
+      protect: 'Bảo vệ\nquyền lợi',
+    });
+    expect(splash.slogan).toBe('Mỗi đơn hàng\nđều xứng đáng được bảo vệ!');
   });
 
   it('bốn câu phụ đã chỉnh để không hứa quá: đúng từng chữ', () => {

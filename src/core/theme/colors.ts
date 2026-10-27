@@ -35,6 +35,22 @@ export const colors = {
   successSoft: '#E3F1E7',
   warningSoft: '#FDF3E7',
   dangerSoft: '#FCEBEA',
+  // Màn Splash (UI-A01; ảnh thiết kế docs/assets/ui/06-splash-design.png, màu đo từ ảnh). Cũng là
+  // màu nền của splash hệ điều hành (app.json, plugin expo-splash-screen): đổi thì đổi cả hai nơi.
+  splashBackground: '#F7FAF8',
+  splashBlob: '#EAF6EE', // hình loang nền
+  splashWave: '#14705B', // sóng đáy, đầu trên
+  splashWaveDeep: '#0C6753', // sóng đáy, đầu dưới
+  splashWaveLight: '#B8D8C3', // dải sóng sáng phía trên sóng đậm
+  onSplashWave: '#FFFFFF', // chữ viết tay trên sóng
+  splashLogo: '#026D50', // khiên (nửa sáng)
+  splashLogoDark: '#014B37', // khiên (nửa tối, nếp gấp)
+  splashWordmark: '#055E47',
+  splashTagline: '#0A6550',
+  splashFeatureLabel: '#0B4A3B',
+  splashFeatureIcon: '#0A6B52',
+  splashFeatureDisc: '#E3F6EC',
+  splashDivider: '#DCE8E1',
   // Lớp phủ hộp thoại/bottom sheet và nền khung camera (không phải giao diện sáng/tối chung).
   scrim: 'rgba(0, 0, 0, 0.5)',
   cameraBackground: '#16201A',

@@ -5,14 +5,34 @@
     "version": "0.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/images/icon.png",
     "ios": {
       "bundleIdentifier": "vn.doncung.app.dev",
       "supportsTablet": false
     },
     "android": {
-      "package": "vn.doncung.app.dev"
+      "package": "vn.doncung.app.dev",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon-foreground.png",
+        "backgroundColor": "#F7FAF8"
+      }
     },
     "scheme": "doncung",
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F7FAF8",
+          "image": "./assets/images/splash/splash-icon.png",
+          "imageWidth": 120,
+          "resizeMode": "contain",
+          "android": {
+            "image": "./assets/images/splash/splash-icon-android.png",
+            "imageWidth": 288
+          }
+        }
+      ]
+    ]
   }
 }

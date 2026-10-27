@@ -58,6 +58,7 @@ function pendingGateways() {
       }),
   );
   const gateways: Gateways = {
+    session: createFakeGateways().session,
     auth: { ...createUnavailableGateways().auth, signInWithPassword },
     shop: createFakeGateways().shop,
   };
@@ -300,6 +301,7 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
 
   it('lỗi lạ (không phải AppError) cũng coi là chưa kết nối, không báo thành công', async () => {
     const gateways: Gateways = {
+      session: createFakeGateways().session,
       auth: {
         ...createUnavailableGateways().auth,
         signInWithPassword: () => Promise.reject(new Error('boom')),

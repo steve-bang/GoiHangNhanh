@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Trạng thái dự án
 
-Repo có tài liệu nghiệp vụ (`docs/`) và **khung kỹ thuật** (Expo + React Native + TypeScript, cấu hình Firebase, Security Rules có test, CI). Có **khung giao diện (app shell)**: điều hướng Expo Router, design system, màn hình khung với dữ liệu minh họa (`docs/engineering/layout.md`). Chưa có tính năng nghiệp vụ nào (không camera/tải lên/Firebase thật); chưa build native (iOS/Android) và chưa chạy trên máy ảo/thiết bị thật. Thiết kế kỹ thuật ở `docs/engineering/` là **đề xuất, chờ người dùng duyệt** (không phải quyết định D-xx); các thư viện native chưa chốt chờ spike trên thiết bị thật.
+Repo có tài liệu nghiệp vụ (`docs/`) và **khung kỹ thuật** (Expo + React Native + TypeScript, cấu hình Firebase, Security Rules có test, CI). Có **khung giao diện (app shell)**: điều hướng Expo Router, design system, màn hình khung với dữ liệu minh họa (`docs/engineering/layout.md`). Đã có các màn thật chạy bằng **cổng giả** (Splash UI-A01 với cổng phiên giả, Chào mừng, đăng ký/đăng nhập/quên mật khẩu, tạo shop; xem `layout.md` mục 2.x, `decisions.md` Q-13..Q-15); chưa chặn truy cập (route guard). Chưa có tính năng nghiệp vụ nào (không camera/tải lên/Firebase thật); chưa build native (iOS/Android) và chưa chạy trên máy ảo/thiết bị thật. Thiết kế kỹ thuật ở `docs/engineering/` là **đề xuất, chờ người dùng duyệt** (không phải quyết định D-xx); các thư viện native chưa chốt chờ spike trên thiết bị thật.
 
 Sản phẩm: **Đơn Chứng** (tên làm việc, có thể đổi sau khi kiểm tra nhãn hiệu; tên repo là `GoiHangNhanh`) — ứng dụng di động quản lý bằng chứng theo vòng đời đơn hàng thương mại điện tử: đóng gói → bàn giao → nhận hàng hoàn → đối chiếu → tranh chấp. Không phải "app lưu video đơn hàng".
 
@@ -23,7 +23,9 @@ Tài liệu nằm trong `docs/`, bắt đầu từ `docs/README.md` (mục lục
 | `npm run check` | lint + typecheck + format:check + unit test (chạy trước khi báo xong) |
 | `npx expo export --platform ios` / `--platform android` | Đóng gói JS (Metro) để bắt lỗi bundle; không cần Xcode/Android SDK. Thêm `--output-dir <thư mục ngoài repo>` nếu không muốn tạo `dist/`. `npx expo install` cần truy cập `api.expo.dev` (có thể bị chặn trong môi trường hạn chế: xem ADR-013) |
 
-Chưa có lệnh build/chạy native (`expo prebuild`, dev build) vì chưa dựng được; sau `expo prebuild`/EAS cần bổ sung vào đây khi đã chạy thật. CI: `.github/workflows/ci.yml` (PR vào `main`): lint, typecheck, format, unit test, test Rules.
+Cờ môi trường của cổng giả (không phải lệnh): `EXPO_PUBLIC_USE_FAKE_BACKEND=1` (bật cổng giả ở bản không phải dev, ví dụ xuất web để chụp ảnh giao diện); `EXPO_PUBLIC_FAKE_SESSION=signed_out|no_shop|signed_in` (phiên giả khi mở app, màn Splash UI-A01; không đặt: dev/test = `signed_in`, bản xem trước = `signed_out`; **bản build thường không có cổng giả nên luôn vào Chào mừng**: `layout.md` mục 2.4, `decisions.md` Q-15). `npx expo prebuild --no-install` đã chạy được trên bản sao ngoài repo (chỉ để kiểm tra cấu hình `app.json`), chưa build/chạy native.
+
+Chưa có lệnh build/chạy native (dev build) vì chưa dựng được; sau `expo prebuild`/EAS cần bổ sung vào đây khi đã chạy thật. CI: `.github/workflows/ci.yml` (PR vào `main`): lint, typecheck, format, unit test, test Rules.
 
 ### Tài liệu kỹ thuật
 

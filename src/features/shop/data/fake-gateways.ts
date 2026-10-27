@@ -11,6 +11,8 @@ import type {
   CreateShopInput,
   Gateways,
   ResetPasswordInput,
+  SessionGateway,
+  SessionState,
   ShopGateway,
   SignedInAccount,
   SignInWithPasswordInput,
@@ -36,6 +38,12 @@ export interface FakeBackendOptions {
   readonly codeTtlMs?: number;
   /** "Vé" đặt lại mật khẩu còn hiệu lực bao lâu (ms). Mặc định 15 phút. */
   readonly ticketTtlMs?: number;
+  /** Phiên giả khi mở app (`session.restore`). Mặc định `signed_in` (giữ hành vi mở app của bản dev). */
+  readonly sessionState?: SessionState;
+  /** Độ trễ riêng của `session.restore` (ms); mặc định = `latencyMs`. Test dùng để mô phỏng cổng chậm. */
+  readonly sessionLatencyMs?: number;
+  /** true: `session.restore` luôn lỗi (mô phỏng cổng hỏng). */
+  readonly sessionFails?: boolean;
 }
 
 /** Email mẫu để thử tay trong bản dev: đã có tài khoản. */
@@ -288,9 +296,35 @@ export class FakeShopGateway implements ShopGateway {
   }
 }
 
+/** Cổng phiên giả: trả trạng thái cấu hình sẵn (xem `EXPO_PUBLIC_FAKE_SESSION` ở `gateways.ts`). */
+export class FakeSessionGateway implements SessionGateway {
+  restoreCalls = 0;
+  private readonly state: SessionState;
+  private readonly latencyMs: number;
+  private readonly fails: boolean;
+
+  constructor(options: FakeBackendOptions = {}) {
+    this.state = options.sessionState ?? 'signed_in';
+    this.latencyMs = options.sessionLatencyMs ?? options.latencyMs ?? 0;
+    this.fails = options.sessionFails ?? false;
+  }
+
+  async restore(): Promise<SessionState> {
+    this.restoreCalls += 1;
+    await delay(this.latencyMs);
+    if (this.fails) throw new AppError('AUTH_SERVICE_UNAVAILABLE');
+    return this.state;
+  }
+}
+
 export function createFakeGateways(options: FakeBackendOptions = {}): {
   auth: FakeAuthGateway;
   shop: FakeShopGateway;
+  session: FakeSessionGateway;
 } & Gateways {
-  return { auth: new FakeAuthGateway(options), shop: new FakeShopGateway(options) };
+  return {
+    auth: new FakeAuthGateway(options),
+    shop: new FakeShopGateway(options),
+    session: new FakeSessionGateway(options),
+  };
 }
