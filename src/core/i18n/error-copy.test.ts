@@ -38,7 +38,12 @@ const SCREEN_ERRORS: [string, string][] = [
   ...flatten(resources.vi.screens.newPassword.errors as Json, 'newPassword.errors'),
 ];
 
-const PROFILE_MESSAGES: [string, Message][] = [['PROFILE_SAVE_FAILED', errors.PROFILE_SAVE_FAILED]];
+/** Thông báo theo mã; thiếu thì chuỗi rỗng để test tự đỏ ở các so sánh chữ. */
+function msg(code: string): Message {
+  return errors[code] ?? '';
+}
+
+const PROFILE_MESSAGES: [string, Message][] = [['PROFILE_SAVE_FAILED', msg('PROFILE_SAVE_FAILED')]];
 
 const ALL: [string, Message][] = [
   ...AUTH_MESSAGES,
@@ -136,12 +141,12 @@ describe('câu chữ thông báo lỗi AUTH_*, signUp.errors và lỗi các màn
 
   it('mã tab Cá nhân (Q-19i): đúng từng chữ với câu người dùng chốt', () => {
     expect(errors.AUTH_WRONG_CURRENT_PASSWORD).toBe('Mật khẩu hiện tại chưa đúng.');
-    expect(fullText(errors.AUTH_SIGN_OUT_FAILED)).toBe('Chưa đăng xuất được. Bạn thử lại nhé.');
-    expect(fullText(errors.PROFILE_SAVE_FAILED)).toBe(
+    expect(fullText(msg('AUTH_SIGN_OUT_FAILED'))).toBe('Chưa đăng xuất được. Bạn thử lại nhé.');
+    expect(fullText(msg('PROFILE_SAVE_FAILED'))).toBe(
       'Chưa cập nhật được thông tin. Bạn thử lại nhé.',
     );
-    expect(fullText(errors.AUTH_REQUIRES_RECENT_LOGIN)).toContain('đăng nhập lại');
-    expect(fullText(errors.AUTH_SESSION_EXPIRED)).toContain('đăng nhập lại');
+    expect(fullText(msg('AUTH_REQUIRES_RECENT_LOGIN'))).toContain('đăng nhập lại');
+    expect(fullText(msg('AUTH_SESSION_EXPIRED'))).toContain('đăng nhập lại');
   });
 
   it('không có câu trấn an "tài khoản chưa được tạo" ở màn đăng ký', () => {
