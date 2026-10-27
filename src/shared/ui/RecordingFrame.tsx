@@ -101,7 +101,7 @@ export function RecordingFrame({
             style={[
               styles.badge,
               overlay,
-              { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: spacing.sm },
+              { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm, gap: spacing.sm },
             ]}
           >
             {badgeLabel ? (
@@ -122,11 +122,18 @@ export function RecordingFrame({
             style={[
               styles.identity,
               overlay,
-              { paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+              { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
             ]}
           >
             {primaryCode ? (
-              <Text variant="caption" bold numberOfLines={1} style={{ color: colors.onCamera }}>
+              <Text
+                variant="caption"
+                bold
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+                style={{ color: colors.onCamera }}
+              >
                 {primaryCode}
               </Text>
             ) : null}
@@ -233,7 +240,7 @@ const styles = StyleSheet.create({
   badge: { flexDirection: 'row', alignItems: 'center' },
   dot: { width: 10, height: 10, borderRadius: 5 },
   spacer: { flex: 1 },
-  identity: { flexShrink: 1, maxWidth: 150 },
+  identity: { flexShrink: 1, maxWidth: 200 },
   notice: { flexDirection: 'row', alignItems: 'center' },
   noticeText: { flex: 1 },
   middle: { flex: 1, alignItems: 'flex-end', justifyContent: 'flex-start', paddingTop: 12 },

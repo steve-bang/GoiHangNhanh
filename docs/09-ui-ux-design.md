@@ -309,6 +309,8 @@ Các tấm hình dưới đây là **mockup khái niệm**, lưu ở `docs/asset
 
 ![Tạo đơn nhanh, xác nhận đơn trước khi quay, màn hình quay](assets/ui/03-quick-order-confirm-record.png)
 
+**Đã dựng** (giao diện theo mẫu, lưu cục bộ; [decisions.md Q-17](engineering/decisions.md), [layout.md mục 2.5](engineering/layout.md)) với các điểm sửa ở mục 5.5 phần A đã xử lý: dòng 5 (bỏ "chống giả mạo"), 6 (nhãn *Chưa khai báo sản phẩm* chỉ khi chưa có dòng), 7 (tên và variant tách riêng, gợi ý tên rồi variant), 8 (số lượng mặc định 1), 11 (nút X qua hộp thoại), 12 (bỏ "Kiểm tra 30 giây…"). Màn quay **chưa ghi video**: camera chỉ xem trước và luôn có dải "Bản thử giao diện: chưa ghi video" (không nói dối "Đang quay"); không có nút thư viện ảnh (O-02) và nút chụp ảnh (không có đặc tả).
+
 ### 5.4 Xác nhận lưu và đồng bộ — UI-C04, C05, F01
 
 ![Xác nhận lưu video và trung tâm đồng bộ](assets/ui/04-save-confirm-and-sync.png)
@@ -343,7 +345,7 @@ Phần đúng hướng: bảng màu và phong cách khớp mục 3; Tổng quan 
 | Mã | Điểm khác | Phương án / khuyến nghị |
 |---|---|---|
 | O-18 | ~~Mockup 02 có thanh dưới: Trang chủ, Đơn hàng, **nút Quét ở giữa**, Thông báo, Cá nhân. D-11 quy định 4 tab~~ | **Đã chốt theo mockup (D-16).** Hệ quả mở: O-26, O-27 |
-| O-19 | Đóng gói đơn mới đi qua **3 màn** trước camera: Tạo đơn nhanh → nút "Lưu và xác nhận đơn" → Xác nhận đơn → "Kiểm tra camera và bắt đầu". Spec (D-10) muốn một lần chạm | Khuyến nghị: nút chính ở Tạo đơn nhanh là **Lưu và quay video**, thẳng sang màn Xem nhanh đơn đã gộp nút bắt đầu, hoặc bỏ hẳn màn Xác nhận khi vừa mới tạo đơn (người dùng vừa nhập xong). Màn Xác nhận chỉ cần khi quét ra đơn có sẵn |
+| O-19 | Đóng gói đơn mới đi qua **3 màn** trước camera: Tạo đơn nhanh → nút "Lưu và xác nhận đơn" → Xác nhận đơn → "Kiểm tra camera và bắt đầu". Spec (D-10) muốn một lần chạm | Khuyến nghị: nút chính ở Tạo đơn nhanh là **Lưu và quay video**, thẳng sang màn Xem nhanh đơn đã gộp nút bắt đầu, hoặc bỏ hẳn màn Xác nhận khi vừa mới tạo đơn (người dùng vừa nhập xong). Màn Xác nhận chỉ cần khi quét ra đơn có sẵn. **Hiện làm theo mockup 03 (chưa chốt):** *Lưu và xác nhận đơn* đi qua màn Xác nhận; *Bỏ qua, quay ngay* đi thẳng tới camera (Q-17e) |
 | O-02 | Màn quay có nút **thư viện ảnh** ở góc dưới phải | Nhập từ thư viện đang là câu hỏi mở. Nếu chưa chốt thì bỏ nút khỏi màn quay; nếu cho nhập, đặt ở nơi khác và gắn nhãn nguồn "nhập từ thư viện" |
 
 ## 6. Tương tác chi tiết
