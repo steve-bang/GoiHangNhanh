@@ -76,6 +76,7 @@ Chỉ dùng mã có sẵn trong `src/core/errors/codes.ts`. Mã mới (ví dụ 
 Mỗi PR nhỏ, độc lập, `npm run check` xanh, ghi rõ "chưa kiểm chứng trên thiết bị iOS/Android".
 
 ### PR1 — Nền tảng
+- **Trạng thái: đã làm trên nhánh `claude/personal-tab-pr1-foundation` (chưa mở PR).** Lệch so với kế hoạch: chưa có `deleteAccount` trong `AccountGateway` (Q-19e chưa chốt); `SettingsGateway` chỉ có tùy chọn thông báo; `SessionProvider` ở `features/personal/ui` chưa nối vào Splash/đăng nhập (làm ở PR sau); không thêm mã UI/route/`nav.json` (Q-19b chưa chốt); mã lỗi mới chỉ đề xuất ở Q-19i; `getInitials` đặt ở `shared/ui`; `ErrorState` nhận chuỗi đã dịch (helper tra mã lỗi `errors:<mã>` dùng chung chưa tách khỏi `features/shop`).
 - Tệp: `src/shared/ui/{ListItem,Switch,Toast,FormField,StatusBadge,Avatar,ErrorState}.tsx` (+ test, `index.ts`, README); `src/features/personal/domain/{types,validation}.ts`; `src/features/personal/data/{account-gateway,fake-account-gateway,unavailable-account-gateway}.ts`; `SessionProvider`; `locales/vi/personal.json`; mã UI/`ROUTES` mới (nếu BA gán); cập nhật `routes.test.ts`.
 - Xong khi: component có test render/a11y (vai trò, nhãn, vùng chạm tối thiểu, cỡ chữ lớn); cổng giả có test `failNext`/độ trễ; không đổi hành vi màn hiện có.
 

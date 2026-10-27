@@ -376,6 +376,8 @@ Kế hoạch chi tiết ở [personal-tab-plan.md](personal-tab-plan.md) (kế h
 | f | Mô hình nhiều shop, thành viên, phân quyền (O-03, O-07) | 1) Một shop mỗi tài khoản ở bản đầu; 2) Nhiều shop | 1: ẩn chuyển shop (PER-07) và thành viên |
 | g | Nội dung trợ giúp tĩnh trong app hay từ CMS; kênh gửi hỗ trợ; URL điều khoản/quyền riêng tư thật | 1) Tĩnh trong app + mở email; 2) CMS/Firestore | 1 |
 | h | Chính sách dữ liệu cục bộ sau đăng xuất | 1) Giữ dữ liệu cục bộ, gắn theo tài khoản/shop; 2) Xóa khi đăng xuất | 1 và cảnh báo (UI-J15) khi còn tệp chưa đồng bộ; không bao giờ xóa trước khi máy chủ xác nhận |
+| i | **Mã lỗi mới đề xuất cho tab Cá nhân** (chưa thêm vào `codes.ts`/`errors.json`; bản giả tạm dùng mã `AUTH_*` sẵn có): `AUTH_WRONG_CURRENT_PASSWORD` (đổi mật khẩu, sai mật khẩu hiện tại; hiện tạm `AUTH_INVALID_CREDENTIALS` nhưng câu chữ nói "email hoặc mật khẩu" nên chưa đúng ngữ cảnh), `AUTH_REQUIRES_RECENT_LOGIN` (Firebase `auth/requires-recent-login`: cần đăng nhập lại trước khi đổi mật khẩu), `AUTH_SESSION_EXPIRED` (phiên hết hạn khi đang dùng), `AUTH_SIGN_OUT_FAILED` (đăng xuất lỗi; hôm nay dùng `AUTH_NETWORK_ERROR`/`AUTH_SERVICE_UNAVAILABLE`), `PROFILE_SAVE_FAILED` (lưu họ tên lỗi) | 1) BA đặt tên và viết câu chữ ba phần theo docs/09 5.1, rồi mới thêm vào `codes.ts`/`errors.json` kèm test; 2) dùng tạm các mã `AUTH_*` sẵn có | 1; PR2 cần chốt trước khi làm màn Đổi mật khẩu |
+| j | Giới hạn họ tên (PER-02/03): PR1 đặt tối đa 50 ký tự (bằng tên shop), bắt buộc không trống; chưa có trong đặc tả BA | 1) 50 ký tự; 2) BA chỉ định | 2, giữ 50 tới khi BA trả lời |
 
 ## Rủi ro nền tảng phát hiện (tóm tắt)
 
