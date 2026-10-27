@@ -59,6 +59,7 @@ tester.run('design-tokens/no-raw-design-values', rule, {
     },
     bad('const s = { minHeight: Math.max(touch, 52) };', 'number'),
     bad('const s = { opacity: 0.85 };', 'number'),
+    bad('const s = { paddingTop: tokens.space.sm + 2 };', 'number'),
     bad('const s = { borderWidth: 1 };', 'number'),
     bad('const s = { fontSize: 15 };', 'number'),
     bad('const s = { fontWeight: "700" };', 'weight'),

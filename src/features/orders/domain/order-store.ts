@@ -1,5 +1,6 @@
 import type { OrderId, OrderLineId, SessionId, ShopId } from '@/core/ids';
 
+import type { OrderListPage, OrderListPageRequest, OrderListQuery } from './order-list';
 import type { Order, OrderDetails, OrderLine, OrderPackage, PackingSession } from './types';
 
 /**
@@ -33,6 +34,18 @@ export interface OrderStore {
    */
   saveSession(session: PackingSession): Promise<void>;
   getSession(shopId: ShopId, id: SessionId): Promise<PackingSession | null>;
+  /**
+   * Một trang danh sách đơn của shop: sắp theo hoạt động gần nhất (MAX(thời điểm tạo, mốc phiên mới
+   * nhất)) rồi `id` giảm dần, phân trang keyset (`after` = con trỏ của thẻ cuối trang trước; đơn mới
+   * chèn vào giữa chừng không làm trùng thẻ). Đọc lỗi ném `ORDER_SAVE_FAILED`.
+   */
+  listOrders(
+    shopId: ShopId,
+    query: OrderListQuery,
+    page: OrderListPageRequest,
+  ): Promise<OrderListPage>;
+  /** Số đơn của shop khớp truy vấn (cùng điều kiện với `listOrders`). */
+  countOrders(shopId: ShopId, query: OrderListQuery): Promise<number>;
   /** Mọi phiên của đơn (mới nhất trước). Dùng để khóa sửa dòng và tìm phiên đang thực hiện. */
   listSessionsOfOrder(shopId: ShopId, orderId: OrderId): Promise<PackingSession[]>;
 }

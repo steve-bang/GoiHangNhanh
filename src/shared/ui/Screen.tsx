@@ -29,6 +29,8 @@ interface ScreenProps {
    * header nhỏ hơn. Không đổi nền toàn app.
    */
   form?: boolean;
+  /** Khoảng cách dọc giữa các khối nội dung (mặc định `tokens.space.lg`); màn dày thông tin đặt nhỏ hơn. */
+  contentGap?: number;
   children: ReactNode;
   testID?: string;
 }
@@ -48,6 +50,7 @@ export function Screen({
   inTabs = false,
   illustrative = false,
   form = false,
+  contentGap,
   children,
   testID,
 }: ScreenProps) {
@@ -67,7 +70,7 @@ export function Screen({
     </>
   );
   const background = form ? tokens.color.surface.raised : tokens.color.surface.screen;
-  const contentStyle = { padding: tokens.space.lg, gap: tokens.space.lg } as const;
+  const contentStyle = { padding: tokens.space.lg, gap: contentGap ?? tokens.space.lg } as const;
 
   return (
     <View

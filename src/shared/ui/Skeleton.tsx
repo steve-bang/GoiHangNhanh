@@ -27,21 +27,21 @@ export function Skeleton({ width = '100%', height = 16 }: SkeletonProps) {
   );
 }
 
-/** Thẻ giữ chỗ cho danh sách đơn/tệp. */
+/** Thẻ giữ chỗ cho danh sách đơn/tệp (cỡ gọn, cùng nhịp với thẻ đơn). */
 export function SkeletonCard() {
   const { tokens } = useTheme();
   return (
     <View
       style={{
         gap: tokens.space.sm,
-        padding: tokens.space.lg,
+        padding: tokens.space.md,
         borderRadius: tokens.radius.md,
         borderWidth: tokens.borderWidth.thin,
         borderColor: tokens.color.border.default,
         backgroundColor: tokens.color.surface.raised,
       }}
     >
-      <Skeleton width="55%" height={20} />
+      <Skeleton width="45%" height={18} />
       <Skeleton width="80%" />
       <Skeleton width="35%" />
     </View>

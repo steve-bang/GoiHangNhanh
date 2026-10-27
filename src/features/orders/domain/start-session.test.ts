@@ -1,6 +1,6 @@
 import type { PackageId, SessionId } from '@/core/ids';
 
-import { buildPackingSession } from './start-session';
+import { buildPackingSession, isSessionActive, isSessionStatusActive } from './start-session';
 import { buildOrder, type IdFactory } from './build-order';
 import { LOCAL_SHOP_ID } from './local-shop';
 import type { OrderDetails } from './types';
@@ -66,5 +66,14 @@ describe('buildPackingSession (A03)', () => {
         nowDevice: 1,
       }),
     ).toEqual({ ok: false, reason: 'package_not_in_order' });
+  });
+});
+
+describe('phiên đang thực hiện', () => {
+  it('created là đang thực hiện; trạng thái lạ (bản app khác ghi) thì không', () => {
+    expect(isSessionStatusActive('created')).toBe(true);
+    expect(isSessionStatusActive('finished')).toBe(false);
+    expect(isSessionStatusActive('')).toBe(false);
+    expect(isSessionActive({ sessionStatus: 'created' })).toBe(true);
   });
 });

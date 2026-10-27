@@ -162,7 +162,7 @@ export function RecordingFrame({
             style={[
               styles.identity,
               overlay,
-              { paddingHorizontal: tokens.space.sm, paddingVertical: tokens.space.xs + 2 },
+              { paddingHorizontal: tokens.space.sm, paddingVertical: tokens.space.tight },
             ]}
           >
             {primaryCode ? (

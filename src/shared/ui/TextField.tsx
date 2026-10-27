@@ -94,7 +94,7 @@ export function TextField({
         trailing
           ? {
               flex: 1,
-              minHeight: frameStyle.minHeight - 2,
+              minHeight: frameStyle.minHeight - 2 * tokens.borderWidth.thin,
               color: tokens.color.text.primary,
               paddingVertical: 0,
             }

@@ -27,7 +27,7 @@ interface Pending {
  * CHƯA làm (chưa ghi video thật): kiểm tra dung lượng (`INSUFFICIENT_STORAGE`) và micro
  * (`MIC_PERMISSION_DENIED`).
  */
-export function useStartPacking(): {
+export function useStartPacking(options: { navigate?: 'push' | 'replace' } = {}): {
   begin: (orderId: OrderId, packageId: PackageId) => void;
   busy: boolean;
   error: ErrorCode | null;
@@ -36,6 +36,9 @@ export function useStartPacking(): {
 } {
   const { t } = useTranslation();
   const navigation = useAppNavigation();
+  // `replace` (mặc định) khi màn gọi là bước đứng trước quay trong một luồng (Xác nhận đơn); `push`
+  // khi gọi từ danh sách/chi tiết đơn để Back không làm mất màn đó.
+  const go = options.navigate === 'push' ? navigation.push : navigation.replace;
   const store = useOrderStore();
   const shopId = useCurrentShopId();
   const permission = useScannerPermission();
@@ -64,7 +67,7 @@ export function useStartPacking(): {
         );
         if (active) {
           setPending(null);
-          navigation.replace(ROUTES.packRecord, { sessionId: active.id });
+          go(ROUTES.packRecord, { sessionId: active.id });
           return;
         }
         const built = buildPackingSession(details, target.packageId, {
@@ -77,7 +80,7 @@ export function useStartPacking(): {
         }
         await store.saveSession(built.session);
         setPending(null);
-        navigation.replace(ROUTES.packRecord, { sessionId: built.session.id });
+        go(ROUTES.packRecord, { sessionId: built.session.id });
       } catch (caught) {
         setError(isAppError(caught) ? caught.code : 'LOCAL_SAVE_UNAVAILABLE');
       } finally {
@@ -85,7 +88,7 @@ export function useStartPacking(): {
         setBusy(false);
       }
     },
-    [navigation, shopId, store],
+    [go, shopId, store],
   );
 
   // Đã chọn "bắt đầu" mà quyền vừa được cấp (từ hộp thoại hoặc từ Cài đặt) thì tiếp tục.

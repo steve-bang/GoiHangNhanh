@@ -98,7 +98,7 @@ try {
     (f) =>
       /^src\//.test(f) &&
       EXCLUDED_PATTERNS.some((re) => re.test(f)) &&
-      !/^src\/core\/theme\//.test(f) &&
+      !/^src\/(core\/theme\/|shared\/ui\/theme\.ts$)/.test(f) &&
       !/\.test\./.test(f),
   );
   if (touched.length)

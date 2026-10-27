@@ -13,6 +13,8 @@ interface CardProps {
   tone?: 'default' | 'brand' | 'warning' | 'danger';
   style?: StyleProp<ViewStyle>;
   testID?: string | undefined;
+  /** Padding nhỏ (`tokens.space.md`) cho khối thông tin dày của nhóm màn form. */
+  compact?: boolean;
 }
 
 /** Thẻ: nền sáng, viền mảnh, bo vừa phải, không đổ bóng (docs/09 mục 3). */
@@ -23,6 +25,7 @@ export function Card({
   tone = 'default',
   style,
   testID,
+  compact = false,
 }: CardProps) {
   const { tokens } = useTheme();
   const background = {
@@ -36,7 +39,7 @@ export function Card({
     borderColor: tokens.color.border.default,
     borderWidth: tokens.borderWidth.thin,
     borderRadius: tokens.radius.md,
-    padding: tokens.space.lg,
+    padding: compact ? tokens.space.md : tokens.space.lg,
   } as const;
 
   if (!onPress) {

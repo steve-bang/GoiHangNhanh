@@ -30,6 +30,7 @@ import { layout } from '@/core/theme';
 
 import { useCurrentShopId, useOrderStore } from '../data';
 import { buildNextPackage, type OrderDetails, type PackingSession } from '../domain';
+import { CopyButton } from './CopyButton';
 import { HeaderHelpButton } from './HeaderHelpButton';
 import { useStartPacking } from './use-start-packing';
 
@@ -403,48 +404,10 @@ export function OrderPreviewScreen() {
   );
 }
 
-function CopyButton({
-  label,
-  onPress,
-  testID,
-}: {
-  label: string;
-  onPress: () => void;
-  testID: string;
-}) {
-  const { t } = useTranslation();
-  const { tokens } = useTheme();
-  return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={[
-        styles.copyButton,
-        {
-          minHeight: getMinTouchTarget(),
-          backgroundColor: tokens.color.brand.soft,
-          borderRadius: tokens.radius.lg,
-        },
-      ]}
-    >
-      <Text variant="formLabel" style={{ color: tokens.color.action.primary }}>
-        {t('screens:preview.copy')}
-      </Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   banner: { flexDirection: 'row', alignItems: 'center', borderWidth: layout.borderWidth.thin },
   copyRow: { flexDirection: 'row', alignItems: 'center', gap: layout.space.md },
-  copyButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: layout.space.md,
-  },
   line: { flexDirection: 'row' },
   thumb: {
     width: layout.component.tile.xl,

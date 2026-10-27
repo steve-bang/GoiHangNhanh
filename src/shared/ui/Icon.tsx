@@ -43,6 +43,7 @@ export const ICON_GLYPHS = {
   'wifi-off': 'cloud-offline-outline',
   info: 'information-circle-outline',
   inbox: 'file-tray-outline',
+  filter: 'options-outline',
   // đăng nhập mạng xã hội và hình thương hiệu (màn Chào mừng)
   apple: 'logo-apple',
   google: 'logo-google',

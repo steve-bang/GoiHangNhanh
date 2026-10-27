@@ -14,6 +14,8 @@ interface EvidenceStatusBadgeProps {
   /** 0-100, chỉ hiển thị khi `status === 'uploading'` và đo được (không bịa tiến độ). */
   progressPercent?: number;
   testID?: string;
+  /** Nhãn gọn (padding và biểu tượng nhỏ hơn); chữ vẫn 12sp đậm như cũ. */
+  compact?: boolean;
 }
 
 /**
@@ -27,10 +29,10 @@ export function EvidenceStatusBadge({
   reason,
   progressPercent,
   testID,
+  compact = false,
 }: EvidenceStatusBadgeProps) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
-  const { space, radius, borderWidth } = tokens;
   const presentation = EVIDENCE_STATUS_PRESENTATION[status];
   const { fg: foreground, bg: background, border } = tokens.status[presentation.statusToken];
 
@@ -46,23 +48,23 @@ export function EvidenceStatusBadge({
       testID={testID}
       accessible
       accessibilityLabel={spoken}
-      style={[styles.wrapper, { gap: space.xs }]}
+      style={[styles.wrapper, { gap: tokens.space.xs }]}
     >
       <View
         style={[
           styles.pill,
           {
             borderColor: border,
-            borderWidth: borderWidth.thin,
+            borderWidth: tokens.borderWidth.thin,
+            gap: tokens.space.tight,
             backgroundColor: background,
-            borderRadius: radius.lg,
-            paddingHorizontal: space.md,
-            paddingVertical: space.xs,
-            gap: space.tight,
+            borderRadius: tokens.radius.lg,
+            paddingHorizontal: compact ? tokens.space.sm : tokens.space.md,
+            paddingVertical: compact ? tokens.space.xxs : tokens.space.xs,
           },
         ]}
       >
-        <Icon name={presentation.icon} size={16} color={foreground} />
+        <Icon name={presentation.icon} size={compact ? 14 : 16} color={foreground} />
         <Text variant="caption" bold style={{ color: foreground }}>
           {label + progress}
         </Text>

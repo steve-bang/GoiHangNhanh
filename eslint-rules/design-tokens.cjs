@@ -85,6 +85,13 @@ function rawNumbers(node, out, allowOne) {
       )
         out.push(node);
       break;
+    case 'BinaryExpression':
+      // `tokens.space.sm + 2`: cộng/trừ một số thô vào token cũng là giá trị thiết kế tự đặt.
+      if (node.operator === '+' || node.operator === '-') {
+        rawNumbers(node.left, out, allowOne);
+        rawNumbers(node.right, out, allowOne);
+      }
+      break;
     case 'ConditionalExpression':
       rawNumbers(node.consequent, out, allowOne);
       rawNumbers(node.alternate, out, allowOne);

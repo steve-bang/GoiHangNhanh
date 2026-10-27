@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 
 import { router } from 'expo-router';
-import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
 import { ROUTES, isTabBarHiddenAt } from '@/core/navigation';
 
@@ -237,6 +237,124 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
       expect(screen.getByTestId('screen-UI-C04')).toBeOnTheScreen();
       expect(screen.queryByText('Đã lưu trên máy')).toBeNull();
       expect(screen.queryByText(/đã lưu trên thiết bị/i)).toBeNull();
+    });
+  });
+
+  describe('tab Đơn hàng: danh sách thật và chi tiết (router thật, kho bộ nhớ)', () => {
+    /** Tạo một đơn bằng UI (nút + ở đầu danh sách -> Tạo đơn nhanh -> Lưu), rồi lùi về danh sách. */
+    async function createOrderFromList(code: string, product?: string) {
+      await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn mới' }));
+      expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
+      await fireEvent.changeText(screen.getByTestId('quick-order-code'), code);
+      if (product) await fireEvent.changeText(screen.getByTestId('line-name-0'), product);
+      await fireEvent.press(screen.getByTestId('quick-save'));
+      expect(await screen.findByTestId('screen-UI-C01')).toBeOnTheScreen();
+      await act(async () => {
+        router.back();
+      });
+      await act(async () => {
+        router.back();
+      });
+      expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
+    }
+
+    async function openOrdersTab() {
+      await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
+      await fireEvent.press(screen.getByRole('button', { name: 'Đơn hàng' }));
+      expect(await screen.findByTestId('orders-empty')).toBeOnTheScreen();
+    }
+
+    it('đơn mới tạo từ Tạo đơn nhanh hiện ở danh sách sau khi quay lại', async () => {
+      await openOrdersTab();
+      await createOrderFromList('DH-LIST-1', 'Áo thun');
+      expect(await screen.findByText('DH-LIST-1')).toBeOnTheScreen();
+      expect(screen.getByText('Áo thun')).toBeOnTheScreen();
+      expect(screen.queryByTestId('orders-empty')).toBeNull();
+      expect(screen.getByTestId('orders-count')).toHaveTextContent('1 đơn');
+      expectTabBarVisible(true);
+      await createOrderFromList('DH-LIST-2');
+      expect(await screen.findByText('DH-LIST-2')).toBeOnTheScreen();
+      expect(screen.getByTestId('orders-count')).toHaveTextContent('2 đơn');
+    });
+
+    it('vào chi tiết rồi Back giữ nguyên từ khóa tìm kiếm và bộ lọc; chi tiết vẫn có thanh tab', async () => {
+      await openOrdersTab();
+      await createOrderFromList('AB-1', 'Áo');
+      await createOrderFromList('AB-2');
+      await createOrderFromList('ZZ-9');
+      await fireEvent.changeText(screen.getByTestId('orders-search'), 'ab');
+      await waitFor(() =>
+        expect(screen.getByTestId('orders-count')).toHaveTextContent('2 đơn phù hợp'),
+      );
+      await fireEvent.press(screen.getByTestId('orders-open-filters'));
+      await fireEvent.press(await screen.findByRole('button', { name: 'Chưa khai báo sản phẩm' }));
+      await fireEvent.press(screen.getByTestId('orders-filters-apply'));
+      await waitFor(() =>
+        expect(screen.getByTestId('orders-count')).toHaveTextContent('1 đơn phù hợp'),
+      );
+      await fireEvent.press(screen.getByText('AB-2'));
+      expect(await screen.findByTestId('screen-UI-E02')).toBeOnTheScreen();
+      expect(screen.getByTestId('detail-order-code')).toHaveTextContent('AB-2');
+      expect(screen.getByText('Chưa khai báo sản phẩm')).toBeOnTheScreen();
+      expectTabBarVisible(true);
+      await act(async () => {
+        router.back();
+      });
+      expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
+      expect(screen.getByTestId('orders-search')).toHaveDisplayValue('ab');
+      expect(screen.getByRole('button', { name: 'Bộ lọc (1)' })).toBeOnTheScreen();
+      expect(screen.getByTestId('orders-count')).toHaveTextContent('1 đơn phù hợp');
+      expect(screen.getByText('AB-2')).toBeOnTheScreen();
+      expect(screen.queryByText('AB-1')).toBeNull();
+    });
+
+    it('chi tiết với ID lạ là không tìm thấy (deep link), Back về danh sách', async () => {
+      await renderRouter(APP_DIR, { initialUrl: '/orders/khong-co' });
+      expect(await screen.findByTestId('order-not-found')).toBeOnTheScreen();
+    });
+
+    it('"Quay ngay" từ thẻ đi qua Xác nhận đơn của đúng đơn; Back về danh sách còn nguyên', async () => {
+      await openOrdersTab();
+      await createOrderFromList('DH-REC-1');
+      await fireEvent.press(await screen.findByRole('button', { name: /^Quay ngay, DH-REC-1$/ }));
+      expect(await screen.findByTestId('screen-UI-C01')).toBeOnTheScreen();
+      expect(screen.getByTestId('preview-order-code')).toHaveTextContent('DH-REC-1');
+      expectTabBarVisible(false);
+      await act(async () => {
+        router.back();
+      });
+      expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
+      expect(screen.getByText('DH-REC-1')).toBeOnTheScreen();
+    });
+
+    it('"Quay ngay" khi đơn đã có phiên đang thực hiện mở lại đúng phiên đó và danh sách vẫn nằm dưới', async () => {
+      await openOrdersTab();
+      await createOrderFromList('DH-REC-2');
+      await fireEvent.press(await screen.findByRole('button', { name: /^Quay ngay, DH-REC-2$/ }));
+      await fireEvent.press(await screen.findByTestId('preview-start')); // tạo phiên, sang màn quay
+      expect(await screen.findByTestId('record-camera')).toBeOnTheScreen();
+      await fireEvent.press(screen.getByRole('button', { name: 'Dừng quay' })); // về Xác nhận đơn
+      expect(await screen.findByTestId('screen-UI-C01')).toBeOnTheScreen();
+      await act(async () => {
+        router.back();
+      });
+      expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
+      // thẻ vẫn là "Chưa có video" (phiên created không phải bằng chứng) nên vẫn "Quay ngay"
+      expect(screen.queryByText(/Đã đồng bộ|Hoàn tất|Đã lưu trên máy/)).toBeNull();
+      await fireEvent.press(screen.getByRole('button', { name: /^Quay ngay, DH-REC-2$/ }));
+      expect(await screen.findByTestId('record-camera')).toBeOnTheScreen();
+      expect(screen.getByText('DH-REC-2')).toBeOnTheScreen();
+      expect(screen.getByTestId('screen-UI-C03')).toBeOnTheScreen();
+    });
+
+    it('nút Quét ở đầu danh sách mở màn quét; Back về đúng danh sách', async () => {
+      await openOrdersTab();
+      await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn' }));
+      expect(screen.getByTestId('screen-UI-B02')).toBeOnTheScreen();
+      await act(async () => {
+        router.back();
+      });
+      expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
     });
   });
 });

@@ -248,3 +248,45 @@ describe('tên thương hiệu không bị tách dòng', () => {
     expect(resources.vi.screens.signUp.title).toBe(`Tạo tài khoản\nĐơn${NBSP}Chứng`);
   });
 });
+
+/** Câu chữ thông báo của tab Đơn hàng (UI-E01, UI-E02): cùng quy ước docs/09 mục 5.1. */
+const ORDER_TAB_MESSAGES: [string, string][] = [
+  ...flatten(resources.vi.screens.orders as Json, 'orders'),
+  ...flatten(resources.vi.screens.orderDetail as Json, 'orderDetail'),
+].filter(([key]) =>
+  [
+    'loadError',
+    'loadMoreError',
+    'emptyMessage',
+    'noResultsMessage',
+    'notFound',
+    'noTracking',
+    'undeclaredHint',
+    'noEvidence',
+  ].some((name) => key.endsWith(`.${name}`) || key === name),
+);
+
+describe('câu chữ thông báo của tab Đơn hàng', () => {
+  it('có đủ các thông báo cần kiểm tra', () => {
+    expect(ORDER_TAB_MESSAGES.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it.each(ORDER_TAB_MESSAGES)('%s: tối đa 2 câu và dưới 20 từ', (_key, message) => {
+    expect(sentences(message).length).toBeLessThanOrEqual(2);
+    expect(words(message).length).toBeLessThan(20);
+  });
+
+  it.each(ORDER_TAB_MESSAGES)('%s: không chứa từ cấm', (_key, message) => {
+    for (const word of FORBIDDEN) expect(message.toLowerCase()).not.toContain(word);
+  });
+
+  it('không có nhãn "Đã đồng bộ" hay "Hoàn tất" ở tab Đơn hàng', () => {
+    const all = [
+      ...flatten(resources.vi.screens.orders as Json, 'orders'),
+      ...flatten(resources.vi.screens.orderDetail as Json, 'orderDetail'),
+    ];
+    for (const [, value] of all) {
+      expect(value).not.toMatch(/đã đồng bộ|hoàn tất/i);
+    }
+  });
+});

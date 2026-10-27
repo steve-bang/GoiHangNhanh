@@ -12,13 +12,21 @@ interface BottomSheetProps {
   onClose: () => void;
   title: string;
   children: ReactNode;
+  /** Cỡ gọn: tiêu đề 17sp nửa đậm (formTitle), padding/khoảng cách nhỏ, nút Đóng `slim`. */
+  compact?: boolean;
 }
 
 /**
  * Bottom sheet cho lựa chọn ngắn (docs/09 mục 3); tác vụ phức tạp dùng trang riêng. Có nút Đóng rõ
  * ràng (không chỉ chạm nền), nút Back của Android đóng sheet, nội dung cuộn được khi chữ lớn.
  */
-export function BottomSheet({ visible, onClose, title, children }: BottomSheetProps) {
+export function BottomSheet({
+  visible,
+  onClose,
+  title,
+  children,
+  compact = false,
+}: BottomSheetProps) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
@@ -45,17 +53,22 @@ export function BottomSheet({ visible, onClose, title, children }: BottomSheetPr
               backgroundColor: tokens.color.surface.raised,
               borderTopLeftRadius: tokens.radius.lg,
               borderTopRightRadius: tokens.radius.lg,
-              padding: tokens.space.lg,
-              paddingBottom: Math.max(insets.bottom, tokens.space.lg),
-              gap: tokens.space.md,
+              padding: compact ? tokens.space.md : tokens.space.lg,
+              paddingBottom: Math.max(insets.bottom, compact ? tokens.space.md : tokens.space.lg),
+              gap: compact ? tokens.space.sm : tokens.space.md,
             },
           ]}
         >
-          <Text variant="sectionTitle" accessibilityRole="header">
+          <Text variant={compact ? 'formTitle' : 'sectionTitle'} accessibilityRole="header">
             {title}
           </Text>
           <ScrollView bounces={false}>{children}</ScrollView>
-          <Button label={t('common:actions.close')} onPress={onClose} variant="secondary" />
+          <Button
+            label={t('common:actions.close')}
+            onPress={onClose}
+            variant="secondary"
+            size={compact ? 'slim' : 'regular'}
+          />
         </View>
       </View>
     </Modal>
