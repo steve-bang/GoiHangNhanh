@@ -22,12 +22,12 @@
 | `npm run lint` (có rule token) | Sạch |
 | `npm run typecheck` | Sạch |
 | `npm run format:check` | Sạch |
-| `npm run check:tokens` | OK: 196 tệp trong phạm vi, 10 ngoại lệ có chú thích |
-| `npm test` (project `unit` + `tooling`) | 78 suite, **1616 test pass** (gồm test mới của `main`; trước thay đổi trên `main` cũ: 69 suite, 1350 test) |
+| `npm run check:tokens` | OK: 196 tệp trong phạm vi, 11 ngoại lệ có chú thích |
+| `npm test` (project `unit` + `tooling`) | 79 suite, **1651 test pass** (gồm test mới của `main`; trước thay đổi trên `main` cũ: 69 suite, 1350 test) |
 | `npm run test:rules` (Firebase Emulator) | **Không chạy**: không liên quan UI, cần Java 21 + emulator |
 | Build native / EAS | **Không chạy được** (chưa dựng được, như `CLAUDE.md` ghi) |
 
-Test mới: `colors.test.ts` (golden của bảng màu cũ), phần tương phản semantic/trạng thái trong `theme.test.ts`, `frozen-style-equivalence.test.tsx` (Button/Text), `eslint-rules/design-tokens.test.js` (27 ca cho rule). Bài `frozen-style-equivalence` đã được chạy cả trên mã `main` cũ và pass (nên nó thực sự giữ hợp đồng cũ).
+Test mới: `colors.test.ts` (golden của bảng màu cũ), phần tương phản semantic/trạng thái trong `theme.test.ts`, `frozen-style-equivalence.test.tsx` (Button/Text), `frozen-icon-equivalence.test.tsx` (Icon/SourceIcon), `eslint-rules/design-tokens.test.js` (59 ca cho rule). Hai bài tương đương style đã được chạy cả trên mã `main` cũ và pass (nên chúng thực sự giữ hợp đồng cũ).
 
 ## 3. Token đã tạo và cách tổ chức
 
@@ -60,7 +60,7 @@ Không thêm dependency nào, không có dependency vòng (kiểm bằng `check:
 
 | Loại | Trước (`main`) | Sau |
 |---|---|---|
-| Số thiết kế cố định (spacing, bo góc, viền, độ mờ, bóng, kích thước…) | 103 | **0** (+5 ngoại lệ có lý do) |
+| Số thiết kế cố định (spacing, bo góc, viền, độ mờ, bóng, kích thước…) | 103 | **0** (+6 ngoại lệ có lý do) |
 | Mã màu viết thẳng | 8 | **0** (+5 ngoại lệ có lý do) |
 | `fontWeight` bằng chữ | 2 | **0** |
 | Đọc bảng cũ `colors`/`spacing`/`radius` | 83 (33 + 30 + 20) | **0** (trừ Button/Text/Icon/SourceIcon, dùng chung với màn đã verify) |
@@ -70,7 +70,7 @@ Ghi chú dòng "Đọc bảng cũ": số 0 chỉ tính các **bảng** `colors`/
 
 `fontSize`/`lineHeight` bằng số: 0 trước và sau (vốn đã qua `Text variant`).
 
-### Hardcode còn lại (10 ngoại lệ có chú thích)
+### Hardcode còn lại (11 ngoại lệ có chú thích)
 
 | Chỗ | Giá trị | Lý do |
 |---|---|---|
@@ -79,6 +79,7 @@ Ghi chú dòng "Đọc bảng cũ": số 0 chỉ tính các **bảng** `colors`/
 | `ScanScreen` | `maxWidth 320` | Giới hạn độ rộng dòng chữ thông báo |
 | `RecordingFrame` | `maxWidth 160` | Giới hạn nhãn mã đơn trên khung quay |
 | `PackConfirmScreen` | `minHeight 180` | Khung giữ chỗ xem trước video (chưa có video thật) |
+| `TextField` | `minHeight − 2 × thin` | Trừ hai cạnh viền khi có phần tử cuối dòng; số 2 là số cạnh viền, không phải kích thước |
 | `OrderDetailScreen` | chấm trạng thái 8dp | Kích thước riêng của hàng chi tiết |
 | `OrderCard` | `opacity 0.7` khi nhấn | Độ mờ nhấn đậm hơn cho nút chữ nhỏ, không dùng ở chỗ khác |
 
