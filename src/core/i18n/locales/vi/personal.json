@@ -1,0 +1,41 @@
+{
+  "fields": {
+    "displayName": "Họ và tên",
+    "email": "Email",
+    "currentPassword": "Mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "confirmNewPassword": "Nhập lại mật khẩu mới"
+  },
+  "hints": {
+    "newPassword": "Từ 8 ký tự."
+  },
+  "validation": {
+    "displayName": {
+      "required": "Hãy nhập họ và tên.",
+      "too_long": "Họ và tên hơi dài. Hãy rút gọn xuống 50 ký tự."
+    },
+    "currentPassword": {
+      "required": "Hãy nhập mật khẩu hiện tại."
+    },
+    "newPassword": {
+      "required": "Hãy nhập mật khẩu mới.",
+      "too_short": "Mật khẩu mới cần ít nhất 8 ký tự.",
+      "same_as_current": "Mật khẩu mới đang giống mật khẩu cũ. Hãy chọn mật khẩu khác."
+    },
+    "confirmNewPassword": {
+      "required": "Hãy nhập lại mật khẩu mới.",
+      "mismatch": "Hai mật khẩu chưa giống nhau. Hãy nhập lại."
+    }
+  },
+  "status": {
+    "comingSoon": "Sắp có",
+    "unavailable": "Chưa khả dụng",
+    "unknown": "Không xác định được trạng thái"
+  },
+  "notifications": {
+    "uploadProblems": "Tải lên lỗi hoặc cần xử lý",
+    "syncCompleted": "Đồng bộ hoàn tất",
+    "storageNearlyFull": "Dung lượng sắp đầy",
+    "planExpiring": "Gói sắp hết hạn"
+  }
+}
