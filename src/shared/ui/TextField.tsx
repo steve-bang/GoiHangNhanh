@@ -7,6 +7,8 @@ import {
   type ReturnKeyTypeOptions,
 } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import { getInputResetStyle, getMinTouchTarget } from '@/platform';
 import { layout } from '@/core/theme';
 
@@ -40,6 +42,13 @@ interface TextFieldProps {
   secureTextEntry?: boolean;
   /** Gợi ý trình quản lý mật khẩu của hệ điều hành điền/lưu đúng loại ô. */
   autoComplete?: 'current-password' | 'new-password' | 'name' | 'email' | 'off';
+  /**
+   * Hiện bộ đếm "độ dài hiện tại/tối đa" căn phải dưới ô (đếm theo `value` thật). Không chặn gõ:
+   * việc báo lỗi quá dài vẫn do màn đảm nhiệm.
+   */
+  counterMax?: number;
+  /** Ô nhiều dòng (cao tối thiểu `field.multilineMinHeight`, chữ bắt đầu từ trên). Không kết hợp với `trailing`. */
+  multiline?: boolean;
 }
 
 /** Ô nhập có nhãn luôn hiện (không dùng placeholder thay nhãn). Cao tối thiểu theo vùng chạm. */
@@ -61,13 +70,18 @@ export function TextField({
   compact = false,
   secureTextEntry,
   autoComplete,
+  counterMax,
+  multiline = false,
 }: TextFieldProps) {
+  const { t } = useTranslation();
   const { tokens, typography } = useTheme();
   const [focused, setFocused] = useState(false);
   const frameStyle = {
-    minHeight: compact
-      ? getMinTouchTarget()
-      : Math.max(getMinTouchTarget(), tokens.component.field.minHeight),
+    minHeight: multiline
+      ? Math.max(getMinTouchTarget(), tokens.component.field.multilineMinHeight)
+      : compact
+        ? getMinTouchTarget()
+        : Math.max(getMinTouchTarget(), tokens.component.field.minHeight),
     backgroundColor: tokens.color.surface.raised,
     borderColor: error
       ? tokens.color.feedback.danger.fg
@@ -95,6 +109,7 @@ export function TextField({
       autoCorrect={false}
       {...(secureTextEntry ? { secureTextEntry } : {})}
       {...(autoComplete ? { autoComplete } : {})}
+      {...(multiline ? { multiline: true, textAlignVertical: 'top' as const } : {})}
       onFocus={() => {
         setFocused(true);
         onFocus?.();
@@ -118,6 +133,7 @@ export function TextField({
               ...frameStyle,
               color: tokens.color.text.primary,
               paddingHorizontal: tokens.space.lg,
+              ...(multiline ? { paddingVertical: tokens.space.md } : {}),
             },
       ]}
     />
@@ -145,11 +161,37 @@ export function TextField({
       ) : (
         input
       )}
-      {error ? (
-        <Text variant="caption" color="danger" accessibilityLiveRegion="polite">
-          {error}
-        </Text>
-      ) : null}
+      {counterMax === undefined ? (
+        error ? (
+          <Text variant="caption" color="danger" accessibilityLiveRegion="polite">
+            {error}
+          </Text>
+        ) : null
+      ) : (
+        <View style={styles.footer}>
+          {error ? (
+            <Text
+              variant="caption"
+              color="danger"
+              accessibilityLiveRegion="polite"
+              style={styles.errorText}
+            >
+              {error}
+            </Text>
+          ) : null}
+          <Text
+            variant="caption"
+            color="textMuted"
+            accessibilityLabel={t('common:fields.counter', {
+              current: value.length,
+              max: counterMax,
+            })}
+            style={styles.counter}
+          >
+            {`${value.length}/${counterMax}`}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -157,4 +199,7 @@ export function TextField({
 const styles = StyleSheet.create({
   container: { gap: layout.space.tight },
   row: { flexDirection: 'row', alignItems: 'center' },
+  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  errorText: { flex: 1 },
+  counter: { marginLeft: 'auto' },
 });

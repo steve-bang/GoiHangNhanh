@@ -17,6 +17,8 @@ interface ScreenHeaderProps {
   tone?: 'default' | 'camera';
   /** Tiêu đề nhỏ (17sp, nửa đậm) cho nhóm màn form/quy trình; vẫn xuống dòng khi chữ lớn. */
   compact?: boolean;
+  /** Kiểu nút quay lại: `chevron` (mặc định) hoặc `arrow` (mũi tên dài, board 07). */
+  backIcon?: 'chevron' | 'arrow';
 }
 
 /**
@@ -29,6 +31,7 @@ export function ScreenHeader({
   trailing,
   tone = 'default',
   compact = false,
+  backIcon = 'chevron',
 }: ScreenHeaderProps) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
@@ -53,7 +56,11 @@ export function ScreenHeader({
           onPress={onBack}
           style={[styles.side, { minWidth: touch, minHeight: touch }]}
         >
-          <Icon name="back" size={compact ? 24 : 26} color={color} />
+          <Icon
+            name={backIcon === 'arrow' ? 'arrow-back' : 'back'}
+            size={compact ? 24 : 26}
+            color={color}
+          />
         </Pressable>
       ) : null}
       <Text variant={compact ? 'formTitle' : 'screenTitle'} style={[styles.title, { color }]}>
