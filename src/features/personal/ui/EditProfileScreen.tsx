@@ -22,13 +22,13 @@ import {
 import { normalizeDisplayName, validateDisplayName } from '../domain/validation';
 import { usePersonalGateways } from './PersonalGatewaysProvider';
 import { useSession } from './SessionProvider';
-import { ReadOnlyField } from './ReadOnlyField';
 import { toErrorCode, useRegion } from './use-region';
 
 /**
- * Sửa hồ sơ (PER-02/03), route con của UI-I01 (decisions.md Q-20k). Chỉ sửa họ tên; email chỉ đọc
- * (chưa có xác minh đổi email). Không dựng avatar lớn vì chưa có chọn ảnh (không thao tác được, chỉ chiếm
- * chỗ trên màn có bàn phím). Nút Lưu chỉ tắt khi chưa có thay đổi hoặc đang gửi; kiểm tra khi bấm Lưu,
+ * Sửa hồ sơ (PER-02/03), route con của UI-I01 (decisions.md Q-20k), dựng theo board 07 khung 2: nhãn
+ * "Họ và tên *", ô chữ, nút Lưu ngay dưới ô. Chỉ sửa họ tên; board không có ô email nên không dựng
+ * (email vẫn hiện ở thẻ hồ sơ màn Cá nhân; chưa có xác minh đổi email). Không dựng avatar lớn vì chưa có
+ * chọn ảnh. Nút Lưu chỉ tắt khi chưa có thay đổi hoặc đang gửi; kiểm tra khi bấm Lưu,
  * lỗi hiện tại ô và focus vào ô đó. Thành công chỉ được báo
  * SAU KHI cổng xác nhận; lỗi lưu hiện ngay tại màn và giữ nguyên điều người dùng đã gõ.
  */
@@ -101,15 +101,6 @@ export function EditProfileScreen() {
       title={t('nav:subTitles.editProfile')}
       onBack={navigation.back}
       testID="screen-UI-I01-edit-profile"
-      footer={
-        <Button
-          label={t('personal:editProfile.save')}
-          onPress={() => void save()}
-          disabled={!canSave}
-          loading={saving}
-          testID="edit-profile-save"
-        />
-      }
     >
       {profile.state.status === 'loading' ? (
         <Card testID="edit-profile-loading">
@@ -134,6 +125,7 @@ export function EditProfileScreen() {
         <View style={{ gap: tokens.space.lg }}>
           <FormField
             label={t('personal:fields.displayName')}
+            required
             value={value}
             onChangeText={(next) => {
               setDraft(next);
@@ -147,17 +139,19 @@ export function EditProfileScreen() {
             {...(nameError ? { error: nameError } : {})}
             testID="edit-profile-name"
           />
-          <ReadOnlyField
-            label={t('personal:fields.email')}
-            value={loaded.email}
-            note={t('personal:editProfile.emailHint')}
-            testID="edit-profile-email"
-          />
           {saveMessage ? (
             <Text color="danger" accessibilityRole="alert" testID="edit-profile-save-error">
               {saveMessage}
             </Text>
           ) : null}
+          {/* Board 07 khung 2: Lưu ngay dưới ô (không ghim đáy). */}
+          <Button
+            label={t('personal:editProfile.save')}
+            onPress={() => void save()}
+            disabled={!canSave}
+            loading={saving}
+            testID="edit-profile-save"
+          />
         </View>
       ) : null}
       <ConfirmDialog

@@ -1,7 +1,6 @@
 {
   "fields": {
     "displayName": "Họ và tên",
-    "email": "Email",
     "currentPassword": "Mật khẩu hiện tại",
     "newPassword": "Mật khẩu mới",
     "confirmNewPassword": "Nhập lại mật khẩu mới",
@@ -73,7 +72,6 @@
   "editProfile": {
     "save": "Lưu",
     "saved": "Đã lưu họ tên.",
-    "emailHint": "Email dùng để đăng nhập, chưa đổi được ở bản này.",
     "leaveTitle": "Bỏ thay đổi?",
     "leaveMessage": "Họ tên bạn vừa sửa chưa được lưu.",
     "leaveConfirm": "Bỏ thay đổi",
