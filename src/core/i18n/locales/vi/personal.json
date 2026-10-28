@@ -195,7 +195,7 @@
     "noData": "Chưa có số liệu",
     "explainOnDevice": "Trên thiết bị: tệp còn trên máy này. Đây chưa phải bản sao lưu.",
     "explainPending": "Đang chờ đồng bộ: tệp chưa được máy chủ xác nhận đã nhận.",
-    "explainCloud": "Trên đám mây: chỉ tính tệp mà máy chủ đã xác nhận.",
+    "explainCloud": "Trên đám mây: chỉ tính tệp máy chủ đã xác nhận và kiểm tra khớp.",
     "retentionRow": "Thời hạn lưu",
     "openSync": "Xem trung tâm đồng bộ"
   },
@@ -206,6 +206,6 @@
     "videoPack": "Video đóng gói",
     "photoDelivery": "Ảnh giao hàng",
     "photoReturn": "Ảnh hoàn hàng",
-    "note": "Cách xử lý dữ liệu khi hết thời hạn lưu chưa được công bố. Bằng chứng đang tranh chấp được giữ lại; hạ cấp gói không xóa bằng chứng ngay."
+    "note": "Theo chính sách dự kiến, bằng chứng đang tranh chấp được giữ lại và hạ cấp gói không xóa bằng chứng ngay. Cách xử lý khi hết thời hạn lưu chưa được công bố."
   }
 }

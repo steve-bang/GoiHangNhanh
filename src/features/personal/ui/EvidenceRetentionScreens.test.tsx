@@ -37,7 +37,9 @@ describe('EvidenceDataScreen (UI-I01 route con, khung 11)', () => {
     await renderWithProviders(<EvidenceDataScreen />);
     const text = screen.getByTestId('evidence-explain');
     expect(text).toHaveTextContent(/Trên thiết bị: .*chưa phải bản sao lưu/);
-    expect(text).toHaveTextContent(/Trên đám mây: chỉ tính tệp mà máy chủ đã xác nhận/);
+    expect(text).toHaveTextContent(
+      /Trên đám mây: chỉ tính tệp máy chủ đã xác nhận và kiểm tra khớp/,
+    );
     expect(screen.getByTestId('screen-UI-I01-evidence')).not.toHaveTextContent(OVERPROMISE);
   });
 
@@ -69,7 +71,9 @@ describe('RetentionDetailScreen (UI-I01 route con, khung 12)', () => {
     await renderWithProviders(<RetentionDetailScreen />);
     const note = screen.getByTestId('retention-note');
     expect(note).toHaveTextContent(/chưa được công bố/);
-    expect(note).toHaveTextContent(/tranh chấp được giữ lại/);
+    expect(note).toHaveTextContent(
+      /Theo chính sách dự kiến, bằng chứng đang tranh chấp được giữ lại/,
+    );
     expect(note).toHaveTextContent(/hạ cấp gói không xóa bằng chứng ngay/);
     expect(screen.getByTestId('screen-UI-I01-retention')).not.toHaveTextContent(OVERPROMISE);
   });
