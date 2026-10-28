@@ -157,7 +157,8 @@
     "pendingSync": "Đang chờ đồng bộ",
     "cloud": "Trên đám mây",
     "noData": "Chưa có số liệu",
-    "openSync": "Xem trung tâm đồng bộ"
+    "openSync": "Xem trung tâm đồng bộ",
+    "openDetail": "Xem chi tiết dữ liệu bằng chứng"
   },
   "groups": {
     "account": "Tài khoản",
@@ -188,5 +189,23 @@
       "emptyTitle": "Chưa có lịch sử thanh toán",
       "emptyMessage": "Ứng dụng chưa có thanh toán nên chưa có giao dịch nào để hiển thị."
     }
+  },
+  "evidenceData": {
+    "total": "Tổng số bằng chứng",
+    "noData": "Chưa có số liệu",
+    "explainOnDevice": "Trên thiết bị: tệp còn trên máy này. Đây chưa phải bản sao lưu.",
+    "explainPending": "Đang chờ đồng bộ: tệp chưa được máy chủ xác nhận đã nhận.",
+    "explainCloud": "Trên đám mây: chỉ tính tệp mà máy chủ đã xác nhận.",
+    "retentionRow": "Thời hạn lưu",
+    "openSync": "Xem trung tâm đồng bộ"
+  },
+  "retentionDetail": {
+    "planEyebrow": "Thời hạn lưu theo gói dịch vụ",
+    "planName": "Chưa có thông tin",
+    "noInfo": "Chưa có thông tin",
+    "videoPack": "Video đóng gói",
+    "photoDelivery": "Ảnh giao hàng",
+    "photoReturn": "Ảnh hoàn hàng",
+    "note": "Cách xử lý dữ liệu khi hết thời hạn lưu chưa được công bố. Bằng chứng đang tranh chấp được giữ lại; hạ cấp gói không xóa bằng chứng ngay."
   }
 }

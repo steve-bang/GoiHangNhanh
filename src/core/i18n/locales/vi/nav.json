@@ -77,6 +77,8 @@
     "shopEdit": "Sửa tên cửa hàng",
     "shopSwitch": "Chuyển cửa hàng",
     "planDetail": "Chi tiết gói dịch vụ",
-    "paymentHistory": "Lịch sử thanh toán"
+    "paymentHistory": "Lịch sử thanh toán",
+    "evidenceData": "Dữ liệu bằng chứng",
+    "retentionDetail": "Thời hạn lưu"
   }
 }
