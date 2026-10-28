@@ -1,19 +1,61 @@
 #!/usr/bin/env bash
-# Khởi động máy ảo (iOS Simulator / Android Emulator) rồi chạy app trong Expo Go.
-# Dùng: npm run dev:ios | npm run dev:android   (chỉ cho macOS)
+# Khởi động máy ảo (iOS Simulator / Android Emulator) rồi chạy app theo môi trường.
+# Dùng: npm run dev:ios | dev:android | prod:ios | prod:android | fake:ios | fake:android   (chỉ macOS)
+#   dev  = Firebase thật của dự án dev   (scripts/env/dev.env)   - dev client
+#   prod = Firebase thật của dự án prod  (scripts/env/prod.env)  - dev client
+#   fake = cổng giả, không Firebase      (scripts/env/fake.env)  - Expo Go
 # Biến tùy chọn: AVD_NAME=<tên AVD Android> (mặc định: AVD đầu tiên), IOS_DEVICE="iPhone 16"
 set -euo pipefail
 
 platform="${1:-}"
+target="${2:-dev}"
 cd "$(dirname "$0")/.."
 
 if [[ "$(uname)" != "Darwin" ]]; then
   echo "Lệnh này chỉ hỗ trợ macOS." >&2
   exit 1
 fi
+if [[ "$platform" != "ios" && "$platform" != "android" ]] || [[ ! -f "scripts/env/$target.env" ]]; then
+  echo "Dùng: $0 ios|android dev|prod|fake" >&2
+  exit 1
+fi
 
-# Dùng Expo Go, không dùng dev client (chưa có dev build); xem CLAUDE.md.
+set -a
+# shellcheck disable=SC1090
+source "scripts/env/$target.env"
+set +a
 export LANG="${LANG:-en_US.UTF-8}"
+
+# Firebase thật cần tệp cấu hình đúng môi trường (firebase/config/README.md) và dev client.
+if [[ "$target" != "fake" ]]; then
+  if [[ "$platform" == "ios" ]]; then cfg="GoogleService-Info.plist"; else cfg="google-services.json"; fi
+  file="firebase/config/$APP_ENV/$cfg"
+  if [[ ! -f "$file" ]]; then
+    echo "Thiếu $file (tải từ Firebase Console, xem firebase/config/README.md)." >&2
+    exit 1
+  fi
+  if [[ -n "${FIREBASE_PROJECT_ID:-}" ]] && ! grep -q "$FIREBASE_PROJECT_ID" "$file"; then
+    echo "$file không thuộc dự án $FIREBASE_PROJECT_ID." >&2
+    exit 1
+  fi
+fi
+
+# Mã app theo môi trường (khớp app.config.js) để kiểm tra đã cài dev client chưa.
+app_id="vn.doncung.app.dev"
+[[ "$APP_ENV" == "prod" ]] && app_id="vn.doncung.app"
+
+# fake: Expo Go; còn lại: dev client (chưa cài thì build và cài bằng `expo run:*`).
+launch() {
+  local installed="$1"
+  if [[ "$target" == "fake" ]]; then
+    exec npx expo start --go "--$platform"
+  elif [[ "$installed" == "yes" ]]; then
+    exec npx expo start --dev-client "--$platform"
+  else
+    echo "Chưa cài $app_id trên máy ảo, đang build (lần đầu mất vài phút)..."
+    exec npx expo run:"$platform"
+  fi
+}
 
 start_ios() {
   if ! xcrun simctl help >/dev/null 2>&1; then
@@ -24,8 +66,8 @@ start_ios() {
   if [[ -n "${IOS_DEVICE:-}" ]]; then
     xcrun simctl boot "$IOS_DEVICE" 2>/dev/null || true
   fi
-  # Expo tự chọn máy ảo đang chạy và cài Expo Go khớp SDK nếu thiếu.
-  exec npx expo start --go --ios
+  xcrun simctl bootstatus booted -b >/dev/null 2>&1 || true
+  if xcrun simctl get_app_container booted "$app_id" >/dev/null 2>&1; then launch yes; else launch no; fi
 }
 
 start_android() {
@@ -50,11 +92,7 @@ start_android() {
   fi
   export ANDROID_HOME="$sdk"
   export PATH="$sdk/platform-tools:$PATH"
-  exec npx expo start --go --android
+  if "$adb" shell pm list packages 2>/dev/null | grep -q "package:$app_id"; then launch yes; else launch no; fi
 }
 
-case "$platform" in
-  ios) start_ios ;;
-  android) start_android ;;
-  *) echo "Dùng: $0 ios|android" >&2; exit 1 ;;
-esac
+"start_$platform"

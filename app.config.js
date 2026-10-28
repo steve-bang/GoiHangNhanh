@@ -8,16 +8,33 @@ function existing(path) {
   return path && fs.existsSync(path) ? path : undefined;
 }
 
+// APP_ENV=dev|prod (đặt bởi `npm run dev:*` / `prod:*`, scripts/env/*.env) chọn tệp trong
+// firebase/config/<env>/ trước, rồi mới tới gốc repo. prod bỏ hậu tố `.dev` của mã app (giá trị giữ chỗ, O-11).
 module.exports = ({ config }) => {
+  const env = process.env.APP_ENV === 'prod' ? 'prod' : 'dev';
   const iosFile = existing(
     process.env.GOOGLE_SERVICES_INFO_PLIST ??
       process.env.GOOGLE_SERVICE_INFO_PLIST ??
+      existing(`./firebase/config/${env}/GoogleService-Info.plist`) ??
       './GoogleService-Info.plist',
   );
-  const androidFile = existing(process.env.GOOGLE_SERVICES_JSON ?? './google-services.json');
+  const androidFile = existing(
+    process.env.GOOGLE_SERVICES_JSON ??
+      existing(`./firebase/config/${env}/google-services.json`) ??
+      './google-services.json',
+  );
+  const appId = (id) => (env === 'prod' && id ? id.replace(/\.dev$/, '') : id);
   return {
     ...config,
-    ios: { ...config.ios, ...(iosFile ? { googleServicesFile: iosFile } : {}) },
-    android: { ...config.android, ...(androidFile ? { googleServicesFile: androidFile } : {}) },
+    ios: {
+      ...config.ios,
+      bundleIdentifier: appId(config.ios?.bundleIdentifier),
+      ...(iosFile ? { googleServicesFile: iosFile } : {}),
+    },
+    android: {
+      ...config.android,
+      package: appId(config.android?.package),
+      ...(androidFile ? { googleServicesFile: androidFile } : {}),
+    },
   };
 };

@@ -86,6 +86,16 @@ EXPO_PUBLIC_BACKEND=firebase EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=10.0.2.2 npm sta
 - Chạy emulator với `--project ghn-test-67b39` (không dùng `demo-doncung`) để trùng mã dự án trong tệp cấu hình app. Emulator không gọi dịch vụ thật.
 - Cần dev build có tệp cấu hình Firebase (mục 3); không chạy được trong Expo Go.
 
+**Một lệnh mở máy ảo + chạy theo môi trường (macOS)** *(chưa thử trên máy)*: `scripts/dev-emulator.sh`, môi trường ở `scripts/env/*.env`, tệp Firebase theo môi trường ở `firebase/config/<env>/` (xem `firebase/config/README.md`).
+
+| Lệnh | Việc |
+|---|---|
+| `npm run dev:ios` / `dev:android` | Mở máy ảo, nối Firebase thật của dự án **dev**, chạy dev client (chưa cài thì build bằng `expo run:*`) |
+| `npm run prod:ios` / `prod:android` | Như trên nhưng nối Firebase **prod** (cần điền `FIREBASE_PROJECT_ID` và đặt tệp cấu hình prod) |
+| `npm run fake:ios` / `fake:android` | Cổng giả trong Expo Go, không Firebase |
+
+Firebase thật cần dev client nên không chạy trong Expo Go; build native iOS vẫn bị chặn với Xcode 16.4 (CLAUDE.md).
+
 ## 5. Deploy lên dự án dev
 
 Chạy ở gốc repo, trên máy của người có quyền với dự án.

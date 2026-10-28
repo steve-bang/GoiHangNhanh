@@ -47,3 +47,5 @@ npm-debug.log*
 # Cấu hình Firebase của app (không commit; xem app.config.js)
 GoogleService-Info.plist
 google-services.json
+firebase/config/*/GoogleService-Info.plist
+firebase/config/*/google-services.json
