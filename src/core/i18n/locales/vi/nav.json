@@ -64,7 +64,7 @@
     "UI-H03": "Xác nhận thanh toán",
     "UI-H04": "Gần hoặc vượt giới hạn",
     "UI-I01": "Cá nhân",
-    "UI-I02": "Cài đặt cửa hàng",
+    "UI-I02": "Cửa hàng",
     "UI-I03": "Thành viên và quyền",
     "UI-I04": "Thông báo",
     "UI-I05": "Bảo mật và dữ liệu",
@@ -74,7 +74,7 @@
   "subTitles": {
     "editProfile": "Sửa họ tên",
     "changePassword": "Đổi mật khẩu",
-    "shopEdit": "Sửa thông tin cửa hàng",
+    "shopEdit": "Sửa tên cửa hàng",
     "shopSwitch": "Chuyển cửa hàng"
   }
 }
