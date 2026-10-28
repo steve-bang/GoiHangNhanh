@@ -1,16 +1,34 @@
-import type { OrderLineId } from '@/core/ids';
+import type { OrderLineId, OrderId, PackageId, ShopId } from '@/core/ids';
 
-import { makeOrder } from '../data/order-store.contract';
+import { buildOrder } from './build-order';
 import { buildOrderEdit, isEditUnchanged } from './update-order';
 
 let n = 0;
 const ctx = () => ({ lineId: () => `new-${(n += 1)}` as OrderLineId, nowDevice: 777 });
 
 describe('buildOrderEdit', () => {
-  const details = makeOrder('E1', {
-    tracking: 'T1',
-    lines: [{ name: 'Áo', variant: 'Đen', quantity: 2 }, { name: 'Quần' }],
-  });
+  const built = buildOrder(
+    {
+      orderCode: 'E1',
+      source: 'shopee',
+      trackingCode: 'T1',
+      lines: [
+        { name: 'Áo', variant: 'Đen', quantity: 2 },
+        { name: 'Quần', variant: '', quantity: 1 },
+      ],
+    },
+    {
+      shopId: 's' as ShopId,
+      nowDevice: 5,
+      ids: {
+        orderId: () => 'o1' as OrderId,
+        lineId: () => `l${(n += 1)}` as OrderLineId,
+        packageId: () => 'p1' as PackageId,
+      },
+    },
+  );
+  if (!built.ok) throw new Error('fixture');
+  const details = built.details;
   const [a, b] = details.lines;
   if (!a || !b) throw new Error('fixture');
   const same = {

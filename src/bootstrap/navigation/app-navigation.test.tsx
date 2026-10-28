@@ -450,6 +450,29 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
       expect(screen.queryByText('AB-1')).toBeNull();
     });
 
+    it('Chi tiết -> Sửa thông tin đơn (ẩn thanh tab) -> Lưu -> Back về chi tiết có dữ liệu mới; danh sách cũng mới', async () => {
+      await openOrdersTab();
+      await createOrderFromList('DH-EDIT-1', 'Áo cũ');
+      await fireEvent.press(await screen.findByText('DH-EDIT-1'));
+      expect(await screen.findByTestId('screen-UI-E02')).toBeOnTheScreen();
+      await fireEvent.press(screen.getByTestId('order-detail-edit'));
+      expect(await screen.findByTestId('screen-UI-E02-edit')).toBeOnTheScreen();
+      expectTabBarVisible(false);
+      expect(screen.getByTestId('order-edit-code')).toHaveTextContent('DH-EDIT-1');
+      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo mới');
+      await fireEvent.press(screen.getByTestId('order-edit-save'));
+      expect(await screen.findByTestId('screen-UI-E02')).toBeOnTheScreen();
+      expect(screen.queryByTestId('screen-UI-E02-edit')).toBeNull();
+      expect(await screen.findByText('Áo mới')).toBeOnTheScreen();
+      expect(screen.queryByText('Áo cũ')).toBeNull();
+      expectTabBarVisible(true);
+      await act(async () => {
+        router.back();
+      });
+      expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
+      expect(await screen.findByText('Áo mới')).toBeOnTheScreen();
+    });
+
     it('Hủy form đã nhập dở: hỏi Bỏ thay đổi?, xác nhận thì về danh sách và không có đơn nào được lưu', async () => {
       await openOrdersTab();
       await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn' }));

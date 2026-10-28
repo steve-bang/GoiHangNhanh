@@ -157,6 +157,8 @@ Mockup `docs/assets/ui/03-quick-order-confirm-record.png`; ADR-017 và [decision
 
 **Cập nhật PR4 (ORD-05/06/10, `orders-tab-ui-pr4-plan.md`, Q-22a, Q-22ac..ag):** luồng mới Tạo đơn nhanh -> *Tiếp tục* (chỉ kiểm tra) -> Xác nhận (cùng màn UI-B04, `testID` `screen-UI-B04-confirm`) -> *Tạo đơn hàng* -> `replace` sang chi tiết đơn (UI-E02); đơn lưu độc lập với quay, *Quay đóng gói* nằm ở chi tiết. ID đơn/kiện sinh một lần khi mở form (thử lại không tạo hai bản ghi), shop lấy lúc bấm Tạo, trùng mã hiện đơn đã có qua `OrderMatchSheet` (chế độ duplicate: lối chính *Xem đơn hiện có*, lối phụ *Vẫn tạo đơn mới* như bản cũ; không gộp, không gắn gì vào đơn cũ), đóng form có dữ liệu hỏi *Bỏ thay đổi?*. Nguồn bán chọn bằng `OrderSourcePicker` (một lựa chọn, không ô tên cho *Khác*). Chưa kiểm chứng trên thiết bị; ảnh render web chưa chụp.
 
+**Cập nhật PR5 (ORD-08, Q-22ah..al):** route con `/orders/[orderId]/edit` của UI-E02 (`hideTabBar`) = *Sửa thông tin đơn* (`EditOrderScreen`): mã đơn khóa (chỉ đọc), nguồn bán (`OrderSourcePicker`), mã vận đơn, dòng sản phẩm (thêm/xóa/sửa); chỉ khi đơn CHƯA có phiên nào (chưa có lịch sử thay đổi; người dùng đã quyết định bỏ lịch sử). Chi tiết có nút phụ *Sửa thông tin đơn*, đơn đã quay thì hiện câu giải thích thay nút. Đổi nguồn/mã vận đơn gây trùng -> `OrderMatchSheet` (*Vẫn lưu thay đổi*). Lưu -> toast + về chi tiết. Chưa kiểm chứng trên thiết bị.
+
 ### 2.6 Danh sách đơn (UI-E01) và Chi tiết đơn (UI-E02)
 
 Đặc tả nguồn là tài liệu tab Đơn hàng do người dùng cung cấp (ORD-01, ORD-07), áp dụng có điều chỉnh để không lệch bất biến; quyết định và chỗ lệch ở [decisions.md Q-18](decisions.md). Dữ liệu **thật cục bộ** (cùng kho `OrderStore` với Q-17); không còn ghi chú "minh họa" ở tab này; Trang chủ vẫn dùng dữ liệu minh họa.

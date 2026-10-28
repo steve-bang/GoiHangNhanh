@@ -31,7 +31,7 @@ export interface OrderStore {
    * Sửa nguồn bán, mã vận đơn và các dòng sản phẩm của đơn trong MỘT giao dịch (hoặc đủ hoặc không có
    * gì). Mã đơn KHÔNG sửa được. CHỈ khi đơn chưa có phiên đóng gói nào: đã có phiên thì ném
    * `ORDER_HAS_SESSION` (chưa có lịch sử thay đổi; bất biến 7; người dùng đã quyết định chưa làm lịch
-   * sử, Q-22ar). Đơn không có hoặc thuộc shop khác ném `ORDER_NOT_FOUND`. `edit.lines` là TOÀN BỘ dòng
+   * sử, Q-22ah). Đơn không có hoặc thuộc shop khác ném `ORDER_NOT_FOUND`. `edit.lines` là TOÀN BỘ dòng
    * sau khi sửa: dòng có trong đơn được cập nhật, dòng không còn bị xóa, dòng mới được thêm. Trả đơn sau
    * khi sửa. Không đổi ảnh chụp đơn của phiên nào (không có phiên).
    */
