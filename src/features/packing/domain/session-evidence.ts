@@ -83,8 +83,21 @@ export function summarizeSessionEvidence(
   };
 }
 
-/** Còn tệp có thể đổi trạng thái (đang ghi/lưu hoặc chưa tới đích tải lên): màn nên đọc lại định kỳ. */
+/**
+ * Còn tệp đang TỰ đổi trạng thái (đang ghi/lưu, chờ/đang tải lên, `uploaded` chờ xác minh): màn nên đọc
+ * lại định kỳ. Trạng thái dừng chờ người dùng hoặc đã tới đích (`verified`, lỗi lưu, `upload_failed`,
+ * `needs_attention`, `hash_mismatch`, `unrecoverable`) KHÔNG poll: đổi tiếp chỉ do một thao tác khác, và
+ * màn đọc lại khi lấy lại focus.
+ */
 export const hasPendingEvidence = (files: readonly Pick<EvidenceFile, 'state'>[]): boolean =>
   files.some(
-    (f) => !['verified', 'unrecoverable', 'local_save_failed', 'hash_mismatch'].includes(f.state),
+    (f) =>
+      ![
+        'verified',
+        'unrecoverable',
+        'local_save_failed',
+        'hash_mismatch',
+        'upload_failed',
+        'needs_attention',
+      ].includes(f.state),
   );

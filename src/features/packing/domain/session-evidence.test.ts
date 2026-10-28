@@ -58,13 +58,14 @@ describe('summarizeSessionEvidence', () => {
 });
 
 describe('hasPendingEvidence', () => {
-  it('còn tệp chưa tới đích (đang lưu, chờ/đang tải lên, lỗi tải lên) thì còn chờ', () => {
-    for (const s of ['saving_local', 'queued', 'uploading', 'uploaded', 'upload_failed'] as const) {
+  it('còn tệp đang tự đổi trạng thái (đang lưu, chờ/đang tải lên) thì còn chờ', () => {
+    for (const s of ['recording', 'saving_local', 'queued', 'uploading', 'uploaded'] as const) {
       expect(hasPendingEvidence(of(s))).toBe(true);
     }
   });
   it('chỉ có tệp ở trạng thái cuối thì không còn chờ', () => {
     expect(hasPendingEvidence(of('verified', 'unrecoverable', 'local_save_failed'))).toBe(false);
+    expect(hasPendingEvidence(of('upload_failed', 'needs_attention', 'hash_mismatch'))).toBe(false);
     expect(hasPendingEvidence([])).toBe(false);
   });
 });

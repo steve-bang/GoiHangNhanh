@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { Text } from 'react-native';
 import { act, screen } from '@testing-library/react-native';
 
 import type { EvidenceId } from '@/core/ids';
@@ -17,7 +19,7 @@ import { renderWithProviders } from '@/test-utils/render';
 
 import { PackConfirmScreen } from './PackConfirmScreen';
 import { PackDoneScreen } from './PackDoneScreen';
-import { PACK_EVIDENCE_POLL_MS } from './use-pack-evidence';
+import { PACK_EVIDENCE_POLL_MS, usePackEvidence } from './use-pack-evidence';
 
 jest.mock('../domain/recorder', () => ({ RECORDER_ENABLED: true }));
 jest.mock(
@@ -175,5 +177,50 @@ describe('usePackEvidence: đọc lại khi thay đổi / lấy lại focus', ()
     expect(
       await screen.findByText('Video đã lưu trên thiết bị. Đang tải lên máy chủ.'),
     ).toBeOnTheScreen();
+  });
+
+  it('tệp upload_failed/needs_attention: KHÔNG poll mãi (chỉ đọc một lần cho tới khi lấy lại focus)', async () => {
+    jest.useFakeTimers();
+    try {
+      const t = await open(<PackConfirmScreen />, ['upload_failed', 'needs_attention']);
+      const spy = jest.spyOn(t.files, 'listBySession');
+      await act(async () => {
+        jest.advanceTimersByTime(PACK_EVIDENCE_POLL_MS * 5);
+      });
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('đổi sessionId: kết quả phiên cũ không còn hiện, về loading rồi mới ra tệp của phiên mới', async () => {
+    const orders = createMemoryOrderStore();
+    const files = createMemoryEvidenceFileStore();
+    const details = await seedOrder(orders, sampleOrder());
+    const first = sampleSession(details, 1);
+    const second = { ...sampleSession(details, 2), id: 'sess-2' as never };
+    await orders.saveSession(first);
+    await addFile(files, first, 'queued');
+    let release: () => void = () => undefined;
+    const real = files.listBySession.bind(files);
+    let switchTo: (s: typeof first) => void = () => undefined;
+    function Probe() {
+      const [session, setSession] = useState(first);
+      switchTo = setSession;
+      const result = usePackEvidence(session);
+      return <Text testID="probe">{result === 'loading' ? 'loading' : `n=${result.length}`}</Text>;
+    }
+    await renderWithProviders(<Probe />, { orderStore: orders, evidenceFileStore: files });
+    expect(await screen.findByText('n=1')).toBeOnTheScreen();
+    files.listBySession = (shop, id) =>
+      id === second.id
+        ? new Promise((resolve) => {
+            release = () => resolve([]);
+          })
+        : real(shop, id);
+    await act(async () => switchTo(second));
+    expect(screen.getByTestId('probe').props.children).toBe('loading');
+    await act(async () => release());
+    expect(await screen.findByText('n=0')).toBeOnTheScreen();
   });
 });
