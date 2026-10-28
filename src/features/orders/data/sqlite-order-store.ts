@@ -23,7 +23,7 @@ import {
 } from '../domain/start-session';
 import { MAX_RECENT_SEARCHES } from '../domain/search';
 import { runSerialized } from './db-queue';
-import { MIGRATIONS } from './sqlite-migrations';
+import { LEGACY_EVIDENCE_FILE_COLUMNS, MIGRATIONS } from './sqlite-migrations';
 
 interface OrderRow {
   id: string;
@@ -147,6 +147,23 @@ export function parseSnapshot(json: string): OrderSnapshot {
   };
 }
 
+/**
+ * Sửa schema lệch do bản v3 cũ (xem `LEGACY_EVIDENCE_FILE_COLUMNS`): thiếu cột thì thêm, đủ thì không
+ * làm gì. Chạy mỗi lần mở sau khi migration xong; chỉ đọc `PRAGMA table_info` nên rẻ.
+ */
+async function repairLegacySchema(db: SqlDatabase): Promise<void> {
+  const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(evidence_files)');
+  if (columns.length === 0) return; // bảng chưa có (không xảy ra sau migration; phòng thủ)
+  const present = new Set(columns.map((c) => c.name));
+  const missing = LEGACY_EVIDENCE_FILE_COLUMNS.filter((c) => !present.has(c.name));
+  if (missing.length === 0) return;
+  await db.withTransactionAsync(async () => {
+    for (const column of missing) {
+      await db.execAsync(`ALTER TABLE evidence_files ADD COLUMN ${column.name} ${column.ddl}`);
+    }
+  });
+}
+
 /** Đưa cơ sở dữ liệu lên phiên bản mới nhất. Dùng chung cho kho đơn và kho tệp bằng chứng. */
 export async function migrateLocalDatabase(db: SqlDatabase): Promise<void> {
   await applyConnectionSettings(db); // ngoài giao dịch; PRAGMA khóa ngoại là theo từng kết nối
@@ -160,6 +177,7 @@ export async function migrateLocalDatabase(db: SqlDatabase): Promise<void> {
       await db.execAsync(`PRAGMA user_version = ${version + 1}`);
     });
   }
+  await repairLegacySchema(db);
 }
 
 /**

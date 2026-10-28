@@ -93,3 +93,16 @@ export const MIGRATIONS: readonly string[] = [
   ALTER TABLE packing_sessions ADD COLUMN remote_status TEXT;
   `,
 ];
+
+/**
+ * Cột của `evidence_files` mà bản v3 ĐẦU TIÊN (đã lỡ chạy trên vài máy dev/Expo Go ở các nhánh xếp
+ * chồng) chưa có: v3 sau đó được sửa tại chỗ để thêm chúng, nên máy đã chạy v3 cũ có
+ * `user_version` = 3 mà thiếu cột. Quy tắc từ nay: không sửa migration đã phát hành; việc sửa schema
+ * lệch nằm ở `repairLegacySchema` (sqlite-order-store.ts), chỉ ADD COLUMN nullable/có mặc định
+ * (idempotent).
+ */
+export const LEGACY_EVIDENCE_FILE_COLUMNS: readonly { name: string; ddl: string }[] = [
+  { name: 'attempt_count', ddl: 'INTEGER NOT NULL DEFAULT 0' },
+  { name: 'next_attempt_at_device', ddl: 'INTEGER' },
+  { name: 'last_error_code', ddl: 'TEXT' },
+];
