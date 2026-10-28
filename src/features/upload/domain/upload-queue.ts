@@ -139,6 +139,7 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
         shopId: file.shopId,
         orderId: file.orderId,
         sessionId: file.sessionId,
+        packageId: file.packageId,
         kind: file.kind,
         createdAtDevice: file.createdAtDevice,
         durationMs: file.durationMs,

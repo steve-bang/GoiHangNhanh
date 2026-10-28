@@ -8,7 +8,10 @@ const mockUpdateDoc = jest.fn(async () => undefined);
 
 jest.mock('@react-native-firebase/firestore', () => ({
   doc: (_db: unknown, path: string) => ({ path }),
-  getDoc: async (ref: { path: string }) => ({ exists: () => mockExisting.has(ref.path) }),
+  getDoc: async (ref: { path: string }) => ({
+    exists: () => mockExisting.has(ref.path),
+    data: () => ({}),
+  }),
   serverTimestamp: () => 'SERVER_TS',
   Timestamp: { fromMillis: (ms: number) => ({ ms }) },
   updateDoc: (...args: unknown[]) => (mockUpdateDoc as (...a: unknown[]) => Promise<void>)(...args),
@@ -19,7 +22,16 @@ jest.mock('@react-native-firebase/firestore', () => ({
   }),
 }));
 
-const services = { auth: { currentUser: { uid: 'u1' } }, db: {} } as unknown as FirebaseServices;
+const mockCall = jest.fn();
+jest.mock('@react-native-firebase/functions', () => ({
+  httpsCallable: (_f: unknown, name: string) => (data: unknown) => mockCall(name, data),
+}));
+
+const services = {
+  auth: { currentUser: { uid: 'u1' } },
+  db: {},
+  functions: {},
+} as unknown as FirebaseServices;
 
 beforeEach(() => {
   mockExisting.clear();
@@ -31,7 +43,11 @@ beforeEach(() => {
 describe('createFirestoreRemoteDocuments', () => {
   it('uid lấy từ phiên đăng nhập; null khi chưa đăng nhập', () => {
     expect(createFirestoreRemoteDocuments(services).currentUid()).toBe('u1');
-    const anon = { auth: { currentUser: null }, db: {} } as unknown as FirebaseServices;
+    const anon = {
+      auth: { currentUser: null },
+      db: {},
+      functions: {},
+    } as unknown as FirebaseServices;
     expect(createFirestoreRemoteDocuments(anon).currentUid()).toBeNull();
   });
 
@@ -62,5 +78,22 @@ describe('createFirestoreRemoteDocuments', () => {
   it('cập nhật trường của tài liệu đã có', async () => {
     await createFirestoreRemoteDocuments(services).updateFields('p', { status: 'ended' });
     expect(mockUpdateDoc).toHaveBeenCalledWith({ path: 'p' }, { status: 'ended' });
+  });
+
+  it('đọc trường tài liệu: null khi chưa có', async () => {
+    const docs = createFirestoreRemoteDocuments(services);
+    expect(await docs.getFields('missing')).toBeNull();
+    mockExisting.add('present');
+    expect(await docs.getFields('present')).toEqual({});
+  });
+
+  it('gọi Cloud Function callable và trả data', async () => {
+    mockCall.mockResolvedValue({ data: { status: 'ready' } });
+    expect(
+      await createFirestoreRemoteDocuments(services).callFunction('createUploadSession', { a: 1 }),
+    ).toEqual({
+      status: 'ready',
+    });
+    expect(mockCall).toHaveBeenCalledWith('createUploadSession', { a: 1 });
   });
 });

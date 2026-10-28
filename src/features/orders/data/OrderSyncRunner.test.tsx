@@ -30,6 +30,10 @@ function fakeDocs() {
     currentUid: () => 'uid',
     createMissing: async (writes) => void created.push(...writes.map((w) => w.path)),
     updateFields: async () => undefined,
+    getFields: async () => null,
+    callFunction: async () => {
+      throw new Error('unused');
+    },
   };
   return { docs, created };
 }

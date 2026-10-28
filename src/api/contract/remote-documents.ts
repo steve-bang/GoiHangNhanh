@@ -24,4 +24,8 @@ export interface RemoteDocuments {
   createMissing(writes: readonly RemoteWriteSpec[]): Promise<void>;
   /** Cập nhật một số trường của tài liệu đã có. */
   updateFields(path: string, fields: Readonly<Record<string, unknown>>): Promise<void>;
+  /** Đọc các trường của một tài liệu; `null` nếu chưa có. */
+  getFields(path: string): Promise<Readonly<Record<string, unknown>> | null>;
+  /** Gọi một Cloud Function dạng callable (ví dụ `createUploadSession`). Lỗi giữ nguyên `code` của SDK. */
+  callFunction<T>(name: string, data: unknown): Promise<T>;
 }

@@ -13,6 +13,10 @@ function fakeDocs(uid: string | null = 'uid-1') {
     currentUid: () => uid,
     createMissing: async (writes) => void created.push([...writes]),
     updateFields: async (path, fields) => void updates.push({ path, fields }),
+    getFields: async () => null,
+    callFunction: async () => {
+      throw new Error('unused');
+    },
   };
   return { docs, created, updates };
 }

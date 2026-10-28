@@ -7,12 +7,18 @@ import {
   writeBatch,
 } from '@react-native-firebase/firestore';
 
+import { httpsCallable } from '@react-native-firebase/functions';
+
 import type { RemoteDocuments } from '../contract';
 
 import type { FirebaseServices } from './client';
 
 /** Cổng ghi Firestore cho đồng bộ đơn/phiên. Chưa chạy trên thiết bị (chỉ có test với SDK giả). */
-export function createFirestoreRemoteDocuments({ auth, db }: FirebaseServices): RemoteDocuments {
+export function createFirestoreRemoteDocuments({
+  auth,
+  db,
+  functions,
+}: FirebaseServices): RemoteDocuments {
   return {
     values: {
       serverTimestamp: () => serverTimestamp(),
@@ -32,6 +38,14 @@ export function createFirestoreRemoteDocuments({ auth, db }: FirebaseServices): 
     },
     async updateFields(path, fields) {
       await updateDoc(doc(db, path), { ...fields });
+    },
+    async getFields(path) {
+      const snapshot = await getDoc(doc(db, path));
+      return snapshot.exists() ? ((snapshot.data() ?? {}) as Record<string, unknown>) : null;
+    },
+    async callFunction<T>(name: string, data: unknown) {
+      const result = await httpsCallable<unknown, T>(functions, name)(data);
+      return result.data;
     },
   };
 }
