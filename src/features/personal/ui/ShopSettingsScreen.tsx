@@ -5,8 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/core/navigation';
 import { useAppNavigation } from '@/platform';
 import {
-  Avatar,
   Card,
+  Icon,
+  IconTile,
   ListGroup,
   ListItem,
   Screen,
@@ -24,10 +25,12 @@ import { useRegion } from './use-region';
 import { useReloadOnShopUpdated } from './use-shop-revision-reload';
 
 /**
- * UI-I02 Cài đặt cửa hàng (PER-05): thông tin cửa hàng đang dùng (tên, vai trò, trạng thái), lối sửa tên
- * (PER-06) và chuyển cửa hàng (PER-07, chỉ khi tài khoản có từ hai cửa hàng trở lên, Q-20f). Quản lý
- * thành viên KHÔNG ở đây (O-03, O-07 chưa chốt). Quyền sửa do cổng trả (`canEdit`): UI chỉ phản ánh,
- * cổng/Rules mới là chốt thật. Tên cửa hàng không phải định danh nên đổi tên không đụng tới bằng chứng đã lưu.
+ * UI-I02 Cài đặt cửa hàng (PER-05; board 07 khung 5, tiêu đề "Cửa hàng"): thẻ thông tin cửa hàng đang dùng
+ * (tên, trạng thái), hai hàng chỉ đọc Vai trò/Trạng thái, rồi mỗi hành động một thẻ: sửa tên (PER-06) và
+ * chuyển cửa hàng (PER-07, chỉ khi tài khoản có từ hai cửa hàng trở lên, Q-20f). KHÔNG có: "Xóa cửa hàng"
+ * (có thể phá bằng chứng, bất biến 9; Q-21d), dòng "ID" (mô hình chưa có mã cửa hàng, Q-20n), quản lý
+ * thành viên (O-03, O-07). Quyền sửa do cổng trả (`canEdit`): UI chỉ phản ánh, cổng/Rules mới là chốt
+ * thật. Tên cửa hàng không phải định danh nên đổi tên không đụng tới bằng chứng đã lưu.
  */
 export function ShopSettingsScreen() {
   const { t } = useTranslation();
@@ -54,12 +57,9 @@ export function ShopSettingsScreen() {
       title={t('nav:titles.UI-I02')}
       onBack={navigation.back}
       testID="screen-UI-I02"
-      contentGap={tokens.space.xl}
+      contentGap={tokens.space.lg}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
     >
-      <Text color="textMuted" testID="shop-settings-intro">
-        {t('personal:shop.settingsIntro')}
-      </Text>
       {refreshFailed ? (
         <Notice alert testID="shop-refresh-failed">
           {t('personal:shop.refreshFailed')}
@@ -106,18 +106,22 @@ function ShopDetails({
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const status = t(`personal:shop.status.${shop.status}`);
+  const active = shop.status === 'active';
   const hasActions = shop.canEdit || canSwitch;
   return (
-    <View style={{ gap: tokens.space.xl }}>
-      <ListGroup testID="shop-settings-card">
-        <ListItem
-          leading={
-            <Avatar name={shop.name} size="lg" shape="square" testID="shop-settings-avatar" />
-          }
-          title={shop.name}
-          showChevron={false}
-          testID="shop-settings-name"
-        />
+    <View style={{ gap: tokens.space.lg }}>
+      <Card testID="shop-settings-card">
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.lg }}>
+          <IconTile icon="store" size="lg" testID="shop-settings-avatar" />
+          <View style={{ flex: 1, flexShrink: 1, gap: tokens.space.sm }}>
+            <Text variant="sectionTitle" testID="shop-settings-name">
+              {shop.name}
+            </Text>
+            <StatusBadge label={status} tone={active ? 'info' : 'warning'} />
+          </View>
+        </View>
+      </Card>
+      <View>
         <InfoRow
           label={t('personal:shop.roleLabel')}
           testID="shop-settings-role"
@@ -130,30 +134,36 @@ function ShopDetails({
           testID="shop-settings-status"
           accessibilityValue={status}
         >
-          <StatusBadge label={status} tone={shop.status === 'active' ? 'neutral' : 'warning'} />
+          <Text bold color={active ? 'brand' : 'warning'}>
+            {status}
+          </Text>
         </InfoRow>
-      </ListGroup>
+      </View>
       {hasActions ? (
-        <ListGroup testID="shop-settings-actions">
+        <View testID="shop-settings-actions" style={{ gap: tokens.space.sm }}>
           {shop.canEdit ? (
-            <ListItem
-              leadingIcon="edit"
-              title={t('personal:shop.editAction')}
-              titleWeight="regular"
-              onPress={onEdit}
-              testID="shop-settings-edit"
-            />
+            <ListGroup>
+              <ListItem
+                leadingIcon="edit"
+                title={t('personal:shop.editAction')}
+                titleWeight="regular"
+                onPress={onEdit}
+                testID="shop-settings-edit"
+              />
+            </ListGroup>
           ) : null}
           {canSwitch ? (
-            <ListItem
-              leadingIcon="swap"
-              title={t('personal:shop.switchAction')}
-              titleWeight="regular"
-              onPress={onSwitch}
-              testID="shop-settings-switch"
-            />
+            <ListGroup>
+              <ListItem
+                leadingIcon="swap"
+                title={t('personal:shop.switchAction')}
+                titleWeight="regular"
+                onPress={onSwitch}
+                testID="shop-settings-switch"
+              />
+            </ListGroup>
           ) : null}
-        </ListGroup>
+        </View>
       ) : null}
       {!shop.canEdit ? (
         <Text color="textMuted" testID="shop-settings-no-permission">
@@ -165,8 +175,9 @@ function ShopDetails({
 }
 
 /**
- * Hàng thông tin chỉ đọc: nhãn (caption, mờ) bên trái, giá trị cỡ thường bên phải; xuống dòng khi
- * hẹp hoặc chữ lớn thay vì ép cột chữ. Một phần tử trợ năng đọc "nhãn. giá trị".
+ * Hàng thông tin chỉ đọc, KHÔNG có thẻ nền và KHÔNG có mũi tên (board 07 khung 5 vẽ mũi tên nhưng hàng không mở
+ * được màn nào: D23): biểu tượng mờ bên trái, nhãn (caption, mờ) ở trên, giá trị ở dưới; xuống dòng được khi
+ * chữ lớn. Một phần tử trợ năng đọc "nhãn. giá trị".
  */
 function InfoRow({
   label,
@@ -187,18 +198,19 @@ function InfoRow({
       accessibilityLabel={`${label}. ${accessibilityValue}`}
       style={{
         flexDirection: 'row',
-        flexWrap: 'wrap',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: tokens.space.sm,
-        paddingHorizontal: tokens.space.lg,
+        gap: tokens.space.md,
+        paddingHorizontal: tokens.space.md,
         paddingVertical: tokens.space.md,
       }}
     >
-      <Text variant="caption" color="textMuted">
-        {label}
-      </Text>
-      {children}
+      <Icon name="user" size={22} color={tokens.color.text.secondary} />
+      <View style={{ flex: 1, flexShrink: 1, gap: tokens.space.tight }}>
+        <Text variant="caption" color="textMuted">
+          {label}
+        </Text>
+        {children}
+      </View>
     </View>
   );
 }
