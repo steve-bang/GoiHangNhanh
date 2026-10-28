@@ -142,6 +142,7 @@
     "onDevice": "Trên thiết bị",
     "pendingSync": "Đang chờ đồng bộ",
     "cloud": "Trên đám mây",
+    "noData": "Chưa có số liệu",
     "openSync": "Xem trung tâm đồng bộ"
   },
   "groups": {

@@ -77,7 +77,7 @@ export function PlanHeroCard() {
 }
 
 /**
- * Khối "Dữ liệu bằng chứng" (board 1a): ba ô chỉ có nhãn, KHÔNG số liệu (chưa có tệp bằng chứng và
+ * Khối "Dữ liệu bằng chứng" (board 1a): ba ô có nhãn và giá trị "Chưa có số liệu" (Q-21p), KHÔNG số liệu (chưa có tệp bằng chứng và
  * chưa có nguồn đếm theo cửa hàng; `countUnsyncedOnDevice` đếm cả máy nên không khớp nghĩa) kèm nút
  * mở Trung tâm đồng bộ.
  */
@@ -94,17 +94,20 @@ export function EvidenceOverviewCard() {
         <View style={{ flexDirection: 'row' }}>
           <MetricTile
             label={t('personal:evidenceOverview.onDevice')}
+            value={t('personal:evidenceOverview.noData')}
             icon="device-saved"
             testID="metric-on-device"
           />
           <MetricTile
             label={t('personal:evidenceOverview.pendingSync')}
+            value={t('personal:evidenceOverview.noData')}
             icon="sync"
             tone="warning"
             testID="metric-pending-sync"
           />
           <MetricTile
             label={t('personal:evidenceOverview.cloud')}
+            value={t('personal:evidenceOverview.noData')}
             icon="cloud"
             tone="blue"
             testID="metric-cloud"
