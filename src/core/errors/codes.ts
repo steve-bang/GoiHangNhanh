@@ -53,6 +53,8 @@ export const ERROR_CODES = {
   SHOP_PERMISSION_DENIED: 'SHOP_PERMISSION_DENIED',
   // Đề xuất (chờ BA, Q-21ab): lưu lựa chọn thông báo (UI-I04)
   SETTINGS_SAVE_FAILED: 'SETTINGS_SAVE_FAILED',
+  // Đề xuất (chờ BA, Q-21ae): không mở được ứng dụng email để soạn yêu cầu hỗ trợ (UI-I06)
+  SUPPORT_MAIL_UNAVAILABLE: 'SUPPORT_MAIL_UNAVAILABLE',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

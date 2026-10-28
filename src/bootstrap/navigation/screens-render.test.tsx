@@ -56,9 +56,10 @@ describe('mọi route của app render được (khung giao diện)', () => {
     const route = routeOf(file as string);
     await renderWithProviders(<Screen />);
 
-    // Route con (Q-20k) dùng chung mã UI với route gốc nên testID có thêm đoạn cuối của đường dẫn.
+    // Route con (Q-20k) dùng chung mã UI với route gốc nên testID có thêm đoạn cuối của đường dẫn
+    // (segment động `[articleId]` thành `articleId`).
     const testID = route.parent
-      ? `screen-${route.code}-${route.path.split('/').pop()}`
+      ? `screen-${route.code}-${(route.path.split('/').pop() ?? '').replace(/[[\]]/g, '')}`
       : `screen-${route.code}`;
     expect(screen.getByTestId(testID)).toBeOnTheScreen();
     // Màn quay là toàn màn hình camera, Splash (UI-A01) và Chào mừng (UI-A02) là màn thương hiệu:

@@ -214,3 +214,36 @@
 | Trạng thái | đạt | đạt | 13: tải, lỗi tải, lỗi lưu, đang lưu (công tắc khóa); 14: tải/lỗi hồ sơ, tài khoản Apple/Google |
 | Chữ lớn | đạt | đạt | nhãn và huy hiệu "Sắp có" xuống dòng |
 | Chuỗi chữ | lệch có chủ đích | lệch có chủ đích | 13: bỏ "Tài khoản", "Cập nhật sản phẩm"; "Thời hạn lưu" -> "Dung lượng sắp đầy"/"Gói sắp hết hạn", thêm "Tải lên lỗi hoặc cần xử lý" (docs/09). 14: "Xác nhận 2 lớp" + "Sắp có" (board "Xác thực 2 lớp: Chưa bật"); mọi hàng chưa làm "Sắp có"; xem mục 6.7 của plan |
+
+---
+
+# Ảnh đối chiếu PR-H: Trợ giúp, bài hướng dẫn, liên hệ hỗ trợ, điều khoản (khung 15-18)
+
+**Lưu ý trung thực:** ảnh render **bản web** (react-native-web trong Chromium) của màn thật trên **cổng giả**, **không phải ảnh chụp trên iOS/Android thật**; 320x568, 360x800, 390x844 (hệ số 2) và chữ lớn (hệ số 1.6, chỉ 320x568, mô phỏng bằng tham số tạm). Bản sao ngoài repo (`react-native-web`, không đổi `package.json`) có sửa tạm KHÔNG commit: tham số URL `fs` (chữ lớn), `noname=1` (hồ sơ chưa có họ tên), `mail=1` (**giả lập** địa chỉ hỗ trợ để thấy nút Soạn email hỗ trợ ở trạng thái mở; trong app thật hôm nay luôn khóa), cổng giả có họ tên "Trần Văn Minh". Ảnh `pr-g-13-notifications-*` đã chụp lại theo mã hiện tại.
+
+| Ảnh | Nội dung |
+| --- | --- |
+| `pr-h-15-help-center-*`, `...-largetext-320x568` | Khung 15: ô tìm, Danh mục (3, không "Cập nhật sản phẩm"), Bài viết đề xuất, lối Liên hệ/Điều khoản |
+| `pr-h-15-search-results-*`, `pr-h-15-search-empty-*` | Tìm "video chua dong bo" (có kết quả); "thanh toan visa" (rỗng, có lối Liên hệ hỗ trợ) |
+| `pr-h-15-category-*` | Danh sách bài của một danh mục (board không vẽ) |
+| `pr-h-16-article-*`, `...-largetext-320x568`, `pr-h-16-article-no-video-*`, `pr-h-16-article-faq-*` | Khung 16: bài có "Tiếp theo"; bài quay (nói chưa ghi video, bài cuối nên không "Tiếp theo"); bài hỏi đáp (không phần các bước) |
+| `pr-h-17-contact-locked-*`, `...-largetext-320x568` | Khung 17 thật hôm nay: thẻ "chưa gửi được", nút khóa |
+| `pr-h-17-contact-simulated-errors-*`, `pr-h-17-contact-simulated-filled-*` | **Giả lập có địa chỉ**: lỗi từng ô khi bấm nút; đã điền |
+| `pr-h-18-legal-*`, `...-largetext-320x568` | Khung 18: hai hàng khóa "Sắp có" kèm thẻ giải thích |
+| `pr-h-board-reference-15-18.png`, `pr-h-compare-board-vs-app-390.png` | Khung 15-18 cắt từ board; hàng trên board, hàng dưới app 390x844 (15, 16, 17 thật, 18) |
+
+## Checklist "giống design"
+
+| Hạng mục | 15 | 16 | 17 | 18 | Ghi chú lệch |
+| --- | --- | --- | --- | --- | --- |
+| Bố cục và thứ tự khối | gần | lệch có chủ đích | lệch có chủ đích | gần | 15: thêm nhóm "Cần thêm trợ giúp?" (lối vào 17, 18); 16: không ảnh/nút phát (D26); 17: thẻ chưa có kênh, bỏ SĐT, thêm Chủ đề và Mã đơn (D14); 18: 2 hàng thay 4 |
+| Thứ bậc chữ | đạt | đạt | đạt | đạt | |
+| Màu thẻ/nền | gần | đạt | gần | gần | hàng khóa mờ; thẻ cảnh báo màu cam nhạt |
+| Icon | gần | - | - | gần | Ionicons gần nghĩa |
+| Nút | - | đạt | lệch có chủ đích | - | 16: "Tiếp theo" ghim đáy; 17: "Soạn email hỗ trợ" khóa (board "Gửi yêu cầu") |
+| Header | đạt | đạt (tên danh mục) | đạt | đạt | |
+| Thanh tab | hiện | ẩn | ẩn | ẩn | 15 là route gốc UI-I06; còn lại route con |
+| Trạng thái | đạt | đạt | đạt | đạt | 15: có/không kết quả; 16: bài lạ; 17: khóa, lỗi ô, lỗi mở email; 18: khóa |
+| Chữ lớn | đạt | đạt | đạt | đạt | xuống dòng, không cắt |
+| Chuỗi chữ | lệch có chủ đích | lệch có chủ đích | lệch có chủ đích | lệch có chủ đích | bài viết do dev viết tạm; "Soạn email hỗ trợ"; "Chính sách quyền riêng tư"; bỏ "đổi trả", "dữ liệu" |
+

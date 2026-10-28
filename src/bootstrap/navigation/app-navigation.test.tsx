@@ -224,6 +224,56 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     expectTabBarVisible(true);
   });
 
+  it('Trợ giúp (UI-I06): Trung tâm có thanh tab; danh mục, bài, "Tiếp theo", Liên hệ, Điều khoản là route con ẩn thanh tab, Back về đúng từng màn', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.profile.path });
+    await fireEvent.press(await screen.findByTestId('menu-UI-I06'));
+    expect(screen.getByTestId('screen-UI-I06')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+
+    await fireEvent.press(screen.getByTestId('help-category-guide'));
+    expect(screen.getByTestId('screen-UI-I06-categoryId')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await fireEvent.press(screen.getByTestId('help-article-row-createOrder'));
+    expect(screen.getByTestId('screen-UI-I06-articleId')).toBeOnTheScreen();
+    expect(screen.getByTestId('help-article-title')).toHaveTextContent(
+      'Tạo đơn bằng cách quét hoặc nhập mã',
+    );
+    expectTabBarVisible(false);
+    await fireEvent.press(screen.getByTestId('help-article-next'));
+    expect(screen.getByTestId('help-article-title')).toHaveTextContent('Tìm và xem lại đơn hàng');
+    await act(async () => {
+      router.back();
+    });
+    // "Tiếp theo" thay bài hiện tại nên Back về danh mục.
+    expect(screen.getByTestId('screen-UI-I06-categoryId')).toBeOnTheScreen();
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-I06')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+
+    await fireEvent.press(screen.getByTestId('help-contact-row'));
+    expect(screen.getByTestId('screen-UI-I06-contact')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await act(async () => {
+      router.back();
+    });
+    await fireEvent.press(screen.getByTestId('help-legal-row'));
+    expect(screen.getByTestId('screen-UI-I06-legal')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-I06')).toBeOnTheScreen();
+  });
+
+  it('bài trợ giúp với ID lạ (liên kết sâu cũ) hiện trạng thái không tìm thấy, nút về Trung tâm trợ giúp', async () => {
+    await renderRouter(APP_DIR, { initialUrl: '/account/help/khong-co' });
+    expect(screen.getByTestId('screen-UI-I06-articleId')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText('Về Trung tâm trợ giúp'));
+    expect(await screen.findByTestId('screen-UI-I06')).toBeOnTheScreen();
+  });
+
   it('Hàng hoàn và Đồng bộ không còn là tab: mở được nhưng không có thanh tab', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.returns.path });
     expect(screen.getByTestId('screen-UI-D01')).toBeOnTheScreen();
