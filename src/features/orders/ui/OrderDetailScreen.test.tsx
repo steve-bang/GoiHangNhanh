@@ -116,8 +116,9 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
     expect(screen.getByText('Chưa có phiên quay')).toBeOnTheScreen();
     expect(screen.getByTestId('detail-no-evidence')).toHaveTextContent('Chưa có video đóng gói.');
     expect(screen.getByText('Đã tạo đơn')).toBeOnTheScreen();
-    // chỉ đọc: không có nút Sửa
-    expect(screen.queryByRole('button', { name: /Sửa|Chỉnh sửa/ })).toBeNull();
+    // chưa có phiên: có nút Sửa thông tin đơn (mở form sửa bằng ID đơn)
+    await fireEvent.press(screen.getByTestId('order-detail-edit'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.orderEdit, { orderId: d.order.id });
     expect(screen.queryByText(/Đã đồng bộ|Hoàn tất/)).toBeNull();
   });
 
@@ -314,7 +315,7 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
     expect(screen.getByTestId('order-detail-record')).toBeOnTheScreen();
   });
 
-  it('nút Xem bằng chứng mở UI-E03 bằng ID đơn; không có nút Sửa, Tiếp nhận hàng hoàn, Đã giao/Đã hủy', async () => {
+  it('nút Xem bằng chứng mở UI-E03 bằng ID đơn; không có nút Tiếp nhận hàng hoàn, Đã giao/Đã hủy (nút Sửa do PR5 có test riêng)', async () => {
     const store = createMemoryOrderStore();
     const d = makeOrder('VIEW', { at: CREATED });
     await store.saveNewOrder(d);
@@ -323,9 +324,7 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.orderEvidence, {
       orderId: d.order.id,
     });
-    expect(
-      screen.queryByRole('button', { name: /Sửa|Tiếp nhận hàng hoàn|Đã giao|Đã hủy/ }),
-    ).toBeNull();
+    expect(screen.queryByRole('button', { name: /Tiếp nhận hàng hoàn|Đã giao|Đã hủy/ })).toBeNull();
   });
 
   it('lấy lại focus thì nạp lại (phiên vừa tạo hiện ở lịch sử)', async () => {
@@ -366,6 +365,17 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
     expect(await screen.findByText('SHOP-A-ORDER')).toBeOnTheScreen();
     await act(async () => fireEvent.press(screen.getByTestId('switch')));
     await waitFor(() => expect(screen.queryByText('SHOP-A-ORDER')).toBeNull());
+  });
+
+  it('đơn đã có phiên: không có nút Sửa, có câu giải thích ngắn (chưa có lịch sử thay đổi)', async () => {
+    const store = createMemoryOrderStore();
+    const d = await withSession(store, 'LOCKED');
+    await open(store, d.order.id);
+    await screen.findByTestId('detail-order-code');
+    expect(screen.queryByTestId('order-detail-edit')).toBeNull();
+    expect(screen.getByTestId('detail-edit-locked')).toHaveTextContent(
+      'Đơn đã bắt đầu quay nên chưa sửa được thông tin.',
+    );
   });
 
   it('nút quay lại của header gọi back', async () => {

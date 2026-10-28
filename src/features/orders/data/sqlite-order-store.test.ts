@@ -27,7 +27,13 @@ describe('kho SQLite: migration và lỗi', () => {
       "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name",
     );
     expect(tables.map((t) => t.name)).toEqual(
-      expect.arrayContaining(['orders', 'order_lines', 'packages', 'packing_sessions']),
+      expect.arrayContaining([
+        'orders',
+        'order_lines',
+        'packages',
+        'packing_sessions',
+        'search_history',
+      ]),
     );
   });
 
@@ -90,6 +96,26 @@ describe('kho SQLite: migration và lỗi', () => {
   it('parseSnapshot từ chối dữ liệu hỏng', () => {
     expect(() => parseSnapshot('{"orderCode":1}')).toThrow();
     expect(() => parseSnapshot('null')).toThrow();
+  });
+});
+
+describe('kho SQLite: nâng cấp từ v1 lên v2 (lịch sử tìm)', () => {
+  it('giữ nguyên dữ liệu đơn của v1 và thêm bảng search_history', async () => {
+    const db = createNodeSqliteDatabase();
+    // dựng đúng DB của người dùng đang ở v1: chỉ chạy migration đầu tiên rồi ghi một đơn
+    await db.execAsync(MIGRATIONS[0] as string);
+    await db.execAsync('PRAGMA user_version = 1');
+    await db.runAsync(
+      `INSERT INTO orders (id, shop_id, order_code, order_code_key, source, tracking_code,
+         tracking_code_key, data_origin, created_at_device)
+       VALUES ('o1', 'shop-local', 'CU-1', 'CU-1', 'shopee', NULL, NULL, 'user_entered', 5)`,
+    );
+    const store = createSqliteOrderStore(db);
+    expect(await store.countOrders('shop-local' as never, {})).toBe(1);
+    const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+    expect(version?.user_version).toBe(MIGRATIONS.length);
+    await store.recordSearch('shop-local' as never, 'CU-1', 9);
+    expect(await store.listRecentSearches('shop-local' as never, 5)).toHaveLength(1);
   });
 });
 

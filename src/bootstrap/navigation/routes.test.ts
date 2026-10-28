@@ -76,6 +76,7 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
       'helpCategory',
       'helpContact',
       'helpLegal',
+      'orderEdit',
       'paymentHistory',
       'planDetail',
       'retentionDetail',
@@ -88,7 +89,9 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
       expect(parent?.parent).toBeUndefined();
       expect(parent?.code).toBe(child.code);
       expect(parent?.tabBar).toBe(child.tabBar);
-      expect(child.path.startsWith('/account/')).toBe(true);
+      expect(
+        child.path.startsWith('/account/') || child.path.startsWith('/orders/[orderId]/'),
+      ).toBe(true);
       expect(name).not.toBe(child.parent);
     }
     expect(ROUTES.editProfile).toMatchObject({ parent: 'profile', code: 'UI-I01' });
@@ -108,6 +111,7 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     ]) {
       expect(route).toMatchObject({ parent: 'help', code: 'UI-I06' });
     }
+    expect(ROUTES.orderEdit).toMatchObject({ parent: 'orderDetail', code: 'UI-E02' });
   });
 
   it('route form (con) ẩn thanh tab bằng hideTabBar nhưng vẫn nằm trong nhóm (tabs); màn gốc vẫn có thanh tab (Q-20r)', () => {
@@ -125,6 +129,7 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
       ROUTES.helpArticle,
       ROUTES.helpContact,
       ROUTES.helpLegal,
+      ROUTES.orderEdit,
     ];
     for (const route of forms) {
       expect(route).toMatchObject({ tabBar: true, hideTabBar: true });
@@ -139,6 +144,7 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
       ROUTES.security,
       ROUTES.plan,
       ROUTES.help,
+      ROUTES.orderDetail,
     ]) {
       expect(isTabBarHiddenAt(root.path)).toBe(false);
     }
@@ -158,6 +164,7 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     expect(nav.subTitles.helpArticle).toBeTruthy();
     expect(nav.subTitles.helpContact).toBeTruthy();
     expect(nav.subTitles.helpLegal).toBeTruthy();
+    expect(nav.subTitles.orderEdit).toBeTruthy();
   });
 
   it('mỗi mã UI-xx có tiêu đề i18n', () => {

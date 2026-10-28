@@ -1,14 +1,17 @@
-import { StyleSheet } from 'react-native';
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
+import { useState } from 'react';
+import { Pressable } from 'react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { AppError } from '@/core/errors/app-error';
 import { ROUTES } from '@/core/navigation';
-import { mockScanner, resetMockScanner } from '@/test-utils/mock-barcode-scanner';
+import { resetMockScanner } from '@/test-utils/mock-barcode-scanner';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { sampleOrder, seedOrder } from '@/test-utils/order-fixtures';
 import { renderWithProviders } from '@/test-utils/render';
 
-import { createMemoryOrderStore } from '../data';
+import type { ShopId } from '@/core/ids';
+
+import { CurrentShopProvider, createMemoryOrderStore } from '../data';
 import { LOCAL_SHOP_ID } from '../domain';
 import type { OrderStore } from '../domain';
 import { QuickOrderScreen } from './QuickOrderScreen';
@@ -35,131 +38,444 @@ async function typeCode(code: string) {
   await fireEvent.changeText(screen.getByTestId('quick-order-code'), code);
 }
 
-describe('UI-B04 Tạo đơn nhanh', () => {
-  it('có đủ thành phần theo mẫu; số lượng mặc định 1; tên và variant là hai ô riêng', async () => {
-    await renderWithProviders(<QuickOrderScreen />);
+describe('UI-B04 Tạo đơn nhanh (ORD-05) và Xác nhận (ORD-06)', () => {
+  async function open(store: OrderStore = createMemoryOrderStore()) {
+    await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
+    return store;
+  }
+  const next = () => fireEvent.press(screen.getByTestId('quick-continue'));
+  const create = () => fireEvent.press(screen.getByTestId('quick-create'));
+
+  it('có đủ thành phần: mã đơn, nguồn bán, sản phẩm (tên và variant riêng, SL mặc định 1), Tiếp tục, Hủy, trợ giúp; không còn nút quay ngay', async () => {
+    await open();
     expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
     expect(screen.getByText('Tạo đơn nhanh')).toBeOnTheScreen();
     expect(screen.getByText('Mã đơn hàng')).toBeOnTheScreen();
+    expect(screen.getByText('Nguồn bán hàng')).toBeOnTheScreen();
     expect(screen.getByTestId('line-name-0')).toBeOnTheScreen();
     expect(screen.getByTestId('line-variant-0')).toBeOnTheScreen();
-    expect(screen.getByText('1')).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Lưu và xác nhận đơn' })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Bỏ qua, quay ngay' })).toBeOnTheScreen();
+    expect(screen.getByTestId('quantity-stepper')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Tiếp tục' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Hủy' })).toBeOnTheScreen();
     expect(screen.getByText('Thêm sản phẩm khác')).toBeOnTheScreen();
+    expect(screen.queryByText(/Bỏ qua, quay ngay|Lưu và xác nhận/)).toBeNull();
     await fireEvent.press(screen.getByTestId('header-help'));
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.help);
   });
 
-  it('không còn các câu/hành vi bị loại khỏi mẫu', async () => {
-    await renderWithProviders(<QuickOrderScreen />);
-    expect(screen.queryByText(/Kiểm tra 30 giây|chống giả mạo/)).toBeNull();
-  });
-
-  it('hai nút khóa khi chưa có mã đơn; điền sẵn mã quét được từ tham số', async () => {
-    await renderWithProviders(<QuickOrderScreen />);
-    expect(screen.getByTestId('quick-save')).toBeDisabled();
-    expect(screen.getByTestId('quick-skip')).toBeDisabled();
-    await typeCode('DH1');
-    expect(screen.getByTestId('quick-save')).toBeEnabled();
-
-    resetMockNavigation();
+  it('mã quét/tìm điền sẵn từ tham số được giữ nguyên', async () => {
     mockNavigation.params = { code: 'SPX999' };
-    await renderWithProviders(<QuickOrderScreen />);
-    expect(screen.getAllByTestId('quick-order-code').at(-1)).toHaveDisplayValue('SPX999');
+    await open();
+    expect(screen.getByTestId('quick-order-code')).toHaveDisplayValue('SPX999');
   });
 
-  it('nguồn bán mặc định "Khác / chưa xác định" và đổi được bằng nút Thay đổi', async () => {
-    await renderWithProviders(<QuickOrderScreen />);
-    expect(screen.getByText('Khác / chưa xác định')).toBeOnTheScreen();
+  it('nguồn bán mặc định "Khác / chưa xác định"; đổi bằng OrderSourcePicker (một lựa chọn, có dấu chọn)', async () => {
+    await open();
+    expect(screen.getByLabelText('Nguồn bán: Khác / chưa xác định')).toBeOnTheScreen();
     await fireEvent.press(screen.getByTestId('source-change'));
-    await fireEvent.press(screen.getByRole('button', { name: 'TikTok Shop' }));
-    expect(screen.getByText('TikTok Shop')).toBeOnTheScreen();
+    expect(screen.getByTestId('source-option-other').props.accessibilityState).toMatchObject({
+      selected: true,
+    });
+    expect(screen.getByTestId('source-option-shopee').props.accessibilityState).toMatchObject({
+      selected: false,
+    });
+    expect(screen.getByText('Nguồn bán chỉ để bạn phân loại đơn.')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByTestId('source-option-tiktok_shop'));
+    expect(screen.getByLabelText('Nguồn bán: TikTok Shop')).toBeOnTheScreen();
+    expect(screen.queryByTestId('source-option-shopee')).toBeNull(); // sheet đã đóng
   });
 
   it('icon quét ở ô Mã đơn thay màn hiện tại bằng màn quét', async () => {
-    await renderWithProviders(<QuickOrderScreen />);
+    await open();
     await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn' }));
     expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.scan);
   });
 
-  it('mô tả ngắn; lưu ý "do bạn nhập" nằm ở dòng caption riêng; dòng nguồn có nhãn trợ năng đầy đủ', async () => {
-    await renderWithProviders(<QuickOrderScreen />);
-    expect(
-      screen.getByText('Nhập nhanh thông tin đơn hàng để bắt đầu quay video đóng gói.'),
-    ).toBeOnTheScreen();
-    expect(screen.getByText('Thông tin do bạn nhập, không lấy từ sàn.')).toBeOnTheScreen();
-    expect(screen.getByLabelText('Nguồn bán: Khác / chưa xác định')).toBeOnTheScreen();
-    expect(screen.queryByText('Nguồn bán')).toBeNull();
-  });
-
-  it('nút chính cao hơn nút "Bỏ qua, quay ngay"; ô số lượng là một ô liền', async () => {
-    await renderWithProviders(<QuickOrderScreen />);
-    const height = (id: string) =>
-      (StyleSheet.flatten(screen.getByTestId(id).props.style as never) as { minHeight: number })
-        .minHeight;
-    expect(height('quick-save')).toBeGreaterThan(height('quick-skip'));
-    expect(screen.getByTestId('quantity-stepper')).toBeOnTheScreen();
-  });
-
-  it('Lưu và xác nhận đơn: ghi đơn + dòng + kiện 1 rồi sang Xác nhận bằng ID đơn (không bằng mã)', async () => {
-    const store = createMemoryOrderStore();
-    await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
-    await typeCode('  dh-77 ');
-    await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo thun cotton');
-    await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'Đen / XL');
-    await fireEvent.press(screen.getByRole('button', { name: 'Tăng số lượng' }));
-    await fireEvent.press(screen.getByTestId('quick-save'));
-
-    await waitFor(() => expect(mockNavigation.push).toHaveBeenCalled());
-    const [orders, ...rest] = await allOrders(store, 'DH-77');
-    expect(rest).toEqual([]);
-    if (!orders) throw new Error('đơn phải được lưu');
-    expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.orderPreview, { orderId: orders.id });
-    const saved = await store.getOrder(LOCAL_SHOP_ID, orders.id);
-    expect(saved?.order).toMatchObject({
-      orderCode: 'dh-77',
-      source: 'other',
-      dataOrigin: 'entered_by_user',
-    });
-    expect(saved?.lines.map((l) => [l.name, l.variant, l.quantity])).toEqual([
-      ['Áo thun cotton', 'Đen / XL', 2],
-    ]);
-    expect(saved?.packages).toHaveLength(1);
-  });
-
-  it('nhiều dòng cùng tên khác variant được giữ riêng, không gộp', async () => {
-    const store = createMemoryOrderStore();
-    await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
-    await typeCode('DH2');
-    await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo');
-    await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'Đen');
-    await fireEvent.press(screen.getByTestId('quick-add-line'));
-    await fireEvent.changeText(screen.getByTestId('line-name-1'), 'Áo');
-    await fireEvent.changeText(screen.getByTestId('line-variant-1'), 'Trắng');
-    await fireEvent.press(screen.getByTestId('quick-save'));
-    await waitFor(() => expect(mockNavigation.push).toHaveBeenCalled());
-    const [order] = await allOrders(store, 'DH2');
-    const saved = order ? await store.getOrder(LOCAL_SHOP_ID, order.id) : null;
-    expect(saved?.lines.map((l) => l.variant)).toEqual(['Đen', 'Trắng']);
-  });
-
-  it('variant mà không có tên: báo lỗi ở dòng, không lưu', async () => {
-    const store = createMemoryOrderStore();
-    await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
-    await typeCode('DH3');
-    await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'Đen');
-    await fireEvent.press(screen.getByTestId('quick-save'));
-    expect(await screen.findByText('Hãy nhập tên sản phẩm cho phân loại này.')).toBeOnTheScreen();
-    expect(await allOrders(store, 'DH3')).toEqual([]);
-    expect(mockNavigation.push).not.toHaveBeenCalled();
-  });
-
   it('nút xóa variant xóa nội dung ô variant', async () => {
-    await renderWithProviders(<QuickOrderScreen />);
+    await open();
     await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'Đen');
     await fireEvent.press(screen.getByRole('button', { name: 'Xóa phân loại' }));
     expect(screen.getByTestId('line-variant-0')).toHaveDisplayValue('');
+  });
+
+  describe('Tiếp tục: chỉ kiểm tra, chưa lưu', () => {
+    it('mã trống: "Nhập mã đơn hàng nhé.", không sang xác nhận, không lưu', async () => {
+      const store = await open();
+      await next();
+      expect(screen.getByText('Nhập mã đơn hàng nhé.')).toBeOnTheScreen();
+      expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
+      expect(await store.countOrders(LOCAL_SHOP_ID, {})).toBe(0);
+    });
+
+    it('mã quá dài: báo mã chưa hợp lệ', async () => {
+      await open();
+      await typeCode('X'.repeat(65));
+      await next();
+      expect(screen.getByText('Mã đơn chưa hợp lệ. Hãy kiểm tra lại.')).toBeOnTheScreen();
+    });
+
+    it('variant mà không có tên: báo lỗi ở dòng (tên sản phẩm KHÔNG bắt buộc nếu không có variant)', async () => {
+      await open();
+      await typeCode('DH3');
+      await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'Đen');
+      await next();
+      expect(await screen.findByText('Hãy nhập tên sản phẩm cho phân loại này.')).toBeOnTheScreen();
+      expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
+    });
+
+    it('không nhập sản phẩm vẫn sang xác nhận, hiện nhãn Chưa khai báo sản phẩm (bất biến 10)', async () => {
+      const store = await open();
+      await typeCode('DH-NOPRODUCT');
+      await next();
+      expect(screen.getByTestId('screen-UI-B04-confirm')).toBeOnTheScreen();
+      expect(screen.getByText('Chưa khai báo sản phẩm')).toBeOnTheScreen();
+      expect(await store.countOrders(LOCAL_SHOP_ID, {})).toBe(0);
+    });
+  });
+
+  describe('Xác nhận (ORD-06)', () => {
+    async function toConfirm(store: OrderStore = createMemoryOrderStore()) {
+      await open(store);
+      await typeCode('  dh-77 ');
+      await fireEvent.press(screen.getByTestId('source-change'));
+      await fireEvent.press(screen.getByTestId('source-option-lazada'));
+      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo thun cotton');
+      await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'Đen / XL');
+      await fireEvent.press(screen.getByRole('button', { name: 'Tăng số lượng' }));
+      await fireEvent.press(screen.getByTestId('quick-add-tracking'));
+      await fireEvent.changeText(screen.getByTestId('quick-tracking'), ' spx-1 ');
+      await next();
+      return store;
+    }
+
+    it('tóm tắt: mã, nguồn, sản phẩm/variant/SL, mã vận đơn, ghi chú "do bạn nhập"; chưa lưu gì', async () => {
+      const store = await toConfirm();
+      expect(screen.getByText('Xác nhận đơn hàng')).toBeOnTheScreen();
+      expect(screen.getByTestId('confirm-order-code')).toHaveTextContent('dh-77');
+      expect(screen.getByTestId('confirm-source')).toHaveTextContent('Lazada');
+      expect(screen.getByTestId('confirm-tracking')).toHaveTextContent('spx-1');
+      expect(screen.getByText('Áo thun cotton')).toBeOnTheScreen();
+      expect(screen.getByText('Đen / XL')).toBeOnTheScreen();
+      expect(screen.getByText('Thông tin do bạn nhập, không lấy từ sàn.')).toBeOnTheScreen();
+      expect(await store.countOrders(LOCAL_SHOP_ID, {})).toBe(0);
+    });
+
+    it('Quay lại chỉnh sửa giữ nguyên toàn bộ dữ liệu', async () => {
+      await toConfirm();
+      await fireEvent.press(screen.getByTestId('quick-back-edit'));
+      expect(screen.getByTestId('quick-order-code')).toHaveDisplayValue('  dh-77 ');
+      expect(screen.getByLabelText('Nguồn bán: Lazada')).toBeOnTheScreen();
+      expect(screen.getByTestId('line-name-0')).toHaveDisplayValue('Áo thun cotton');
+      expect(screen.getByTestId('line-variant-0')).toHaveDisplayValue('Đen / XL');
+      expect(screen.getByTestId('quick-tracking')).toHaveDisplayValue(' spx-1 ');
+    });
+
+    it('Tạo đơn hàng: ghi ĐÚNG MỘT đơn (+ dòng + kiện 1, không phiên) rồi mở chi tiết bằng ID đơn', async () => {
+      const store = await toConfirm();
+      await create();
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      const [order, ...rest] = await allOrders(store, 'DH-77');
+      expect(rest).toEqual([]);
+      if (!order) throw new Error('đơn phải được lưu');
+      expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.orderDetail, {
+        orderId: order.id,
+      });
+      const saved = await store.getOrder(LOCAL_SHOP_ID, order.id);
+      expect(saved?.order).toMatchObject({
+        orderCode: 'dh-77',
+        source: 'lazada',
+        trackingCode: 'spx-1',
+        dataOrigin: 'entered_by_user',
+      });
+      expect(saved?.lines.map((l) => [l.name, l.variant, l.quantity])).toEqual([
+        ['Áo thun cotton', 'Đen / XL', 2],
+      ]);
+      expect(saved?.packages).toHaveLength(1);
+      // đơn mới không có phiên (không "bằng chứng", không quay)
+      expect(await store.listSessionsOfOrder(LOCAL_SHOP_ID, order.id)).toEqual([]);
+      expect(mockNavigation.push).not.toHaveBeenCalledWith(ROUTES.packRecord, expect.anything());
+    });
+
+    it('nhiều dòng cùng tên khác variant được giữ riêng, không gộp', async () => {
+      const store = await open();
+      await typeCode('DH2');
+      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo');
+      await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'Đen');
+      await fireEvent.press(screen.getByTestId('quick-add-line'));
+      await fireEvent.changeText(screen.getByTestId('line-name-1'), 'Áo');
+      await fireEvent.changeText(screen.getByTestId('line-variant-1'), 'Trắng');
+      await next();
+      await create();
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      const [order] = await allOrders(store, 'DH2');
+      const saved = order ? await store.getOrder(LOCAL_SHOP_ID, order.id) : null;
+      expect(saved?.lines.map((l) => l.variant)).toEqual(['Đen', 'Trắng']);
+    });
+
+    it('bấm Tạo liên tục chỉ tạo một đơn và điều hướng một lần', async () => {
+      const store = await toConfirm();
+      const button = screen.getByTestId('quick-create');
+      await act(async () => {
+        void fireEvent.press(button);
+        void fireEvent.press(button);
+        void fireEvent.press(button);
+      });
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      expect(await allOrders(store, 'DH-77')).toHaveLength(1);
+      expect(mockNavigation.replace).toHaveBeenCalledTimes(1);
+    });
+
+    it('lỗi lưu: giữ form, câu "Chưa tạo được đơn…", Thử lại dùng đúng ID cũ và không tạo hai bản ghi', async () => {
+      const store = createMemoryOrderStore();
+      const seen: string[] = [];
+      let fail = true;
+      const flaky: OrderStore = {
+        ...store,
+        saveNewOrder: async (details) => {
+          seen.push(
+            details.order.id,
+            ...details.lines.map((l) => l.id),
+            ...details.packages.map((p) => p.id),
+          );
+          if (fail) throw new AppError('ORDER_SAVE_FAILED');
+          return store.saveNewOrder(details);
+        },
+      };
+      await toConfirm(flaky);
+      await create();
+      expect(await screen.findByTestId('save-error')).toBeOnTheScreen();
+      expect(
+        screen.getByText('Chưa tạo được đơn. Thông tin bạn nhập vẫn được giữ lại.'),
+      ).toBeOnTheScreen();
+      expect(mockNavigation.replace).not.toHaveBeenCalled();
+      expect(await store.countOrders(LOCAL_SHOP_ID, {})).toBe(0);
+      fail = false;
+      await waitFor(() => expect(screen.getByTestId('quick-create')).toBeEnabled());
+      await create();
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      expect(await allOrders(store, 'DH-77')).toHaveLength(1);
+      const half = seen.length / 2;
+      expect(seen.slice(0, half)).toEqual(seen.slice(half)); // cùng ID đơn/dòng/kiện ở lần thử lại
+    });
+
+    it('đã lưu xong nhưng kết quả bị mất (lỗi sau khi ghi): Thử lại KHÔNG tạo bản thứ hai, chỉ mở đơn đó', async () => {
+      const store = createMemoryOrderStore();
+      let first = true;
+      const lossy: OrderStore = {
+        ...store,
+        saveNewOrder: async (details) => {
+          await store.saveNewOrder(details);
+          if (first) {
+            first = false;
+            throw new AppError('ORDER_SAVE_FAILED');
+          }
+        },
+      };
+      await toConfirm(lossy);
+      await create();
+      expect(await screen.findByTestId('save-error')).toBeOnTheScreen();
+      await waitFor(() => expect(screen.getByTestId('quick-create')).toBeEnabled());
+      await create();
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      expect(await allOrders(store, 'DH-77')).toHaveLength(1);
+    });
+
+    it('lưu xong nhưng kết quả mất, rồi người dùng SỬA form: không mở bản cũ làm mất phần sửa, không ghi đè; đơn đã lưu hiện ở hộp trùng, Vẫn tạo thì tạo đơn mới với nội dung đã sửa', async () => {
+      const store = createMemoryOrderStore();
+      let first = true;
+      const lossy: OrderStore = {
+        ...store,
+        saveNewOrder: async (details) => {
+          await store.saveNewOrder(details);
+          if (first) {
+            first = false;
+            throw new AppError('ORDER_SAVE_FAILED');
+          }
+        },
+      };
+      await toConfirm(lossy);
+      await create();
+      expect(await screen.findByTestId('save-error')).toBeOnTheScreen();
+      await waitFor(() => expect(screen.getByTestId('quick-create')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('quick-back-edit'));
+      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo đã sửa');
+      await next();
+      await create();
+      expect(await screen.findByText('Đơn này đã có')).toBeOnTheScreen();
+      expect(mockNavigation.replace).not.toHaveBeenCalled();
+      const [old] = await allOrders(store, 'DH-77');
+      expect((await store.getOrder(LOCAL_SHOP_ID, old?.id as never))?.lines[0]?.name).toBe(
+        'Áo thun cotton',
+      ); // bản đã lưu không bị ghi đè
+      await fireEvent.press(screen.getByTestId('order-match-create-anyway'));
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      const orders = await allOrders(store, 'DH-77');
+      expect(orders).toHaveLength(2);
+      const created = orders.find((o) => o.id !== old?.id);
+      expect((await store.getOrder(LOCAL_SHOP_ID, created?.id as never))?.lines[0]?.name).toBe(
+        'Áo đã sửa',
+      );
+    });
+
+    it('shop lấy LÚC BẤM Tạo: đổi shop giữa Tiếp tục và Tạo thì ghi vào shop mới', async () => {
+      const store = createMemoryOrderStore();
+      function Harness() {
+        const [shop, setShop] = useState('shop-a');
+        return (
+          <>
+            <Pressable testID="switch" onPress={() => setShop('shop-b')} />
+            <CurrentShopProvider shopId={shop}>
+              <QuickOrderScreen />
+            </CurrentShopProvider>
+          </>
+        );
+      }
+      await renderWithProviders(<Harness />, { orderStore: store });
+      await typeCode('DH-SHOP');
+      await next();
+      await act(async () => fireEvent.press(screen.getByTestId('switch')));
+      await create();
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      expect(await store.countOrders('shop-a' as ShopId, {})).toBe(0);
+      expect(await store.countOrders('shop-b' as ShopId, {})).toBe(1);
+    });
+  });
+
+  describe('trùng mã (ORD-14, ADR-011): kiểm ở bước Tạo đơn hàng', () => {
+    async function setup(
+      options: { tracking?: string; code?: string; source?: 'tiktok_shop' | 'other' } = {},
+    ) {
+      const store = createMemoryOrderStore();
+      const existing = await seedOrder(store, sampleOrder({ withLines: false }));
+      await open(store);
+      if ((options.source ?? 'tiktok_shop') === 'tiktok_shop') {
+        await fireEvent.press(screen.getByTestId('source-change'));
+        await fireEvent.press(screen.getByTestId('source-option-tiktok_shop'));
+      }
+      await typeCode(options.code ?? ' dh1234567890 ');
+      if (options.tracking) {
+        await fireEvent.press(screen.getByTestId('quick-add-tracking'));
+        await fireEvent.changeText(screen.getByTestId('quick-tracking'), options.tracking);
+      }
+      await next();
+      await create();
+      return { store, existing };
+    }
+
+    it('cùng mã đơn + nguồn: hiện đơn đã có, KHÔNG tạo, KHÔNG gắn gì vào đơn cũ, không điều hướng', async () => {
+      const { store, existing } = await setup();
+      expect(await screen.findByText('Đơn này đã có')).toBeOnTheScreen();
+      expect(screen.getByTestId(`order-match-${existing.order.id}`)).toBeOnTheScreen();
+      expect(screen.getByText('Trùng mã đơn')).toBeOnTheScreen();
+      expect(await allOrders(store, 'DH1234567890')).toHaveLength(1);
+      expect(await store.listSessionsOfOrder(LOCAL_SHOP_ID, existing.order.id)).toEqual([]);
+      expect(mockNavigation.replace).not.toHaveBeenCalled();
+    });
+
+    it('Xem đơn hiện có mở chi tiết bằng ID của đơn đã có', async () => {
+      const { existing } = await setup();
+      await fireEvent.press(await screen.findByTestId(`order-match-${existing.order.id}`));
+      expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.orderDetail, {
+        orderId: existing.order.id,
+      });
+    });
+
+    it('Quay lại chỉnh sửa đóng hộp và giữ nguyên form', async () => {
+      await setup();
+      await fireEvent.press(await screen.findByTestId('order-match-back-edit'));
+      expect(screen.queryByTestId('order-match-sheet')).toBeNull();
+      expect(screen.getByTestId('quick-create')).toBeEnabled();
+    });
+
+    it('trùng mã đơn + nguồn vẫn có nút phụ Vẫn tạo đơn mới (khôi phục hành vi cũ); nút chính là xem đơn hiện có', async () => {
+      const { store, existing } = await setup();
+      expect(await screen.findByTestId('order-match-create-anyway')).toBeOnTheScreen();
+      await fireEvent.press(screen.getByTestId('order-match-create-anyway'));
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      const orders = await allOrders(store, 'DH1234567890');
+      expect(orders).toHaveLength(2);
+      const created = orders.find((o) => o.id !== existing.order.id);
+      expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.orderDetail, {
+        orderId: created?.id,
+      });
+      // đơn cũ không bị đổi, không gắn phiên/dòng nào vào nó
+      expect((await store.getOrder(LOCAL_SHOP_ID, existing.order.id))?.lines).toEqual([]);
+      expect(await store.listSessionsOfOrder(LOCAL_SHOP_ID, existing.order.id)).toEqual([]);
+    });
+
+    it('bấm Vẫn tạo đơn mới hai lần liên tiếp: chỉ thêm MỘT đơn (cùng ID)', async () => {
+      const { store } = await setup();
+      const button = await screen.findByTestId('order-match-create-anyway');
+      await act(async () => {
+        void fireEvent.press(button);
+        void fireEvent.press(button);
+      });
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      expect(await allOrders(store, 'DH1234567890')).toHaveLength(2);
+      expect(mockNavigation.replace).toHaveBeenCalledTimes(1);
+    });
+
+    it('trùng mã vận đơn (kiện gộp hai đơn chung mã vận đơn): vẫn tạo được đơn mới', async () => {
+      const { store, existing } = await setup({
+        source: 'other',
+        code: 'DH-GOP-2',
+        tracking: 'spx1234567890',
+      });
+      expect(await screen.findByText('Trùng mã vận đơn')).toBeOnTheScreen();
+      await fireEvent.press(screen.getByTestId('order-match-create-anyway'));
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      expect(await allOrders(store, 'DH-GOP-2')).toHaveLength(1);
+      expect(await allOrders(store, 'DH1234567890')).toHaveLength(1);
+      expect((await store.getOrder(LOCAL_SHOP_ID, existing.order.id))?.order.trackingCode).toBe(
+        'SPX1234567890',
+      );
+    });
+
+    it('cùng mã nhưng khác nguồn bán thì không coi là trùng', async () => {
+      const { store } = await setup({ source: 'other' });
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      expect(await allOrders(store, 'DH1234567890')).toHaveLength(2);
+    });
+
+    it('cùng mã đơn khác nguồn NHƯNG trùng mã vận đơn: vẫn báo, không tự gộp', async () => {
+      const { store, existing } = await setup({ source: 'other', tracking: 'spx1234567890' });
+      expect(await screen.findByText('Trùng mã vận đơn')).toBeOnTheScreen();
+      expect(screen.getByTestId(`order-match-${existing.order.id}`)).toBeOnTheScreen();
+      expect(await allOrders(store, 'DH1234567890')).toHaveLength(1);
+    });
+  });
+
+  describe('đóng form có dữ liệu chưa lưu', () => {
+    it('chưa nhập gì: Hủy thoát ngay; mã điền sẵn từ quét không tính là thay đổi', async () => {
+      mockNavigation.params = { code: 'SPX1' };
+      await open();
+      expect(mockNavigation.leaveGuardEnabled).toBe(false);
+      await fireEvent.press(screen.getByTestId('quick-cancel'));
+      expect(mockNavigation.back).toHaveBeenCalledTimes(1);
+    });
+
+    it('có dữ liệu: hỏi Bỏ thay đổi?; Tiếp tục nhập ở lại, Bỏ thay đổi mới thoát (không lưu gì)', async () => {
+      const store = await open();
+      await typeCode('DH-DIRTY');
+      expect(mockNavigation.leaveGuardEnabled).toBe(true);
+      await fireEvent.press(screen.getByTestId('quick-cancel'));
+      expect(screen.getByText('Bỏ thay đổi?')).toBeOnTheScreen();
+      expect(mockNavigation.back).not.toHaveBeenCalled();
+      await fireEvent.press(screen.getByRole('button', { name: 'Tiếp tục nhập' }));
+      expect(screen.queryByText('Bỏ thay đổi?')).toBeNull();
+      expect(screen.getByTestId('quick-order-code')).toHaveDisplayValue('DH-DIRTY');
+      await fireEvent.press(screen.getByTestId('quick-cancel'));
+      await fireEvent.press(screen.getByTestId('quick-leave-confirm'));
+      expect(mockNavigation.back).toHaveBeenCalledTimes(1);
+      expect(await store.countOrders(LOCAL_SHOP_ID, {})).toBe(0);
+    });
+
+    it('cố rời màn bằng Back/cử chỉ khi có dữ liệu: hiện hộp xác nhận', async () => {
+      await open();
+      await typeCode('DH-DIRTY');
+      await act(async () => mockNavigation.attemptLeave?.());
+      expect(screen.getByText('Bỏ thay đổi?')).toBeOnTheScreen();
+    });
   });
 
   describe('gợi ý từ lịch sử đã nhập', () => {
@@ -188,190 +504,5 @@ describe('UI-B04 Tạo đơn nhanh', () => {
       await fireEvent(screen.getByTestId('line-name-0'), 'focus');
       expect(screen.queryByTestId('line-suggestions-0')).toBeNull();
     });
-  });
-
-  describe('Bỏ qua, quay ngay', () => {
-    it('KHÔNG bỏ âm thầm dòng đã nhập: lưu các dòng hợp lệ (vẫn quay ngay, không chặn)', async () => {
-      const store = createMemoryOrderStore();
-      await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
-      await typeCode('DH-KEEP');
-      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo');
-      await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'Đen');
-      await fireEvent.press(screen.getByTestId('quick-add-line'));
-      await fireEvent.changeText(screen.getByTestId('line-name-1'), 'Quần');
-      await fireEvent.press(screen.getByTestId('quick-skip'));
-      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
-      const [order] = await allOrders(store, 'DH-KEEP');
-      const details = order ? await store.getOrder(LOCAL_SHOP_ID, order.id) : null;
-      expect(details?.lines.map((l) => [l.name, l.variant])).toEqual([
-        ['Áo', 'Đen'],
-        ['Quần', null],
-      ]);
-      const call = mockNavigation.replace.mock.calls[0] as [unknown, { sessionId: string }];
-      const session = await store.getSession(LOCAL_SHOP_ID, call[1].sessionId as never);
-      expect(session?.snapshot.lines.map((l) => l.name)).toEqual(['Áo', 'Quần']);
-    });
-
-    it('dòng dở dang (có variant, thiếu tên) vẫn báo lỗi, không bị bỏ mất rồi quay', async () => {
-      const store = createMemoryOrderStore();
-      await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
-      await typeCode('DH-PART');
-      await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'Đen');
-      await fireEvent.press(screen.getByTestId('quick-skip'));
-      expect(await screen.findByText('Hãy nhập tên sản phẩm cho phân loại này.')).toBeOnTheScreen();
-      expect(await allOrders(store, 'DH-PART')).toEqual([]);
-      expect(mockNavigation.replace).not.toHaveBeenCalled();
-    });
-
-    it('ghi đơn KHÔNG có dòng (khi chưa nhập gì), tạo phiên gắn đúng kiện rồi vào màn quay bằng sessionId', async () => {
-      const store = createMemoryOrderStore();
-      await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
-      await typeCode('DH-QUICK');
-      await fireEvent.press(screen.getByTestId('quick-skip'));
-      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
-
-      const [order] = await allOrders(store, 'DH-QUICK');
-      const details = order ? await store.getOrder(LOCAL_SHOP_ID, order.id) : null;
-      expect(details?.lines).toEqual([]);
-      const call = mockNavigation.replace.mock.calls[0] as [unknown, { sessionId: string }];
-      expect(call[0]).toBe(ROUTES.packRecord);
-      const session = await store.getSession(LOCAL_SHOP_ID, call[1].sessionId as never);
-      expect(session).toMatchObject({
-        orderId: order?.id,
-        packageId: details?.packages[0]?.id,
-        sessionStatus: 'created',
-      });
-      expect(session?.snapshot.lines).toEqual([]);
-      expect(mockNavigation.push).not.toHaveBeenCalled();
-    });
-
-    it('chưa có quyền camera: hộp thoại xin quyền hiện, chưa mở màn quay; cấp quyền thì tiếp tục', async () => {
-      mockScanner.permission = 'askable';
-      const store = createMemoryOrderStore();
-      await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
-      await typeCode('DH-PERM');
-      await fireEvent.press(screen.getByTestId('quick-skip'));
-      expect(await screen.findByTestId('start-permission-modal')).toBeOnTheScreen();
-      expect(mockNavigation.replace).not.toHaveBeenCalled();
-      await fireEvent.press(screen.getByTestId('start-permission-allow'));
-      expect(mockScanner.request).toHaveBeenCalled();
-
-      // Quyền vừa được cấp (hộp thoại hệ điều hành/Cài đặt): lần vẽ kế tiếp thấy `granted` thì tiếp tục.
-      mockScanner.permission = 'granted';
-      await typeCode('DH-PERM ');
-      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
-      expect(mockNavigation.replace.mock.calls[0]?.[0]).toBe(ROUTES.packRecord);
-    });
-  });
-
-  describe('trùng mã (A02, ADR-011)', () => {
-    async function setup() {
-      const store = createMemoryOrderStore();
-      const existing = await seedOrder(store, sampleOrder({ withLines: false }));
-      await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
-      await fireEvent.press(screen.getByTestId('source-change'));
-      await fireEvent.press(screen.getByRole('button', { name: 'TikTok Shop' }));
-      await typeCode(' dh1234567890 ');
-      await fireEvent.press(screen.getByTestId('quick-save'));
-      return { store, existing };
-    }
-
-    it('cùng mã đơn + nguồn: hiện "Đã có đơn này", KHÔNG tự lưu, KHÔNG tự chọn đơn', async () => {
-      const { store, existing } = await setup();
-      expect(await screen.findByTestId('duplicate-sheet')).toBeOnTheScreen();
-      expect(screen.getByText('Đã có đơn này')).toBeOnTheScreen();
-      expect(screen.getByTestId(`duplicate-${existing.order.id}`)).toBeOnTheScreen();
-      expect(await allOrders(store, 'DH1234567890')).toHaveLength(1);
-      expect(mockNavigation.push).not.toHaveBeenCalled();
-    });
-
-    it('"Dùng đơn này" mở Xác nhận với ID của đơn đã có', async () => {
-      const { existing } = await setup();
-      await fireEvent.press(await screen.findByRole('button', { name: 'Dùng đơn này' }));
-      expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.orderPreview, {
-        orderId: existing.order.id,
-      });
-    });
-
-    it('"Tạo hồ sơ mới" lưu thêm một đơn riêng (không ghi đè) rồi sang Xác nhận', async () => {
-      const { store, existing } = await setup();
-      await fireEvent.press(await screen.findByTestId('duplicate-create-new'));
-      await waitFor(() => expect(mockNavigation.push).toHaveBeenCalled());
-      const orders = await allOrders(store, 'DH1234567890');
-      expect(orders).toHaveLength(2);
-      const created = orders.find((o) => o.id !== existing.order.id);
-      expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.orderPreview, {
-        orderId: created?.id,
-      });
-    });
-
-    it('cùng mã nhưng khác nguồn bán thì không coi là trùng', async () => {
-      const store = createMemoryOrderStore();
-      await seedOrder(store, sampleOrder({ withLines: false }));
-      await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
-      await typeCode('DH1234567890'); // nguồn mặc định "Khác": khác TikTok Shop của đơn đã có
-      await fireEvent.press(screen.getByTestId('quick-save'));
-      await waitFor(() => expect(mockNavigation.push).toHaveBeenCalled());
-      expect(screen.queryByTestId('duplicate-sheet')).toBeNull();
-      expect(await allOrders(store, 'DH1234567890')).toHaveLength(2);
-    });
-
-    it('cùng mã đơn khác nguồn NHƯNG trùng mã vận đơn: vẫn cảnh báo, không tự gộp', async () => {
-      const store = createMemoryOrderStore();
-      const existing = await seedOrder(store, sampleOrder({ withLines: false }));
-      await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
-      await typeCode('DH1234567890'); // nguồn mặc định "Khác": khác nguồn của đơn đã có
-      await fireEvent.press(screen.getByTestId('quick-add-tracking'));
-      await fireEvent.changeText(screen.getByTestId('quick-tracking'), 'spx1234567890');
-      await fireEvent.press(screen.getByTestId('quick-save'));
-      expect(await screen.findByText('Cùng mã vận đơn')).toBeOnTheScreen();
-      expect(screen.getByTestId(`duplicate-${existing.order.id}`)).toBeOnTheScreen();
-      expect(mockNavigation.push).not.toHaveBeenCalled();
-      expect(await allOrders(store, 'DH1234567890')).toHaveLength(1);
-    });
-
-    it('cùng mã vận đơn (mã đơn khác) cũng được báo để chọn', async () => {
-      const store = createMemoryOrderStore();
-      const existing = await seedOrder(store, sampleOrder({ withLines: false }));
-      await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
-      await typeCode('DH-KHAC');
-      await fireEvent.press(screen.getByTestId('quick-add-tracking'));
-      await fireEvent.changeText(screen.getByTestId('quick-tracking'), 'spx1234567890');
-      await fireEvent.press(screen.getByTestId('quick-save'));
-      expect(await screen.findByText('Cùng mã vận đơn')).toBeOnTheScreen();
-      expect(screen.getByTestId(`duplicate-${existing.order.id}`)).toBeOnTheScreen();
-    });
-  });
-
-  it('lưu lỗi: báo ORDER_SAVE_FAILED bằng câu thường, không rời màn, bấm lại được', async () => {
-    const store = createMemoryOrderStore();
-    const failing: OrderStore = {
-      ...store,
-      saveNewOrder: jest.fn(async () => {
-        throw new AppError('ORDER_SAVE_FAILED');
-      }),
-    };
-    await renderWithProviders(<QuickOrderScreen />, { orderStore: failing });
-    await typeCode('DH-ERR');
-    await fireEvent.press(screen.getByTestId('quick-save'));
-    expect(await screen.findByTestId('save-error')).toBeOnTheScreen();
-    expect(screen.getByText('Chưa xử lý được đơn trên máy. Bạn thử lại nhé.')).toBeOnTheScreen();
-    expect(within(screen.getByTestId('save-error')).queryByText(/video/)).toBeNull();
-    expect(mockNavigation.push).not.toHaveBeenCalled();
-    await waitFor(() => expect(screen.getByTestId('quick-save')).toBeEnabled());
-  });
-
-  it('bấm đúp nhanh chỉ tạo một đơn', async () => {
-    const store = createMemoryOrderStore();
-    await renderWithProviders(<QuickOrderScreen />, { orderStore: store });
-    await typeCode('DH-DOUBLE');
-    const button = screen.getByTestId('quick-save');
-    await act(async () => {
-      void fireEvent.press(button);
-      void fireEvent.press(button);
-    });
-    await waitFor(() => expect(mockNavigation.push).toHaveBeenCalled());
-    expect(await allOrders(store, 'DH-DOUBLE')).toHaveLength(1);
-    expect(mockNavigation.push).toHaveBeenCalledTimes(1);
   });
 });

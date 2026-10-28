@@ -83,6 +83,8 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     await fireEvent.press(screen.getByTestId('scan-manual-open'));
     await fireEvent.changeText(screen.getByTestId('scan-manual-code'), 'ABC123');
     await fireEvent.press(screen.getByTestId('scan-manual-lookup'));
+    // tra cứu trước (Q-22x): chưa có đơn nào nên hộp kết quả đưa lối "Tạo đơn với mã này"
+    await fireEvent.press(await screen.findByTestId('order-match-create'));
     expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
     await act(async () => {
       router.back();
@@ -92,6 +94,20 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
       router.back();
     });
     expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
+  });
+
+  it('từ màn quét mở Tìm đơn đã lưu (UI-B03), Back về màn quét', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
+    await fireEvent.press(tabButton('Đơn hàng'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn hàng' }));
+    await fireEvent.press(screen.getByTestId('scan-manual-open'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Tìm đơn đã lưu' }));
+    expect(await screen.findByTestId('screen-UI-B03')).toBeOnTheScreen();
+    expect(screen.getByTestId('search-input')).toBeOnTheScreen();
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-B02')).toBeOnTheScreen();
   });
 
   it('chuyển qua lại giữa các tab Đơn hàng, Thông báo, Cá nhân; thanh tab vẫn hiện', async () => {
@@ -327,23 +343,36 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
       await fireEvent.press(screen.getByTestId('scan-manual-open'));
       await fireEvent.changeText(screen.getByTestId('scan-manual-code'), code);
       await fireEvent.press(screen.getByTestId('scan-manual-lookup'));
+      await fireEvent.press(await screen.findByTestId('order-match-create'));
       expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
       expect(screen.getByTestId('quick-order-code')).toHaveDisplayValue(code);
     }
 
-    it('đi thẳng tới màn quay bằng ID phiên và Back lùi đúng từng bước', async () => {
-      await scanToQuickOrder('DH-FLOW-1');
-      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo thun');
-      await fireEvent.press(screen.getByTestId('quick-save'));
-      expect(await screen.findByTestId('screen-UI-C01')).toBeOnTheScreen();
-      expect(screen.getByText('DH-FLOW-1')).toBeOnTheScreen();
-      expectTabBarVisible(false);
+    /** Quét -> Tạo đơn -> Tiếp tục -> Tạo đơn hàng; đơn lưu rồi mở chi tiết (UI-E02). */
+    async function scanAndCreate(code: string, product?: string) {
+      await scanToQuickOrder(code);
+      if (product) await fireEvent.changeText(screen.getByTestId('line-name-0'), product);
+      await fireEvent.press(screen.getByTestId('quick-continue'));
+      expect(screen.getByTestId('screen-UI-B04-confirm')).toBeOnTheScreen();
+      await fireEvent.press(screen.getByTestId('quick-create'));
+      expect(await screen.findByTestId('screen-UI-E02')).toBeOnTheScreen();
+    }
 
-      // Back từ Xác nhận về Tạo đơn, rồi về màn quét, rồi về tab đứng trước khi quét.
-      await act(async () => {
-        router.back();
-      });
-      expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
+    /** ... rồi Quay đóng gói từ chi tiết -> Xác nhận đơn (UI-C01) -> màn quay. */
+    async function recordFromDetail(code: string) {
+      await scanAndCreate(code);
+      await fireEvent.press(screen.getByTestId('order-detail-record'));
+      await fireEvent.press(await screen.findByTestId('preview-start'));
+      expect(await screen.findByTestId('record-camera')).toBeOnTheScreen();
+    }
+
+    it('Tạo đơn hàng lưu đơn rồi mở chi tiết (không vào màn quay); Back lùi đúng: màn quét, rồi tab đứng trước', async () => {
+      await scanAndCreate('DH-FLOW-1', 'Áo thun');
+      expect(screen.getByTestId('detail-order-code')).toHaveTextContent('DH-FLOW-1');
+      expect(screen.queryByTestId('screen-UI-C03')).toBeNull();
+      expect(screen.queryByTestId('screen-UI-B04')).toBeNull(); // form đã được thay bằng chi tiết
+      expect(screen.getByTestId('detail-no-evidence')).toBeOnTheScreen();
+      expectTabBarVisible(true);
       await act(async () => {
         router.back();
       });
@@ -354,33 +383,28 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
       expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
     });
 
-    it('Xác nhận -> bắt đầu mở màn quay (không tab), có xem trước camera, huy hiệu "Xem trước" và dải "chưa ghi video"', async () => {
-      await scanToQuickOrder('DH-FLOW-2');
-      await fireEvent.press(screen.getByTestId('quick-save'));
-      await screen.findByTestId('screen-UI-C01');
-      await fireEvent.press(screen.getByTestId('preview-start'));
+    it('Quay lại chỉnh sửa ở bước xác nhận về form còn nguyên dữ liệu (chưa lưu đơn)', async () => {
+      await scanToQuickOrder('DH-FLOW-6');
+      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo');
+      await fireEvent.press(screen.getByTestId('quick-continue'));
+      await fireEvent.press(screen.getByTestId('quick-back-edit'));
+      expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
+      expect(screen.getByTestId('line-name-0')).toHaveDisplayValue('Áo');
+    });
+
+    it('Quay đóng gói từ chi tiết -> Xác nhận đơn -> màn quay (không tab), xem trước camera, huy hiệu "Xem trước" và dải "chưa ghi video"', async () => {
+      await recordFromDetail('DH-FLOW-2');
       expect(await screen.findByText('DH-FLOW-2')).toBeOnTheScreen();
       expect(screen.getByTestId('screen-UI-C03')).toBeOnTheScreen();
       expect(await screen.findByText('Bản thử giao diện: chưa ghi video')).toBeOnTheScreen();
-      expect(screen.getByTestId('record-camera')).toBeOnTheScreen();
       expect(screen.getByText('Xem trước')).toBeOnTheScreen();
       expect(screen.queryByText('Đang quay')).toBeNull(); // chưa ghi tệp nào (bất biến 3, 11)
       expect(screen.queryByTestId('screen-UI-C01')).toBeNull(); // đã thay bằng màn quay
       expectTabBarVisible(false);
     });
 
-    it('Bỏ qua, quay ngay đi thẳng tới màn quay, không qua màn Xác nhận', async () => {
-      await scanToQuickOrder('DH-FLOW-3');
-      await fireEvent.press(screen.getByTestId('quick-skip'));
-      expect(await screen.findByTestId('record-camera')).toBeOnTheScreen();
-      expect(screen.getByText('DH-FLOW-3')).toBeOnTheScreen();
-      expect(screen.queryByTestId('screen-UI-C01')).toBeNull();
-    });
-
     it('Back khi đang ở màn quay bị chặn; Ở lại màn quay ở lại; Kết thúc phiên quay về Xác nhận đơn (không qua màn "đã lưu"), bắt đầu lại mở lại đúng phiên cũ', async () => {
-      await scanToQuickOrder('DH-FLOW-4');
-      await fireEvent.press(screen.getByTestId('quick-skip'));
-      await screen.findByTestId('record-camera');
+      await recordFromDetail('DH-FLOW-4');
 
       await act(async () => {
         router.back();
@@ -395,7 +419,6 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
         router.back();
       });
       await fireEvent.press(screen.getByRole('button', { name: 'Kết thúc phiên' }));
-      // Luồng Quét -> Tạo đơn -> Xác nhận -> Quay -> Dừng: về Xác nhận đơn với thông báo trung thực
       expect(await screen.findByTestId('screen-UI-C01')).toBeOnTheScreen();
       expect(screen.getByText('Bản thử giao diện: chưa có video nào được lưu.')).toBeOnTheScreen();
       expect(screen.getByTestId('preview-order-code')).toHaveTextContent('DH-FLOW-4');
@@ -411,9 +434,7 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     });
 
     it('bấm nút Dừng quay (không qua hộp thoại) quay về Xác nhận đơn kèm thông báo "chưa có video nào được lưu"', async () => {
-      await scanToQuickOrder('DH-FLOW-5');
-      await fireEvent.press(screen.getByTestId('quick-skip'));
-      await screen.findByTestId('record-camera');
+      await recordFromDetail('DH-FLOW-5');
       await fireEvent.press(screen.getByRole('button', { name: 'Dừng quay' }));
       expect(await screen.findByTestId('screen-UI-C01')).toBeOnTheScreen();
       expect(screen.queryByText('Phiên quay chưa kết thúc')).toBeNull();
@@ -431,17 +452,15 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
   });
 
   describe('tab Đơn hàng: danh sách thật và chi tiết (router thật, kho bộ nhớ)', () => {
-    /** Tạo một đơn bằng UI (nút + ở đầu danh sách -> Tạo đơn nhanh -> Lưu), rồi lùi về danh sách. */
+    /** Tạo một đơn bằng UI (Tạo đơn -> Tiếp tục -> Tạo đơn hàng -> chi tiết), rồi lùi về danh sách. */
     async function createOrderFromList(code: string, product?: string) {
       await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn' }));
       expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
       await fireEvent.changeText(screen.getByTestId('quick-order-code'), code);
       if (product) await fireEvent.changeText(screen.getByTestId('line-name-0'), product);
-      await fireEvent.press(screen.getByTestId('quick-save'));
-      expect(await screen.findByTestId('screen-UI-C01')).toBeOnTheScreen();
-      await act(async () => {
-        router.back();
-      });
+      await fireEvent.press(screen.getByTestId('quick-continue'));
+      await fireEvent.press(screen.getByTestId('quick-create'));
+      expect(await screen.findByTestId('screen-UI-E02')).toBeOnTheScreen();
       await act(async () => {
         router.back();
       });
@@ -496,6 +515,41 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
       expect(screen.getByTestId('orders-count')).toHaveTextContent('1 đơn phù hợp');
       expect(screen.getByText('AB-2')).toBeOnTheScreen();
       expect(screen.queryByText('AB-1')).toBeNull();
+    });
+
+    it('Chi tiết -> Sửa thông tin đơn (ẩn thanh tab) -> Lưu -> Back về chi tiết có dữ liệu mới; danh sách cũng mới', async () => {
+      await openOrdersTab();
+      await createOrderFromList('DH-EDIT-1', 'Áo cũ');
+      await fireEvent.press(await screen.findByText('DH-EDIT-1'));
+      expect(await screen.findByTestId('screen-UI-E02')).toBeOnTheScreen();
+      await fireEvent.press(screen.getByTestId('order-detail-edit'));
+      expect(await screen.findByTestId('screen-UI-E02-edit')).toBeOnTheScreen();
+      expectTabBarVisible(false);
+      expect(screen.getByTestId('order-edit-code')).toHaveTextContent('DH-EDIT-1');
+      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo mới');
+      await fireEvent.press(screen.getByTestId('order-edit-save'));
+      expect(await screen.findByTestId('screen-UI-E02')).toBeOnTheScreen();
+      expect(screen.queryByTestId('screen-UI-E02-edit')).toBeNull();
+      expect(await screen.findByText('Áo mới')).toBeOnTheScreen();
+      expect(screen.queryByText('Áo cũ')).toBeNull();
+      expectTabBarVisible(true);
+      await act(async () => {
+        router.back();
+      });
+      expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
+      expect(await screen.findByText('Áo mới')).toBeOnTheScreen();
+    });
+
+    it('Hủy form đã nhập dở: hỏi Bỏ thay đổi?, xác nhận thì về danh sách và không có đơn nào được lưu', async () => {
+      await openOrdersTab();
+      await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn' }));
+      await fireEvent.changeText(screen.getByTestId('quick-order-code'), 'DH-HUY');
+      await fireEvent.press(screen.getByTestId('quick-cancel'));
+      expect(screen.getByText('Bỏ thay đổi?')).toBeOnTheScreen();
+      await fireEvent.press(screen.getByTestId('quick-leave-confirm'));
+      expect(await screen.findByTestId('screen-UI-E01')).toBeOnTheScreen();
+      expect(screen.queryByText('DH-HUY')).toBeNull();
+      expect(screen.getByTestId('orders-empty')).toBeOnTheScreen();
     });
 
     it('chi tiết với ID lạ là không tìm thấy (deep link), Back về danh sách', async () => {

@@ -28,7 +28,7 @@
   },
   "scan": {
     "hint": "Đưa mã QR / mã vạch vào khung hình để quét tự động",
-    "manualButton": "Nhập mã đơn thủ công",
+    "manualButton": "Nhập mã thủ công",
     "manualTitle": "Nhập mã thủ công",
     "manualLabel": "Mã đơn hoặc mã vận đơn",
     "manualPlaceholder": "Ví dụ: mã trên nhãn vận chuyển",
@@ -60,11 +60,9 @@
     }
   },
   "quickOrder": {
-    "intro": "Nhập nhanh thông tin đơn hàng để bắt đầu quay video đóng gói.",
+    "intro": "Nhập nhanh thông tin đơn hàng.",
     "userEntered": "Thông tin do bạn nhập, không lấy từ sàn.",
     "sourceA11y": "Nguồn bán: {{name}}",
-    "changeSource": "Thay đổi",
-    "changeSourceHint": "Đổi nguồn bán của đơn",
     "sourceSheetTitle": "Chọn nguồn bán",
     "orderCode": "Mã đơn hàng",
     "orderCodePlaceholder": "Quét hoặc nhập mã đơn",
@@ -82,20 +80,28 @@
     "quantity": "Số lượng",
     "addLine": "Thêm sản phẩm khác",
     "removeLine": "Xóa dòng sản phẩm này",
-    "saveAndConfirm": "Lưu và xác nhận đơn",
-    "skipAndRecord": "Bỏ qua, quay ngay",
     "nameRequired": "Hãy nhập tên sản phẩm cho phân loại này.",
     "quantityInvalid": "Hãy nhập số lượng hợp lệ.",
     "invalidCode": "Mã đơn chưa hợp lệ. Hãy kiểm tra lại.",
-    "duplicate": {
-      "title": "Đã có đơn này",
-      "message": "Mã này đã có trong máy. Hãy chọn đơn đã có hoặc tạo hồ sơ mới.",
-      "sameOrder": "Cùng mã đơn và nguồn bán",
-      "sameTracking": "Cùng mã vận đơn",
-      "tracking": "Mã vận đơn: {{code}}",
-      "useOrder": "Dùng đơn này",
-      "createNew": "Tạo hồ sơ mới"
-    }
+    "title": "Tạo đơn nhanh",
+    "confirmTitle": "Xác nhận đơn hàng",
+    "cancel": "Hủy",
+    "continue": "Tiếp tục",
+    "codeRequired": "Nhập mã đơn hàng nhé.",
+    "sourceLabel": "Nguồn bán hàng",
+    "sourceChange": "Đổi nguồn bán của đơn",
+    "sourceNote": "Nguồn bán chỉ để bạn phân loại đơn.",
+    "backToEdit": "Quay lại chỉnh sửa",
+    "createOrder": "Tạo đơn hàng",
+    "confirmIntro": "Xem lại thông tin trước khi tạo đơn.",
+    "createFailed": "Chưa tạo được đơn. Thông tin bạn nhập vẫn được giữ lại.",
+    "leave": {
+      "title": "Bỏ thay đổi?",
+      "message": "Thông tin bạn đã nhập sẽ không được lưu.",
+      "stay": "Tiếp tục nhập",
+      "discard": "Bỏ thay đổi"
+    },
+    "confirmTracking": "Mã vận đơn"
   },
   "preview": {
     "banner": {
@@ -442,7 +448,8 @@
     "history": "Lịch sử hoạt động",
     "historyCreated": "Đã tạo đơn",
     "historySession": "Đã bắt đầu phiên quay kiện {{index}}",
-    "historyNote": "Suy ra từ dữ liệu trên máy, theo giờ của thiết bị."
+    "historyNote": "Suy ra từ dữ liệu trên máy, theo giờ của thiết bị.",
+    "edit": "Sửa thông tin đơn"
   },
   "orderEvidence": {
     "loading": "Đang mở bằng chứng…",
@@ -461,5 +468,66 @@
     "capturedAt": "Ghi lúc {{time}} (giờ thiết bị)",
     "errorHint": "Tệp này cần xử lý.",
     "openSync": "Mở trung tâm đồng bộ"
+  },
+  "orderMatch": {
+    "title": "Tra cứu mã",
+    "code": "Mã: {{code}}",
+    "loading": "Đang tìm trong máy…",
+    "oneTitle": "Đã tìm thấy đơn",
+    "oneNote": "Đơn này có trong máy của bạn.",
+    "openDetail": "Xem chi tiết đơn",
+    "noneTitle": "Không tìm thấy đơn",
+    "noneMessage": "Chưa có đơn này trên máy này. Bạn có thể tạo đơn mới với mã đã nhập.",
+    "createWithCode": "Tạo đơn với mã này",
+    "tryAgain": "Quét hoặc nhập lại",
+    "manyTitle": "Có nhiều đơn trùng mã",
+    "manyMessage": "Hãy chọn đúng đơn trước khi tiếp tục.",
+    "duplicateTitle": "Đơn này đã có",
+    "duplicateMessage": "Mã này đã có trong máy. Hãy xem đơn hiện có, hoặc tạo thêm đơn mới nếu đây là đơn khác.",
+    "backToEdit": "Quay lại chỉnh sửa",
+    "createInstead": "Không phải đơn nào ở trên: tạo đơn mới với mã này",
+    "error": "Chưa tìm được lúc này. Bạn thử lại nhé.",
+    "reason": {
+      "orderCode": "Trùng mã đơn",
+      "trackingCode": "Trùng mã vận đơn"
+    },
+    "createAnyway": "Vẫn tạo đơn mới"
+  },
+  "orderSearch": {
+    "placeholder": "Nhập mã đơn hoặc mã vận đơn",
+    "hint": "Nhập ít nhất 2 ký tự để tìm.",
+    "recentTitle": "Tìm kiếm gần đây",
+    "recentEmpty": "Chưa có tìm kiếm nào gần đây.",
+    "clearAll": "Xóa tất cả",
+    "removeItem": "Xóa {{text}} khỏi lịch sử",
+    "clearTitle": "Xóa lịch sử tìm kiếm?",
+    "clearMessage": "Chỉ xóa các mã bạn đã tìm trên máy này. Đơn hàng không bị ảnh hưởng.",
+    "clearConfirm": "Xóa lịch sử",
+    "clearCancel": "Giữ lại",
+    "resultsTitle": "Kết quả tìm kiếm",
+    "loading": "Đang tìm…",
+    "truncated": "Chỉ hiện 20 đơn đầu. Hãy gõ thêm để thu hẹp.",
+    "emptyTitle": "Không tìm thấy đơn này",
+    "emptyMessage": "Kiểm tra lại mã hoặc tạo đơn mới với mã đã nhập.",
+    "createWithCode": "Tạo đơn với mã này",
+    "error": "Chưa tìm được lúc này. Bạn thử lại nhé."
+  },
+  "orderEdit": {
+    "codeLocked": "Mã đơn không đổi được sau khi tạo.",
+    "save": "Lưu thay đổi",
+    "cancel": "Hủy",
+    "saved": "Đã cập nhật thông tin đơn.",
+    "saveFailed": "Chưa lưu được thay đổi. Bạn thử lại nhé.",
+    "lockedTitle": "Chưa sửa được đơn này",
+    "lockedMessage": "Đơn đã bắt đầu quay nên chưa sửa được thông tin.",
+    "duplicateMessage": "Thay đổi này làm đơn trùng với đơn đã có. Hãy xem đơn hiện có, hoặc vẫn lưu nếu đây là đơn khác.",
+    "saveAnyway": "Vẫn lưu thay đổi",
+    "loading": "Đang mở đơn…",
+    "leave": {
+      "title": "Bỏ thay đổi?",
+      "message": "Thay đổi bạn vừa nhập sẽ không được lưu.",
+      "stay": "Tiếp tục sửa",
+      "discard": "Bỏ thay đổi"
+    }
   }
 }
