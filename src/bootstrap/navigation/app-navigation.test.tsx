@@ -83,6 +83,8 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     await fireEvent.press(screen.getByTestId('scan-manual-open'));
     await fireEvent.changeText(screen.getByTestId('scan-manual-code'), 'ABC123');
     await fireEvent.press(screen.getByTestId('scan-manual-lookup'));
+    // tra cứu trước (Q-22x): chưa có đơn nào nên hộp kết quả đưa lối "Tạo đơn với mã này"
+    await fireEvent.press(await screen.findByTestId('order-match-create'));
     expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
     await act(async () => {
       router.back();
@@ -260,6 +262,7 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
       await fireEvent.press(screen.getByTestId('scan-manual-open'));
       await fireEvent.changeText(screen.getByTestId('scan-manual-code'), code);
       await fireEvent.press(screen.getByTestId('scan-manual-lookup'));
+      await fireEvent.press(await screen.findByTestId('order-match-create'));
       expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
       expect(screen.getByTestId('quick-order-code')).toHaveDisplayValue(code);
     }

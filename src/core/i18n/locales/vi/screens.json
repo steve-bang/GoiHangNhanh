@@ -28,7 +28,7 @@
   },
   "scan": {
     "hint": "Đưa mã QR / mã vạch vào khung hình để quét tự động",
-    "manualButton": "Nhập mã đơn thủ công",
+    "manualButton": "Nhập mã thủ công",
     "manualTitle": "Nhập mã thủ công",
     "manualLabel": "Mã đơn hoặc mã vận đơn",
     "manualPlaceholder": "Ví dụ: mã trên nhãn vận chuyển",
@@ -440,5 +440,44 @@
     "historyCreated": "Đã tạo đơn",
     "historySession": "Đã bắt đầu phiên quay kiện {{index}}",
     "historyNote": "Suy ra từ dữ liệu trên máy, theo giờ của thiết bị."
+  },
+  "orderMatch": {
+    "title": "Tra cứu mã",
+    "code": "Mã: {{code}}",
+    "loading": "Đang tìm trong máy…",
+    "oneTitle": "Đã tìm thấy đơn",
+    "oneNote": "Đơn này có trong máy của bạn.",
+    "openDetail": "Xem chi tiết đơn",
+    "noneTitle": "Không tìm thấy đơn",
+    "noneMessage": "Chưa có đơn này trên máy này. Bạn có thể tạo đơn mới với mã đã nhập.",
+    "createWithCode": "Tạo đơn với mã này",
+    "tryAgain": "Quét hoặc nhập lại",
+    "manyTitle": "Có nhiều đơn trùng mã",
+    "manyMessage": "Hãy chọn đúng đơn trước khi tiếp tục.",
+    "createInstead": "Không phải đơn nào ở trên: tạo đơn mới với mã này",
+    "error": "Chưa tìm được lúc này. Bạn thử lại nhé.",
+    "reason": {
+      "orderCode": "Trùng mã đơn",
+      "trackingCode": "Trùng mã vận đơn"
+    }
+  },
+  "orderSearch": {
+    "placeholder": "Nhập mã đơn hoặc mã vận đơn",
+    "hint": "Nhập ít nhất 2 ký tự để tìm.",
+    "recentTitle": "Tìm kiếm gần đây",
+    "recentEmpty": "Chưa có tìm kiếm nào gần đây.",
+    "clearAll": "Xóa tất cả",
+    "removeItem": "Xóa {{text}} khỏi lịch sử",
+    "clearTitle": "Xóa lịch sử tìm kiếm?",
+    "clearMessage": "Chỉ xóa các mã bạn đã tìm trên máy này. Đơn hàng không bị ảnh hưởng.",
+    "clearConfirm": "Xóa lịch sử",
+    "clearCancel": "Giữ lại",
+    "resultsTitle": "Kết quả tìm kiếm",
+    "loading": "Đang tìm…",
+    "truncated": "Chỉ hiện 20 đơn đầu. Hãy gõ thêm để thu hẹp.",
+    "emptyTitle": "Không tìm thấy đơn này",
+    "emptyMessage": "Kiểm tra lại mã hoặc tạo đơn mới với mã đã nhập.",
+    "createWithCode": "Tạo đơn với mã này",
+    "error": "Chưa tìm được lúc này. Bạn thử lại nhé."
   }
 }
