@@ -598,19 +598,21 @@ export function createSqliteOrderStore(
         }
         return result;
       }),
-    markOrderPublished: (shopId, orderId, atDevice, uid) =>
+    markOrderPublished: (shopId, orderId, atDevice, uid, packageIds) =>
       guarded('ORDER_SAVE_FAILED', () =>
         db.withTransactionAsync(async () => {
           await db.runAsync(
             'UPDATE orders SET remote_synced_at_device = ? WHERE id = ? AND shop_id = ?',
             [atDevice, orderId, shopId],
           );
-          await db.runAsync(
-            `UPDATE packages SET remote_synced_at_device = ?
-             WHERE order_id = ? AND created_by = ? AND remote_synced_at_device IS NULL
-               AND order_id IN (SELECT id FROM orders WHERE id = ? AND shop_id = ?)`,
-            [atDevice, orderId, uid, orderId, shopId],
-          );
+          for (const packageId of packageIds) {
+            await db.runAsync(
+              `UPDATE packages SET remote_synced_at_device = ?
+               WHERE id = ? AND order_id = ? AND created_by = ? AND remote_synced_at_device IS NULL
+                 AND order_id IN (SELECT id FROM orders WHERE id = ? AND shop_id = ?)`,
+              [atDevice, packageId, orderId, uid, orderId, shopId],
+            );
+          }
         }),
       ),
     markPackagePublished: (shopId, packageId, atDevice) =>

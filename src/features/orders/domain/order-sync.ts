@@ -73,7 +73,14 @@ export function createOrderSync(deps: OrderSyncDeps): OrderSync {
           if (!isOnline()) break;
           try {
             await remote.publishOrder(details);
-            await store.markOrderPublished(shopId, details.order.id, now(), uid);
+            // Chỉ đánh dấu đúng các kiện vừa đăng (từ bản `details` đã đọc), không phải kiện thêm giữa chừng.
+            await store.markOrderPublished(
+              shopId,
+              details.order.id,
+              now(),
+              uid,
+              details.packages.map((p) => p.id),
+            );
             summary.ordersPublished += 1;
           } catch {
             summary.failed += 1;

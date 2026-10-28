@@ -242,11 +242,15 @@ export function createMemoryOrderStore(
           copy<OrderDetails>({ order: o, lines: linesOf(o.id), packages: packagesOf(o.id) }),
         );
     },
-    async markOrderPublished(shopId, orderId, atDevice, uid) {
+    async markOrderPublished(shopId, orderId, atDevice, uid, packageIds) {
       if (!orderOf(shopId, orderId)) return;
       publishedOrders.set(orderId, atDevice);
       for (const pkg of packagesOf(orderId)) {
-        if (pkg.createdBy === uid && !publishedPackages.has(pkg.id)) {
+        if (
+          packageIds.includes(pkg.id) &&
+          pkg.createdBy === uid &&
+          !publishedPackages.has(pkg.id)
+        ) {
           publishedPackages.set(pkg.id, atDevice);
         }
       }

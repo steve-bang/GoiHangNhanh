@@ -113,14 +113,16 @@ export interface OrderStore {
     creatorUid: string,
   ): Promise<OrderDetails[]>;
   /**
-   * Ghi nhận đơn đã có trên máy chủ (idempotent), cùng các kiện của đơn do `creatorUid` tạo (cùng
-   * lần đăng với đơn). Kiện của người khác thêm vào đơn này vẫn chờ chính họ đăng.
+   * Ghi nhận đơn đã có trên máy chủ (idempotent), cùng ĐÚNG các kiện trong `publishedPackageIds`
+   * (những kiện `publishOrder` đã ghi, lấy từ bản đơn mà bộ đồng bộ đã đọc) và do `creatorUid` tạo.
+   * Kiện thêm giữa lúc đăng, hay của người khác, KHÔNG được đánh dấu: chúng vẫn chờ lượt đăng riêng.
    */
   markOrderPublished(
     shopId: ShopId,
     orderId: OrderId,
     atDevice: number,
     creatorUid: string,
+    publishedPackageIds: readonly PackageId[],
   ): Promise<void>;
   /** Ghi nhận một kiện đã có trên máy chủ (idempotent). */
   markPackagePublished(shopId: ShopId, packageId: PackageId, atDevice: number): Promise<void>;
