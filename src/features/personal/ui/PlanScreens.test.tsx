@@ -38,6 +38,9 @@ describe('PlanScreen (UI-H01, khung 8)', () => {
     expect(screen.getByTestId('plan-benefit-dispute')).toHaveTextContent(/tranh chấp/);
     expect(screen.getByTestId('plan-benefit-downgrade')).toHaveTextContent(/Hạ cấp/);
     expect(screen.getByTestId('plan-benefits-note')).toHaveTextContent(/chưa được công bố/);
+    // Tiêu đề mềm: không đọc như cam kết của dịch vụ đang chạy (Q-21w).
+    expect(screen.getByText('Chính sách lưu trữ dự kiến')).toBeOnTheScreen();
+    expect(screen.queryByText('Quyền lợi')).toBeNull();
   });
 
   it('"Chi tiết gói" mở route con chi tiết', async () => {
@@ -52,6 +55,7 @@ describe('PlanScreen (UI-H01, khung 8)', () => {
     expect(upgrade.props.accessibilityState).toMatchObject({ disabled: true });
     await fireEvent.press(upgrade);
     expect(mockNavigation.push).not.toHaveBeenCalled();
+    expect(upgrade.props.accessibilityHint).toBe('Sắp có. Hiện chưa nâng cấp được trong ứng dụng.');
     expect(screen.getByTestId('plan-upgrade-soon')).toHaveTextContent(/^Sắp có/);
   });
 
@@ -65,7 +69,7 @@ describe('PlanScreen (UI-H01, khung 8)', () => {
 describe('PlanDetailScreen (route con UI-H01, khung 9)', () => {
   it('quyền lợi chi tiết, thời hạn lưu "Chưa có thông tin", không "Xem tất cả" (D27), không giá', async () => {
     await renderWithProviders(<PlanDetailScreen />);
-    expect(screen.getByText('Quyền lợi chi tiết')).toBeOnTheScreen();
+    expect(screen.getByText('Chính sách lưu trữ dự kiến')).toBeOnTheScreen();
     expect(screen.getAllByTestId(/^plan-benefit-/)).toHaveLength(3);
     expect(screen.getByTestId('plan-detail-retention')).toHaveTextContent(/Chưa có thông tin/);
     expect(screen.getByTestId('plan-detail-status')).toHaveTextContent('Sắp có');

@@ -22,6 +22,7 @@ export function UpgradeAction({
         label={t('personal:planScreen.upgradeAction')}
         variant={variant}
         disabled
+        accessibilityHint={t('personal:planScreen.upgradeSoon')}
         onPress={() => undefined}
         testID={testID}
       />
