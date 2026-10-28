@@ -73,5 +73,9 @@
   "SETTINGS_SAVE_FAILED": {
     "title": "Chưa lưu được cài đặt.",
     "hint": "Bạn thử lại nhé."
+  },
+  "SUPPORT_MAIL_UNAVAILABLE": {
+    "title": "Chưa mở được ứng dụng email.",
+    "hint": "Bạn thử lại nhé."
   }
 }

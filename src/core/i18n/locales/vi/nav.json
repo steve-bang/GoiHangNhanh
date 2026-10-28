@@ -79,6 +79,10 @@
     "planDetail": "Chi tiết gói dịch vụ",
     "paymentHistory": "Lịch sử thanh toán",
     "evidenceData": "Dữ liệu bằng chứng",
-    "retentionDetail": "Thời hạn lưu"
+    "retentionDetail": "Thời hạn lưu",
+    "helpCategory": "Danh mục trợ giúp",
+    "helpArticle": "Bài hướng dẫn",
+    "helpContact": "Liên hệ hỗ trợ",
+    "helpLegal": "Điều khoản và chính sách"
   }
 }
