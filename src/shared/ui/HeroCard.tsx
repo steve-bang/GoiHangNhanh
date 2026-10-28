@@ -15,10 +15,12 @@ interface HeroCardProps {
   subtitle?: string;
   /** Huy hiệu góc phải trên (ví dụ `StatusBadge`). Tự chịu trách nhiệm trợ năng của nó. */
   badge?: ReactNode;
+  /** Chuỗi đọc được của huy hiệu (ví dụ "Sắp có"); nối vào nhãn trợ năng vì thẻ là một phần tử gộp. */
+  badgeLabel?: string;
   /** Có `onPress` thì cả thẻ là một nút và có mũi tên phải (trừ khi `showChevron={false}`). */
   onPress?: () => void;
   showChevron?: boolean;
-  /** Mặc định đọc eyebrow, tiêu đề, phụ đề; truyền khi `badge` mang thông tin cần đọc kèm. */
+  /** Thay hoàn toàn nhãn mặc định (eyebrow, tiêu đề, phụ đề, `badgeLabel`). */
   accessibilityLabel?: string;
   testID?: string;
 }
@@ -33,6 +35,7 @@ export function HeroCard({
   title,
   subtitle,
   badge,
+  badgeLabel,
   onPress,
   showChevron,
   accessibilityLabel,
@@ -41,7 +44,8 @@ export function HeroCard({
   const { tokens } = useTheme();
   const interactive = onPress !== undefined;
   const chevron = showChevron ?? interactive;
-  const spoken = accessibilityLabel ?? [eyebrow, title, subtitle].filter(Boolean).join('. ');
+  const spoken =
+    accessibilityLabel ?? [eyebrow, title, subtitle, badgeLabel].filter(Boolean).join('. ');
 
   const content = (
     <>
