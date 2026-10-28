@@ -3,6 +3,7 @@ export * from './ui';
 export {
   CurrentShopProvider,
   OrderStoreProvider,
+  OrderSyncRunner,
   createLocalOrderStore,
   createMemoryEvidenceFileStore,
   createMemoryOrderStore,

@@ -24,3 +24,4 @@ export interface ApiClient {
   readonly shop: ShopApi;
   readonly session: SessionApi;
 }
+export type { RemoteDocuments, RemoteWriteSpec } from './remote-documents';

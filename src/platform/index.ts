@@ -18,3 +18,4 @@ export { copyText } from './clipboard';
 export { newOrderId, newOrderLineId, newPackageId, newSessionId } from './ids';
 export { openLocalDatabase } from './local-db';
 export type { SqlDatabase, SqlParam } from './sql-database';
+export { subscribeAppActive } from './app-state';

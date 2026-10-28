@@ -7,3 +7,5 @@ export { loadEvidenceItems, loadEvidenceStates } from './order-evidence-source';
 export type { EvidenceStatesByOrder } from './order-evidence-source';
 export { createMemoryEvidenceFileStore } from './memory-evidence-file-store';
 export { createSqliteEvidenceFileStore } from './sqlite-evidence-file-store';
+export { OrderSyncRunner } from './OrderSyncRunner';
+export { createRemoteOrderWriter, RemoteNotSignedInError } from './remote-order-writer';
