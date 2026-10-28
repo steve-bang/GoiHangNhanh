@@ -30,6 +30,9 @@ interface ConfirmDialogBaseProps {
   iconTone?: IconTone;
   /** `row`: hai nút cạnh nhau (hủy bên trái, xác nhận bên phải). Mặc định `column` như cũ. */
   actionsLayout?: 'column' | 'row';
+  /** Mã kiểm thử cho phần nội dung và cho nút xác nhận (màn dùng cho test; không ảnh hưởng hiển thị). */
+  messageTestID?: string;
+  confirmTestID?: string;
 }
 
 /**
@@ -57,6 +60,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   hideConfirm = false,
+  messageTestID,
+  confirmTestID,
   destructive = false,
   detail,
   confirmOutlined = false,
@@ -66,6 +71,7 @@ export function ConfirmDialog({
   primary = destructive ? 'cancel' : 'confirm',
 }: ConfirmDialogProps) {
   const { tokens } = useTheme();
+  const confirmIdProps = confirmTestID ? { testID: confirmTestID } : {};
   return (
     <Modal
       visible={visible}
@@ -102,7 +108,9 @@ export function ConfirmDialog({
             >
               {title}
             </Text>
-            <Text {...(icon ? { style: styles.centered } : {})}>{message}</Text>
+            <Text {...(icon ? { style: styles.centered } : {})} testID={messageTestID}>
+              {message}
+            </Text>
             {detail ? (
               <Text
                 variant="caption"
@@ -130,6 +138,7 @@ export function ConfirmDialog({
                 <View style={styles.flexOne}>
                   <Button
                     label={confirmLabel ?? ''}
+                    {...confirmIdProps}
                     onPress={onConfirm ?? onCancel}
                     variant={
                       destructive ? 'destructive' : primary === 'confirm' ? 'primary' : 'secondary'
@@ -145,6 +154,7 @@ export function ConfirmDialog({
                     <Button label={cancelLabel} onPress={onCancel} variant="primary" />
                     <Button
                       label={confirmLabel ?? ''}
+                      {...confirmIdProps}
                       onPress={onConfirm ?? onCancel}
                       variant={destructive ? 'destructive' : 'secondary'}
                       {...(destructive && confirmOutlined ? { outlined: true } : {})}
@@ -154,6 +164,7 @@ export function ConfirmDialog({
                   <>
                     <Button
                       label={confirmLabel ?? ''}
+                      {...confirmIdProps}
                       onPress={onConfirm ?? onCancel}
                       variant={destructive ? 'destructive' : 'primary'}
                     />

@@ -290,6 +290,12 @@ describe('ConfirmDialog: icon và bố cục hàng', () => {
     expect(labels).toEqual(['Ở lại ứng dụng', 'Đăng xuất']);
   });
 
+  it('messageTestID và confirmTestID gắn đúng phần tử, không đổi nội dung hiển thị', async () => {
+    await renderWithProviders(<ConfirmDialog {...base} messageTestID="msg" confirmTestID="ok" />);
+    expect(screen.getByTestId('msg')).toHaveTextContent('Bạn có chắc chắn muốn đăng xuất?');
+    expect(screen.getByTestId('ok')).toBeOnTheScreen();
+  });
+
   it('hideConfirm: chỉ một nút (nút chính), bấm là hủy; không có nút xác nhận', async () => {
     const onCancel = jest.fn();
     await renderWithProviders(
