@@ -49,7 +49,11 @@ interface TextFieldProps {
   counterMax?: number;
   /** Ô nhiều dòng (cao tối thiểu `field.multilineMinHeight`, chữ bắt đầu từ trên). Không kết hợp với `trailing`. */
   multiline?: boolean;
-  /** Trường bắt buộc: thêm dấu sao đỏ sau nhãn (chỉ trang trí, ẩn khỏi trình đọc) và báo `aria-required`. */
+  /**
+   * Trường bắt buộc: thêm dấu sao sau nhãn (chỉ trang trí, ẩn khỏi trình đọc) và báo `aria-required`.
+   * Dấu sao màu trung tính (`text.secondary`), không đỏ: đỏ chỉ dành cho lỗi/phá hủy (docs/design-system.md;
+   * board 07 vẽ sao đỏ, lệch có chủ đích ghi ở personal-tab-redesign-plan.md).
+   */
   required?: boolean;
 }
 
@@ -156,7 +160,7 @@ export function TextField({
           {labelText}
           <Text
             bold
-            color="danger"
+            color="textMuted"
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
             testID={testID ? `${testID}-required` : undefined}
