@@ -49,6 +49,7 @@ export function SearchScreen() {
     if (!normalized) return;
     void recent.record(normalized.text);
     const result = await match.lookup(normalized.text);
+    if (!result) return; // đã bị lần Enter sau thay thế: không điều hướng lần nữa
     if (result.kind === 'one') {
       match.reset();
       navigation.push(ROUTES.orderDetail, { orderId: result.row.order.id });

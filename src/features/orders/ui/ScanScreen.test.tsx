@@ -194,6 +194,19 @@ describe('UI-B02 Quét mã đơn hàng', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
+  it('mã camera không hợp lệ (quá dài): báo lỗi, không "Vừa quét", không truy vấn, quét tiếp được', async () => {
+    const store = createMemoryOrderStore();
+    const spy = jest.spyOn(store, 'findOrdersByCodes');
+    await open(store);
+    await act(async () => mockScanner.emit('X'.repeat(65)));
+    expect(screen.getByTestId('scan-invalid')).toBeOnTheScreen();
+    expect(screen.queryByText(/Vừa quét/)).toBeNull();
+    expect(spy).not.toHaveBeenCalled();
+    await act(async () => mockScanner.emit('OK-1'));
+    expect(await screen.findByTestId('order-match-sheet')).toBeOnTheScreen();
+    expect(screen.queryByTestId('scan-invalid')).toBeNull();
+  });
+
   it('đổi shop trong lúc hộp kết quả mở: không còn hiện đơn của shop cũ', async () => {
     const store = createMemoryOrderStore();
     const d = makeOrder('SHOP-A', { shopId: 'shop-a' as ShopId });
@@ -215,6 +228,12 @@ describe('UI-B02 Quét mã đơn hàng', () => {
     expect(await screen.findByTestId('order-match-one')).toBeOnTheScreen();
     await act(async () => fireEvent.press(screen.getByTestId('switch')));
     expect(screen.queryByTestId('order-match-one')).toBeNull();
+    // hộp tự ẩn vì đổi shop: camera phải quét tiếp được (không kẹt cờ "đang xử lý")
+    await act(async () => {
+      jest.advanceTimersByTime(2100);
+    });
+    await act(async () => mockScanner.emit('LAI-QUET'));
+    expect(await screen.findByText('Mã: LAI-QUET')).toBeOnTheScreen();
   });
 
   it('nhập tay có lối tìm đơn đã lưu', async () => {

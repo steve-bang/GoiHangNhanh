@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { ShopId } from '@/core/ids';
 import { logger } from '@/core/logging/logger';
@@ -28,6 +28,7 @@ export type SearchState =
 interface Tagged {
   shopId: ShopId;
   key: string;
+  retry: number;
   state: SearchState;
 }
 
@@ -42,12 +43,10 @@ export function useOrderSearch(input: string, retryToken: number): SearchState {
   const normalized = normalizeSearchInput(input);
   const key = normalized?.key ?? null;
   const [tagged, setTagged] = useState<Tagged | null>(null);
-  const seq = useRef(0);
 
   useEffect(() => {
     if (key === null) return;
     let cancelled = false;
-    seq.current += 1;
     const timer = setTimeout(() => {
       void (async () => {
         try {
@@ -69,6 +68,7 @@ export function useOrderSearch(input: string, retryToken: number): SearchState {
           setTagged({
             shopId,
             key,
+            retry: retryToken,
             state:
               rows.length === 0
                 ? { kind: 'empty' }
@@ -78,7 +78,7 @@ export function useOrderSearch(input: string, retryToken: number): SearchState {
           logger.warn('orders.search_failed', {
             reason: caught instanceof Error ? 'error' : 'unknown',
           });
-          if (!cancelled) setTagged({ shopId, key, state: { kind: 'error' } });
+          if (!cancelled) setTagged({ shopId, key, retry: retryToken, state: { kind: 'error' } });
         }
       })();
     }, SEARCH_DEBOUNCE_MS);
@@ -89,6 +89,7 @@ export function useOrderSearch(input: string, retryToken: number): SearchState {
   }, [key, shopId, store, retryToken]);
 
   if (key === null) return { kind: 'idle' };
-  if (tagged && tagged.shopId === shopId && tagged.key === key) return tagged.state;
+  if (tagged && tagged.shopId === shopId && tagged.key === key && tagged.retry === retryToken)
+    return tagged.state;
   return { kind: 'loading' };
 }

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -61,6 +61,12 @@ export function ScanScreen() {
   const lastScan = useRef<{ code: string; at: number } | null>(null);
   const handled = useRef(false);
   const match = useOrderLookup();
+  const [scanInvalid, setScanInvalid] = useState(false);
+
+  // Hộp kết quả về trạng thái nghỉ (đóng, hoặc tự ẩn vì đổi shop): lại nhận mã mới từ camera.
+  useEffect(() => {
+    if (match.state.kind === 'idle') handled.current = false;
+  }, [match.state.kind]);
 
   const frame = Math.min(FRAME_MAX, Math.round(width * FRAME_RATIO));
   const trimmed = code.trim();
@@ -101,6 +107,12 @@ export function ScanScreen() {
       return;
     }
     lastScan.current = { code: scanned, at: now };
+    if (!validateCode(scanned).ok) {
+      // Mã camera không hợp lệ (quá dài, ký tự điều khiển): không tra cứu, không hiện "Vừa quét".
+      setScanInvalid(true);
+      return;
+    }
+    setScanInvalid(false);
     handled.current = true;
     setLastCode(scanned);
     // `handled` giữ true cho tới khi đóng hộp kết quả (closeMatch): không chồng hai hộp, mỗi mã một truy vấn.
@@ -188,6 +200,17 @@ export function ScanScreen() {
             <Text style={[styles.hint, { color: tokens.color.camera.onCamera }]}>
               {t('screens:scan.hint')}
             </Text>
+            {scanInvalid ? (
+              <Text
+                testID="scan-invalid"
+                variant="caption"
+                bold
+                accessibilityRole="alert"
+                style={{ color: tokens.color.camera.onCamera }}
+              >
+                {t('errors:INVALID_CODE')}
+              </Text>
+            ) : null}
             {lastCode ? (
               <Text variant="caption" bold style={{ color: tokens.color.camera.scanAccent }}>
                 {t('screens:scan.lastScanned', { code: lastCode })}

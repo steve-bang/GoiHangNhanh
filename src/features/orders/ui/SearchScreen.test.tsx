@@ -159,6 +159,45 @@ describe('UI-B03 Tìm đơn hàng', () => {
     );
   });
 
+  it('Enter hai lần nhanh với mã khớp đúng một đơn: chỉ MỘT lần điều hướng', async () => {
+    const store = createMemoryOrderStore();
+    const d = makeOrder('DH-88', { at: 1 });
+    await store.saveNewOrder(d);
+    await open(store);
+    await type('dh-88');
+    await act(async () => {
+      fireEvent(screen.getByTestId('search-input'), 'submitEditing');
+      fireEvent(screen.getByTestId('search-input'), 'submitEditing');
+    });
+    await waitFor(() => expect(mockNavigation.push).toHaveBeenCalled());
+    expect(mockNavigation.push).toHaveBeenCalledTimes(1);
+  });
+
+  it('Thử lại sau lỗi: khung lỗi cũ biến mất ngay khi bắt đầu truy vấn', async () => {
+    const store = createMemoryOrderStore();
+    let release: (() => void) | null = null;
+    let broken = true;
+    const real = store.listOrders.bind(store);
+    await open({
+      ...store,
+      listOrders: (...args) =>
+        broken
+          ? Promise.reject(new AppError('ORDER_SAVE_FAILED'))
+          : new Promise((resolve) => {
+              release = () => resolve(real(...args));
+            }),
+    });
+    await type('LOI-1');
+    await settle();
+    expect(await screen.findByTestId('search-error')).toBeOnTheScreen();
+    broken = false;
+    await fireEvent.press(screen.getByRole('button', { name: 'Thử lại' }));
+    expect(screen.queryByTestId('search-error')).toBeNull();
+    expect(screen.getByTestId('search-loading')).toBeOnTheScreen();
+    await settle();
+    await act(async () => release?.());
+  });
+
   it('Enter khi nhiều đơn khớp chính xác: bắt chọn, không mở đơn đầu', async () => {
     const store = createMemoryOrderStore();
     const a = makeOrder('DUP-1', { source: 'shopee', at: 1 });

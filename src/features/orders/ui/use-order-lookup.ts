@@ -42,7 +42,8 @@ type Tagged = { shopId: ShopId; state: LookupState };
  */
 export function useOrderLookup(): {
   state: LookupState;
-  lookup: (code: string) => Promise<LookupState>;
+  /** `null` khi yêu cầu này đã bị lần gọi sau (hoặc `reset`) thay thế: bên gọi KHÔNG được hành động theo nó. */
+  lookup: (code: string) => Promise<LookupState | null>;
   reset: () => void;
 } {
   const store = useOrderStore();
@@ -51,12 +52,13 @@ export function useOrderLookup(): {
   const generation = useRef(0);
 
   const lookup = useCallback(
-    async (rawCode: string): Promise<LookupState> => {
+    async (rawCode: string): Promise<LookupState | null> => {
       generation.current += 1;
       const mine = generation.current;
       const code = rawCode.trim();
-      const set = (state: LookupState) => {
-        if (mine === generation.current) setTagged({ shopId, state });
+      const set = (state: LookupState): LookupState | null => {
+        if (mine !== generation.current) return null;
+        setTagged({ shopId, state });
         return state;
       };
       set({ kind: 'loading', code });
