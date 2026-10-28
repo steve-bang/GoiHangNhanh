@@ -151,6 +151,15 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.sync);
   });
 
+  it('tiêu đề khối bằng chứng là nút có "›" mở Dữ liệu bằng chứng (khung 11)', async () => {
+    await renderProfile(createFakePersonalGateways(NAMED));
+    const title = screen.getByTestId('evidence-overview-title');
+    expect(title.props.accessibilityRole).toBe('button');
+    expect(title.props.accessibilityLabel).toBe('Dữ liệu bằng chứng');
+    await fireEvent.press(title);
+    expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.evidenceData);
+  });
+
   it('các thẻ không có chiều cao cố định (chữ lớn không bị cắt)', async () => {
     await renderProfile(createFakePersonalGateways(NAMED));
     await waitFor(() => expect(screen.getByTestId('shop-card')).toBeOnTheScreen());

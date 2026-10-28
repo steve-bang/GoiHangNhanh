@@ -179,6 +179,25 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     expectTabBarVisible(true);
   });
 
+  it('Dữ liệu bằng chứng và Thời hạn lưu (route con UI-I01) ẩn thanh tab; tiêu đề khối bằng chứng ở màn chính là lối vào', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.profile.path });
+    await fireEvent.press(await screen.findByTestId('evidence-overview-title'));
+    expect(screen.getByTestId('screen-UI-I01-evidence')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await fireEvent.press(screen.getByTestId('evidence-retention-link'));
+    expect(screen.getByTestId('screen-UI-I01-retention')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-I01-evidence')).toBeOnTheScreen();
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-I01')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+  });
+
   it('Hàng hoàn và Đồng bộ không còn là tab: mở được nhưng không có thanh tab', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.returns.path });
     expect(screen.getByTestId('screen-UI-D01')).toBeOnTheScreen();

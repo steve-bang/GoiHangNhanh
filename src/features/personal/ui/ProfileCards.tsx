@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { ROUTES } from '@/core/navigation';
-import { useAppNavigation } from '@/platform';
+import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import {
   Button,
   Card,
@@ -81,7 +81,7 @@ export function PlanHeroCard() {
 /**
  * Khối "Dữ liệu bằng chứng" (board 1a): ba ô có nhãn và giá trị "Chưa có số liệu" (Q-21p), KHÔNG số liệu (chưa có tệp bằng chứng và
  * chưa có nguồn đếm theo cửa hàng; `countUnsyncedOnDevice` đếm cả máy nên không khớp nghĩa) kèm nút
- * mở Trung tâm đồng bộ.
+ * mở Trung tâm đồng bộ. Tiêu đề (có "›") mở Dữ liệu bằng chứng (khung 11, PER-11).
  */
 export function EvidenceOverviewCard() {
   const { t } = useTranslation();
@@ -90,9 +90,25 @@ export function EvidenceOverviewCard() {
   return (
     <Card testID="evidence-overview">
       <View style={{ gap: tokens.space.md }}>
-        <Text variant="sectionTitle" accessibilityRole="header">
-          {t('personal:evidenceOverview.title')}
-        </Text>
+        <Pressable
+          onPress={() => navigation.push(ROUTES.evidenceData)}
+          accessibilityRole="button"
+          accessibilityLabel={t('personal:evidenceOverview.title')}
+          accessibilityHint={t('personal:evidenceOverview.openDetail')}
+          testID="evidence-overview-title"
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: tokens.space.sm,
+            minHeight: getMinTouchTarget(),
+            opacity: pressed ? tokens.opacity.pressed : 1,
+          })}
+        >
+          <Text variant="sectionTitle" style={{ flex: 1, flexShrink: 1 }}>
+            {t('personal:evidenceOverview.title')}
+          </Text>
+          <Icon name="forward" size={18} color={tokens.color.text.secondary} />
+        </Pressable>
         <View style={{ flexDirection: 'row' }}>
           <MetricTile
             label={t('personal:evidenceOverview.onDevice')}
