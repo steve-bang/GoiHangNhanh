@@ -206,7 +206,7 @@
 
 | Hạng mục | 13 | 14 | Ghi chú lệch |
 | --- | --- | --- | --- |
-| Bố cục và thứ tự khối | lệch có chủ đích | gần | 13: thẻ "Thông báo đẩy" kèm nhãn "Sắp có" ở ĐẦU (board: thẻ cam quyền bị từ chối ở cuối, không dựng vì chưa có adapter đọc quyền); bốn công tắc (board năm). 14: nhóm một thẻ có đường kẻ (board: mỗi hàng một thẻ); "Xóa tài khoản" tách nhóm riêng |
+| Bố cục và thứ tự khối | lệch có chủ đích | gần | 13: thẻ "Thông báo đẩy" kèm nhãn "Sắp có" ở ĐẦU (board: thẻ cam quyền bị từ chối ở cuối, không dựng vì chưa có adapter đọc quyền); ba công tắc hiển thị (board năm; bản chụp khung 13 còn bốn, lỗi thời, Q-21ag). 14: nhóm một thẻ có đường kẻ (board: mỗi hàng một thẻ); "Xóa tài khoản" tách nhóm riêng |
 | Thứ bậc chữ | đạt | đạt | tiêu đề 14 xuống dòng ở 390px (chữ lớn hơn board) |
 | Màu thẻ/nền | gần | gần | không thẻ cam; hàng khóa mờ |
 | Icon | gần | gần | glyph Ionicons gần nghĩa, duyệt ở ảnh PR; "Xóa tài khoản" icon cảnh báo (board: thùng rác) |
