@@ -451,3 +451,28 @@ Kế hoạch chi tiết ở [personal-tab-redesign-plan.md](personal-tab-redesig
 6. Xác minh SHA-256 phía máy chủ cho video lớn bị giới hạn thời gian/chi phí Function.
 7. Phiên bản mới nhất của một số công cụ (ESLint 10, TypeScript 7) chưa tương thích hệ sinh thái Expo; đã chọn bản tương thích.
 8. Khung giao diện chỉ mới kiểm chứng bằng Jest/router trong bộ nhớ và `expo export`; **chưa chạy trên máy ảo/thiết bị**. Cần xem: tràn viền Android (khoảng trống khi hiện bàn phím, `KeyboardAvoidingView` ở `src/platform/layout.ts`), vùng an toàn, Back phần cứng/cử chỉ ở màn quay, font scale lớn, tải font icon lần đầu.
+
+### Q-22 — Giao diện mới tab Đơn hàng (ORD-01…ORD-16): quyết định đã duyệt và ghi chú PR1
+Kế hoạch ở [orders-tab-ui-plan.md](orders-tab-ui-plan.md). Tên Q-22 vì Q-21 đã dùng cho tab Cá nhân (kế hoạch ban đầu ghi "Q-21"; đã đổi). Không chốt O-xx.
+
+| # | Nội dung | Trạng thái |
+|---|---|---|
+| a | Luồng tạo đơn theo mockup mới (Tạo đơn nhanh -> Xác nhận -> Tạo đơn hàng -> Chi tiết; Quay đóng gói nằm ở chi tiết), làm ở PR4; cập nhật docs/09 (UI-B04) khi làm | **Người dùng đã duyệt đề xuất** (phương án 1) |
+| b | Giữ 5 tab (D-16), không đổi thanh tab theo mockup 4 mục | **Người dùng đã duyệt đề xuất** |
+| c | Sửa đơn có bảng lịch sử rồi cho sửa (kể cả sau khi có phiên; mã đơn vẫn khóa), làm ở PR5 | **Người dùng đã duyệt đề xuất** (phương án 1) |
+| d | Xóa đơn (ORD-16): không làm | Đề xuất (chưa duyệt riêng; không chặn) |
+| e | ORD-11 (danh mục sản phẩm): hoãn | Đề xuất (chưa duyệt riêng) |
+| f | Lịch sử tìm kiếm lưu cục bộ theo shop, có nút xóa, làm ở PR3 | **Người dùng đã duyệt đề xuất** (phương án 1); BA xác nhận mã đơn là PII nhẹ |
+| g | Mã UI cho màn mới: route con của UI-E02 | Đề xuất (chưa duyệt riêng) |
+
+**PR1 (Nền và danh sách) đã làm; ghi chú và lệch so với mockup:**
+
+| # | Nội dung | Ghi chú |
+|---|---|---|
+| h | **Sắp xếp (Mới tạo nhất / Cập nhật gần đây / Cũ nhất) KHÔNG làm ở PR1.** `OrderStore.listOrders` hiện chỉ có một thứ tự (`MAX(thời điểm tạo, mốc phiên)` giảm dần, khóa keyset theo cặp đó, Q-18d); thêm thứ tự khác cần đổi hợp đồng kho (tham số sắp xếp, con trỏ theo khóa khác, test hợp đồng cho cả kho SQLite và bộ nhớ). Thanh "Đơn gần đây" và chữ "Lọc + Sắp xếp" của mockup vì vậy không có; nút vẫn là "Bộ lọc" | Làm riêng khi có yêu cầu đổi hợp đồng kho (đề xuất gộp vào PR2 hoặc PR trước PR3) |
+| i | **Bố cục ORD-01:** tiêu đề; hàng "ô tìm (có nút quét mã ở cuối khi trống; gõ chữ thì nút xóa thế chỗ) + nút *Tạo đơn*"; chip; hàng "số đơn + Bộ lọc"; thẻ. Bỏ hai nút biểu tượng ở header (testID `orders-scan`, `orders-create` giữ nguyên). Nhãn nút "Tạo đơn mới" đổi thành "Tạo đơn" theo mockup | `SearchField` thêm `onScan`/`scanLabel`/`scanTestID` |
+| j | **Thẻ đơn:** ô logo nguồn bán 44 ở bên trái thay ảnh sản phẩm (app không có ảnh sản phẩm; bất biến 10); thêm "SL: n" của dòng sản phẩm đầu (người dùng nhập); mã đơn + MỘT nhãn bằng chứng; thời điểm tạo ở chân thẻ chứ không ở góc trên phải như mockup (giữ giờ đầy đủ "Tạo lúc dd/MM/yyyy HH:mm" để không mơ hồ). **Không** có "Đã đồng bộ"/"Đang tải lên" (hôm nay luôn *Chưa có video*; Q-18a) | `OrderCard.quantityLabel` |
+| k | **Chip:** chỉ *Tất cả* và *Chưa có video* (mockup có *Chưa quay*, *Có bằng chứng*): chip còn lại ẩn tới khi có dữ liệu bằng chứng thật (Q-18c5) | |
+| l | **Sheet lọc (ORD-09):** vẫn là bottom sheet với chip (thời gian tạo, nguồn bán, trạng thái khai báo), không phải trang với ô chọn thả xuống; nút *Xóa bộ lọc* + *Áp dụng* nằm cùng hàng. **Không có** "Trạng thái bằng chứng" và "Trạng thái đơn" (chưa có nguồn dữ liệu; "trạng thái đơn" chưa được định nghĩa) và mục Sắp xếp (câu h) | |
+| m | **Câu chữ (ORD-13, ORD-16 phần trống/lỗi):** *Chưa có đơn hàng nào* / "Tạo đơn đầu tiên để bắt đầu lưu bằng chứng nhé." (nút *Tạo đơn hàng*, nút chính); lỗi tải "Chưa tải được danh sách đơn hàng. Bạn thử lại nhé." (khung lỗi dạng thẻ + nút *Thử lại*); không kết quả: *Không có kết quả* / "Không có đơn phù hợp với bộ lọc này." (nút *Xóa tìm kiếm và bộ lọc*; lời này cũng dùng khi chỉ có từ khóa tìm). Biểu tượng trong ô tròn (`EmptyState.iconCircle`). Banner ngoại tuyến là của `Screen` (`useIsOffline()` vẫn là stub luôn `false`, nên chưa hiện thật; làm ở PR6). Câu ngoại tuyến hiện giữ "Đang ngoại tuyến. Bằng chứng sẽ được đồng bộ khi có mạng." (câu có từ trước, chưa đối chiếu với bảng message mục 7 đặc tả vì bảng đó không nằm trong repo; BA xác nhận) | `ErrorState variant="card"`; `SkeletonCard` đổi theo bố cục thẻ mới |
+| n | **Chưa kiểm chứng:** thiết bị iOS/Android; **ảnh render bản web chưa chụp được** (môi trường không có `react-native-web` lẫn trình duyệt); độ giống mockup mới chỉ đối chiếu bằng mắt theo ảnh, chưa so điểm ảnh; chữ lớn hệ thống với hàng "ô tìm + Tạo đơn" (nút có thể bị ép hẹp ở màn 320dp) | |

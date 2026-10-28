@@ -16,9 +16,17 @@ interface SearchFieldProps {
   testID?: string;
   /** Cỡ gọn của nhóm màn form (chữ 14sp, cao tối thiểu bằng vùng chạm, viền xanh nhạt). */
   compact?: boolean;
+  /**
+   * Có thì hiện nút quét mã ở cuối ô khi ô đang trống (mockup tab Đơn hàng, ORD-01); khi đã gõ chữ thì
+   * nút xóa nội dung thế chỗ. Bên gọi tự mở màn quét; ô không biết gì về camera.
+   */
+  onScan?: () => void;
+  /** Nhãn đọc màn hình của nút quét (bắt buộc đi kèm `onScan`). */
+  scanLabel?: string;
+  scanTestID?: string;
 }
 
-/** Ô tìm lớn có biểu tượng kính lúp và nút xóa nội dung. */
+/** Ô tìm lớn có biểu tượng kính lúp, nút xóa nội dung và (tùy chọn) nút quét mã. */
 export function SearchField({
   value,
   onChangeText,
@@ -26,6 +34,9 @@ export function SearchField({
   onSubmitEditing,
   testID,
   compact = false,
+  onScan,
+  scanLabel,
+  scanTestID,
 }: SearchFieldProps) {
   const { t } = useTranslation();
   const { tokens, typography } = useTheme();
@@ -69,6 +80,16 @@ export function SearchField({
           style={[styles.clear, { minWidth: touch, minHeight: touch }]}
         >
           <Icon name="close" color={tokens.color.text.secondary} />
+        </Pressable>
+      ) : onScan ? (
+        <Pressable
+          testID={scanTestID}
+          accessibilityRole="button"
+          accessibilityLabel={scanLabel}
+          onPress={onScan}
+          style={[styles.clear, { minWidth: touch, minHeight: touch }]}
+        >
+          <Icon name="scan" color={tokens.color.action.primary} />
         </Pressable>
       ) : null}
     </View>

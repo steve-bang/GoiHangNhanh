@@ -48,6 +48,25 @@ describe('biến thể gọn (tab Đơn hàng dùng nhóm chữ form, Q-18)', ()
     expect(style(screen.getByLabelText('Tìm')).fontSize).toBe(typography.formBody.fontSize);
   });
 
+  it('EmptyState iconCircle: biểu tượng nằm trong ô tròn; SearchField onScan hiện nút quét khi trống', async () => {
+    const onScan = jest.fn();
+    await renderWithProviders(
+      <>
+        <EmptyState compact iconCircle icon="package" title="Trống" message="Mô tả" />
+        <SearchField
+          value=""
+          onChangeText={jest.fn()}
+          placeholder="Tìm"
+          onScan={onScan}
+          scanLabel="Quét"
+        />
+      </>,
+    );
+    expect(screen.getByText('Trống')).toBeOnTheScreen();
+    fireEvent.press(screen.getByRole('button', { name: 'Quét' }));
+    expect(onScan).toHaveBeenCalledTimes(1);
+  });
+
   it('EmptyState compact: mô tả 14sp, vẫn có nút hành động cụ thể', async () => {
     const onAction = jest.fn();
     await renderWithProviders(
