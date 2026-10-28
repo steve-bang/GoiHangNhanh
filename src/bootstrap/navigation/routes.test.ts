@@ -65,11 +65,13 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
 
   it('route con (parent): trỏ tới route gốc có thật, cùng mã UI, cùng cờ tabBar, gốc không phải con', () => {
     const children = Object.entries(ROUTES).filter(([, r]) => 'parent' in r && r.parent);
-    // Chỉ các route con đã duyệt (PR2: hồ sơ, mật khẩu; PR4: sửa và chuyển cửa hàng, cùng mã UI-I02);
+    // Chỉ các route con đã duyệt (PR2: hồ sơ, mật khẩu; PR4: sửa và chuyển cửa hàng, cùng mã UI-I02; PR-E: chi tiết gói và lịch sử thanh toán, cùng mã UI-H01);
     // thêm route con mới phải được người dùng duyệt và sửa danh sách này.
     expect(children.map(([name]) => name).sort()).toEqual([
       'changePassword',
       'editProfile',
+      'paymentHistory',
+      'planDetail',
       'shopEdit',
       'shopSwitch',
     ]);
@@ -86,10 +88,19 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     expect(ROUTES.changePassword).toMatchObject({ parent: 'security', code: 'UI-I05' });
     expect(ROUTES.shopEdit).toMatchObject({ parent: 'shopSettings', code: 'UI-I02' });
     expect(ROUTES.shopSwitch).toMatchObject({ parent: 'shopSettings', code: 'UI-I02' });
+    expect(ROUTES.planDetail).toMatchObject({ parent: 'plan', code: 'UI-H01' });
+    expect(ROUTES.paymentHistory).toMatchObject({ parent: 'plan', code: 'UI-H01' });
   });
 
   it('route form (con) ẩn thanh tab bằng hideTabBar nhưng vẫn nằm trong nhóm (tabs); màn gốc vẫn có thanh tab (Q-20r)', () => {
-    const forms = [ROUTES.editProfile, ROUTES.changePassword, ROUTES.shopEdit, ROUTES.shopSwitch];
+    const forms = [
+      ROUTES.editProfile,
+      ROUTES.changePassword,
+      ROUTES.shopEdit,
+      ROUTES.shopSwitch,
+      ROUTES.planDetail,
+      ROUTES.paymentHistory,
+    ];
     for (const route of forms) {
       expect(route).toMatchObject({ tabBar: true, hideTabBar: true });
       expect(isTabBarHiddenAt(route.path)).toBe(true);
@@ -107,6 +118,8 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     expect(nav.subTitles.changePassword).toBeTruthy();
     expect(nav.subTitles.shopEdit).toBeTruthy();
     expect(nav.subTitles.shopSwitch).toBeTruthy();
+    expect(nav.subTitles.planDetail).toBeTruthy();
+    expect(nav.subTitles.paymentHistory).toBeTruthy();
   });
 
   it('mỗi mã UI-xx có tiêu đề i18n', () => {
