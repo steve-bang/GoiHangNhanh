@@ -1,7 +1,10 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { onObjectFinalized } from 'firebase-functions/v2/storage';
 
+import { verifyEvidenceObject } from './evidence';
 import { createShopForUser, parseShopInput, ShopError, updateShopForUser } from './shop';
 
 // Khu vực dữ liệu đã chốt: Singapore (decisions.md Q-08). Phải khớp getFunctions(app, region) ở app.
@@ -41,3 +44,19 @@ export const updateShop = onCall({ region: REGION }, async (request) => {
     return toHttpsError(error);
   }
 });
+
+/**
+ * Khi bản gốc bằng chứng được tải lên Storage: máy chủ tính lại SHA-256 và ghi `server.*` + kiểm toán
+ * (evidence.ts). Mọi đối tượng khác bị bỏ qua. Lỗi đọc thì ném để Cloud Functions thử lại.
+ */
+export const verifyEvidence = onObjectFinalized(
+  { region: REGION, timeoutSeconds: 540, memory: '512MiB', retry: true },
+  async (event) => {
+    const { bucket, name } = event.data;
+    await verifyEvidenceObject(
+      getFirestore(),
+      { open: (path) => getStorage().bucket(bucket).file(path).createReadStream() },
+      name,
+    );
+  },
+);

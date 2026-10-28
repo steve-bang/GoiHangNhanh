@@ -1,0 +1,200 @@
+import { createHash } from 'node:crypto';
+import { Readable } from 'node:stream';
+
+import { deleteApp, initializeApp, type App } from 'firebase-admin/app';
+import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+
+import {
+  hashStream,
+  parseEvidencePath,
+  verifyEvidenceObject,
+  type EvidenceObjectReader,
+} from '../../functions/src/evidence';
+
+// Chạy trên Firestore Emulator (FIRESTORE_EMULATOR_HOST do `firebase emulators:exec` đặt).
+let app: App;
+let db: Firestore;
+
+beforeAll(() => {
+  app = initializeApp({ projectId: 'demo-doncung' }, 'evidence-fn-test');
+  db = getFirestore(app);
+});
+
+afterAll(async () => {
+  await deleteApp(app);
+});
+
+const sha = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
+let counter = 0;
+
+/** Tạo tài liệu bằng chứng như client khai báo (đã đóng tệp, trạng thái queued). */
+async function declare(bytes: Buffer, overrides: Record<string, unknown> = {}) {
+  counter += 1;
+  const shopId = `shop-ev-${Date.now()}-${counter}`;
+  const evidenceId = `ev-${counter}`;
+  await db.doc(`shops/${shopId}/evidence/${evidenceId}`).set({
+    shopId,
+    sessionId: 's1',
+    orderId: 'o1',
+    packageId: 'p1',
+    kind: 'original_video',
+    origin: 'in_app_capture',
+    clientFileState: 'uploading',
+    sha256Client: sha(bytes),
+    sizeBytes: bytes.length,
+    mimeType: 'video/mp4',
+    ...overrides,
+  });
+  return { shopId, evidenceId, path: `shops/${shopId}/evidence/${evidenceId}/original` };
+}
+
+const readerOf = (bytes: Buffer): EvidenceObjectReader => ({
+  open: () => Readable.from([bytes.subarray(0, 3), bytes.subarray(3)]),
+});
+
+const evidenceOf = async (shopId: string, evidenceId: string) =>
+  (await db.doc(`shops/${shopId}/evidence/${evidenceId}`).get()).data();
+const auditOf = async (shopId: string) =>
+  (await db.collection(`shops/${shopId}/auditEvents`).get()).docs.map((d) => d.data());
+
+describe('parseEvidencePath', () => {
+  it('chỉ nhận đường dẫn bản gốc', () => {
+    expect(parseEvidencePath('shops/s1/evidence/e1/original')).toEqual({
+      shopId: 's1',
+      evidenceId: 'e1',
+    });
+    for (const other of [
+      'shops/s1/evidence/e1/derived/d1',
+      'shops/s1/exports/x/file.zip',
+      'shops/s1/evidence/e1/original/extra',
+      'evidence/e1/original',
+      '',
+    ]) {
+      expect(parseEvidencePath(other)).toBeNull();
+    }
+  });
+});
+
+describe('hashStream', () => {
+  it('tính SHA-256 và số byte theo từng mảnh', async () => {
+    const bytes = Buffer.from('noi dung video');
+    expect(await hashStream(Readable.from([bytes.subarray(0, 4), bytes.subarray(4)]))).toEqual({
+      sha256: sha(bytes),
+      sizeBytes: bytes.length,
+    });
+  });
+});
+
+describe('verifyEvidenceObject', () => {
+  const bytes = Buffer.from('video-goc-0123456789');
+
+  it('khớp mã băm và kích thước: server.state = verified, có mã băm máy chủ và một sự kiện kiểm toán', async () => {
+    const { shopId, evidenceId, path } = await declare(bytes);
+    expect(await verifyEvidenceObject(db, readerOf(bytes), path)).toEqual({ outcome: 'verified' });
+    const doc = await evidenceOf(shopId, evidenceId);
+    expect(doc?.server).toMatchObject({
+      state: 'verified',
+      sha256Server: sha(bytes),
+      sizeBytesServer: bytes.length,
+      storagePath: path,
+    });
+    expect(doc?.server.verifiedAt).toBeDefined();
+    expect(doc?.server.receivedAt).toBeDefined();
+    expect(await auditOf(shopId)).toEqual([
+      expect.objectContaining({ type: 'evidence.verified', evidenceId, actorUid: null }),
+    ]);
+  });
+
+  it('mã băm khai báo viết hoa vẫn khớp', async () => {
+    const { shopId, evidenceId, path } = await declare(bytes, {
+      sha256Client: sha(bytes).toUpperCase(),
+    });
+    expect((await verifyEvidenceObject(db, readerOf(bytes), path)).outcome).toBe('verified');
+    expect((await evidenceOf(shopId, evidenceId))?.server.state).toBe('verified');
+  });
+
+  it('nội dung khác với khai báo: hash_mismatch, KHÔNG verifiedAt, có kiểm toán lý do', async () => {
+    const { shopId, evidenceId, path } = await declare(bytes);
+    const tampered = Buffer.from('video-goc-0123456780');
+    expect(await verifyEvidenceObject(db, readerOf(tampered), path)).toEqual({
+      outcome: 'hash_mismatch',
+      reason: 'sha256_differs',
+    });
+    const doc = await evidenceOf(shopId, evidenceId);
+    expect(doc?.server.state).toBe('hash_mismatch');
+    expect(doc?.server.verifiedAt).toBeUndefined();
+    expect(doc?.server.sha256Server).toBe(sha(tampered));
+    expect(await auditOf(shopId)).toEqual([
+      expect.objectContaining({ type: 'evidence.hash_mismatch', reason: 'sha256_differs' }),
+    ]);
+  });
+
+  it('kích thước lệch khai báo dù băm khớp: hash_mismatch size_differs', async () => {
+    const { path } = await declare(bytes, { sizeBytes: bytes.length + 1 });
+    expect(await verifyEvidenceObject(db, readerOf(bytes), path)).toEqual({
+      outcome: 'hash_mismatch',
+      reason: 'size_differs',
+    });
+  });
+
+  it('khai báo hỏng (thiếu mã băm hoặc kích thước): không bao giờ verified', async () => {
+    const { path } = await declare(bytes, { sha256Client: null });
+    expect(await verifyEvidenceObject(db, readerOf(bytes), path)).toEqual({
+      outcome: 'hash_mismatch',
+      reason: 'invalid_declaration',
+    });
+  });
+
+  it('chạy lặp không đổi kết quả và không nhân đôi kiểm toán', async () => {
+    const { shopId, path } = await declare(bytes);
+    await verifyEvidenceObject(db, readerOf(bytes), path);
+    expect((await verifyEvidenceObject(db, readerOf(bytes), path)).outcome).toBe('already_final');
+    expect(await auditOf(shopId)).toHaveLength(1);
+  });
+
+  it('hash_mismatch đã chốt thì chạy lại với nội dung đúng cũng không thành verified', async () => {
+    const { shopId, evidenceId, path } = await declare(bytes);
+    await verifyEvidenceObject(db, readerOf(Buffer.from('khac')), path);
+    expect((await verifyEvidenceObject(db, readerOf(bytes), path)).outcome).toBe('already_final');
+    expect((await evidenceOf(shopId, evidenceId))?.server.state).toBe('hash_mismatch');
+  });
+
+  it('chưa có tài liệu khai báo (tệp mồ côi): không tạo gì', async () => {
+    const path = 'shops/shop-mo-coi/evidence/ev-x/original';
+    expect((await verifyEvidenceObject(db, readerOf(bytes), path)).outcome).toBe(
+      'no_evidence_document',
+    );
+    expect((await db.doc('shops/shop-mo-coi/evidence/ev-x').get()).exists).toBe(false);
+    expect(await auditOf('shop-mo-coi')).toEqual([]);
+  });
+
+  it('đường dẫn không phải bản gốc bị bỏ qua', async () => {
+    const { shopId, evidenceId } = await declare(bytes);
+    const derived = `shops/${shopId}/evidence/${evidenceId}/derived/preview`;
+    expect((await verifyEvidenceObject(db, readerOf(bytes), derived)).outcome).toBe('ignored_path');
+    expect((await evidenceOf(shopId, evidenceId))?.server).toBeUndefined();
+  });
+
+  it('lỗi đọc Storage: ném lỗi, giữ uploaded để thử lại, rồi lần sau xác minh được', async () => {
+    const { shopId, evidenceId, path } = await declare(bytes);
+    const broken: EvidenceObjectReader = {
+      open: () =>
+        new Readable({
+          read() {
+            this.destroy(new Error('network'));
+          },
+        }),
+    };
+    await expect(verifyEvidenceObject(db, broken, path)).rejects.toThrow('network');
+    expect((await evidenceOf(shopId, evidenceId))?.server.state).toBe('uploaded');
+    expect(await auditOf(shopId)).toEqual([]);
+    expect((await verifyEvidenceObject(db, readerOf(bytes), path)).outcome).toBe('verified');
+  });
+
+  it('shop khác cùng evidenceId không bị ảnh hưởng (cô lập theo đường dẫn)', async () => {
+    const a = await declare(bytes);
+    const b = await declare(bytes);
+    await verifyEvidenceObject(db, readerOf(bytes), a.path);
+    expect((await evidenceOf(b.shopId, b.evidenceId))?.server).toBeUndefined();
+  });
+});
