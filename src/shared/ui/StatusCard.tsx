@@ -9,31 +9,48 @@ import { Text } from './Text';
 import { toneColors, type IconTone } from './tone';
 import { useTheme } from './theme';
 
-type StatusCardKind =
-  | {
-      /** Trạng thái bằng chứng: màu/biểu tượng lấy từ `semantic.status`, tiêu đề mặc định từ i18n. */
-      status: EvidenceStatusLabel;
-      tone?: never;
-      icon?: never;
-    }
-  | {
-      /** Thẻ thông tin khác (ví dụ lưu trữ, hạn lưu): tông + biểu tượng do bên gọi chọn. */
-      tone: IconTone;
-      icon: IconName;
-      status?: never;
-    };
-
-type StatusCardProps = StatusCardKind & {
-  /**
-   * Bắt buộc với `tone`; với `status` mặc định là nhãn chuẩn docs/09 mục 3. KHÔNG đổi sang chữ
-   * mạnh hơn trạng thái thật (ví dụ "đã sao lưu" khi chưa được máy chủ xác nhận).
-   */
-  title?: string;
+type StatusCardBase = {
   description?: string;
-  /** 0-100. Chỉ truyền khi đo được; có thì hiện thanh tiến độ + phần trăm. */
-  progress?: number;
   testID?: string;
 };
+
+type StatusCardProps = StatusCardBase &
+  (
+    | {
+        /** Đang tải lên: duy nhất trạng thái có thể đo tiến độ. */
+        status: 'uploading';
+        /** 0-100. Chỉ truyền khi đo được; giá trị không hợp lệ (NaN, âm, >100) được kẹp hoặc bỏ. */
+        progress?: number;
+        tone?: never;
+        icon?: never;
+        title?: never;
+      }
+    | {
+        /** Trạng thái bằng chứng khác: nhãn luôn là nhãn chuẩn docs/09 mục 3, không ghi đè được. */
+        status: Exclude<EvidenceStatusLabel, 'uploading'>;
+        progress?: never;
+        tone?: never;
+        icon?: never;
+        title?: never;
+      }
+    | {
+        /**
+         * Thẻ thông tin khác (ví dụ lưu trữ, hạn lưu): tông + biểu tượng + tiêu đề do bên gọi
+         * chọn. KHÔNG dùng để giả nhãn trạng thái bằng chứng (ví dụ "Đã đồng bộ").
+         */
+        tone: IconTone;
+        icon: IconName;
+        title: string;
+        status?: never;
+        progress?: never;
+      }
+  );
+
+/** NaN/Infinity -> bỏ (không đo được); còn lại làm tròn và kẹp 0-100. */
+function normalizeProgress(progress: number | undefined): number | undefined {
+  if (progress === undefined || !Number.isFinite(progress)) return undefined;
+  return Math.min(100, Math.max(0, Math.round(progress)));
+}
 
 /**
  * Thẻ trạng thái dạng ngang: biểu tượng + tiêu đề + mô tả (+ thanh tiến độ). Luôn có chữ và biểu
@@ -41,7 +58,7 @@ type StatusCardProps = StatusCardKind & {
  * chưa có dữ liệu thật (Q-21i).
  */
 export function StatusCard(props: StatusCardProps) {
-  const { description, progress, testID } = props;
+  const { description, testID } = props;
   const { t } = useTranslation();
   const { tokens } = useTheme();
 
@@ -53,14 +70,13 @@ export function StatusCard(props: StatusCardProps) {
     const presentation = EVIDENCE_STATUS_PRESENTATION[props.status];
     ({ fg, bg } = tokens.status[presentation.statusToken]);
     icon = presentation.icon;
-    title = props.title ?? t(presentation.labelKey);
+    title = t(presentation.labelKey);
   } else {
     ({ fg, bg } = toneColors(tokens, props.tone));
     icon = props.icon;
-    title = props.title ?? '';
+    title = props.title;
   }
-  const percent =
-    progress === undefined ? undefined : Math.min(100, Math.max(0, Math.round(progress)));
+  const percent = props.status === 'uploading' ? normalizeProgress(props.progress) : undefined;
   const spoken = [title, description, percent === undefined ? undefined : `${percent}%`]
     .filter(Boolean)
     .join('. ');
