@@ -8,6 +8,7 @@ import { useAppNavigation } from '@/platform';
 import { useToast } from '@/shared/ui';
 
 import { evaluateSignOutGuard, type SignOutGuard } from '../domain/sign-out-guard';
+import { readDeviceFacts } from './read-device-facts';
 import { useSession } from './SessionProvider';
 
 /** Bước của luồng đăng xuất: hộp xác nhận, hoặc cảnh báo chặn (UI-J15 chưa có mã/route: hộp thoại tại chỗ). */
@@ -49,11 +50,7 @@ export function useSignOut() {
     try {
       let guard: SignOutGuard;
       try {
-        const [recording, unsynced] = await Promise.all([
-          store.hasRecordingOnDevice().catch(() => null),
-          store.countUnsyncedOnDevice().catch(() => null),
-        ]);
-        guard = evaluateSignOutGuard({ recording, unsynced });
+        guard = evaluateSignOutGuard(await readDeviceFacts(store));
       } catch {
         guard = { kind: 'unknown' };
       }
