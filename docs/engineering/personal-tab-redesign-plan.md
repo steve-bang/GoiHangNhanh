@@ -173,7 +173,7 @@ Mỗi PR: nhánh tách từ `main` mới nhất sau khi PR trước merge; theo 
 | **C** (đã làm, mục 6.3) | Sửa họ tên, Đổi mật khẩu, hộp thoại Đăng xuất | `EditProfileScreen.tsx`, `ChangePasswordScreen.tsx`, `use-sign-out.ts`, `ProfileScreen.tsx` (hộp thoại) | Không route mới | Cập nhật test hiện có + test thẻ social thay form | Khớp 2, 3, 4a-c; vẫn chặn khi quay, vẫn đủ lối đăng xuất (D21) | A |
 | **D** (đã làm, mục 6.4) | Cửa hàng: cài đặt, sửa tên, chuyển + 2 hộp thoại | `ShopSettingsScreen.tsx`, `ShopEditScreen.tsx`, `ShopSwitchScreen.tsx`, `use-switch-shop.ts` | Không route mới | Test hiện có + bộ đếm, "Bị khóa", ô tìm | Khớp 5, 6, 7a-c; "Xóa cửa hàng" ẩn | A |
 | **E** (đã làm, mục 6.5) | Gói, chi tiết gói, lịch sử thanh toán | `src/app/(tabs)/account/plan/{index,detail,payments}.tsx`, màn mới trong `features/personal/ui`, `routes.ts` (route con của `plan`, `UI-H01`), `nav.json` | `plan` (có sẵn) + 2 route con `parent` (Q-21b) | `routes.test.ts` (route con khai báo `parent`), màn | Khớp 8, 9, 10; mọi giá trị "Chưa có thông tin"; nút nâng cấp khóa | A, Q-21b |
-| **F** | Dữ liệu bằng chứng, thời hạn lưu | màn mới + `routes.ts` (route con của `profile` UI-I01) | 2 route con | Test đếm thật (0) và chữ "Chưa có thông tin" | Khớp 11, 12; không số bịa; thẻ ghi chú theo D19 | A, B |
+| **F** (đã làm, mục 6.6) | Dữ liệu bằng chứng, thời hạn lưu | màn mới + `routes.ts` (route con của `profile` UI-I01) | 2 route con | Test đếm thật (0) và chữ "Chưa có thông tin" | Khớp 11, 12; không số bịa; thẻ ghi chú theo D19 | A, B |
 | **G** | Thông báo, Quyền riêng tư và bảo mật | `NotificationsScreen`, `SecurityScreen`, `SettingsGateway` (bản giả + chưa kết nối), `account-menu.ts` (đổi `available`) | `notifications`, `security` (có sẵn) | Test công tắc lưu/đọc cục bộ, thẻ quyền bị từ chối, hàng khóa | Khớp 13, 14; không hứa đẩy | A, C |
 | **H** | Trợ giúp, bài hướng dẫn, liên hệ, điều khoản (+ Về ứng dụng nếu Q-21j chốt giữ) | màn mới, nội dung tĩnh trong `personal.json`, `legal-links.ts` | `help` (có sẵn) + route con bài/liên hệ/điều khoản | Test tìm kiếm tĩnh, mở email soạn sẵn không "đã gửi" | Khớp 15-18; không "Chính sách đổi trả" | A, Q-21j/k cho tài nguyên |
 | **I** | Xóa tài khoản | màn mới, `Checkbox`, kết nối `use-sign-out` (đếm tệp) | route con của `security` | Test điều kiện thật, nút khóa | Khớp 20; không xóa thật | A, G, Q-21h, Q-20e |
@@ -295,6 +295,30 @@ Hai route con mới của UI-H01, KHÔNG mã UI mới (Q-21b): `ROUTES.planDetai
 7. Bỏ đường kẻ ngăn trên nút (board có), thay bằng khoảng cách token.
 
 **Chưa kiểm chứng:** thiết bị iOS/Android thật; VoiceOver/TalkBack (nút vô hiệu đọc là "không dùng được" + dòng "Sắp có" nằm dưới); chữ lớn chỉ chụp bằng bản thử nhân cỡ chữ ở bản sao ngoài repo (icon không phóng theo). Chưa có dữ liệu gói thật nên các trạng thái hết hạn/sắp hết hạn/chờ thanh toán chưa dựng (Q-21x).
+
+### 6.6 Trạng thái PR-F (đã làm, chờ duyệt)
+
+Hai route con mới của UI-I01, KHÔNG mã UI mới (Q-21b): `ROUTES.evidenceData` (`/account/evidence`) và `ROUTES.retentionDetail` (`/account/retention`), đều `hideTabBar`; `routes.test.ts` cập nhật danh sách route con và route form có chủ đích. Màn: `EvidenceDataScreen`, `RetentionDetailScreen` (`features/personal/ui`). Tiêu đề khối "Dữ liệu bằng chứng" ở màn chính nay là nút có "›" mở khung 11 (hoàn tất lệch số 4 của mục 6.2). Không đổi thành phần dùng chung, không đổi logic đăng xuất/chuyển cửa hàng. Ảnh: `docs/assets/screens/personal-tab-v3/pr-f-*.png`, checklist ở README thư mục đó.
+
+| Khung | Cách làm |
+| --- | --- |
+| 11 Dữ liệu bằng chứng | Thẻ "Tổng số bằng chứng" + ba hàng (Trên thiết bị / Đang chờ đồng bộ / Trên đám mây) bằng `MetricTile layout="row"` trong `ListGroup`, mọi giá trị "Chưa có số liệu", KHÔNG số; ba dòng giải thích: "Trên thiết bị" chưa phải bản sao lưu, "Đang chờ đồng bộ" là chưa được máy chủ xác nhận, "Trên đám mây" chỉ tính tệp máy chủ đã xác nhận (bất biến 3); hàng "Thời hạn lưu" mở khung 12; nút chính "Xem trung tâm đồng bộ" (UI-F01) |
+| 12 Thời hạn lưu | Thẻ "Thời hạn lưu theo gói dịch vụ" + "Chưa có thông tin"; ba hàng Video đóng gói / Ảnh giao hàng / Ảnh hoàn hàng, mỗi hàng "Chưa có thông tin" (nhãn và giá trị tự xuống dòng khi chữ lớn); thẻ ghi chú đổi câu theo D19 |
+| 21 Dải trạng thái | KHÔNG có màn trong tab Cá nhân. Chỉ bảo đảm `StatusCard`/`EvidenceStatusBadge`: test `StatusCard.board21.test.tsx` dựng từng trạng thái bằng dữ liệu giả CHỈ trong test (nhãn chuẩn docs/09 mục 3, màu từ `semantic.status`, tiến độ 70, sắp hết hạn/đã hết hạn theo tông, không cụm "an toàn/đồng bộ thành công/trên đám mây" ở trạng thái chưa xác nhận) và một test khóa rằng không mã sản phẩm nào ngoài `shared/ui` dùng `StatusCard` |
+
+**Quyết định về D19:** bỏ câu "dữ liệu có thể vẫn xem được trên thiết bị của bạn" (docs/06 chưa chốt xử lý khi hết hạn và bản cục bộ, O-06). Thẻ ghi chú giữ vị trí cuối màn nhưng nói điều đã có cơ sở: "Cách xử lý dữ liệu khi hết thời hạn lưu chưa được công bố. Bằng chứng đang tranh chấp được giữ lại; hạ cấp gói không xóa bằng chứng ngay." Không hứa khôi phục, không ngày hết hạn. Test cụm cấm (`vui lòng`, `bảo vệ`, `an toàn`, `vẫn xem được`, `khôi phục`, gói/ngày bịa).
+
+**Nguồn số đếm:** giữ "Chưa có số liệu" cho cả bốn ô. Chưa có tệp bằng chứng, và `countUnsyncedOnDevice` đếm cả máy (không khớp một cửa hàng, bất biến 8). Khi có tệp thật: "Trên thiết bị" và "Đang chờ đồng bộ" đếm theo `shopId` hiện tại; "Trên đám mây" chỉ tính tệp ở trạng thái do máy chủ xác nhận (`uploaded`/`verified`), không tính tệp mới lưu cục bộ.
+
+**Lệch có chủ đích so với board**
+
+1. Số: "Chưa có số liệu" (board "Chưa có thông tin"; thống nhất với khối ở màn chính, Q-21p). Không chấm cam đặc: ô icon tông cảnh báo.
+2. Khung 12: tên gói "Chưa có thông tin" (board "Gói tiêu chuẩn", D2); thẻ ghi chú đổi câu (D19), nền trắng viền với icon thông tin xanh dương (không thêm tông Card mới).
+3. Khung 11 thêm đoạn giải thích và hàng "Thời hạn lưu" (board không có lối vào khung 12, Q-21y).
+4. Tiêu đề khung 11 là "Dữ liệu bằng chứng" (board đặt "Quản lý dữ liệu bằng chứng" làm tên khung, header trong điện thoại là "Dữ liệu bằng chứng").
+5. Tiêu đề khối ở màn chính từ vai trò `header` sang `button` (nút mở khung 11); trình đọc màn hình không còn thấy nó là đề mục.
+
+**Chưa kiểm chứng:** thiết bị iOS/Android thật; VoiceOver/TalkBack; chữ lớn chỉ bằng bản thử nhân cỡ chữ; không có dữ liệu thật để thử các số đếm.
 
 ## 7. Rủi ro
 
