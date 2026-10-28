@@ -3,11 +3,13 @@ export { PersonalGatewaysProvider, usePersonalGateways } from './ui/PersonalGate
 export { ChangePasswordScreen } from './ui/ChangePasswordScreen';
 export { EditProfileScreen } from './ui/EditProfileScreen';
 export { EvidenceDataScreen } from './ui/EvidenceDataScreen';
+export { NotificationsScreen } from './ui/NotificationsScreen';
 export { PaymentHistoryScreen } from './ui/PaymentHistoryScreen';
 export { PlanDetailScreen } from './ui/PlanDetailScreen';
 export { PlanScreen } from './ui/PlanScreen';
 export { ProfileScreen } from './ui/ProfileScreen';
 export { RetentionDetailScreen } from './ui/RetentionDetailScreen';
+export { SecurityScreen } from './ui/SecurityScreen';
 export { ShopEditScreen } from './ui/ShopEditScreen';
 export { ShopSettingsScreen } from './ui/ShopSettingsScreen';
 export { ShopSwitchScreen } from './ui/ShopSwitchScreen';

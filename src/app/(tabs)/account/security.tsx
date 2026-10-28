@@ -1,1 +1,1 @@
-export { SecurityScreen as default } from '@/features/shop';
+export { SecurityScreen as default } from '@/features/personal';
