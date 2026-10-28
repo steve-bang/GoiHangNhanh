@@ -30,13 +30,17 @@ async function renderEdit(
 }
 
 describe('EditProfileScreen (route con của UI-I01)', () => {
-  it('hiện họ tên hiện tại; email là ô chỉ đọc có khóa và chú thích; không còn avatar lớn; Lưu tắt khi chưa sửa', async () => {
+  it('khung 2: nhãn "Họ và tên" có dấu sao bắt buộc, giá trị hiện tại, KHÔNG có ô email, Lưu tắt khi chưa sửa và nằm trong nội dung (không ghim đáy)', async () => {
     await renderEdit();
     expect(screen.getByTestId('edit-profile-name').props.value).toBe('Lan');
-    expect(screen.getByTestId('edit-profile-email')).toHaveTextContent('demo@example.com');
-    expect(screen.getByTestId('edit-profile-email').props.onChangeText).toBeUndefined();
-    expect(screen.getByText('Email dùng để đăng nhập, chưa đổi được ở bản này.')).toBeOnTheScreen();
-    expect(screen.getByTestId('icon-lock-closed-outline')).toBeOnTheScreen();
+    expect(screen.getByText('Họ và tên')).toBeOnTheScreen();
+    expect(
+      screen.getByTestId('edit-profile-name-required', { includeHiddenElements: true }),
+    ).toHaveTextContent('*');
+    expect(screen.queryByTestId('edit-profile-email')).toBeNull();
+    expect(screen.queryByText('demo@example.com')).toBeNull();
+    expect(screen.queryByTestId('icon-lock-closed-outline')).toBeNull();
+    expect(screen.getByLabelText('Lưu')).toBeOnTheScreen();
     expect(screen.queryByTestId('edit-profile-avatar')).toBeNull();
     expect(screen.queryByText('L', { includeHiddenElements: true })).toBeNull();
     expect(isDisabled()).toBe(true);
@@ -152,7 +156,7 @@ describe('EditProfileScreen (route con của UI-I01)', () => {
     await renderWithProviders(<EditProfileScreen />, { personalGateways: gateways });
     expect(await screen.findByTestId('edit-profile-load-error')).toBeOnTheScreen();
     expect(screen.queryByTestId('edit-profile-name')).toBeNull();
-    expect(isDisabled()).toBe(true);
+    expect(screen.queryByTestId('edit-profile-save')).toBeNull();
     await fireEvent.press(screen.getByText('Thử lại'));
     await waitFor(() => expect(screen.getByTestId('edit-profile-name')).toBeOnTheScreen());
   });

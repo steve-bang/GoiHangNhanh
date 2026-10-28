@@ -289,7 +289,7 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
   it('Đăng xuất mở hộp thoại xác nhận; "Ở lại ứng dụng" đóng và không gọi cổng (luồng đầy đủ: SignOut.test.tsx)', async () => {
     const gateways = await renderProfile();
     await fireEvent.press(screen.getByTestId('sign-out'));
-    expect(screen.getByText('Bạn muốn đăng xuất?')).toBeOnTheScreen();
+    expect(screen.getByText('Xác nhận đăng xuất')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Ở lại ứng dụng'));
     expect(screen.queryByText('Bạn muốn đăng xuất?')).toBeNull();
     expect(gateways.account.signOutCalls).toBe(0);

@@ -4,7 +4,9 @@ import { renderWithProviders } from '@/test-utils/render';
 
 import { ConfirmDialog } from './ConfirmDialog';
 
-function setup(props: Partial<Parameters<typeof ConfirmDialog>[0]> = {}) {
+type TwoButtonProps = Extract<Parameters<typeof ConfirmDialog>[0], { confirmLabel: string }>;
+
+function setup(props: Partial<TwoButtonProps> = {}) {
   const onConfirm = jest.fn();
   const onCancel = jest.fn();
   const view = renderWithProviders(

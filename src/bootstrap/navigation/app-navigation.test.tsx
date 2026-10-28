@@ -117,6 +117,9 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     // Cổng giả mặc định chưa có họ tên: khung 1e có nút "Cập nhật" mở Sửa họ tên.
     await fireEvent.press(await screen.findByRole('button', { name: 'Cập nhật' }));
     expect(screen.getByTestId('screen-UI-I01-edit-profile')).toBeOnTheScreen();
+    // Khung 2: nút Lưu nằm trong nội dung ngay dưới ô (không ghim đáy), chưa có ô email.
+    expect(await screen.findByTestId('edit-profile-save')).toBeOnTheScreen();
+    expect(screen.queryByTestId('edit-profile-email')).toBeNull();
     expectTabBarVisible(false);
     await act(async () => {
       router.back();
@@ -125,6 +128,9 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     expectTabBarVisible(true);
     await fireEvent.press(screen.getByTestId('change-password-entry'));
     expect(screen.getByTestId('screen-UI-I05-change-password')).toBeOnTheScreen();
+    // Khung 3: cổng giả đăng nhập bằng mật khẩu nên hiện form (thẻ Apple/Google chỉ khi không phải mật khẩu).
+    expect(await screen.findByTestId('change-password-submit')).toBeOnTheScreen();
+    expect(screen.queryByTestId('change-password-social')).toBeNull();
     expectTabBarVisible(false);
     await act(async () => {
       router.back();

@@ -49,4 +49,39 @@
 | Trạng thái | đạt | đạt | đạt | đạt | đạt | |
 | Chuỗi chữ | lệch có chủ đích | - | lệch | lệch | lệch | xem mục 6.2 của plan (huy hiệu, gói, câu lỗi, "Hãy" thay "Vui lòng") |
 
-**Ảnh `pr-b-1a-*` chưa chụp lại sau review PR #15** (không có trình duyệt/react-native-web trong môi trường): ba ô "Dữ liệu bằng chứng" nay có thêm dòng "Chưa có số liệu" dưới nhãn; ảnh hiện còn là bản chỉ nhãn. Khung 1b khác ảnh ở trợ năng (mỗi thẻ một phần tử "Đang tải"), hình không đổi.
+Ảnh `pr-b-1a-*` (4 ảnh) đã **chụp lại ở PR-C** với dòng "Chưa có số liệu" dưới nhãn ba ô bằng chứng (cổng giả có họ tên "Trần Văn Minh", cửa hàng "Shop Thời Trang" như board). Khung 1b khác ảnh ở trợ năng (mỗi thẻ một phần tử "Đang tải"), hình không đổi; ảnh 1b-1e chưa chụp lại.
+
+---
+
+# Ảnh đối chiếu PR-C: Sửa họ tên, Đổi mật khẩu, hộp thoại Đăng xuất (khung 2, 3, 4a-4c)
+
+**Lưu ý trung thực:** ảnh render **bản web** (react-native-web trong Chromium) của màn thật trên **cổng giả**, **không phải ảnh chụp trên iOS/Android thật**. Chụp ở 320x568, 360x800, 390x844 (hệ số 2); **chưa chụp ở chữ lớn (font scale)**. Để chụp được các nhánh, bản sao ngoài repo có các thay đổi tạm KHÔNG commit: cổng giả đọc `?method=apple|google|password` (loại đăng nhập, họ tên "Trần Văn Minh", cửa hàng "Shop Thời Trang"), kho bộ nhớ đọc `?recording=1` (đang quay) và `?unsynced=3` (3 tệp chưa đồng bộ; trong app thật số này hôm nay luôn 0 và chưa có phiên đang ghi). Cách chụp như PR-B (export web trên bản sao ngoài repo có `react-native-web@0.21.4`, phục vụ tĩnh, Playwright + Chromium). Font, bàn phím và vòng focus của trình duyệt khác thiết bị thật.
+
+| Ảnh | Nội dung |
+| --- | --- |
+| `pr-c-2-edit-name-{320x568,360x800,390x844}.png` | Khung 2: đã nhập "Trần Văn Minh", Lưu ngay dưới ô |
+| `pr-c-2-edit-name-empty-*.png` | Ô trống (nút Lưu tắt vì chưa khác giá trị đã lưu) |
+| `pr-c-3-password-*.png` | Khung 3: form ban đầu (tài khoản mật khẩu) |
+| `pr-c-3-password-errors-*.png` | Bấm Lưu khi chưa nhập: lỗi tại từng ô, mật khẩu mới 3 ký tự |
+| `pr-c-3-apple-*.png`, `pr-c-3-google-*.png` | Tài khoản Apple/Google: thẻ giải thích THAY form |
+| `pr-c-4a-signout-confirm-*.png` | Khung 4a |
+| `pr-c-4b-signout-recording-*.png` | Khung 4b (đang quay) |
+| `pr-c-4c-signout-unsynced-*.png` | Khung 4c (còn 3 tệp chưa đồng bộ) |
+| `pr-c-board-reference-2-4.png` | Khung 2, 3, 4a, 4b, 4c cắt từ board 07 |
+| `pr-c-compare-board-vs-app-390.png` | Hàng trên: board; hàng dưới: app 390x844, cùng cột = cùng khung (3 là nhánh mật khẩu; thẻ Apple/Google ở ảnh riêng) |
+
+## Checklist "giống design"
+
+| Hạng mục | 2 | 3 | 4a | 4b | 4c | Ghi chú lệch |
+| --- | --- | --- | --- | --- | --- | --- |
+| Bố cục và thứ tự khối | đạt | lệch có chủ đích | đạt | đạt | đạt | khung 3: thẻ Apple/Google thay form (D18, Q-21s) |
+| Thứ bậc chữ | đạt | đạt | đạt | đạt | đạt | |
+| Màu thẻ/nền | đạt | gần (thẻ dùng `brand.soft`, board xanh nhạt hơn) | đạt | đạt | đạt | |
+| Icon | - | đạt (mắt) | gần | gần | gần | icon hộp thoại trong ô tròn nền nhạt (Ionicons gần nghĩa, board là biểu tượng đặc) |
+| Khoảng cách | gần | gần | gần | gần | gần | hộp thoại lề 24dp, board ~12dp (Q-21r) |
+| Nút | đạt (Lưu dưới ô) | đạt | đạt (chính + viền đỏ) | đạt (một nút) | đạt (chính + phụ viền) | phụ 4c viền xanh đậm hơn board |
+| Header | đạt | đạt | - | - | - | tiêu đề lệch trái, mũi tên trái |
+| Thanh tab | ẩn (đạt) | ẩn (đạt) | hiện dưới lớp tối | như 4a | như 4a | board không vẽ thanh tab dưới lớp tối |
+| Trạng thái | đạt | đạt (lỗi tại ô, Apple/Google, tải, lỗi tải) | đạt | đạt | đạt | |
+| Chuỗi chữ | đạt (không có ô email) | lệch: "Tối thiểu 8 ký tự" (không "chữ và số", D29); thẻ nêu đúng Apple hoặc Google | đạt + dòng phụ về dữ liệu trên máy | đạt ("Hãy" thay "Vui lòng") | lệch: nêu số tệp thật và "Hãy đồng bộ xong rồi đăng xuất" | xem mục 6.3 của plan |
+

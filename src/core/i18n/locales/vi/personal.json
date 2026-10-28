@@ -1,10 +1,14 @@
 {
+  "placeholders": {
+    "currentPassword": "Nhập mật khẩu hiện tại",
+    "newPassword": "Nhập mật khẩu mới",
+    "confirmNewPassword": "Nhập lại mật khẩu mới"
+  },
   "fields": {
     "displayName": "Họ và tên",
-    "email": "Email",
     "currentPassword": "Mật khẩu hiện tại",
     "newPassword": "Mật khẩu mới",
-    "confirmNewPassword": "Nhập lại mật khẩu mới",
+    "confirmNewPassword": "Xác nhận mật khẩu mới",
     "shopName": "Tên cửa hàng"
   },
   "validation": {
@@ -58,33 +62,34 @@
   },
   "signOut": {
     "action": "Đăng xuất",
-    "dialogTitle": "Bạn muốn đăng xuất?",
-    "dialogMessage": "Bạn sẽ cần đăng nhập lại.",
+    "dialogTitle": "Xác nhận đăng xuất",
+    "dialogMessage": "Bạn có chắc muốn đăng xuất khỏi ứng dụng?",
     "dataNote": "Video và dữ liệu trên máy này vẫn được giữ lại.",
     "confirm": "Đăng xuất",
     "cancel": "Ở lại ứng dụng",
     "success": "Bạn đã đăng xuất thành công.",
     "recordingTitle": "Đang quay video",
-    "recordingMessage": "Hãy kết thúc phiên quay trước khi đăng xuất để không mất video đang ghi.",
-    "unsyncedTitle": "Còn video chưa lưu lên máy chủ",
+    "recordingMessage": "Bạn đang quay video đóng gói. Hãy dừng quay trước khi đăng xuất.",
+    "unsyncedTitle": "Còn bằng chứng chưa đồng bộ",
     "unsyncedMessage": "Còn {{count}} tệp bằng chứng trên máy chưa được máy chủ xác nhận. Hãy đồng bộ xong rồi đăng xuất.",
     "openSync": "Xem trung tâm đồng bộ"
   },
   "editProfile": {
     "save": "Lưu",
     "saved": "Đã lưu họ tên.",
-    "emailHint": "Email dùng để đăng nhập, chưa đổi được ở bản này.",
     "leaveTitle": "Bỏ thay đổi?",
     "leaveMessage": "Họ tên bạn vừa sửa chưa được lưu.",
     "leaveConfirm": "Bỏ thay đổi",
     "leaveCancel": "Tiếp tục sửa"
   },
   "changePassword": {
-    "submit": "Đổi mật khẩu",
+    "submit": "Lưu",
     "saved": "Đã đổi mật khẩu.",
     "signInAgain": "Đăng nhập lại",
-    "intro": "Đặt mật khẩu mới để giữ tài khoản của bạn an toàn.",
-    "requirementLength": "Từ {{min}} ký tự",
+    "socialTitle": "Tài khoản {{provider}}",
+    "socialMessage": "Bạn đang đăng nhập bằng {{provider}}. Mật khẩu do {{provider}} quản lý, hãy đổi trong cài đặt tài khoản {{provider}}.",
+    "provider": { "apple": "Apple", "google": "Google" },
+    "requirementLength": "Tối thiểu {{min}} ký tự",
     "requirementMet": "Đã đạt",
     "requirementUnmet": "Chưa đạt"
   },
@@ -126,7 +131,7 @@
     "switched": "Đã chuyển sang {{name}}.",
     "recordingTitle": "Đang quay video",
     "recordingMessage": "Hãy kết thúc phiên quay trước khi chuyển cửa hàng để không mất video đang ghi.",
-    "unsyncedTitle": "Còn video chưa lưu lên máy chủ",
+    "unsyncedTitle": "Còn bằng chứng chưa đồng bộ",
     "unsyncedMessage": "Cửa hàng hiện tại còn {{count}} tệp bằng chứng chưa được máy chủ xác nhận. Các tệp vẫn được giữ trên máy, không bị xóa.",
     "unsyncedContinue": "Vẫn chuyển cửa hàng",
     "openSync": "Xem trung tâm đồng bộ",
