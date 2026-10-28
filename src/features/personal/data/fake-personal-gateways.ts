@@ -95,6 +95,8 @@ export class FakeAccountGateway implements AccountGateway {
   private currentShopId!: string | null;
   private password: string = FAKE_ACCOUNT_PASSWORD;
   private readonly failure = new FailureQueue();
+  /** Tăng mỗi lần đặt lại: lần ghi của lời gọi bắt đầu trước đăng xuất (đang chờ) bị bỏ, không rò sang tài khoản sau. */
+  private generation = 0;
 
   constructor(
     private readonly options: FakePersonalOptions = {},
@@ -111,6 +113,7 @@ export class FakeAccountGateway implements AccountGateway {
    * khoản đăng nhập kế tiếp không thấy dữ liệu của tài khoản trước. Khi có Firebase thật, hồ sơ lấy theo `uid`.
    */
   private resetState(): void {
+    this.generation += 1;
     const options = this.options;
     this.password = FAKE_ACCOUNT_PASSWORD;
     if (options.shops) {
@@ -159,6 +162,7 @@ export class FakeAccountGateway implements AccountGateway {
 
   async updateShopName(shopId: string, name: string): Promise<ShopSummary> {
     this.updateShopNameCalls.push({ shopId, name });
+    const generation = this.generation;
     await delay(this.latencyMs);
     this.failure.consume();
     const index = this.shops.findIndex((shop) => shop.id === shopId);
@@ -168,30 +172,34 @@ export class FakeAccountGateway implements AccountGateway {
     if (!shop.canEdit) throw new AppError('SHOP_PERMISSION_DENIED');
     if (validateShopName(name) !== null) throw new AppError('SHOP_SAVE_FAILED');
     const updated: ShopSummary = { ...shop, name: normalizeShopName(name) };
-    this.shops[index] = updated;
+    if (generation === this.generation) this.shops[index] = updated;
     return { ...updated };
   }
 
   async switchShop(shopId: string): Promise<ShopSummary> {
     this.switchShopCalls.push(shopId);
+    const generation = this.generation;
     await delay(this.latencyMs);
     this.failure.consume();
     const shop = this.shops.find((candidate) => candidate.id === shopId);
     if (!shop || shop.status !== 'active') throw new AppError('SHOP_SWITCH_FAILED');
-    this.currentShopId = shop.id;
+    if (generation === this.generation) this.currentShopId = shop.id;
     return { ...shop };
   }
 
   async updateProfile(input: UpdateProfileInput): Promise<UserProfile> {
     this.updateCalls.push(input);
+    const generation = this.generation;
     await delay(this.latencyMs);
     this.failure.consume();
-    this.profile = { ...this.profile, displayName: normalizeDisplayName(input.displayName) };
-    return this.profile;
+    const updated = { ...this.profile, displayName: normalizeDisplayName(input.displayName) };
+    if (generation === this.generation) this.profile = updated;
+    return updated;
   }
 
   async changePassword(input: ChangePasswordInput): Promise<void> {
     this.changePasswordCalls += 1;
+    const generation = this.generation;
     await delay(this.latencyMs);
     this.failure.consume();
     // Tài khoản Apple/Google không có mật khẩu hiện tại để đối chiếu (UI vốn ẩn mục này, Q-20c).
@@ -203,7 +211,7 @@ export class FakeAccountGateway implements AccountGateway {
     ) {
       throw new AppError('AUTH_WEAK_PASSWORD');
     }
-    this.password = input.newPassword;
+    if (generation === this.generation) this.password = input.newPassword;
   }
 
   async signOut(): Promise<void> {
@@ -221,6 +229,8 @@ export class FakeSettingsGateway implements SettingsGateway {
   private readonly latencyMs: number;
   private preferences: NotificationPreferences;
   private readonly failure = new FailureQueue();
+  /** Tăng mỗi lần `reset()`: lần lưu đang chờ của tài khoản cũ không được ghi vào tài khoản sau. */
+  private generation = 0;
 
   constructor(private readonly options: FakePersonalOptions = {}) {
     this.latencyMs = options.latencyMs ?? 0;
@@ -233,6 +243,7 @@ export class FakeSettingsGateway implements SettingsGateway {
 
   /** Đặt lại về mặc định khi tài khoản đăng xuất (xem `FakeAccountGateway.resetState`). */
   reset(): void {
+    this.generation += 1;
     this.preferences = this.initialPreferences();
   }
 
@@ -250,10 +261,12 @@ export class FakeSettingsGateway implements SettingsGateway {
     next: NotificationPreferences,
   ): Promise<NotificationPreferences> {
     this.updateCalls.push(next);
+    const generation = this.generation;
     await delay(this.latencyMs);
     this.failure.consume();
-    this.preferences = { ...next };
-    return this.preferences;
+    const saved = { ...next };
+    if (generation === this.generation) this.preferences = saved;
+    return saved;
   }
 }
 

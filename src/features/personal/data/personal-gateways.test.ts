@@ -138,6 +138,38 @@ describe('cổng cá nhân giả: đăng xuất đặt lại dữ liệu tài kh
   });
 });
 
+describe('cổng cá nhân giả: đăng xuất giữa lúc đang lưu', () => {
+  it('lần lưu đang chờ của tài khoản cũ không ghi sang tài khoản sau (cài đặt, họ tên, tên shop, mật khẩu)', async () => {
+    const { account, settings } = createFakePersonalGateways({ latencyMs: 20 });
+    const before = await settings.getNotificationPreferences();
+    const shopId = (await account.listShops()).map((shop) => shop.id).join();
+    // Đăng xuất bắt đầu trước; các lần lưu bắt đầu giữa chừng nên kết thúc SAU lúc đặt lại.
+    const signingOut = account.signOut();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const pending = [
+      settings.updateNotificationPreferences({ ...before, syncCompleted: !before.syncCompleted }),
+      account.updateProfile({ displayName: 'Cũ' }),
+      account.updateShopName(shopId, 'Shop cũ'),
+      account.changePassword({
+        currentPassword: FAKE_ACCOUNT_PASSWORD,
+        newPassword: 'mat-khau-moi-1',
+      }),
+    ];
+    await signingOut;
+    await Promise.all(pending);
+    expect(await settings.getNotificationPreferences()).toEqual(before);
+    expect((await account.getProfile()).displayName).toBeNull();
+    expect((await account.getShopSummary())?.name).toBe('Cửa hàng minh họa');
+    // Mật khẩu đã về mặc định: mật khẩu cũ vẫn là mật khẩu hiện tại.
+    await expect(
+      account.changePassword({
+        currentPassword: FAKE_ACCOUNT_PASSWORD,
+        newPassword: 'mat-khau-khac-2',
+      }),
+    ).resolves.toBeUndefined();
+  });
+});
+
 describe('cổng cá nhân chưa kết nối', () => {
   it('mọi lời gọi trả AUTH_SERVICE_UNAVAILABLE, không bao giờ báo thành công', async () => {
     const { account, settings } = createUnavailablePersonalGateways();
