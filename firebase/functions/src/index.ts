@@ -63,8 +63,16 @@ export const verifyEvidence = onObjectFinalized(
     const { bucket, name } = event.data;
     await verifyEvidenceObject(
       getFirestore(),
-      { open: (path) => getStorage().bucket(bucket).file(path).createReadStream() },
+      {
+        // Ghim đúng generation đã finalize: nếu đối tượng bị thay giữa chừng thì lỗi, thử lại.
+        open: (path) =>
+          getStorage()
+            .bucket(bucket)
+            .file(path, event.data.generation ? { generation: event.data.generation } : undefined)
+            .createReadStream(),
+      },
       name,
+      event.data.generation,
     );
   },
 );
@@ -73,13 +81,14 @@ const storageSigner = (bucketName?: string): UploadUrlSigner => {
   const bucket = bucketName ? getStorage().bucket(bucketName) : getStorage().bucket();
   return {
     objectExists: async (path) => (await bucket.file(path).exists())[0],
-    signResumableStart: async (path, contentType, expiresAtMs) =>
+    signResumableStart: async (path, contentType, expiresAtMs, extensionHeaders) =>
       (
         await bucket.file(path).getSignedUrl({
           version: 'v4',
           action: 'resumable',
           expires: expiresAtMs,
           contentType,
+          extensionHeaders: { ...extensionHeaders },
         })
       )[0],
   };

@@ -191,6 +191,45 @@ describe('verifyEvidenceObject', () => {
     expect((await verifyEvidenceObject(db, readerOf(bytes), path)).outcome).toBe('verified');
   });
 
+  it('finalize lần hai với generation khác sau khi đã verified: cách ly hash_mismatch + kiểm toán, giữ băm cũ', async () => {
+    const { shopId, evidenceId, path } = await declare(bytes);
+    expect((await verifyEvidenceObject(db, readerOf(bytes), path, '1001')).outcome).toBe(
+      'verified',
+    );
+    const replaced = Buffer.from('noi-dung-bi-ghi-de');
+    const result = await verifyEvidenceObject(db, readerOf(replaced), path, '1002');
+    expect(result.outcome).toBe('original_overwritten');
+    const doc = await evidenceOf(shopId, evidenceId);
+    expect(doc?.server).toMatchObject({
+      state: 'hash_mismatch',
+      sha256Server: sha(bytes),
+      generation: '1002',
+      overwrittenFromGeneration: '1001',
+    });
+    expect(await auditOf(shopId)).toEqual([
+      expect.objectContaining({ type: 'evidence.verified' }),
+      expect.objectContaining({
+        type: 'evidence.original_overwritten',
+        evidenceId,
+        previousState: 'verified',
+      }),
+    ]);
+    // Chạy lại đúng sự kiện đó: không nhân đôi kiểm toán.
+    expect((await verifyEvidenceObject(db, readerOf(replaced), path, '1002')).outcome).toBe(
+      'already_final',
+    );
+    expect(await auditOf(shopId)).toHaveLength(2);
+  });
+
+  it('finalize lặp với CÙNG generation sau verified vẫn là already_final (không báo ghi đè)', async () => {
+    const { shopId, path } = await declare(bytes);
+    await verifyEvidenceObject(db, readerOf(bytes), path, '2001');
+    expect((await verifyEvidenceObject(db, readerOf(bytes), path, '2001')).outcome).toBe(
+      'already_final',
+    );
+    expect(await auditOf(shopId)).toHaveLength(1);
+  });
+
   it('shop khác cùng evidenceId không bị ảnh hưởng (cô lập theo đường dẫn)', async () => {
     const a = await declare(bytes);
     const b = await declare(bytes);

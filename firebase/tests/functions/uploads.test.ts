@@ -2,6 +2,7 @@ import { deleteApp, initializeApp, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
 import {
+  CREATE_ONLY_HEADERS,
   createUploadSessionForUser,
   parseUploadSessionInput,
   UPLOAD_URL_TTL_MS,
@@ -24,11 +25,16 @@ afterAll(async () => {
 let counter = 0;
 
 function fakeSigner(existing = false) {
-  const signed: { path: string; contentType: string; expiresAtMs: number }[] = [];
+  const signed: {
+    path: string;
+    contentType: string;
+    expiresAtMs: number;
+    extensionHeaders: Readonly<Record<string, string>>;
+  }[] = [];
   const signer: UploadUrlSigner = {
     objectExists: async () => existing,
-    signResumableStart: async (path, contentType, expiresAtMs) => {
-      signed.push({ path, contentType, expiresAtMs });
+    signResumableStart: async (path, contentType, expiresAtMs, extensionHeaders) => {
+      signed.push({ path, contentType, expiresAtMs, extensionHeaders });
       return `https://signed.example/${path}?sig=x`;
     },
   };
@@ -93,11 +99,20 @@ describe('createUploadSessionForUser', () => {
       storagePath: path,
       url: `https://signed.example/${path}?sig=x`,
       method: 'POST',
-      headers: { 'x-goog-resumable': 'start', 'Content-Type': 'video/mp4' },
+      headers: {
+        'x-goog-resumable': 'start',
+        'Content-Type': 'video/mp4',
+        'x-goog-if-generation-match': '0',
+      },
       expiresAtMs: 1_000 + UPLOAD_URL_TTL_MS,
     });
     expect(signed).toEqual([
-      { path, contentType: 'video/mp4', expiresAtMs: 1_000 + UPLOAD_URL_TTL_MS },
+      {
+        path,
+        contentType: 'video/mp4',
+        expiresAtMs: 1_000 + UPLOAD_URL_TTL_MS,
+        extensionHeaders: { 'x-goog-if-generation-match': '0' },
+      },
     ]);
     const events = await audit(shopId);
     expect(events).toEqual([
@@ -108,6 +123,21 @@ describe('createUploadSessionForUser', () => {
       }),
     ]);
     expect(JSON.stringify(events)).not.toContain('signed.example');
+  });
+
+  it('hai lần xin URL liên tiếp trước khi có đối tượng: cả hai đều bị ràng buộc tạo-một-lần trong chữ ký và header trả về', async () => {
+    const { shopId, uid, evidenceId } = await seed({});
+    const { signer, signed } = fakeSigner();
+    const results = [
+      await createUploadSessionForUser(db, signer, uid, { shopId, evidenceId }),
+      await createUploadSessionForUser(db, signer, uid, { shopId, evidenceId }),
+    ];
+    expect(signed).toHaveLength(2);
+    for (const call of signed) expect(call.extensionHeaders).toEqual(CREATE_ONLY_HEADERS);
+    for (const r of results) {
+      expect(r.status).toBe('ready');
+      if (r.status === 'ready') expect(r.headers).toMatchObject(CREATE_ONLY_HEADERS);
+    }
   });
 
   it.each([['owner'], ['manager'], ['packer']])('vai trò %s được tải', async (role) => {

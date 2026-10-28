@@ -34,6 +34,11 @@ export interface UploadSessionApi {
 /**
  * Gửi tệp gốc theo luồng qua phiên tải có thể tiếp tục (native, không nạp cả video vào bộ nhớ).
  * Chỉ trả về khi máy chủ đã nhận ĐỦ tệp.
+ *
+ * Hiện thực PHẢI mở phiên bằng `session.method` + `session.url` và gửi NGUYÊN `session.headers` (kể
+ * cả `x-goog-if-generation-match: 0` nằm trong chữ ký URL: thiếu/khác thì Storage từ chối, và bản
+ * gốc đã có không bị ghi đè). Phản hồi 412 (đối tượng đã tồn tại) KHÔNG phải lỗi cần thử lại mù:
+ * ném `UploadPortError('retryable', ...)` để vòng sau đối soát trạng thái máy chủ.
  */
 export interface BytesUploader {
   send(

@@ -8,8 +8,18 @@ export interface UploadUrlSigner {
     storagePath: string,
     contentType: string,
     expiresAtMs: number,
+    /** Header phải nằm trong chữ ký VÀ được client gửi nguyên (Storage từ chối nếu thiếu/khác). */
+    extensionHeaders: Readonly<Record<string, string>>,
   ): Promise<string>;
 }
+
+/**
+ * Chỉ tạo đối tượng khi CHƯA có (generation 0): hai phiên tải song song hoặc URL cũ dùng lại sau khi
+ * bản gốc đã xuất hiện đều bị Storage từ chối (412), nên không ghi đè được bản đã xác minh (bất biến 4).
+ */
+export const CREATE_ONLY_HEADERS: Readonly<Record<string, string>> = {
+  'x-goog-if-generation-match': '0',
+};
 
 export interface UploadSessionInput {
   readonly shopId: string;
@@ -73,6 +83,9 @@ export function parseUploadSessionInput(data: unknown): UploadSessionInput {
  * - Đường dẫn do MÁY CHỦ dựng từ shopId + evidenceId, client không chọn được; Content-Type lấy từ
  *   khai báo và nằm trong danh sách cho phép.
  * - Bản gốc tạo đúng một lần (bất biến 4): đã có đối tượng hoặc trạng thái máy chủ thì KHÔNG cấp URL.
+ *   Kiểm tra này chỉ là lớp đầu; lớp chắc là header `x-goog-if-generation-match: 0` trong chữ ký URL
+ *   (URL còn hạn 15 phút và các lần xin song song không vượt được kiểm tra lúc xin). Lớp thứ ba nằm
+ *   ở `verifyEvidenceObject` (so generation khi finalize).
  * - Mỗi lần cấp có một sự kiện kiểm toán; URL không được ghi vào kiểm toán hay log.
  */
 export async function createUploadSessionForUser(
@@ -105,7 +118,12 @@ export async function createUploadSessionForUser(
     throw new UploadError('failed-precondition', 'Loại tệp không được nhận.');
   }
   const expiresAtMs = nowMs + UPLOAD_URL_TTL_MS;
-  const url = await signer.signResumableStart(storagePath, contentType, expiresAtMs);
+  const url = await signer.signResumableStart(
+    storagePath,
+    contentType,
+    expiresAtMs,
+    CREATE_ONLY_HEADERS,
+  );
   await db.collection(`shops/${shopId}/auditEvents`).add({
     type: 'evidence.upload_session_created',
     actorUid: uid,
@@ -117,7 +135,11 @@ export async function createUploadSessionForUser(
     storagePath,
     url,
     method: 'POST',
-    headers: { 'x-goog-resumable': 'start', 'Content-Type': contentType },
+    headers: {
+      'x-goog-resumable': 'start',
+      'Content-Type': contentType,
+      ...CREATE_ONLY_HEADERS,
+    },
     expiresAtMs,
   };
 }
