@@ -5,7 +5,7 @@ import { View } from 'react-native';
 import { getSupportEmail } from '@/core/config/support-contact';
 import { ROUTES } from '@/core/navigation';
 import { useOrderStore } from '@/features/orders';
-import { useAppNavigation } from '@/platform';
+import { useAppNavigation, useScreenFocused } from '@/platform';
 import {
   Button,
   Card,
@@ -28,6 +28,7 @@ import {
   type DeleteConditionStatus,
 } from '../domain/delete-account-conditions';
 import { usePersonalGateways } from './PersonalGatewaysProvider';
+import { readDeviceFacts } from './read-device-facts';
 import { useSession } from './SessionProvider';
 
 type Checked = { readonly key: string; readonly facts: DeleteConditionFacts };
@@ -46,28 +47,30 @@ export function DeleteAccountScreen() {
   const store = useOrderStore();
   const { account } = usePersonalGateways();
   const session = useSession();
+  const focused = useScreenFocused();
   const [agreed, setAgreed] = useState(false);
   const [checked, setChecked] = useState<Checked | null>(null);
 
   // Đọc tình trạng thật theo khóa phiên: đổi tài khoản/cửa hàng thì bỏ kết quả cũ (không rò sang phiên mới).
+  // Đọc lại mỗi khi màn lấy lại focus (ví dụ quay về từ trung tâm đồng bộ) để số tệp không bị cũ.
   useEffect(() => {
+    if (!focused) return;
     let cancelled = false;
     const key = session.key;
     void (async () => {
-      const [recording, unsynced, ownedShops] = await Promise.all([
-        store.hasRecordingOnDevice().catch(() => null),
-        store.countUnsyncedOnDevice().catch(() => null),
+      const [device, ownedShops] = await Promise.all([
+        readDeviceFacts(store),
         account
           .listShops()
           .then((shops) => shops.filter((shop) => shop.role === 'owner').length)
           .catch(() => null),
       ]);
-      if (!cancelled) setChecked({ key, facts: { recording, unsynced, ownedShops } });
+      if (!cancelled) setChecked({ key, facts: { ...device, ownedShops } });
     })();
     return () => {
       cancelled = true;
     };
-  }, [store, account, session.key]);
+  }, [store, account, session.key, focused]);
 
   const conditions =
     checked && checked.key === session.key ? evaluateDeleteConditions(checked.facts) : null;
