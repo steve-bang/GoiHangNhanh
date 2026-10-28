@@ -83,6 +83,14 @@ export const ICON_GLYPHS = {
   'flash-off': 'flash-off',
   alert: 'alert-circle',
   'scan-solid': 'scan',
+  // thiết kế lại tab Cá nhân (board 07): trạng thái trống/lỗi, hộp thoại, ô số liệu
+  disconnect: 'unlink-outline',
+  'warning-solid': 'warning',
+  receipt: 'receipt-outline',
+  play: 'play',
+  cloud: 'cloud-outline',
+  document: 'document-text-outline',
+  person: 'person-outline',
 } as const satisfies Record<string, GlyphName>;
 
 export type IconName = keyof typeof ICON_GLYPHS;
