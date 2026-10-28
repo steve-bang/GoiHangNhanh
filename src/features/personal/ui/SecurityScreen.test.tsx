@@ -15,7 +15,7 @@ jest.mock(
 
 beforeEach(() => resetMockNavigation());
 
-const LOCKED = ['twoFactor', 'devices', 'dataAccess', 'deleteAccount'] as const;
+const LOCKED = ['twoFactor', 'devices', 'dataAccess'] as const;
 
 async function setup(gateways = createFakePersonalGateways()) {
   await renderWithProviders(<SecurityScreen />, { personalGateways: gateways });
@@ -32,7 +32,7 @@ describe('SecurityScreen (UI-I05, khung 14)', () => {
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.changePassword);
   });
 
-  it('bốn hàng chưa làm: khóa "Sắp có", đọc là không dùng được kèm gợi ý, bấm không điều hướng', async () => {
+  it('ba hàng chưa làm: khóa "Sắp có", đọc là không dùng được kèm gợi ý, bấm không điều hướng', async () => {
     await setup();
     await screen.findByTestId('security-password');
     expect(screen.getByText('Xác nhận 2 lớp')).toBeOnTheScreen();
@@ -49,6 +49,17 @@ describe('SecurityScreen (UI-I05, khung 14)', () => {
     }
     expect(mockNavigation.push).not.toHaveBeenCalled();
     expect(mockNavigation.replace).not.toHaveBeenCalled();
+  });
+
+  it('"Xóa tài khoản" không còn khóa hoàn toàn: mở màn thông tin (nút xóa trong màn đó vẫn khóa), nhóm riêng, chữ đỏ', async () => {
+    await setup();
+    await screen.findByTestId('security-password');
+    const row = screen.getByTestId('security-deleteAccount');
+    expect(row.props.accessibilityState?.disabled).toBeFalsy();
+    expect(row).not.toHaveTextContent(/Sắp có/);
+    expect(screen.getByTestId('security-group-danger')).toContainElement(row);
+    await fireEvent.press(row);
+    expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.deleteAccount);
   });
 
   it('không nói như đã có 2FA/mã hóa/bảo vệ, không "Chưa bật" cho tính năng chưa tồn tại', async () => {

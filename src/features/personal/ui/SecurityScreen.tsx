@@ -20,10 +20,11 @@ import { useRegion, type Region } from './use-region';
 /**
  * Quyền riêng tư và bảo mật (UI-I05; board 07 khung 14). Chỉ "Đổi mật khẩu" làm được thật (route con
  * `changePassword`, PER-04) và chỉ với tài khoản đăng nhập bằng mật khẩu: tài khoản Apple/Google thấy hàng
- * ghi chú, không điều hướng (như PR-C, D-13, Q-20c). Bốn hàng còn lại bị khóa "Sắp có", KHÔNG điều hướng:
+ * ghi chú, không điều hướng (như PR-C, D-13, Q-20c). Ba hàng bị khóa "Sắp có", KHÔNG điều hướng:
  * Xác thực 2 lớp (chưa có MFA; nhãn "Xác nhận 2 lớp" vì test cụm cấm chặn "xác thực"; bỏ "Chưa bật" của board), Thiết bị đăng nhập (PER-15
- * cần theo dõi phiên), Dữ liệu và quyền truy cập (chưa có màn đích), Xóa tài khoản (PER-22 chờ chính sách,
- * Q-20e/Q-21h; không dựng luồng xóa). Không nói mã hóa, 2FA hay bảo vệ đặc biệt nào chưa có.
+ * cần theo dõi phiên), Dữ liệu và quyền truy cập (chưa có màn đích). "Xóa tài khoản" (chữ đỏ, nhóm riêng) mở màn thông tin
+ * `deleteAccount` (PER-22, khung 20): màn đó có nút xóa KHÓA, không luồng xóa (Q-20e, Q-21h). Không nói mã hóa, 2FA
+ * hay bảo vệ đặc biệt nào chưa có.
  */
 export function SecurityScreen() {
   const { t } = useTranslation();
@@ -47,7 +48,14 @@ export function SecurityScreen() {
         <LockedRow id="dataAccess" icon="eye" />
       </ListGroup>
       <ListGroup testID="security-group-danger">
-        <LockedRow id="deleteAccount" icon="alert-triangle" destructive />
+        <ListItem
+          leadingIcon="alert-triangle"
+          title={t('personal:security.deleteAccount')}
+          titleWeight="regular"
+          destructive
+          onPress={() => navigation.push(ROUTES.deleteAccount)}
+          testID="security-deleteAccount"
+        />
       </ListGroup>
     </Screen>
   );
@@ -116,7 +124,7 @@ function LockedRow({
   icon,
   destructive = false,
 }: {
-  id: 'twoFactor' | 'devices' | 'dataAccess' | 'deleteAccount';
+  id: 'twoFactor' | 'devices' | 'dataAccess';
   icon: IconName;
   destructive?: boolean;
 }) {
