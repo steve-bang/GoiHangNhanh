@@ -9,6 +9,8 @@
   },
   "scripts": {
     "start": "expo start --dev-client",
+    "dev:ios": "bash scripts/dev-emulator.sh ios",
+    "dev:android": "bash scripts/dev-emulator.sh android",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
