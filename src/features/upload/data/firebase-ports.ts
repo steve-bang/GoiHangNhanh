@@ -71,8 +71,12 @@ export function createFirebaseUploadPorts(docs: RemoteDocuments, appVersion?: st
   const serverStates: ServerStateReader = {
     async read(shopId: ShopId, ids: readonly EvidenceId[]) {
       const result = new Map<EvidenceId, ServerFileState>();
+      if (ids.length === 0) return result;
+      // Một lượt đọc theo lô (không đọc tuần tự từng tài liệu mỗi 60 giây).
+      const path = (id: EvidenceId) => `shops/${shopId}/evidence/${id}`;
+      const documents = await docs.getManyFields(ids.map(path));
       for (const id of ids) {
-        const fields = await docs.getFields(`shops/${shopId}/evidence/${id}`);
+        const fields = documents.get(path(id));
         const state = (fields?.server as { state?: unknown } | undefined)?.state;
         if (typeof state === 'string' && SERVER_STATES.includes(state)) {
           result.set(id, state as ServerFileState);

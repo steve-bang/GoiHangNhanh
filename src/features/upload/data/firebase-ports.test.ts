@@ -28,6 +28,7 @@ function fakeDocs(overrides: Partial<RemoteDocuments> = {}) {
     createMissing: async (writes) => void created.push(...writes),
     updateFields: async () => undefined,
     getFields: async () => null,
+    getManyFields: async () => new Map(),
     callFunction: async () => ({ status: 'already_received' }) as never,
     ...overrides,
   };
@@ -122,14 +123,40 @@ describe('createFirebaseUploadPorts', () => {
       'shops/s1/evidence/d': {},
       'shops/s1/evidence/e': null,
     };
-    const t = fakeDocs({ getFields: async (path) => fields[path] ?? null });
+    const batches: (readonly string[])[] = [];
+    const t = fakeDocs({
+      getManyFields: async (paths) => {
+        batches.push(paths);
+        return new Map(
+          paths.flatMap((path) => {
+            const found = fields[path];
+            return found ? [[path, found] as const] : [];
+          }),
+        );
+      },
+    });
     const states = await createFirebaseUploadPorts(t.docs).serverStates.read(
       's1' as ShopId,
       ['a', 'b', 'c', 'd', 'e'] as EvidenceId[],
     );
+    expect(batches).toHaveLength(1); // một lượt đọc theo lô, không đọc tuần tự từng tài liệu
     expect([...states.entries()]).toEqual([
       ['a', 'verified'],
       ['b', 'hash_mismatch'],
     ]);
+  });
+
+  it('không có tệp nào cần hỏi thì không đọc gì', async () => {
+    let calls = 0;
+    const t = fakeDocs({
+      getManyFields: async () => {
+        calls += 1;
+        return new Map();
+      },
+    });
+    expect(
+      (await createFirebaseUploadPorts(t.docs).serverStates.read('s1' as ShopId, [])).size,
+    ).toBe(0);
+    expect(calls).toBe(0);
   });
 });

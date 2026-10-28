@@ -34,6 +34,36 @@ export interface UploadQueue {
 }
 
 const S = FILE_STATES;
+
+/** Mã lỗi phát sinh TRƯỚC khi gửi gì lên máy chủ (kiểm tra cục bộ): máy chủ chưa thể biết tệp này. */
+const LOCAL_ONLY_ERROR_CODES: readonly string[] = [
+  'LOCAL_HASH_CHANGED',
+  'FILE_MISSING',
+  'FILE_UNREADABLE',
+];
+
+/**
+ * Máy chủ có thể đã biết tệp này không? Chỉ khi đó mới đáng hỏi (mỗi lần hỏi là lượt đọc Firestore):
+ * đang tải/đã tải (`uploading`, `uploaded`), tải lỗi (có thể máy chủ nhận mà app mất phản hồi, QA-05),
+ * cần xử lý trừ khi lỗi là kiểm tra cục bộ, hoặc đang chờ lại sau một lần thử (đã có lần thử hoặc mã lỗi).
+ * Tệp `queued` chưa từng thử thì chưa khai báo, máy chủ chắc chắn chưa có.
+ */
+export function mayBeKnownToServer(
+  file: Pick<EvidenceFile, 'state' | 'attemptCount' | 'lastErrorCode'>,
+): boolean {
+  switch (file.state) {
+    case S.UPLOADING:
+    case S.UPLOADED:
+    case S.UPLOAD_FAILED:
+      return true;
+    case S.NEEDS_ATTENTION:
+      return !file.lastErrorCode || !LOCAL_ONLY_ERROR_CODES.includes(file.lastErrorCode);
+    case S.QUEUED:
+      return file.attemptCount > 0 || file.lastErrorCode !== null;
+    default:
+      return false;
+  }
+}
 const device = (type: FileEvent['type']): FileEvent => ({ type, origin: 'device' });
 const server = (type: FileEvent['type']): FileEvent => ({ type, origin: 'server' });
 
@@ -71,13 +101,15 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
   }
 
   async function reconcile(shopId: ShopId, summary: Counters): Promise<void> {
-    const pending = await files.listByStates(shopId, [
-      S.UPLOADING,
-      S.QUEUED,
-      S.UPLOAD_FAILED,
-      S.NEEDS_ATTENTION,
-      S.UPLOADED,
-    ]);
+    const pending = (
+      await files.listByStates(shopId, [
+        S.UPLOADING,
+        S.QUEUED,
+        S.UPLOAD_FAILED,
+        S.NEEDS_ATTENTION,
+        S.UPLOADED,
+      ])
+    ).filter(mayBeKnownToServer);
     if (pending.length === 0) return;
     let known: ReadonlyMap<EvidenceId, ServerFileState>;
     try {

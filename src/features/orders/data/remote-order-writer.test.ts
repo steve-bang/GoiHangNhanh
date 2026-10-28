@@ -14,6 +14,7 @@ function fakeDocs(uid: string | null = 'uid-1') {
     createMissing: async (writes) => void created.push([...writes]),
     updateFields: async (path, fields) => void updates.push({ path, fields }),
     getFields: async () => null,
+    getManyFields: async () => new Map(),
     callFunction: async () => {
       throw new Error('unused');
     },

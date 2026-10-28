@@ -26,6 +26,14 @@ export interface RemoteDocuments {
   updateFields(path: string, fields: Readonly<Record<string, unknown>>): Promise<void>;
   /** Đọc các trường của một tài liệu; `null` nếu chưa có. */
   getFields(path: string): Promise<Readonly<Record<string, unknown>> | null>;
+  /**
+   * Đọc các trường của NHIỀU tài liệu theo lô (ít lượt đọc hơn gọi `getFields` từng cái). Chỉ trả tài
+   * liệu CÓ; đường dẫn không có thì không nằm trong kết quả. Hiện thực gom theo bộ sưu tập cha và theo
+   * giới hạn Firestore cho `in` (tối đa 10 mỗi truy vấn).
+   */
+  getManyFields(
+    paths: readonly string[],
+  ): Promise<ReadonlyMap<string, Readonly<Record<string, unknown>>>>;
   /** Gọi một Cloud Function dạng callable (ví dụ `createUploadSession`). Lỗi giữ nguyên `code` của SDK. */
   callFunction<T>(name: string, data: unknown): Promise<T>;
 }
