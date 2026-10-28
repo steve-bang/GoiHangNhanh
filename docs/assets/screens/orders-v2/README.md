@@ -1,4 +1,4 @@
-# Ảnh render tab Đơn hàng (giao diện mới, PR1 + PR2 + PR3 + PR4)
+# Ảnh render tab Đơn hàng (giao diện mới, PR1 + PR2 + PR3 + PR4; PR5 chưa có ảnh)
 
 **Lưu ý trung thực:** đây là ảnh render **bản web (react-native-web) trong Chromium**, **không phải ảnh chụp trên iOS/Android thật**. Font (Inter của trình duyệt, không phải SF/Roboto), vòng focus (khung đen quanh ô nhập là vòng focus của trình duyệt), bóng, vùng an toàn, thanh điều hướng hệ thống, bàn phím, chữ lớn (Dynamic Type/font scale) trên thiết bị thật có thể khác. **Chưa chụp ở chữ lớn.** Chưa kiểm chứng trên thiết bị.
 
@@ -23,7 +23,7 @@ Làm trong bản sao ngoài repo (không commit): nhánh `claude/orders-tab-ui-p
 | | `pr4-UI-B04-form-prefilled-code`, `-source-picker`, `-confirm-save-error`, `-duplicate-sheet-tracking`, `-leave-dialog` | 360, 390 |
 | Tham chiếu | `mockup-*.png`: các khung cắt từ mockup `ab7b1e7b-image.png` (01, 02-03-04, 05-06, 07, 09-10, 13, 14-16), phóng 2x | |
 
-**Không chụp được / chưa chụp:** camera quét thật (web không có), trạng thái "Đang ghi/Đang tải lên/Đã đồng bộ/Lỗi" ở UI-E03 (chưa có dữ liệu thật; chỉ có ở test), nhiều trạng thái ngoại tuyến (banner `useIsOffline` là khung tạm), chữ lớn, thiết bị thật, nửa dưới của chi tiết đơn (màn cuộn; ảnh chỉ cắt khung nhìn, phần Bằng chứng/Lịch sử nằm dưới).
+**Không chụp được / chưa chụp:** màn *Sửa thông tin đơn* (PR5, ORD-08) và nút *Sửa thông tin đơn* / câu "Đơn đã bắt đầu quay nên chưa sửa được thông tin." ở chi tiết đơn (môi trường gộp không có trình duyệt; các ảnh `pr2-UI-E02-*` được chụp trước PR5 nên không có nút Sửa), camera quét thật (web không có), trạng thái "Đang ghi/Đang tải lên/Đã đồng bộ/Lỗi" ở UI-E03 (chưa có dữ liệu thật; chỉ có ở test), nhiều trạng thái ngoại tuyến (banner `useIsOffline` là khung tạm), chữ lớn, thiết bị thật, nửa dưới của chi tiết đơn (màn cuộn; ảnh chỉ cắt khung nhìn, phần Bằng chứng/Lịch sử nằm dưới).
 
 ## So với mockup: giống / lệch
 
@@ -49,6 +49,6 @@ Làm trong bản sao ngoài repo (không commit): nhánh `claude/orders-tab-ui-p
 4. **Kết quả tìm và hộp chọn đơn trùng (360):** dòng sản phẩm một dòng nên "SL: n" và "và N sản phẩm khác" bị cắt thành "…" khi tên + variant dài (mất số lượng); mã vận đơn cũng cắt ("Mã vận đơn: G…").
 5. **Hộp "Không tìm thấy đơn"/"Đơn này đã có":** hai nút *Quét hoặc nhập lại* / *Quay lại chỉnh sửa* và *Đóng* làm cùng việc (đóng hộp): thừa một nút.
 6. **UI-B03 mở từ màn quét nhưng thanh tab sáng "Trang chủ"** (route nằm trong nhóm tab Trang chủ).
-7. **Chi tiết đơn (ảnh ghép PR2 + PR1/3/4):** tiêu đề khối bằng chứng là "Bằng chứng đóng gói" dù PR2 đổi thành "Bằng chứng": do gộp tạm `screens.json` ưu tiên khóa của nhánh PR4 (kết quả gộp thật sự khi merge PR2 vào chuỗi PR cần kiểm lại).
+7. **Chi tiết đơn (ảnh ghép PR2 + PR1/3/4):** tiêu đề khối bằng chứng là "Bằng chứng đóng gói" dù PR2 đổi thành "Bằng chứng": do gộp tạm `screens.json` ưu tiên khóa của nhánh PR4 (trong nhánh gộp `claude/orders-tab-ui`, PR2 và PR4 đã gộp thật: ảnh chưa chụp lại, tiêu đề hiện hành lấy theo `screens.json` đã gộp).
 8. Vòng focus đen quanh ô nhập (ảnh có ô đang focus) là của trình duyệt.
 9. Chữ trên màn tạo đơn dùng nhóm `form*` nhỏ (13-14) nên ở 320 vẫn vừa nhưng chưa kiểm với chữ lớn hệ thống.
