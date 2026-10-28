@@ -1,12 +1,17 @@
+import type * as DeviceCondition from './device-condition';
 import { readDeviceCondition, UNKNOWN_DEVICE_CONDITION } from './device-condition';
 
 let mockLevel: () => Promise<number> = async () => 0.5;
 let mockState: () => Promise<number> = async () => 1;
-jest.mock('expo-battery', () => ({
-  BatteryState: { UNKNOWN: 0, UNPLUGGED: 1, CHARGING: 2, FULL: 3 },
-  getBatteryLevelAsync: () => mockLevel(),
-  getBatteryStateAsync: () => mockState(),
-}));
+let mockLoadError: Error | null = null;
+jest.mock('expo-battery', () => {
+  if (mockLoadError) throw mockLoadError;
+  return {
+    BatteryState: { UNKNOWN: 0, UNPLUGGED: 1, CHARGING: 2, FULL: 3 },
+    getBatteryLevelAsync: () => mockLevel(),
+    getBatteryStateAsync: () => mockState(),
+  };
+});
 
 describe('readDeviceCondition', () => {
   it('đọc mức pin và trạng thái sạc; nhiệt độ chưa có nguồn nên luôn null', async () => {
@@ -38,5 +43,18 @@ describe('readDeviceCondition', () => {
       throw new Error('native');
     };
     expect(await readDeviceCondition()).toEqual(UNKNOWN_DEVICE_CONDITION);
+  });
+
+  it('mô-đun native thiếu (nạp ném lỗi): trả "không biết", không ném; import tệp không nạp mô-đun', async () => {
+    jest.resetModules();
+    mockLoadError = new Error("Cannot find native module 'ExpoBattery'");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fresh = require('./device-condition') as typeof DeviceCondition;
+    await expect(fresh.readDeviceCondition()).resolves.toEqual({
+      batteryLevel: null,
+      charging: null,
+      thermal: null,
+    });
+    mockLoadError = null;
   });
 });
