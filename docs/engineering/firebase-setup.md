@@ -112,6 +112,7 @@ npx firebase deploy --config firebase/firebase.json --project ghn-test-67b39 \
 ```
 
 - **Phải có `--project`:** `.firebaserc` nằm trong `firebase/` nên bí danh `dev` không tự nhận ra từ gốc repo.
+- **Trước khi deploy `storage`/bật tải lên bản gốc: bật Object Versioning (hoặc retention policy) cho bucket bằng chứng** (`gcloud storage buckets update gs://<bucket> --versioning`; cân nhắc thêm quy tắc vòng đời để giới hạn chi phí các phiên bản cũ). Header tạo-một-lần (`x-goog-if-generation-match: 0`) là lớp chắn chính chống ghi đè bản gốc; `verifyEvidence` chỉ PHÁT HIỆN sau sự việc và không phục hồi được. Versioning giữ lại bản bị ghi đè (Q-23i, bất biến 4).
 - **Không deploy `storage`** lúc này: Storage chưa bật, và bản gốc video sẽ tải lên qua Function ở giai đoạn sau (ADR-006).
 - `predeploy` tự chạy `npm run build` trong `firebase/functions`.
 - Lần đầu CLI có thể hỏi bật các API (Cloud Functions, Cloud Build, Artifact Registry, Cloud Run, Eventarc): trả lời `y`; nếu dừng giữa chừng, đợi vài phút rồi chạy lại. Nếu hỏi chính sách xóa ảnh build, đặt một số ngày ngắn để tránh phí lưu trữ.

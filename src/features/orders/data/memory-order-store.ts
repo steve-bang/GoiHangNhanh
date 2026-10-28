@@ -11,6 +11,8 @@ import {
   matchesListQuery,
   type OrderListItem,
 } from '../domain/order-list';
+import { stampCreator, type CreatorUidProvider } from '../domain/creator';
+import { canChangeSessionStatus } from '../domain/session-status';
 import {
   findActiveSession,
   isSessionActive,
@@ -24,11 +26,17 @@ const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
  * Kho trong bộ nhớ (Jest, bản web chụp ảnh giao diện, và khi không mở được SQLite). Mất khi app
  * đóng: KHÔNG dùng để giữ dữ liệu thật. Cùng hợp đồng với kho SQLite (order-store.contract.ts).
  */
-export function createMemoryOrderStore(): OrderStore {
+export function createMemoryOrderStore(
+  options: { creatorUid?: CreatorUidProvider } = {},
+): OrderStore {
+  const creatorUid = (): string | null => options.creatorUid?.() ?? null;
   const orders = new Map<OrderId, Order>();
   const lines = new Map<OrderLineId, OrderLine>();
   const packages = new Map<string, OrderPackage>();
   const sessions = new Map<SessionId, PackingSession>();
+  const publishedOrders = new Map<OrderId, number>();
+  const publishedSessions = new Map<SessionId, string>();
+  const publishedPackages = new Map<string, number>();
   /** shopId -> (khóa chuẩn hóa -> mục). */
   const searches = new Map<string, Map<string, { text: string; lastUsedAtDevice: number }>>();
 
@@ -90,9 +98,10 @@ export function createMemoryOrderStore(): OrderStore {
     async saveNewOrder(details) {
       if (orders.has(details.order.id)) throw new AppError('ORDER_SAVE_FAILED');
       const incoming = copy(details);
-      orders.set(incoming.order.id, incoming.order);
+      const uid = creatorUid();
+      orders.set(incoming.order.id, stampCreator(incoming.order, uid));
       for (const line of incoming.lines) lines.set(line.id, line);
-      for (const pkg of incoming.packages) packages.set(pkg.id, pkg);
+      for (const pkg of incoming.packages) packages.set(pkg.id, stampCreator(pkg, uid));
     },
     async getOrder(shopId, id) {
       const order = orderOf(shopId, id);
@@ -157,7 +166,7 @@ export function createMemoryOrderStore(): OrderStore {
       ) {
         throw new AppError('ORDER_SAVE_FAILED');
       }
-      packages.set(pkg.id, copy(pkg));
+      packages.set(pkg.id, stampCreator(copy(pkg), creatorUid()));
     },
     async saveSession(session) {
       const pkg = packages.get(session.packageId);
@@ -168,11 +177,19 @@ export function createMemoryOrderStore(): OrderStore {
         throw new AppError('PACKAGE_SESSION_ACTIVE');
       }
       if (sessions.has(session.id)) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
-      sessions.set(session.id, copy(session));
+      sessions.set(session.id, stampCreator(copy(session), creatorUid()));
     },
     async getSession(shopId, id) {
       const session = sessions.get(id);
       return session && session.shopId === shopId ? copy(session) : null;
+    },
+    async updateSessionStatus(shopId, id, status) {
+      const session = sessions.get(id);
+      if (!session || session.shopId !== shopId) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+      if (!canChangeSessionStatus(session.sessionStatus, status)) {
+        throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+      }
+      sessions.set(id, { ...session, sessionStatus: status as PackingSession['sessionStatus'] });
     },
     async listSessionsOfOrder(shopId, orderId) {
       return sessionsOf(shopId, orderId).map(copy);
@@ -209,6 +226,61 @@ export function createMemoryOrderStore(): OrderStore {
     },
     async clearRecentSearches(shopId) {
       searches.delete(shopId);
+    },
+    async listOrdersPendingRemote(shopId, limit, uid) {
+      return [...orders.values()]
+        .filter(
+          (o) =>
+            o.shopId === shopId &&
+            o.createdBy === uid &&
+            !publishedOrders.has(o.id) &&
+            sessionsOf(shopId, o.id).length > 0,
+        )
+        .sort((a, b) => a.createdAtDevice - b.createdAtDevice)
+        .slice(0, limit)
+        .map((o) =>
+          copy<OrderDetails>({ order: o, lines: linesOf(o.id), packages: packagesOf(o.id) }),
+        );
+    },
+    async markOrderPublished(shopId, orderId, atDevice, uid, packageIds) {
+      if (!orderOf(shopId, orderId)) return;
+      publishedOrders.set(orderId, atDevice);
+      for (const pkg of packagesOf(orderId)) {
+        if (
+          packageIds.includes(pkg.id) &&
+          pkg.createdBy === uid &&
+          !publishedPackages.has(pkg.id)
+        ) {
+          publishedPackages.set(pkg.id, atDevice);
+        }
+      }
+    },
+    async markPackagePublished(shopId, packageId, atDevice) {
+      const pkg = packages.get(packageId);
+      if (pkg && orderOf(shopId, pkg.orderId)) publishedPackages.set(packageId, atDevice);
+    },
+    async listSessionsPendingRemote(shopId, limit, uid) {
+      return [...sessions.values()]
+        .filter(
+          (s) =>
+            s.shopId === shopId &&
+            s.createdBy === uid &&
+            s.sessionStatus !== 'created' &&
+            publishedSessions.get(s.id) !== s.sessionStatus &&
+            publishedOrders.has(s.orderId) &&
+            (publishedPackages.has(s.packageId) || packages.get(s.packageId)?.createdBy === uid),
+        )
+        .sort((a, b) => a.startedAtDevice - b.startedAtDevice)
+        .slice(0, limit)
+        .map((s) => ({
+          session: copy(s),
+          status: s.sessionStatus as string,
+          packagePending: !publishedPackages.has(s.packageId),
+        }));
+    },
+    async markSessionPublished(shopId, sessionId, status) {
+      const session = sessions.get(sessionId);
+      if (session && session.shopId === shopId) publishedSessions.set(sessionId, status);
     },
     async hasRecordingInProgress(shopId) {
       return [...sessions.values()].some(

@@ -20,6 +20,7 @@ module.exports = {
       testMatch: ['<rootDir>/firebase/tests/**/*.test.ts'],
       // Một bản firebase-admin duy nhất (của functions/) cho test và mã Function.
       moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/src/$1',
         '^firebase-admin/(.*)$': '<rootDir>/firebase/functions/node_modules/firebase-admin/lib/$1',
       },
       transform: { '^.+\\.[jt]sx?$': ['babel-jest', { presets: ['babel-preset-expo'] }] },

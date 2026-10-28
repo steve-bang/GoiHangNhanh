@@ -2,8 +2,9 @@ import type { ReactNode } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { StatusBar } from 'expo-status-bar';
 
+import { getDefaultRemoteDocuments } from '@/api/create-remote-documents';
 import { initI18n } from '@/core/i18n';
-import { OrderStoreProvider } from '@/features/orders';
+import { OrderStoreProvider, OrderSyncRunner } from '@/features/orders';
 import {
   PersonalGatewaysProvider,
   SessionProvider,
@@ -27,7 +28,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
           <SessionProvider>
             <ToastProvider>
               <SessionShopProvider>
-                <OrderStoreProvider>{children}</OrderStoreProvider>
+                <OrderStoreProvider>
+                  <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
+                  {children}
+                </OrderStoreProvider>
               </SessionShopProvider>
             </ToastProvider>
           </SessionProvider>

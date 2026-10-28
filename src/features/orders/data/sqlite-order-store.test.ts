@@ -5,6 +5,7 @@ import { buildPackingSession } from '../domain/start-session';
 import { createNodeSqliteDatabase } from '@/test-utils/node-sqlite';
 
 import { runOrderStoreContract, makeOrder } from './order-store.contract';
+import { runPendingRemoteContract } from './pending-remote.contract';
 import { MIGRATIONS } from './sqlite-migrations';
 import { createSqliteOrderStore, parseSnapshot } from './sqlite-order-store';
 
@@ -12,6 +13,14 @@ import { createSqliteOrderStore, parseSnapshot } from './sqlite-order-store';
 runOrderStoreContract('SQLite (node:sqlite)', async () =>
   createSqliteOrderStore(createNodeSqliteDatabase()),
 );
+
+runPendingRemoteContract('SQLite (node:sqlite)', async () => {
+  let uid: string | null = 'user-a';
+  return {
+    store: createSqliteOrderStore(createNodeSqliteDatabase(), { creatorUid: () => uid }),
+    setUid: (value) => void (uid = value),
+  };
+});
 
 describe('kho SQLite: migration và lỗi', () => {
   it('tạo schema ở lần dùng đầu, đặt user_version, và chạy lại không lỗi', async () => {
@@ -35,6 +44,37 @@ describe('kho SQLite: migration và lỗi', () => {
         'search_history',
       ]),
     );
+  });
+
+  it('nâng cấp từ v4 lên v5: thêm cột created_by, dữ liệu cũ giữ nguyên, không người tạo và không bao giờ được đăng', async () => {
+    const db = createNodeSqliteDatabase();
+    for (const sql of MIGRATIONS.slice(0, 4)) await db.execAsync(sql);
+    await db.execAsync('PRAGMA user_version = 4');
+    const details = makeOrder('V4', { lines: [{ name: 'Áo' }] });
+    const o = details.order;
+    const pkg = details.packages[0];
+    if (!pkg) throw new Error('fixture');
+    await db.runAsync(
+      `INSERT INTO orders (id, shop_id, order_code, order_code_key, source, tracking_code,
+        tracking_code_key, data_origin, created_at_device) VALUES (?, ?, 'V4', 'V4', ?, NULL, NULL, 'entered_by_user', 1)`,
+      [o.id, o.shopId, o.source],
+    );
+    await db.runAsync(
+      'INSERT INTO packages (id, order_id, idx, created_at_device) VALUES (?, ?, 1, 1)',
+      [pkg.id, o.id],
+    );
+    const store = createSqliteOrderStore(db, { creatorUid: () => 'u1' });
+    const before = await store.getOrder(o.shopId, o.id);
+    expect(before?.order.orderCode).toBe('V4');
+    expect(before?.order).not.toHaveProperty('createdBy');
+    for (const table of ['orders', 'packages', 'packing_sessions']) {
+      const cols = await db.getAllAsync<{ name: string }>(`PRAGMA table_info(${table})`);
+      expect(cols.map((c) => c.name)).toContain('created_by');
+    }
+    expect(
+      (await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version'))?.user_version,
+    ).toBe(MIGRATIONS.length);
+    expect(await store.listOrdersPendingRemote(o.shopId, 10, 'u1')).toEqual([]);
   });
 
   it('lưu đơn là một giao dịch: một dòng lỗi thì không còn bản ghi nào', async () => {
