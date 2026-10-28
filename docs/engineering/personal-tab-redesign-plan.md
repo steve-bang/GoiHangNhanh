@@ -172,7 +172,7 @@ Mỗi PR: nhánh tách từ `main` mới nhất sau khi PR trước merge; theo 
 | **B** | Màn chính + 5 trạng thái (1a-1e) | `ProfileScreen.tsx`, `ProfileSummaryCard.tsx`, `MenuRow.tsx`, `RegionParts.tsx`, `account-menu.ts`, `nav.json`, `personal.json` | Không route mới; thẻ gói/dữ liệu bằng chứng mở route đã có hoặc khóa "Sắp có" | `ProfileScreen.test.tsx` đủ 5 trạng thái, chữ lớn, 320/360/390 | Khớp checklist 1a-1e (mục 8); không số giả | A |
 | **C** (đã làm, mục 6.3) | Sửa họ tên, Đổi mật khẩu, hộp thoại Đăng xuất | `EditProfileScreen.tsx`, `ChangePasswordScreen.tsx`, `use-sign-out.ts`, `ProfileScreen.tsx` (hộp thoại) | Không route mới | Cập nhật test hiện có + test thẻ social thay form | Khớp 2, 3, 4a-c; vẫn chặn khi quay, vẫn đủ lối đăng xuất (D21) | A |
 | **D** (đã làm, mục 6.4) | Cửa hàng: cài đặt, sửa tên, chuyển + 2 hộp thoại | `ShopSettingsScreen.tsx`, `ShopEditScreen.tsx`, `ShopSwitchScreen.tsx`, `use-switch-shop.ts` | Không route mới | Test hiện có + bộ đếm, "Bị khóa", ô tìm | Khớp 5, 6, 7a-c; "Xóa cửa hàng" ẩn | A |
-| **E** | Gói, chi tiết gói, lịch sử thanh toán | `src/app/(tabs)/account/{plan,plan-detail,payment-history}.tsx`, màn mới trong `features/personal/ui`, `routes.ts` (route con của `plan`, `UI-H01`), `nav.json` | `plan` (có sẵn) + 2 route con `parent` (Q-21b) | `routes.test.ts` (route con khai báo `parent`), màn | Khớp 8, 9, 10; mọi giá trị "Chưa có thông tin"; nút nâng cấp khóa | A, Q-21b |
+| **E** (đã làm, mục 6.5) | Gói, chi tiết gói, lịch sử thanh toán | `src/app/(tabs)/account/{plan,plan-detail,payment-history}.tsx`, màn mới trong `features/personal/ui`, `routes.ts` (route con của `plan`, `UI-H01`), `nav.json` | `plan` (có sẵn) + 2 route con `parent` (Q-21b) | `routes.test.ts` (route con khai báo `parent`), màn | Khớp 8, 9, 10; mọi giá trị "Chưa có thông tin"; nút nâng cấp khóa | A, Q-21b |
 | **F** | Dữ liệu bằng chứng, thời hạn lưu | màn mới + `routes.ts` (route con của `profile` UI-I01) | 2 route con | Test đếm thật (0) và chữ "Chưa có thông tin" | Khớp 11, 12; không số bịa; thẻ ghi chú theo D19 | A, B |
 | **G** | Thông báo, Quyền riêng tư và bảo mật | `NotificationsScreen`, `SecurityScreen`, `SettingsGateway` (bản giả + chưa kết nối), `account-menu.ts` (đổi `available`) | `notifications`, `security` (có sẵn) | Test công tắc lưu/đọc cục bộ, thẻ quyền bị từ chối, hàng khóa | Khớp 13, 14; không hứa đẩy | A, C |
 | **H** | Trợ giúp, bài hướng dẫn, liên hệ, điều khoản (+ Về ứng dụng nếu Q-21j chốt giữ) | màn mới, nội dung tĩnh trong `personal.json`, `legal-links.ts` | `help` (có sẵn) + route con bài/liên hệ/điều khoản | Test tìm kiếm tĩnh, mở email soạn sẵn không "đã gửi" | Khớp 15-18; không "Chính sách đổi trả" | A, Q-21j/k cho tài nguyên |
@@ -272,6 +272,29 @@ Không route/mã UI mới (`UI-I02` giữ nguyên, Q-21b). Ảnh: `docs/assets/s
 **Docs:** đã cập nhật `docs/09-ui-ux-design.md` (dòng UI-I02: tên màn Cửa hàng, nhãn "Bị khóa" thay "Tạm khóa", luồng Xác nhận, ngưỡng ô tìm); chờ BA xác nhận.
 
 **Chưa kiểm chứng:** thiết bị iOS/Android thật, chữ lớn (chưa chụp), VoiceOver/TalkBack (`radio` + `selected`/`disabled`), `String.prototype.normalize` của Hermes trên cả hai nền tảng (lọc không dấu), bàn phím trên màn hẹp, 7c nút vô hiệu đọc bởi trình đọc màn hình.
+
+### 6.5 Trạng thái PR-E (đã làm, chờ duyệt)
+
+Hai route con mới của UI-H01, KHÔNG mã UI mới (Q-21b): `ROUTES.planDetail` (`/account/plan/detail`) và `ROUTES.paymentHistory` (`/account/plan/payments`), đều `hideTabBar`. `plan.tsx` chuyển thành `plan/index.tsx` (cùng URL `/account/plan`). Tiêu đề UI-H01 đổi "Gói hiện tại" thành "Gói dịch vụ" (`nav.json`). Màn ở `features/personal/ui` (`PlanScreen`, `PlanDetailScreen`, `PaymentHistoryScreen`, `PlanBenefits`, `UpgradeAction`); placeholder `PlanScreen` của `features/shop` đã bỏ. Không đổi thành phần dùng chung. Ảnh: `docs/assets/screens/personal-tab-v3/pr-e-*.png` (bản web, cổng giả, 320/360/390, thêm 3 ảnh chữ lớn 1.6 lần ở 320x568), ảnh ghép `pr-e-compare-board-vs-app-390.png`, checklist ở README thư mục đó.
+
+| Khung | Cách làm |
+| --- | --- |
+| 8 Gói dịch vụ | Header "Gói dịch vụ"; thẻ: "Chưa có thông tin" + huy hiệu "Sắp có", "Thời hạn lưu: Chưa có thông tin"; "Quyền lợi" với ba dòng dấu tích trần (nguyên tắc lưu trữ từ docs/06) và ghi chú "chưa được công bố" từng gói; nút chính "Chi tiết gói" (mở khung 9); nút phụ "Nâng cấp gói" KHÓA (vô hiệu, không điều hướng) + dòng "Sắp có. Hiện chưa nâng cấp được trong ứng dụng." |
+| 9 Chi tiết gói | Thẻ nền mint (`Card tone="brand"`): ô icon, "Chưa có thông tin" + "Sắp có", "Quyền lợi chi tiết" (dấu tích trong vòng tròn), "Thời hạn lưu" + "Chưa có thông tin"; nút chính "Nâng cấp gói" khóa; hàng "Lịch sử thanh toán" (lối vào khung 10) |
+| 10 Lịch sử thanh toán | `EmptyState icon="receipt"`: "Chưa có lịch sử thanh toán" + "Ứng dụng chưa có thanh toán nên chưa có giao dịch nào để hiển thị."; không nút tải hóa đơn |
+| Menu/thẻ gói (1a) | `plan` ở `account-menu.ts` đổi `available` (lý do: UI-H01 đã có nội dung trung thực hữu ích, Q-21w); thẻ gói mở UI-H01, vẫn "Chưa có thông tin" + huy hiệu "Sắp có" (huy hiệu nay hiện cả khi mở được), không nói "Đang hoạt động" |
+
+**Lệch có chủ đích so với board**
+
+1. D2: không "Gói tiêu chuẩn"/"Đang hoạt động"; quyền lợi là ba nguyên tắc lưu trữ thay vì năm dòng board (bỏ "Hỗ trợ 24/7", "Đối chiếu đơn hàng", "Lưu ảnh giao/hoàn hàng": chưa có cơ sở); thêm ghi chú nguyên tắc chung (Q-21w).
+2. D3: "Nâng cấp gói" vô hiệu + chữ giải thích (board vẽ bật); khung 9 nút đặc nhưng vô hiệu (nhạt).
+3. D27: không "Xem tất cả" ở khung 9. D4: "Thời hạn lưu: Chưa có thông tin" (như board).
+4. Khung 9 có thêm hàng "Lịch sử thanh toán" (board không có lối vào, Q-21v); thẻ mint bao cả quyền lợi và thời hạn (board: thẻ mint chỉ phần đầu); ô icon dùng `clipboard` tông trung tính (không có glyph tài liệu; tông brand trùng nền mint nên mất ô).
+5. Thanh tab: khung 8 vẫn hiện (route gốc UI-H01, như Q-21t); khung 9 và 10 ẩn (route con `hideTabBar`). Khung 10: icon `receipt` (board: hóa đơn có biểu tượng mắt); mô tả khác board ("Khi có giao dịch..." ngụ ý sẽ có giao dịch).
+6. Khung 8: nút phụ "Nâng cấp gói" nằm ngay dưới nút chính, dòng "Sắp có" nằm dưới nút (board không có).
+7. Bỏ đường kẻ ngăn trên nút (board có), thay bằng khoảng cách token.
+
+**Chưa kiểm chứng:** thiết bị iOS/Android thật; VoiceOver/TalkBack (nút vô hiệu đọc là "không dùng được" + dòng "Sắp có" nằm dưới); chữ lớn chỉ chụp bằng bản thử nhân cỡ chữ ở bản sao ngoài repo (icon không phóng theo). Chưa có dữ liệu gói thật nên các trạng thái hết hạn/sắp hết hạn/chờ thanh toán chưa dựng (Q-21x).
 
 ## 7. Rủi ro
 
