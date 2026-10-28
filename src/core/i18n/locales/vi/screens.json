@@ -145,7 +145,17 @@
     "torchOn": "Bật đèn pin",
     "torchOff": "Tắt đèn pin",
     "sessionMissing": "Không mở được phiên quay này.",
-    "cameraError": "Không mở được camera. Có thể ứng dụng khác đang dùng camera."
+    "cameraError": "Không mở được camera. Có thể ứng dụng khác đang dùng camera.",
+    "saving": "Đang lưu video trên máy…",
+    "saveFailed": "Chưa lưu được video. Hãy quay lại đơn để thử lại.",
+    "storageFull": "Máy đã đầy bộ nhớ nên chưa lưu được video. Hãy giải phóng dung lượng rồi quay lại.",
+    "recorderFailed": "Camera dừng đột ngột. Video chưa được lưu.",
+    "startFailed": "Chưa bắt đầu quay được. Hãy quay lại đơn để thử lại.",
+    "interruptedNotice": "Lần quay trước bị gián đoạn. Hãy mở đơn để kiểm tra video.",
+    "alreadyRecorded": "Phiên này không quay thêm được. Hãy mở đơn và chọn Xem bằng chứng.",
+    "leavePreparing": "Chưa bắt đầu ghi video. Thoát sẽ đưa bạn về màn hình đơn.",
+    "leaveSaving": "Video đang được lưu trên máy. Bạn có thể về màn hình đơn, việc lưu vẫn tiếp tục.",
+    "backToOrder": "Về đơn hàng"
   },
   "confirm": {
     "nothingSaved": "Bản thử giao diện: chưa có video nào được lưu.",
@@ -157,14 +167,28 @@
     "savedMessage": "Video đã lưu trên thiết bị. Đang chờ tải lên máy chủ.",
     "review": "Xem lại video",
     "addSegment": "Ghi thêm đoạn riêng",
-    "save": "Lưu bằng chứng"
+    "save": "Lưu bằng chứng",
+    "noVideo": "Phiên này chưa có video nào được lưu.",
+    "saveFailed": "Chưa lưu được video của phiên này. Hãy quay lại đơn để thử lại.",
+    "savingNow": "Đang lưu video trên máy…",
+    "uploadingMessage": "Video đã lưu trên thiết bị. Đang tải lên máy chủ.",
+    "uploadedMessage": "Máy chủ đã nhận video. Đang kiểm tra tệp.",
+    "verifiedMessage": "Máy chủ đã kiểm tra: tệp khớp với bản trên máy.",
+    "uploadFailedMessage": "Video vẫn lưu trên máy. Tải lên chưa được, app sẽ tự thử lại.",
+    "uploadAttentionMessage": "Video vẫn lưu trên máy. Việc tải lên cần bạn xử lý ở phần bằng chứng của đơn.",
+    "hashMismatchMessage": "Máy chủ báo tệp không khớp bản trên máy. Video gốc vẫn được giữ trên máy.",
+    "partialFailed": "Một số video chưa lưu được trên máy. Video còn lại đã lưu trên máy."
   },
   "packDone": {
     "nothingSaved": "Bản thử giao diện: chưa có video nào được lưu.",
     "summary": "Phiên đóng gói đã hoàn tất. Video đã lưu trên thiết bị, đang chờ đồng bộ.",
     "videoCount": "Số video",
     "next": "Đóng gói đơn tiếp theo",
-    "viewEvidence": "Xem bằng chứng"
+    "viewEvidence": "Xem bằng chứng",
+    "noVideo": "Phiên này chưa có video nào được lưu.",
+    "summaryQueued": "Phiên đóng gói đã hoàn tất. Video đã lưu trên thiết bị, đang chờ đồng bộ.",
+    "summaryUploaded": "Phiên đóng gói đã hoàn tất. Máy chủ đã nhận video.",
+    "summaryPartial": "Phiên chưa trọn vẹn: có video chưa lưu xong. Video còn lại đã lưu trên máy."
   },
   "returns": {
     "search": "Tìm theo mã đơn, mã vận đơn hoặc mã hoàn",

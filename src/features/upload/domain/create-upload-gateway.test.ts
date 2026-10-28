@@ -1,4 +1,4 @@
-import type { EvidenceId, OrderId, SessionId, ShopId } from '@/core/ids';
+import type { EvidenceId, OrderId, PackageId, SessionId, ShopId } from '@/core/ids';
 
 import {
   createUploadGateway,
@@ -13,6 +13,7 @@ const request: UploadRequest = {
   shopId: 's1' as ShopId,
   orderId: 'o1' as OrderId,
   sessionId: 'ss1' as SessionId,
+  packageId: 'p1' as PackageId,
   kind: 'video',
   createdAtDevice: 1000,
   durationMs: 5000,

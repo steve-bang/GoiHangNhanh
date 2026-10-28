@@ -49,6 +49,7 @@ export type { OrderStore, RecentSearch } from './order-store';
 export {
   buildPackingSession,
   findActiveSession,
+  findBlockingSession,
   isSessionActive,
   isSessionStatusActive,
 } from './start-session';

@@ -44,9 +44,8 @@ export function buildPackingSession(
 }
 
 /**
- * Trạng thái "đang ghi video" của phiên. TÊN TẠM: chưa có recorder nên chưa phiên nào mang trạng thái
- * này (kiểu `PackingSession.sessionStatus` mới chỉ có `created`); recorder phải đặt tên chính thức và
- * ghi trạng thái này khi tệp bắt đầu được ghi. Đăng xuất (PER-21) dựa vào đây để chặn khi đang quay.
+ * Trạng thái "đang ghi video" của phiên: luồng ghi video (khi bật cờ `RECORDER_ENABLED`) đặt khi tệp bắt
+ * đầu được ghi. TÊN CÒN TẠM (chờ BA đặt tên chính thức). Đăng xuất (PER-21) dựa vào đây để chặn khi đang quay.
  * `created` (đã mở màn quay, chưa ghi tệp) KHÔNG phải đang quay: chưa có dữ liệu video để mất.
  */
 export const RECORDING_SESSION_STATUS = 'recording';
@@ -71,4 +70,27 @@ export function findActiveSession(
   packageId: PackageId,
 ): PackingSession | null {
   return sessions.find((s) => s.packageId === packageId && isSessionActive(s)) ?? null;
+}
+
+/**
+ * Phiên đã khép lại (hoặc dừng giữa chừng) của một kiện, chặn việc tạo phiên đóng gói MỚI cho kiện đó
+ * (docs/04 A01: phiên đã hoàn tất thì "không tự bắt đầu quay mới"; ADR-020 R-11, phương án a theo khuyến nghị
+ * reviewer, chờ BA xác nhận). `recorded` = `ended`/`confirmed` (kiện đã quay xong); `unfinished` =
+ * `interrupted`/`needs_attention` (lần quay dở: luồng "tiếp tục" chưa được BA chốt, Q-23j, nên cũng chặn,
+ * thận trọng). Trạng thái lạ KHÔNG chặn (cùng lý do với `isSessionStatusActive`). Chỉ cho luồng đóng gói;
+ * quay hàng hoàn không dùng hàm này.
+ */
+export type BlockingSession = { kind: 'recorded' | 'unfinished'; session: PackingSession };
+
+export function findBlockingSession(
+  sessions: readonly PackingSession[],
+  packageId: PackageId,
+): BlockingSession | null {
+  const ofPackage = sessions.filter((s) => s.packageId === packageId);
+  const recorded = ofPackage.find((s) => ['ended', 'confirmed'].includes(s.sessionStatus));
+  if (recorded) return { kind: 'recorded', session: recorded };
+  const unfinished = ofPackage.find((s) =>
+    ['interrupted', 'needs_attention'].includes(s.sessionStatus),
+  );
+  return unfinished ? { kind: 'unfinished', session: unfinished } : null;
 }

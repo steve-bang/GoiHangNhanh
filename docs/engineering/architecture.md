@@ -158,6 +158,7 @@ shops/{shopId}/exports/{exportId}/…                      bộ hồ sơ xuất
  [server] uploaded ──SERVER_VERIFIED──► verified           [server] uploaded ──SERVER_HASH_MISMATCH──► hash_mismatch
  recording|saving_local ──LOCAL_WRITE_FAILED──► local_save_failed ──RETRY_LOCAL_SAVE──► saving_local
  recording|saving_local|local_save_failed|needs_attention ──MARK_UNRECOVERABLE──► unrecoverable
+ saving_local ──LOCAL_FILE_MOVED──► saving_local   (chỉ ghi đường dẫn bền mới ngay sau khi chuyển tệp, trước khi băm)
 ```
 
 Bảo đảm (có unit test, xem [testing.md](testing.md)):

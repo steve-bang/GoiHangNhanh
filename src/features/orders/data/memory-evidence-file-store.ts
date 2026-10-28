@@ -73,6 +73,13 @@ export function createMemoryEvidenceFileStore(
       ofShop(shopId)
         .filter((f) => states.includes(f.state))
         .sort(oldestFirst),
+    listShopsWithStates: async (states) => [
+      ...new Set([...files.values()].filter((f) => states.includes(f.state)).map((f) => f.shopId)),
+    ],
+    listByOrders: async (shopId, orderIds) =>
+      ofShop(shopId)
+        .filter((f) => orderIds.includes(f.orderId))
+        .sort(oldestFirst),
     listByOrder: async (shopId, orderId: OrderId) =>
       ofShop(shopId)
         .filter((f) => f.orderId === orderId)

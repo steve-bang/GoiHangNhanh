@@ -4,13 +4,15 @@ import { StatusBar } from 'expo-status-bar';
 
 import { getDefaultRemoteDocuments } from '@/api/create-remote-documents';
 import { initI18n } from '@/core/i18n';
-import { OrderStoreProvider, OrderSyncRunner } from '@/features/orders';
+import { EvidenceFileStoreProvider, OrderStoreProvider, OrderSyncRunner } from '@/features/orders';
+import { RecordingRecovery } from '@/features/packing';
 import {
   PersonalGatewaysProvider,
   SessionProvider,
   SessionShopProvider,
 } from '@/features/personal';
 import { OnboardingFlowProvider } from '@/features/shop';
+import { UploadRunner } from '@/features/upload';
 import { ToastProvider } from '@/shared/ui';
 
 const i18n = initI18n();
@@ -29,8 +31,12 @@ export function AppProviders({ children }: { children: ReactNode }) {
             <ToastProvider>
               <SessionShopProvider>
                 <OrderStoreProvider>
-                  <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
-                  {children}
+                  <EvidenceFileStoreProvider>
+                    <RecordingRecovery />
+                    <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
+                    <UploadRunner docs={getDefaultRemoteDocuments()} />
+                    {children}
+                  </EvidenceFileStoreProvider>
                 </OrderStoreProvider>
               </SessionShopProvider>
             </ToastProvider>

@@ -47,6 +47,7 @@ export type FileEventType =
   // Sự kiện từ thiết bị
   | 'STOP_RECORDING'
   | 'LOCAL_FILE_READABLE'
+  | 'LOCAL_FILE_MOVED'
   | 'LOCAL_WRITE_FAILED'
   | 'RECOVERY_FOUND_FILE'
   | 'RETRY_LOCAL_SAVE'
@@ -79,6 +80,9 @@ interface Rule {
  * - RECOVERY_FOUND_FILE: app bị kill khi đang ghi; tìm thấy tệp dở dang -> phải qua SAVING_LOCAL
  *   để kiểm tra lại đọc được, KHÔNG đi thẳng tới QUEUED (A05: "không tự nhận là video đầy đủ";
  *   cờ "bị gián đoạn" nằm ở trạng thái phiên, không ở đây).
+ * - LOCAL_FILE_MOVED: tệp vừa được chuyển từ thư mục tạm sang thư mục bền khi đang SAVING_LOCAL; chỉ
+ *   ghi lại đường dẫn mới (bản ghi vẫn ở SAVING_LOCAL) để app bị kill trong lúc băm không mất dấu bản
+ *   gốc. Không tới QUEUED được: phải qua LOCAL_FILE_READABLE (đã băm, có kích thước).
  * - SERVER_RECEIVED từ QUEUED/UPLOAD_FAILED/NEEDS_ATTENTION: máy chủ đã nhận nhưng app mất phản hồi
  *   (QA-05); đối soát với máy chủ phải đưa được tệp tới UPLOADED mà không tải lại.
  * - SERVER_HASH_MISMATCH chỉ từ UPLOADED: mã băm được so sau khi máy chủ nhận đủ tệp.
@@ -86,6 +90,7 @@ interface Rule {
 const RULES: Readonly<Record<FileEventType, Rule>> = {
   STOP_RECORDING: { origin: 'device', from: [S.RECORDING], to: S.SAVING_LOCAL },
   LOCAL_FILE_READABLE: { origin: 'device', from: [S.SAVING_LOCAL], to: S.QUEUED },
+  LOCAL_FILE_MOVED: { origin: 'device', from: [S.SAVING_LOCAL], to: S.SAVING_LOCAL },
   LOCAL_WRITE_FAILED: {
     origin: 'device',
     from: [S.RECORDING, S.SAVING_LOCAL],

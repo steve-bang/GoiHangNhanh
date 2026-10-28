@@ -4,7 +4,7 @@ import { createMemoryEvidenceFileStore } from '@/features/orders';
 
 import { MAX_UPLOAD_ATTEMPTS, retryDelayMs } from './backoff';
 import type { HashResult, ServerFileState, UploadGateway, UploadOutcome } from './ports';
-import { createUploadQueue } from './upload-queue';
+import { createUploadQueue, mayBeKnownToServer } from './upload-queue';
 
 const SHOP = 'shop-1' as ShopId;
 const HASH = 'ab'.repeat(32);
@@ -261,5 +261,52 @@ describe('hàng đợi tải lên', () => {
     await t.queue.runOnce(SHOP);
     expect(t.uploads).toEqual([]);
     expect(await t.state('r')).toBe('recording');
+  });
+});
+
+describe('đối soát chỉ hỏi máy chủ về tệp máy chủ có thể đã biết', () => {
+  it.each([
+    ['uploading', 0, null, true],
+    ['uploaded', 0, null, true],
+    ['upload_failed', 1, 'NETWORK', true],
+    ['queued', 0, null, false], // chưa từng thử: chưa khai báo
+    ['queued', 2, 'NETWORK', true], // đã thử lại
+    ['queued', 0, 'HTTP_403', true], // đã xử lý xong lỗi từ máy chủ
+    ['needs_attention', 0, 'LOCAL_HASH_CHANGED', false], // lỗi kiểm tra cục bộ, chưa gửi gì
+    ['needs_attention', 0, 'FILE_MISSING', false],
+    ['needs_attention', 0, 'UPLOAD_REJECTED_400', true],
+    ['needs_attention', 3, null, true],
+    ['verified', 0, null, false],
+    ['saving_local', 0, null, false],
+  ] as const)('%s (thử %i lần, mã %s) -> %s', (state, attemptCount, lastErrorCode, expected) => {
+    expect(mayBeKnownToServer({ state, attemptCount, lastErrorCode })).toBe(expected);
+  });
+
+  it('runOnce không gửi tệp queued chưa từng thử vào lượt hỏi máy chủ; tệp đang tải thì có', async () => {
+    const asked: EvidenceId[][] = [];
+    const files = createMemoryEvidenceFileStore();
+    await queuedFile(files, 'fresh');
+    await queuedFile(files, 'inflight', 2000);
+    await files.applyEvent(
+      SHOP,
+      'inflight' as EvidenceId,
+      { type: 'UPLOAD_STARTED', origin: 'device' },
+      3000,
+    );
+    const queue = createUploadQueue({
+      files,
+      gateway: {
+        upload: async () => ({ kind: 'received' }),
+        fetchServerStates: async (_shop, ids) => {
+          asked.push([...ids]);
+          return new Map();
+        },
+      },
+      hasher: { sha256: async () => ({ ok: true, sha256: HASH }) },
+      now: () => 10_000,
+      isOnline: () => true,
+    });
+    await queue.runOnce(SHOP);
+    expect(asked).toEqual([['inflight']]);
   });
 });

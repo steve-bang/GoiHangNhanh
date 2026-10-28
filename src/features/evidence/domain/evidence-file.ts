@@ -1,6 +1,7 @@
 import type { EvidenceId, OrderId, PackageId, SessionId, ShopId } from '@/core/ids';
 
 import {
+  ALL_FILE_STATES,
   FILE_STATES,
   transition,
   type FileEvent,
@@ -76,6 +77,11 @@ const SYNCED_OR_FINAL: readonly FileState[] = [
   FILE_STATES.UNRECOVERABLE,
 ];
 
+/** Mọi trạng thái còn việc đồng bộ (`isUnsynced`). */
+export const UNSYNCED_STATES: readonly FileState[] = ALL_FILE_STATES.filter(
+  (s) => !SYNCED_OR_FINAL.includes(s),
+);
+
 /** Tệp còn việc đồng bộ: chưa tới `uploaded`/`verified` và chưa mất hẳn (docs/06). */
 export const isUnsynced = (state: FileState): boolean => !SYNCED_OR_FINAL.includes(state);
 
@@ -109,6 +115,7 @@ export function hasSameBinding(
 /** Sự kiện được phép ghi VỊ TRÍ THẬT của tệp khi chuyển từ thư mục tạm sang thư mục bền. */
 const RELOCATION_EVENTS: readonly FileEvent['type'][] = [
   'LOCAL_FILE_READABLE',
+  'LOCAL_FILE_MOVED',
   'LOCAL_WRITE_FAILED',
   'RECOVERY_FOUND_FILE',
 ];
@@ -202,6 +209,13 @@ export interface EvidenceFileStore {
   ): Promise<ApplyEventResult>;
   /** Tệp của shop đang ở một trong các trạng thái, cũ nhất trước (hàng đợi tải lên). */
   listByStates(shopId: ShopId, states: readonly FileState[]): Promise<readonly EvidenceFile[]>;
+  /**
+   * Các shop trên máy này có tệp ở một trong các trạng thái. CHỈ để khôi phục sau khi app bị đóng giữa
+   * chừng (phiên của shop khác/shop tạm không được treo mãi ở "đang quay"); không dùng để hiển thị dữ liệu.
+   */
+  listShopsWithStates(states: readonly FileState[]): Promise<readonly ShopId[]>;
+  /** Tệp của nhiều đơn cùng lúc (danh sách đơn), cũ nhất trước. */
+  listByOrders(shopId: ShopId, orderIds: readonly OrderId[]): Promise<readonly EvidenceFile[]>;
   /** Mọi tệp của một đơn, cũ nhất trước. */
   listByOrder(shopId: ShopId, orderId: OrderId): Promise<readonly EvidenceFile[]>;
   listBySession(shopId: ShopId, sessionId: SessionId): Promise<readonly EvidenceFile[]>;

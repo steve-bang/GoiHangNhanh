@@ -10,6 +10,8 @@
   "ORDER_SAVE_FAILED": "Chưa xử lý được đơn trên máy. Bạn thử lại nhé.",
   "ORDER_HAS_SESSION": "Đơn này đã bắt đầu quay nên chưa sửa được số lượng.",
   "PACKAGE_SESSION_ACTIVE": "Kiện này đã có phiên đang thực hiện.",
+  "PACKAGE_ALREADY_RECORDED": "Kiện này đã quay xong. Hãy mở đơn và chọn Xem bằng chứng.",
+  "PACKAGE_RECORDING_UNFINISHED": "Kiện này có lần quay chưa hoàn tất. Hãy mở đơn và chọn Xem bằng chứng.",
   "SOURCE_ORDER_NOT_FOUND": "Chưa tìm được đơn gốc. Bạn có thể tiếp tục với hồ sơ chưa liên kết.",
   "SOURCE_ORDER_AMBIGUOUS": "Có nhiều đơn phù hợp. Hãy kiểm tra thêm trước khi chọn.",
   "RETURN_CODE_DUPLICATE": "Mã này đã có hồ sơ hàng hoàn. Hãy mở hồ sơ hiện có hoặc xác nhận đây là lần tiếp nhận khác.",

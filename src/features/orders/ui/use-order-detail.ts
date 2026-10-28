@@ -5,7 +5,7 @@ import type { ErrorCode } from '@/core/errors/codes';
 import type { OrderId } from '@/core/ids';
 import { useScreenFocused } from '@/platform';
 
-import { loadEvidenceItems, useCurrentShopId, useOrderStore } from '../data';
+import { loadEvidenceItems, useCurrentShopId, useEvidenceFileStore, useOrderStore } from '../data';
 import {
   summarizePackEvidence,
   type OrderDetails,
@@ -36,6 +36,7 @@ export function useOrderDetail(orderId: OrderId | undefined): {
   reload: () => void;
 } {
   const store = useOrderStore();
+  const evidenceFiles = useEvidenceFileStore();
   const shopId = useCurrentShopId();
   const focused = useScreenFocused();
   const [state, setState] = useState<OrderDetailState>({ kind: 'loading' });
@@ -55,7 +56,7 @@ export function useOrderDetail(orderId: OrderId | undefined): {
         return;
       }
       const sessions = await store.listSessionsOfOrder(shopId, orderId);
-      const items = await loadEvidenceItems(shopId, orderId);
+      const items = await loadEvidenceItems(evidenceFiles, shopId, orderId);
       if (mine !== generation.current) return;
       setState({
         kind: 'ready',
@@ -69,7 +70,7 @@ export function useOrderDetail(orderId: OrderId | undefined): {
       const code: ErrorCode = isAppError(caught) ? caught.code : 'ORDER_SAVE_FAILED';
       setState((prev) => (prev.kind === 'ready' ? prev : { kind: 'error', code }));
     }
-  }, [orderId, shopId, store]);
+  }, [orderId, shopId, store, evidenceFiles]);
 
   useEffect(() => {
     if (!focused) return;

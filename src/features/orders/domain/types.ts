@@ -74,8 +74,10 @@ export interface OrderSnapshot {
 
 /**
  * Phiên đóng gói (docs/04 A03): ID phiên + đơn + kiện được tạo TRƯỚC khi mở camera (bất biến 2).
- * `sessionStatus` chỉ có `created`: chưa ghi video nên chưa có tệp, chưa phải bằng chứng và tuyệt
- * đối không có trạng thái "đã lưu" (bất biến 3).
+ * `sessionStatus` là trạng thái THẬT lưu cục bộ: `created` (chưa ghi video nên chưa có tệp, chưa phải
+ * bằng chứng, tuyệt đối không có trạng thái "đã lưu"; bất biến 3), rồi `recording`, `ended`,
+ * `interrupted`, `needs_attention` do luồng ghi video đặt (`updateSessionStatus`). Kiểu `string` vì giá
+ * trị đọc từ kho có thể lạ (bản app khác ghi); dùng `isSessionStatus*` để hiểu.
  */
 export interface PackingSession {
   readonly id: SessionId;
@@ -84,7 +86,7 @@ export interface PackingSession {
   readonly packageId: PackageId;
   readonly startedAtDevice: number;
   readonly snapshot: OrderSnapshot;
-  readonly sessionStatus: 'created';
+  readonly sessionStatus: string;
   /** uid người bắt đầu phiên (xem `Order.createdBy`). */
   readonly createdBy?: string;
 }

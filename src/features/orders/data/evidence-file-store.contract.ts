@@ -219,6 +219,32 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
       });
     });
 
+    it('LOCAL_FILE_MOVED: ghi đường dẫn bền mới khi đang saving_local (trước khi băm), vẫn saving_local, không đóng tệp', async () => {
+      const h = await make();
+      const input = await seedFile(h, 'MOV');
+      await h.files.create(input);
+      const apply = (type: string, now: number, patch?: object) =>
+        h.files.applyEvent(LOCAL_SHOP_ID, input.id, device(type), now, patch);
+      await apply('STOP_RECORDING', 1, { localPath: 'file:///tmp/a.mp4' });
+      expect(await apply('LOCAL_FILE_MOVED', 2, { localPath: 'evidence/a.mp4' })).toMatchObject({
+        ok: true,
+        file: { state: 'saving_local', localPath: 'evidence/a.mp4', sha256Client: null },
+      });
+      // Không thành chi tiết đã chốt: không đặt được mã băm/kích thước qua sự kiện này.
+      expect(await apply('LOCAL_FILE_MOVED', 3, { sha256Client: 'cd'.repeat(32) })).toEqual({
+        ok: false,
+        error: 'IMMUTABLE_FIELD',
+      });
+      expect(
+        await apply('LOCAL_FILE_READABLE', 4, { ...CLOSED, localPath: 'evidence/a.mp4' }),
+      ).toMatchObject({ ok: true, file: { state: 'queued' } });
+      // Sau khi đóng (có mã băm) không còn đổi được vị trí, và sự kiện này cũng hết hợp lệ.
+      expect(await apply('LOCAL_FILE_MOVED', 5, { localPath: 'evidence/khac.mp4' })).toEqual({
+        ok: false,
+        error: 'ILLEGAL_TRANSITION',
+      });
+    });
+
     it('không cho vào hàng đợi khi thiếu đường dẫn, kích thước hoặc mã băm', async () => {
       const h = await make();
       const input = await seedFile(h, 'D');
@@ -339,6 +365,32 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
         ok: true,
         file: { state: 'queued', attemptCount: 1, nextAttemptAtDevice: null, lastErrorCode: null },
       });
+    });
+
+    it('listShopsWithStates: các shop có tệp ở trạng thái đó (không trùng), rỗng thì rỗng', async () => {
+      const h = await make();
+      const a = await seedFile(h, 'S1');
+      const b = await seedFile(h, 'S2', { id: 'ev-S2', shopId: 'shop-khac' as ShopId });
+      await h.files.create(a);
+      await h.files.create(b);
+      expect([...(await h.files.listShopsWithStates(['recording']))].sort()).toEqual(
+        [LOCAL_SHOP_ID, 'shop-khac'].sort(),
+      );
+      expect(await h.files.listShopsWithStates(['queued'])).toEqual([]);
+      expect(await h.files.listShopsWithStates([])).toEqual([]);
+    });
+
+    it('listByOrders: tệp của nhiều đơn, cô lập shop, danh sách rỗng thì rỗng', async () => {
+      const h = await make();
+      const a = await seedFile(h, 'L1');
+      const b = await seedFile(h, 'L2', { id: 'ev-L2' });
+      await h.files.create(a);
+      await h.files.create({ ...b, createdAtDevice: 100 });
+      const both = await h.files.listByOrders(LOCAL_SHOP_ID, [a.orderId, b.orderId]);
+      expect(both.map((f) => f.id)).toEqual([b.id, a.id]);
+      expect(await h.files.listByOrders(LOCAL_SHOP_ID, [b.orderId])).toHaveLength(1);
+      expect(await h.files.listByOrders(LOCAL_SHOP_ID, [])).toEqual([]);
+      expect(await h.files.listByOrders('shop-khac' as ShopId, [a.orderId])).toEqual([]);
     });
   });
 }

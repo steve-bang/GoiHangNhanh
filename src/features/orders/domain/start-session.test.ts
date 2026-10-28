@@ -1,6 +1,11 @@
 import type { PackageId, SessionId } from '@/core/ids';
 
-import { buildPackingSession, isSessionActive, isSessionStatusActive } from './start-session';
+import {
+  buildPackingSession,
+  findBlockingSession,
+  isSessionActive,
+  isSessionStatusActive,
+} from './start-session';
 import { buildOrder, type IdFactory } from './build-order';
 import { LOCAL_SHOP_ID } from './local-shop';
 import type { OrderDetails } from './types';
@@ -75,5 +80,36 @@ describe('phiên đang thực hiện', () => {
     expect(isSessionStatusActive('finished')).toBe(false);
     expect(isSessionStatusActive('')).toBe(false);
     expect(isSessionActive({ sessionStatus: 'created' })).toBe(true);
+  });
+});
+
+describe('findBlockingSession (R-11)', () => {
+  const sess = (packageId: string, sessionStatus: string, id = 's') =>
+    ({ id, packageId, sessionStatus }) as never;
+  it('ended/confirmed của đúng kiện chặn là recorded; interrupted/needs_attention là unfinished', () => {
+    expect(findBlockingSession([sess('p1', 'ended')], 'p1' as PackageId)?.kind).toBe('recorded');
+    expect(findBlockingSession([sess('p1', 'confirmed')], 'p1' as PackageId)?.kind).toBe(
+      'recorded',
+    );
+    expect(findBlockingSession([sess('p1', 'interrupted')], 'p1' as PackageId)?.kind).toBe(
+      'unfinished',
+    );
+    expect(findBlockingSession([sess('p1', 'needs_attention')], 'p1' as PackageId)?.kind).toBe(
+      'unfinished',
+    );
+    expect(
+      findBlockingSession(
+        [sess('p1', 'interrupted', 'a'), sess('p1', 'ended', 'b')],
+        'p1' as PackageId,
+      )?.kind,
+    ).toBe('recorded');
+  });
+  it('không chặn: kiện khác, phiên created/recording (có luồng mở lại riêng), trạng thái lạ, không có phiên', () => {
+    expect(findBlockingSession([sess('p2', 'ended')], 'p1' as PackageId)).toBeNull();
+    expect(
+      findBlockingSession([sess('p1', 'created'), sess('p1', 'recording')], 'p1' as PackageId),
+    ).toBeNull();
+    expect(findBlockingSession([sess('p1', 'xyz')], 'p1' as PackageId)).toBeNull();
+    expect(findBlockingSession([], 'p1' as PackageId)).toBeNull();
   });
 });

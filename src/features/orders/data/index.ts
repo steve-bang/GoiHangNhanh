@@ -9,3 +9,5 @@ export { createMemoryEvidenceFileStore } from './memory-evidence-file-store';
 export { createSqliteEvidenceFileStore } from './sqlite-evidence-file-store';
 export { OrderSyncRunner } from './OrderSyncRunner';
 export { createRemoteOrderWriter, RemoteNotSignedInError } from './remote-order-writer';
+export { createLocalEvidenceFileStore } from './create-evidence-file-store';
+export { EvidenceFileStoreProvider, useEvidenceFileStore } from './EvidenceFileStoreProvider';

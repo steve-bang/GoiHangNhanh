@@ -1,4 +1,4 @@
-import type { EvidenceId, OrderId, SessionId, ShopId } from '@/core/ids';
+import type { EvidenceId, OrderId, PackageId, SessionId, ShopId } from '@/core/ids';
 
 /** Kết quả tính mã băm tệp cục bộ. Không ném lỗi: tệp mất/không đọc được là kết quả bình thường. */
 export type HashResult =
@@ -15,6 +15,7 @@ export interface UploadRequest {
   readonly shopId: ShopId;
   readonly orderId: OrderId;
   readonly sessionId: SessionId;
+  readonly packageId: PackageId;
   /** Cần để suy ra loại tệp khi khai báo bằng chứng. */
   readonly kind: 'video' | 'photo';
   /** Giờ THIẾT BỊ lúc tạo tệp. */

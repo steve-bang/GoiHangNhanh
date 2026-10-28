@@ -115,6 +115,16 @@ describe('tình huống gián đoạn và lỗi (docs/04 A05/A07, QA-04/05/09/12
     expect(transition('recording', ev('LOCAL_FILE_READABLE'))).toMatchObject({ ok: false });
   });
 
+  it('đã chuyển tệp sang thư mục bền: ghi đường dẫn mới nhưng vẫn ở saving_local, chưa thành hàng đợi', () => {
+    expect(transition('saving_local', device('LOCAL_FILE_MOVED'))).toEqual({
+      ok: true,
+      state: 'saving_local',
+    });
+    for (const state of ALL_FILE_STATES.filter((s) => s !== 'saving_local')) {
+      expect(transition(state, device('LOCAL_FILE_MOVED'))).toMatchObject({ ok: false });
+    }
+  });
+
   it('QA-12: hết dung lượng giữa phiên -> lỗi lưu cục bộ, không sang hàng đợi', () => {
     expect(run('recording', ['LOCAL_WRITE_FAILED'])).toBe('local_save_failed');
     expect(run('saving_local', ['LOCAL_WRITE_FAILED'])).toBe('local_save_failed');

@@ -22,6 +22,7 @@ import {
   RECORDING_SESSION_STATUS,
 } from '../domain/start-session';
 import { MAX_RECENT_SEARCHES } from '../domain/search';
+import { UNSYNCED_STATES } from '@/features/evidence';
 import type { CreatorUidProvider } from '../domain/creator';
 import { canChangeSessionStatus } from '../domain/session-status';
 import { runSerialized } from './db-queue';
@@ -63,6 +64,8 @@ interface SessionRow {
   created_by: string | null;
 }
 
+const UNSYNCED_SQL = UNSYNCED_STATES.map((state) => `'${state}'`).join(', ');
+
 /** Điều kiện WHERE (tham số hóa) cho danh sách/đếm; luôn bắt đầu bằng cô lập shop (bất biến 8). */
 function listConditions(shopId: ShopId, query: OrderListQuery) {
   const conditions = ['o.shop_id = ?'];
@@ -86,7 +89,13 @@ function listConditions(shopId: ShopId, query: OrderListQuery) {
     const exists = 'EXISTS (SELECT 1 FROM order_lines l WHERE l.order_id = o.id)';
     conditions.push(query.declaration === 'declared' ? exists : `NOT ${exists}`);
   }
-  // query.withoutVideo: chưa có bảng bằng chứng nên không đơn nào có video thật => không điều kiện.
+  if (query.withoutVideo) {
+    // "Có video" = có MỘT tệp video bất kỳ (kể cả đang ghi/lỗi: cùng nghĩa với summarizeOrderEvidence);
+    // phiên `created` không phải bằng chứng nên không tính (bất biến 3).
+    conditions.push(
+      "NOT EXISTS (SELECT 1 FROM evidence_files ev WHERE ev.order_id = o.id AND ev.kind = 'video')",
+    );
+  }
   return { where: conditions.join(' AND '), params };
 }
 
@@ -255,7 +264,7 @@ export function createSqliteOrderStore(
     packageId: row.package_id as PackageId,
     startedAtDevice: row.started_at_device,
     snapshot: parseSnapshot(row.snapshot_json),
-    sessionStatus: 'created',
+    sessionStatus: row.session_status,
     ...(row.created_by ? { createdBy: row.created_by } : {}),
   });
 
@@ -579,9 +588,21 @@ export function createSqliteOrderStore(
       }),
     listSessionsOfOrder: (shopId, orderId) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', () => sessionsOfOrder(shopId, orderId)),
-    // Chưa có bảng tệp bằng chứng: không có tệp nào để chưa đồng bộ (xem OrderStore.countUnsynced).
-    countUnsynced: async () => 0,
-    countUnsyncedOnDevice: async () => 0,
+    countUnsynced: (shopId) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        const row = await db.getFirstAsync<{ n: number }>(
+          `SELECT COUNT(*) AS n FROM evidence_files WHERE shop_id = ? AND state IN (${UNSYNCED_SQL})`,
+          [shopId],
+        );
+        return row?.n ?? 0;
+      }),
+    countUnsyncedOnDevice: () =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        const row = await db.getFirstAsync<{ n: number }>(
+          `SELECT COUNT(*) AS n FROM evidence_files WHERE state IN (${UNSYNCED_SQL})`,
+        );
+        return row?.n ?? 0;
+      }),
     listOrdersPendingRemote: (shopId, limit, uid) =>
       guarded('ORDER_SAVE_FAILED', async () => {
         const rows = await db.getAllAsync<{ id: string }>(
