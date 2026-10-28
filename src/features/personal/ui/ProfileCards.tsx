@@ -1,0 +1,158 @@
+import { useTranslation } from 'react-i18next';
+import { View } from 'react-native';
+
+import { ROUTES } from '@/core/navigation';
+import { useAppNavigation } from '@/platform';
+import {
+  Button,
+  Card,
+  EmptyState,
+  HeroCard,
+  Icon,
+  IconTile,
+  MetricTile,
+  StatusBadge,
+  Text,
+  useTheme,
+} from '@/shared/ui';
+
+import type { ShopSummary } from '../domain/types';
+import { planMenuItem } from './account-menu';
+
+/**
+ * Thẻ cửa hàng của UI-I01 (board 1a): ô icon xanh dương, "Cửa hàng của bạn" / tên / "Quản lý cửa hàng",
+ * mở Cài đặt cửa hàng. Chưa có cửa hàng thì nói rõ, không bịa tên.
+ */
+export function ShopCard({ shop }: { shop: ShopSummary | null }) {
+  const { t } = useTranslation();
+  const { tokens } = useTheme();
+  const navigation = useAppNavigation();
+  const name = shop?.name ?? t('personal:profile.noShop');
+  const eyebrow = t('personal:profile.shopEyebrow');
+  const manage = t('personal:profile.shopManage');
+  return (
+    <Card
+      onPress={() => navigation.push(ROUTES.shopSettings)}
+      accessibilityLabel={[eyebrow, name, manage].join('. ')}
+      testID="shop-card"
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.md }}>
+        <IconTile icon="store" tone="blue" size="lg" />
+        <View style={{ flex: 1 }}>
+          <Text variant="caption" color="textMuted">
+            {eyebrow}
+          </Text>
+          <Text bold>{name}</Text>
+          <Text variant="caption" color="textMuted">
+            {manage}
+          </Text>
+        </View>
+        <Icon name="forward" size={18} color={tokens.color.text.secondary} />
+      </View>
+    </Card>
+  );
+}
+
+/**
+ * Thẻ gói của UI-I01 (board 1a). Gói/thời hạn chưa có nguồn dữ liệu (O-06, O-16; Q-21c) nên mọi giá
+ * trị là "Chưa có thông tin", huy hiệu "Sắp có"; KHÔNG bịa tên gói hay "Đang hoạt động". Chỉ mở được
+ * khi mục `plan` ở `account-menu.ts` được bật; hôm nay khóa (không mũi tên, không điều hướng).
+ */
+export function PlanHeroCard() {
+  const { t } = useTranslation();
+  const navigation = useAppNavigation();
+  const item = planMenuItem();
+  const open = item.availability === 'available';
+  const soonLabel = t('personal:status.comingSoon');
+  return (
+    <HeroCard
+      eyebrow={t('personal:plan.eyebrow')}
+      title={t('personal:plan.title')}
+      subtitle={t('personal:plan.retention')}
+      {...(open ? {} : { badge: <StatusBadge label={soonLabel} />, badgeLabel: soonLabel })}
+      {...(open ? { onPress: () => navigation.push(item.route) } : {})}
+      testID="plan-card"
+    />
+  );
+}
+
+/**
+ * Khối "Dữ liệu bằng chứng" (board 1a): ba ô chỉ có nhãn, KHÔNG số liệu (chưa có tệp bằng chứng và
+ * chưa có nguồn đếm theo cửa hàng; `countUnsyncedOnDevice` đếm cả máy nên không khớp nghĩa) kèm nút
+ * mở Trung tâm đồng bộ.
+ */
+export function EvidenceOverviewCard() {
+  const { t } = useTranslation();
+  const { tokens } = useTheme();
+  const navigation = useAppNavigation();
+  return (
+    <Card testID="evidence-overview">
+      <View style={{ gap: tokens.space.md }}>
+        <Text variant="sectionTitle" accessibilityRole="header">
+          {t('personal:evidenceOverview.title')}
+        </Text>
+        <View style={{ flexDirection: 'row' }}>
+          <MetricTile
+            label={t('personal:evidenceOverview.onDevice')}
+            icon="device-saved"
+            testID="metric-on-device"
+          />
+          <MetricTile
+            label={t('personal:evidenceOverview.pendingSync')}
+            icon="sync"
+            tone="warning"
+            testID="metric-pending-sync"
+          />
+          <MetricTile
+            label={t('personal:evidenceOverview.cloud')}
+            icon="cloud"
+            tone="blue"
+            testID="metric-cloud"
+          />
+        </View>
+        <Button
+          label={t('personal:evidenceOverview.openSync')}
+          onPress={() => navigation.push(ROUTES.sync)}
+          testID="open-sync-center"
+        />
+      </View>
+    </Card>
+  );
+}
+
+/** Khung 1e: chưa có họ tên. Thay thẻ hồ sơ (Q-21e); mở Sửa họ tên. */
+export function ProfileNoName() {
+  const { t } = useTranslation();
+  const navigation = useAppNavigation();
+  return (
+    <View testID="profile-no-name">
+      <EmptyState
+        icon="user"
+        iconTone="brand"
+        title={t('personal:profile.noNameTitle')}
+        message={t('personal:profile.noNameMessage')}
+        actionLabel={t('personal:profile.noNameAction')}
+        actionVariant="primary"
+        onAction={() => navigation.push(ROUTES.editProfile)}
+      />
+    </View>
+  );
+}
+
+/** Khung 1d: ngoại tuyến và chưa có dữ liệu hồ sơ nào để hiện. */
+export function ProfileOffline({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <View testID="profile-offline">
+      <EmptyState
+        icon="disconnect"
+        iconTone="brand"
+        title={t('personal:profile.offlineTitle')}
+        message={t('personal:profile.offlineMessage')}
+        actionLabel={t('common:actions.retry')}
+        actionVariant="primary"
+        onAction={onRetry}
+      />
+    </View>
+  );
+}

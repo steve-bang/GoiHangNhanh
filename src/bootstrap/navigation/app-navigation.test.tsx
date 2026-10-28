@@ -114,7 +114,8 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
   it('từ Cá nhân vào Sửa họ tên và Đổi mật khẩu (route con UI-I01/UI-I05): thanh tab ẩn trên form, hiện lại khi Back về Cá nhân (Q-20r)', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.profile.path });
     expectTabBarVisible(true);
-    await fireEvent.press(await screen.findByTestId('profile-summary'));
+    // Cổng giả mặc định chưa có họ tên: khung 1e có nút "Cập nhật" mở Sửa họ tên.
+    await fireEvent.press(await screen.findByRole('button', { name: 'Cập nhật' }));
     expect(screen.getByTestId('screen-UI-I01-edit-profile')).toBeOnTheScreen();
     expectTabBarVisible(false);
     await act(async () => {

@@ -9,18 +9,21 @@ import type { Region } from './use-region';
 
 /**
  * Khung chữ + nút thử lại cho một khu vực lỗi (câu chữ lấy theo mã lỗi, docs/09 mục 5.1). `inline`:
- * đặt trong một thẻ nhóm có sẵn (không bọc thẻ thứ hai).
+ * đặt trong một thẻ nhóm có sẵn (không bọc thẻ thứ hai). `card`: thẻ lỗi nền hồng của board 07
+ * (khung 1c), tự là thẻ nên không bọc thêm.
  */
 export function RegionError({
   region,
   code,
   testID,
   inline = false,
+  card = false,
 }: {
   region: Region<unknown>;
   code: Parameters<typeof resolveErrorMessage>[1];
   testID: string;
   inline?: boolean;
+  card?: boolean;
 }) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
@@ -32,8 +35,10 @@ export function RegionError({
       {...(message.hint ? { message: message.hint } : {})}
       onRetry={() => void region.reload()}
       retrying={region.refreshing}
+      {...(card ? { variant: 'card' as const } : {})}
     />
   );
+  if (card) return state;
   return inline ? <View style={{ padding: tokens.space.lg }}>{state}</View> : <Card>{state}</Card>;
 }
 
