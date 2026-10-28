@@ -1,1 +1,9 @@
-{}
+{
+  "src/test-utils/render.tsx": "Chỉ thêm provider (cổng cá nhân, phiên, toast) quanh cây test; không đổi giao diện màn đã xác nhận.",
+  "src/features/shop/ui/ForgotPasswordScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện.",
+  "src/features/shop/ui/NewPasswordScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện.",
+  "src/features/shop/ui/SignUpScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện.",
+  "src/features/shop/ui/VerifyOtpScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện.",
+  "src/features/shop/ui/onboarding/OnboardingParts.tsx": "Chỉ chuyển helper resolveErrorMessage/errorText/ErrorMessage sang core/i18n/error-message (dùng chung với tab Cá nhân); giữ nguyên giao diện.",
+  "src/features/shop/ui/SignInScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện. Thêm ghi phiên toàn app (session.beginSession) sau khi đăng nhập thành công, chỉ tầng logic."
+}

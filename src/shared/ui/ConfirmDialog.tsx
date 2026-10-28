@@ -21,6 +21,10 @@ interface ConfirmDialogProps {
    * ngược lại là nút xác nhận. Khi lối an toàn là "ở lại" (ví dụ rời màn quay), truyền `cancel`.
    */
   primary?: 'confirm' | 'cancel';
+  /** Dòng phụ nhỏ, mờ dưới nội dung (ví dụ lời trấn an về dữ liệu). */
+  detail?: string;
+  /** Nút xác nhận phá hủy dạng viền/chữ đỏ (thứ yếu) thay vì nền đỏ đặc. Chỉ có tác dụng khi `destructive`. */
+  confirmOutlined?: boolean;
 }
 
 /** Hộp thoại xác nhận, chỉ dùng cho hành động quan trọng (xóa, đóng hồ sơ, rời phiên quay). */
@@ -33,6 +37,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   destructive = false,
+  detail,
+  confirmOutlined = false,
   primary = destructive ? 'cancel' : 'confirm',
 }: ConfirmDialogProps) {
   const { tokens } = useTheme();
@@ -64,6 +70,11 @@ export function ConfirmDialog({
               {title}
             </Text>
             <Text>{message}</Text>
+            {detail ? (
+              <Text variant="caption" color="textMuted">
+                {detail}
+              </Text>
+            ) : null}
             <View style={{ gap: tokens.space.sm, marginTop: tokens.space.sm }}>
               {primary === 'cancel' ? (
                 <>
@@ -72,6 +83,7 @@ export function ConfirmDialog({
                     label={confirmLabel}
                     onPress={onConfirm}
                     variant={destructive ? 'destructive' : 'secondary'}
+                    {...(destructive && confirmOutlined ? { outlined: true } : {})}
                   />
                 </>
               ) : (

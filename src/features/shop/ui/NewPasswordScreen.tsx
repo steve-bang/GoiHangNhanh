@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ErrorCode } from '@/core/errors/codes';
+import { resolveErrorMessage, type ErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Text, useTheme } from '@/shared/ui';
@@ -14,13 +15,7 @@ import { PasswordToggle, RequirementCard } from './onboarding/AuthParts';
 import { LockCheckIllustration } from './onboarding/AuthIllustrations';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import { OnboardingScaffold } from './onboarding/OnboardingScaffold';
-import {
-  FormErrorBanner,
-  IconField,
-  resolveErrorMessage,
-  type ErrorMessage,
-  type TextInputHandle,
-} from './onboarding/OnboardingParts';
+import { FormErrorBanner, IconField, type TextInputHandle } from './onboarding/OnboardingParts';
 import { isRetryable, useGatewayTask } from './onboarding/useGatewayTask';
 
 /**

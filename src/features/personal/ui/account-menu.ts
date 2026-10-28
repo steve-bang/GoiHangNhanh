@@ -1,0 +1,72 @@
+import { ROUTES, type RouteDef } from '@/core/navigation';
+import type { IconName } from '@/shared/ui';
+
+/**
+ * Trạng thái của một mục menu tab Cá nhân. MỘT CHỖ DUY NHẤT để bật/tắt mục:
+ * - `available`: mở được.
+ * - `coming_soon`: màn đích chưa làm; hàng bị khóa (không điều hướng) và có nhãn "Sắp có".
+ * - `hidden`: không hiện (đặc tả chưa chốt, không dựng chức năng giả).
+ * Khi PR tương ứng xong chỉ cần đổi `availability` của mục ở đây.
+ */
+export type MenuAvailability = 'available' | 'coming_soon' | 'hidden';
+
+/** Nhóm hiển thị trên UI-I01. Hai nhóm đầu còn có thẻ động (hồ sơ, cửa hàng) do màn dựng. */
+export type MenuGroupId = 'shopAndPlan' | 'settings' | 'support';
+
+export interface MenuItem {
+  readonly id: string;
+  readonly group: MenuGroupId;
+  readonly route: RouteDef;
+  readonly labelKey: `nav:account.${string}`;
+  readonly icon: IconName;
+  readonly availability: MenuAvailability;
+}
+
+export const ACCOUNT_MENU: readonly MenuItem[] = [
+  {
+    id: 'plan',
+    group: 'shopAndPlan',
+    route: ROUTES.plan,
+    labelKey: 'nav:account.plan',
+    icon: 'sparkle',
+    availability: 'coming_soon',
+  },
+  // Thành viên và quyền: mô hình thành viên/vai trò chưa chốt (O-03, O-07) nên không hiện.
+  {
+    id: 'members',
+    group: 'shopAndPlan',
+    route: ROUTES.members,
+    labelKey: 'nav:account.members',
+    icon: 'user',
+    availability: 'hidden',
+  },
+  {
+    id: 'notifications',
+    group: 'settings',
+    route: ROUTES.notifications,
+    labelKey: 'nav:account.notifications',
+    icon: 'notifications',
+    availability: 'coming_soon',
+  },
+  {
+    id: 'security',
+    group: 'settings',
+    route: ROUTES.security,
+    labelKey: 'nav:account.security',
+    icon: 'lock',
+    availability: 'coming_soon',
+  },
+  {
+    id: 'help',
+    group: 'support',
+    route: ROUTES.help,
+    labelKey: 'nav:account.help',
+    icon: 'help',
+    availability: 'coming_soon',
+  },
+];
+
+/** Các mục hiện được của một nhóm (bỏ mục `hidden`), giữ thứ tự khai báo. */
+export function visibleMenuItems(group: MenuGroupId): readonly MenuItem[] {
+  return ACCOUNT_MENU.filter((item) => item.group === group && item.availability !== 'hidden');
+}

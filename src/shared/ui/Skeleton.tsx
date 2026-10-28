@@ -6,10 +6,12 @@ import { useTheme } from './theme';
 interface SkeletonProps {
   width?: DimensionValue;
   height?: number;
+  /** Hình tròn đường kính `height` (giữ chỗ cho avatar); bỏ qua `width`. */
+  circle?: boolean;
 }
 
 /** Khối giữ chỗ khi đang tải. Tĩnh (không hiệu ứng lấp lánh): không thêm hiệu ứng trang trí. */
-export function Skeleton({ width = '100%', height = 16 }: SkeletonProps) {
+export function Skeleton({ width = '100%', height = 16, circle = false }: SkeletonProps) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
   return (
@@ -18,9 +20,9 @@ export function Skeleton({ width = '100%', height = 16 }: SkeletonProps) {
       accessibilityLabel={t('common:loading')}
       accessibilityState={{ busy: true }}
       style={{
-        width,
+        width: circle ? height : width,
         height,
-        borderRadius: tokens.radius.sm,
+        borderRadius: circle ? height / 2 : tokens.radius.sm,
         backgroundColor: tokens.color.border.default,
       }}
     />

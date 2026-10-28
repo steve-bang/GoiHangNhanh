@@ -179,8 +179,8 @@ Lưu ý: xuất PDF/ZIP/chia sẻ phải được xác định trong đặc tả
 
 | Mã | Màn | Nội dung chính |
 |---|---|---|
-| UI-I01 | Hồ sơ tài khoản | Tên hiển thị, email, shop đang dùng, gói, bảo mật, trợ giúp, đăng xuất |
-| UI-I02 | Cài đặt shop | Tên shop, nguồn bán, tùy chọn mặc định; không thành trang quản lý danh mục sản phẩm; đổi tên shop không đổi lịch sử bằng chứng đã ghi |
+| UI-I01 | Hồ sơ tài khoản *(tiêu đề trong app: "Cá nhân", theo tên tab, D-16; lệch có chủ đích với `nav.json` `titles.UI-I01`)* | Tên hiển thị, email, shop đang dùng, gói, bảo mật, trợ giúp, đăng xuất |
+| UI-I02 | Cài đặt shop *(tiêu đề trong app: "Cài đặt cửa hàng"; route con "Sửa thông tin cửa hàng" và "Chuyển cửa hàng" dùng cùng mã; thuật ngữ shop/cửa hàng chờ BA, Q-20q)* | Tên shop, nguồn bán, tùy chọn mặc định; không thành trang quản lý danh mục sản phẩm; đổi tên shop không đổi lịch sử bằng chứng đã ghi |
 | UI-I03 | Thành viên và quyền | Danh sách thành viên; vai trò theo [07](07-roles-permissions-security.md); mời, thu hồi, trạng thái lời mời; mọi thao tác trong phạm vi shop |
 | UI-I04 | Thông báo | Chọn: upload lỗi/cần xử lý; đồng bộ hoàn tất (tùy chọn); dung lượng sắp đầy; gói sắp hết hạn. Không báo từng video tải thành công |
 | UI-I05 | Bảo mật và dữ liệu | Đăng xuất thiết bị; quản lý phiên/thiết bị nếu hỗ trợ; chính sách lưu trữ và xóa; yêu cầu tải dữ liệu/xóa tài khoản; **cảnh báo dữ liệu chưa đồng bộ trước khi đăng xuất hoặc xóa app** |

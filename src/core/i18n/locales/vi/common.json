@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Đơn\u00a0Chứng"
+    "name": "Đơn Chứng"
   },
   "actions": {
     "back": "Quay lại",
@@ -8,7 +8,10 @@
     "retry": "Thử lại",
     "clearText": "Xóa nội dung đã nhập",
     "increase": "Tăng số lượng",
-    "decrease": "Giảm số lượng"
+    "decrease": "Giảm số lượng",
+    "showPassword": "Hiện mật khẩu",
+    "hidePassword": "Ẩn mật khẩu",
+    "dismiss": "Đóng thông báo"
   },
   "illustrative": "Dữ liệu minh họa của khung giao diện, chưa phải dữ liệu thật.",
   "loading": "Đang tải",

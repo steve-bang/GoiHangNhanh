@@ -21,7 +21,6 @@ export const PlansScreen = () => <PlaceholderScreen uiCode="UI-H02" />;
 export const CheckoutScreen = () => <PlaceholderScreen uiCode="UI-H03" />;
 export const PlanLimitScreen = () => <PlaceholderScreen uiCode="UI-H04" />;
 
-export const ShopSettingsScreen = () => <PlaceholderScreen uiCode="UI-I02" />;
 export const MembersScreen = () => <PlaceholderScreen uiCode="UI-I03" />;
 export const NotificationsScreen = () => <PlaceholderScreen uiCode="UI-I04" />;
 export const SecurityScreen = () => <PlaceholderScreen uiCode="UI-I05" />;

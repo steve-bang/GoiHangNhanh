@@ -4,6 +4,7 @@ import { Pressable, Text, useWindowDimensions } from 'react-native';
 
 import { resources } from '@/core/i18n/resources';
 import { ROUTES } from '@/core/navigation';
+import { useSession } from '@/features/personal';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
@@ -185,6 +186,33 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
         mockNavigation.reset.mock.calls,
       ]),
     ).not.toContain(FAKE_DEMO_PASSWORD);
+  });
+
+  it('thành công: ghi phiên toàn app (chỉ uid/email, không mật khẩu); thất bại thì không ghi', async () => {
+    function SessionProbe() {
+      const { state } = useSession();
+      return <Text testID="probe-session">{JSON.stringify(state.user)}</Text>;
+    }
+    const fake = createFakeApi();
+    await renderWithProviders(
+      <>
+        <SessionProbe />
+        <SignInScreen />
+      </>,
+      { gateways: fake },
+    );
+    await fill(FAKE_DEMO_EMAIL, 'sai-mat-khau-1');
+    await fireEvent.press(submit());
+    expect(screen.getByTestId('probe-session')).toHaveTextContent('null');
+
+    await fill(FAKE_DEMO_EMAIL, FAKE_DEMO_PASSWORD);
+    await fireEvent.press(submit());
+    const user = JSON.parse(screen.getByTestId('probe-session').props.children as string) as Record<
+      string,
+      unknown
+    >;
+    expect(user.email).toBe(FAKE_DEMO_EMAIL);
+    expect(JSON.stringify(user)).not.toContain(FAKE_DEMO_PASSWORD);
   });
 
   it('thành công nhưng chưa có shop: sang /create-shop', async () => {

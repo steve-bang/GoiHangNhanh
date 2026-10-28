@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getEnabledSocialProviders } from '@/core/config/feature-flags';
+import { resolveErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
+import { useSession } from '@/features/personal';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Text, useTheme } from '@/shared/ui';
 
@@ -15,12 +17,7 @@ import { StackedBrandLogo } from './BrandLogo';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import { OnboardingScaffold } from './onboarding/OnboardingScaffold';
 import { PasswordToggle, SocialIconRow, SuccessBanner } from './onboarding/AuthParts';
-import {
-  FormErrorBanner,
-  IconField,
-  resolveErrorMessage,
-  type TextInputHandle,
-} from './onboarding/OnboardingParts';
+import { FormErrorBanner, IconField, type TextInputHandle } from './onboarding/OnboardingParts';
 import { isRetryable, useGatewayTask } from './onboarding/useGatewayTask';
 import { WelcomeIllustration } from './WelcomeIllustration';
 
@@ -37,6 +34,7 @@ export function SignInScreen() {
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
   const { dispatch, recovery, dispatchRecovery, gateways } = useOnboardingFlow();
+  const session = useSession();
   const providers = getEnabledSocialProviders();
 
   const [email, setEmail] = useState(recovery.signInEmail ?? '');
@@ -110,6 +108,9 @@ export function SignInScreen() {
       const account = await gateways.auth.signInWithPassword({ email: normalized, password });
       // Đã rời màn (Back/đi chỗ khác) trong lúc chờ: không điều hướng thay người dùng.
       if (!isActive()) return;
+      // Ghi phiên toàn app (chỉ tầng logic, không đổi giao diện). `shopId` chưa biết: cổng đăng nhập
+      // chưa trả ID shop (chờ Firebase thật, decisions.md Q-17/Q-20); họ tên lấy từ hồ sơ khi cần.
+      session.beginSession({ uid: account.uid, email: account.email, displayName: null }, null);
       if (account.hasShop) {
         // Rời luồng thiết lập: xóa dữ liệu của tài khoản trước (nếu có) khỏi bộ nhớ luồng.
         dispatch({ type: 'reset' });

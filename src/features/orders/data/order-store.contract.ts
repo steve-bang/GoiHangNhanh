@@ -200,6 +200,60 @@ export function runOrderStoreContract(name: string, create: () => Promise<OrderS
       expect(await store.listSessionsOfOrder(LOCAL_SHOP_ID, details.order.id)).toHaveLength(2);
     });
 
+    it('đếm chưa đồng bộ: chưa có tệp bằng chứng nên 0 (kể cả khi có đơn và phiên created), đúng theo shop', async () => {
+      const store = await create();
+      expect(await store.countUnsynced(LOCAL_SHOP_ID)).toBe(0);
+      await startSession(store, makeOrder('UNS'), 'sess-uns', undefined, true);
+      expect(await store.countUnsynced(LOCAL_SHOP_ID)).toBe(0);
+      expect(await store.countUnsynced('shop-khac' as ShopId)).toBe(0);
+    });
+
+    it('đang quay: phiên created KHÔNG tính; chỉ phiên đang ghi của đúng shop mới tính, kết thúc thì hết', async () => {
+      const store = await create();
+      const other = 'shop-khac' as ShopId;
+      expect(await store.hasRecordingInProgress(LOCAL_SHOP_ID)).toBe(false);
+      await startSession(store, makeOrder('REC-1'), 'sess-rec-0', undefined, true);
+      expect(await store.hasRecordingInProgress(LOCAL_SHOP_ID)).toBe(false);
+
+      // Chưa có recorder nên dựng phiên đang ghi bằng cách ghi thẳng trạng thái (kho giữ nguyên giá trị ghi).
+      const details = makeOrder('REC-2');
+      await store.saveNewOrder(details);
+      const pkg = details.packages[0];
+      if (!pkg) throw new Error('fixture');
+      const built = buildPackingSession(details, pkg.id, {
+        sessionId: 'sess-rec-1' as SessionId,
+        nowDevice: 6000,
+      });
+      if (!built.ok) throw new Error('fixture');
+      await store.saveSession({ ...built.session, sessionStatus: 'recording' as never });
+      expect(await store.hasRecordingInProgress(LOCAL_SHOP_ID)).toBe(true);
+      expect(await store.hasRecordingInProgress(other)).toBe(false);
+    });
+
+    it('toàn thiết bị: thấy phiên đang quay của MỌI shop và chưa đồng bộ là 0; phiên created không tính', async () => {
+      const store = await create();
+      const other = 'shop-khac' as ShopId;
+      expect(await store.hasRecordingOnDevice()).toBe(false);
+      expect(await store.countUnsyncedOnDevice()).toBe(0);
+      await startSession(store, makeOrder('DEV-0'), 'sess-dev-0', undefined, true);
+      expect(await store.hasRecordingOnDevice()).toBe(false);
+
+      // Phiên đang ghi của shop KHÁC shop hiện dùng: kiểm tra theo shop không thấy, toàn thiết bị thấy.
+      const details = makeOrder('DEV-1', { shopId: other });
+      await store.saveNewOrder(details);
+      const pkg = details.packages[0];
+      if (!pkg) throw new Error('fixture');
+      const built = buildPackingSession(details, pkg.id, {
+        sessionId: 'sess-dev-1' as SessionId,
+        nowDevice: 7000,
+      });
+      if (!built.ok) throw new Error('fixture');
+      await store.saveSession({ ...built.session, sessionStatus: 'recording' as never });
+      expect(await store.hasRecordingInProgress(LOCAL_SHOP_ID)).toBe(false);
+      expect(await store.hasRecordingInProgress(other)).toBe(true);
+      expect(await store.hasRecordingOnDevice()).toBe(true);
+    });
+
     it('cô lập shop: shop khác không đọc, không sửa, không thêm kiện, không tạo phiên dù biết ID', async () => {
       const store = await create();
       const other = 'shop-khac' as ShopId;
