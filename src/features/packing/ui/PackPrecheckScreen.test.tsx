@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { ROUTES } from '@/core/navigation';
@@ -6,6 +7,8 @@ import { mockScanner, resetMockScanner } from '@/test-utils/mock-barcode-scanner
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { sampleOrder, sampleSession, seedOrder } from '@/test-utils/order-fixtures';
 import { renderWithProviders } from '@/test-utils/render';
+
+import type { DeviceCondition } from '@/platform';
 
 import { MIN_FREE_BYTES_TO_RECORD } from '../domain';
 import { PackPrecheckScreen } from './PackPrecheckScreen';
@@ -46,9 +49,12 @@ let mockDevice: { batteryLevel: number | null; charging: boolean | null; thermal
     charging: false,
     thermal: null,
   };
+// Mỗi lần đọc máy lấy một phần tử của hàng đợi (nếu có) để test điều khiển thời điểm kết quả đến.
+let mockDeviceReads: (() => Promise<unknown>)[] = [];
 jest.mock('@/platform/device-condition', () => ({
   readDeviceCondition: () =>
-    mockDeviceHang ? new Promise(() => undefined) : Promise.resolve(mockDevice),
+    mockDeviceReads.shift()?.() ??
+    (mockDeviceHang ? new Promise(() => undefined) : Promise.resolve(mockDevice)),
   UNKNOWN_DEVICE_CONDITION: { batteryLevel: null, charging: null, thermal: null },
 }));
 let mockDeviceHang = false;
@@ -64,6 +70,7 @@ beforeEach(() => {
   mockWritable = true;
   mockDevice = { batteryLevel: 0.8, charging: false, thermal: null };
   mockDeviceHang = false;
+  mockDeviceReads = [];
   mockProbe.mockClear();
   mockOpenSettings.mockReset();
   resetMockNavigation();
@@ -263,5 +270,111 @@ describe('UI-C02 Kiểm tra trước khi quay', () => {
       expect(screen.getByTestId('precheck-issue-storage')).toBeOnTheScreen();
       expect(mockNavigation.replace).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('kết quả đo của lượt cũ đến muộn', () => {
+  const OK: DeviceCondition = { batteryLevel: 0.8, charging: false, thermal: null };
+  const LOW: DeviceCondition = { batteryLevel: 0.05, charging: false, thermal: null };
+  /** Một lần đọc máy mà test tự quyết lúc nào trả. */
+  function deferredRead() {
+    let resolve: (value: DeviceCondition) => void = () => undefined;
+    const promise = new Promise<DeviceCondition>((r) => (resolve = r));
+    mockDeviceReads.push(() => promise);
+    return (value: DeviceCondition) => resolve(value);
+  }
+
+  it('Kiểm tra lại: lượt mới chưa có kết quả thì KHÔNG dùng số liệu lượt trước (không còn màn lỗi cũ, không điều hướng); kết quả lượt mới mới được áp dụng', async () => {
+    mockDevice = LOW;
+    const session = await open();
+    expect(await screen.findByTestId('precheck-issue-battery')).toBeOnTheScreen();
+    const answer = deferredRead();
+    mockDevice = OK;
+    await fireEvent.press(screen.getByRole('button', { name: 'Kiểm tra lại' }));
+    await act(async () => undefined);
+    // Lượt 1 đang đọc: không được dựng kết quả từ lượt 0 (vẫn là pin thấp).
+    expect(screen.getByText('Đang kiểm tra máy…')).toBeOnTheScreen();
+    expect(screen.queryByTestId('precheck-issue-battery')).toBeNull();
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    await act(async () => answer(OK));
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packRecord, {
+      sessionId: session.id,
+    });
+  });
+
+  it('đổi sang phiên khác trong lúc đang đọc: kết quả đọc của lượt bị hủy đến muộn KHÔNG áp dụng cho lượt đang chạy (không vào quay bằng số liệu cũ, không ghi đè kết quả mới)', async () => {
+    const orders = createMemoryOrderStore();
+    // Mỗi phiên một đơn/kiện riêng (mỗi kiện chỉ có một phiên đang hoạt động).
+    const sessionOf = async (tag: string) => {
+      const base = sampleOrder({ withLines: false });
+      const orderId = `order-${tag}` as typeof base.order.id;
+      const details = {
+        order: { ...base.order, id: orderId, orderCode: `DH-${tag}` },
+        lines: [],
+        packages: base.packages.map((pkg) => ({ ...pkg, id: `pkg-${tag}` as never, orderId })),
+      };
+      await seedOrder(orders, details);
+      const session = { ...sampleSession(details, Date.now()), id: `phien-${tag}` as never };
+      await orders.saveSession(session);
+      return session;
+    };
+    const sessionA = await sessionOf('a');
+    const sessionB = await sessionOf('b');
+    await orders.updateSessionStatus(sessionB.shopId, sessionB.id, 'recording'); // không còn `created`
+    const sessionC = await sessionOf('c');
+
+    let select: (id: string) => void = () => undefined;
+    function Host() {
+      const [id, setId] = useState(sessionA.id as string);
+      select = (next) => {
+        mockNavigation.params = { sessionId: next };
+        setId(next);
+      };
+      return id ? <PackPrecheckScreen /> : null;
+    }
+    mockNavigation.params = { sessionId: sessionA.id };
+    const staleRead = deferredRead(); // lượt của phiên A
+    await renderWithProviders(<Host />, { orderStore: orders });
+    await act(async () => undefined);
+    expect(screen.getByText('Đang kiểm tra máy…')).toBeOnTheScreen();
+
+    // Phiên B không còn `created`: màn thôi đo (hủy lượt của A) và chuyển thẳng sang quay.
+    await act(async () => select(sessionB.id));
+    await act(async () => undefined);
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packRecord, {
+      sessionId: sessionB.id,
+    });
+    mockNavigation.replace.mockClear();
+
+    const toC = { sessionId: sessionC.id }; // (mock điều hướng đổi tham chiếu mỗi lần render nên lệnh sang B có thể lặp lại)
+    // Phiên C là `created`: lượt đo mới (cùng số lượt 0) bắt đầu; pin lúc này thấp.
+    const currentRead = deferredRead();
+    await act(async () => select(sessionC.id));
+    await act(async () => undefined);
+    expect(screen.getByText('Đang kiểm tra máy…')).toBeOnTheScreen();
+
+    // Kết quả "tốt" của lượt cũ (phiên A) đến muộn: phải bị bỏ, không được cho vào quay.
+    await act(async () => staleRead(OK));
+    expect(mockNavigation.replace).not.toHaveBeenCalledWith(ROUTES.packRecord, toC);
+    expect(screen.getByText('Đang kiểm tra máy…')).toBeOnTheScreen();
+
+    // Kết quả của lượt hiện tại (pin thấp) được áp dụng và chặn quay.
+    await act(async () => currentRead(LOW));
+    expect(await screen.findByTestId('precheck-issue-battery')).toBeOnTheScreen();
+    expect(mockNavigation.replace).not.toHaveBeenCalledWith(ROUTES.packRecord, toC);
+  });
+
+  it('gỡ màn khi đang đọc: kết quả đến muộn không điều hướng và không gây lỗi', async () => {
+    const answer = deferredRead();
+    const orders = createMemoryOrderStore();
+    const details = await seedOrder(orders, sampleOrder());
+    const session = sampleSession(details, Date.now());
+    await orders.saveSession(session);
+    mockNavigation.params = { sessionId: session.id };
+    const view = await renderWithProviders(<PackPrecheckScreen />, { orderStore: orders });
+    await act(async () => undefined);
+    await act(async () => view.unmount());
+    await act(async () => answer(OK));
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
   });
 });
