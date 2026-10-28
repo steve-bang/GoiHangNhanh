@@ -179,7 +179,7 @@ export function createMemoryOrderStore(): OrderStore {
     async updateSessionStatus(shopId, id, status) {
       const session = sessions.get(id);
       if (!session || session.shopId !== shopId) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
-      sessions.set(id, { ...session, sessionStatus: status as PackingSession['sessionStatus'] });
+      sessions.set(id, { ...session, sessionStatus: status });
     },
     async listSessionsOfOrder(shopId, orderId) {
       return sessionsOf(shopId, orderId).map(copy);

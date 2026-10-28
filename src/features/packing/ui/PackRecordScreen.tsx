@@ -11,7 +11,7 @@ import {
   useScannerPermission,
   useScreenFocused,
 } from '@/platform';
-import { RecordingFrame, Screen, Text } from '@/shared/ui';
+import { Button, RecordingFrame, Screen, Text } from '@/shared/ui';
 
 import { RECORDER_ENABLED, formatElapsed } from '../domain';
 import { PackRecordLive } from './PackRecordLive';
@@ -71,8 +71,29 @@ export function PackRecordScreen() {
     );
   }
 
-  // Bộ ghi thật bật: màn riêng, ghi tệp thật và chỉ chuyển bước khi tệp đã lưu bền.
-  if (RECORDER_ENABLED) return <PackRecordLive session={session} />;
+  // Bộ ghi thật bật: màn riêng, ghi tệp thật và chỉ chuyển bước khi tệp đã lưu bền. CHỈ phiên `created`
+  // (chưa ghi) được quay: phiên đã `recording`/`ended`/`interrupted`/`needs_attention` mà mở lại (liên kết
+  // sâu, nút Back) sẽ ghi thêm video và đè trạng thái phiên, vi phạm bất biến 4 và 7. Quay lại thì phải
+  // bắt đầu phiên MỚI từ đơn.
+  if (RECORDER_ENABLED) {
+    if (session.sessionStatus !== 'created') {
+      return (
+        <Screen
+          title={t('nav:titles.UI-C03')}
+          testID="screen-UI-C03"
+          footer={
+            <Button
+              label={t('screens:record.backToOrder')}
+              onPress={() => navigation.replace(ROUTES.orderPreview, { orderId: session.orderId })}
+            />
+          }
+        >
+          <Text accessibilityRole="alert">{t('screens:record.alreadyRecorded')}</Text>
+        </Screen>
+      );
+    }
+    return <PackRecordLive session={session} />;
+  }
 
   const goNext = () =>
     navigation.replace(ROUTES.orderPreview, {

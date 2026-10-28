@@ -44,9 +44,8 @@ export function buildPackingSession(
 }
 
 /**
- * Trạng thái "đang ghi video" của phiên. TÊN TẠM: chưa có recorder nên chưa phiên nào mang trạng thái
- * này (kiểu `PackingSession.sessionStatus` mới chỉ có `created`); recorder phải đặt tên chính thức và
- * ghi trạng thái này khi tệp bắt đầu được ghi. Đăng xuất (PER-21) dựa vào đây để chặn khi đang quay.
+ * Trạng thái "đang ghi video" của phiên: luồng ghi video (khi bật cờ `RECORDER_ENABLED`) đặt khi tệp bắt
+ * đầu được ghi. TÊN CÒN TẠM (chờ BA đặt tên chính thức). Đăng xuất (PER-21) dựa vào đây để chặn khi đang quay.
  * `created` (đã mở màn quay, chưa ghi tệp) KHÔNG phải đang quay: chưa có dữ liệu video để mất.
  */
 export const RECORDING_SESSION_STATUS = 'recording';

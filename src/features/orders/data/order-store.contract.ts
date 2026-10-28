@@ -6,7 +6,7 @@ import { buildNextPackage, buildOrder, type IdFactory } from '../domain/build-or
 import { toCodeKey } from '../domain/codes';
 import type { OrderStore } from '../domain/order-store';
 import type { OrderListCursor, OrderListItem } from '../domain/order-list';
-import { buildPackingSession } from '../domain/start-session';
+import { buildPackingSession, findActiveSession } from '../domain/start-session';
 import type { OrderDetails, OrderLine, PackingSession } from '../domain/types';
 import type { OrderEdit } from '../domain/update-order';
 import { LOCAL_SHOP_ID } from '../domain/local-shop';
@@ -367,6 +367,32 @@ export function runOrderStoreContract(name: string, create: () => Promise<OrderS
       await store.saveSession({ ...built.session, sessionStatus: 'recording' as never });
       expect(await store.hasRecordingInProgress(LOCAL_SHOP_ID)).toBe(true);
       expect(await store.hasRecordingInProgress(other)).toBe(false);
+    });
+
+    it('getSession/listSessionsOfOrder trả trạng thái phiên THẬT sau updateSessionStatus; chỉ created/recording là đang thực hiện', async () => {
+      const store = await create();
+      const details = makeOrder('REAL-ST');
+      await store.saveNewOrder(details);
+      const pkg = details.packages[0];
+      if (!pkg) throw new Error('fixture');
+      const built = buildPackingSession(details, pkg.id, {
+        sessionId: 'sess-real-1' as SessionId,
+        nowDevice: 8000,
+      });
+      if (!built.ok) throw new Error('fixture');
+      await store.saveSession(built.session);
+      expect((await store.getSession(LOCAL_SHOP_ID, built.session.id))?.sessionStatus).toBe(
+        'created',
+      );
+      await store.updateSessionStatus(LOCAL_SHOP_ID, built.session.id, 'ended');
+      expect((await store.getSession(LOCAL_SHOP_ID, built.session.id))?.sessionStatus).toBe(
+        'ended',
+      );
+      const [listed] = await store.listSessionsOfOrder(LOCAL_SHOP_ID, details.order.id);
+      expect(listed?.sessionStatus).toBe('ended');
+      expect(
+        findActiveSession(await store.listSessionsOfOrder(LOCAL_SHOP_ID, details.order.id), pkg.id),
+      ).toBeNull();
     });
 
     it('toàn thiết bị: thấy phiên đang quay của MỌI shop và chưa đồng bộ là 0; phiên created không tính', async () => {

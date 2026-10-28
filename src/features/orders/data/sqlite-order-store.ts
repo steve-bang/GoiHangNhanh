@@ -235,7 +235,7 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
     packageId: row.package_id as PackageId,
     startedAtDevice: row.started_at_device,
     snapshot: parseSnapshot(row.snapshot_json),
-    sessionStatus: 'created',
+    sessionStatus: row.session_status,
   });
 
   const sessionsOfOrder = async (shopId: ShopId, orderId: OrderId) => {

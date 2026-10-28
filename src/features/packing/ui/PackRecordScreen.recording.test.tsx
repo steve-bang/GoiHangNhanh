@@ -148,6 +148,34 @@ describe('màn quay khi bộ ghi thật bật', () => {
   });
 });
 
+describe('chỉ phiên created được quay', () => {
+  it.each(['recording', 'ended', 'interrupted', 'needs_attention'])(
+    'mở lại phiên %s: không bật camera, không tạo tệp, không đổi trạng thái; nói đã quay và có đường về đơn',
+    async (status) => {
+      const orders = createMemoryOrderStore();
+      const files = createMemoryEvidenceFileStore();
+      const details = await seedOrder(orders, sampleOrder());
+      const session = sampleSession(details, Date.now());
+      await orders.saveSession(session);
+      await orders.updateSessionStatus(LOCAL_SHOP_ID, session.id, status);
+      mockNavigation.params = { sessionId: session.id };
+      await renderWithProviders(<PackRecordScreen />, {
+        orderStore: orders,
+        evidenceFileStore: files,
+      });
+      expect(await screen.findByText(/Phiên này đã quay rồi/)).toBeOnTheScreen();
+      expect(mockRecorder.mounted).toBe(false);
+      expect(mockRecorder.recordCalls).toBe(0);
+      expect(await filesOf(files, session.id)).toEqual([]);
+      expect((await orders.getSession(LOCAL_SHOP_ID, session.id))?.sessionStatus).toBe(status);
+      await fireEvent.press(screen.getByRole('button', { name: 'Về đơn hàng' }));
+      expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.orderPreview, {
+        orderId: session.orderId,
+      });
+    },
+  );
+});
+
 describe('rời màn quay (vòng đời bộ ghi)', () => {
   const closeAndEnd = async () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Rời màn quay' }));
