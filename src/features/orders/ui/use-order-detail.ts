@@ -5,10 +5,11 @@ import type { ErrorCode } from '@/core/errors/codes';
 import type { OrderId } from '@/core/ids';
 import { useScreenFocused } from '@/platform';
 
-import { loadEvidenceStates, useCurrentShopId, useOrderStore } from '../data';
+import { loadEvidenceItems, useCurrentShopId, useOrderStore } from '../data';
 import {
-  summarizeOrderEvidence,
+  summarizePackEvidence,
   type OrderDetails,
+  type OrderEvidenceItem,
   type OrderEvidenceSummary,
   type PackingSession,
 } from '../domain';
@@ -22,6 +23,7 @@ export type OrderDetailState =
       details: OrderDetails;
       sessions: readonly PackingSession[];
       evidence: OrderEvidenceSummary;
+      items: readonly OrderEvidenceItem[];
     };
 
 /**
@@ -53,13 +55,14 @@ export function useOrderDetail(orderId: OrderId | undefined): {
         return;
       }
       const sessions = await store.listSessionsOfOrder(shopId, orderId);
-      const states = await loadEvidenceStates(shopId, [orderId]);
+      const items = await loadEvidenceItems(shopId, orderId);
       if (mine !== generation.current) return;
       setState({
         kind: 'ready',
         details,
         sessions,
-        evidence: summarizeOrderEvidence(states.get(orderId) ?? []),
+        evidence: summarizePackEvidence(items),
+        items,
       });
     } catch (caught) {
       if (mine !== generation.current) return;

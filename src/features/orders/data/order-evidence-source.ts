@@ -1,6 +1,8 @@
 import type { OrderId, ShopId } from '@/core/ids';
 import type { FileState } from '@/features/evidence';
 
+import type { OrderEvidenceItem } from '../domain/evidence-items';
+
 /** Trạng thái các tệp bằng chứng theo đơn (đơn không có trong map = chưa có tệp nào). */
 export type EvidenceStatesByOrder = ReadonlyMap<OrderId, readonly FileState[]>;
 
@@ -16,4 +18,16 @@ export async function loadEvidenceStates(
   _orderIds: readonly OrderId[],
 ): Promise<EvidenceStatesByOrder> {
   return new Map();
+}
+
+/**
+ * Danh sách tệp bằng chứng của MỘT đơn (UI-E03). Cùng nguồn với `loadEvidenceStates`: hiện luôn rỗng
+ * vì chưa có kho tệp thật; thay đồng thời với `loadEvidenceStates` (theo `shopId`, sắp xếp cũ nhất
+ * trước). Không tự dựng mục từ phiên `created` (bất biến 3).
+ */
+export async function loadEvidenceItems(
+  _shopId: ShopId,
+  _orderId: OrderId,
+): Promise<readonly OrderEvidenceItem[]> {
+  return [];
 }
