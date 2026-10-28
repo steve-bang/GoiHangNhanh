@@ -69,6 +69,7 @@ src/core/theme/
 | `red.700` | `#B3261E` | `danger` |
 | `red.50` | `#FCEBEA` | `dangerSoft` |
 | `teal.50` | `#EAF5F4` | `infoSoft` |
+| `blue.50` / `blue.700` | `#E8F0FA` / `#1F5EA8` | (mới, PR-A tab Cá nhân; Q-21g) ô icon cửa hàng/đám mây. Tương phản 700 trên 50: 5.7:1 |
 | `neutral.0` | `#FFFFFF` | `surface`, `formBackground`, `onBrand`… |
 | `neutral.50` | `#FAF8F2` | `background` |
 | `neutral.100` | `#F3F6F5` | `surfaceMuted` |
@@ -104,6 +105,7 @@ Các khóa chỉ màn ngoài phạm vi dùng (`splash*`, `welcome*`, `onboarding
 | `text.primary` | `neutral.900` | Chữ chính màn thường |
 | `text.secondary` | `neutral.600` | Chữ phụ, chú thích |
 | `text.onAction` | `neutral.0` | Chữ trên nút/nền thương hiệu, nền lỗi |
+| `text.onBrandMuted` | `white.75a` | Chữ phụ trên nền thương hiệu đậm (thẻ hero). Trộn lên `jade.950` ≈ 7.9:1 (mới, PR-A) |
 | `text.strong` / `text.subtle` | `slate.900` / `slate.500` | Chữ chính/phụ **nhóm màn form** (nợ TD-1, xem 6) |
 | `surface.screen` | `neutral.50` | Nền màn hình |
 | `surface.raised` | `neutral.0` | Thẻ, ô nhập, nền màn form |
@@ -115,6 +117,7 @@ Các khóa chỉ màn ngoài phạm vi dùng (`splash*`, `welcome*`, `onboarding
 | `feedback.{success,warning,danger}.{fg,bg}` | `green.700/100`, `amber.700/50`, `red.700/50` | Thông báo, ô nhắc |
 | `feedback.info.bg` | `teal.50` | Ô nhắc thông tin (chưa có `info.fg` — TD-2) |
 | `brand.soft` | `jade.100` | Nền nhấn nhẹ, trạng thái chọn |
+| `accent.blue.{fg,bg}` | `blue.700` / `blue.50` | Điểm nhấn xanh dương (ô icon). KHÔNG phải màu trạng thái; không dùng cho lỗi/thành công (mới, PR-A) |
 | `overlay.scrim` | `black.50a` | Lớp phủ hộp thoại/bottom sheet |
 | `camera.{background,onCamera,onCameraMuted,control,scanAccent}` | các primitive camera | **Cố định, không đổi theo sáng/tối** |
 
@@ -153,6 +156,9 @@ Chỉ ghi giá trị **đã có và dùng ≥2 lần hoặc có tên nghiệp v�
 | `button.borderWidth` | `strong` (1.5) / `thin` (1 cho slim) | `Button` | |
 | `component.field.minHeight` | 52 | `TextField`, `SearchField`, hàng ở `ProfileScreen`, `ScanScreen` | Ô nhập/hàng thao tác, lớn hơn vùng chạm để gõ một tay |
 | `component.tile.{sm,md,lg,xl}` | 28 / 44 / 52 / 56 | thumbnail dòng sản phẩm; avatar; ô biểu tượng thẻ; lối tắt tròn, ảnh đơn | Ô vuông chứa biểu tượng/ảnh nhỏ |
+| `component.field.multilineMinHeight` | 120 | `TextField multiline` | Ô nhiều dòng (liên hệ hỗ trợ); chỉ `minHeight`, cao thêm khi chữ lớn (mới, PR-A) |
+| `component.progress.height` | 6 | `StatusCard` | Thanh tiến độ ngang (mới, PR-A) |
+| `component.checkbox.size` | 24 | `Checkbox` | Ô vuông; vùng chạm cả hàng theo `size.touch`. Viền chưa chọn dùng `text.secondary` (>= 3:1), không dùng `border.default` (mới, PR-A) |
 | `component.actionCard.minHeight` | 88 | `ActionCard` | |
 | `component.stepper.valueMinWidth` | 48 | `QuantityStepper` | |
 | `component.scanFrame.cornerRadius` | 14 | `ScanScreen` | Khung ngắm (4 góc) |

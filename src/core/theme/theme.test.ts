@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { colors } from './colors';
+import { components } from './components';
+import { palette } from './primitives';
 import { semantic } from './semantic';
 import { EVIDENCE_STATUS_PRESENTATION } from './evidence-status';
 import { MIN_TOUCH_TARGET, typography } from './typography';
@@ -106,6 +108,77 @@ describe('tương phản token ngữ nghĩa (WCAG AA)', () => {
     ...Object.entries(status).map(([k, v]) => [`status.${k}`, v.fg, v.bg] as const),
   ] as const)('%s', (_name, fg, bg) => {
     expect(contrast(fg, bg)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+/** Trộn màu rgba (alpha) lên nền hex đặc để đo tương phản thật khi chữ mờ nằm trên nền đậm. */
+function over(rgba: string, hexBackground: string): string {
+  const m = /rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/.exec(rgba);
+  if (!m) throw new Error(`không phải rgba: ${rgba}`);
+  const n = parseInt(hexBackground.slice(1), 16);
+  const bg = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const alpha = Number(m[4]);
+  const mixed = [m[1], m[2], m[3]].map((v, i) =>
+    Math.round(alpha * Number(v) + (1 - alpha) * (bg[i] as number)),
+  );
+  return `#${mixed.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
+describe('token mới của đợt nâng cấp tab Cá nhân (PR-A, Q-21g)', () => {
+  const { color } = semantic;
+
+  it('primitive xanh dương và tham chiếu tầng 2 trỏ đúng primitive', () => {
+    expect(palette.blue).toEqual({ 50: '#E8F0FA', 700: '#1F5EA8' });
+    expect(color.accent.blue.fg).toBe(palette.blue[700]);
+    expect(color.accent.blue.bg).toBe(palette.blue[50]);
+    expect(color.text.onBrandMuted).toBe(palette.alpha.white75);
+  });
+
+  it('token thành phần mới có đúng giá trị', () => {
+    expect(components.progress.height).toBe(6);
+    expect(components.checkbox.size).toBe(24);
+    expect(components.field.multilineMinHeight).toBe(120);
+    // ô nhiều dòng phải cao hơn ô một dòng
+    expect(components.field.multilineMinHeight).toBeGreaterThan(components.field.minHeight);
+  });
+
+  it('chữ trên nền xanh dương và trên thẻ hero đạt 4.5:1', () => {
+    expect(contrast(color.accent.blue.fg, color.accent.blue.bg)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.accent.blue.fg, color.surface.raised)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.text.onAction, color.brand.deep)).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrast(over(color.text.onBrandMuted, color.brand.deep), color.brand.deep),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // Biểu tượng/tông ô icon (IconTile) và mô tả trong thẻ trạng thái (StatusCard) nằm trên nền thẻ trắng.
+  it.each([
+    ['brand', color.action.primary, color.brand.soft],
+    ['blue', color.accent.blue.fg, color.accent.blue.bg],
+    ['warning', color.feedback.warning.fg, color.feedback.warning.bg],
+    ['success', color.feedback.success.fg, color.feedback.success.bg],
+    ['danger', color.feedback.danger.fg, color.feedback.danger.bg],
+    ['neutral', color.text.secondary, color.surface.muted],
+  ] as const)('tông ô icon %s: biểu tượng >= 3:1, chữ >= 4.5:1', (_tone, fg, bg) => {
+    expect(contrast(fg, bg)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(Object.entries(semantic.status))(
+    'mô tả trạng thái %s trên thẻ trắng đạt 4.5:1',
+    (_name, v) => {
+      expect(contrast(v.fg, color.surface.raised)).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it('thanh tiến độ (vạch uploading trên nền border.field) nhìn thấy được >= 3:1 với nền thẻ', () => {
+    expect(contrast(semantic.status.uploading.fg, color.border.field)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('viền hộp kiểm chưa chọn (text.secondary) và viền lỗi đạt 3:1 trên nền thẻ (WCAG 1.4.11)', () => {
+    // `border.default` chỉ ~1.5:1 nên KHÔNG dùng cho ranh giới hộp kiểm.
+    expect(contrast(color.text.secondary, color.surface.raised)).toBeGreaterThanOrEqual(3);
+    expect(contrast(color.feedback.danger.fg, color.surface.raised)).toBeGreaterThanOrEqual(3);
+    expect(contrast(color.border.default, color.surface.raised)).toBeLessThan(3);
   });
 });
 

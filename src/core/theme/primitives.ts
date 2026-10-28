@@ -10,6 +10,7 @@ export const palette = {
   amber: { 700: '#B45309', 50: '#FDF3E7' },
   red: { 700: '#B3261E', 50: '#FCEBEA' },
   teal: { 50: '#EAF5F4' },
+  blue: { 50: '#E8F0FA', 700: '#1F5EA8' },
   neutral: {
     0: '#FFFFFF',
     50: '#FAF8F2',

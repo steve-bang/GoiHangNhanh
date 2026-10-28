@@ -16,6 +16,8 @@ interface ErrorStateProps {
   retryLabel?: string;
   /** Đang thử lại: khóa nút, chống bấm đúp. */
   retrying?: boolean;
+  /** `card`: nền thẻ lỗi (board 07), căn giữa trong thẻ bo góc. Mặc định `inline` như cũ. */
+  variant?: 'inline' | 'card';
   testID?: string;
 }
 
@@ -29,6 +31,7 @@ export function ErrorState({
   onRetry,
   retryLabel,
   retrying = false,
+  variant = 'inline',
   testID,
 }: ErrorStateProps) {
   const { t } = useTranslation();
@@ -38,7 +41,17 @@ export function ErrorState({
       testID={testID}
       accessible
       accessibilityRole="alert"
-      style={[styles.container, { gap: tokens.space.sm, padding: tokens.space.lg }]}
+      style={[
+        styles.container,
+        { gap: tokens.space.sm, padding: tokens.space.lg },
+        variant === 'card'
+          ? {
+              backgroundColor: tokens.color.feedback.danger.bg,
+              borderRadius: tokens.radius.md,
+              padding: tokens.space.xl,
+            }
+          : null,
+      ]}
     >
       <Icon name="alert" size={32} color={tokens.color.feedback.danger.fg} />
       <Text bold style={styles.centered}>

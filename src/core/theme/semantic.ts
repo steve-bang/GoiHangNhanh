@@ -11,6 +11,8 @@ const color = {
     primary: palette.neutral[900],
     secondary: palette.neutral[600],
     onAction: palette.neutral[0],
+    /** Chữ phụ trên nền thương hiệu đậm (thẻ hero): mờ hơn `onAction` nhưng vẫn >= 4.5:1. */
+    onBrandMuted: palette.alpha.white75,
     /** Nhóm màn form (mockup 03). Nợ TD-1: hợp nhất với primary/secondary sau khi duyệt trực quan. */
     strong: palette.slate[900],
     subtle: palette.slate[500],
@@ -29,6 +31,8 @@ const color = {
     destructive: palette.red[700],
   },
   brand: { soft: palette.jade[100], deep: palette.jade[950] },
+  /** Tông xanh dương dùng làm điểm nhấn (ô icon cửa hàng, đám mây); không phải màu trạng thái. */
+  accent: { blue: { fg: palette.blue[700], bg: palette.blue[50] } },
   feedback: {
     success: { fg: palette.green[700], bg: palette.green[100] },
     warning: { fg: palette.amber[700], bg: palette.amber[50] },

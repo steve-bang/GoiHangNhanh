@@ -179,6 +179,7 @@ Token ở `src/core/theme` (màu, chữ, khoảng cách, bo góc, vùng chạm);
 | `ProductLineList` | Dòng sản phẩm (tên, variant, số lượng, nguồn "Do bạn nhập") | Nhãn *Chưa khai báo sản phẩm* chỉ khi chưa có dòng nào |
 | `TextField`, `SearchField`, `QuantityStepper`, `FilterChips` | Nhập, tìm, số lượng (mặc định 1), lọc | Chip xuống dòng thay vì cuộn ngang, có `appearance="solid"` và `trailing` cùng hàng; `TextField` có `trailing` (icon quét, nút xóa) và `compact`; `SearchField compact`; `FilterChips size="compact"`; `QuantityStepper` là ô liền "- 2 +"; `Button size` (`regular`/`compact`/`slim`) và `Screen form`: xem mục 2.5 |
 | `EvidenceStatusBadge` | 6 nhãn trạng thái bằng chứng (docs/09 mục 3) | Chữ + biểu tượng riêng + viền; *Đã lưu trên máy* không tick/màu thành công; tiến độ % chỉ khi `uploading` và có số đo |
+| `HeroCard`, `IconTile`, `MetricTile`, `StatusCard`, `Checkbox` | Bộ thành phần của đợt thiết kế lại tab Cá nhân (PR-A, board 07); chưa màn nào dùng | Chỉ token; `StatusCard` lấy màu từ `semantic.status`, luôn chữ + biểu tượng; không chiều cao cố định; xem `personal-tab-redesign-plan.md` mục 6.1 |
 | `SyncStatusBar` | Khối đồng bộ (lỗi/chờ/đang tải) | Dùng nhãn chuẩn; ghi chú tải nền có thể tạm dừng |
 | `OfflineBanner` | Banner ngoại tuyến (UI-F04) | Hiện qua `Screen` khi `useIsOffline()` (hiện luôn `false`, xem mục 7) |
 | `EmptyState`, `Skeleton`/`SkeletonCard` | Trống có hành động cụ thể; giữ chỗ khi tải | Skeleton tĩnh, không hiệu ứng; `EmptyState compact`; `SkeletonCard` đã đổi sang cỡ gọn (chỉ danh sách đơn dùng) |

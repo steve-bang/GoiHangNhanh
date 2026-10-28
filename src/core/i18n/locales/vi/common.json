@@ -56,5 +56,8 @@
       "messagePreview": "Phiên quay sẽ kết thúc và bạn quay về bước trước.",
       "keepPreview": "Ở lại màn quay"
     }
+  },
+  "fields": {
+    "counter": "{{current}} trên {{max}} ký tự"
   }
 }

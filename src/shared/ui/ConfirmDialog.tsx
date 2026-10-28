@@ -1,6 +1,9 @@
 import { Modal, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from './Button';
+import type { IconName } from './Icon';
+import { IconTile } from './IconTile';
+import type { IconTone } from './tone';
 import { Text } from './Text';
 import { useTheme } from './theme';
 
@@ -25,6 +28,11 @@ interface ConfirmDialogProps {
   detail?: string;
   /** Nút xác nhận phá hủy dạng viền/chữ đỏ (thứ yếu) thay vì nền đỏ đặc. Chỉ có tác dụng khi `destructive`. */
   confirmOutlined?: boolean;
+  /** Biểu tượng tròn đầu hộp thoại; có thì tiêu đề và nội dung căn giữa (board 07). */
+  icon?: IconName;
+  iconTone?: IconTone;
+  /** `row`: hai nút cạnh nhau (hủy bên trái, xác nhận bên phải). Mặc định `column` như cũ. */
+  actionsLayout?: 'column' | 'row';
 }
 
 /** Hộp thoại xác nhận, chỉ dùng cho hành động quan trọng (xóa, đóng hồ sơ, rời phiên quay). */
@@ -39,6 +47,9 @@ export function ConfirmDialog({
   destructive = false,
   detail,
   confirmOutlined = false,
+  icon,
+  iconTone = 'brand',
+  actionsLayout = 'column',
   primary = destructive ? 'cancel' : 'confirm',
 }: ConfirmDialogProps) {
   const { tokens } = useTheme();
@@ -66,37 +77,74 @@ export function ConfirmDialog({
           }}
         >
           <ScrollView contentContainerStyle={{ gap: tokens.space.md }}>
-            <Text variant="sectionTitle" accessibilityRole="header">
+            {icon ? (
+              <View style={styles.centeredBox}>
+                <IconTile icon={icon} tone={iconTone} size="lg" shape="circle" />
+              </View>
+            ) : null}
+            <Text
+              variant="sectionTitle"
+              accessibilityRole="header"
+              {...(icon ? { style: styles.centered } : {})}
+            >
               {title}
             </Text>
-            <Text>{message}</Text>
+            <Text {...(icon ? { style: styles.centered } : {})}>{message}</Text>
             {detail ? (
-              <Text variant="caption" color="textMuted">
+              <Text
+                variant="caption"
+                color="textMuted"
+                {...(icon ? { style: styles.centered } : {})}
+              >
                 {detail}
               </Text>
             ) : null}
-            <View style={{ gap: tokens.space.sm, marginTop: tokens.space.sm }}>
-              {primary === 'cancel' ? (
-                <>
-                  <Button label={cancelLabel} onPress={onCancel} variant="primary" />
+            {actionsLayout === 'row' ? (
+              <View
+                style={[styles.actionsRow, { gap: tokens.space.sm, marginTop: tokens.space.sm }]}
+              >
+                <View style={styles.flexOne}>
+                  <Button
+                    label={cancelLabel}
+                    onPress={onCancel}
+                    variant={primary === 'cancel' ? 'primary' : 'secondary'}
+                  />
+                </View>
+                <View style={styles.flexOne}>
                   <Button
                     label={confirmLabel}
                     onPress={onConfirm}
-                    variant={destructive ? 'destructive' : 'secondary'}
+                    variant={
+                      destructive ? 'destructive' : primary === 'confirm' ? 'primary' : 'secondary'
+                    }
                     {...(destructive && confirmOutlined ? { outlined: true } : {})}
                   />
-                </>
-              ) : (
-                <>
-                  <Button
-                    label={confirmLabel}
-                    onPress={onConfirm}
-                    variant={destructive ? 'destructive' : 'primary'}
-                  />
-                  <Button label={cancelLabel} onPress={onCancel} variant="secondary" />
-                </>
-              )}
-            </View>
+                </View>
+              </View>
+            ) : (
+              <View style={{ gap: tokens.space.sm, marginTop: tokens.space.sm }}>
+                {primary === 'cancel' ? (
+                  <>
+                    <Button label={cancelLabel} onPress={onCancel} variant="primary" />
+                    <Button
+                      label={confirmLabel}
+                      onPress={onConfirm}
+                      variant={destructive ? 'destructive' : 'secondary'}
+                      {...(destructive && confirmOutlined ? { outlined: true } : {})}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      label={confirmLabel}
+                      onPress={onConfirm}
+                      variant={destructive ? 'destructive' : 'primary'}
+                    />
+                    <Button label={cancelLabel} onPress={onCancel} variant="secondary" />
+                  </>
+                )}
+              </View>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -104,4 +152,10 @@ export function ConfirmDialog({
   );
 }
 
-const styles = StyleSheet.create({ root: { flex: 1, justifyContent: 'center' } });
+const styles = StyleSheet.create({
+  root: { flex: 1, justifyContent: 'center' },
+  centered: { textAlign: 'center' },
+  centeredBox: { alignItems: 'center' },
+  actionsRow: { flexDirection: 'row', alignItems: 'stretch' },
+  flexOne: { flex: 1 },
+});

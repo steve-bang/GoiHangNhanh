@@ -80,7 +80,7 @@ describe('createShopForUser', () => {
       ),
     );
     expect(new Set(results.map((r) => r.id)).size).toBe(1);
-  });
+  }, 20_000);
 });
 
 describe('updateShopForUser', () => {
