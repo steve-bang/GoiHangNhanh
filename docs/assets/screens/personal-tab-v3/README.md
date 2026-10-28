@@ -1,4 +1,4 @@
-> **Cập nhật sau khi ẩn Gói dịch vụ (Q-21ag):** màn chính tab Cá nhân đã bỏ thẻ gói và mục menu "Gói dịch vụ". Các ảnh màn chính `pr-b-*`, `pr-c-*` (nếu có thẻ gói) và ảnh Gói dịch vụ `pr-e-*` là **bản lỗi thời** so với màn hiện tại (khung E vẫn là mã đã giữ, chỉ vào được bằng URL). **Chưa chụp lại màn chính mới:** môi trường làm việc không có Chromium/Playwright (không tải được trình duyệt), nên chưa có ảnh bản web của màn mới; cần chụp lại khi có môi trường, theo cách ghi ở các mục dưới (bản sao ngoài repo, không sửa mã sản phẩm).
+> **Cập nhật sau khi ẩn Gói dịch vụ (Q-21ag):** màn chính tab Cá nhân đã bỏ thẻ gói và mục menu "Gói dịch vụ". Các ảnh màn chính `pr-b-*`, `pr-c-*` (nếu có thẻ gói) và ảnh Gói dịch vụ `pr-e-*` là **bản lỗi thời** so với màn hiện tại (khung E vẫn là mã đã giữ, chỉ vào được bằng URL). **Chưa chụp lại màn chính mới:** môi trường làm việc không có Chromium/Playwright (không tải được trình duyệt), nên chưa có ảnh bản web của màn mới; cần chụp lại khi có môi trường (gồm `pr-g-13-*`, nay còn ba công tắc), theo cách ghi ở các mục dưới (bản sao ngoài repo, không sửa mã sản phẩm).
 
 # Ảnh đối chiếu PR-A: token và thành phần dùng chung (tab Cá nhân, board 07)
 
@@ -193,7 +193,7 @@
 
 | Ảnh | Nội dung |
 | --- | --- |
-| `pr-g-13-notifications-{320x568,360x800,390x844}.png`, `...-largetext-320x568.png` | Khung 13: thẻ "Thông báo đẩy" kèm nhãn "Sắp có" + bốn công tắc (mặc định cổng giả) |
+| `pr-g-13-notifications-{320x568,360x800,390x844}.png`, `...-largetext-320x568.png` | Khung 13: thẻ "Thông báo đẩy" kèm nhãn "Sắp có" + bốn công tắc (mặc định cổng giả). **Lỗi thời:** màn hiện tại chỉ còn ba công tắc ("Gói sắp hết hạn" ẩn theo cờ `plan`, Q-21ag); chưa chụp lại vì môi trường không có trình duyệt |
 | `pr-g-13-save-error-*.png` | Bấm "Đồng bộ dữ liệu" khi cổng báo lỗi lưu: công tắc hoàn về Tắt, thẻ cảnh báo "Chưa lưu được cài đặt. Bạn thử lại nhé." |
 | `pr-g-13-load-error-*.png` | Không tải được cài đặt (cổng chưa kết nối): thẻ lỗi + Thử lại, không công tắc |
 | `pr-g-14-security-*.png`, `...-largetext-320x568.png` | Khung 14, tài khoản mật khẩu |
@@ -206,7 +206,7 @@
 
 | Hạng mục | 13 | 14 | Ghi chú lệch |
 | --- | --- | --- | --- |
-| Bố cục và thứ tự khối | lệch có chủ đích | gần | 13: thẻ "Thông báo đẩy" kèm nhãn "Sắp có" ở ĐẦU (board: thẻ cam quyền bị từ chối ở cuối, không dựng vì chưa có adapter đọc quyền); bốn công tắc (board năm). 14: nhóm một thẻ có đường kẻ (board: mỗi hàng một thẻ); "Xóa tài khoản" tách nhóm riêng |
+| Bố cục và thứ tự khối | lệch có chủ đích | gần | 13: thẻ "Thông báo đẩy" kèm nhãn "Sắp có" ở ĐẦU (board: thẻ cam quyền bị từ chối ở cuối, không dựng vì chưa có adapter đọc quyền); ba công tắc hiển thị (board năm; bản chụp khung 13 còn bốn, lỗi thời, Q-21ag). 14: nhóm một thẻ có đường kẻ (board: mỗi hàng một thẻ); "Xóa tài khoản" tách nhóm riêng |
 | Thứ bậc chữ | đạt | đạt | tiêu đề 14 xuống dòng ở 390px (chữ lớn hơn board) |
 | Màu thẻ/nền | gần | gần | không thẻ cam; hàng khóa mờ |
 | Icon | gần | gần | glyph Ionicons gần nghĩa, duyệt ở ảnh PR; "Xóa tài khoản" icon cảnh báo (board: thùng rác) |

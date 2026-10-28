@@ -22,6 +22,7 @@ import {
 } from '@/shared/ui';
 
 import type { NotificationPreferenceKey, NotificationPreferences } from '../domain/types';
+import { planMenuItem } from './account-menu';
 import { Notice } from './Notice';
 import { usePersonalGateways } from './PersonalGatewaysProvider';
 import { useSession } from './SessionProvider';
@@ -36,8 +37,14 @@ const OPTIONS: readonly { key: NotificationPreferenceKey; icon: IconName }[] = [
 ];
 
 /**
- * Cài đặt thông báo (PER-13; UI-I04; board 07 khung 13). Bốn công tắc theo docs/09 (board vẽ năm loại,
- * lệch: xem personal-tab-redesign-plan.md mục 6.7). Lựa chọn lưu qua `SettingsGateway`; ứng dụng CHƯA có hạ
+ * Loại thông báo gắn với gói dịch vụ: ẩn khi mục `plan` của menu là `hidden` (cùng một cờ ở `account-menu.ts`,
+ * Q-21ag). Giá trị vẫn nằm trong `NotificationPreferences` và được giữ nguyên khi lưu công tắc khác.
+ */
+const PLAN_LINKED_OPTION: NotificationPreferenceKey = 'planExpiring';
+
+/**
+ * Cài đặt thông báo (PER-13; UI-I04; board 07 khung 13). Bốn loại theo docs/09, hôm nay hiện ba (loại "Gói sắp hết hạn" ẩn
+ * theo cờ `plan`; board vẽ năm loại, lệch: xem personal-tab-redesign-plan.md mục 6.7). Lựa chọn lưu qua `SettingsGateway`; ứng dụng CHƯA có hạ
  * tầng thông báo đẩy nên màn nói thẳng điều đó và KHÔNG hứa "bạn sẽ nhận thông báo". Không xin quyền hệ điều
  * hành ở đây và không dựng thẻ "Quyền thông báo bị từ chối" (chưa có adapter đọc quyền: sẽ là chức năng giả).
  * Giá trị hiện theo kết quả cổng: bật/tắt tức thì, hoàn về giá trị cũ nếu lưu lỗi; báo "Đã lưu" chỉ SAU KHI
@@ -72,6 +79,8 @@ export function NotificationsScreen() {
     scopeRef.current = session.key;
   }, [session.key]);
 
+  const showPlanOption = planMenuItem().availability !== 'hidden';
+  const options = OPTIONS.filter(({ key }) => showPlanOption || key !== PLAN_LINKED_OPTION);
   const loaded = region.state.status === 'ready' ? region.state.data : null;
   const base = confirmed?.key === session.key ? confirmed.prefs : loaded;
 
@@ -159,7 +168,7 @@ export function NotificationsScreen() {
 
       {base ? (
         <ListGroup testID="notification-options">
-          {OPTIONS.map(({ key, icon }) => (
+          {options.map(({ key, icon }) => (
             <Switch
               key={key}
               icon={icon}
