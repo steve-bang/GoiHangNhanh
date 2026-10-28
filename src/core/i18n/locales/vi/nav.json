@@ -14,7 +14,7 @@
     "shopSettings": "Cài đặt cửa hàng",
     "members": "Thành viên và quyền",
     "notifications": "Thông báo",
-    "security": "Bảo mật và dữ liệu",
+    "security": "Quyền riêng tư và bảo mật",
     "plan": "Gói dịch vụ",
     "help": "Trợ giúp"
   },
@@ -67,7 +67,7 @@
     "UI-I02": "Cửa hàng",
     "UI-I03": "Thành viên và quyền",
     "UI-I04": "Thông báo",
-    "UI-I05": "Bảo mật và dữ liệu",
+    "UI-I05": "Quyền riêng tư và bảo mật",
     "UI-I06": "Trợ giúp",
     "UI-I07": "Thông báo"
   },
