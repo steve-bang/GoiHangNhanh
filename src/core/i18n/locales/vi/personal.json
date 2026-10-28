@@ -207,5 +207,40 @@
     "photoDelivery": "Ảnh giao hàng",
     "photoReturn": "Ảnh hoàn hàng",
     "note": "Theo chính sách dự kiến, bằng chứng đang tranh chấp được giữ lại và hạ cấp gói không xóa bằng chứng ngay. Cách xử lý khi hết thời hạn lưu chưa được công bố."
+  },
+  "notificationSettings": {
+    "pushTitle": "Thông báo đẩy",
+    "pushMessage": "Ứng dụng chưa gửi thông báo nào. Lựa chọn của bạn sẽ được dùng khi tính năng này sẵn sàng.",
+    "saved": "Đã lưu lựa chọn.",
+    "options": {
+      "uploadProblems": {
+        "title": "Tải lên lỗi hoặc cần xử lý",
+        "description": "Báo khi có video tải lên chưa xong và cần bạn xử lý."
+      },
+      "syncCompleted": {
+        "title": "Đồng bộ dữ liệu",
+        "description": "Nhận thông báo khi đồng bộ hoàn tất."
+      },
+      "storageNearlyFull": {
+        "title": "Dung lượng sắp đầy",
+        "description": "Nhắc khi dung lượng lưu trữ gần hết."
+      },
+      "planExpiring": {
+        "title": "Gói sắp hết hạn",
+        "description": "Nhắc trước khi gói dịch vụ hết hạn."
+      }
+    }
+  },
+  "security": {
+    "changePassword": "Đổi mật khẩu",
+    "socialPassword": "Mật khẩu do {{provider}} quản lý.",
+    "profileLoading": "Đang tải thông tin tài khoản",
+    "profileError": "Chưa tải được thông tin tài khoản.",
+    "profileRetryHint": "Chạm để thử lại.",
+    "twoFactor": "Xác nhận 2 lớp",
+    "devices": "Thiết bị đăng nhập",
+    "dataAccess": "Dữ liệu và quyền truy cập",
+    "deleteAccount": "Xóa tài khoản",
+    "lockedHint": "Chưa dùng được. Tính năng này sắp có."
   }
 }

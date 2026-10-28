@@ -199,9 +199,23 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     expect(screen.queryByRole('button', { name: 'Quay lại' })).toBeNull();
   });
 
+  it('Thông báo và Quyền riêng tư và bảo mật đã mở được (PR-G), không còn nhãn "Sắp có"', async () => {
+    await renderProfile();
+    for (const [code, route] of [
+      ['UI-I04', ROUTES.notifications],
+      ['UI-I05', ROUTES.security],
+    ] as const) {
+      const row = screen.getByTestId(`menu-${code}`);
+      expect(row).not.toHaveTextContent(/Sắp có/);
+      await fireEvent.press(row);
+      expect(mockNavigation.push).toHaveBeenLastCalledWith(route);
+    }
+    expect(screen.getByTestId('menu-UI-I05')).toHaveTextContent(/Quyền riêng tư và bảo mật/);
+  });
+
   it('mục chưa làm: nhãn "Sắp có", khóa, không điều hướng, đọc đúng trợ năng', async () => {
     await renderProfile();
-    for (const code of ['UI-I04', 'UI-I05', 'UI-I06']) {
+    for (const code of ['UI-I06']) {
       const row = screen.getByTestId(`menu-${code}`);
       expect(row).toHaveTextContent(/Sắp có/);
       expect(row.props.accessibilityState).toMatchObject({ disabled: true });

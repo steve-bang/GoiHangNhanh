@@ -68,6 +68,16 @@ describe('Switch', () => {
     await fireEvent.press(screen.getByRole('switch', { name: 'Đồng bộ' }));
     expect(onValueChange).not.toHaveBeenCalled();
   });
+
+  it('icon tùy chọn: có ô icon trang trí, nhãn đọc không đổi; không icon thì không có ô', async () => {
+    const { rerender } = await renderWithProviders(
+      <Switch label="Đồng bộ" value icon="sync" onValueChange={jest.fn()} testID="sw" />,
+    );
+    expect(screen.getByRole('switch', { name: 'Đồng bộ' })).toBeChecked();
+    expect(screen.getByTestId('sw').children).toHaveLength(3);
+    await rerender(<Switch label="Đồng bộ" value onValueChange={jest.fn()} testID="sw" />);
+    expect(screen.getByTestId('sw').children).toHaveLength(2);
+  });
 });
 
 describe('FormField / PasswordField', () => {

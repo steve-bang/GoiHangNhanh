@@ -1,1 +1,1 @@
-export { NotificationsScreen as default } from '@/features/shop';
+export { NotificationsScreen as default } from '@/features/personal';

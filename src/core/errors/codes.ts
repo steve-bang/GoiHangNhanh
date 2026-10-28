@@ -51,6 +51,8 @@ export const ERROR_CODES = {
   SHOP_SAVE_FAILED: 'SHOP_SAVE_FAILED',
   SHOP_SWITCH_FAILED: 'SHOP_SWITCH_FAILED',
   SHOP_PERMISSION_DENIED: 'SHOP_PERMISSION_DENIED',
+  // Đề xuất (chờ BA, Q-21ab): lưu lựa chọn thông báo (UI-I04)
+  SETTINGS_SAVE_FAILED: 'SETTINGS_SAVE_FAILED',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

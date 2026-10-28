@@ -48,6 +48,7 @@ const PROFILE_MESSAGES: [string, Message][] = [
   ['SHOP_SAVE_FAILED', msg('SHOP_SAVE_FAILED')],
   ['SHOP_SWITCH_FAILED', msg('SHOP_SWITCH_FAILED')],
   ['SHOP_PERMISSION_DENIED', msg('SHOP_PERMISSION_DENIED')],
+  ['SETTINGS_SAVE_FAILED', msg('SETTINGS_SAVE_FAILED')],
 ];
 
 const ALL: [string, Message][] = [
@@ -162,6 +163,10 @@ describe('câu chữ thông báo lỗi AUTH_*, signUp.errors và lỗi các màn
     expect(fullText(msg('SHOP_PERMISSION_DENIED'))).toBe(
       'Bạn chưa có quyền thực hiện thao tác này. Hãy liên hệ chủ cửa hàng.',
     );
+  });
+
+  it('mã cài đặt thông báo (Q-21ab): đúng từng chữ', () => {
+    expect(fullText(msg('SETTINGS_SAVE_FAILED'))).toBe('Chưa lưu được cài đặt. Bạn thử lại nhé.');
   });
 
   it('không có câu trấn an "tài khoản chưa được tạo" ở màn đăng ký', () => {

@@ -2,7 +2,10 @@ import { Pressable, StyleSheet, Switch as RNSwitch, View } from 'react-native';
 
 import { getMinTouchTarget } from '@/platform';
 
+import { IconTile } from './IconTile';
+import type { IconName } from './Icon';
 import { Text } from './Text';
+import type { IconTone } from './tone';
 import { useTheme } from './theme';
 
 interface SwitchProps {
@@ -12,6 +15,9 @@ interface SwitchProps {
   value: boolean;
   onValueChange: (value: boolean) => void;
   disabled?: boolean;
+  /** Ô icon trang trí bên trái nhãn (board 07 khung 13). Không đặt thì giữ bố cục cũ. */
+  icon?: IconName;
+  iconTone?: IconTone;
   testID?: string;
 }
 
@@ -25,6 +31,8 @@ export function Switch({
   value,
   onValueChange,
   disabled = false,
+  icon,
+  iconTone,
   testID,
 }: SwitchProps) {
   const { tokens } = useTheme();
@@ -48,6 +56,7 @@ export function Switch({
         },
       ]}
     >
+      {icon ? <IconTile icon={icon} {...(iconTone ? { tone: iconTone } : {})} /> : null}
       <View style={styles.text}>
         <Text bold>{label}</Text>
         {description ? (

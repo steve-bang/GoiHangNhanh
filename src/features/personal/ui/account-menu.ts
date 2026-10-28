@@ -50,7 +50,8 @@ export const ACCOUNT_MENU: readonly MenuItem[] = [
     route: ROUTES.notifications,
     labelKey: 'nav:account.notifications',
     icon: 'notifications',
-    availability: 'coming_soon',
+    // Bật vì UI-I04 đã có bốn công tắc lưu qua cổng cài đặt và nói rõ thông báo đẩy sắp có (Q-21ab).
+    availability: 'available',
   },
   {
     id: 'security',
@@ -58,7 +59,8 @@ export const ACCOUNT_MENU: readonly MenuItem[] = [
     route: ROUTES.security,
     labelKey: 'nav:account.security',
     icon: 'lock',
-    availability: 'coming_soon',
+    // Bật vì UI-I05 có Đổi mật khẩu thật (tài khoản mật khẩu); các hàng chưa làm tự khóa "Sắp có" trong màn.
+    availability: 'available',
   },
   {
     id: 'help',
