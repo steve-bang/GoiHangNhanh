@@ -150,3 +150,5 @@
 | Thanh tab | hiện (Q-21t) | ẩn | ẩn | |
 | Trạng thái | đạt | đạt | đạt | chưa có dữ liệu gói nên chưa dựng hết hạn/sắp hết hạn |
 | Chuỗi chữ | lệch có chủ đích | lệch có chủ đích | lệch | không "Gói tiêu chuẩn", "Đang hoạt động", "Hỗ trợ 24/7", "Xem tất cả"; xem mục 6.5 của plan |
+
+**Ảnh `pr-e-8*`, `pr-e-9*` chưa chụp lại sau review:** tiêu đề mục "Quyền lợi" / "Quyền lợi chi tiết" đã đổi thành "Chính sách lưu trữ dự kiến" (Q-21w) và nút "Nâng cấp gói" thêm gợi ý trợ năng (không đổi hình). Môi trường này không có trình duyệt để render lại; ảnh hiện còn tiêu đề cũ. Cần chụp lại khi có Chromium.
