@@ -11,6 +11,7 @@ import {
 } from '../data/fake-personal-gateways';
 import { createUnavailablePersonalGateways } from '../data/unavailable-personal-gateways';
 import type { NotificationPreferences, PersonalGateways } from '../domain/types';
+import { ACCOUNT_MENU, type MenuAvailability } from './account-menu';
 import { NotificationsScreen } from './NotificationsScreen';
 import { useSession } from './SessionProvider';
 
@@ -21,7 +22,21 @@ jest.mock(
 
 beforeEach(() => resetMockNavigation());
 
-const KEYS = ['uploadProblems', 'syncCompleted', 'storageNearlyFull', 'planExpiring'] as const;
+const KEYS = ['uploadProblems', 'syncCompleted', 'storageNearlyFull'] as const;
+
+/** Đặt cờ `availability` của mục plan trong lúc chạy `run`, luôn khôi phục. */
+async function withPlanAvailability(value: MenuAvailability, run: () => Promise<void>) {
+  const mutable = ACCOUNT_MENU.find((entry) => entry.id === 'plan') as {
+    availability: MenuAvailability;
+  };
+  const before = mutable.availability;
+  mutable.availability = value;
+  try {
+    await run();
+  } finally {
+    mutable.availability = before;
+  }
+}
 
 async function setup(gateways: PersonalGateways = createFakePersonalGateways()) {
   await renderWithProviders(<NotificationsScreen />, { personalGateways: gateways });
@@ -58,10 +73,12 @@ function deferredGateways(initial: NotificationPreferences = FAKE_NOTIFICATION_D
 }
 
 describe('NotificationsScreen (UI-I04, khung 13)', () => {
-  it('đúng bốn loại theo docs/09, nhãn + mô tả, mặc định theo cổng; không loại ngoài đặc tả', async () => {
+  it('gói đang ẩn: còn ba công tắc, nhãn + mô tả, mặc định theo cổng; không loại ngoài đặc tả', async () => {
     await setup();
     expect(screen.getByTestId('screen-UI-I04')).toBeOnTheScreen();
-    expect(screen.getAllByRole('switch')).toHaveLength(4);
+    expect(screen.getAllByRole('switch')).toHaveLength(3);
+    expect(screen.queryByTestId('notification-switch-planExpiring')).toBeNull();
+    expect(screen.queryByText('Gói sắp hết hạn')).toBeNull();
     for (const key of KEYS) {
       expect(sw(key)).toBeOnTheScreen();
       expect(sw(key).props.accessibilityLabel).toBeTruthy();
@@ -76,6 +93,34 @@ describe('NotificationsScreen (UI-I04, khung 13)', () => {
     expect(screen.queryByText(/mỗi video|từng video/i)).toBeNull();
   });
 
+  it('lưu công tắc khác khi loại gói ẩn: giá trị loại gói đã lưu được gửi nguyên, không bị ghi đè', async () => {
+    const stored = { ...FAKE_NOTIFICATION_DEFAULTS, planExpiring: false };
+    const d = deferredGateways(stored);
+    await setup(d.gateways);
+    await fireEvent.press(sw('syncCompleted'));
+    expect(d.calls).toEqual([{ ...stored, syncCompleted: true }]);
+    await act(async () => d.resolve({ ...stored, syncCompleted: true }));
+    await fireEvent.press(sw('uploadProblems'));
+    expect(d.calls[1]).toMatchObject({ planExpiring: false, syncCompleted: true });
+  });
+
+  it.each(['available', 'coming_soon'] as const)(
+    'bật lại gói (%s): hàng "Gói sắp hết hạn" hiện lại, đủ bốn công tắc, lưu được',
+    async (availability) => {
+      await withPlanAvailability(availability, async () => {
+        const d = deferredGateways();
+        await setup(d.gateways);
+        expect(screen.getAllByRole('switch')).toHaveLength(4);
+        expect(screen.getByText('Gói sắp hết hạn')).toBeOnTheScreen();
+        await fireEvent.press(sw('planExpiring'));
+        expect(d.calls).toEqual([
+          { ...FAKE_NOTIFICATION_DEFAULTS, planExpiring: !FAKE_NOTIFICATION_DEFAULTS.planExpiring },
+        ]);
+        await act(async () => d.resolve(d.calls[0] as NotificationPreferences));
+      });
+    },
+  );
+
   it('nói thẳng thông báo đẩy sắp có, không hứa "bạn sẽ nhận"; không thẻ quyền hệ điều hành giả', async () => {
     await setup();
     const note = screen.getByTestId('notification-push-note');
@@ -88,7 +133,7 @@ describe('NotificationsScreen (UI-I04, khung 13)', () => {
     expect(screen.queryByText('Mở Cài đặt')).toBeNull();
   });
 
-  it('bật công tắc: gọi cổng đúng một lần với đủ bốn giá trị, rồi báo "Đã lưu" sau khi cổng xác nhận', async () => {
+  it('bật công tắc: gọi cổng đúng một lần với đủ bốn giá trị (loại gói ẩn giữ nguyên), rồi báo "Đã lưu" sau khi cổng xác nhận', async () => {
     const d = deferredGateways();
     await setup(d.gateways);
     await fireEvent.press(sw('syncCompleted'));
@@ -116,9 +161,9 @@ describe('NotificationsScreen (UI-I04, khung 13)', () => {
     await setup(d.gateways);
     await fireEvent.press(sw('syncCompleted'));
     expect(sw('syncCompleted').props.accessibilityState).toMatchObject({ disabled: true });
-    expect(sw('planExpiring').props.accessibilityState).toMatchObject({ disabled: true });
+    expect(sw('storageNearlyFull').props.accessibilityState).toMatchObject({ disabled: true });
     await fireEvent.press(sw('syncCompleted'));
-    await fireEvent.press(sw('planExpiring'));
+    await fireEvent.press(sw('storageNearlyFull'));
     expect(d.calls).toHaveLength(1);
     await act(async () => d.resolve({ ...FAKE_NOTIFICATION_DEFAULTS, syncCompleted: true }));
   });
@@ -266,14 +311,22 @@ describe('NotificationsScreen (UI-I04, khung 13)', () => {
       await waitFor(() =>
         expect(sw('syncCompleted').props.accessibilityState).toMatchObject({ disabled: false }),
       );
-      await fireEvent.press(sw('planExpiring'));
+      await fireEvent.press(sw('storageNearlyFull'));
       expect(calls).toHaveLength(2);
-      expect(calls[1]).toEqual({ ...FAKE_NOTIFICATION_DEFAULTS, planExpiring: false });
+      expect(calls[1]).toEqual({
+        ...FAKE_NOTIFICATION_DEFAULTS,
+        storageNearlyFull: !FAKE_NOTIFICATION_DEFAULTS.storageNearlyFull,
+      });
       // Kết quả muộn của A: không toast, không đổi công tắc phiên B (vẫn đang chờ lần lưu của B).
       await act(async () => resolvers[0]?.({ ...FAKE_NOTIFICATION_DEFAULTS, syncCompleted: true }));
       expect(screen.queryByText('Đã lưu lựa chọn.')).toBeNull();
       expect(sw('syncCompleted').props.accessibilityState).toMatchObject({ checked: false });
-      await act(async () => resolvers[1]?.({ ...FAKE_NOTIFICATION_DEFAULTS, planExpiring: false }));
+      await act(async () =>
+        resolvers[1]?.({
+          ...FAKE_NOTIFICATION_DEFAULTS,
+          storageNearlyFull: !FAKE_NOTIFICATION_DEFAULTS.storageNearlyFull,
+        }),
+      );
       expect(screen.getByText('Đã lưu lựa chọn.')).toBeOnTheScreen();
     });
 
