@@ -1,14 +1,20 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { Pressable } from 'react-native';
 
 import { resources } from '@/core/i18n/resources';
 import { ROUTES } from '@/core/navigation';
 import { createMemoryOrderStore, type OrderStore } from '@/features/orders';
-import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
+import {
+  mockNavigation,
+  resetMockNavigation,
+  setMockScreenFocused,
+} from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
 import { createFakePersonalGateways } from '../data/fake-personal-gateways';
 import { createUnavailablePersonalGateways } from '../data/unavailable-personal-gateways';
 import { DeleteAccountScreen } from './DeleteAccountScreen';
+import { useSession } from './SessionProvider';
 
 jest.mock(
   '@/platform/navigation',
@@ -128,14 +134,77 @@ describe('Xóa tài khoản (UI-I05 route con, khung 20)', () => {
     expect(button.props.accessibilityHint).toBe(
       'Chưa dùng được. Việc xóa tài khoản trong ứng dụng sắp có.',
     );
+    expect(button.props.accessibilityState).toMatchObject({ disabled: true });
+    // Nút khóa: bấm không kích hoạt gì (lớp bảo vệ là `disabled`; bỏ nó thì onPress/cổng/điều hướng sẽ chạy).
     await fireEvent.press(button);
     expect(gateways.account.signOutCalls).toBe(0);
-    expect(mockNavigation.push).not.toHaveBeenCalled();
-    expect(mockNavigation.replace).not.toHaveBeenCalled();
-    expect(mockNavigation.reset).not.toHaveBeenCalled();
+    expect(mockNavigation.push).toHaveBeenCalledTimes(0);
+    expect(mockNavigation.replace).toHaveBeenCalledTimes(0);
+    expect(mockNavigation.reset).toHaveBeenCalledTimes(0);
+    expect(mockNavigation.back).toHaveBeenCalledTimes(0);
     expect(screen.getByTestId('delete-soon')).toHaveTextContent(
       'Sắp có. Hiện chưa xóa được tài khoản trong ứng dụng.',
     );
+  });
+
+  describe('đọc lại và cô lập theo phiên', () => {
+    function SwitchProbe() {
+      const { beginSession } = useSession();
+      return (
+        <Pressable
+          testID="switch-session"
+          onPress={() =>
+            beginSession({ uid: 'u2', email: 'b@example.com', displayName: null }, 's2')
+          }
+        />
+      );
+    }
+
+    it('quay về từ trung tâm đồng bộ: đọc lại, số tệp cập nhật', async () => {
+      let unsynced = 3;
+      const reads: number[] = [];
+      await setup({
+        store: withStore({
+          countUnsyncedOnDevice: async () => {
+            reads.push(unsynced);
+            return unsynced;
+          },
+        }),
+      });
+      expect(await screen.findByText('Còn 3 tệp chưa được máy chủ xác nhận.')).toBeOnTheScreen();
+      await act(async () => setMockScreenFocused(false));
+      expect(reads).toHaveLength(1); // rời màn không đọc thêm
+      unsynced = 0;
+      await act(async () => setMockScreenFocused(true));
+      await waitFor(async () => expect(await statusOf('unsynced')).toHaveTextContent('Đạt'));
+      expect(reads).toEqual([3, 0]);
+      expect(screen.queryByTestId('delete-sync-link')).toBeNull();
+    });
+
+    it('đổi phiên khi lần đọc cũ chưa xong: kết quả cũ bị bỏ, không rò sang phiên mới', async () => {
+      const resolvers: ((n: number) => void)[] = [];
+      await renderWithProviders(
+        <>
+          <SwitchProbe />
+          <DeleteAccountScreen />
+        </>,
+        {
+          personalGateways: createFakePersonalGateways({ shop: { role: 'member' } }),
+          orderStore: withStore({
+            countUnsyncedOnDevice: () => new Promise<number>((res) => resolvers.push(res)),
+          }),
+        },
+      );
+      await waitFor(() => expect(resolvers).toHaveLength(1));
+      await fireEvent.press(screen.getByTestId('switch-session'));
+      await waitFor(() => expect(resolvers).toHaveLength(2));
+      // Lần đọc cũ (phiên trước) xong sau: không được hiện.
+      await act(async () => resolvers[0]?.(9));
+      expect(screen.queryByText('Còn 9 tệp chưa được máy chủ xác nhận.')).toBeNull();
+      expect(screen.getByTestId('delete-condition-unsynced')).toHaveTextContent(/Đang kiểm tra/);
+      await act(async () => resolvers[1]?.(0));
+      await waitFor(async () => expect(await statusOf('unsynced')).toHaveTextContent('Đạt'));
+    });
   });
 
   it('chưa có địa chỉ hỗ trợ thật: không nhắc đường dẫn hỗ trợ nào', async () => {
@@ -161,7 +230,10 @@ describe('Xóa tài khoản (UI-I05 route con, khung 20)', () => {
   it('không dùng cụm hứa quá mức hoặc cấm trong chuỗi của màn', () => {
     const text = JSON.stringify(resources.vi.personal.deleteAccount);
     expect(text).not.toMatch(
-      /vui lòng|bảo vệ|an toàn|ngay lập tức|tuyệt đối|khôi phục|vĩnh viễn|đã xóa|xác thực/i,
+      /vui lòng|bảo vệ|an toàn|ngay lập tức|tuyệt đối|khôi phục|vĩnh viễn|đã xóa|xác thực|dự kiến/i,
+    );
+    expect(resources.vi.personal.deleteAccount.dataDispute).toBe(
+      'Bằng chứng đang tranh chấp không bị xóa tự động. Cách xử lý khi xóa tài khoản chưa được công bố.',
     );
   });
 });
