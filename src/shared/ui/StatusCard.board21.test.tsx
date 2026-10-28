@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 
 import { screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
@@ -124,9 +124,14 @@ describe('StatusCard không hiển thị ở app thật khi chưa có dữ liệ
     });
 
   it('chỉ shared/ui và test mới dùng StatusCard', () => {
-    const users = walk(SRC)
-      .filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f))
-      .filter((f) => !f.includes(join('shared', 'ui') + '/'))
+    const files = walk(SRC)
+      .map((f) => f.split(sep).join('/'))
+      .filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f));
+    // Sai đường dẫn SRC sẽ quét rỗng và pass giả: phải quét được mã nguồn thật.
+    expect(files.length).toBeGreaterThan(50);
+    expect(files.some((f) => f.endsWith('/shared/ui/StatusCard.tsx'))).toBe(true);
+    const users = files
+      .filter((f) => !f.includes('/shared/ui/'))
       .filter((f) => /\bStatusCard\b/.test(readFileSync(f, 'utf8')));
     expect(users).toEqual([]);
   });
