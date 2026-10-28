@@ -175,6 +175,8 @@ export const ROUTES = {
   security: route('/account/security', 'UI-I05', true),
   // PER-04: đổi mật khẩu, route con của UI-I05 (Q-20k).
   changePassword: subRoute('/account/change-password', 'security', 'UI-I05', true, true),
+  // PER-22: màn thông tin Xóa tài khoản (board 07 khung 20), route con của UI-I05; nút xóa khóa, không luồng xóa (Q-21h, Q-21af).
+  deleteAccount: subRoute('/account/delete-account', 'security', 'UI-I05', true, true),
   help: route('/account/help', 'UI-I06', true),
   // PER-16..19: danh mục, bài hướng dẫn, liên hệ hỗ trợ, điều khoản và chính sách; route con của UI-I06 (Q-21b, Q-21ae; không mã UI mới).
   helpCategory: subRoute('/account/help/category/[categoryId]', 'help', 'UI-I06', true, true),

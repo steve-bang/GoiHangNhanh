@@ -386,5 +386,52 @@
       "note": "Các trang này chưa được công bố nên chưa mở được. Hàng sẽ mở được khi có địa chỉ thật.",
       "openFailed": "Chưa mở được trang này. Bạn thử lại nhé."
     }
+  },
+  "deleteAccount": {
+    "title": "Xóa tài khoản?",
+    "intro": "Đây là thao tác quan trọng. Hãy đọc kỹ thông tin về dữ liệu và quyền truy cập trước khi tiếp tục.",
+    "conditionsTitle": "Điều kiện",
+    "checking": "Đang kiểm tra",
+    "status": {
+      "met": "Đạt",
+      "attention": "Cần xử lý",
+      "unknown": "Chưa kiểm tra được"
+    },
+    "conditions": {
+      "recording": {
+        "title": "Không đang quay video trên máy này",
+        "met": "Không có video nào đang quay.",
+        "attention": "Hãy dừng quay trước khi xóa tài khoản.",
+        "unknown": "Chưa đọc được dữ liệu trên máy."
+      },
+      "unsynced": {
+        "title": "Không còn tệp chưa đồng bộ trên máy này",
+        "met": "Không có tệp nào đang chờ đồng bộ.",
+        "attention": "Còn {{count}} tệp chưa được máy chủ xác nhận.",
+        "unknown": "Chưa đọc được dữ liệu trên máy."
+      },
+      "disputes": {
+        "title": "Bằng chứng đang tranh chấp hoặc cần giữ lại",
+        "unknown": "Ứng dụng chưa có dữ liệu để kiểm tra mục này."
+      },
+      "ownership": {
+        "title": "Cửa hàng bạn là chủ",
+        "met": "Bạn không là chủ cửa hàng nào.",
+        "attention": "Bạn là chủ {{count}} cửa hàng. Cách xử lý cửa hàng chưa được công bố.",
+        "unknown": "Chưa đọc được danh sách cửa hàng."
+      }
+    },
+    "syncLink": "Xem trung tâm đồng bộ",
+    "dataTitle": "Dữ liệu sẽ ra sao",
+    "dataDispute": "Bằng chứng đang tranh chấp được giữ lại theo chính sách dự kiến, không bị xóa ngầm.",
+    "dataDevice": "Cách xử lý video và dữ liệu trên máy này chưa được công bố.",
+    "dataServer": "Thời gian và cách xóa dữ liệu trên máy chủ chưa được công bố.",
+    "agree": "Tôi hiểu và đồng ý",
+    "delete": "Xóa tài khoản",
+    "deleteHint": "Chưa dùng được. Việc xóa tài khoản trong ứng dụng sắp có.",
+    "soon": "Sắp có. Hiện chưa xóa được tài khoản trong ứng dụng.",
+    "support": "Bạn có thể liên hệ hỗ trợ để hỏi về việc xóa tài khoản.",
+    "supportLink": "Liên hệ hỗ trợ",
+    "keep": "Giữ tài khoản của tôi"
   }
 }
