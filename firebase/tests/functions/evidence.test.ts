@@ -202,10 +202,16 @@ describe('verifyEvidenceObject', () => {
     const doc = await evidenceOf(shopId, evidenceId);
     expect(doc?.server).toMatchObject({
       state: 'hash_mismatch',
-      sha256Server: sha(bytes),
       generation: '1002',
       overwrittenFromGeneration: '1001',
+      previous: { state: 'verified', generation: '1001', sha256Server: sha(bytes) },
     });
+    // Bản cũ không còn nằm cạnh hash_mismatch như thể còn đúng.
+    expect(doc?.server).not.toHaveProperty('sha256Server');
+    expect(doc?.server).not.toHaveProperty('sizeBytesServer');
+    expect(doc?.server).not.toHaveProperty('verifiedAt');
+    expect(doc?.server.previous).toHaveProperty('verifiedAt');
+    expect(doc?.server.previous.sizeBytesServer).toBe(bytes.length);
     expect(await auditOf(shopId)).toEqual([
       expect.objectContaining({ type: 'evidence.verified' }),
       expect.objectContaining({
@@ -228,6 +234,70 @@ describe('verifyEvidenceObject', () => {
       'already_final',
     );
     expect(await auditOf(shopId)).toHaveLength(1);
+  });
+
+  it('finalize CŨ giao lặp/đến muộn sau finalize mới (generation nhỏ hơn): already_final, không đảo generation, không kiểm toán thừa', async () => {
+    const { shopId, evidenceId, path } = await declare(bytes);
+    await verifyEvidenceObject(db, readerOf(bytes), path, '9');
+    const replaced = Buffer.from('ban-moi');
+    expect((await verifyEvidenceObject(db, readerOf(replaced), path, '10')).outcome).toBe(
+      'original_overwritten', // so số, không so chuỗi: '10' > '9'
+    );
+    expect((await verifyEvidenceObject(db, readerOf(bytes), path, '9')).outcome).toBe(
+      'already_final',
+    );
+    const doc = await evidenceOf(shopId, evidenceId);
+    expect(doc?.server).toMatchObject({ state: 'hash_mismatch', generation: '10' });
+    expect(await auditOf(shopId)).toHaveLength(2);
+  });
+
+  it('hai finalize chồng nhau khi chưa chốt: bản đã băm mà generation lệch KHÔNG được chốt', async () => {
+    const { shopId, evidenceId, path } = await declare(bytes);
+    const newer = Buffer.from('ban-moi-hon');
+    let streamed = false;
+    // Finalize generation 1 đang băm thì finalize generation 2 chen vào bước 1 (ghi nhận generation đang xét).
+    const slow: EvidenceObjectReader = {
+      open: () =>
+        new Readable({
+          read() {
+            if (streamed) return;
+            streamed = true;
+            void db
+              .doc(`shops/${shopId}/evidence/${evidenceId}`)
+              .update({ 'server.generation': '2' })
+              .then(() => {
+                this.push(bytes);
+                this.push(null);
+              });
+          },
+        }),
+    };
+    const first = await verifyEvidenceObject(db, slow, path, '1');
+    expect(first.outcome).toBe('superseded');
+    // Chưa chốt gì cho generation 1 (dù băm khớp khai báo); không kiểm toán.
+    const doc = await evidenceOf(shopId, evidenceId);
+    expect(doc?.server).toMatchObject({ state: 'uploaded', generation: '2' });
+    expect(doc?.server).not.toHaveProperty('verifiedAt');
+    expect(await auditOf(shopId)).toEqual([]);
+    // Finalize của generation 2 tự chốt theo nội dung đã băm của nó.
+    expect((await verifyEvidenceObject(db, readerOf(newer), path, '2')).outcome).toBe(
+      'hash_mismatch',
+    );
+    expect(await auditOf(shopId)).toHaveLength(1);
+  });
+
+  it('finalize cũ đến muộn khi generation mới hơn đang được xét: superseded, không hạ generation', async () => {
+    // Dựng trạng thái chưa chốt ở generation 8, rồi finalize generation 7 đến muộn.
+    const other = await declare(bytes);
+    await db.doc(`shops/${other.shopId}/evidence/${other.evidenceId}`).update({
+      server: { state: 'uploaded', generation: '8', storagePath: other.path },
+    });
+    expect((await verifyEvidenceObject(db, readerOf(bytes), other.path, '7')).outcome).toBe(
+      'superseded',
+    );
+    const doc = await evidenceOf(other.shopId, other.evidenceId);
+    expect(doc?.server).toMatchObject({ state: 'uploaded', generation: '8' });
+    expect(await auditOf(other.shopId)).toEqual([]);
   });
 
   it('shop khác cùng evidenceId không bị ảnh hưởng (cô lập theo đường dẫn)', async () => {

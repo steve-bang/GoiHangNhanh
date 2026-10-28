@@ -14,6 +14,7 @@ export type VerifyOutcome =
   | 'hash_mismatch'
   | 'already_final' // máy chủ đã chốt `verified`/`hash_mismatch`: chạy lại không đổi gì
   | 'original_overwritten' // đối tượng bị thay bằng generation khác SAU khi đã chốt: cách ly + kiểm toán
+  | 'superseded' // chưa chốt, nhưng đã có generation MỚI hơn đang được xét: để finalize của generation đó tự chốt
   | 'ignored_path' // không phải bản gốc bằng chứng
   | 'no_evidence_document'; // tệp mồ côi: chưa có tài liệu khai báo
 
@@ -47,6 +48,18 @@ export async function hashStream(stream: Readable): Promise<{ sha256: string; si
 
 const FINAL_STATES = ['verified', 'hash_mismatch'];
 
+/** Generation GCS là số nguyên 64 bit dạng chuỗi: so bằng BigInt, không so chuỗi. */
+function compareGeneration(a: string, b: string): number {
+  try {
+    const x = BigInt(a);
+    const y = BigInt(b);
+    return x === y ? 0 : x > y ? 1 : -1;
+  } catch {
+    // Không phải số: không so thứ tự được, coi khác nhau là "mới hơn" (cách ly thay vì bỏ qua).
+    return a === b ? 0 : 1;
+  }
+}
+
 /**
  * Xác minh bản gốc bằng chứng sau khi tệp được tải lên Storage (docs/06; CLAUDE.md bất biến 3).
  *
@@ -56,9 +69,13 @@ const FINAL_STATES = ['verified', 'hash_mismatch'];
  * - Idempotent: trạng thái chốt thì chạy lại không đổi gì và không nhân đôi kiểm toán (id sự kiện
  *   cố định theo bằng chứng).
  * - Bản gốc bất biến (bất biến 4): `server.generation` ghi lúc nhận. Nếu finalize đến với generation
- *   KHÁC khi đã chốt (đối tượng bị ghi đè dù URL ký đã ràng buộc tạo-một-lần), KHÔNG trả
- *   `already_final` im lặng: chuyển `hash_mismatch` (nhãn "Đã xác minh" không còn đúng), giữ
- *   `sha256Server` của bản đã băm, ghi kiểm toán `evidence.original_overwritten`.
+ *   LỚN HƠN generation đã chốt (so BigInt; đối tượng bị ghi đè dù URL ký đã ràng buộc tạo-một-lần),
+ *   KHÔNG trả `already_final` im lặng: chuyển `hash_mismatch` (nhãn "Đã xác minh" không còn đúng), ghi
+ *   kiểm toán `evidence.original_overwritten`, và chuyển `verifiedAt`/`sha256Server`/`sizeBytesServer`
+ *   của bản cũ sang `server.previous` (không để cạnh `hash_mismatch` như thể còn đúng). Generation
+ *   NHỎ HƠN hoặc BẰNG (finalize cũ giao lặp/đến muộn) là `already_final`, không đổi gì.
+ * - Hai finalize chồng nhau khi chưa chốt: chỉ generation đang được ghi ở `server.generation` được
+ *   chốt; bản đã băm mà generation lệch thì KHÔNG chốt (`superseded`).
  * - Không ghi nội dung tệp, đường dẫn hay mã băm vào log; mã băm chỉ nằm trong tài liệu bằng chứng.
  * - Không đụng `retention` (cờ giữ do Function khác quản lý, O-06).
  */
@@ -86,13 +103,22 @@ export async function verifyEvidenceObject(
       if (
         generationText !== undefined &&
         server.generation !== undefined &&
-        server.generation !== generationText
+        compareGeneration(generationText, server.generation) > 0
       ) {
         // Đối tượng bị thay sau khi chốt: cách ly + kiểm toán (id cố định theo generation: chạy lại không nhân đôi).
+        const old = data.server as Record<string, unknown>;
+        const previous: Record<string, unknown> = { state, generation: server.generation };
+        for (const key of ['verifiedAt', 'sha256Server', 'sizeBytesServer']) {
+          if (old[key] !== undefined) previous[key] = old[key];
+        }
         tx.update(evidenceRef, {
           'server.state': 'hash_mismatch',
           'server.generation': generationText,
           'server.overwrittenFromGeneration': server.generation,
+          'server.previous': previous,
+          'server.verifiedAt': FieldValue.delete(),
+          'server.sha256Server': FieldValue.delete(),
+          'server.sizeBytesServer': FieldValue.delete(),
         });
         tx.set(
           db.doc(
@@ -120,6 +146,13 @@ export async function verifyEvidenceObject(
           ...(generationText !== undefined ? { generation: generationText } : {}),
         },
       });
+    } else if (
+      generationText !== undefined &&
+      server.generation !== undefined &&
+      compareGeneration(generationText, server.generation) < 0
+    ) {
+      // Finalize cũ đến muộn khi đã có generation mới hơn đang được xét: không hạ generation, không băm.
+      return { final: true as const, overwritten: false as const, superseded: true as const };
     } else if (generationText !== undefined && server.generation !== generationText) {
       // Chưa chốt mà đối tượng đã đổi: băm bản mới nhất, ghi nhận generation đang được xét.
       tx.update(evidenceRef, { 'server.generation': generationText });
@@ -132,6 +165,7 @@ export async function verifyEvidenceObject(
   });
   if (!declared) return { outcome: 'no_evidence_document' };
   if (declared.final) {
+    if ('superseded' in declared) return { outcome: 'superseded' };
     return { outcome: declared.overwritten ? 'original_overwritten' : 'already_final' };
   }
 
@@ -154,6 +188,15 @@ export async function verifyEvidenceObject(
       (snap.data()?.server as
         { state?: string; receivedAt?: unknown; generation?: string } | undefined) ?? {};
     if (current.state && FINAL_STATES.includes(current.state)) return { outcome: 'already_final' };
+    if (
+      generationText !== undefined &&
+      current.generation !== undefined &&
+      compareGeneration(generationText, current.generation) !== 0
+    ) {
+      // Bản vừa băm không còn là generation đang được xét (finalize khác chạy chồng): không gắn
+      // `verified` cho generation chưa từng được băm; finalize của generation đó tự chốt.
+      return { outcome: 'superseded' };
+    }
     tx.update(evidenceRef, {
       server: {
         state: verified ? 'verified' : 'hash_mismatch',
