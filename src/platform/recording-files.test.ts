@@ -206,6 +206,20 @@ describe('probeEvidenceDirWritable', () => {
     expect(mockFiles.get('file:///docs/evidence/ev-1.mp4')).toBe(123);
   });
 
+  it('dọn tệp thăm dò sót lại, chỉ đúng tên .probe-<số>; không đụng tệp bằng chứng hay tệp tên gần giống', () => {
+    mockFiles.set('file:///docs/evidence/.probe-111', 1);
+    mockFiles.set('file:///docs/evidence/.probe-222', 1);
+    mockFiles.set('file:///docs/evidence/ev-1.mp4', 123);
+    mockFiles.set('file:///docs/evidence/.probe-keep.mp4', 5);
+    mockFiles.set('file:///docs/evidence/x.probe-333', 7);
+    expect(probeEvidenceDirWritable()).toBe(true);
+    expect([...mockFiles.keys()].sort()).toEqual([
+      'file:///docs/evidence/.probe-keep.mp4',
+      'file:///docs/evidence/ev-1.mp4',
+      'file:///docs/evidence/x.probe-333',
+    ]);
+  });
+
   it('không ghi được: false và vẫn dọn tệp thăm dò', () => {
     mockWriteError = new Error('read-only');
     expect(probeEvidenceDirWritable()).toBe(false);
