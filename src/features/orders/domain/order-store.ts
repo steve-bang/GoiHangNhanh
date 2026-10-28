@@ -1,4 +1,4 @@
-import type { OrderId, OrderLineId, SessionId, ShopId } from '@/core/ids';
+import type { OrderId, OrderLineId, PackageId, SessionId, ShopId } from '@/core/ids';
 
 import type { OrderListPage, OrderListPageRequest, OrderListQuery } from './order-list';
 import type { Order, OrderDetails, OrderLine, OrderPackage, PackingSession } from './types';
@@ -112,8 +112,18 @@ export interface OrderStore {
     limit: number,
     creatorUid: string,
   ): Promise<OrderDetails[]>;
-  /** Ghi nhận đơn đã có trên máy chủ (idempotent). */
-  markOrderPublished(shopId: ShopId, orderId: OrderId, atDevice: number): Promise<void>;
+  /**
+   * Ghi nhận đơn đã có trên máy chủ (idempotent), cùng các kiện của đơn do `creatorUid` tạo (cùng
+   * lần đăng với đơn). Kiện của người khác thêm vào đơn này vẫn chờ chính họ đăng.
+   */
+  markOrderPublished(
+    shopId: ShopId,
+    orderId: OrderId,
+    atDevice: number,
+    creatorUid: string,
+  ): Promise<void>;
+  /** Ghi nhận một kiện đã có trên máy chủ (idempotent). */
+  markPackagePublished(shopId: ShopId, packageId: PackageId, atDevice: number): Promise<void>;
   /**
    * Phiên CẦN đăng/cập nhật trạng thái trên máy chủ bởi `creatorUid`: do chính `creatorUid` bắt đầu,
    * trạng thái khác `created` (phiên `created` chưa có bằng chứng nên không đăng), khác trạng thái đã
@@ -123,9 +133,21 @@ export interface OrderStore {
     shopId: ShopId,
     limit: number,
     creatorUid: string,
-  ): Promise<{ session: PackingSession; status: string }[]>;
+  ): Promise<PendingSession[]>;
   /** Ghi nhận phiên đã đăng với `status` (idempotent). */
   markSessionPublished(shopId: ShopId, sessionId: SessionId, status: string): Promise<void>;
+}
+
+/**
+ * Một phiên cần đăng. `packagePending`: kiện của phiên (do chính `creatorUid` tạo) CHƯA được ghi nhận
+ * là đã đăng, nên phải đảm bảo kiện có trên máy chủ trước khi đăng phiên; `false` thì không cần đọc
+ * hay ghi gì thêm cho kiện. Phiên trên kiện do người khác tạo mà kiện chưa đăng thì KHÔNG có mặt ở
+ * danh sách (chờ họ đăng kiện).
+ */
+export interface PendingSession {
+  readonly session: PackingSession;
+  readonly status: string;
+  readonly packagePending: boolean;
 }
 
 export interface RecentSearch {

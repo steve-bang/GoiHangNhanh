@@ -36,6 +36,7 @@ export function createMemoryOrderStore(
   const sessions = new Map<SessionId, PackingSession>();
   const publishedOrders = new Map<OrderId, number>();
   const publishedSessions = new Map<SessionId, string>();
+  const publishedPackages = new Map<string, number>();
   /** shopId -> (khóa chuẩn hóa -> mục). */
   const searches = new Map<string, Map<string, { text: string; lastUsedAtDevice: number }>>();
 
@@ -241,8 +242,18 @@ export function createMemoryOrderStore(
           copy<OrderDetails>({ order: o, lines: linesOf(o.id), packages: packagesOf(o.id) }),
         );
     },
-    async markOrderPublished(shopId, orderId, atDevice) {
-      if (orderOf(shopId, orderId)) publishedOrders.set(orderId, atDevice);
+    async markOrderPublished(shopId, orderId, atDevice, uid) {
+      if (!orderOf(shopId, orderId)) return;
+      publishedOrders.set(orderId, atDevice);
+      for (const pkg of packagesOf(orderId)) {
+        if (pkg.createdBy === uid && !publishedPackages.has(pkg.id)) {
+          publishedPackages.set(pkg.id, atDevice);
+        }
+      }
+    },
+    async markPackagePublished(shopId, packageId, atDevice) {
+      const pkg = packages.get(packageId);
+      if (pkg && orderOf(shopId, pkg.orderId)) publishedPackages.set(packageId, atDevice);
     },
     async listSessionsPendingRemote(shopId, limit, uid) {
       return [...sessions.values()]
@@ -252,11 +263,16 @@ export function createMemoryOrderStore(
             s.createdBy === uid &&
             s.sessionStatus !== 'created' &&
             publishedSessions.get(s.id) !== s.sessionStatus &&
-            publishedOrders.has(s.orderId),
+            publishedOrders.has(s.orderId) &&
+            (publishedPackages.has(s.packageId) || packages.get(s.packageId)?.createdBy === uid),
         )
         .sort((a, b) => a.startedAtDevice - b.startedAtDevice)
         .slice(0, limit)
-        .map((s) => ({ session: copy(s), status: s.sessionStatus as string }));
+        .map((s) => ({
+          session: copy(s),
+          status: s.sessionStatus as string,
+          packagePending: !publishedPackages.has(s.packageId),
+        }));
     },
     async markSessionPublished(shopId, sessionId, status) {
       const session = sessions.get(sessionId);

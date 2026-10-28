@@ -54,6 +54,9 @@ const BATCH = 25;
  * ở lại máy cho đến khi chính họ đăng nhập (Q-23g).
  */
 export function createOrderSync(deps: OrderSyncDeps): OrderSync {
+  // Lưu ý: nếu một lệnh ghi treo giữa chừng (mất mạng, batch.commit chưa trả), `running` của lượt đó
+  // giữ nguyên cho đến khi lệnh settle; lượt mới trong lúc đó trả `skipped: 'busy'`. Đây là hành vi
+  // chấp nhận được, không phải lỗi: `OrderSyncRunner` tạo bộ đồng bộ mới khi trạng thái mạng đổi.
   const { store, remote, now, isOnline, currentUid } = deps;
   let running = false;
 
@@ -70,26 +73,27 @@ export function createOrderSync(deps: OrderSyncDeps): OrderSync {
           if (!isOnline()) break;
           try {
             await remote.publishOrder(details);
-            await store.markOrderPublished(shopId, details.order.id, now());
+            await store.markOrderPublished(shopId, details.order.id, now(), uid);
             summary.ordersPublished += 1;
           } catch {
             summary.failed += 1;
           }
         }
-        for (const { session, status } of await store.listSessionsPendingRemote(
-          shopId,
-          BATCH,
-          uid,
-        )) {
+        const pendingSessions = await store.listSessionsPendingRemote(shopId, BATCH, uid);
+        for (const { session, status, packagePending } of pendingSessions) {
           if (!isOnline()) break;
           if (!isRemoteSessionStatus(status)) continue; // trạng thái lạ: không đăng, không đoán
           try {
             // Kiện thêm sau khi đơn đã đăng: đảm bảo kiện của phiên có trên máy chủ trước (Rules).
-            // Kiện do người khác tạo thì để họ đăng (phiên của mình chờ).
-            const details = await store.getOrder(shopId, session.orderId);
-            const pkg = details?.packages.find((p) => p.id === session.packageId);
-            if (details && pkg && pkg.createdBy === uid) {
+            // Chỉ khi kho báo kiện CHƯA đăng; đăng rồi thì không đọc lại gì (mỗi lần phiên đổi trạng
+            // thái mà đọc lại cả cây đơn sẽ tốn 1 + số dòng + số kiện lượt đọc Firestore).
+            // Kiện do người khác tạo mà chưa đăng thì phiên không có mặt ở danh sách (chờ họ đăng).
+            if (packagePending) {
+              const details = await store.getOrder(shopId, session.orderId);
+              const pkg = details?.packages.find((p) => p.id === session.packageId);
+              if (!details || !pkg) throw new Error('package_missing');
               await remote.publishPackage(details.order, pkg);
+              await store.markPackagePublished(shopId, pkg.id, now());
             }
             await remote.publishSession(session, status);
             await store.markSessionPublished(shopId, session.id, status);

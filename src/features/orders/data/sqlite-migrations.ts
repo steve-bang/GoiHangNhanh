@@ -100,6 +100,12 @@ export const MIGRATIONS: readonly string[] = [
   ALTER TABLE packages ADD COLUMN created_by TEXT;
   ALTER TABLE packing_sessions ADD COLUMN created_by TEXT;
   `,
+  // v6: kiện đã đăng lên máy chủ chưa, để đăng phiên không phải đọc lại cả cây đơn (mỗi lần phiên đổi
+  // trạng thái) chỉ để biết "kiện thêm sau" đã có chưa (chi phí đọc Firestore). Kiện có trước cột này
+  // giữ NULL: lần đăng phiên đầu tiên kiểm tra một lần (idempotent) rồi đánh dấu.
+  `
+  ALTER TABLE packages ADD COLUMN remote_synced_at_device INTEGER;
+  `,
 ];
 
 /**

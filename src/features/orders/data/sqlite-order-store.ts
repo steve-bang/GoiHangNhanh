@@ -598,25 +598,48 @@ export function createSqliteOrderStore(
         }
         return result;
       }),
-    markOrderPublished: (shopId, orderId, atDevice) =>
+    markOrderPublished: (shopId, orderId, atDevice, uid) =>
       guarded('ORDER_SAVE_FAILED', () =>
-        db.runAsync('UPDATE orders SET remote_synced_at_device = ? WHERE id = ? AND shop_id = ?', [
-          atDevice,
-          orderId,
-          shopId,
-        ]),
+        db.withTransactionAsync(async () => {
+          await db.runAsync(
+            'UPDATE orders SET remote_synced_at_device = ? WHERE id = ? AND shop_id = ?',
+            [atDevice, orderId, shopId],
+          );
+          await db.runAsync(
+            `UPDATE packages SET remote_synced_at_device = ?
+             WHERE order_id = ? AND created_by = ? AND remote_synced_at_device IS NULL
+               AND order_id IN (SELECT id FROM orders WHERE id = ? AND shop_id = ?)`,
+            [atDevice, orderId, uid, orderId, shopId],
+          );
+        }),
+      ),
+    markPackagePublished: (shopId, packageId, atDevice) =>
+      guarded('ORDER_SAVE_FAILED', () =>
+        db.runAsync(
+          `UPDATE packages SET remote_synced_at_device = ?
+           WHERE id = ? AND order_id IN (SELECT id FROM orders WHERE shop_id = ?)`,
+          [atDevice, packageId, shopId],
+        ),
       ),
     listSessionsPendingRemote: (shopId, limit, uid) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
-        const rows = await db.getAllAsync<SessionRow>(
-          `SELECT s.* FROM packing_sessions s JOIN orders o ON o.id = s.order_id
+        const rows = await db.getAllAsync<SessionRow & { package_synced: number | null }>(
+          `SELECT s.*, p.remote_synced_at_device AS package_synced
+           FROM packing_sessions s
+           JOIN orders o ON o.id = s.order_id
+           JOIN packages p ON p.id = s.package_id
            WHERE s.shop_id = ? AND s.created_by = ? AND s.session_status != 'created'
              AND (s.remote_status IS NULL OR s.remote_status != s.session_status)
              AND o.remote_synced_at_device IS NOT NULL
+             AND (p.remote_synced_at_device IS NOT NULL OR p.created_by = ?)
            ORDER BY s.started_at_device, s.id LIMIT ?`,
-          [shopId, uid, limit],
+          [shopId, uid, uid, limit],
         );
-        return rows.map((row) => ({ session: toSession(row), status: row.session_status }));
+        return rows.map((row) => ({
+          session: toSession(row),
+          status: row.session_status,
+          packagePending: row.package_synced === null,
+        }));
       }),
     markSessionPublished: (shopId, sessionId, status) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', () =>
