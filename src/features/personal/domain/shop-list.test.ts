@@ -19,6 +19,27 @@ describe('foldForSearch', () => {
   it('bỏ dấu tiếng Việt (kể cả đ), đổi chữ thường, cắt khoảng trắng đầu cuối', () => {
     expect(foldForSearch('  Đồ Chơi Mỹ Phẩm  ')).toBe('do choi my pham');
   });
+
+  it('đ và Đ đều thành d, cả khi chuỗi đã ở dạng tổ hợp (NFD)', () => {
+    expect(foldForSearch('đĐ')).toBe('dd');
+    expect(foldForSearch('Đồ'.normalize('NFD'))).toBe('do');
+  });
+
+  it('môi trường không hỗ trợ normalize: không crash, vẫn so khớp chữ thường (đ vẫn thành d)', () => {
+    const original = String.prototype.normalize;
+    try {
+      // @ts-expect-error mô phỏng môi trường thiếu normalize
+      delete String.prototype.normalize;
+      expect(foldForSearch('  Shop ĐỒ Chơi ')).toBe('shop dồ chơi');
+      String.prototype.normalize = () => {
+        throw new RangeError('không hỗ trợ');
+      };
+      expect(foldForSearch('Shop Đồ')).toBe('shop dồ');
+      expect(filterShopsByName(SHOPS, 'shop')).toHaveLength(3);
+    } finally {
+      String.prototype.normalize = original;
+    }
+  });
 });
 
 describe('filterShopsByName', () => {
