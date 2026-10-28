@@ -116,7 +116,7 @@ export function HelpScreen() {
               {featuredArticles().map((article) => (
                 <ListItem
                   key={article.id}
-                  leadingIcon="clipboard"
+                  leadingIcon="receipt"
                   title={helpArticleTitle(t, article.id)}
                   titleWeight="regular"
                   showChevron={false}
@@ -135,7 +135,7 @@ export function HelpScreen() {
               testID="help-contact-row"
             />
             <ListItem
-              leadingIcon="clipboard"
+              leadingIcon="receipt"
               title={t('personal:help.legalRow')}
               titleWeight="regular"
               onPress={() => navigation.push(ROUTES.helpLegal)}

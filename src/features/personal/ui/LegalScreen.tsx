@@ -42,7 +42,7 @@ export function LegalScreen() {
             return (
               <ListItem
                 key={row.id}
-                leadingIcon="clipboard"
+                leadingIcon="receipt"
                 title={label}
                 titleWeight="regular"
                 // Hàng khóa vẫn là nút (vô hiệu) để trình đọc màn hình đọc "không dùng được" kèm gợi ý.
@@ -59,7 +59,7 @@ export function LegalScreen() {
           return (
             <ListItem
               key={row.id}
-              leadingIcon="clipboard"
+              leadingIcon="receipt"
               title={label}
               titleWeight="regular"
               onPress={() => {
