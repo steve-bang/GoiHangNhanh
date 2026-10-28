@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import type { ShopId } from '@/core/ids';
 import { logger } from '@/core/logging/logger';
 
-import { loadEvidenceStates, useCurrentShopId, useOrderStore } from '../data';
+import { loadEvidenceStates, useCurrentShopId, useEvidenceFileStore, useOrderStore } from '../data';
 import {
   SEARCH_DEBOUNCE_MS,
   SEARCH_RESULT_LIMIT,
@@ -39,6 +39,7 @@ interface Tagged {
  */
 export function useOrderSearch(input: string, retryToken: number): SearchState {
   const store = useOrderStore();
+  const evidenceFiles = useEvidenceFileStore();
   const shopId = useCurrentShopId();
   const normalized = normalizeSearchInput(input);
   const key = normalized?.key ?? null;
@@ -57,6 +58,7 @@ export function useOrderSearch(input: string, retryToken: number): SearchState {
           );
           const items = page.items.slice(0, SEARCH_RESULT_LIMIT);
           const states = await loadEvidenceStates(
+            evidenceFiles,
             shopId,
             items.map((i) => i.order.id),
           );
@@ -86,7 +88,7 @@ export function useOrderSearch(input: string, retryToken: number): SearchState {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [key, shopId, store, retryToken]);
+  }, [key, shopId, store, evidenceFiles, retryToken]);
 
   if (key === null) return { kind: 'idle' };
   if (tagged && tagged.shopId === shopId && tagged.key === key && tagged.retry === retryToken)

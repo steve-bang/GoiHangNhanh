@@ -3,8 +3,7 @@ import { AppError } from '@/core/errors/app-error';
 import { logger } from '@/core/logging/logger';
 import {
   applyEventToFile,
-  ALL_FILE_STATES,
-  isUnsynced,
+  UNSYNCED_STATES,
   type EvidenceFile,
   type EvidenceFileStore,
   type FileState,
@@ -37,7 +36,6 @@ interface FileRow {
 const COLUMNS =
   'id, shop_id, order_id, package_id, session_id, file_group, kind, state, local_path, size_bytes, duration_ms, sha256_client, attempt_count, next_attempt_at_device, last_error_code, created_at_device, updated_at_device';
 
-const UNSYNCED_STATES = ALL_FILE_STATES.filter(isUnsynced);
 const UNSYNCED_SQL = UNSYNCED_STATES.map((s) => `'${s}'`).join(', ');
 
 function toFile(row: FileRow): EvidenceFile {
@@ -167,6 +165,16 @@ export function createSqliteEvidenceFileStore(db: SqlDatabase): EvidenceFileStor
         const rows = await db.getAllAsync<FileRow>(
           `SELECT ${COLUMNS} FROM evidence_files WHERE shop_id = ? AND state IN (${marks}) ORDER BY created_at_device, id`,
           [shopId, ...states],
+        );
+        return rows.map(toFile);
+      }),
+    listByOrders: (shopId, orderIds) =>
+      guarded(async () => {
+        if (orderIds.length === 0) return [];
+        const marks = orderIds.map(() => '?').join(', ');
+        const rows = await db.getAllAsync<FileRow>(
+          `SELECT ${COLUMNS} FROM evidence_files WHERE shop_id = ? AND order_id IN (${marks}) ORDER BY created_at_device, id`,
+          [shopId, ...orderIds],
         );
         return rows.map(toFile);
       }),

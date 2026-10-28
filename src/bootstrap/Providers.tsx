@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { getDefaultRemoteDocuments } from '@/api/create-remote-documents';
 import { initI18n } from '@/core/i18n';
-import { OrderStoreProvider, OrderSyncRunner } from '@/features/orders';
+import { EvidenceFileStoreProvider, OrderStoreProvider, OrderSyncRunner } from '@/features/orders';
 import {
   PersonalGatewaysProvider,
   SessionProvider,
@@ -29,8 +29,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
             <ToastProvider>
               <SessionShopProvider>
                 <OrderStoreProvider>
-                  <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
-                  {children}
+                  <EvidenceFileStoreProvider>
+                    <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
+                    {children}
+                  </EvidenceFileStoreProvider>
                 </OrderStoreProvider>
               </SessionShopProvider>
             </ToastProvider>

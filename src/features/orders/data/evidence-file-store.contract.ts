@@ -210,5 +210,18 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
         file: { state: 'queued', attemptCount: 1, nextAttemptAtDevice: null, lastErrorCode: null },
       });
     });
+
+    it('listByOrders: tệp của nhiều đơn, cô lập shop, danh sách rỗng thì rỗng', async () => {
+      const h = await make();
+      const a = await seedFile(h, 'L1');
+      const b = await seedFile(h, 'L2', { id: 'ev-L2' });
+      await h.files.create(a);
+      await h.files.create({ ...b, createdAtDevice: 100 });
+      const both = await h.files.listByOrders(LOCAL_SHOP_ID, [a.orderId, b.orderId]);
+      expect(both.map((f) => f.id)).toEqual([b.id, a.id]);
+      expect(await h.files.listByOrders(LOCAL_SHOP_ID, [b.orderId])).toHaveLength(1);
+      expect(await h.files.listByOrders(LOCAL_SHOP_ID, [])).toEqual([]);
+      expect(await h.files.listByOrders('shop-khac' as ShopId, [a.orderId])).toEqual([]);
+    });
   });
 }

@@ -1,6 +1,7 @@
 import type { EvidenceId, OrderId, PackageId, SessionId, ShopId } from '@/core/ids';
 
 import {
+  ALL_FILE_STATES,
   FILE_STATES,
   transition,
   type FileEvent,
@@ -71,6 +72,11 @@ const SYNCED_OR_FINAL: readonly FileState[] = [
   FILE_STATES.UNRECOVERABLE,
 ];
 
+/** Mọi trạng thái còn việc đồng bộ (`isUnsynced`). */
+export const UNSYNCED_STATES: readonly FileState[] = ALL_FILE_STATES.filter(
+  (s) => !SYNCED_OR_FINAL.includes(s),
+);
+
 /** Tệp còn việc đồng bộ: chưa tới `uploaded`/`verified` và chưa mất hẳn (docs/06). */
 export const isUnsynced = (state: FileState): boolean => !SYNCED_OR_FINAL.includes(state);
 
@@ -130,6 +136,8 @@ export interface EvidenceFileStore {
   ): Promise<ApplyEventResult>;
   /** Tệp của shop đang ở một trong các trạng thái, cũ nhất trước (hàng đợi tải lên). */
   listByStates(shopId: ShopId, states: readonly FileState[]): Promise<readonly EvidenceFile[]>;
+  /** Tệp của nhiều đơn cùng lúc (danh sách đơn), cũ nhất trước. */
+  listByOrders(shopId: ShopId, orderIds: readonly OrderId[]): Promise<readonly EvidenceFile[]>;
   /** Mọi tệp của một đơn, cũ nhất trước. */
   listByOrder(shopId: ShopId, orderId: OrderId): Promise<readonly EvidenceFile[]>;
   listBySession(shopId: ShopId, sessionId: SessionId): Promise<readonly EvidenceFile[]>;

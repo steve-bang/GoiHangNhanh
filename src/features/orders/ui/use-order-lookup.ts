@@ -5,7 +5,8 @@ import type { ErrorCode } from '@/core/errors/codes';
 import type { ShopId } from '@/core/ids';
 import { logger } from '@/core/logging/logger';
 
-import { loadEvidenceStates, useCurrentShopId, useOrderStore } from '../data';
+import type { EvidenceFileStore } from '@/features/evidence';
+import { loadEvidenceStates, useCurrentShopId, useEvidenceFileStore, useOrderStore } from '../data';
 import {
   classifyLookup,
   summarizeOrderEvidence,
@@ -47,8 +48,10 @@ async function buildRows(
   shopId: ShopId,
   matches: readonly { order: Order; reasons: readonly MatchReason[] }[],
   store: OrderStore,
+  evidenceFiles: EvidenceFileStore,
 ): Promise<LookupRow[]> {
   const states = await loadEvidenceStates(
+    evidenceFiles,
     shopId,
     matches.map((m) => m.order.id),
   );
@@ -85,6 +88,7 @@ export function useOrderLookup(): {
   reset: () => void;
 } {
   const store = useOrderStore();
+  const evidenceFiles = useEvidenceFileStore();
   const shopId = useCurrentShopId();
   const [tagged, setTagged] = useState<Tagged>({ shopId, state: { kind: 'idle' } });
   const generation = useRef(0);
@@ -109,7 +113,7 @@ export function useOrderLookup(): {
         const result = classifyLookup(found, code);
         if (result.kind === 'none') return set({ kind: 'none', code });
         const matches = result.kind === 'one' ? [result.match] : result.matches;
-        const rows = await buildRows(shopId, matches, store);
+        const rows = await buildRows(shopId, matches, store, evidenceFiles);
         const [only] = rows;
         return set(
           rows.length === 1 && only
@@ -123,7 +127,7 @@ export function useOrderLookup(): {
         return set({ kind: 'error', code, errorCode: 'SEARCH_UNAVAILABLE' });
       }
     },
-    [shopId, store],
+    [shopId, store, evidenceFiles],
   );
 
   const showDuplicates = useCallback(
@@ -135,7 +139,7 @@ export function useOrderLookup(): {
       generation.current += 1;
       const mine = generation.current;
       try {
-        const rows = await buildRows(shop, items, store);
+        const rows = await buildRows(shop, items, store, evidenceFiles);
         if (mine !== generation.current) return null;
         const state: LookupState = { kind: 'duplicate', code, rows };
         setTagged({ shopId: shop, state });
@@ -150,7 +154,7 @@ export function useOrderLookup(): {
         return state;
       }
     },
-    [store],
+    [store, evidenceFiles],
   );
 
   const reset = useCallback(() => {

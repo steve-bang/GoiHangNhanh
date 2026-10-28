@@ -1,5 +1,5 @@
 import type { OrderId, ShopId } from '@/core/ids';
-import type { FileState } from '@/features/evidence';
+import type { EvidenceFileStore, FileState } from '@/features/evidence';
 
 import type { OrderEvidenceItem } from '../domain/evidence-items';
 
@@ -7,27 +7,38 @@ import type { OrderEvidenceItem } from '../domain/evidence-items';
 export type EvidenceStatesByOrder = ReadonlyMap<OrderId, readonly FileState[]>;
 
 /**
- * NGUỒN DUY NHẤT của trạng thái tệp bằng chứng cho danh sách/chi tiết đơn. HIỆN CHƯA CÓ bằng chứng
- * thật (chưa ghi video, chưa có bảng tệp): luôn trả rỗng, nên mọi đơn là "Chưa có video". Phiên
- * `created` KHÔNG phải bằng chứng (bất biến 3) nên cố ý không đọc từ phiên. Khi có kho tệp bằng
- * chứng (recorder/hàng đợi tải lên), đọc ở đây theo `shopId` và thay điều kiện `withoutVideo` của
- * `OrderStore` cho khớp (xem `OrderListQuery.withoutVideo`).
+ * NGUỒN DUY NHẤT của trạng thái tệp bằng chứng cho danh sách/chi tiết đơn: đọc từ kho tệp bằng chứng
+ * theo `shopId`. Phiên `created` KHÔNG phải bằng chứng (bất biến 3) nên không đọc từ phiên; chưa có
+ * tệp nào (ví dụ recorder đang tắt) thì map rỗng và mọi đơn là "Chưa có video".
  */
 export async function loadEvidenceStates(
-  _shopId: ShopId,
-  _orderIds: readonly OrderId[],
+  files: EvidenceFileStore,
+  shopId: ShopId,
+  orderIds: readonly OrderId[],
 ): Promise<EvidenceStatesByOrder> {
-  return new Map();
+  const result = new Map<OrderId, FileState[]>();
+  for (const file of await files.listByOrders(shopId, orderIds)) {
+    const states = result.get(file.orderId) ?? [];
+    states.push(file.state);
+    result.set(file.orderId, states);
+  }
+  return result;
 }
 
 /**
- * Danh sách tệp bằng chứng của MỘT đơn (UI-E03). Cùng nguồn với `loadEvidenceStates`: hiện luôn rỗng
- * vì chưa có kho tệp thật; thay đồng thời với `loadEvidenceStates` (theo `shopId`, sắp xếp cũ nhất
- * trước). Không tự dựng mục từ phiên `created` (bất biến 3).
+ * Danh sách tệp bằng chứng của MỘT đơn (UI-E03), cũ nhất trước, cùng nguồn với `loadEvidenceStates`.
+ * Giờ là giờ THIẾT BỊ lúc tạo tệp (không phải thời gian máy chủ). Không dựng mục từ phiên `created`.
  */
 export async function loadEvidenceItems(
-  _shopId: ShopId,
-  _orderId: OrderId,
+  files: EvidenceFileStore,
+  shopId: ShopId,
+  orderId: OrderId,
 ): Promise<readonly OrderEvidenceItem[]> {
-  return [];
+  return (await files.listByOrder(shopId, orderId)).map((file) => ({
+    id: file.id,
+    group: file.group,
+    kind: file.kind,
+    capturedAtDevice: file.createdAtDevice,
+    state: file.state,
+  }));
 }

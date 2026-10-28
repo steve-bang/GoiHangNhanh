@@ -4,7 +4,14 @@ import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initI18n } from '@/core/i18n';
-import { OrderStoreProvider, createMemoryOrderStore, type OrderStore } from '@/features/orders';
+import {
+  EvidenceFileStoreProvider,
+  OrderStoreProvider,
+  createMemoryEvidenceFileStore,
+  createMemoryOrderStore,
+  type OrderStore,
+} from '@/features/orders';
+import type { EvidenceFileStore } from '@/features/evidence';
 import {
   PersonalGatewaysProvider,
   SessionProvider,
@@ -28,10 +35,12 @@ export function renderWithProviders(
   options: {
     gateways?: Gateways;
     orderStore?: OrderStore;
+    evidenceFileStore?: EvidenceFileStore;
     personalGateways?: PersonalGateways;
   } = {},
 ) {
   const orderStore = options.orderStore ?? createMemoryOrderStore();
+  const evidenceFileStore = options.evidenceFileStore ?? createMemoryEvidenceFileStore();
   return render(
     <SafeAreaProvider initialMetrics={METRICS}>
       <I18nextProvider i18n={initI18n()}>
@@ -42,7 +51,11 @@ export function renderWithProviders(
             <SessionProvider>
               <ToastProvider>
                 <SessionShopProvider>
-                  <OrderStoreProvider store={orderStore}>{ui}</OrderStoreProvider>
+                  <OrderStoreProvider store={orderStore}>
+                    <EvidenceFileStoreProvider store={evidenceFileStore}>
+                      {ui}
+                    </EvidenceFileStoreProvider>
+                  </OrderStoreProvider>
                 </SessionShopProvider>
               </ToastProvider>
             </SessionProvider>

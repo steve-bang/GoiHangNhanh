@@ -51,4 +51,25 @@ describe('kho tệp SQLite: schema và ràng buộc', () => {
     ]);
     expect((await h.files.get(LOCAL_SHOP_ID, input.id))?.state).toBe('saving_local');
   });
+
+  it('kho đơn thấy tệp bằng chứng: withoutVideo và số chưa đồng bộ theo shop/toàn máy', async () => {
+    const h = await harness();
+    const a = await seedFile(h, 'W1');
+    await seedFile(h, 'W2', { id: 'ev-W2' });
+    expect(await h.orders.countOrders(LOCAL_SHOP_ID, { withoutVideo: true })).toBe(2);
+    expect(await h.orders.countUnsynced(LOCAL_SHOP_ID)).toBe(0);
+    await h.files.create(a);
+    expect(await h.orders.countOrders(LOCAL_SHOP_ID, { withoutVideo: true })).toBe(1);
+    expect(await h.orders.countOrders(LOCAL_SHOP_ID, {})).toBe(2);
+    expect(await h.orders.countUnsynced(LOCAL_SHOP_ID)).toBe(1);
+    expect(await h.orders.countUnsyncedOnDevice()).toBe(1);
+    expect(await h.orders.countUnsynced('shop-khac' as never)).toBe(0);
+    await h.files.applyEvent(
+      LOCAL_SHOP_ID,
+      a.id,
+      { type: 'MARK_UNRECOVERABLE', origin: 'device' },
+      9000,
+    );
+    expect(await h.orders.countUnsynced(LOCAL_SHOP_ID)).toBe(0);
+  });
 });

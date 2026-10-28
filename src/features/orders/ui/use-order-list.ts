@@ -5,7 +5,7 @@ import type { ShopId } from '@/core/ids';
 import { logger } from '@/core/logging/logger';
 import { useScreenFocused } from '@/platform';
 
-import { loadEvidenceStates, useCurrentShopId, useOrderStore } from '../data';
+import { loadEvidenceStates, useCurrentShopId, useEvidenceFileStore, useOrderStore } from '../data';
 import {
   ORDER_LIST_PAGE_SIZE,
   summarizeOrderEvidence,
@@ -69,6 +69,7 @@ export function useOrderList(
 ): OrderListState {
   const pageSize = options.pageSize ?? ORDER_LIST_PAGE_SIZE;
   const store = useOrderStore();
+  const evidenceFiles = useEvidenceFileStore();
   const shopId = useCurrentShopId();
   const focused = useScreenFocused();
   const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
@@ -110,6 +111,7 @@ export function useOrderList(
           store.countOrders(shopId, query),
         ]);
         const states = await loadEvidenceStates(
+          evidenceFiles,
           shopId,
           page.items.map((i) => i.order.id),
         );
@@ -145,7 +147,7 @@ export function useOrderList(
         if (mine === generation.current) setRefreshing(false);
       }
     },
-    [pageSize, shopId, store],
+    [pageSize, shopId, store, evidenceFiles],
   );
 
   // Nạp khi mở màn, khi đổi bộ lọc/từ khóa, và mỗi khi màn lấy lại focus.
@@ -176,6 +178,7 @@ export function useOrderList(
           after: cursor,
         });
         const states = await loadEvidenceStates(
+          evidenceFiles,
           shopId,
           page.items.map((i) => i.order.id),
         );
@@ -210,7 +213,7 @@ export function useOrderList(
         }
       }
     })();
-  }, [filtersKey, pageSize, shopId, store]);
+  }, [filtersKey, pageSize, shopId, store, evidenceFiles]);
 
   const rows = useMemo<readonly OrderListRow[]>(
     () =>

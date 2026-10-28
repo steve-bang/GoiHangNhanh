@@ -46,6 +46,10 @@ export function createMemoryEvidenceFileStore(): EvidenceFileStore {
       ofShop(shopId)
         .filter((f) => states.includes(f.state))
         .sort(oldestFirst),
+    listByOrders: async (shopId, orderIds) =>
+      ofShop(shopId)
+        .filter((f) => orderIds.includes(f.orderId))
+        .sort(oldestFirst),
     listByOrder: async (shopId, orderId: OrderId) =>
       ofShop(shopId)
         .filter((f) => f.orderId === orderId)
