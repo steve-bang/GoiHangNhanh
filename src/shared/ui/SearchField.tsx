@@ -7,7 +7,7 @@ import { layout } from '@/core/theme';
 import { Icon } from './Icon';
 import { useTheme } from './theme';
 
-interface SearchFieldProps {
+interface SearchFieldBaseProps {
   value: string;
   onChangeText: (value: string) => void;
   /** Vừa là gợi ý vừa là nhãn đọc màn hình (ví dụ "Tìm theo mã đơn hoặc mã vận đơn"). */
@@ -16,15 +16,22 @@ interface SearchFieldProps {
   testID?: string;
   /** Cỡ gọn của nhóm màn form (chữ 14sp, cao tối thiểu bằng vùng chạm, viền xanh nhạt). */
   compact?: boolean;
-  /**
-   * Có thì hiện nút quét mã ở cuối ô khi ô đang trống (mockup tab Đơn hàng, ORD-01); khi đã gõ chữ thì
-   * nút xóa nội dung thế chỗ. Bên gọi tự mở màn quét; ô không biết gì về camera.
-   */
-  onScan?: () => void;
-  /** Nhãn đọc màn hình của nút quét (bắt buộc đi kèm `onScan`). */
-  scanLabel?: string;
-  scanTestID?: string;
 }
+
+/** Nút quét: `onScan` luôn đi kèm `scanLabel` (nhãn đọc màn hình), kiểm tra lúc biên dịch. */
+type SearchFieldScanProps =
+  | {
+      /**
+       * Có thì hiện nút quét mã ở cuối ô khi ô đang trống (mockup tab Đơn hàng, ORD-01); khi đã gõ chữ
+       * thì nút xóa nội dung thế chỗ. Bên gọi tự mở màn quét; ô không biết gì về camera.
+       */
+      onScan: () => void;
+      scanLabel: string;
+      scanTestID?: string;
+    }
+  | { onScan?: undefined; scanLabel?: undefined; scanTestID?: undefined };
+
+type SearchFieldProps = SearchFieldBaseProps & SearchFieldScanProps;
 
 /** Ô tìm lớn có biểu tượng kính lúp, nút xóa nội dung và (tùy chọn) nút quét mã. */
 export function SearchField({

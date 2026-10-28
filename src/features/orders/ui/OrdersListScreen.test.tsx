@@ -126,7 +126,7 @@ describe('UI-E01 Danh sách đơn (dữ liệu thật)', () => {
   it('chưa có đơn nào: trạng thái rỗng có hành động tạo đơn đầu tiên', async () => {
     await open();
     expect(await screen.findByText('Chưa có đơn hàng nào')).toBeOnTheScreen();
-    expect(screen.getByText('Tạo đơn đầu tiên để bắt đầu lưu bằng chứng nhé.')).toBeOnTheScreen();
+    expect(screen.getByText('Tạo đơn đầu tiên để bắt đầu nhé.')).toBeOnTheScreen();
     expect(screen.queryByText('Không có kết quả')).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn hàng' }));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.quickOrder);

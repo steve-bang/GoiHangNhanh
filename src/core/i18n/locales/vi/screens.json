@@ -186,10 +186,10 @@
     "loadMoreError": "Chưa tải thêm được đơn.",
     "loadingMore": "Đang tải thêm…",
     "emptyTitle": "Chưa có đơn hàng nào",
-    "emptyMessage": "Tạo đơn đầu tiên để bắt đầu lưu bằng chứng nhé.",
+    "emptyMessage": "Tạo đơn đầu tiên để bắt đầu nhé.",
     "emptyAction": "Tạo đơn hàng",
     "noResultsTitle": "Không có kết quả",
-    "noResultsMessage": "Không có đơn phù hợp với bộ lọc này.",
+    "noResultsMessage": "Không có đơn phù hợp với tìm kiếm hoặc bộ lọc này.",
     "clearAll": "Xóa tìm kiếm và bộ lọc",
     "count": {
       "all": "{{count}} đơn",
