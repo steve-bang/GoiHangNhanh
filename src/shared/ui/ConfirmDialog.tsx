@@ -30,6 +30,11 @@ interface ConfirmDialogBaseProps {
   iconTone?: IconTone;
   /** `row`: hai nút cạnh nhau (hủy bên trái, xác nhận bên phải). Mặc định `column` như cũ. */
   actionsLayout?: 'column' | 'row';
+  /**
+   * Nút xác nhận hiện nhưng vô hiệu (mờ, không bấm được): dùng khi hành động bị chặn nhưng người dùng cần
+   * thấy việc gì đang bị chặn (board 07 khung 7c). Không có tác dụng với `hideConfirm`. Mặc định `false`.
+   */
+  confirmDisabled?: boolean;
   /** Mã kiểm thử cho phần nội dung và cho nút xác nhận (màn dùng cho test; không ảnh hưởng hiển thị). */
   messageTestID?: string;
   confirmTestID?: string;
@@ -60,6 +65,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   hideConfirm = false,
+  confirmDisabled = false,
   messageTestID,
   confirmTestID,
   destructive = false,
@@ -71,7 +77,10 @@ export function ConfirmDialog({
   primary = destructive ? 'cancel' : 'confirm',
 }: ConfirmDialogProps) {
   const { tokens } = useTheme();
-  const confirmIdProps = confirmTestID ? { testID: confirmTestID } : {};
+  const confirmIdProps = {
+    ...(confirmTestID ? { testID: confirmTestID } : {}),
+    ...(confirmDisabled ? { disabled: true } : {}),
+  };
   return (
     <Modal
       visible={visible}

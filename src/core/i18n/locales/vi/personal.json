@@ -88,7 +88,10 @@
     "signInAgain": "Đăng nhập lại",
     "socialTitle": "Tài khoản {{provider}}",
     "socialMessage": "Bạn đang đăng nhập bằng {{provider}}. Mật khẩu do {{provider}} quản lý, hãy đổi trong cài đặt tài khoản {{provider}}.",
-    "provider": { "apple": "Apple", "google": "Google" },
+    "provider": {
+      "apple": "Apple",
+      "google": "Google"
+    },
     "requirementLength": "Tối thiểu {{min}} ký tự",
     "requirementMet": "Đã đạt",
     "requirementUnmet": "Chưa đạt"
@@ -104,15 +107,14 @@
     },
     "status": {
       "active": "Đang hoạt động",
-      "suspended": "Tạm khóa"
+      "suspended": "Bị khóa"
     },
     "current": "Đang dùng",
-    "editAction": "Chỉnh sửa thông tin",
+    "editAction": "Sửa tên cửa hàng",
     "switchAction": "Chuyển cửa hàng",
     "noEditPermission": "Bạn chưa có quyền sửa thông tin cửa hàng. Hãy liên hệ chủ cửa hàng.",
     "refreshFailed": "Chưa làm mới được. Đang hiện dữ liệu đã tải trước đó.",
-    "renameNote": "Đổi tên không làm thay đổi video và lịch sử đã lưu.",
-    "settingsIntro": "Quản lý thông tin cửa hàng đang lưu bằng chứng đơn hàng."
+    "renameNote": "Đổi tên không làm thay đổi video và lịch sử đã lưu."
   },
   "editShop": {
     "save": "Lưu",
@@ -123,19 +125,26 @@
     "leaveCancel": "Tiếp tục sửa"
   },
   "switchShop": {
-    "intro": "Chọn cửa hàng bạn muốn làm việc.",
-    "dialogTitle": "Chuyển cửa hàng?",
-    "dialogMessage": "Bạn sẽ xem đơn và video của {{name}}. Dữ liệu của cửa hàng hiện tại vẫn được giữ trên máy.",
-    "confirm": "Chuyển cửa hàng",
-    "cancel": "Ở lại",
+    "listLabel": "Danh sách cửa hàng",
+    "dialogTitle": "Xác nhận chuyển cửa hàng",
+    "dialogMessage": "Bạn có chắc chắn muốn chuyển sang {{name}}?",
+    "confirm": "Xác nhận",
+    "cancel": "Hủy",
     "switched": "Đã chuyển sang {{name}}.",
-    "recordingTitle": "Đang quay video",
-    "recordingMessage": "Hãy kết thúc phiên quay trước khi chuyển cửa hàng để không mất video đang ghi.",
+    "recordingTitle": "Không thể chuyển cửa hàng",
+    "recordingMessage": "Bạn đang quay video đóng gói. Hãy dừng quay trước khi chuyển.",
     "unsyncedTitle": "Còn bằng chứng chưa đồng bộ",
     "unsyncedMessage": "Cửa hàng hiện tại còn {{count}} tệp bằng chứng chưa được máy chủ xác nhận. Các tệp vẫn được giữ trên máy, không bị xóa.",
     "unsyncedContinue": "Vẫn chuyển cửa hàng",
     "openSync": "Xem trung tâm đồng bộ",
-    "suspendedHint": "Cửa hàng đang tạm khóa nên chưa chuyển vào được."
+    "suspendedHint": "Cửa hàng đang bị khóa nên chưa chuyển vào được.",
+    "search": "Tìm cửa hàng",
+    "noMatch": "Không có cửa hàng nào khớp.",
+    "submit": "Xác nhận",
+    "selected": "Đã chọn",
+    "dialogDetail": "Dữ liệu của cửa hàng hiện tại vẫn được giữ trên máy.",
+    "recordingStay": "Ở lại",
+    "recordingSwitch": "Chuyển cửa hàng"
   },
   "plan": {
     "eyebrow": "Gói dịch vụ",

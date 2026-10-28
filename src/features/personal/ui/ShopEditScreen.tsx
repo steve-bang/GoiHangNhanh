@@ -20,13 +20,14 @@ import {
   type TextFieldInput,
 } from '@/shared/ui';
 
-import { normalizeShopName, validateShopName } from '../domain/validation';
+import { normalizeShopName, SHOP_NAME_MAX_LENGTH, validateShopName } from '../domain/validation';
 import { usePersonalGateways } from './PersonalGatewaysProvider';
 import { useSession } from './SessionProvider';
 import { useRegion } from './use-region';
 
 /**
- * Sửa thông tin cửa hàng (PER-06), route con của UI-I02. Chỉ sửa TÊN: logo và mô tả chưa có nơi lưu
+ * Sửa tên cửa hàng (PER-06; board 07 khung 6), route con của UI-I02. Nhãn "Tên cửa hàng *", bộ đếm theo độ
+ * dài thật (D22), nút Lưu ngay dưới ô. Chỉ sửa TÊN: logo và mô tả chưa có nơi lưu
  * (chưa có backend), nên không dựng ô giả; cũng không dựng avatar lớn (không thao tác được, và tên trống
  * sẽ hiện biểu tượng người dùng gây hiểu nhầm). Thành công chỉ được báo SAU KHI cổng xác nhận; lỗi (kể cả
  * thiếu quyền) hiện tại màn và giữ nguyên điều người dùng đã gõ. Gửi lặp bị chặn bằng `busyRef`.
@@ -99,17 +100,6 @@ export function ShopEditScreen() {
       title={t('nav:subTitles.shopEdit')}
       onBack={navigation.back}
       testID="screen-UI-I02-edit"
-      footer={
-        canEdit ? (
-          <Button
-            label={t('personal:editShop.save')}
-            onPress={() => void save()}
-            disabled={!canSave}
-            loading={saving}
-            testID="edit-shop-save"
-          />
-        ) : undefined
-      }
     >
       {shop.state.status === 'loading' ? (
         <Card testID="edit-shop-loading">
@@ -144,6 +134,8 @@ export function ShopEditScreen() {
         <View style={{ gap: tokens.space.lg }}>
           <FormField
             label={t('personal:fields.shopName')}
+            required
+            counterMax={SHOP_NAME_MAX_LENGTH}
             value={value}
             onChangeText={(next) => {
               setDraft(next);
@@ -156,14 +148,22 @@ export function ShopEditScreen() {
             {...(nameError ? { error: nameError } : {})}
             testID="edit-shop-name"
           />
-          <Text variant="caption" color="textMuted">
-            {t('personal:shop.renameNote')}
-          </Text>
           {saveMessage ? (
             <Text color="danger" accessibilityRole="alert" testID="edit-shop-save-error">
               {saveMessage}
             </Text>
           ) : null}
+          {/* Board 07 khung 6: Lưu ngay dưới ô (không ghim đáy). */}
+          <Button
+            label={t('personal:editShop.save')}
+            onPress={() => void save()}
+            disabled={!canSave}
+            loading={saving}
+            testID="edit-shop-save"
+          />
+          <Text variant="caption" color="textMuted">
+            {t('personal:shop.renameNote')}
+          </Text>
         </View>
       ) : null}
       <ConfirmDialog
