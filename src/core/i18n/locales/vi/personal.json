@@ -311,7 +311,7 @@
       },
       "cameraOff": {
         "title": "Camera đang bị tắt",
-        "summary": "Ứng dụng chỉ dùng camera để quét mã. Bạn vẫn nhập mã bằng tay được.",
+        "summary": "Ứng dụng dùng camera để quét mã và xem trước ở màn quay. Bạn vẫn nhập mã bằng tay được.",
         "step": {
           "1": "Ở màn Quét, bấm Mở Cài đặt.",
           "2": "Bật quyền Camera cho Đơn Chứng.",
@@ -325,7 +325,7 @@
         "step": {
           "1": "Đã lưu trên máy: video nằm trong điện thoại, chưa có bản trên máy chủ.",
           "2": "Chờ tải lên và Đang tải lên: chưa phải bản sao lưu cho tới khi máy chủ xác nhận.",
-          "3": "Đã tải lên: máy chủ đã nhận đủ tệp. Đã xác minh: mã băm khớp với bản gốc. Lỗi cần xử lý thì bản trên máy vẫn được giữ."
+          "3": "Đã tải lên: máy chủ đã nhận đủ tệp. Đã xác minh: máy chủ tính lại mã băm và thấy khớp, nghĩa là tệp không đổi kể từ lúc tính. Mã băm không cho biết video quay lúc nào hay có chân thực không."
         },
         "keywords": "đồng bộ tải lên trạng thái video chưa lên máy chủ sao lưu"
       },
@@ -373,6 +373,9 @@
         "message": {
           "required": "Hãy nhập nội dung cần hỗ trợ.",
           "too_long": "Nội dung quá dài (tối đa 600 ký tự)."
+        },
+        "orderCode": {
+          "too_long": "Mã đơn quá dài (tối đa 64 ký tự)."
         }
       }
     },

@@ -181,6 +181,19 @@ describe('Chi tiết bài hướng dẫn (khung 16)', () => {
     expect(screen.getByTestId('help-article-title')).toHaveTextContent(/chưa ghi video/);
   });
 
+  it('bài "camera bị tắt" nhắc cả màn quay; bài "chưa đồng bộ" nói đúng giới hạn mã băm, không hứa giữ bản trên máy', async () => {
+    mockNavigation.params = { articleId: 'cameraOff' };
+    await renderWithProviders(<HelpArticleScreen />);
+    expect(screen.getByTestId('help-article-summary')).toHaveTextContent(/xem trước ở màn quay/);
+    expect(screen.getByTestId('help-article-summary')).not.toHaveTextContent(/chỉ dùng camera/);
+    mockNavigation.params = { articleId: 'unsynced' };
+    await renderWithProviders(<HelpArticleScreen />);
+    const step3 = screen.getAllByTestId('help-article-step-3').at(-1);
+    expect(step3).toHaveTextContent(/máy chủ tính lại mã băm và thấy khớp/);
+    expect(step3).toHaveTextContent(/không cho biết video quay lúc nào hay có chân thực không/);
+    expect(step3).not.toHaveTextContent(/vẫn được giữ/);
+  });
+
   it('bài lạ: trạng thái rỗng, nút về Trung tâm trợ giúp (không trang trắng)', async () => {
     mockNavigation.params = { articleId: 'khong-co' };
     await renderWithProviders(<HelpArticleScreen />);
@@ -253,6 +266,19 @@ describe('Liên hệ hỗ trợ (khung 17)', () => {
     expect(screen.getByText('Hãy nhập họ và tên.')).toBeOnTheScreen();
     expect(screen.getByText('Hãy nhập chủ đề.')).toBeOnTheScreen();
     expect(screen.getByText('Hãy nhập nội dung cần hỗ trợ.')).toBeOnTheScreen();
+  });
+
+  it('mã đơn quá dài: ô nhập giới hạn 65 ký tự, quá 64 thì báo lỗi và không mở email (không cắt âm thầm)', async () => {
+    mockSupportEmail.mockReturnValue('ho-tro@example.com');
+    await renderWithProviders(<SupportContactScreen />, {
+      personalGateways: createFakePersonalGateways({ profile: { displayName: 'Minh' } }),
+    });
+    await waitFor(() => expect(screen.getByTestId('support-name').props.value).toBe('Minh'));
+    expect(screen.getByTestId('support-order-code').props.maxLength).toBe(65);
+    await fill({ order: 'D'.repeat(65) });
+    await fireEvent.press(screen.getByTestId('support-send'));
+    expect(open).not.toHaveBeenCalled();
+    expect(screen.getByText('Mã đơn quá dài (tối đa 64 ký tự).')).toBeOnTheScreen();
   });
 
   it('có địa chỉ: mở email soạn sẵn; chỉ báo "đã mở", KHÔNG báo "đã gửi"; không đính kèm dữ liệu khác', async () => {
