@@ -11,7 +11,7 @@ import type { IconName } from '@/shared/ui';
 export type MenuAvailability = 'available' | 'coming_soon' | 'hidden';
 
 /**
- * Nhóm hiển thị trên UI-I01. `shopAndPlan`: mục `plan` được màn dựng thành thẻ gói (HeroCard), các mục
+ * Nhóm hiển thị trên UI-I01. `shopAndPlan`: mục `plan` được màn dựng thành thẻ gói (HeroCard; hôm nay `hidden`, Q-21ag), các mục
  * còn lại (nếu có) thành hàng dưới thẻ cửa hàng. Thẻ hồ sơ/cửa hàng/dữ liệu bằng chứng do màn dựng.
  */
 export type MenuGroupId = 'shopAndPlan' | 'settings' | 'support';

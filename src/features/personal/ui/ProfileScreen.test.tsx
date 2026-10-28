@@ -538,7 +538,7 @@ describe('ProfileScreen khung 1d: ngoại tuyến', () => {
     await waitFor(() => expect(screen.getByTestId('profile-offline')).toBeOnTheScreen());
     expect(screen.getByText('Đang ngoại tuyến')).toBeOnTheScreen();
     expect(screen.queryByTestId('profile-error')).toBeNull();
-    // Các khối còn lại vẫn có (cửa hàng đã tải, thẻ gói, Đăng xuất): không phải màn trống toàn màn.
+    // Các khối còn lại vẫn có (cửa hàng đã tải, Đăng xuất): không phải màn trống toàn màn.
     expect(screen.getByText('Cửa hàng minh họa')).toBeOnTheScreen();
     expect(screen.getByTestId('sign-out')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Thử lại'));
