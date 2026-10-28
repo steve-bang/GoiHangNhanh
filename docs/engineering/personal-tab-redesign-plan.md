@@ -1,6 +1,6 @@
 # Kế hoạch nâng cấp giao diện tab Cá nhân theo design board 07
 
-> Trạng thái: **kế hoạch đã được người dùng duyệt; các mặc định Q-21a..i đã được ủy quyền áp dụng** (xem [decisions.md Q-21](decisions.md)). Câu hỏi chưa chốt (Q-21j..n) cần designer/BA. Chưa triển khai mã nào theo kế hoạch này (BƯỚC 0 chỉ là tài liệu).
+> Trạng thái: **kế hoạch đã được người dùng duyệt; các mặc định Q-21a..i đã được ủy quyền áp dụng** (xem [decisions.md Q-21](decisions.md)). Câu hỏi chưa chốt (Q-21j..n) cần designer/BA. **PR-A (token + thành phần dùng chung) đã làm trên nhánh `claude/personal-tab-redesign-pr-a`** (mục 6.1); các PR B-I chưa làm.
 
 ## 1. Mục tiêu, nguồn và phạm vi
 
@@ -177,6 +177,14 @@ Mỗi PR: nhánh tách từ `main` mới nhất sau khi PR trước merge; theo 
 | **G** | Thông báo, Quyền riêng tư và bảo mật | `NotificationsScreen`, `SecurityScreen`, `SettingsGateway` (bản giả + chưa kết nối), `account-menu.ts` (đổi `available`) | `notifications`, `security` (có sẵn) | Test công tắc lưu/đọc cục bộ, thẻ quyền bị từ chối, hàng khóa | Khớp 13, 14; không hứa đẩy | A, C |
 | **H** | Trợ giúp, bài hướng dẫn, liên hệ, điều khoản (+ Về ứng dụng nếu Q-21j chốt giữ) | màn mới, nội dung tĩnh trong `personal.json`, `legal-links.ts` | `help` (có sẵn) + route con bài/liên hệ/điều khoản | Test tìm kiếm tĩnh, mở email soạn sẵn không "đã gửi" | Khớp 15-18; không "Chính sách đổi trả" | A, Q-21j/k cho tài nguyên |
 | **I** | Xóa tài khoản | màn mới, `Checkbox`, kết nối `use-sign-out` (đếm tệp) | route con của `security` | Test điều kiện thật, nút khóa | Khớp 20; không xóa thật | A, G, Q-21h, Q-20e |
+
+### 6.1 Trạng thái PR-A (đã làm, chờ duyệt)
+
+- **Token:** đúng danh sách mục 4 (`palette.blue[50/700]`, `color.accent.blue`, `color.text.onBrandMuted`, `components.progress.height`, `components.checkbox.size`, `components.field.multilineMinHeight`); không bóng, không gradient, không thư viện; `colors.ts`/golden không đổi; tương phản có test; `check:tokens` xanh (baseline ngoại lệ không tăng).
+- **Thành phần mới** (`src/shared/ui`): `HeroCard`, `IconTile` (+ `tone.ts`), `MetricTile` (mới, không mở rộng `StatTile` vì thẻ nền màu/số lớn khác mục đích), `StatusCard`, `Checkbox`; glyph mới: `disconnect`, `warning-solid`, `receipt`, `play`, `cloud`, `document`, `person`.
+- **Prop tùy chọn mới** (mặc định giữ nguyên, test đóng băng xanh): `ConfirmDialog` (`icon`, `iconTone`, `actionsLayout`), `TextField` (`counterMax`, `multiline`), `ErrorState` (`variant="card"`), `EmptyState` (`iconTone`, `actionVariant`; `actionLabel`/`onAction` thành tùy chọn), `ScreenHeader` (`backIcon`). `EmptyState` đã có `icon` và `ScreenHeader` đã có `trailing` và căn trái sẵn từ trước, nên không thêm gì cho các việc đó.
+- **Lệch so với plan/board:** (1) `TextField` dùng `counterMax` (đếm theo `value.length`) thay vì chuỗi "20/50" tự truyền, để D22 đúng từ gốc; (2) viền hộp kiểm dùng `text.secondary` thay `border.default` (tương phản); (3) thẻ "Đang quay video" của khung 21 chưa dựng (ngoại lệ D-18 chỉ cho chấm ghi hình); (4) nhãn mặc định `StatusCard` theo nhãn chuẩn docs/09, không phải chữ board; (5) icon hộp thoại trong ô tròn nền nhạt thay vì biểu tượng đặc; (6) ngắt kết nối dùng `unlink-outline`. Chi tiết và ảnh: `docs/assets/screens/personal-tab-v3/README.md`.
+- **Chưa làm ở PR-A:** `ConfirmDialog` chưa có nút xác nhận vô hiệu (khung 7c) và chưa có liên kết "Vẫn đăng xuất" (D21): để PR-C/PR-D. Chưa kiểm chứng trên thiết bị, chưa chụp ở chữ lớn.
 
 ## 7. Rủi ro
 
