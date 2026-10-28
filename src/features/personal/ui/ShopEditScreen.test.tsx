@@ -41,6 +41,20 @@ describe('ShopEditScreen (UI-I02 route con, PER-06)', () => {
     expect(isDisabled()).toBe(true);
   });
 
+  it('board khung 6: nhãn có dấu sao, bộ đếm theo độ dài thật (không phải số cố định), Lưu ngay dưới ô', async () => {
+    await renderEdit();
+    expect(
+      screen.getByTestId('edit-shop-name-required', { includeHiddenElements: true }),
+    ).toHaveTextContent('*');
+    expect(screen.getByText('6/50')).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByTestId('edit-shop-name'), 'Shop Thời Trang');
+    expect(screen.getByText('15/50')).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByTestId('edit-shop-name'), 'a'.repeat(51));
+    expect(screen.getByText('51/50')).toBeOnTheScreen();
+    // Nút Lưu nằm trong nội dung cuộn (ngay dưới ô), không ghim ở chân màn.
+    expect(screen.getByTestId('screen-UI-I02-edit-scroll')).toContainElement(saveButton());
+  });
+
   it('không dựng avatar lớn trên form sửa tên cửa hàng', async () => {
     await renderEdit();
     expect(screen.queryByTestId('edit-shop-avatar', { includeHiddenElements: true })).toBeNull();
