@@ -21,6 +21,7 @@ import {
   RECORDING_SESSION_STATUS,
 } from '../domain/start-session';
 import { MAX_RECENT_SEARCHES } from '../domain/search';
+import { runSerialized } from './db-queue';
 import { MIGRATIONS } from './sqlite-migrations';
 
 interface OrderRow {
@@ -145,6 +146,21 @@ export function parseSnapshot(json: string): OrderSnapshot {
   };
 }
 
+/** Đưa cơ sở dữ liệu lên phiên bản mới nhất. Dùng chung cho kho đơn và kho tệp bằng chứng. */
+export async function migrateLocalDatabase(db: SqlDatabase): Promise<void> {
+  await applyConnectionSettings(db); // ngoài giao dịch; PRAGMA khóa ngoại là theo từng kết nối
+  const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+  const current = row?.user_version ?? 0;
+  for (let version = current; version < MIGRATIONS.length; version += 1) {
+    const sql = MIGRATIONS[version];
+    if (sql === undefined) break;
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(sql);
+      await db.execAsync(`PRAGMA user_version = ${version + 1}`);
+    });
+  }
+}
+
 /**
  * Kho SQLite cục bộ (ADR-017). Mọi lỗi cơ sở dữ liệu đổi thành `AppError` (log chỉ ghi loại lỗi,
  * không ghi dữ liệu): `ORDER_SAVE_FAILED` cho đơn/dòng/kiện, `LOCAL_SAVE_UNAVAILABLE` cho phiên.
@@ -160,24 +176,11 @@ export function parseSnapshot(json: string): OrderSnapshot {
  */
 export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
   let ready: Promise<void> | null = null;
-  let tail: Promise<unknown> = Promise.resolve();
 
-  const migrate = async () => {
-    await applyConnectionSettings(db); // ngoài giao dịch; PRAGMA khóa ngoại là theo từng kết nối
-    const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
-    const current = row?.user_version ?? 0;
-    for (let version = current; version < MIGRATIONS.length; version += 1) {
-      const sql = MIGRATIONS[version];
-      if (sql === undefined) break;
-      await db.withTransactionAsync(async () => {
-        await db.execAsync(sql);
-        await db.execAsync(`PRAGMA user_version = ${version + 1}`);
-      });
-    }
-  };
+  const migrate = () => migrateLocalDatabase(db);
 
   const guarded = async <T>(failure: ErrorCode, task: () => Promise<T>): Promise<T> => {
-    const run = tail.then(async () => {
+    const run = runSerialized(db, async () => {
       if (!ready) {
         ready = migrate().catch((error: unknown) => {
           ready = null; // lần sau thử mở lại
@@ -187,7 +190,6 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
       await ready;
       return task();
     });
-    tail = run.catch(() => undefined);
     try {
       return await run;
     } catch (error) {

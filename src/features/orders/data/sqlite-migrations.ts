@@ -59,4 +59,27 @@ export const MIGRATIONS: readonly string[] = [
   );
   CREATE INDEX idx_search_history_shop_recent ON search_history (shop_id, last_used_at_device DESC);
   `,
+  // v3: tệp bằng chứng cục bộ (video/ảnh). Trạng thái TỆP tách khỏi phiên (bất biến 3); gắn với
+  // đơn + kiện + phiên tạo trước khi quay (bất biến 2). Chỉ thêm bảng, không đụng bảng cũ.
+  `
+  CREATE TABLE evidence_files (
+    id TEXT PRIMARY KEY NOT NULL,
+    shop_id TEXT NOT NULL,
+    order_id TEXT NOT NULL REFERENCES orders (id),
+    package_id TEXT NOT NULL REFERENCES packages (id),
+    session_id TEXT NOT NULL REFERENCES packing_sessions (id),
+    file_group TEXT NOT NULL CHECK (file_group IN ('pack', 'return')),
+    kind TEXT NOT NULL CHECK (kind IN ('video', 'photo')),
+    state TEXT NOT NULL,
+    local_path TEXT,
+    size_bytes INTEGER,
+    duration_ms INTEGER,
+    sha256_client TEXT,
+    created_at_device INTEGER NOT NULL,
+    updated_at_device INTEGER NOT NULL
+  );
+  CREATE INDEX idx_evidence_files_order ON evidence_files (shop_id, order_id, created_at_device);
+  CREATE INDEX idx_evidence_files_session ON evidence_files (shop_id, session_id);
+  CREATE INDEX idx_evidence_files_state ON evidence_files (shop_id, state);
+  `,
 ];
