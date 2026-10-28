@@ -1,8 +1,8 @@
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { useAppNavigation } from '@/platform';
-import { Card, Icon, IconTile, ListGroup, ListItem, Screen, Text, useTheme } from '@/shared/ui';
+import { getMinTouchTarget, useAppNavigation } from '@/platform';
+import { Card, Icon, IconTile, ListGroup, Screen, Text, useTheme } from '@/shared/ui';
 import type { IconName } from '@/shared/ui';
 
 const ROWS: readonly { key: 'videoPack' | 'photoDelivery' | 'photoReturn'; icon: IconName }[] = [
@@ -51,19 +51,39 @@ export function RetentionDetailScreen() {
         {ROWS.map(({ key, icon }) => {
           const title = t(`personal:retentionDetail.${key}`);
           return (
-            <ListItem
+            <View
               key={key}
-              leadingIcon={icon}
-              title={title}
-              titleWeight="regular"
+              accessible
               accessibilityLabel={`${title}: ${noInfo}`}
-              trailing={
+              testID={`retention-row-${key}`}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: tokens.space.md,
+                minHeight: getMinTouchTarget(),
+                paddingHorizontal: tokens.space.md,
+                paddingVertical: tokens.space.sm,
+              }}
+            >
+              <Icon name={icon} size={22} color={tokens.color.text.secondary} />
+              {/* Xuống dòng khi chữ lớn: giá trị rớt xuống dưới nhãn thay vì ép nhãn thành từng chữ. */}
+              <View
+                style={{
+                  flex: 1,
+                  flexShrink: 1,
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  columnGap: tokens.space.sm,
+                }}
+              >
+                <Text>{title}</Text>
                 <Text color="textMuted" variant="caption">
                   {noInfo}
                 </Text>
-              }
-              testID={`retention-row-${key}`}
-            />
+              </View>
+            </View>
           );
         })}
       </ListGroup>
