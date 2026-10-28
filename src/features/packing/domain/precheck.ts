@@ -1,3 +1,4 @@
+import type { DeviceCondition, ThermalLevel } from '@/core/device';
 import type { ErrorCode } from '@/core/errors/codes';
 
 import {
@@ -10,17 +11,9 @@ import {
 /** Quyền camera như `useScannerPermission` báo. */
 export type CameraStatus = 'checking' | 'granted' | 'askable' | 'blocked';
 
-/** Mức nhiệt do hệ điều hành báo. */
-export type ThermalLevel = 'nominal' | 'fair' | 'serious' | 'critical';
-
-/** Tình trạng máy; mỗi trường `null` = không biết (không đoán, không chặn). */
-export interface DeviceConditionInput {
-  /** Mức pin 0..1. */
-  readonly batteryLevel: number | null;
-  /** Đang sạc hoặc đã đầy. */
-  readonly charging: boolean | null;
-  readonly thermal: ThermalLevel | null;
-}
+/** Tình trạng máy: kiểu dùng chung ở `@/core/device`; mỗi trường `null` = không biết (không đoán, không chặn). */
+export type DeviceConditionInput = DeviceCondition;
+export type { ThermalLevel };
 
 /** Điều kiện BẮT BUỘC của A04 mà app kiểm được (micro chưa kiểm: ghi không tiếng tới khi O-09 chốt). */
 export type PrecheckId = 'camera' | 'storage' | 'localWrite' | 'battery' | 'thermal';

@@ -1,19 +1,6 @@
 import { BatteryState, getBatteryLevelAsync, getBatteryStateAsync } from 'expo-battery';
 
-/** Mức nhiệt do hệ điều hành báo (iOS `thermalState`, Android `thermalStatus`). */
-export type ThermalLevel = 'nominal' | 'fair' | 'serious' | 'critical';
-
-/**
- * Tình trạng máy lúc kiểm tra trước khi quay (A04: "cảnh báo thiết bị quá nóng/bộ nhớ gần đầy nếu hệ
- * điều hành cung cấp"). Mỗi trường `null` = KHÔNG biết (không đoán, không chặn).
- */
-export interface DeviceCondition {
-  /** Mức pin 0..1. */
-  readonly batteryLevel: number | null;
-  /** Đang cắm sạc hoặc đã đầy; `null` khi không rõ. */
-  readonly charging: boolean | null;
-  readonly thermal: ThermalLevel | null;
-}
+import type { DeviceCondition } from '@/core/device';
 
 export const UNKNOWN_DEVICE_CONDITION: DeviceCondition = {
   batteryLevel: null,
