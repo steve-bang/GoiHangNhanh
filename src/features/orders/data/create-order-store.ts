@@ -50,7 +50,8 @@ export function createLocalOrderStore(
     removeRecentSearch: async (s, t) => (await get()).removeRecentSearch(s, t),
     clearRecentSearches: async (s) => (await get()).clearRecentSearches(s),
     listOrdersPendingRemote: async (s, l, u) => (await get()).listOrdersPendingRemote(s, l, u),
-    markOrderPublished: async (s, o, a, u) => (await get()).markOrderPublished(s, o, a, u),
+    markOrderPublished: async (s, o, a, u, ids) =>
+      (await get()).markOrderPublished(s, o, a, u, ids),
     markPackagePublished: async (s, p, a) => (await get()).markPackagePublished(s, p, a),
     listSessionsPendingRemote: async (s, l, u) => (await get()).listSessionsPendingRemote(s, l, u),
     markSessionPublished: async (s, i, st) => (await get()).markSessionPublished(s, i, st),

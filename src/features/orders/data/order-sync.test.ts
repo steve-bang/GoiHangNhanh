@@ -12,10 +12,12 @@ async function setup(options: { online?: boolean; uid?: string | null } = {}) {
   const store = createMemoryOrderStore({ creatorUid: () => uid });
   const calls: string[] = [];
   const fail = { order: false, session: false };
+  const hooks: { duringPublishOrder: (() => Promise<void>) | null } = { duringPublishOrder: null };
   let online = options.online ?? true;
   const remote: RemoteOrderWriter = {
     publishOrder: async (d) => {
       calls.push(`order:${d.order.orderCode}`);
+      await hooks.duringPublishOrder?.();
       if (fail.order) throw new Error('denied');
     },
     publishPackage: async (_order, pkg) => {
@@ -51,6 +53,7 @@ async function setup(options: { online?: boolean; uid?: string | null } = {}) {
     sync,
     calls,
     fail,
+    hooks,
     addOrder,
     setOnline: (v: boolean) => void (online = v),
     setUid: (v: string | null) => void (uid = v),
@@ -127,6 +130,32 @@ describe('đồng bộ đơn một chiều', () => {
     await t.store.updateSessionStatus(LOCAL_SHOP_ID, built.session.id, 'recording');
     await t.sync.runOnce(LOCAL_SHOP_ID);
     await t.store.updateSessionStatus(LOCAL_SHOP_ID, built.session.id, 'ended');
+    await t.sync.runOnce(LOCAL_SHOP_ID);
+    expect(t.calls.filter((c) => c.startsWith('package:'))).toEqual(['package:2']);
+  });
+
+  it('kiện + phiên thêm GIỮA LÚC đăng đơn không bị đánh dấu nhầm: lượt sau vẫn đăng kiện rồi phiên', async () => {
+    const t = await setup();
+    const a = await t.addOrder('RACE', 1000);
+    let s2: SessionId | null = null;
+    t.hooks.duringPublishOrder = async () => {
+      t.hooks.duringPublishOrder = null;
+      const next = buildNextPackage(a.details, { ids: testIds, nowDevice: 2000 });
+      await t.store.addPackage(LOCAL_SHOP_ID, next);
+      const built = buildPackingSession(
+        { ...a.details, packages: [...a.details.packages, next] },
+        next.id,
+        { sessionId: 's-RACE-2' as SessionId, nowDevice: 3000 },
+      );
+      if (!built.ok) throw new Error('fixture');
+      await t.store.saveSession(built.session);
+      await t.store.updateSessionStatus(LOCAL_SHOP_ID, built.session.id, 'recording');
+      s2 = built.session.id;
+    };
+    await t.sync.runOnce(LOCAL_SHOP_ID);
+    expect(s2).toBe('s-RACE-2');
+    // Cùng lượt: kiện K2 vẫn được đăng (không bị đánh dấu nhầm) rồi mới tới phiên của nó.
+    expect(t.calls).toEqual(['order:RACE', 'package:2', 'session:s-RACE-2:recording']);
     await t.sync.runOnce(LOCAL_SHOP_ID);
     expect(t.calls.filter((c) => c.startsWith('package:'))).toEqual(['package:2']);
   });
