@@ -9,6 +9,7 @@ import { sampleOrder, sampleSession, seedOrder } from '@/test-utils/order-fixtur
 
 import {
   MIN_FREE_BYTES_TO_RECORD,
+  reconcileSavedSessions,
   recoverInterruptedRecordings,
   startRecording,
   type PersistOutcome,
@@ -451,7 +452,7 @@ describe('recoverInterruptedRecordings', () => {
     });
   });
 
-  it('lần mở app sau: local_save_failed còn tệp được thử lại và vào hàng đợi; phiên không bị đổi trạng thái', async () => {
+  it('lần mở app sau: local_save_failed còn tệp được thử lại và vào hàng đợi; phiên needs_attention về ended', async () => {
     const t = await setup();
     await started(t);
     await stopAt(t, 'file:///cache/x.mp4');
@@ -468,7 +469,7 @@ describe('recoverInterruptedRecordings', () => {
     );
     expect(result).toEqual({ interrupted: 0, lost: 0 });
     expect(await t.fileState()).toBe('queued');
-    expect(await sessionStatus(t)).toBe('needs_attention');
+    expect(await sessionStatus(t)).toBe('ended');
   });
 
   it('local_save_failed không có đường dẫn (bộ ghi lỗi, chưa có tệp): để nguyên', async () => {
@@ -491,6 +492,131 @@ describe('recoverInterruptedRecordings', () => {
       lost: 0,
     });
     expect(await t.fileState()).toBe('recording');
+  });
+});
+
+describe('phiên và tệp không lệch nhau (finding 2)', () => {
+  it('cập nhật phiên sang ended lỗi: tệp đã queued thì VẪN báo saved (video an toàn trong hàng đợi)', async () => {
+    const t = await setup();
+    const active = await started(t);
+    const real = t.orders.updateSessionStatus.bind(t.orders);
+    t.orders.updateSessionStatus = async (shop, id, status) => {
+      if (status === 'ended') throw new Error('db');
+      return real(shop, id, status);
+    };
+    t.finish({ ok: true, tempUri: 'file:///cache/x.mp4' });
+    expect(await active.result).toEqual({ kind: 'saved', evidenceId: 'ev-1' });
+    expect(await t.fileState()).toBe('queued');
+  });
+
+  const savedAndEnded = async () => {
+    const t = await setup();
+    const active = await started(t);
+    t.finish({ ok: true, tempUri: 'file:///cache/x.mp4' });
+    await active.result;
+    return t;
+  };
+  const ports = (t: Awaited<ReturnType<typeof setup>>) => ({ files: t.files, orders: t.orders });
+  const status = async (t: Awaited<ReturnType<typeof setup>>) =>
+    (await t.orders.getSession(LOCAL_SHOP_ID, t.session.id))?.sessionStatus;
+
+  it('đối chiếu lúc mở app: phiên recording có tệp queued về ended (hết chặn đăng xuất)', async () => {
+    // mô phỏng kill giữa LOCAL_FILE_READABLE và updateSessionStatus(ENDED): tệp queued, phiên vẫn recording
+    const t2 = await setup();
+    await started(t2);
+    await t2.files.applyEvent(
+      LOCAL_SHOP_ID,
+      'ev-1' as EvidenceId,
+      { type: 'STOP_RECORDING', origin: 'device' },
+      1,
+      { localPath: 'p' },
+    );
+    await t2.files.applyEvent(
+      LOCAL_SHOP_ID,
+      'ev-1' as EvidenceId,
+      { type: 'LOCAL_FILE_MOVED', origin: 'device' },
+      1,
+      { localPath: 'evidence/ev-1.mp4' },
+    );
+    await t2.files.applyEvent(
+      LOCAL_SHOP_ID,
+      'ev-1' as EvidenceId,
+      { type: 'LOCAL_FILE_READABLE', origin: 'device' },
+      1,
+      { localPath: 'evidence/ev-1.mp4', sizeBytes: 1, sha256Client: 'a'.repeat(64) },
+    );
+    expect(await status(t2)).toBe('recording');
+    expect(await t2.orders.hasRecordingInProgress(LOCAL_SHOP_ID)).toBe(true);
+    expect(await reconcileSavedSessions(ports(t2), LOCAL_SHOP_ID)).toBe(1);
+    expect(await status(t2)).toBe('ended');
+    expect(await t2.orders.hasRecordingInProgress(LOCAL_SHOP_ID)).toBe(false);
+  });
+
+  it('đối chiếu: phiên needs_attention có tệp queued về ended; phiên interrupted giữ nguyên', async () => {
+    const t = await savedAndEnded();
+    await t.orders.updateSessionStatus(LOCAL_SHOP_ID, t.session.id, 'needs_attention');
+    expect(await reconcileSavedSessions(ports(t), LOCAL_SHOP_ID)).toBe(1);
+    expect(await status(t)).toBe('ended');
+
+    const u = await setup();
+    await started(u);
+    await u.files.applyEvent(
+      LOCAL_SHOP_ID,
+      'ev-1' as EvidenceId,
+      { type: 'STOP_RECORDING', origin: 'device' },
+      1,
+      { localPath: 'p' },
+    );
+    await u.files.applyEvent(
+      LOCAL_SHOP_ID,
+      'ev-1' as EvidenceId,
+      { type: 'LOCAL_FILE_READABLE', origin: 'device' },
+      1,
+      { localPath: 'p', sizeBytes: 1, sha256Client: 'a'.repeat(64) },
+    );
+    await u.orders.updateSessionStatus(LOCAL_SHOP_ID, u.session.id, 'interrupted');
+    expect(await reconcileSavedSessions(ports(u), LOCAL_SHOP_ID)).toBe(0);
+    expect(await status(u)).toBe('interrupted');
+  });
+
+  it('đối chiếu không đụng phiên còn tệp dở dang và nuốt lỗi kho', async () => {
+    const t = await savedAndEnded();
+    await t.orders.updateSessionStatus(LOCAL_SHOP_ID, t.session.id, 'needs_attention');
+    const unfinished = [{ sessionId: t.session.id }] as never;
+    expect(await reconcileSavedSessions(ports(t), LOCAL_SHOP_ID, unfinished)).toBe(0);
+    expect(await status(t)).toBe('needs_attention');
+    t.orders.updateSessionStatus = async () => {
+      throw new Error('db');
+    };
+    expect(await reconcileSavedSessions(ports(t), LOCAL_SHOP_ID)).toBe(0);
+  });
+
+  it('khôi phục theo danh sách chụp: tệp đã đổi trạng thái (lần quay đang diễn ra) không bị đụng', async () => {
+    const t = await setup();
+    await started(t);
+    const snapshot = await t.files.listByStates(LOCAL_SHOP_ID, ['recording']);
+    await t.files.applyEvent(
+      LOCAL_SHOP_ID,
+      'ev-1' as EvidenceId,
+      { type: 'STOP_RECORDING', origin: 'device' },
+      1,
+      { localPath: 'file:///cache/x.mp4' },
+    );
+    const result = await recoverInterruptedRecordings(
+      {
+        files: t.files,
+        orders: t.orders,
+        persist: t.ports.persist,
+        hash: t.ports.hash,
+        now: () => 9000,
+        exists: () => false,
+        findPersisted: () => null,
+      },
+      LOCAL_SHOP_ID,
+      snapshot,
+    );
+    expect(result).toEqual({ interrupted: 0, lost: 0 });
+    expect(await t.fileState()).toBe('saving_local');
   });
 });
 

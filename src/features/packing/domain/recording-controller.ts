@@ -239,7 +239,11 @@ async function finish(
       });
       return fail('SAVE_FAILED');
     }
-    await orders.updateSessionStatus(shopId, session.id, SESSION_STATUS.ENDED);
+    // Từ đây video ĐÃ an toàn trong hàng đợi: cập nhật phiên chỉ là cố gắng. Lỗi ở đây KHÔNG được làm
+    // UI báo "chưa lưu được"; phiên kẹt ở `recording` sẽ được đối chiếu lại lúc mở app (reconcile).
+    await orders
+      .updateSessionStatus(shopId, session.id, SESSION_STATUS.ENDED)
+      .catch(() => undefined);
     return { kind: 'saved', evidenceId };
   } catch {
     // Lỗi kho cục bộ giữa chừng: cố ghi lỗi (kèm đường dẫn bền nếu đã chuyển tệp); không được thì lần
@@ -255,13 +259,72 @@ async function finish(
   }
 }
 
+/** Trạng thái tệp cho thấy một lần quay dở dang (hoặc lưu lỗi còn tệp để thử lại). */
+export const UNFINISHED_STATES = ['recording', 'saving_local', 'local_save_failed'] as const;
+
+/** Đưa phiên về `ended` theo bảng chuyển hợp lệ; bảng không cho (đã `confirmed`...) hoặc lỗi kho thì bỏ qua. */
+async function endSession(
+  orders: Pick<OrderStore, 'updateSessionStatus'>,
+  shopId: PackingSession['shopId'],
+  sessionId: PackingSession['id'],
+): Promise<void> {
+  await orders.updateSessionStatus(shopId, sessionId, SESSION_STATUS.ENDED).catch(() => undefined);
+}
+
+/** Tệp đã lưu bền trên máy nhưng chưa tới đích tải lên: phiên của chúng phải là `ended`. */
+export const SAVED_PENDING_STATES = [
+  'queued',
+  'uploading',
+  'upload_failed',
+  'needs_attention',
+] as const;
+
+/**
+ * Đối chiếu phiên với tệp (lúc mở app): phiên còn `recording`/`needs_attention` mà tệp của nó đã `queued`
+ * trở đi (video an toàn trên máy; app bị kill giữa lúc lưu tệp và lúc cập nhật phiên, hoặc cập nhật phiên
+ * lỗi) thì về `ended` theo bảng chuyển hợp lệ (kho kiểm tra: recording/needs_attention -> ended đều hợp lệ). Bỏ qua phiên còn tệp dở dang
+ * (`unfinished`: do `recoverInterruptedRecordings` xử lý) và phiên `interrupted` (video có thể thiếu phần
+ * cuối). Không ném lỗi.
+ */
+export async function reconcileSavedSessions(
+  ports: Pick<RecoveryPorts, 'files' | 'orders'>,
+  shopId: PackingSession['shopId'],
+  unfinished: readonly EvidenceFile[] = [],
+): Promise<number> {
+  const { files, orders } = ports;
+  let fixed = 0;
+  try {
+    const skip = new Set(unfinished.map((f) => f.sessionId));
+    const checked = new Set<string>();
+    for (const file of await files.listByStates(shopId, SAVED_PENDING_STATES)) {
+      if (skip.has(file.sessionId) || checked.has(file.sessionId)) continue;
+      checked.add(file.sessionId);
+      const session = await orders.getSession(shopId, file.sessionId);
+      if (
+        !session ||
+        (session.sessionStatus !== SESSION_STATUS.RECORDING &&
+          session.sessionStatus !== SESSION_STATUS.NEEDS_ATTENTION)
+      ) {
+        continue;
+      }
+      try {
+        await orders.updateSessionStatus(shopId, session.id, SESSION_STATUS.ENDED);
+        fixed += 1;
+      } catch {
+        // thử lại lần mở app sau
+      }
+    }
+  } catch {
+    // lỗi kho cục bộ: lần mở app sau chạy lại
+  }
+  return fixed;
+}
+
 /** Đường dẫn của tệp bền: `evidence/...` tương đối, hoặc tuyệt đối chứa `/evidence/` (dữ liệu cũ). */
 export const isPersistentPath = (path: string): boolean => /(^|\/)evidence\//.test(path);
 
-export interface RecoveryPorts extends Pick<
-  RecordingPorts,
-  'files' | 'orders' | 'persist' | 'hash' | 'now'
-> {
+export interface RecoveryPorts extends Pick<RecordingPorts, 'files' | 'persist' | 'hash' | 'now'> {
+  readonly orders: Pick<OrderStore, 'updateSessionStatus' | 'getSession'>;
   /** Đường dẫn đã lưu (tương đối hoặc tuyệt đối) còn tệp không. */
   readonly exists: (localPath: string) => boolean;
   /** Tệp bền theo ID bằng chứng (`evidence/<id>.<đuôi>`) nếu có, bất kể CSDL ghi đường dẫn nào. */
@@ -351,16 +414,17 @@ async function completeLocalSave(
 export async function recoverInterruptedRecordings(
   ports: RecoveryPorts,
   shopId: PackingSession['shopId'],
+  unfinished?: readonly EvidenceFile[],
 ): Promise<RecoveryResult> {
   const { files, orders, now, exists, findPersisted } = ports;
   let interrupted = 0;
   let lost = 0;
   try {
-    for (const file of await files.listByStates(shopId, [
-      'recording',
-      'saving_local',
-      'local_save_failed',
-    ])) {
+    for (const listed of unfinished ?? (await files.listByStates(shopId, UNFINISHED_STATES))) {
+      // Chỉ xử lý tệp còn ĐÚNG trạng thái dở dang như lúc chụp danh sách: tệp đã đổi (đang được một lần
+      // quay đang diễn ra xử lý) thì không đụng vào, tránh xử lý hai luồng hoặc đè lần quay mới.
+      const file = unfinished ? await files.get(shopId, listed.id) : listed;
+      if (!file || file.state !== listed.state) continue;
       const wasInterrupted = file.state !== 'local_save_failed';
       if (file.state === 'local_save_failed' && !file.localPath) continue; // lỗi trước khi có tệp
       let step: RecoveryStep;
@@ -391,7 +455,11 @@ export async function recoverInterruptedRecordings(
           step = await completeLocalSave(ports, shopId, file, location);
         }
       }
-      if (!wasInterrupted) continue;
+      if (!wasInterrupted) {
+        // Thử lại lưu cục bộ thành công: video đã vào hàng đợi nên phiên (đang `needs_attention`) về `ended`.
+        if (step === 'queued') await endSession(orders, shopId, file.sessionId);
+        continue;
+      }
       interrupted += 1;
       if (step === 'lost') lost += 1;
       // Phiên bị gián đoạn: dù cứu được tệp, video có thể thiếu phần cuối nên không tự nhận là đầy đủ.

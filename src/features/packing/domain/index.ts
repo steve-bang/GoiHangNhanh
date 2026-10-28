@@ -9,7 +9,10 @@ export {
 export {
   isPersistentPath,
   MIN_FREE_BYTES_TO_RECORD,
+  reconcileSavedSessions,
+  SAVED_PENDING_STATES,
   recoverInterruptedRecordings,
+  UNFINISHED_STATES,
   SESSION_STATUS,
   startRecording,
   type ActiveRecording,
