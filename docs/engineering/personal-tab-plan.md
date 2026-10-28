@@ -2,6 +2,8 @@
 
 > Trạng thái: **kế hoạch đã được người dùng duyệt để lập tài liệu; Q-20a đã chốt: giữ 5 tab (D-16); các câu b–h ở mục 9 (Q-20, O-29) vẫn chưa chốt.** Triển khai theo từng PR ở mục 6, chỉ sau khi người dùng cho phép.
 
+> Giao diện làm lại theo design board 07 (2026-10-28): xem [personal-tab-redesign-plan.md](personal-tab-redesign-plan.md) và [Q-21](decisions.md); bảng ánh xạ PER/UI ở đây vẫn là nguồn cho phạm vi chức năng.
+
 ## 1. Bối cảnh
 
 BA giao đặc tả tab Cá nhân gồm 24 màn/chức năng (PER-01…PER-24). Mã `PER-xx` **chưa tồn tại trong repo**: repo dùng mã `UI-xx` (docs/09). Tab Cá nhân hiện là khung: `ProfileScreen` (UI-I01) hiển thị tên shop minh họa và 6 mục menu, các màn UI-I02…I06 và UI-H01…H04 là màn khung. Chưa có đăng xuất, hồ sơ, đổi mật khẩu, xóa tài khoản, Firebase thật, route guard.
