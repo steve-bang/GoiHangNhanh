@@ -50,9 +50,11 @@ export function OrderMatchSheet({
       ? t('screens:orderMatch.oneTitle')
       : state.kind === 'many'
         ? t('screens:orderMatch.manyTitle')
-        : state.kind === 'none'
-          ? t('screens:orderMatch.noneTitle')
-          : t('screens:orderMatch.title');
+        : state.kind === 'duplicate'
+          ? t('screens:orderMatch.duplicateTitle')
+          : state.kind === 'none'
+            ? t('screens:orderMatch.noneTitle')
+            : t('screens:orderMatch.title');
 
   return (
     <BottomSheet compact visible={visible} onClose={onClose} title={title}>
@@ -119,6 +121,34 @@ export function OrderMatchSheet({
               testID="order-match-create"
               label={t('screens:orderMatch.createInstead')}
               onPress={() => createWithCode(state.code)}
+            />
+          </>
+        ) : null}
+        {state.kind === 'duplicate' ? (
+          <>
+            <Text variant="formBody" color="ink">
+              {t('screens:orderMatch.duplicateMessage')}
+            </Text>
+            <View style={{ gap: tokens.space.sm }}>
+              {state.rows.map((row) => (
+                <OrderResultRow
+                  key={row.order.id}
+                  testID={`order-match-${row.order.id}`}
+                  order={row.order}
+                  firstLine={row.firstLine}
+                  lineCount={row.lineCount}
+                  evidence={row.evidence}
+                  reasons={row.reasons}
+                  onPress={() => openOrder(state.code, row)}
+                />
+              ))}
+            </View>
+            <Button
+              size="slim"
+              variant="secondary"
+              testID="order-match-back-edit"
+              label={t('screens:orderMatch.backToEdit')}
+              onPress={onClose}
             />
           </>
         ) : null}

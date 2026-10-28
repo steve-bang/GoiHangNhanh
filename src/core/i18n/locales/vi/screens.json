@@ -60,11 +60,9 @@
     }
   },
   "quickOrder": {
-    "intro": "Nhập nhanh thông tin đơn hàng để bắt đầu quay video đóng gói.",
+    "intro": "Nhập nhanh thông tin đơn hàng.",
     "userEntered": "Thông tin do bạn nhập, không lấy từ sàn.",
     "sourceA11y": "Nguồn bán: {{name}}",
-    "changeSource": "Thay đổi",
-    "changeSourceHint": "Đổi nguồn bán của đơn",
     "sourceSheetTitle": "Chọn nguồn bán",
     "orderCode": "Mã đơn hàng",
     "orderCodePlaceholder": "Quét hoặc nhập mã đơn",
@@ -82,20 +80,28 @@
     "quantity": "Số lượng",
     "addLine": "Thêm sản phẩm khác",
     "removeLine": "Xóa dòng sản phẩm này",
-    "saveAndConfirm": "Lưu và xác nhận đơn",
-    "skipAndRecord": "Bỏ qua, quay ngay",
     "nameRequired": "Hãy nhập tên sản phẩm cho phân loại này.",
     "quantityInvalid": "Hãy nhập số lượng hợp lệ.",
     "invalidCode": "Mã đơn chưa hợp lệ. Hãy kiểm tra lại.",
-    "duplicate": {
-      "title": "Đã có đơn này",
-      "message": "Mã này đã có trong máy. Hãy chọn đơn đã có hoặc tạo hồ sơ mới.",
-      "sameOrder": "Cùng mã đơn và nguồn bán",
-      "sameTracking": "Cùng mã vận đơn",
-      "tracking": "Mã vận đơn: {{code}}",
-      "useOrder": "Dùng đơn này",
-      "createNew": "Tạo hồ sơ mới"
-    }
+    "title": "Tạo đơn nhanh",
+    "confirmTitle": "Xác nhận đơn hàng",
+    "cancel": "Hủy",
+    "continue": "Tiếp tục",
+    "codeRequired": "Nhập mã đơn hàng nhé.",
+    "sourceLabel": "Nguồn bán hàng",
+    "sourceChange": "Đổi nguồn bán của đơn",
+    "sourceNote": "Nguồn bán chỉ để bạn phân loại đơn.",
+    "backToEdit": "Quay lại chỉnh sửa",
+    "createOrder": "Tạo đơn hàng",
+    "confirmIntro": "Xem lại thông tin trước khi tạo đơn.",
+    "createFailed": "Chưa tạo được đơn. Thông tin bạn nhập vẫn được giữ lại.",
+    "leave": {
+      "title": "Bỏ thay đổi?",
+      "message": "Thông tin bạn đã nhập sẽ không được lưu.",
+      "stay": "Tiếp tục nhập",
+      "discard": "Bỏ thay đổi"
+    },
+    "confirmTracking": "Mã vận đơn"
   },
   "preview": {
     "banner": {
@@ -454,6 +460,9 @@
     "tryAgain": "Quét hoặc nhập lại",
     "manyTitle": "Có nhiều đơn trùng mã",
     "manyMessage": "Hãy chọn đúng đơn trước khi tiếp tục.",
+    "duplicateTitle": "Đơn này đã có",
+    "duplicateMessage": "Mã này đã có trong máy. Hãy xem đơn hiện có hoặc quay lại sửa mã.",
+    "backToEdit": "Quay lại chỉnh sửa",
     "createInstead": "Không phải đơn nào ở trên: tạo đơn mới với mã này",
     "error": "Chưa tìm được lúc này. Bạn thử lại nhé.",
     "reason": {
