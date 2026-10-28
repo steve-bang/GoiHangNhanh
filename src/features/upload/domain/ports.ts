@@ -15,6 +15,11 @@ export interface UploadRequest {
   readonly shopId: ShopId;
   readonly orderId: OrderId;
   readonly sessionId: SessionId;
+  /** Cần để suy ra loại tệp khi khai báo bằng chứng. */
+  readonly kind: 'video' | 'photo';
+  /** Giờ THIẾT BỊ lúc tạo tệp. */
+  readonly createdAtDevice: number;
+  readonly durationMs: number | null;
   readonly localPath: string;
   readonly sizeBytes: number;
   /** Mã băm thiết bị tính lúc đóng tệp; máy chủ tính lại và KHÔNG tin giá trị này. */

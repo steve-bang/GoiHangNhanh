@@ -5,6 +5,12 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { onObjectFinalized } from 'firebase-functions/v2/storage';
 
 import { verifyEvidenceObject } from './evidence';
+import {
+  createUploadSessionForUser,
+  parseUploadSessionInput,
+  UploadError,
+  type UploadUrlSigner,
+} from './uploads';
 import { createShopForUser, parseShopInput, ShopError, updateShopForUser } from './shop';
 
 // Khu vực dữ liệu đã chốt: Singapore (decisions.md Q-08). Phải khớp getFunctions(app, region) ở app.
@@ -18,7 +24,9 @@ function requireUid(auth: { uid: string } | undefined): string {
 }
 
 function toHttpsError(error: unknown): never {
-  if (error instanceof ShopError) throw new HttpsError(error.code, error.message);
+  if (error instanceof ShopError || error instanceof UploadError) {
+    throw new HttpsError(error.code, error.message);
+  }
   if (error instanceof HttpsError) throw error;
   throw new HttpsError('internal', 'Lỗi hệ thống.');
 }
@@ -60,3 +68,34 @@ export const verifyEvidence = onObjectFinalized(
     );
   },
 );
+
+const storageSigner = (bucketName?: string): UploadUrlSigner => {
+  const bucket = bucketName ? getStorage().bucket(bucketName) : getStorage().bucket();
+  return {
+    objectExists: async (path) => (await bucket.file(path).exists())[0],
+    signResumableStart: async (path, contentType, expiresAtMs) =>
+      (
+        await bucket.file(path).getSignedUrl({
+          version: 'v4',
+          action: 'resumable',
+          expires: expiresAtMs,
+          contentType,
+        })
+      )[0],
+  };
+};
+
+/** Cấp URL ký để tải bản gốc bằng chứng (uploads.ts). Client không có quyền Storage trực tiếp. */
+export const createUploadSession = onCall({ region: REGION }, async (request) => {
+  const uid = requireUid(request.auth);
+  try {
+    return await createUploadSessionForUser(
+      getFirestore(),
+      storageSigner(),
+      uid,
+      parseUploadSessionInput(request.data),
+    );
+  } catch (error) {
+    return toHttpsError(error);
+  }
+});
