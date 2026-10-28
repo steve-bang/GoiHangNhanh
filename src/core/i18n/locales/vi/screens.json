@@ -445,7 +445,8 @@
     "history": "Lịch sử hoạt động",
     "historyCreated": "Đã tạo đơn",
     "historySession": "Đã bắt đầu phiên quay kiện {{index}}",
-    "historyNote": "Suy ra từ dữ liệu trên máy, theo giờ của thiết bị."
+    "historyNote": "Suy ra từ dữ liệu trên máy, theo giờ của thiết bị.",
+    "edit": "Sửa thông tin đơn"
   },
   "orderMatch": {
     "title": "Tra cứu mã",
@@ -489,5 +490,23 @@
     "emptyMessage": "Kiểm tra lại mã hoặc tạo đơn mới với mã đã nhập.",
     "createWithCode": "Tạo đơn với mã này",
     "error": "Chưa tìm được lúc này. Bạn thử lại nhé."
+  },
+  "orderEdit": {
+    "codeLocked": "Mã đơn không đổi được sau khi tạo.",
+    "save": "Lưu thay đổi",
+    "cancel": "Hủy",
+    "saved": "Đã cập nhật thông tin đơn.",
+    "saveFailed": "Chưa lưu được thay đổi. Bạn thử lại nhé.",
+    "lockedTitle": "Chưa sửa được đơn này",
+    "lockedMessage": "Đơn đã bắt đầu quay nên chưa sửa được thông tin.",
+    "duplicateMessage": "Thay đổi này làm đơn trùng với đơn đã có. Hãy xem đơn hiện có, hoặc vẫn lưu nếu đây là đơn khác.",
+    "saveAnyway": "Vẫn lưu thay đổi",
+    "loading": "Đang mở đơn…",
+    "leave": {
+      "title": "Bỏ thay đổi?",
+      "message": "Thay đổi bạn vừa nhập sẽ không được lưu.",
+      "stay": "Tiếp tục sửa",
+      "discard": "Bỏ thay đổi"
+    }
   }
 }

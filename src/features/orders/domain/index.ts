@@ -39,6 +39,8 @@ export {
   SEARCH_RESULT_LIMIT,
   normalizeSearchInput,
 } from './search';
+export { buildOrderEdit, isEditUnchanged } from './update-order';
+export type { EditBuildResult, EditLineDraft, OrderEdit, OrderEditDraft } from './update-order';
 export { formatDeviceDateTime } from './format';
 export { LOCAL_SHOP_ID } from './local-shop';
 export type { OrderStore, RecentSearch } from './order-store';

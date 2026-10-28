@@ -23,6 +23,8 @@ export function OrderMatchSheet({
   onRetry,
   onOpened,
   onCreateAnyway,
+  createAnywayLabel,
+  duplicateMessage,
 }: {
   state: LookupState;
   onClose: () => void;
@@ -34,6 +36,10 @@ export function OrderMatchSheet({
    * ví dụ kiện gộp hai đơn chung mã vận đơn). Không gộp, không gắn gì vào đơn cũ. Bỏ trống = không có nút.
    */
   onCreateAnyway?: () => void;
+  /** Đổi nhãn nút phụ (mặc định *Vẫn tạo đơn mới*; màn Sửa đơn dùng *Vẫn lưu thay đổi*). */
+  createAnywayLabel?: string;
+  /** Đổi câu giải thích của chế độ `duplicate`. */
+  duplicateMessage?: string;
 }) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
@@ -133,7 +139,7 @@ export function OrderMatchSheet({
         {state.kind === 'duplicate' ? (
           <>
             <Text variant="formBody" color="ink">
-              {t('screens:orderMatch.duplicateMessage')}
+              {duplicateMessage ?? t('screens:orderMatch.duplicateMessage')}
             </Text>
             <View style={{ gap: tokens.space.sm }}>
               {state.rows.map((row) => (
@@ -154,7 +160,7 @@ export function OrderMatchSheet({
                 size="slim"
                 variant="secondary"
                 testID="order-match-create-anyway"
-                label={t('screens:orderMatch.createAnyway')}
+                label={createAnywayLabel ?? t('screens:orderMatch.createAnyway')}
                 onPress={onCreateAnyway}
               />
             ) : null}

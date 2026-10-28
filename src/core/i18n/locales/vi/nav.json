@@ -79,6 +79,7 @@
     "planDetail": "Chi tiết gói dịch vụ",
     "paymentHistory": "Lịch sử thanh toán",
     "evidenceData": "Dữ liệu bằng chứng",
-    "retentionDetail": "Thời hạn lưu"
+    "retentionDetail": "Thời hạn lưu",
+    "orderEdit": "Sửa thông tin đơn"
   }
 }

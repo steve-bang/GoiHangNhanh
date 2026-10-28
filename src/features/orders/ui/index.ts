@@ -1,3 +1,4 @@
+export { EditOrderScreen } from './EditOrderScreen';
 export { HomeScreen } from './HomeScreen';
 export { OrderDetailScreen } from './OrderDetailScreen';
 export { OrderPreviewScreen } from './OrderPreviewScreen';

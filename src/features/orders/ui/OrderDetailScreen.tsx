@@ -213,6 +213,20 @@ export function OrderDetailScreen() {
           <Text variant="caption" color="textMuted">
             {t('screens:orderDetail.enteredByYou')}
           </Text>
+          {sessions.length === 0 ? (
+            <Button
+              size="slim"
+              variant="secondary"
+              testID="order-detail-edit"
+              label={t('screens:orderDetail.edit')}
+              onPress={() => navigation.push(ROUTES.orderEdit, { orderId: order.id })}
+            />
+          ) : (
+            // Đơn đã bắt đầu quay: chưa sửa được (chưa có lịch sử thay đổi; bất biến 7, Q-22ah).
+            <Text variant="caption" color="textMuted" testID="detail-edit-locked">
+              {t('screens:orderEdit.lockedMessage')}
+            </Text>
+          )}
         </View>
       </Card>
 

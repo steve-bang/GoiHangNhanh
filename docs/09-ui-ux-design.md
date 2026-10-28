@@ -140,7 +140,7 @@ Phải khác luồng đóng gói: ghi nhận tình trạng kiện **trước** k
 | Mã | Màn | Nội dung chính |
 |---|---|---|
 | UI-E01 | Danh sách đơn | Tìm theo mã đơn/vận đơn; lọc nguồn bán, thời gian, trạng thái bằng chứng; thẻ: mã, nguồn bán, ngày, số video — không nhồi nhiều trường |
-| UI-E02 | Chi tiết đơn | Khu vực thu gọn được: nhận diện; sản phẩm/variant khai báo; kiện; bằng chứng đóng gói; hàng hoàn liên quan; lịch sử. CTA chính *Xem bằng chứng*; sửa thông tin là hành động phụ |
+| UI-E02 | Chi tiết đơn | Khu vực thu gọn được: nhận diện; sản phẩm/variant khai báo; kiện; bằng chứng đóng gói; hàng hoàn liên quan; lịch sử. CTA chính *Xem bằng chứng*; sửa thông tin là hành động phụ *(PR5: chỉ khi đơn chưa có phiên quay; đơn đã quay chưa sửa được vì chưa có lịch sử thay đổi, Q-22ah; chờ BA)* |
 | UI-E03 | Danh sách bằng chứng | Thumbnail; loại (đóng gói, mở kiện hoàn, ảnh tình trạng kiện, ảnh kiểm hàng); thời gian, thời lượng; trạng thái theo chuẩn mục 3 — không chỉ thumbnail xanh/dấu tick |
 | UI-E04 | Chi tiết video | Trình phát; mã đơn/kiện, thời điểm, thời lượng; trạng thái tải lên/xác minh; thông tin phiên quay kể cả gián đoạn; chia sẻ/xuất nếu được phép. Thêm phiên mới không ghi đè bản gốc |
 | UI-E05 | Lịch sử thay đổi | Ai, lúc nào, trường nào; trường quan trọng có giá trị trước/sau; phân biệt dữ liệu người dùng nhập với dữ liệu xác nhận từ nguồn tích hợp (nếu có sau này); không sửa/xóa theo cách thông thường |

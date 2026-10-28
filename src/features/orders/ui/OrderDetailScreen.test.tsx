@@ -117,8 +117,9 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
     expect(screen.getByText('Chưa có phiên quay')).toBeOnTheScreen();
     expect(screen.getByTestId('detail-no-evidence')).toHaveTextContent('Chưa có video đóng gói.');
     expect(screen.getByText('Đã tạo đơn')).toBeOnTheScreen();
-    // chỉ đọc: không có nút Sửa
-    expect(screen.queryByRole('button', { name: /Sửa|Chỉnh sửa/ })).toBeNull();
+    // chưa có phiên: có nút Sửa thông tin đơn (mở form sửa bằng ID đơn)
+    await fireEvent.press(screen.getByTestId('order-detail-edit'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.orderEdit, { orderId: d.order.id });
     expect(screen.queryByText(/Đã đồng bộ|Hoàn tất/)).toBeNull();
   });
 
@@ -294,6 +295,17 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
     await store.saveSession(built.session);
     await act(async () => setMockScreenFocused(true));
     await waitFor(() => expect(screen.getAllByTestId('detail-history-item')).toHaveLength(2));
+  });
+
+  it('đơn đã có phiên: không có nút Sửa, có câu giải thích ngắn (chưa có lịch sử thay đổi)', async () => {
+    const store = createMemoryOrderStore();
+    const d = await withSession(store, 'LOCKED');
+    await open(store, d.order.id);
+    await screen.findByTestId('detail-order-code');
+    expect(screen.queryByTestId('order-detail-edit')).toBeNull();
+    expect(screen.getByTestId('detail-edit-locked')).toHaveTextContent(
+      'Đơn đã bắt đầu quay nên chưa sửa được thông tin.',
+    );
   });
 
   it('nút quay lại của header gọi back', async () => {

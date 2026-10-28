@@ -7,7 +7,8 @@ import { toCodeKey } from '../domain/codes';
 import type { OrderStore } from '../domain/order-store';
 import type { OrderListCursor, OrderListItem } from '../domain/order-list';
 import { buildPackingSession } from '../domain/start-session';
-import type { OrderDetails, PackingSession } from '../domain/types';
+import type { OrderDetails, OrderLine, PackingSession } from '../domain/types';
+import type { OrderEdit } from '../domain/update-order';
 import { LOCAL_SHOP_ID } from '../domain/local-shop';
 
 let seq = 0;
@@ -167,6 +168,144 @@ export function runOrderStoreContract(name: string, create: () => Promise<OrderS
       const otherLine = other.lines[0];
       if (!otherLine) throw new Error('fixture');
       await store.updateLineQuantity(LOCAL_SHOP_ID, otherLine.id, 3);
+    });
+
+    describe('updateOrder: sửa nguồn, mã vận đơn, dòng sản phẩm (mã đơn khóa)', () => {
+      const edit = (details: OrderDetails, patch: Partial<OrderEdit> = {}): OrderEdit => ({
+        source: details.order.source,
+        trackingCode: details.order.trackingCode,
+        lines: details.lines,
+        ...patch,
+      });
+
+      it('cập nhật nguồn, mã vận đơn (và khóa tìm kiếm), sửa/xóa/thêm dòng theo thứ tự mới; mã đơn và kiện giữ nguyên', async () => {
+        const store = await create();
+        const d = makeOrder('ED1', {
+          tracking: 'OLD-1',
+          lines: [{ name: 'Áo', variant: 'Đen' }, { name: 'Quần', quantity: 2 }, { name: 'Nón' }],
+        });
+        await store.saveNewOrder(d);
+        const [a, , c] = d.lines;
+        if (!a || !c) throw new Error('fixture');
+        const added: OrderLine = {
+          id: 'line-moi' as never,
+          orderId: d.order.id,
+          name: 'Ví',
+          variant: 'Nâu',
+          quantity: 3,
+          position: 2,
+          dataOrigin: 'entered_by_user',
+          createdAtDevice: 99,
+        };
+        const result = await store.updateOrder(
+          LOCAL_SHOP_ID,
+          d.order.id,
+          edit(d, {
+            source: 'lazada',
+            trackingCode: 'new-9',
+            lines: [
+              { ...c, position: 0, quantity: 5 }, // Nón lên đầu, đổi SL
+              { ...a, position: 1, variant: 'Trắng' },
+              added, // Quần bị xóa
+            ],
+          }),
+        );
+        expect(result.order).toMatchObject({
+          orderCode: 'ED1',
+          source: 'lazada',
+          trackingCode: 'new-9',
+          id: d.order.id,
+        });
+        expect(result.lines.map((l) => [l.name, l.variant, l.quantity, l.position])).toEqual([
+          ['Nón', null, 5, 0],
+          ['Áo', 'Trắng', 1, 1],
+          ['Ví', 'Nâu', 3, 2],
+        ]);
+        expect(result.packages).toHaveLength(1);
+        const loaded = await store.getOrder(LOCAL_SHOP_ID, d.order.id);
+        expect(loaded).toEqual(result);
+        // khóa tìm kiếm theo mã vận đơn cũng đổi theo
+        expect(await store.findOrdersByCodes(LOCAL_SHOP_ID, { trackingCodeKey: 'OLD-1' })).toEqual(
+          [],
+        );
+        expect(
+          (await store.findOrdersByCodes(LOCAL_SHOP_ID, { trackingCodeKey: 'NEW-9' })).map(
+            (o) => o.id,
+          ),
+        ).toEqual([d.order.id]);
+      });
+
+      it('xóa hết dòng và bỏ mã vận đơn: đơn thành "chưa khai báo sản phẩm"', async () => {
+        const store = await create();
+        const d = makeOrder('ED2', { tracking: 'T-1', lines: [{ name: 'Áo' }] });
+        await store.saveNewOrder(d);
+        const result = await store.updateOrder(
+          LOCAL_SHOP_ID,
+          d.order.id,
+          edit(d, { trackingCode: null, lines: [] }),
+        );
+        expect(result.lines).toEqual([]);
+        expect(result.order.trackingCode).toBeNull();
+      });
+
+      it('đơn đã có phiên: ném ORDER_HAS_SESSION và KHÔNG đổi gì (bất biến 7); ảnh chụp phiên nguyên vẹn', async () => {
+        const store = await create();
+        const d = makeOrder('ED3', { lines: [{ name: 'Áo', quantity: 2 }] });
+        await store.saveNewOrder(d);
+        const session = await startSession(store, d, 'sess-ed3');
+        await expect(
+          store.updateOrder(
+            LOCAL_SHOP_ID,
+            d.order.id,
+            edit(d, { source: 'lazada', trackingCode: 'X', lines: [] }),
+          ),
+        ).rejects.toMatchObject({ code: 'ORDER_HAS_SESSION' });
+        expect(await store.getOrder(LOCAL_SHOP_ID, d.order.id)).toEqual(d);
+        expect(await store.getSession(LOCAL_SHOP_ID, session.id)).toEqual(session);
+      });
+
+      it('đơn không tồn tại hoặc của shop khác: ORDER_NOT_FOUND, đơn của shop kia không đổi (bất biến 8)', async () => {
+        const store = await create();
+        const other = 'shop-khac' as ShopId;
+        const theirs = makeOrder('ED4', { shopId: other, lines: [{ name: 'Áo' }] });
+        await store.saveNewOrder(theirs);
+        await expect(
+          store.updateOrder(LOCAL_SHOP_ID, theirs.order.id, edit(theirs, { source: 'lazada' })),
+        ).rejects.toMatchObject({ code: 'ORDER_NOT_FOUND' });
+        await expect(
+          store.updateOrder(LOCAL_SHOP_ID, 'khong-co' as never, edit(theirs)),
+        ).rejects.toMatchObject({ code: 'ORDER_NOT_FOUND' });
+        expect(await store.getOrder(other, theirs.order.id)).toEqual(theirs);
+      });
+
+      it('lỗi giữa chừng thì không đổi gì (một giao dịch): dòng của đơn khác trong bản sửa', async () => {
+        const store = await create();
+        const a = makeOrder('ED5', { tracking: 'KEEP', lines: [{ name: 'Áo' }, { name: 'Quần' }] });
+        const b = makeOrder('ED6', { lines: [{ name: 'Nón' }] });
+        await store.saveNewOrder(a);
+        await store.saveNewOrder(b);
+        const foreign = b.lines[0];
+        const first = a.lines[0];
+        if (!foreign || !first) throw new Error('fixture');
+        await expect(
+          store.updateOrder(
+            LOCAL_SHOP_ID,
+            a.order.id,
+            edit(a, {
+              source: 'lazada',
+              trackingCode: 'CHANGED',
+              // dòng thứ hai mượn ID dòng của đơn khác: phải bị từ chối, và nguồn/mã vận đơn/xóa dòng
+              // đã làm trước đó phải được hoàn lại
+              lines: [
+                { ...first, name: 'Đổi tên' },
+                { ...foreign, orderId: a.order.id, position: 1 },
+              ],
+            }),
+          ),
+        ).rejects.toMatchObject({ code: 'ORDER_SAVE_FAILED' });
+        expect(await store.getOrder(LOCAL_SHOP_ID, a.order.id)).toEqual(a);
+        expect(await store.getOrder(LOCAL_SHOP_ID, b.order.id)).toEqual(b);
+      });
     });
 
     it('thêm kiện vẫn được khi đơn đã có phiên; ảnh chụp của phiên cũ không đổi', async () => {
