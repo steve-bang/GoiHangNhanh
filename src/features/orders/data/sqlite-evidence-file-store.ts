@@ -27,12 +27,15 @@ interface FileRow {
   size_bytes: number | null;
   duration_ms: number | null;
   sha256_client: string | null;
+  attempt_count: number;
+  next_attempt_at_device: number | null;
+  last_error_code: string | null;
   created_at_device: number;
   updated_at_device: number;
 }
 
 const COLUMNS =
-  'id, shop_id, order_id, package_id, session_id, file_group, kind, state, local_path, size_bytes, duration_ms, sha256_client, created_at_device, updated_at_device';
+  'id, shop_id, order_id, package_id, session_id, file_group, kind, state, local_path, size_bytes, duration_ms, sha256_client, attempt_count, next_attempt_at_device, last_error_code, created_at_device, updated_at_device';
 
 const UNSYNCED_STATES = ALL_FILE_STATES.filter(isUnsynced);
 const UNSYNCED_SQL = UNSYNCED_STATES.map((s) => `'${s}'`).join(', ');
@@ -51,6 +54,9 @@ function toFile(row: FileRow): EvidenceFile {
     sizeBytes: row.size_bytes,
     durationMs: row.duration_ms,
     sha256Client: row.sha256_client,
+    attemptCount: row.attempt_count,
+    nextAttemptAtDevice: row.next_attempt_at_device,
+    lastErrorCode: row.last_error_code,
     createdAtDevice: row.created_at_device,
     updatedAtDevice: row.updated_at_device,
   };
@@ -104,7 +110,7 @@ export function createSqliteEvidenceFileStore(db: SqlDatabase): EvidenceFileStor
     create: (input) =>
       guarded(async () => {
         await db.runAsync(
-          `INSERT OR IGNORE INTO evidence_files (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, 'recording', NULL, NULL, NULL, NULL, ?, ?)`,
+          `INSERT OR IGNORE INTO evidence_files (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, 'recording', NULL, NULL, NULL, NULL, 0, NULL, NULL, ?, ?)`,
           [
             input.id,
             input.shopId,
@@ -136,13 +142,16 @@ export function createSqliteEvidenceFileStore(db: SqlDatabase): EvidenceFileStor
           if (!outcome.ok) return;
           const f = outcome.file;
           await db.runAsync(
-            'UPDATE evidence_files SET state = ?, local_path = ?, size_bytes = ?, duration_ms = ?, sha256_client = ?, updated_at_device = ? WHERE shop_id = ? AND id = ?',
+            'UPDATE evidence_files SET state = ?, local_path = ?, size_bytes = ?, duration_ms = ?, sha256_client = ?, attempt_count = ?, next_attempt_at_device = ?, last_error_code = ?, updated_at_device = ? WHERE shop_id = ? AND id = ?',
             [
               f.state,
               f.localPath,
               f.sizeBytes,
               f.durationMs,
               f.sha256Client,
+              f.attemptCount,
+              f.nextAttemptAtDevice,
+              f.lastErrorCode,
               f.updatedAtDevice,
               shopId,
               id,
@@ -150,6 +159,16 @@ export function createSqliteEvidenceFileStore(db: SqlDatabase): EvidenceFileStor
           );
         });
         return outcome;
+      }),
+    listByStates: (shopId, states) =>
+      guarded(async () => {
+        if (states.length === 0) return [];
+        const marks = states.map(() => '?').join(', ');
+        const rows = await db.getAllAsync<FileRow>(
+          `SELECT ${COLUMNS} FROM evidence_files WHERE shop_id = ? AND state IN (${marks}) ORDER BY created_at_device, id`,
+          [shopId, ...states],
+        );
+        return rows.map(toFile);
       }),
     listByOrder: (shopId, orderId) => guarded(() => list('order_id', shopId, orderId)),
     listBySession: (shopId, sessionId) => guarded(() => list('session_id', shopId, sessionId)),

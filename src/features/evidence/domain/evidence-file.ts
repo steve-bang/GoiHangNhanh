@@ -29,6 +29,12 @@ export interface EvidenceFile {
   readonly durationMs: number | null;
   /** Mã băm SHA-256 do thiết bị tính lúc đóng tệp; máy chủ tính lại và không tin giá trị này. */
   readonly sha256Client: string | null;
+  /** Số lần đã thử tải lên (hàng đợi tải lên; bền qua lần mở lại app). */
+  readonly attemptCount: number;
+  /** Thời điểm THIẾT BỊ sớm nhất được thử lại; `null` = không chờ. */
+  readonly nextAttemptAtDevice: number | null;
+  /** Mã lỗi gần nhất của lần tải lên (mã nghiệp vụ, không chứa đường dẫn/PII). */
+  readonly lastErrorCode: string | null;
   readonly createdAtDevice: number;
   readonly updatedAtDevice: number;
 }
@@ -45,6 +51,11 @@ export interface EvidenceFilePatch {
   readonly sizeBytes?: number;
   readonly durationMs?: number;
   readonly sha256Client?: string;
+  readonly attemptCount?: number;
+  /** `null` xóa thời điểm chờ. */
+  readonly nextAttemptAtDevice?: number | null;
+  /** `null` xóa mã lỗi. */
+  readonly lastErrorCode?: string | null;
 }
 
 export type ApplyEventError = TransitionError | 'FILE_NOT_FOUND' | 'MISSING_FILE_DETAILS';
@@ -90,6 +101,12 @@ export function applyEventToFile(
     sizeBytes: patch.sizeBytes ?? file.sizeBytes,
     durationMs: patch.durationMs ?? file.durationMs,
     sha256Client: patch.sha256Client ?? file.sha256Client,
+    attemptCount: patch.attemptCount ?? file.attemptCount,
+    nextAttemptAtDevice:
+      patch.nextAttemptAtDevice === undefined
+        ? file.nextAttemptAtDevice
+        : patch.nextAttemptAtDevice,
+    lastErrorCode: patch.lastErrorCode === undefined ? file.lastErrorCode : patch.lastErrorCode,
     updatedAtDevice: nowDevice,
   };
   if (result.state === FILE_STATES.QUEUED && !hasQueueDetails(file, patch)) {
@@ -111,6 +128,8 @@ export interface EvidenceFileStore {
     nowDevice: number,
     patch?: EvidenceFilePatch,
   ): Promise<ApplyEventResult>;
+  /** Tệp của shop đang ở một trong các trạng thái, cũ nhất trước (hàng đợi tải lên). */
+  listByStates(shopId: ShopId, states: readonly FileState[]): Promise<readonly EvidenceFile[]>;
   /** Mọi tệp của một đơn, cũ nhất trước. */
   listByOrder(shopId: ShopId, orderId: OrderId): Promise<readonly EvidenceFile[]>;
   listBySession(shopId: ShopId, sessionId: SessionId): Promise<readonly EvidenceFile[]>;

@@ -23,6 +23,9 @@ export function createMemoryEvidenceFileStore(): EvidenceFileStore {
         sizeBytes: null,
         durationMs: null,
         sha256Client: null,
+        attemptCount: 0,
+        nextAttemptAtDevice: null,
+        lastErrorCode: null,
         updatedAtDevice: input.createdAtDevice,
       };
       files.set(file.id, file);
@@ -39,6 +42,10 @@ export function createMemoryEvidenceFileStore(): EvidenceFileStore {
       if (result.ok) files.set(id, result.file);
       return result;
     },
+    listByStates: async (shopId, states) =>
+      ofShop(shopId)
+        .filter((f) => states.includes(f.state))
+        .sort(oldestFirst),
     listByOrder: async (shopId, orderId: OrderId) =>
       ofShop(shopId)
         .filter((f) => f.orderId === orderId)

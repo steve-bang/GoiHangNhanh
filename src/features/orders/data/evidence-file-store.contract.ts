@@ -181,5 +181,34 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
       expect(await h.files.countUnsynced(LOCAL_SHOP_ID)).toBe(1);
       expect(await h.files.countUnsyncedOnDevice()).toBe(1);
     });
+
+    it('ghi và xóa số lần thử, thời điểm thử lại, mã lỗi; listByStates lọc theo trạng thái', async () => {
+      const h = await make();
+      const a = await seedFile(h, 'K');
+      await h.files.create(a);
+      await h.files.applyEvent(LOCAL_SHOP_ID, a.id, device('STOP_RECORDING'), 1);
+      await h.files.applyEvent(LOCAL_SHOP_ID, a.id, device('LOCAL_FILE_READABLE'), 2, CLOSED);
+      await h.files.applyEvent(LOCAL_SHOP_ID, a.id, device('UPLOAD_STARTED'), 3);
+      const failed = await h.files.applyEvent(LOCAL_SHOP_ID, a.id, device('UPLOAD_FAILED'), 4, {
+        attemptCount: 1,
+        nextAttemptAtDevice: 9000,
+        lastErrorCode: 'NETWORK',
+      });
+      expect(failed).toMatchObject({
+        ok: true,
+        file: { attemptCount: 1, nextAttemptAtDevice: 9000, lastErrorCode: 'NETWORK' },
+      });
+      expect(await h.files.listByStates(LOCAL_SHOP_ID, ['upload_failed'])).toHaveLength(1);
+      expect(await h.files.listByStates(LOCAL_SHOP_ID, ['queued'])).toEqual([]);
+      expect(await h.files.listByStates(LOCAL_SHOP_ID, [])).toEqual([]);
+      const retry = await h.files.applyEvent(LOCAL_SHOP_ID, a.id, device('RETRY_UPLOAD'), 5, {
+        nextAttemptAtDevice: null,
+        lastErrorCode: null,
+      });
+      expect(retry).toMatchObject({
+        ok: true,
+        file: { state: 'queued', attemptCount: 1, nextAttemptAtDevice: null, lastErrorCode: null },
+      });
+    });
   });
 }

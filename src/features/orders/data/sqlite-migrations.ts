@@ -75,6 +75,9 @@ export const MIGRATIONS: readonly string[] = [
     size_bytes INTEGER,
     duration_ms INTEGER,
     sha256_client TEXT,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    next_attempt_at_device INTEGER,
+    last_error_code TEXT,
     created_at_device INTEGER NOT NULL,
     updated_at_device INTEGER NOT NULL
   );
