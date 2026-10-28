@@ -487,6 +487,46 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
     ).toBeOnTheScreen();
   });
 
+  it('camera tự dừng đúng hạn + băm treo: không còn "Đang quay"/nút Dừng, hiện dải "Đã đủ 10 phút"; lưu xong vẫn báo giới hạn', async () => {
+    let finishHash: (value: unknown) => void = () => undefined;
+    mockHash.mockReturnValue(new Promise((resolve) => (finishHash = resolve)));
+    const { session } = await startRecordingNow();
+    await advance(10 * 60 - 1);
+    await act(async () => mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mp4' }));
+    await advance(30); // băm chưa xong, đồng hồ vẫn chạy
+    expect(screen.queryByText('Đang quay')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Dừng quay' })).toBeNull();
+    expect(screen.getByText('Đã đủ 10 phút. App đang dừng quay và lưu video.')).toBeOnTheScreen();
+    expect(screen.queryByText(/Sắp đủ 10 phút/)).toBeNull();
+    expect(mockRecorder.stopCalls).toBe(0);
+    await act(async () => finishHash({ ok: true, sha256: 'ab'.repeat(32), sizeBytes: 4096 }));
+    await advance(0);
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packConfirm, {
+      sessionId: session.id,
+    });
+    expect(
+      screen.getByText('Mỗi lần quay tối đa 10 phút nên app đã tự dừng. Video đã lưu trên máy.'),
+    ).toBeOnTheScreen();
+  });
+
+  it('bấm Dừng ngay sau khi camera dừng đúng hạn (cùng lượt, chưa kịp vẽ lại): thông báo giới hạn không bị nuốt', async () => {
+    const { session } = await startRecordingNow();
+    await advance(10 * 60 - 1);
+    const stopButton = screen.getByRole('button', { name: 'Dừng quay' });
+    await act(async () => {
+      mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mp4' });
+      await Promise.resolve();
+      fireEvent.press(stopButton);
+    });
+    await advance(0);
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packConfirm, {
+      sessionId: session.id,
+    });
+    expect(
+      screen.getByText('Mỗi lần quay tối đa 10 phút nên app đã tự dừng. Video đã lưu trên máy.'),
+    ).toBeOnTheScreen();
+  });
+
   it('OS/camera ngắt sớm (phút 9) rồi lưu + băm chậm quá 10 phút: KHÔNG báo giới hạn (không rõ nguyên nhân thì không nêu)', async () => {
     let finishHash: (value: unknown) => void = () => undefined;
     mockHash.mockReturnValue(new Promise((resolve) => (finishHash = resolve)));

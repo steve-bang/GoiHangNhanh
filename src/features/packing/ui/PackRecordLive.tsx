@@ -142,7 +142,18 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
           cameraTiming.current = timing;
           const recording = handle.record(options);
           const mark = () => {
-            timing.end ??= monotonicNow();
+            if (timing.end !== null) return;
+            timing.end = monotonicNow();
+            // Camera đã trả kết quả: từ đây chỉ còn lưu + băm. Chốt NGAY nguyên nhân (trước khi lưu/băm có thể
+            // mất lâu) và chuyển màn sang "đang lưu" để không còn hiện "Đang quay" / nút Dừng.
+            if (
+              !stopRequested.current &&
+              timing.end - timing.begin >= LIMIT_SECONDS * 1000 - LIMIT_TOLERANCE_MS
+            ) {
+              limitHit.current = true;
+              if (mounted.current) setLimitReached(true);
+            }
+            if (mounted.current) setPhase((current) => (current === 'failed' ? current : 'saving'));
           };
           return {
             ...recording,
@@ -190,15 +201,9 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
       if (!mounted.current) return;
       if (outcome.kind === 'saved') {
         // Dừng do hết thời lượng tối đa (bộ đếm của app, hoặc camera tự dừng đúng hạn): báo người dùng.
-        // Chỉ nêu nguyên nhân khi chắc: bộ đếm của app đã đặt `limitHit`, hoặc camera trả tệp ở đúng hạn
-        // (đo lúc camera trả kết quả). Ngắt sớm hơn (cuộc gọi, OS...) thì KHÔNG nói là do giới hạn.
-        const timing = cameraTiming.current;
-        const stoppedByCamera =
-          !stopRequested.current &&
-          timing !== null &&
-          timing.end !== null &&
-          timing.end - timing.begin >= LIMIT_SECONDS * 1000 - LIMIT_TOLERANCE_MS;
-        if (limitHit.current || stoppedByCamera) {
+        // `limitHit` đã được chốt khi camera trả kết quả (bộ ghi ở trên) hoặc khi bộ đếm của app dừng; bấm
+        // Dừng sau đó không xóa nó. Ngắt sớm hơn (cuộc gọi, OS...) thì KHÔNG nói là do giới hạn.
+        if (limitHit.current) {
           toast.show(t('screens:record.limitReached', { minutes: POLICY.maxRecordMinutes }), {
             tone: 'info',
             durationMs: 8000,
@@ -214,7 +219,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
     if (mounted.current) {
       startedAtRef.current = monotonicNow();
       setStartedAt(startedAtRef.current);
-      setPhase(pendingStop.current ? 'saving' : 'recording');
+      setPhase(pendingStop.current || cameraTiming.current?.end != null ? 'saving' : 'recording');
     }
   }, [fail, navigation, ports, requestStop, session, t, toast]);
 
@@ -335,6 +340,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
       torch={torch}
       {...(cameraReady ? { onToggleTorch: () => setTorch((value) => !value) } : {})}
       onStop={stop}
+      stopHidden={phase === 'saving'}
       onEndSession={endSession}
     />
   );
