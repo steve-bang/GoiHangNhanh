@@ -164,5 +164,29 @@
     "shopAndPlan": "Cửa hàng và gói",
     "settings": "Cài đặt",
     "support": "Hỗ trợ"
+  },
+  "planScreen": {
+    "title": "Chưa có thông tin",
+    "retention": "Thời hạn lưu: Chưa có thông tin",
+    "benefitsTitle": "Chính sách lưu trữ dự kiến",
+    "benefits": {
+      "retention": "Bằng chứng được lưu theo thời hạn của gói",
+      "dispute": "Bằng chứng đang tranh chấp được giữ lại trong thời gian xử lý",
+      "downgrade": "Hạ cấp gói không xóa bằng chứng ngay, có thời gian chuyển tiếp"
+    },
+    "benefitsNote": "Đây là nguyên tắc lưu trữ chung. Quyền lợi và thời hạn của từng gói chưa được công bố.",
+    "detailAction": "Chi tiết gói",
+    "upgradeAction": "Nâng cấp gói",
+    "upgradeSoon": "Sắp có. Hiện chưa nâng cấp được trong ứng dụng.",
+    "detail": {
+      "benefitsTitle": "Chính sách lưu trữ dự kiến",
+      "retentionTitle": "Thời hạn lưu",
+      "retentionValue": "Chưa có thông tin",
+      "historyAction": "Lịch sử thanh toán"
+    },
+    "payments": {
+      "emptyTitle": "Chưa có lịch sử thanh toán",
+      "emptyMessage": "Ứng dụng chưa có thanh toán nên chưa có giao dịch nào để hiển thị."
+    }
   }
 }

@@ -77,7 +77,9 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 | `/disputes/select-evidence` | UI-G03 | chưa có đặc tả (docs/09 mục 4) | ẩn | `disputes`: `DisputeSelectEvidenceScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/disputes/export` | UI-G04 | chưa có đặc tả (docs/09 mục 4) | ẩn | `disputes`: `DisputeExportScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/disputes/[disputeId]` | UI-G05 | chưa có đặc tả (docs/09 mục 4) | ẩn | `disputes`: `DisputeDetailScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/account/plan` | UI-H01 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `PlanScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/account/plan` | UI-H01 | chưa có đặc tả (docs/09 mục 4) | hiện | `personal`: `PlanScreen` | PER-08 (khung 8, PR-E): tên gói/hạn lưu "Chưa có thông tin" + "Sắp có", quyền lợi là nguyên tắc lưu trữ chung (docs/06), "Chi tiết gói" mở khung 9, "Nâng cấp gói" khóa (chưa có thanh toán, O-16); không gói/giá/hạn giả; testID `screen-UI-H01` |
+| `/account/plan/detail` | UI-H01 (route con, `parent: plan`) | chưa có đặc tả (Q-21b) | ẩn (`hideTabBar`) | `personal`: `PlanDetailScreen` | Khung 9: thẻ mint, quyền lợi chi tiết, thời hạn lưu "Chưa có thông tin", "Nâng cấp gói" khóa, hàng "Lịch sử thanh toán"; testID `screen-UI-H01-detail` |
+| `/account/plan/payments` | UI-H01 (route con, `parent: plan`) | chưa có đặc tả (Q-21b, Q-21v) | ẩn (`hideTabBar`) | `personal`: `PaymentHistoryScreen` | Khung 10: trạng thái trống trung thực (chưa có thanh toán), không hóa đơn giả; testID `screen-UI-H01-payments` |
 | `/account/plans` | UI-H02 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `PlansScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/account/checkout` | UI-H03 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `CheckoutScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/account/limit` | UI-H04 | chưa có đặc tả (docs/09 mục 4) | hiện | `shop`: `PlanLimitScreen` | Placeholder (route + tiêu đề + lối quay lại) |

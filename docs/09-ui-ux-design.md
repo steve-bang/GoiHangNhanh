@@ -170,7 +170,7 @@ Lưu ý: xuất PDF/ZIP/chia sẻ phải được xác định trong đặc tả
 
 | Mã | Màn | Nội dung chính |
 |---|---|---|
-| UI-H01 | Gói hiện tại | Tên gói, trạng thái, thời hạn; giới hạn lưu trữ + thời gian lưu; cảnh báo sắp đạt giới hạn; CTA *Xem các gói* |
+| UI-H01 | Gói dịch vụ (tiêu đề màn; trước đây "Gói hiện tại") | Mục tiêu: tên gói, trạng thái, thời hạn; giới hạn lưu trữ + thời gian lưu; cảnh báo sắp đạt giới hạn; CTA *Xem các gói*. **Hiện trạng app (chờ BA xác nhận, Q-21v/w):** chưa có dữ liệu gói nên tên gói và hạn lưu là "Chưa có thông tin" + huy hiệu "Sắp có"; mục "Chính sách lưu trữ dự kiến" nêu ba nguyên tắc chung từ docs/06; CTA *Nâng cấp gói* bị khóa vì chưa chốt kênh thanh toán (O-16); có hai route con *Chi tiết gói* và *Lịch sử thanh toán*; chưa có giới hạn lưu trữ và cảnh báo hết hạn cho đến khi có dữ liệu gói |
 | UI-H02 | So sánh gói | Thời gian lưu, dung lượng cloud, số thành viên/thiết bị, xuất hồ sơ + tính năng nâng cao, giá/chu kỳ/gia hạn; **nêu rõ điều gì xảy ra với dữ liệu khi hết hạn gói**, không chỉ làm nổi giá |
 | UI-H03 | Xác nhận thanh toán | Gói, giá, chu kỳ, điều kiện gia hạn; phương thức hỗ trợ; điều khoản quan trọng; thành công/thất bại lấy từ kết quả thật của nhà cung cấp thanh toán. Kênh thanh toán: O-16 |
 | UI-H04 | Gần/vượt giới hạn | Báo giới hạn cụ thể bị ảnh hưởng; đề xuất nâng gói / giải phóng an toàn / chờ gia hạn; không mất video đang chờ tải; không khóa người dùng khỏi truy cập bằng chứng hiện có chỉ vì đổi gói |

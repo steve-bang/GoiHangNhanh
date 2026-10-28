@@ -59,7 +59,7 @@
     "UI-G03": "Chọn bằng chứng",
     "UI-G04": "Xem trước và xuất",
     "UI-G05": "Chi tiết tranh chấp",
-    "UI-H01": "Gói hiện tại",
+    "UI-H01": "Gói dịch vụ",
     "UI-H02": "So sánh gói",
     "UI-H03": "Xác nhận thanh toán",
     "UI-H04": "Gần hoặc vượt giới hạn",
@@ -75,6 +75,8 @@
     "editProfile": "Sửa họ tên",
     "changePassword": "Đổi mật khẩu",
     "shopEdit": "Sửa tên cửa hàng",
-    "shopSwitch": "Chuyển cửa hàng"
+    "shopSwitch": "Chuyển cửa hàng",
+    "planDetail": "Chi tiết gói dịch vụ",
+    "paymentHistory": "Lịch sử thanh toán"
   }
 }

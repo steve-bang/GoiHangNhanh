@@ -2,6 +2,9 @@
 export { PersonalGatewaysProvider, usePersonalGateways } from './ui/PersonalGatewaysProvider';
 export { ChangePasswordScreen } from './ui/ChangePasswordScreen';
 export { EditProfileScreen } from './ui/EditProfileScreen';
+export { PaymentHistoryScreen } from './ui/PaymentHistoryScreen';
+export { PlanDetailScreen } from './ui/PlanDetailScreen';
+export { PlanScreen } from './ui/PlanScreen';
 export { ProfileScreen } from './ui/ProfileScreen';
 export { ShopEditScreen } from './ui/ShopEditScreen';
 export { ShopSettingsScreen } from './ui/ShopSettingsScreen';

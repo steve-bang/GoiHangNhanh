@@ -155,6 +155,9 @@ export const ROUTES = {
   disputeDetail: route('/disputes/[disputeId]', 'UI-G05'),
   // Nhóm H, I - mở từ menu tài khoản
   plan: route('/account/plan', 'UI-H01', true),
+  // PER-08: chi tiết gói và lịch sử thanh toán, route con của UI-H01 (Q-21b, không mã UI mới).
+  planDetail: subRoute('/account/plan/detail', 'plan', 'UI-H01', true, true),
+  paymentHistory: subRoute('/account/plan/payments', 'plan', 'UI-H01', true, true),
   plans: route('/account/plans', 'UI-H02', true),
   checkout: route('/account/checkout', 'UI-H03', true),
   planLimit: route('/account/limit', 'UI-H04', true),

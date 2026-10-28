@@ -119,3 +119,36 @@
 | Thanh tab | lệch có chủ đích (hiện) | ẩn (đạt) | ẩn (đạt) | dưới lớp tối | như 7b | Q-21t |
 | Trạng thái | đạt | đạt (đã sửa, chưa sửa, lỗi) | đạt (chưa chọn, đã chọn, tìm, không khớp) | đạt | đạt | |
 | Chuỗi chữ | lệch | lệch | lệch | lệch | lệch | xem mục 6.4 của plan |
+
+---
+
+# Ảnh đối chiếu PR-E: Gói dịch vụ, Chi tiết gói, Lịch sử thanh toán (khung 8, 9, 10)
+
+**Lưu ý trung thực:** ảnh render **bản web** (react-native-web trong Chromium) của màn thật trên **cổng giả**, **không phải ảnh chụp trên iOS/Android thật**; 320x568, 360x800, 390x844 (hệ số 2). Ba màn là nội dung tĩnh (chưa có dữ liệu gói), nên không cần dữ liệu minh họa. Bản sao ngoài repo (không thêm phụ thuộc vào repo) có hai thay đổi tạm KHÔNG commit: `Text` nhân cỡ chữ theo `?fs=1.6` (chỉ để chụp chữ lớn; icon không phóng theo), và cổng giả đọc `?named=1` như các PR trước.
+
+| Ảnh | Nội dung |
+| --- | --- |
+| `pr-e-8-plan-{320x568,360x800,390x844}.png` | Khung 8 Gói dịch vụ |
+| `pr-e-9-plan-detail-*.png` | Khung 9 Chi tiết gói |
+| `pr-e-10-payment-history-*.png` | Khung 10 Lịch sử thanh toán |
+| `pr-e-{8-plan,9-plan-detail,10-payment-history}-largetext-320x568.png` | Chữ lớn (1.6 lần) ở 320x568 |
+| `pr-e-1a-main-with-plan-*.png` | Màn Cá nhân với thẻ gói đã mở được (huy hiệu "Sắp có", có mũi tên) |
+| `pr-e-board-reference-8-10.png` | Khung 8, 9, 10 cắt từ board 07 |
+| `pr-e-compare-board-vs-app-390.png` | Hàng trên board, hàng dưới app 390x844, cùng cột = cùng khung |
+
+## Checklist "giống design"
+
+| Hạng mục | 8 | 9 | 10 | Ghi chú lệch |
+| --- | --- | --- | --- | --- |
+| Bố cục và thứ tự khối | đạt | gần | đạt | khung 9: thẻ mint bao cả quyền lợi và thời hạn; thêm hàng "Lịch sử thanh toán" |
+| Thứ bậc chữ | đạt | đạt | đạt | |
+| Màu thẻ/nền | đạt | đạt (mint `brand.soft`) | đạt | |
+| Icon | gần | gần | gần | dấu tích Ionicons; ô icon `clipboard` tông trung tính; hóa đơn `receipt` không có mắt |
+| Khoảng cách | gần | gần | gần | quy về token; không đường kẻ ngăn |
+| Nút | gần | gần | - | "Nâng cấp gói" vô hiệu (board bật) + dòng "Sắp có" |
+| Header | đạt | đạt | đạt | mũi tên trái, tiêu đề lệch trái |
+| Thanh tab | hiện (Q-21t) | ẩn | ẩn | |
+| Trạng thái | đạt | đạt | đạt | chưa có dữ liệu gói nên chưa dựng hết hạn/sắp hết hạn |
+| Chuỗi chữ | lệch có chủ đích | lệch có chủ đích | lệch | không "Gói tiêu chuẩn", "Đang hoạt động", "Hỗ trợ 24/7", "Xem tất cả"; xem mục 6.5 của plan |
+
+**Ảnh `pr-e-8*`, `pr-e-9*` chưa chụp lại sau review:** tiêu đề mục "Quyền lợi" / "Quyền lợi chi tiết" đã đổi thành "Chính sách lưu trữ dự kiến" (Q-21w) và nút "Nâng cấp gói" thêm gợi ý trợ năng (không đổi hình). Môi trường này không có trình duyệt để render lại; ảnh hiện còn tiêu đề cũ. Cần chụp lại khi có Chromium.
