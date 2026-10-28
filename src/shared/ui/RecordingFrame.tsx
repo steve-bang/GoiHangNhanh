@@ -49,6 +49,8 @@ interface RecordingFrameProps {
    * "Phần đã ghi không bị xóa" chung.
    */
   leaveMessage?: string;
+  /** Ẩn nút dừng khi không còn gì để dừng (đã dừng, đang lưu). Mặc định hiện. */
+  stopHidden?: boolean;
   /** Có `onToggleTorch` thì hiện nút đèn pin ở bên phải. */
   torch?: boolean;
   onToggleTorch?: () => void;
@@ -71,6 +73,7 @@ export function RecordingFrame({
   guidance,
   onStop,
   onEndSession,
+  stopHidden = false,
   preview,
   previewMessage,
   recording,
@@ -263,26 +266,28 @@ export function RecordingFrame({
               {guidance}
             </Text>
           </View>
-          <Pressable
-            testID="recording-stop"
-            accessibilityRole="button"
-            accessibilityLabel={t('common:recording.stop')}
-            onPress={() => {
-              // Dừng quay là cách kết thúc bình thường: tắt chặn rời màn trước, nếu không điều hướng
-              // đi nơi khác sẽ bị chính hộp thoại cảnh báo chặn lại.
-              allowLeave();
-              onStop();
-            }}
-            style={styles.stopWrap}
-          >
-            <View style={[styles.stopRing, { borderColor: tokens.color.camera.onCamera }]}>
-              <View
-                style={[styles.stopInner, { backgroundColor: tokens.color.feedback.danger.fg }]}
-              >
-                <Icon name="stop" size={28} color={tokens.color.camera.onCamera} />
+          {stopHidden ? null : (
+            <Pressable
+              testID="recording-stop"
+              accessibilityRole="button"
+              accessibilityLabel={t('common:recording.stop')}
+              onPress={() => {
+                // Dừng quay là cách kết thúc bình thường: tắt chặn rời màn trước, nếu không điều hướng
+                // đi nơi khác sẽ bị chính hộp thoại cảnh báo chặn lại.
+                allowLeave();
+                onStop();
+              }}
+              style={styles.stopWrap}
+            >
+              <View style={[styles.stopRing, { borderColor: tokens.color.camera.onCamera }]}>
+                <View
+                  style={[styles.stopInner, { backgroundColor: tokens.color.feedback.danger.fg }]}
+                >
+                  <Icon name="stop" size={28} color={tokens.color.camera.onCamera} />
+                </View>
               </View>
-            </View>
-          </Pressable>
+            </Pressable>
+          )}
         </View>
       </View>
 

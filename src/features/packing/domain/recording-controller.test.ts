@@ -8,7 +8,6 @@ import {
 import { sampleOrder, sampleSession, seedOrder } from '@/test-utils/order-fixtures';
 
 import {
-  MIN_FREE_BYTES_TO_RECORD,
   reconcileSavedSessions,
   recoverInterruptedRecordings,
   startRecording,
@@ -17,6 +16,7 @@ import {
   type RecordResult,
   type RecordingPorts,
 } from './recording-controller';
+import { MIN_FREE_BYTES_TO_RECORD } from './recording-policy';
 
 async function setup() {
   const orders = createMemoryOrderStore();
@@ -248,6 +248,28 @@ describe('startRecording', () => {
     expect((await t.orders.getSession(LOCAL_SHOP_ID, t.session.id))?.sessionStatus).toBe('created');
   });
 
+  it('A04: ngưỡng theo chính sách (minFreeBytes) thay ngưỡng mặc định', async () => {
+    const small = await setup();
+    // dưới ngưỡng mặc định nhưng đủ theo chính sách nhỏ hơn: cho quay
+    const ok = await startRecording(
+      { ...small.ports, availableBytes: () => 1000, minFreeBytes: 1000 },
+      small.session,
+    );
+    expect('kind' in ok).toBe(false);
+    const big = await setup();
+    // trên ngưỡng mặc định nhưng dưới ngưỡng chính sách lớn hơn: từ chối, chưa tạo tệp
+    const refused = await startRecording(
+      {
+        ...big.ports,
+        availableBytes: () => MIN_FREE_BYTES_TO_RECORD + 1,
+        minFreeBytes: MIN_FREE_BYTES_TO_RECORD * 2,
+      },
+      big.session,
+    );
+    expect(refused).toEqual({ kind: 'failed', reason: 'INSUFFICIENT_STORAGE' });
+    expect(await big.fileState()).toBeUndefined();
+  });
+
   it('A04: đủ dung lượng hoặc không biết dung lượng thì bắt đầu bình thường', async () => {
     for (const available of [MIN_FREE_BYTES_TO_RECORD, null]) {
       const t = await setup();
@@ -267,6 +289,36 @@ describe('startRecording', () => {
       reason: 'RECORDER_FAILED',
     });
     expect(await t.fileState()).toBe('local_save_failed');
+  });
+
+  it('giới hạn thời lượng (O-05) được chuyển cho bộ ghi để camera tự dừng đúng hạn; không đặt thì không giới hạn', async () => {
+    const seen: (number | undefined)[] = [];
+    const t = await setup();
+    const withRecorder = (maxDurationSec?: number): RecordingPorts => ({
+      ...t.ports,
+      ...(maxDurationSec !== undefined ? { maxDurationSec } : {}),
+      recorder: {
+        record: (options) => {
+          seen.push(options?.maxDurationSec);
+          return t.ports.recorder.record();
+        },
+      },
+    });
+    await startRecording(withRecorder(600), t.session);
+    const other = await setup();
+    await startRecording(
+      {
+        ...other.ports,
+        recorder: {
+          record: (options) => {
+            seen.push(options?.maxDurationSec);
+            return other.ports.recorder.record();
+          },
+        },
+      },
+      other.session,
+    );
+    expect(seen).toEqual([600, undefined]);
   });
 
   it('không tạo được bản ghi tệp (kho lỗi): không quay', async () => {

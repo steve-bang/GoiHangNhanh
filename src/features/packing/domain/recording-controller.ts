@@ -2,6 +2,8 @@ import type { EvidenceId } from '@/core/ids';
 import type { EvidenceFile, EvidenceFileStore, FileEventType } from '@/features/evidence';
 import type { OrderStore, PackingSession } from '@/features/orders';
 
+import { MIN_FREE_BYTES_TO_RECORD } from './recording-policy';
+
 /** Kết quả ghi do bộ ghi (camera) trả về khi dừng. */
 export type RecordResult =
   | { readonly ok: true; readonly tempUri: string }
@@ -14,8 +16,12 @@ export interface RecordingHandle {
 }
 
 export interface Recorder {
-  /** Bắt đầu ghi một video. Ném lỗi (đồng bộ hoặc bất đồng bộ) nếu camera không bắt đầu được. */
-  record(): RecordingHandle;
+  /**
+   * Bắt đầu ghi một video. `maxDurationSec`: giới hạn thời lượng, camera tự dừng và trả tệp hợp lệ khi
+   * tới hạn (lưới cứng khi bộ đếm JS bị tạm dừng lúc app nền). Ném lỗi (đồng bộ hoặc bất đồng bộ) nếu
+   * camera không bắt đầu được.
+   */
+  record(options?: { readonly maxDurationSec?: number }): RecordingHandle;
 }
 
 export type PersistOutcome =
@@ -44,13 +50,14 @@ export interface RecordingPorts {
    * dung lượng lúc lưu). Không truyền thì bỏ qua kiểm tra (A04).
    */
   availableBytes?(): number | null;
+  /**
+   * Dung lượng trống tối thiểu (byte) để cho bắt đầu quay; theo `RecordingPolicy` của người dùng
+   * (`requiredFreeBytes`). Không truyền = `MIN_FREE_BYTES_TO_RECORD` (chính sách mặc định).
+   */
+  readonly minFreeBytes?: number;
+  /** Giới hạn thời lượng một lần quay (giây); không truyền = không giới hạn ở camera. */
+  readonly maxDurationSec?: number;
 }
-
-/**
- * Dung lượng trống tối thiểu để bắt đầu quay (A04: `INSUFFICIENT_STORAGE`). GIÁ TRỊ TẠM (500 MB): ngưỡng
- * vận hành thật chờ O-05 và đo bitrate thực trên thiết bị; một video 5-10 phút có thể vài trăm MB.
- */
-export const MIN_FREE_BYTES_TO_RECORD = 500 * 1024 * 1024;
 
 export type RecordingOutcome =
   | { readonly kind: 'saved'; readonly evidenceId: EvidenceId }
@@ -85,7 +92,7 @@ const extensionOf = (uri: string): string => {
 
 /**
  * Điều phối MỘT lần quay (docs/04 A05), nối bộ ghi với kho tệp bằng chứng và trạng thái phiên:
- * 0. Dung lượng trống dưới ngưỡng (`MIN_FREE_BYTES_TO_RECORD`) thì từ chối bắt đầu (A04), chưa tạo gì.
+ * 0. Dung lượng trống dưới ngưỡng (`ports.minFreeBytes`, mặc định `MIN_FREE_BYTES_TO_RECORD`) thì từ chối bắt đầu (A04), chưa tạo gì.
  * 1. ID bằng chứng + bản ghi tệp (`recording`, gắn phiên + kiện + đơn) được tạo TRƯỚC khi mở camera
  *    (bất biến 2); không tạo được thì KHÔNG quay.
  * 2. Phiên chuyển `recording` rồi mới ghi.
@@ -111,7 +118,7 @@ export async function startRecording(
   const { files, orders, recorder, newEvidenceId, now } = ports;
   // A04: kiểm dung lượng TRƯỚC khi tạo bất cứ thứ gì, để không có tệp/phiên `recording` mồ côi.
   const free = ports.availableBytes?.() ?? null;
-  if (free !== null && free < MIN_FREE_BYTES_TO_RECORD) {
+  if (free !== null && free < (ports.minFreeBytes ?? MIN_FREE_BYTES_TO_RECORD)) {
     return { kind: 'failed', reason: 'INSUFFICIENT_STORAGE' };
   }
   const evidenceId = newEvidenceId();
@@ -134,7 +141,9 @@ export async function startRecording(
 
   let handle: RecordingHandle;
   try {
-    handle = recorder.record();
+    handle = recorder.record(
+      ports.maxDurationSec !== undefined ? { maxDurationSec: ports.maxDurationSec } : undefined,
+    );
   } catch {
     await markFailed(ports, session, evidenceId, SESSION_STATUS.INTERRUPTED);
     return { kind: 'failed', reason: 'RECORDER_FAILED' };

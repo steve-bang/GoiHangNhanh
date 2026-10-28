@@ -19,12 +19,14 @@ export { newEvidenceId, newOrderId, newOrderLineId, newPackageId, newSessionId }
 export { openLocalDatabase } from './local-db';
 export type { SqlDatabase, SqlParam } from './sql-database';
 export { subscribeAppActive } from './app-state';
+export { monotonicNow } from './monotonic-clock';
 export { hashFile, HASH_CHUNK_BYTES } from './file-hasher';
 export type { HashFileResult } from './file-hasher';
 export {
   findPersistedRecording,
   getAvailableDiskBytes,
   persistRecording,
+  probeEvidenceDirWritable,
   recordingExists,
   resolveRecordingUri,
 } from './recording-files';
@@ -33,3 +35,5 @@ export { classifyUploadStatus, uploadFileResumable } from './resumable-upload';
 export type { UploadFileResult, UploadSessionRequest } from './resumable-upload';
 export { CameraRecorder } from './camera-recorder';
 export type { CameraRecorderHandle, RecorderResult } from './camera-recorder';
+export { readDeviceCondition, UNKNOWN_DEVICE_CONDITION } from './device-condition';
+export type { DeviceCondition, ThermalLevel } from '@/core/device';

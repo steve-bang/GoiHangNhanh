@@ -113,3 +113,49 @@ export function getAvailableDiskBytes(): number | null {
     return null;
   }
 }
+
+const PROBE_PREFIX = '.probe-';
+/** Đúng tên tệp thăm dò (`.probe-<giờ>`); tệp bằng chứng là `<id>.<đuôi>` nên không bao giờ khớp. */
+const PROBE_NAME = /^\.probe-\d+$/;
+
+/** Dọn tệp thăm dò SÓT LẠI (app bị kill giữa tạo và xóa). Chỉ xóa tên khớp `PROBE_NAME`; không ném lỗi. */
+function removeStaleProbes(directory: Directory): void {
+  try {
+    for (const entry of directory.list()) {
+      if (!PROBE_NAME.test(entry.name)) continue;
+      try {
+        entry.delete();
+      } catch {
+        // không xóa được: bỏ qua, lần sau dọn tiếp
+      }
+    }
+  } catch {
+    // không liệt kê được: bỏ qua
+  }
+}
+
+/**
+ * Thử ghi vào thư mục bằng chứng (A04 "khả năng ghi tệp cục bộ"): tạo, ghi vài byte rồi xóa MỘT tệp
+ * thăm dò riêng (`.probe-<giờ>`). Không bao giờ đụng tệp bằng chứng. `true` = ghi được. Thăm dò sót
+ * lại (app bị kill giữa chừng) vô hại và được dọn ở lần thăm dò sau (chỉ tên khớp đúng `.probe-<số>`). Chưa kiểm chứng trên thiết bị.
+ */
+export function probeEvidenceDirWritable(): boolean {
+  let probe: File | null = null;
+  try {
+    const directory = new Directory(Paths.document, EVIDENCE_DIR);
+    if (!directory.exists) directory.create({ intermediates: true });
+    removeStaleProbes(directory);
+    probe = new File(directory, `${PROBE_PREFIX}${Date.now()}`);
+    probe.create();
+    probe.write(new Uint8Array([0]));
+    return true;
+  } catch {
+    return false;
+  } finally {
+    try {
+      probe?.delete();
+    } catch {
+      // không xóa được tệp thăm dò: bỏ qua
+    }
+  }
+}

@@ -8,7 +8,6 @@ export {
 } from './session-evidence';
 export {
   isPersistentPath,
-  MIN_FREE_BYTES_TO_RECORD,
   reconcileSavedSessions,
   SAVED_PENDING_STATES,
   recoverInterruptedRecordings,
@@ -26,3 +25,25 @@ export {
   type RecordingPorts,
   type RecordResult,
 } from './recording-controller';
+export {
+  runPrecheck,
+  type CameraStatus,
+  type DeviceConditionInput,
+  type ThermalLevel,
+  type PrecheckFix,
+  type PrecheckId,
+  type PrecheckIssue,
+  type PrecheckPorts,
+  type PrecheckResult,
+} from './precheck';
+export {
+  ACTIVE_RECORDING_POLICY,
+  DEFAULT_RECORDING_POLICY,
+  ESTIMATED_BYTES_PER_MINUTE,
+  MIN_BATTERY_LEVEL,
+  maxRecordSeconds,
+  MIN_FREE_BYTES_TO_RECORD,
+  requiredFreeBytes,
+  WARN_BEFORE_LIMIT_SECONDS,
+  type RecordingPolicy,
+} from './recording-policy';

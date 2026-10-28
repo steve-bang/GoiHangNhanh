@@ -2,6 +2,7 @@ import {
   findPersistedRecording,
   getAvailableDiskBytes,
   persistRecording,
+  probeEvidenceDirWritable,
   recordingExists,
   resolveRecordingUri,
 } from './recording-files';
@@ -10,6 +11,8 @@ const mockFiles = new Map<string, number>();
 const mockDirs = new Set<string>();
 let mockMoveError: (Error & { code?: string }) | null = null;
 let mockDocument = 'file:///docs';
+let mockWriteError: Error | null = null;
+const mockProbeLog: string[] = [];
 let mockDisk: number | (() => number) = 1_000_000;
 
 jest.mock('expo-file-system', () => {
@@ -27,6 +30,17 @@ jest.mock('expo-file-system', () => {
     }
     get size() {
       return mockFiles.get(this.uri) ?? null;
+    }
+    create() {
+      mockFiles.set(this.uri, 0);
+      mockProbeLog.push(`create:${this.uri}`);
+    }
+    write() {
+      if (mockWriteError) throw mockWriteError;
+    }
+    delete() {
+      mockFiles.delete(this.uri);
+      mockProbeLog.push(`delete:${this.uri}`);
     }
     move(target: MockFile) {
       if (mockMoveError) throw mockMoveError;
@@ -69,6 +83,8 @@ beforeEach(() => {
   mockFiles.clear();
   mockDirs.clear();
   mockMoveError = null;
+  mockWriteError = null;
+  mockProbeLog.length = 0;
   mockDocument = 'file:///docs';
   mockDisk = 1_000_000;
 });
@@ -177,5 +193,37 @@ describe('getAvailableDiskBytes', () => {
       throw new Error('x');
     };
     expect(getAvailableDiskBytes()).toBeNull();
+  });
+});
+
+describe('probeEvidenceDirWritable', () => {
+  it('ghi được: tạo thư mục, tạo + ghi + XÓA đúng tệp thăm dò, không đụng tệp bằng chứng', () => {
+    mockFiles.set('file:///docs/evidence/ev-1.mp4', 123);
+    expect(probeEvidenceDirWritable()).toBe(true);
+    expect(mockProbeLog.map((l) => l.split(':')[0])).toEqual(['create', 'delete']);
+    expect(mockProbeLog[0]).toMatch(/\.probe-\d+$/);
+    expect([...mockFiles.keys()]).toEqual(['file:///docs/evidence/ev-1.mp4']);
+    expect(mockFiles.get('file:///docs/evidence/ev-1.mp4')).toBe(123);
+  });
+
+  it('dọn tệp thăm dò sót lại, chỉ đúng tên .probe-<số>; không đụng tệp bằng chứng hay tệp tên gần giống', () => {
+    mockFiles.set('file:///docs/evidence/.probe-111', 1);
+    mockFiles.set('file:///docs/evidence/.probe-222', 1);
+    mockFiles.set('file:///docs/evidence/ev-1.mp4', 123);
+    mockFiles.set('file:///docs/evidence/.probe-keep.mp4', 5);
+    mockFiles.set('file:///docs/evidence/x.probe-333', 7);
+    expect(probeEvidenceDirWritable()).toBe(true);
+    expect([...mockFiles.keys()].sort()).toEqual([
+      'file:///docs/evidence/.probe-keep.mp4',
+      'file:///docs/evidence/ev-1.mp4',
+      'file:///docs/evidence/x.probe-333',
+    ]);
+  });
+
+  it('không ghi được: false và vẫn dọn tệp thăm dò', () => {
+    mockWriteError = new Error('read-only');
+    expect(probeEvidenceDirWritable()).toBe(false);
+    expect(mockProbeLog.map((l) => l.split(':')[0])).toEqual(['create', 'delete']);
+    expect(mockFiles.size).toBe(0);
   });
 });

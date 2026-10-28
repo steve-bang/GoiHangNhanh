@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { RECORDER_ENABLED } from '@/core/config/recorder';
 import { isAppError } from '@/core/errors/app-error';
 import type { ErrorCode } from '@/core/errors/codes';
 import type { OrderId, PackageId } from '@/core/ids';
@@ -10,6 +11,14 @@ import { CameraPermissionSheet } from '@/shared/ui';
 
 import { useCurrentShopId, useOrderStore } from '../data';
 import { buildPackingSession, findActiveSession, findBlockingSession } from '../domain';
+
+/**
+ * Màn kế tiếp sau khi có phiên: khi bộ ghi thật bật, phiên MỚI (`created`) đi qua kiểm tra sẵn sàng
+ * UI-C02 (A04; chạy ngầm, tự chuyển sang quay nếu đạt). Phiên đã qua `created` mở thẳng màn quay để màn
+ * đó nói đúng tình trạng. Cờ tắt: thẳng sang màn quay như trước.
+ */
+const nextRoute = (sessionStatus: string) =>
+  RECORDER_ENABLED && sessionStatus === 'created' ? ROUTES.packPrecheck : ROUTES.packRecord;
 
 interface Pending {
   orderId: OrderId;
@@ -25,8 +34,8 @@ interface Pending {
  * `PACKAGE_ALREADY_RECORDED`/`PACKAGE_RECORDING_UNFINISHED` (ADR-020 R-11, chờ BA). Dùng chung cho "Kiểm tra camera và
  * bắt đầu" (UI-C01) và "Bỏ qua, quay ngay" (UI-B04).
  *
- * CHƯA làm (chưa ghi video thật): kiểm tra dung lượng (`INSUFFICIENT_STORAGE`) và micro
- * (`MIC_PERMISSION_DENIED`).
+ * Kiểm tra dung lượng/ghi tệp (A04) do UI-C02 làm khi bộ ghi thật bật. Micro (`MIC_PERMISSION_DENIED`)
+ * chưa kiểm: ghi không tiếng tới khi O-09 chốt.
  */
 export function useStartPacking(options: { navigate?: 'push' | 'replace' } = {}): {
   begin: (orderId: OrderId, packageId: PackageId) => void;
@@ -66,7 +75,7 @@ export function useStartPacking(options: { navigate?: 'push' | 'replace' } = {})
         const active = findActiveSession(sessions, target.packageId);
         if (active) {
           setPending(null);
-          go(ROUTES.packRecord, { sessionId: active.id });
+          go(nextRoute(active.sessionStatus), { sessionId: active.id });
           return;
         }
         // Kiện đã quay xong (hoặc có lần quay dở): KHÔNG tự tạo phiên mới (docs/04 A01; ADR-020 R-11).
@@ -90,7 +99,7 @@ export function useStartPacking(options: { navigate?: 'push' | 'replace' } = {})
         }
         await store.saveSession(built.session);
         setPending(null);
-        go(ROUTES.packRecord, { sessionId: built.session.id });
+        go(nextRoute(built.session.sessionStatus), { sessionId: built.session.id });
       } catch (caught) {
         setError(isAppError(caught) ? caught.code : 'LOCAL_SAVE_UNAVAILABLE');
       } finally {
