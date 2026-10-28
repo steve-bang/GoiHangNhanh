@@ -21,7 +21,13 @@ export type { SqlDatabase, SqlParam } from './sql-database';
 export { subscribeAppActive } from './app-state';
 export { hashFile, HASH_CHUNK_BYTES } from './file-hasher';
 export type { HashFileResult } from './file-hasher';
-export { persistRecording, recordingExists } from './recording-files';
+export {
+  findPersistedRecording,
+  getAvailableDiskBytes,
+  persistRecording,
+  recordingExists,
+  resolveRecordingUri,
+} from './recording-files';
 export type { PersistResult } from './recording-files';
 export { classifyUploadStatus, uploadFileResumable } from './resumable-upload';
 export type { UploadFileResult, UploadSessionRequest } from './resumable-upload';

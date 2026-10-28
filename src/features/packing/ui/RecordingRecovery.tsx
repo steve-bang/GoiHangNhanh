@@ -6,7 +6,7 @@ import {
   useOrderStore,
   LOCAL_SHOP_ID,
 } from '@/features/orders';
-import { hashFile, persistRecording, recordingExists } from '@/platform';
+import { findPersistedRecording, hashFile, persistRecording, recordingExists } from '@/platform';
 
 import { RECORDER_ENABLED, recoverInterruptedRecordings } from '../domain';
 
@@ -30,6 +30,7 @@ export function RecordingRecovery() {
         hash: hashFile,
         now: Date.now,
         exists: recordingExists,
+        findPersisted: findPersistedRecording,
       },
       shopId,
     ).catch(() => undefined);

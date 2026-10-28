@@ -1,5 +1,7 @@
 import { FileSystemUploadType, uploadAsync } from 'expo-file-system/legacy';
 
+import { resolveRecordingUri } from './recording-files';
+
 export interface UploadSessionRequest {
   readonly url: string;
   readonly method: 'POST';
@@ -45,7 +47,7 @@ export async function uploadFileResumable(
   }
   if (!location) return retryable('NO_SESSION_LOCATION');
   try {
-    const response = await uploadAsync(location, localUri, {
+    const response = await uploadAsync(location, resolveRecordingUri(localUri), {
       httpMethod: 'PUT',
       uploadType: FileSystemUploadType.BINARY_CONTENT,
       headers: { 'Content-Type': contentType },

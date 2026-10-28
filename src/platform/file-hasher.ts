@@ -2,6 +2,8 @@ import { File, FileMode } from 'expo-file-system';
 
 import { Sha256 } from '@/core/crypto/sha256';
 
+import { resolveRecordingUri } from './recording-files';
+
 /** Đọc từng khối này để băm: đủ lớn để ít vòng lặp, đủ nhỏ để không giữ nhiều bộ nhớ. */
 export const HASH_CHUNK_BYTES = 1024 * 1024;
 
@@ -10,14 +12,14 @@ export type HashFileResult =
   | { readonly ok: false; readonly reason: 'FILE_MISSING' | 'FILE_UNREADABLE' };
 
 /**
- * SHA-256 của tệp cục bộ, đọc theo khối (không nạp cả video vào bộ nhớ). Tệp không có -> `FILE_MISSING`;
+ * SHA-256 của tệp cục bộ (`uri` là đường dẫn đã lưu, tương đối hoặc tuyệt đối), đọc theo khối (không nạp cả video vào bộ nhớ). Tệp không có -> `FILE_MISSING`;
  * lỗi đọc giữa chừng -> `FILE_UNREADABLE`. Không log đường dẫn hay nội dung. Tốc độ băm bằng JS trên
  * Hermes chưa đo trên thiết bị.
  */
 export async function hashFile(uri: string): Promise<HashFileResult> {
   let handle: ReturnType<File['open']> | null = null;
   try {
-    const file = new File(uri);
+    const file = new File(resolveRecordingUri(uri));
     if (!file.exists) return { ok: false, reason: 'FILE_MISSING' };
     handle = file.open(FileMode.ReadOnly);
     const hash = new Sha256();
