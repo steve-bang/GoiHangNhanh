@@ -10,5 +10,9 @@ import { useSession } from './SessionProvider';
  */
 export function SessionShopProvider({ children }: { children: ReactNode }) {
   const session = useSession();
-  return <CurrentShopProvider shopId={session.state.shopId}>{children}</CurrentShopProvider>;
+  return (
+    <CurrentShopProvider shopId={session.state.shopId} uid={session.state.user?.uid ?? null}>
+      {children}
+    </CurrentShopProvider>
+  );
 }

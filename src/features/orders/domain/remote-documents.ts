@@ -1,5 +1,5 @@
 import { toCodeKey } from './codes';
-import type { OrderDetails, PackingSession } from './types';
+import type { Order, OrderDetails, OrderPackage, PackingSession } from './types';
 
 /**
  * Giá trị đặc biệt của Firestore do lớp gọi cấp (SDK native trên máy, SDK web trong test Rules), để
@@ -59,16 +59,36 @@ export function orderWrites(details: OrderDetails, uid: string, v: RemoteValues)
         ...stamp,
       },
     })),
-    ...packages.map((pkg) => ({
-      path: `${base}/packages/${pkg.id}`,
-      data: { shopId: order.shopId, orderId: order.id, index: pkg.index, ...stamp },
-    })),
+    ...packages.map((pkg) => packageWrite(order, pkg, uid, v)),
   ];
+}
+
+/** Tài liệu kiện (Rules: `createdBy == auth.uid`, nên chỉ người tạo kiện mới đăng được). */
+export function packageWrite(
+  order: Pick<Order, 'id' | 'shopId'>,
+  pkg: Pick<OrderPackage, 'id' | 'index'>,
+  uid: string,
+  v: RemoteValues,
+): RemoteWrite {
+  return {
+    path: `shops/${order.shopId}/orders/${order.id}/packages/${pkg.id}`,
+    data: {
+      shopId: order.shopId,
+      orderId: order.id,
+      index: pkg.index,
+      createdAt: v.serverTimestamp(),
+      createdBy: uid,
+    },
+  };
 }
 
 /**
  * Tài liệu phiên khi TẠO: Rules chỉ cho tạo với `status: 'recording'` (phiên tạo trước khi quay, ảnh
  * chụp đơn bất biến). Trạng thái hiện tại khác `recording` thì đăng thêm bằng `sessionStatusUpdate`.
+ *
+ * Hai mốc thời gian KHÁC NHAU (bất biến 11): `startedAtDevice` là giờ THIẾT BỊ lúc bắt đầu quay (đáng
+ * dùng làm mốc quay); `startedAtServer` (Rules ép `== request.time`) là giờ máy chủ NHẬN bản đăng,
+ * có thể muộn hàng giờ nếu máy ngoại tuyến, nên KHÔNG dùng làm mốc quay (ADR-019, Q-23g).
  */
 export function sessionWrite(
   session: PackingSession,

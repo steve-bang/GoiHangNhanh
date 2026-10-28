@@ -3,11 +3,18 @@ import type { SessionId, ShopId } from '@/core/ids';
 import { LOCAL_SHOP_ID } from '../domain/local-shop';
 import type { OrderStore } from '../domain/order-store';
 import { buildPackingSession } from '../domain/start-session';
-import { makeOrder } from './order-store.contract';
+import { buildNextPackage } from '../domain/build-order';
+import { makeOrder, testIds } from './order-store.contract';
 
 export interface PendingRemoteHarness {
   readonly store: OrderStore;
+  /** Đổi tài khoản đang đăng nhập (kho đọc uid mỗi lần lưu); `null` = chưa biết ai. Mặc định `U`. */
+  readonly setUid: (uid: string | null) => void;
 }
+
+/** Tài khoản mặc định của bài test (người tạo). */
+const U = 'user-a';
+const V = 'user-b';
 
 const setStatus = (h: PendingRemoteHarness, id: string, status: string) =>
   h.store.updateSessionStatus(LOCAL_SHOP_ID, id as SessionId, status);
@@ -35,25 +42,25 @@ export function runPendingRemoteContract(
     it('đơn chưa có phiên thì chưa cần đăng (đơn còn sửa được)', async () => {
       const h = await create();
       await h.store.saveNewOrder(makeOrder('A', { lines: [{ name: 'Áo' }] }));
-      expect(await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 10)).toEqual([]);
+      expect(await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 10, U)).toEqual([]);
     });
 
     it('đơn đã có phiên cần đăng, đủ dòng + kiện, cũ nhất trước; đăng xong thì hết', async () => {
       const h = await create();
       const late = await orderWithSession(h, 'LATE', 3000);
       const early = await orderWithSession(h, 'EARLY', 1000);
-      const pending = await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 10);
+      const pending = await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 10, U);
       expect(pending.map((d) => d.order.id)).toEqual([
         early.details.order.id,
         late.details.order.id,
       ]);
       expect(pending[0]?.lines).toHaveLength(1);
       expect(pending[0]?.packages).toHaveLength(1);
-      expect(await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 1)).toHaveLength(1);
+      expect(await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 1, U)).toHaveLength(1);
       await h.store.markOrderPublished(LOCAL_SHOP_ID, early.details.order.id, 9000);
       await h.store.markOrderPublished(LOCAL_SHOP_ID, early.details.order.id, 9001); // idempotent
       expect(
-        (await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 10)).map((d) => d.order.id),
+        (await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 10, U)).map((d) => d.order.id),
       ).toEqual([late.details.order.id]);
     });
 
@@ -61,16 +68,16 @@ export function runPendingRemoteContract(
       const h = await create();
       const a = await orderWithSession(h, 'ISO', 1000);
       const other = 'shop-khac' as ShopId;
-      expect(await h.store.listOrdersPendingRemote(other, 10)).toEqual([]);
+      expect(await h.store.listOrdersPendingRemote(other, 10, U)).toEqual([]);
       await h.store.markOrderPublished(other, a.details.order.id, 1);
-      expect(await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 10)).toHaveLength(1);
+      expect(await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 10, U)).toHaveLength(1);
     });
 
     it('phiên created không bao giờ cần đăng', async () => {
       const h = await create();
       const a = await orderWithSession(h, 'CRE', 1000);
       await h.store.markOrderPublished(LOCAL_SHOP_ID, a.details.order.id, 5);
-      expect(await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10)).toEqual([]);
+      expect(await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10, U)).toEqual([]);
     });
 
     it('phiên recording cần đăng khi đơn đã đăng; đổi trạng thái thì cần đăng lại', async () => {
@@ -78,15 +85,15 @@ export function runPendingRemoteContract(
       const a = await orderWithSession(h, 'REC', 1000);
       await setStatus(h, a.session.id, 'recording');
       // Đơn chưa đăng: chưa đăng phiên (Rules cần đơn tồn tại trước).
-      expect(await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10)).toEqual([]);
+      expect(await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10, U)).toEqual([]);
       await h.store.markOrderPublished(LOCAL_SHOP_ID, a.details.order.id, 5);
-      const first = await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10);
+      const first = await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10, U);
       expect(first).toHaveLength(1);
       expect(first[0]).toMatchObject({ status: 'recording', session: { id: a.session.id } });
       await h.store.markSessionPublished(LOCAL_SHOP_ID, a.session.id, 'recording');
-      expect(await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10)).toEqual([]);
+      expect(await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10, U)).toEqual([]);
       await setStatus(h, a.session.id, 'ended');
-      expect(await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10)).toMatchObject([
+      expect(await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10, U)).toMatchObject([
         { status: 'ended' },
       ]);
     });
@@ -96,9 +103,78 @@ export function runPendingRemoteContract(
       const a = await orderWithSession(h, 'SI', 1000);
       await setStatus(h, a.session.id, 'recording');
       await h.store.markOrderPublished(LOCAL_SHOP_ID, a.details.order.id, 5);
-      expect(await h.store.listSessionsPendingRemote('shop-khac' as ShopId, 10)).toEqual([]);
+      expect(await h.store.listSessionsPendingRemote('shop-khac' as ShopId, 10, U)).toEqual([]);
       await h.store.markSessionPublished('shop-khac' as ShopId, a.session.id, 'recording');
-      expect(await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10)).toHaveLength(1);
+      expect(await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10, U)).toHaveLength(1);
+    });
+
+    it('chỉ đăng bản ghi do CHÍNH tài khoản đang đăng nhập tạo: máy dùng chung không ghi nhầm người tạo', async () => {
+      const h = await create();
+      const mine = await orderWithSession(h, 'MINE', 1000);
+      h.setUid(V);
+      const theirs = await orderWithSession(h, 'THEIRS', 2000);
+      h.setUid(U);
+      // Mỗi người chỉ thấy việc của mình.
+      expect(
+        (await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 10, U)).map((d) => d.order.id),
+      ).toEqual([mine.details.order.id]);
+      expect(
+        (await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 10, V)).map((d) => d.order.id),
+      ).toEqual([theirs.details.order.id]);
+      expect(await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 10, 'nguoi-la')).toEqual([]);
+      // Người tạo đọc lại được từ kho (đơn, kiện, phiên).
+      const stored = await h.store.getOrder(LOCAL_SHOP_ID, theirs.details.order.id);
+      expect(stored?.order.createdBy).toBe(V);
+      expect(stored?.packages[0]?.createdBy).toBe(V);
+      expect((await h.store.getSession(LOCAL_SHOP_ID, theirs.session.id))?.createdBy).toBe(V);
+      // Phiên cũng theo người tạo.
+      await h.store.markOrderPublished(LOCAL_SHOP_ID, mine.details.order.id, 5);
+      await h.store.markOrderPublished(LOCAL_SHOP_ID, theirs.details.order.id, 5);
+      await setStatus(h, mine.session.id, 'recording');
+      await setStatus(h, theirs.session.id, 'recording');
+      expect(
+        (await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10, U)).map((p) => p.session.id),
+      ).toEqual([mine.session.id]);
+      expect(
+        (await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10, V)).map((p) => p.session.id),
+      ).toEqual([theirs.session.id]);
+    });
+
+    it('bản ghi tạo khi chưa biết ai đăng nhập không có người tạo và không bao giờ được đăng', async () => {
+      const h = await create();
+      h.setUid(null);
+      const a = await orderWithSession(h, 'ANON', 1000);
+      h.setUid(U);
+      const stored = await h.store.getOrder(LOCAL_SHOP_ID, a.details.order.id);
+      expect(stored?.order).not.toHaveProperty('createdBy');
+      expect(await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 10, U)).toEqual([]);
+      await h.store.markOrderPublished(LOCAL_SHOP_ID, a.details.order.id, 5);
+      await setStatus(h, a.session.id, 'recording');
+      expect(await h.store.listSessionsPendingRemote(LOCAL_SHOP_ID, 10, U)).toEqual([]);
+    });
+
+    it('createdBy do người gọi tự khai bị bỏ qua: kho chỉ tin uid của phiên đăng nhập', async () => {
+      const h = await create();
+      const details = makeOrder('SPOOF', { lines: [{ name: 'Áo' }] });
+      await h.store.saveNewOrder({
+        ...details,
+        order: { ...details.order, createdBy: V },
+        packages: details.packages.map((p) => ({ ...p, createdBy: V })),
+      });
+      const stored = await h.store.getOrder(LOCAL_SHOP_ID, details.order.id);
+      expect(stored?.order.createdBy).toBe(U);
+      expect(stored?.packages.every((p) => p.createdBy === U)).toBe(true);
+      expect(await h.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 10, V)).toEqual([]);
+    });
+
+    it('kiện thêm bởi người khác mang uid người đó (đăng thế nào là việc của sync)', async () => {
+      const h = await create();
+      const a = await orderWithSession(h, 'PKG', 1000);
+      h.setUid(V);
+      const next = buildNextPackage(a.details, { ids: testIds, nowDevice: 3000 });
+      await h.store.addPackage(LOCAL_SHOP_ID, next);
+      const stored = await h.store.getOrder(LOCAL_SHOP_ID, a.details.order.id);
+      expect(stored?.packages.map((p) => p.createdBy)).toEqual([U, V]);
     });
   });
 }

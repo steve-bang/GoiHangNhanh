@@ -92,6 +92,14 @@ export const MIGRATIONS: readonly string[] = [
   ALTER TABLE orders ADD COLUMN remote_synced_at_device INTEGER;
   ALTER TABLE packing_sessions ADD COLUMN remote_status TEXT;
   `,
+  // v5: uid người tạo đơn/kiện/phiên (nullable). Rules ép `createdBy == auth.uid` nên chỉ người tạo
+  // mới đăng được bản ghi của mình; máy dùng chung không được ghi nhầm người tạo (ADR-019, Q-23g).
+  // Bản ghi có trước cột này giữ NULL và KHÔNG bao giờ được đăng.
+  `
+  ALTER TABLE orders ADD COLUMN created_by TEXT;
+  ALTER TABLE packages ADD COLUMN created_by TEXT;
+  ALTER TABLE packing_sessions ADD COLUMN created_by TEXT;
+  `,
 ];
 
 /**

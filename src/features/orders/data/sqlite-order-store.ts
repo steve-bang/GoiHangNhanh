@@ -22,6 +22,7 @@ import {
   RECORDING_SESSION_STATUS,
 } from '../domain/start-session';
 import { MAX_RECENT_SEARCHES } from '../domain/search';
+import type { CreatorUidProvider } from '../domain/creator';
 import { canChangeSessionStatus } from '../domain/session-status';
 import { runSerialized } from './db-queue';
 import { LEGACY_EVIDENCE_FILE_COLUMNS, MIGRATIONS } from './sqlite-migrations';
@@ -33,6 +34,7 @@ interface OrderRow {
   source: string;
   tracking_code: string | null;
   created_at_device: number;
+  created_by: string | null;
 }
 interface LineRow {
   id: string;
@@ -48,6 +50,7 @@ interface PackageRow {
   order_id: string;
   idx: number;
   created_at_device: number;
+  created_by: string | null;
 }
 interface SessionRow {
   id: string;
@@ -57,6 +60,7 @@ interface SessionRow {
   started_at_device: number;
   snapshot_json: string;
   session_status: string;
+  created_by: string | null;
 }
 
 /** Điều kiện WHERE (tham số hóa) cho danh sách/đếm; luôn bắt đầu bằng cô lập shop (bất biến 8). */
@@ -94,6 +98,7 @@ const toOrder = (r: OrderRow): Order => ({
   trackingCode: r.tracking_code,
   dataOrigin: 'entered_by_user',
   createdAtDevice: r.created_at_device,
+  ...(r.created_by ? { createdBy: r.created_by } : {}),
 });
 const toLine = (r: LineRow): OrderLine => ({
   id: r.id as OrderLineId,
@@ -110,6 +115,7 @@ const toPackage = (r: PackageRow): OrderPackage => ({
   orderId: r.order_id as OrderId,
   index: r.idx,
   createdAtDevice: r.created_at_device,
+  ...(r.created_by ? { createdBy: r.created_by } : {}),
 });
 
 /** Đọc ảnh chụp từ JSON đã lưu: kiểm tra ở biên, không ép kiểu mù (conventions mục 4). */
@@ -194,7 +200,11 @@ export async function migrateLocalDatabase(db: SqlDatabase): Promise<void> {
  * `withExclusiveTransactionAsync` vì nó mở kết nối MỚI (không có PRAGMA khóa ngoại, không dùng được
  * trên web); hàng đợi này giữ một kết nối đã bật khóa ngoại.
  */
-export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
+export function createSqliteOrderStore(
+  db: SqlDatabase,
+  options: { creatorUid?: CreatorUidProvider } = {},
+): OrderStore {
+  const creatorUid = (): string | null => options.creatorUid?.() ?? null;
   let ready: Promise<void> | null = null;
 
   const migrate = () => migrateLocalDatabase(db);
@@ -246,6 +256,7 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
     startedAtDevice: row.started_at_device,
     snapshot: parseSnapshot(row.snapshot_json),
     sessionStatus: 'created',
+    ...(row.created_by ? { createdBy: row.created_by } : {}),
   });
 
   const sessionsOfOrder = async (shopId: ShopId, orderId: OrderId) => {
@@ -342,9 +353,11 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
       guarded('ORDER_SAVE_FAILED', () =>
         db.withTransactionAsync(async () => {
           const o = details.order;
+          const uid = creatorUid();
           await db.runAsync(
             `INSERT INTO orders (id, shop_id, order_code, order_code_key, source, tracking_code,
-              tracking_code_key, data_origin, created_at_device) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              tracking_code_key, data_origin, created_at_device, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               o.id,
               o.shopId,
@@ -355,6 +368,7 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
               o.trackingCode === null ? null : toCodeKey(o.trackingCode),
               o.dataOrigin,
               o.createdAtDevice,
+              uid,
             ],
           );
           for (const l of details.lines) {
@@ -375,8 +389,8 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
           }
           for (const p of details.packages) {
             await db.runAsync(
-              'INSERT INTO packages (id, order_id, idx, created_at_device) VALUES (?, ?, ?, ?)',
-              [p.id, p.orderId, p.index, p.createdAtDevice],
+              'INSERT INTO packages (id, order_id, idx, created_at_device, created_by) VALUES (?, ?, ?, ?, ?)',
+              [p.id, p.orderId, p.index, p.createdAtDevice, uid],
             );
           }
         }),
@@ -503,8 +517,8 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
           );
           if (!owner) throw new AppError('ORDER_SAVE_FAILED');
           await db.runAsync(
-            'INSERT INTO packages (id, order_id, idx, created_at_device) VALUES (?, ?, ?, ?)',
-            [pkg.id, pkg.orderId, pkg.index, pkg.createdAtDevice],
+            'INSERT INTO packages (id, order_id, idx, created_at_device, created_by) VALUES (?, ?, ?, ?, ?)',
+            [pkg.id, pkg.orderId, pkg.index, pkg.createdAtDevice, creatorUid()],
           );
         }),
       ),
@@ -523,7 +537,7 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
           }
           await db.runAsync(
             `INSERT INTO packing_sessions (id, shop_id, order_id, package_id, started_at_device,
-              snapshot_json, session_status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              snapshot_json, session_status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               s.id,
               s.shopId,
@@ -532,6 +546,7 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
               s.startedAtDevice,
               JSON.stringify(s.snapshot),
               s.sessionStatus,
+              creatorUid(),
             ],
           );
         }),
@@ -567,14 +582,14 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
     // Chưa có bảng tệp bằng chứng: không có tệp nào để chưa đồng bộ (xem OrderStore.countUnsynced).
     countUnsynced: async () => 0,
     countUnsyncedOnDevice: async () => 0,
-    listOrdersPendingRemote: (shopId, limit) =>
+    listOrdersPendingRemote: (shopId, limit, uid) =>
       guarded('ORDER_SAVE_FAILED', async () => {
         const rows = await db.getAllAsync<{ id: string }>(
           `SELECT o.id FROM orders o
-           WHERE o.shop_id = ? AND o.remote_synced_at_device IS NULL
+           WHERE o.shop_id = ? AND o.remote_synced_at_device IS NULL AND o.created_by = ?
              AND EXISTS (SELECT 1 FROM packing_sessions s WHERE s.order_id = o.id)
            ORDER BY o.created_at_device, o.id LIMIT ?`,
-          [shopId, limit],
+          [shopId, uid, limit],
         );
         const result: OrderDetails[] = [];
         for (const row of rows) {
@@ -591,15 +606,15 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
           shopId,
         ]),
       ),
-    listSessionsPendingRemote: (shopId, limit) =>
+    listSessionsPendingRemote: (shopId, limit, uid) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
         const rows = await db.getAllAsync<SessionRow>(
           `SELECT s.* FROM packing_sessions s JOIN orders o ON o.id = s.order_id
-           WHERE s.shop_id = ? AND s.session_status != 'created'
+           WHERE s.shop_id = ? AND s.created_by = ? AND s.session_status != 'created'
              AND (s.remote_status IS NULL OR s.remote_status != s.session_status)
              AND o.remote_synced_at_device IS NOT NULL
            ORDER BY s.started_at_device, s.id LIMIT ?`,
-          [shopId, limit],
+          [shopId, uid, limit],
         );
         return rows.map((row) => ({ session: toSession(row), status: row.session_status }));
       }),

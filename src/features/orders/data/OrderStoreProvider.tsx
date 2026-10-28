@@ -1,9 +1,10 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { openLocalDatabase } from '@/platform';
 
 import type { OrderStore } from '../domain/order-store';
 import { createLocalOrderStore } from './create-order-store';
+import { useCurrentUid } from './current-shop';
 
 const OrderStoreContext = createContext<OrderStore | null>(null);
 
@@ -15,7 +16,17 @@ export function OrderStoreProvider({
   store?: OrderStore;
   children: ReactNode;
 }) {
-  const value = useMemo(() => store ?? createLocalOrderStore(openLocalDatabase), [store]);
+  // Kho đọc uid MỖI LẦN lưu (không đóng băng lúc tạo kho): đổi tài khoản thì bản ghi mới mang uid mới.
+  const uid = useCurrentUid();
+  const [holder] = useState(() => {
+    let current: string | null = uid;
+    return { get: () => current, set: (next: string | null) => void (current = next) };
+  });
+  useEffect(() => holder.set(uid), [holder, uid]);
+  const value = useMemo(
+    () => store ?? createLocalOrderStore(openLocalDatabase, { creatorUid: holder.get }),
+    [store, holder],
+  );
   return <OrderStoreContext.Provider value={value}>{children}</OrderStoreContext.Provider>;
 }
 

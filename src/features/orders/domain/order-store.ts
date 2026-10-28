@@ -102,20 +102,27 @@ export interface OrderStore {
   /** Xóa toàn bộ lịch sử tìm của MỘT shop (không đụng shop khác). */
   clearRecentSearches(shopId: ShopId): Promise<void>;
   /**
-   * Đơn CẦN đăng lên máy chủ: đã có ít nhất một phiên (từ đó đơn không còn sửa được nên đăng là
-   * thao tác tạo thuần, không cần cập nhật/xóa dòng; Q-23a) và chưa đăng. Cũ nhất trước.
+   * Đơn CẦN đăng lên máy chủ bởi `creatorUid`: đã có ít nhất một phiên (từ đó đơn không còn sửa được
+   * nên đăng là thao tác tạo thuần, không cần cập nhật/xóa dòng; Q-23a), chưa đăng, và do CHÍNH
+   * `creatorUid` tạo (`createdBy`). Đơn của người khác dùng chung máy, hoặc không rõ người tạo (tạo
+   * trước khi có cột / lúc chưa biết uid), không bao giờ có mặt ở đây (Q-23g). Cũ nhất trước.
    */
-  listOrdersPendingRemote(shopId: ShopId, limit: number): Promise<OrderDetails[]>;
+  listOrdersPendingRemote(
+    shopId: ShopId,
+    limit: number,
+    creatorUid: string,
+  ): Promise<OrderDetails[]>;
   /** Ghi nhận đơn đã có trên máy chủ (idempotent). */
   markOrderPublished(shopId: ShopId, orderId: OrderId, atDevice: number): Promise<void>;
   /**
-   * Phiên CẦN đăng/cập nhật trạng thái trên máy chủ: trạng thái khác `created` (phiên `created` chưa
-   * có bằng chứng nên không đăng), khác trạng thái đã đăng gần nhất, và đơn của nó đã đăng.
-   * `status` là trạng thái cục bộ hiện tại. Cũ nhất trước.
+   * Phiên CẦN đăng/cập nhật trạng thái trên máy chủ bởi `creatorUid`: do chính `creatorUid` bắt đầu,
+   * trạng thái khác `created` (phiên `created` chưa có bằng chứng nên không đăng), khác trạng thái đã
+   * đăng gần nhất, và đơn của nó đã đăng. `status` là trạng thái cục bộ hiện tại. Cũ nhất trước.
    */
   listSessionsPendingRemote(
     shopId: ShopId,
     limit: number,
+    creatorUid: string,
   ): Promise<{ session: PackingSession; status: string }[]>;
   /** Ghi nhận phiên đã đăng với `status` (idempotent). */
   markSessionPublished(shopId: ShopId, sessionId: SessionId, status: string): Promise<void>;
