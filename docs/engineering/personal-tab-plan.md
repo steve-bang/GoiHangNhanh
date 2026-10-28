@@ -56,7 +56,7 @@ Mọi mã UI mới phải được thêm đồng thời vào `ROUTES`/`UI_CODES`
 - **Làm thật với cổng giả**: PER-01, 02, 03 (họ tên), 04, 05, 06, 21, 13 (lưu tùy chọn cục bộ/giả), 16/17 (nội dung tĩnh trong app), 19 (liên kết trong `legal-links.ts`), 20.
 - **Chỉ hiện trạng thái trung thực "Chưa khả dụng / Sắp có"**: PER-08/09/10 (giá, thanh toán, dung lượng, ngày hết hạn chưa có nguồn: O-06, O-16), PER-12, PER-15 (cần auth theo dõi phiên), thành viên (O-03, O-07), PER-24.
 - **Hoãn tới khi chốt**: PER-22 xóa tài khoản (chưa có chính sách), PER-18 gửi hỗ trợ thật (chưa có kênh; tạm mở email/liên kết), PER-07 khi chỉ có một shop (ẩn mục).
-- **PER-11**: khi chưa có dữ liệu hiện nhãn "Không xác định được trạng thái"; liên kết sang Trung tâm đồng bộ (UI-F01). Không hiện số giả.
+- **PER-11**: khi chưa có dữ liệu hiện "Chưa có số liệu" (mã: `evidenceOverview.noData`, Q-21p/aa); liên kết sang Trung tâm đồng bộ (UI-F01). Không hiện số giả.
 - Không hứa "đã sao lưu", không hứa tải nền khi app bị dừng (bất biến 3, 11).
 
 ## 5. Kiến trúc đề xuất

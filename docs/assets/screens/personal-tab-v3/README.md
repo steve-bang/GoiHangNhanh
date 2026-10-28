@@ -180,3 +180,5 @@
 | Chữ lớn | đạt | đạt | hàng thời hạn xuống dòng, giá trị rớt xuống dưới nhãn |
 | Chuỗi chữ | lệch có chủ đích | lệch có chủ đích | "Chưa có số liệu"/"Chưa có thông tin" thay số; không "Gói tiêu chuẩn"; ghi chú khung 12 đổi câu (D19) |
 
+
+**Lưu ý sau review PR #19:** chữ thẻ ghi chú của ảnh `pr-f-12-*` đã cũ (câu mới: "Theo chính sách dự kiến, bằng chứng đang tranh chấp được giữ lại và hạ cấp gói không xóa bằng chứng ngay. Cách xử lý khi hết thời hạn lưu chưa được công bố."). Chưa chụp lại vì không dựng được bản sao ngoài repo trong môi trường này; chụp lại khi có điều kiện.
