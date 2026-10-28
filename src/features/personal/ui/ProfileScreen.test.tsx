@@ -130,15 +130,22 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     }
   });
 
-  it('dữ liệu bằng chứng: ba ô chỉ có nhãn (không số giả), nút mở Trung tâm đồng bộ', async () => {
+  it('dữ liệu bằng chứng: ba ô nhãn + "Chưa có số liệu" (không số giả), nút mở Trung tâm đồng bộ', async () => {
     await renderProfile(createFakePersonalGateways(NAMED));
     const block = screen.getByTestId('evidence-overview');
     expect(block).toHaveTextContent(/Dữ liệu bằng chứng/);
-    expect(screen.getByTestId('metric-on-device').props.accessibilityLabel).toBe('Trên thiết bị');
-    expect(screen.getByTestId('metric-pending-sync').props.accessibilityLabel).toBe(
-      'Đang chờ đồng bộ',
+    expect(screen.getByTestId('metric-on-device').props.accessibilityLabel).toBe(
+      'Trên thiết bị: Chưa có số liệu',
     );
-    expect(screen.getByTestId('metric-cloud').props.accessibilityLabel).toBe('Trên đám mây');
+    expect(screen.getByTestId('metric-pending-sync').props.accessibilityLabel).toBe(
+      'Đang chờ đồng bộ: Chưa có số liệu',
+    );
+    expect(screen.getByTestId('metric-cloud').props.accessibilityLabel).toBe(
+      'Trên đám mây: Chưa có số liệu',
+    );
+    for (const id of ['metric-on-device', 'metric-pending-sync', 'metric-cloud']) {
+      expect(screen.getByTestId(id)).toHaveTextContent(/Chưa có số liệu/);
+    }
     expect(block).not.toHaveTextContent(/\d/);
     await fireEvent.press(screen.getByRole('button', { name: 'Xem trung tâm đồng bộ' }));
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.sync);
@@ -316,6 +323,78 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
   });
 });
 
+describe('ProfileScreen: tải lại theo revision', () => {
+  function RevisionProbe() {
+    const { updateDisplayName, notifyShopUpdated } = useSession();
+    return (
+      <>
+        <Pressable testID="bump-profile" onPress={() => updateDisplayName('Lan Anh 2')} />
+        <Pressable testID="bump-shop" onPress={() => notifyShopUpdated()} />
+      </>
+    );
+  }
+  async function renderWithProbe() {
+    const gateways = createFakePersonalGateways(NAMED);
+    await renderWithProviders(
+      <>
+        <RevisionProbe />
+        <ProfileScreen />
+      </>,
+      { personalGateways: gateways },
+    );
+    await waitFor(() => expect(screen.getByTestId('profile-summary')).toBeOnTheScreen());
+    await waitFor(() => expect(screen.getByTestId('shop-card')).toBeOnTheScreen());
+    return gateways;
+  }
+
+  it('profileRevision tăng: tải lại hồ sơ MỘT lần (không tải lại shop), dữ liệu cũ vẫn hiện, không nháy khung chờ', async () => {
+    const gateways = await renderWithProbe();
+    expect(gateways.account.getProfileCalls).toBe(1);
+    expect(gateways.account.getShopSummaryCalls).toBe(1);
+    let resolve: (() => void) | undefined;
+    const real = gateways.account.getProfile.bind(gateways.account);
+    jest.spyOn(gateways.account, 'getProfile').mockImplementation(
+      () =>
+        new Promise((done) => {
+          resolve = () => done(real());
+        }),
+    );
+    await fireEvent.press(screen.getByTestId('bump-profile'));
+    await waitFor(() => expect(resolve).toBeDefined());
+    // Trong lúc tải: dữ liệu cũ còn đó, không có khung chờ.
+    expect(screen.getByTestId('profile-summary')).toHaveTextContent(/Lan Anh/);
+    expect(screen.queryByTestId('profile-loading')).toBeNull();
+    expect(screen.queryByLabelText('Đang tải')).toBeNull();
+    await act(async () => {
+      resolve?.();
+    });
+    expect(gateways.account.getShopSummaryCalls).toBe(1);
+    expect(screen.queryByTestId('profile-loading')).toBeNull();
+    expect(screen.getByTestId('profile-summary')).toBeOnTheScreen();
+  });
+
+  it('shopRevision tăng: tải lại shop MỘT lần (không tải lại hồ sơ), thẻ shop không nháy khung chờ', async () => {
+    const gateways = await renderWithProbe();
+    let resolve: (() => void) | undefined;
+    const real = gateways.account.getShopSummary.bind(gateways.account);
+    const spy = jest.spyOn(gateways.account, 'getShopSummary').mockImplementation(
+      () =>
+        new Promise((done) => {
+          resolve = () => done(real());
+        }),
+    );
+    await fireEvent.press(screen.getByTestId('bump-shop'));
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId('shop-card')).toBeOnTheScreen();
+    expect(screen.queryByTestId('shop-loading')).toBeNull();
+    await act(async () => {
+      resolve?.();
+    });
+    expect(gateways.account.getProfileCalls).toBe(1);
+    expect(screen.getByTestId('shop-card')).toBeOnTheScreen();
+  });
+});
+
 function pending<T>() {
   return new Promise<T>(() => undefined);
 }
@@ -339,6 +418,14 @@ describe('ProfileScreen khung 1b: đang tải', () => {
     expect(screen.queryByTestId('evidence-overview')).toBeNull();
     expect(screen.queryByText('Chưa có thông tin')).toBeNull();
     expect(screen.getByTestId('sign-out')).toBeOnTheScreen();
+  });
+
+  it('trình đọc màn hình: mỗi thẻ khung chờ là MỘT phần tử "Đang tải" (5 thẻ), không phần tử con lẻ', async () => {
+    const gateways = createFakePersonalGateways();
+    jest.spyOn(gateways.account, 'getProfile').mockReturnValue(pending());
+    jest.spyOn(gateways.account, 'getShopSummary').mockReturnValue(pending());
+    await renderProfile(gateways);
+    expect(screen.getAllByLabelText('Đang tải')).toHaveLength(5);
   });
 
   it('hồ sơ chậm nhưng cửa hàng đã xong: chỉ thẻ hồ sơ là khung chờ, thẻ cửa hàng và các khối khác hiện', async () => {
@@ -390,6 +477,15 @@ describe('ProfileScreen khung 1c: lỗi', () => {
 });
 
 describe('ProfileScreen khung 1d: ngoại tuyến', () => {
+  it('ngoại tuyến nhưng lỗi KHÔNG phải lỗi mạng: đi khung 1c (thẻ lỗi), không phải "Đang ngoại tuyến"', async () => {
+    mockOffline = true;
+    const gateways = createFakePersonalGateways(NAMED);
+    gateways.account.failNext('AUTH_SERVICE_UNAVAILABLE');
+    await renderProfile(gateways);
+    await waitFor(() => expect(screen.getByTestId('profile-error')).toBeOnTheScreen());
+    expect(screen.queryByTestId('profile-offline')).toBeNull();
+  });
+
   it('chưa có dữ liệu hồ sơ: trạng thái "Đang ngoại tuyến" có nút Thử lại; tải lại khi bấm', async () => {
     mockOffline = true;
     const gateways = createFakePersonalGateways(NAMED);
