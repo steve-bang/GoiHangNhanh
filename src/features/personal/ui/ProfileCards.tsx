@@ -56,8 +56,8 @@ export function ShopCard({ shop }: { shop: ShopSummary | null }) {
 /**
  * Thẻ gói của UI-I01 (board 1a). Gói/thời hạn chưa có nguồn dữ liệu (O-06, O-16; Q-21c) nên mọi giá
  * trị là "Chưa có thông tin", huy hiệu "Sắp có" (luôn hiện, kể cả khi mở được); KHÔNG bịa tên gói hay
- * "Đang hoạt động". Mở UI-H01 khi mục `plan` ở `account-menu.ts` được bật (hôm nay bật); tắt thì khóa
- * (không mũi tên, không điều hướng).
+ * "Đang hoạt động". HÔM NAY ĐANG ẨN (mục `plan` ở `account-menu.ts` là `hidden`, Q-21ag): `ProfileScreen` không
+ * dựng thẻ này. Khi bật lại mục thì mở UI-H01; mục `coming_soon` thì khóa (không mũi tên, không điều hướng).
  */
 export function PlanHeroCard() {
   const { t } = useTranslation();
