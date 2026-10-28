@@ -47,6 +47,8 @@ interface TextFieldProps {
    * việc báo lỗi quá dài vẫn do màn đảm nhiệm.
    */
   counterMax?: number;
+  /** Giới hạn cứng của ô nhập (hệ điều hành chặn gõ/dán quá mức). Mặc định không giới hạn. */
+  maxLength?: number;
   /** Ô nhiều dòng (cao tối thiểu `field.multilineMinHeight`, chữ bắt đầu từ trên). Không kết hợp với `trailing`. */
   multiline?: boolean;
   /**
@@ -77,6 +79,7 @@ export function TextField({
   secureTextEntry,
   autoComplete,
   counterMax,
+  maxLength,
   multiline = false,
   required = false,
 }: TextFieldProps) {
@@ -117,6 +120,7 @@ export function TextField({
       autoCorrect={false}
       {...(secureTextEntry ? { secureTextEntry } : {})}
       {...(autoComplete ? { autoComplete } : {})}
+      {...(maxLength !== undefined ? { maxLength } : {})}
       {...(multiline ? { multiline: true, textAlignVertical: 'top' as const } : {})}
       onFocus={() => {
         setFocused(true);
