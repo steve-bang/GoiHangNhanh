@@ -266,6 +266,10 @@ Không route/mã UI mới (`UI-I02` giữ nguyên, Q-21b). Ảnh: `docs/assets/s
 6. Icon 7b/7c: ô tròn nền nhạt, glyph `swap`/`camera` (board: khiên đặc, máy quay có khóa đỏ); nút phụ có viền, nút vô hiệu 7c dạng viền mờ. 7b có thêm dòng phụ về dữ liệu trên máy. Lề hộp thoại 24dp (Q-21r).
 7. Bỏ câu "Chọn cửa hàng bạn muốn làm việc." (board không có).
 8. Cảnh báo chưa đồng bộ khi chuyển giữ BottomSheet (board không có khung; cần ba lối nên không vừa `ConfirmDialog` hai nút).
+9. Board vẽ ô tìm với 4 cửa hàng; app chỉ hiện ô tìm từ 6 cửa hàng (`SHOP_SEARCH_MIN_SHOPS`, Q-21u).
+10. Trợ năng 7a: danh sách là `radiogroup`; chỉ hàng đang chọn trong phiên báo `selected`, hàng "Đang dùng" chỉ có nhãn "Đang dùng" (tránh lẫn với hàng vừa chọn). Lọc không dấu có đường lui khi thiếu `normalize` (so khớp chữ thường).
+
+**Docs:** đã cập nhật `docs/09-ui-ux-design.md` (dòng UI-I02: tên màn Cửa hàng, nhãn "Bị khóa" thay "Tạm khóa", luồng Xác nhận, ngưỡng ô tìm); chờ BA xác nhận.
 
 **Chưa kiểm chứng:** thiết bị iOS/Android thật, chữ lớn (chưa chụp), VoiceOver/TalkBack (`radio` + `selected`/`disabled`), `String.prototype.normalize` của Hermes trên cả hai nền tảng (lọc không dấu), bàn phím trên màn hẹp, 7c nút vô hiệu đọc bởi trình đọc màn hình.
 
