@@ -147,6 +147,18 @@ Kiểm tra phiên bản: 2026-10-27, theo `node_modules/expo/bundledNativeModule
 
 ---
 
+## ADR-018 — Chấp nhận advisory `npm audit` và đóng băng tính năng phụ
+
+Kiểm tra: 2026-10-28 (`npm audit --omit=dev`: 22 lỗi, trong đó 11 mức high; kèm devDependencies là 32 lỗi).
+
+- **Phạm vi thật của các lỗi high:** thuộc chuỗi build của Expo (`@expo/cli`, `zod` 3.x, `node-forge`) và `@grpc/grpc-js` bên trong gói `firebase` (JS SDK). Gói `firebase` chỉ nằm ở `devDependencies` và chỉ `firebase/tests/*` (test Rules/Functions) dùng; mã app trong `src/` dùng `@react-native-firebase`. Không có lỗi nào nằm trên đường chạy của app trên thiết bị mà chúng tôi biết.
+- **Không áp dụng "fix" của audit:** các bản sửa đề xuất đều là hạ cấp (`expo@51.0.39`, `firebase@9.14.0`, `jest@25`). `npm audit fix` (không `--force`) chỉ giảm từ 23 xuống 22 lỗi production mà đổi khoảng 14 nghìn dòng `package-lock.json`, nên không làm.
+- **Hướng xử lý:** nâng theo `npx expo install --fix` khi Expo SDK hoặc `@expo/cli` ra bản vá; xem lại danh sách này mỗi lần nâng SDK. Chưa dùng `overrides` (có thể thêm cho `node-forge`/`@grpc/grpc-js` nếu người dùng muốn).
+- **Đóng băng tính năng phụ:** theo yêu cầu người dùng (mục tiêu "tính năng vừa đủ, chạy ổn định"), không thêm PR giao diện/tab Cá nhân mới, chỉ sửa lỗi, cho tới khi lõi bằng chứng (quay, lưu tệp, tải lên) chạy được trên thiết bị.
+- **CI:** thêm job `bundle` chạy `npx expo export` cho iOS và Android để bắt lỗi đóng gói Metro sớm (không phải build native).
+
+---
+
 ## ADR-019 — Đồng bộ đơn và phiên lên Firestore (một chiều, đăng khi đơn đã có phiên)
 
 Lý do: Rules chỉ cho tạo tài liệu bằng chứng khi `sessions/{sessionId}` đã có và khớp đơn/kiện (`firestore.rules`), mà đơn/phiên hôm nay chỉ nằm ở SQLite. Quyết định (Q-23): **Q-23a người dùng đã duyệt (2026-10-28)**; Q-23b, Q-23c, Q-23d vẫn là đề xuất chờ người dùng/BA duyệt:
