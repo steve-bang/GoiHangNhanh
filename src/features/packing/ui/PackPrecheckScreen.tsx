@@ -14,7 +14,7 @@ import {
 } from '@/platform';
 import { Button, Card, Screen, Text, useTheme } from '@/shared/ui';
 
-import { RECORDER_ENABLED, runPrecheck } from '../domain';
+import { DEFAULT_RECORDING_POLICY, RECORDER_ENABLED, runPrecheck } from '../domain';
 import { PackNotRecorded } from './PackNotRecorded';
 import { usePackSession } from './use-pack-session';
 
@@ -131,7 +131,13 @@ export function PackPrecheckScreen() {
       <View style={{ gap: tokens.space.sm }}>
         {result.issues.map((issue) => (
           <Card key={issue.id} tone="warning" testID={`precheck-issue-${issue.id}`}>
-            <Text accessibilityRole="alert">{t(`errors:${issue.code}`)}</Text>
+            <Text accessibilityRole="alert">
+              {issue.code === 'INSUFFICIENT_STORAGE'
+                ? t('screens:precheck.storageMinutes', {
+                    minutes: DEFAULT_RECORDING_POLICY.maxRecordMinutes,
+                  })
+                : t(`errors:${issue.code}`)}
+            </Text>
           </Card>
         ))}
       </View>

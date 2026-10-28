@@ -14,6 +14,7 @@ import type { CameraRecorderHandle, RecorderResult } from '@/platform/camera-rec
 export const mockRecorder = {
   mounted: false,
   recordCalls: 0,
+  lastRecordOptions: undefined as undefined | { maxDurationSec?: number },
   stopCalls: 0,
   torch: false,
   onReady: undefined as undefined | (() => void),
@@ -35,6 +36,7 @@ export const mockRecorder = {
 export function resetMockRecorder(): void {
   mockRecorder.mounted = false;
   mockRecorder.recordCalls = 0;
+  mockRecorder.lastRecordOptions = undefined;
   mockRecorder.stopCalls = 0;
   mockRecorder.torch = false;
   mockRecorder.onReady = undefined;
@@ -63,8 +65,9 @@ export const cameraRecorderMock = {
     mockRecorder.onError = onError;
     useEffect(() => {
       handleRef.current = {
-        record: () => {
+        record: (options?: { maxDurationSec?: number }) => {
           mockRecorder.recordCalls += 1;
+          mockRecorder.lastRecordOptions = options;
           const done = new Promise<RecorderResult>((resolve) => {
             mockRecorder.resolveDone = resolve;
           });

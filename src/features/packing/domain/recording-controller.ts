@@ -16,8 +16,12 @@ export interface RecordingHandle {
 }
 
 export interface Recorder {
-  /** Bắt đầu ghi một video. Ném lỗi (đồng bộ hoặc bất đồng bộ) nếu camera không bắt đầu được. */
-  record(): RecordingHandle;
+  /**
+   * Bắt đầu ghi một video. `maxDurationSec`: giới hạn thời lượng, camera tự dừng và trả tệp hợp lệ khi
+   * tới hạn (lưới cứng khi bộ đếm JS bị tạm dừng lúc app nền). Ném lỗi (đồng bộ hoặc bất đồng bộ) nếu
+   * camera không bắt đầu được.
+   */
+  record(options?: { readonly maxDurationSec?: number }): RecordingHandle;
 }
 
 export type PersistOutcome =
@@ -46,6 +50,8 @@ export interface RecordingPorts {
    * dung lượng lúc lưu). Không truyền thì bỏ qua kiểm tra (A04).
    */
   availableBytes?(): number | null;
+  /** Giới hạn thời lượng một lần quay (giây); không truyền = không giới hạn ở camera. */
+  readonly maxDurationSec?: number;
 }
 
 export type RecordingOutcome =
@@ -130,7 +136,9 @@ export async function startRecording(
 
   let handle: RecordingHandle;
   try {
-    handle = recorder.record();
+    handle = recorder.record(
+      ports.maxDurationSec !== undefined ? { maxDurationSec: ports.maxDurationSec } : undefined,
+    );
   } catch {
     await markFailed(ports, session, evidenceId, SESSION_STATUS.INTERRUPTED);
     return { kind: 'failed', reason: 'RECORDER_FAILED' };

@@ -67,13 +67,13 @@ describe('runPrecheck (A04)', () => {
   });
 
   it('thời lượng tối thiểu theo chính sách (về sau theo gói): đổi chính sách thì đổi ngưỡng', () => {
-    const free = requiredFreeBytes({ minRecordMinutes: 30 }) - 1;
+    const free = requiredFreeBytes({ maxRecordMinutes: 30 }) - 1;
     expect(runPrecheck({ ...ok, freeBytes: free }).status).toBe('ready');
-    expect(runPrecheck({ ...ok, freeBytes: free, policy: { minRecordMinutes: 30 } }).status).toBe(
+    expect(runPrecheck({ ...ok, freeBytes: free, policy: { maxRecordMinutes: 30 } }).status).toBe(
       'blocked',
     );
     expect(
-      runPrecheck({ ...ok, freeBytes: free + 1, policy: { minRecordMinutes: 30 } }).status,
+      runPrecheck({ ...ok, freeBytes: free + 1, policy: { maxRecordMinutes: 30 } }).status,
     ).toBe('ready');
   });
 

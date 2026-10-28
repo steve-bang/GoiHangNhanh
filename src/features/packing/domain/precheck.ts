@@ -57,13 +57,13 @@ export interface PrecheckPorts {
   readonly canWrite: () => boolean;
   /** Pin và nhiệt độ; không truyền = không biết. */
   readonly device?: DeviceConditionInput;
-  /** Chính sách thời lượng tối thiểu (O-05); mặc định 10 phút, về sau theo gói. */
+  /** Chính sách giới hạn quay (O-05); mặc định tối đa 10 phút, về sau theo gói. */
   readonly policy?: RecordingPolicy;
 }
 
 /**
  * Kiểm tra sẵn sàng ghi hình (docs/04 A04): quyền camera, chỗ trống đủ quay tối thiểu theo chính sách
- * (mặc định 10 phút, O-05), khả năng ghi tệp cục bộ, pin và nhiệt độ. Hàm thuần, chạy ngầm; chỉ trả
+ * (mặc định tối đa 10 phút mỗi lần quay, O-05), khả năng ghi tệp cục bộ, pin và nhiệt độ. Hàm thuần, chạy ngầm; chỉ trả
  * `blocked` khi có điều kiện không đạt, và liệt kê TẤT CẢ để người dùng xử lý một lượt. Không đọc được
  * dung lượng, pin hay nhiệt độ thì KHÔNG chặn (không đoán); thử ghi lỗi thì chặn. Pin chỉ chặn khi không
  * cắm sạc. Quyền camera còn `checking` thì `pending`, chưa kết luận.

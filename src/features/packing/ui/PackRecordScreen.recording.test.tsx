@@ -147,9 +147,7 @@ describe('màn quay khi bộ ghi thật bật', () => {
     mockFreeBytes = 10 * 1024 * 1024;
     const { session, files, orders } = await setup(<PackRecordScreen />);
     await act(async () => mockRecorder.signalReady());
-    expect(
-      await screen.findByText(/Dung lượng thiết bị không đủ để bắt đầu an toàn/),
-    ).toBeOnTheScreen();
+    expect(await screen.findByText(/Máy cần đủ chỗ cho 10 phút quay/)).toBeOnTheScreen();
     expect(screen.queryByText('Đang quay')).toBeNull();
     expect(mockRecorder.recordCalls).toBe(0);
     expect(await filesOf(files, session.id)).toEqual([]);
@@ -405,5 +403,110 @@ describe('Xác nhận / Hoàn tất theo tệp thật của phiên', () => {
     });
     expect(await screen.findByText(/chưa có video nào được lưu/)).toBeOnTheScreen();
     expect(screen.queryByText(/đã hoàn tất/i)).toBeNull();
+  });
+});
+
+describe('giới hạn quay tối đa 10 phút (O-05)', () => {
+  // Chỉ giả lập đồng hồ (setInterval + Date) để nhảy qua 10 phút; các hẹn giờ khác và microtask vẫn thật
+  // để React/RNTL chạy bình thường.
+  beforeEach(() =>
+    jest.useFakeTimers({
+      now: Date.now(),
+      doNotFake: [
+        'setTimeout',
+        'clearTimeout',
+        'setImmediate',
+        'clearImmediate',
+        'nextTick',
+        'queueMicrotask',
+        'performance',
+        'requestAnimationFrame',
+        'cancelAnimationFrame',
+        'requestIdleCallback',
+        'cancelIdleCallback',
+        'hrtime',
+      ],
+    }),
+  );
+  afterEach(() => jest.useRealTimers());
+
+  const advance = async (seconds: number) => {
+    await act(async () => {
+      jest.advanceTimersByTime(seconds * 1000);
+    });
+  };
+
+  async function startRecordingNow() {
+    const t = await setup(<PackRecordScreen />);
+    await act(async () => mockRecorder.signalReady());
+    await advance(0);
+    expect(mockRecorder.recordCalls).toBe(1);
+    return t;
+  }
+
+  it('báo camera giới hạn cứng 600 giây (camera tự dừng và trả tệp hợp lệ khi tới hạn)', async () => {
+    await startRecordingNow();
+    expect(mockRecorder.lastRecordOptions).toEqual({ maxDurationSec: 600 });
+  });
+
+  it('chưa gần hạn: không có dải báo; còn 1 phút: báo sắp tự dừng, vẫn đang quay', async () => {
+    await startRecordingNow();
+    await advance(8 * 60);
+    expect(screen.queryByTestId('recording-notice')).toBeNull();
+    await advance(60);
+    expect(screen.getByText('Sắp đủ 10 phút. App sẽ tự dừng quay.')).toBeOnTheScreen();
+    expect(mockRecorder.stopCalls).toBe(0);
+    expect(screen.getByText('Đang quay')).toBeOnTheScreen();
+  });
+
+  it('đủ 10 phút: tự dừng đúng một lần, báo đang dừng và lưu; lưu xong sang xác nhận kèm thông báo', async () => {
+    const { session, files } = await startRecordingNow();
+    await advance(10 * 60);
+    expect(mockRecorder.stopCalls).toBe(1);
+    expect(screen.getByText('Đã đủ 10 phút. App đang dừng quay và lưu video.')).toBeOnTheScreen();
+    await advance(30); // quá hạn thêm: không dừng lần hai
+    expect(mockRecorder.stopCalls).toBe(1);
+    await act(async () => mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mov' }));
+    await advance(0);
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packConfirm, {
+      sessionId: session.id,
+    });
+    expect(
+      screen.getByText('Mỗi lần quay tối đa 10 phút nên app đã tự dừng. Video đã lưu trên máy.'),
+    ).toBeOnTheScreen();
+    expect((await filesOf(files, session.id))[0]?.state).toBe('queued');
+  });
+
+  it('camera tự dừng đúng hạn (không do app): vẫn báo cho người dùng', async () => {
+    await startRecordingNow();
+    await advance(10 * 60 - 1);
+    // camera đóng tệp ở hạn mà bộ đếm của app chưa kịp dừng
+    await act(async () => mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mp4' }));
+    await advance(0);
+    expect(
+      screen.getByText('Mỗi lần quay tối đa 10 phút nên app đã tự dừng. Video đã lưu trên máy.'),
+    ).toBeOnTheScreen();
+  });
+
+  it('người dùng tự dừng sớm: không có thông báo giới hạn', async () => {
+    const { session } = await startRecordingNow();
+    await advance(5 * 60);
+    await fireEvent.press(screen.getByRole('button', { name: 'Dừng quay' }));
+    await act(async () => mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mp4' }));
+    await advance(0);
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packConfirm, {
+      sessionId: session.id,
+    });
+    expect(screen.queryByText(/app đã tự dừng/)).toBeNull();
+  });
+
+  it('hết giờ nhưng lưu lỗi: nói lỗi đúng, KHÔNG báo "Video đã lưu"', async () => {
+    mockPersist.mockReturnValue({ ok: false, reason: 'STORAGE_FULL' });
+    await startRecordingNow();
+    await advance(10 * 60);
+    await act(async () => mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mp4' }));
+    await advance(0);
+    expect(screen.getByText(/Máy đã đầy bộ nhớ/)).toBeOnTheScreen();
+    expect(screen.queryByText(/Video đã lưu trên máy/)).toBeNull();
   });
 });

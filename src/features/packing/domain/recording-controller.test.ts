@@ -269,6 +269,36 @@ describe('startRecording', () => {
     expect(await t.fileState()).toBe('local_save_failed');
   });
 
+  it('giới hạn thời lượng (O-05) được chuyển cho bộ ghi để camera tự dừng đúng hạn; không đặt thì không giới hạn', async () => {
+    const seen: (number | undefined)[] = [];
+    const t = await setup();
+    const withRecorder = (maxDurationSec?: number): RecordingPorts => ({
+      ...t.ports,
+      ...(maxDurationSec !== undefined ? { maxDurationSec } : {}),
+      recorder: {
+        record: (options) => {
+          seen.push(options?.maxDurationSec);
+          return t.ports.recorder.record();
+        },
+      },
+    });
+    await startRecording(withRecorder(600), t.session);
+    const other = await setup();
+    await startRecording(
+      {
+        ...other.ports,
+        recorder: {
+          record: (options) => {
+            seen.push(options?.maxDurationSec);
+            return other.ports.recorder.record();
+          },
+        },
+      },
+      other.session,
+    );
+    expect(seen).toEqual([600, undefined]);
+  });
+
   it('không tạo được bản ghi tệp (kho lỗi): không quay', async () => {
     const t = await setup();
     const broken = {
