@@ -1,6 +1,6 @@
 # Kế hoạch nâng cấp giao diện tab Cá nhân theo design board 07
 
-> Trạng thái: **kế hoạch đã được người dùng duyệt; các mặc định Q-21a..i đã được ủy quyền áp dụng** (xem [decisions.md Q-21](decisions.md)). Câu hỏi chưa chốt (Q-21j..n) cần designer/BA. **PR-A (token + thành phần dùng chung) đã squash-merge vào `main`** (mục 6.1); **PR-B (màn chính 1a-1e) đã làm trên nhánh `claude/personal-tab-redesign-pr-b`** (mục 6.2, chưa mở PR); các PR C-I chưa làm.
+> Trạng thái: **kế hoạch đã được người dùng duyệt; các mặc định Q-21a..i đã được ủy quyền áp dụng** (xem [decisions.md Q-21](decisions.md)). Câu hỏi chưa chốt (Q-21j..n) cần designer/BA. **PR-A (token + thành phần dùng chung) đã squash-merge vào `main`** (mục 6.1); **PR-B (màn chính 1a-1e) đã làm trên nhánh `claude/personal-tab-redesign-pr-b`, đang review ở PR #15** (mục 6.2); các PR C-I chưa làm.
 
 ## 1. Mục tiêu, nguồn và phạm vi
 
@@ -186,18 +186,18 @@ Mỗi PR: nhánh tách từ `main` mới nhất sau khi PR trước merge; theo 
 - **Lệch so với plan/board:** (1) `TextField` dùng `counterMax` (đếm theo `value.length`) thay vì chuỗi "20/50" tự truyền, để D22 đúng từ gốc; (2) viền hộp kiểm dùng `text.secondary` thay `border.default` (tương phản); (3) thẻ "Đang quay video" của khung 21 chưa dựng (ngoại lệ D-18 chỉ cho chấm ghi hình); (4) nhãn mặc định `StatusCard` theo nhãn chuẩn docs/09, không phải chữ board; (5) icon hộp thoại trong ô tròn nền nhạt thay vì biểu tượng đặc; (6) ngắt kết nối dùng `unlink-outline`. Chi tiết và ảnh: `docs/assets/screens/personal-tab-v3/README.md`.
 - **Chưa làm ở PR-A:** `ConfirmDialog` chưa có nút xác nhận vô hiệu (khung 7c) và chưa có liên kết "Vẫn đăng xuất" (D21): để PR-C/PR-D. Chưa kiểm chứng trên thiết bị, chưa chụp ở chữ lớn.
 
-### 6.2 Trạng thái PR-B (đã làm, chờ duyệt)
+### 6.2 Trạng thái PR-B (đã làm, đang review ở PR #15)
 
-Màn UI-I01 dựng lại theo khung 1a-1e; **không route/mã UI mới** (Q-21b). Tệp: `ProfileScreen.tsx`, `ProfileCards.tsx` (thẻ cửa hàng, thẻ gói, khối dữ liệu bằng chứng, trạng thái 1d/1e), `ProfileSkeletons.tsx` (khung chờ 1b/1c), `ProfileSummaryCard.tsx`, `RegionParts.tsx` (`RegionError card`), `account-menu.ts` (`planMenuItem`), `personal.json`; dùng chung: glyph `cloud` mới, `ErrorState variant="card"` có nút thử lại là nút chính. Ảnh: `docs/assets/screens/personal-tab-v3/pr-b-*.png` (xem README ở đó).
+Màn UI-I01 dựng lại theo khung 1a-1e; **không route/mã UI mới** (Q-21b). Tệp: `ProfileScreen.tsx`, `ProfileCards.tsx` (thẻ cửa hàng, thẻ gói, khối dữ liệu bằng chứng, trạng thái 1d/1e), `ProfileSkeletons.tsx` (khung chờ 1b/1c), `ProfileSummaryCard.tsx`, `RegionParts.tsx` (`RegionError card`), `account-menu.ts` (`planMenuItem`), `personal.json`; dùng chung: glyph `cloud` mới, `ErrorState variant="card"` có nút thử lại là nút chính. Ảnh: `docs/assets/screens/personal-tab-v3/pr-b-*.png` (xem README ở đó). **Ảnh `pr-b-1a-*` chưa chụp lại sau review**: môi trường này không có trình duyệt và không có react-native-web; ba ô bằng chứng nay có thêm dòng "Chưa có số liệu" dưới nhãn, ảnh cũ còn ở dạng chỉ nhãn. Chụp lại ở lần có trình duyệt.
 
 **Cách thể hiện từng khung**
 
 | Khung | Cách làm |
 |---|---|
-| 1a | Header chỉ "Cá nhân" (không mũi tên, không icon phải: D28/Q-21k); thẻ hồ sơ; thẻ cửa hàng (`IconTile store blue`); `HeroCard` gói; khối "Dữ liệu bằng chứng" (3 `MetricTile`) + nút "Xem trung tâm đồng bộ" (`ROUTES.sync`); rồi nhóm Tài khoản (Đổi mật khẩu, chỉ khi đăng nhập bằng mật khẩu) / Cài đặt / Hỗ trợ / Đăng xuất + phiên bản |
-| 1b | Chỉ khi **cả hai** khu vực (hồ sơ, cửa hàng) chưa xong: khung chờ cho cả năm khối. Một khu vực xong trước thì khu vực đó hiện thật, khu vực kia vẫn khung chờ; thẻ gói và khối bằng chứng (nội dung tĩnh) hiện ngay |
+| 1a | Header chỉ "Cá nhân" (không mũi tên, không icon phải: D28/Q-21k); thẻ hồ sơ; thẻ cửa hàng (`IconTile store blue`); `HeroCard` gói; khối "Dữ liệu bằng chứng" (3 `MetricTile`, giá trị "Chưa có số liệu") + nút "Xem trung tâm đồng bộ" (`ROUTES.sync`); rồi nhóm Tài khoản (Đổi mật khẩu, chỉ khi đăng nhập bằng mật khẩu) / Cài đặt / Hỗ trợ / Đăng xuất + phiên bản |
+| 1b | Mỗi thẻ khung chờ là MỘT phần tử "Đang tải" cho trình đọc màn hình (thanh con bị ẩn). Chỉ khi **cả hai** khu vực (hồ sơ, cửa hàng) chưa xong: khung chờ cho cả năm khối. Một khu vực xong trước thì khu vực đó hiện thật, khu vực kia vẫn khung chờ; thẻ gói và khối bằng chứng (nội dung tĩnh) hiện ngay |
 | 1c | Lỗi hồ sơ: khung chờ mờ (ẩn khỏi trình đọc màn hình) + `ErrorState variant="card"`; lỗi cửa hàng: thẻ lỗi tại chỗ. Mỗi khu vực độc lập, không che khu vực đã tải xong |
-| 1d | **Chỉ khi ngoại tuyến và chưa có dữ liệu hồ sơ nào** (lỗi tải): `EmptyState icon="disconnect"` + "Thử lại". Đã có dữ liệu thì GIỮ dữ liệu + thẻ cảnh báo "dữ liệu đã lưu, có thể chưa mới nhất" (hành vi trung thực cũ), không xóa vì ngoại tuyến |
+| 1d | **Chỉ khi ngoại tuyến, lỗi là lỗi mạng (`AUTH_NETWORK_ERROR`) và chưa có dữ liệu hồ sơ nào**; lỗi mã khác dù đang ngoại tuyến đi khung 1c: `EmptyState icon="disconnect"` + "Thử lại". Đã có dữ liệu thì GIỮ dữ liệu + thẻ cảnh báo "dữ liệu đã lưu, có thể chưa mới nhất" (hành vi trung thực cũ), không xóa vì ngoại tuyến |
 | 1e | Q-21e cách 1: chỉ thay thẻ hồ sơ bằng `EmptyState icon="user"` + "Cập nhật" (mở Sửa họ tên); thẻ cửa hàng, gói, bằng chứng, menu, Đăng xuất vẫn dùng được |
 
 **Quyết định cho Q-21l (ghi theo ủy quyền, chờ designer):** board chỉ thấy hàng "Cài đặt ›". Giữ cấu trúc nhóm hiện tại dưới nút đồng bộ: Tài khoản (Đổi mật khẩu) / Cài đặt (Thông báo, Quyền riêng tư và bảo mật) / Hỗ trợ (Trợ giúp), rồi Đăng xuất; không thêm màn trung tâm "Cài đặt". Nhóm "Cửa hàng và gói" bỏ tiêu đề vì thẻ cửa hàng và thẻ gói đã đứng riêng; mục `plan` của `account-menu.ts` điều khiển thẻ gói (bật `available` thì thẻ mở được, hôm nay khóa + "Sắp có"). Mục `members` vẫn ẩn.
@@ -206,7 +206,7 @@ Màn UI-I01 dựng lại theo khung 1a-1e; **không route/mã UI mới** (Q-21b)
 
 1. Không có huy hiệu "Đã xác thực": `UserProfile` chưa có dữ liệu xác thực email (Q-21m; xem câu hỏi mới ở `decisions.md`).
 2. Thẻ gói: tên gói "Chưa có thông tin", huy hiệu "Sắp có", không "Gói tiêu chuẩn"/"Đang hoạt động", không mũi tên (khóa, Q-21c); nền phẳng `brand.deep` (Q-21a).
-3. Ba ô bằng chứng chỉ có nhãn, **không số** (đúng board 1a): chưa có tệp bằng chứng, và `countUnsyncedOnDevice` đếm cả máy (mọi cửa hàng) nên không khớp nghĩa "Đang chờ đồng bộ" của một cửa hàng; PR-F quyết định nguồn số. Không có chấm cam; tên "Trên đám mây" giữ theo board (O-28c: tên chính thức còn mở; hôm nay chưa có gì hiện là đã ở đó).
+3. Ba ô bằng chứng giữ đúng ba nhãn của board nhưng mỗi ô có giá trị "Chưa có số liệu" (đồng nhất; trợ năng đọc "Trên đám mây: Chưa có số liệu"; sau review PR #15, Q-21p cách 1), **không số**: chưa có tệp bằng chứng, và `countUnsyncedOnDevice` đếm cả máy (mọi cửa hàng) nên không khớp nghĩa "Đang chờ đồng bộ" của một cửa hàng; PR-F quyết định nguồn số. Không có chấm cam; tên "Trên đám mây" giữ theo board (O-28c: tên chính thức còn mở; hôm nay chưa có gì hiện là đã ở đó).
 4. Khối bằng chứng không có mũi tên "›" ở tiêu đề (chưa có màn khung 11; PR-F thêm).
 5. Thẻ hồ sơ vẫn có mũi tên (board không vẽ) để lối vào Sửa họ tên không bị ẩn.
 6. 1c: khung chờ chỉ ở chỗ thẻ hồ sơ; các khối bên dưới là nội dung thật (không vẽ khung chờ mờ cho nội dung tĩnh). Lời lỗi theo mã lỗi (docs/04-05), không phải "Không thể tải thông tin cá nhân".

@@ -48,3 +48,5 @@
 | Header | lệch có chủ đích | như 1a | như 1a | như 1a | như 1a | không mũi tên quay lại, không icon phải (D28) |
 | Trạng thái | đạt | đạt | đạt | đạt | đạt | |
 | Chuỗi chữ | lệch có chủ đích | - | lệch | lệch | lệch | xem mục 6.2 của plan (huy hiệu, gói, câu lỗi, "Hãy" thay "Vui lòng") |
+
+**Ảnh `pr-b-1a-*` chưa chụp lại sau review PR #15** (không có trình duyệt/react-native-web trong môi trường): ba ô "Dữ liệu bằng chứng" nay có thêm dòng "Chưa có số liệu" dưới nhãn; ảnh hiện còn là bản chỉ nhãn. Khung 1b khác ảnh ở trợ năng (mỗi thẻ một phần tử "Đang tải"), hình không đổi.
