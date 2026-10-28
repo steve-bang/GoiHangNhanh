@@ -423,7 +423,7 @@
     },
     "syncLink": "Xem trung tâm đồng bộ",
     "dataTitle": "Dữ liệu sẽ ra sao",
-    "dataDispute": "Bằng chứng đang tranh chấp được giữ lại theo chính sách dự kiến, không bị xóa ngầm.",
+    "dataDispute": "Bằng chứng đang tranh chấp không bị xóa tự động. Cách xử lý khi xóa tài khoản chưa được công bố.",
     "dataDevice": "Cách xử lý video và dữ liệu trên máy này chưa được công bố.",
     "dataServer": "Thời gian và cách xóa dữ liệu trên máy chủ chưa được công bố.",
     "agree": "Tôi hiểu và đồng ý",
