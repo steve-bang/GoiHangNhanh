@@ -47,6 +47,20 @@ npx expo export --platform android
 
 Chạy app trên máy ảo/thiết bị (dev build, **không dùng Expo Go**) và triển khai lên cửa hàng: xem [DEPLOYMENT.md](DEPLOYMENT.md).
 
+## Chạy trên máy ảo (macOS)
+
+**Cài một lần:** Node theo `.nvmrc` (`nvm use`), `npm ci`; iOS: Xcode + iOS Simulator; Android: Android Studio + một AVD (Device Manager). Với Firebase thật, tải tệp cấu hình app từ Firebase Console (Project settings → Your apps; cách tạo dự án: [firebase-setup.md](docs/engineering/firebase-setup.md) mục 2) và đặt vào `firebase/config/dev/` (`GoogleService-Info.plist`, `google-services.json`; dự án prod thì `firebase/config/prod/`). Hai tệp không commit.
+
+**Chạy:** ở thư mục gốc repo.
+
+| Lệnh                                | Việc                                                                |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| `npm run dev:ios` / `dev:android`   | Mở máy ảo, nối Firebase thật dự án **dev**, chạy dev client         |
+| `npm run prod:ios` / `prod:android` | Như trên, nối Firebase **prod** (điền `scripts/env/prod.env` trước) |
+| `npm run fake:ios` / `fake:android` | Cổng giả trong Expo Go, không cần Firebase hay build native         |
+
+Lần đầu `dev`/`prod` chưa có app trên máy ảo nên script tự build (`expo run:*`, vài phút). **Build iOS chưa chạy được với Xcode 16.4** (cần Xcode 26+); khi đó dùng Android hoặc `fake:ios`. Chọn máy: `AVD_NAME=<tên AVD>`, `IOS_DEVICE="iPhone 16"`. Chưa thử trên máy thật; lỗi thường gặp: thiếu tệp cấu hình (script báo rõ), thiếu `LANG=en_US.UTF-8` khi `pod install`.
+
 ## Lệnh thường dùng
 
 | Lệnh                              | Việc                                                                          |
