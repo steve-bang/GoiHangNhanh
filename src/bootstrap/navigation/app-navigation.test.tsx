@@ -160,6 +160,25 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     expectTabBarVisible(false);
   });
 
+  it('Gói dịch vụ: "Chi tiết gói" và Lịch sử thanh toán (route con UI-H01) ẩn thanh tab, Back về từng màn', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.plan.path });
+    await fireEvent.press(await screen.findByTestId('plan-detail-action'));
+    expect(screen.getByTestId('screen-UI-H01-detail')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await fireEvent.press(screen.getByTestId('plan-detail-history'));
+    expect(screen.getByTestId('screen-UI-H01-payments')).toBeOnTheScreen();
+    expectTabBarVisible(false);
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-H01-detail')).toBeOnTheScreen();
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-H01')).toBeOnTheScreen();
+    expectTabBarVisible(true);
+  });
+
   it('Hàng hoàn và Đồng bộ không còn là tab: mở được nhưng không có thanh tab', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.returns.path });
     expect(screen.getByTestId('screen-UI-D01')).toBeOnTheScreen();
