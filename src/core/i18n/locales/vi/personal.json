@@ -168,7 +168,7 @@
   "planScreen": {
     "title": "Chưa có thông tin",
     "retention": "Thời hạn lưu: Chưa có thông tin",
-    "benefitsTitle": "Quyền lợi",
+    "benefitsTitle": "Chính sách lưu trữ dự kiến",
     "benefits": {
       "retention": "Bằng chứng được lưu theo thời hạn của gói",
       "dispute": "Bằng chứng đang tranh chấp được giữ lại trong thời gian xử lý",
@@ -179,7 +179,7 @@
     "upgradeAction": "Nâng cấp gói",
     "upgradeSoon": "Sắp có. Hiện chưa nâng cấp được trong ứng dụng.",
     "detail": {
-      "benefitsTitle": "Quyền lợi chi tiết",
+      "benefitsTitle": "Chính sách lưu trữ dự kiến",
       "retentionTitle": "Thời hạn lưu",
       "retentionValue": "Chưa có thông tin",
       "historyAction": "Lịch sử thanh toán"
