@@ -38,7 +38,7 @@ export function PlanDetailScreen() {
       <Card tone="brand" testID="plan-detail-card">
         <View style={{ gap: tokens.space.lg }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.md }}>
-            <IconTile icon="clipboard" size="lg" />
+            <IconTile icon="clipboard" size="lg" tone="neutral" />
             <View style={{ flex: 1, flexShrink: 1, gap: tokens.space.sm }}>
               <Text variant="sectionTitle" testID="plan-detail-name">
                 {t('personal:planScreen.title')}
