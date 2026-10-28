@@ -89,7 +89,11 @@ export function ShopSwitchScreen() {
       ) : null}
       {list && list.length > 0 ? (
         visible.length > 0 ? (
-          <ListGroup testID="switch-shop-list">
+          <ListGroup
+            testID="switch-shop-list"
+            accessibilityRole="radiogroup"
+            accessibilityLabel={t('personal:switchShop.listLabel')}
+          >
             {visible.map((shop) => (
               <ShopSwitchRow
                 key={shop.id}

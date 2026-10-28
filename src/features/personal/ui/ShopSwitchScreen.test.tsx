@@ -118,6 +118,15 @@ describe('ShopSwitchScreen (UI-I02 route con, PER-07)', () => {
     expect(gateways.account.switchShopCalls).toEqual([]);
   });
 
+  it('trợ năng: danh sách là radiogroup; hàng "Đang dùng" không báo selected, chỉ đọc nhãn "Đang dùng"', async () => {
+    await setup();
+    expect(screen.getByTestId('switch-shop-list').props.accessibilityRole).toBe('radiogroup');
+    const current = screen.getByTestId('switch-shop-item-shop-a');
+    expect(current.props.accessibilityState.selected).toBeUndefined();
+    expect(current.props.accessibilityLabel).toMatch(/Đang dùng/);
+    expect(screen.getByTestId('switch-shop-item-shop-b').props.accessibilityRole).toBe('radio');
+  });
+
   it('ít cửa hàng (dưới ngưỡng): không có ô tìm', async () => {
     await setup();
     expect(screen.queryByTestId('switch-shop-search')).toBeNull();

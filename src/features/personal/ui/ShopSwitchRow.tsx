@@ -86,7 +86,7 @@ export function ShopSwitchRow({
         testID={testID}
         accessible
         accessibilityLabel={label}
-        accessibilityState={{ disabled: suspended, selected: isCurrent }}
+        accessibilityState={{ disabled: suspended }}
         style={[styles.row, rowStyle]}
       >
         {content}

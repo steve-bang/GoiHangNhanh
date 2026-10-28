@@ -125,6 +125,7 @@
     "leaveCancel": "Tiếp tục sửa"
   },
   "switchShop": {
+    "listLabel": "Danh sách cửa hàng",
     "dialogTitle": "Xác nhận chuyển cửa hàng",
     "dialogMessage": "Bạn có chắc chắn muốn chuyển sang {{name}}?",
     "confirm": "Xác nhận",
