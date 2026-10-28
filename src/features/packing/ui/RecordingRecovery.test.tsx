@@ -33,7 +33,13 @@ const flush = () => act(async () => void (await new Promise((r) => setTimeout(r,
 
 type Files = ReturnType<typeof createMemoryEvidenceFileStore>;
 
-async function seedFile(files: Files, shopId: string, id: string, sessionId: string) {
+async function seedFile(
+  files: Files,
+  shopId: string,
+  id: string,
+  sessionId: string,
+  createdAtDevice = 1,
+) {
   await files.create({
     id: id as EvidenceId,
     shopId: shopId as never,
@@ -42,7 +48,7 @@ async function seedFile(files: Files, shopId: string, id: string, sessionId: str
     sessionId: sessionId as SessionId,
     group: 'pack',
     kind: 'video',
-    createdAtDevice: 1,
+    createdAtDevice,
   });
 }
 
@@ -189,5 +195,77 @@ describe('RecordingRecovery', () => {
     expect((await orders.getSession(LOCAL_SHOP_ID, session.id))?.sessionStatus).toBe('ended');
     expect(await orders.hasRecordingInProgress(LOCAL_SHOP_ID)).toBe(false);
     expect(screen.queryByText(/Lần quay trước bị gián đoạn/)).toBeNull();
+  });
+
+  describe('chưa đọc được kho', () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    const tick = (ms: number) => act(async () => void (await jest.advanceTimersByTimeAsync(ms)));
+
+    async function setupFlaky(failures: number) {
+      mockEnabled = true;
+      const orders = createMemoryOrderStore();
+      const real = createMemoryEvidenceFileStore();
+      const details = await seedOrder(orders, sampleOrder());
+      const session = sampleSession(details, 1);
+      await orders.saveSession(session);
+      await orders.updateSessionStatus(LOCAL_SHOP_ID, session.id, 'recording');
+      await seedFile(real, LOCAL_SHOP_ID, 'ev-cu', session.id);
+      let remaining = failures;
+      let calls = 0;
+      const files: Files = {
+        ...real,
+        listShopsWithStates: async (states) => {
+          calls += 1;
+          if (remaining > 0) {
+            remaining -= 1;
+            throw new Error('db');
+          }
+          return real.listShopsWithStates(states);
+        },
+      };
+      const view = await renderWithProviders(<RecordingRecovery />, {
+        orderStore: orders,
+        evidenceFileStore: files,
+      });
+      return { real, orders, session, view, calls: () => calls };
+    }
+
+    it('lỗi đọc kho: tự thử lại bằng đồng hồ riêng, không phải chờ lần mở app sau', async () => {
+      const t = await setupFlaky(1);
+      await tick(0);
+      expect(t.calls()).toBe(1);
+      expect((await t.real.get(LOCAL_SHOP_ID, 'ev-cu' as EvidenceId))?.state).toBe('recording');
+      await tick(15_000);
+      expect(t.calls()).toBe(2);
+      expect((await t.real.get(LOCAL_SHOP_ID, 'ev-cu' as EvidenceId))?.state).toBe('unrecoverable');
+      expect((await t.orders.getSession(LOCAL_SHOP_ID, t.session.id))?.sessionStatus).toBe(
+        'interrupted',
+      );
+    });
+
+    it('thử lại KHÔNG đè lên lần quay của lần chạy này (tạo sau mốc khởi động)', async () => {
+      const t = await setupFlaky(1);
+      await tick(0);
+      // người dùng bắt đầu quay trong lúc chờ thử lại
+      await seedFile(t.real, LOCAL_SHOP_ID, 'ev-dang-quay', t.session.id, Date.now() + 1);
+      await tick(15_000);
+      expect((await t.real.get(LOCAL_SHOP_ID, 'ev-cu' as EvidenceId))?.state).toBe('unrecoverable');
+      expect((await t.real.get(LOCAL_SHOP_ID, 'ev-dang-quay' as EvidenceId))?.state).toBe(
+        'recording',
+      );
+    });
+
+    it('lỗi liên tục: dừng sau số lần tối đa, không thử mãi; gỡ màn thì hủy hẹn', async () => {
+      const t = await setupFlaky(99);
+      for (let i = 0; i < 12; i += 1) await tick(5 * 15_000);
+      expect(t.calls()).toBe(5);
+      const gone = await setupFlaky(99);
+      await tick(0);
+      await gone.view.unmount();
+      await tick(10 * 15_000);
+      expect(gone.calls()).toBe(1);
+    });
   });
 });
