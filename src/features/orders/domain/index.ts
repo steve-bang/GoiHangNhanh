@@ -30,7 +30,7 @@ export type {
 } from './order-list';
 export { canRecordNow, summarizeOrderEvidence } from './order-evidence';
 export type { OrderEvidenceSummary } from './order-evidence';
-export { countEvidence } from './evidence-items';
+export { countEvidence, packItems, summarizePackEvidence } from './evidence-items';
 export type { EvidenceCounts, OrderEvidenceItem } from './evidence-items';
 export { formatDeviceDateTime } from './format';
 export { LOCAL_SHOP_ID } from './local-shop';

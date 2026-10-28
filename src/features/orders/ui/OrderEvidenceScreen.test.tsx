@@ -25,10 +25,6 @@ jest.mock(
 // Hôm nay nguồn thật luôn rỗng; các nhánh khác kiểm bằng dữ liệu giả CỦA TEST (không nằm trong app).
 const mockItems: OrderEvidenceItem[] = [];
 jest.mock('../data/order-evidence-source', () => ({
-  loadEvidenceStates: async (_shop: string, ids: string[]) =>
-    new Map<string, FileState[]>(
-      mockItems.length ? ids.map((id) => [id, mockItems.map((i) => i.state)]) : [],
-    ),
   loadEvidenceItems: async () => mockItems,
 }));
 
@@ -92,6 +88,17 @@ describe('UI-E03 Bằng chứng của đơn', () => {
       }),
     );
     expect(await store.listSessionsOfOrder(d.order.shopId, d.order.id)).toHaveLength(1);
+  });
+
+  it('đơn chỉ có tệp hàng hoàn: nhóm Đóng gói vẫn trống và còn nút Quay đóng gói', async () => {
+    const store = createMemoryOrderStore();
+    const d = makeOrder('DH-EV-R', { at: AT });
+    await store.saveNewOrder(d);
+    item('r', 'queued', { group: 'return' });
+    await open(store, d.order.id);
+    expect(await screen.findByText('Đơn này chưa có bằng chứng.')).toBeOnTheScreen();
+    expect(screen.getByText('Hàng hoàn (1)')).toBeOnTheScreen();
+    expect(screen.getByTestId('order-evidence-record')).toBeOnTheScreen();
   });
 
   it('nhóm Hàng hoàn trống có câu riêng', async () => {

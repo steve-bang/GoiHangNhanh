@@ -13,7 +13,7 @@ import {
   FilterChips,
   IconTile,
   Screen,
-  Skeleton,
+  SkeletonCard,
   Text,
   useTheme,
   type ChipOption,
@@ -25,6 +25,7 @@ import {
   formatDeviceDateTime,
   isSessionActive,
   summarizeOrderEvidence,
+  summarizePackEvidence,
   type OrderEvidenceItem,
   type PackingSession,
 } from '../domain';
@@ -63,7 +64,7 @@ export function OrderEvidenceScreen() {
         <Text variant="formBody" accessibilityLiveRegion="polite" color="inkMuted">
           {t('screens:orderEvidence.loading')}
         </Text>
-        <Skeleton height={72} />
+        <SkeletonCard />
       </Screen>
     );
   }
@@ -144,7 +145,7 @@ function EvidenceReady({
     { key: 'pack', label: t('screens:orderEvidence.groupPack', { count: packItems.length }) },
     { key: 'return', label: t('screens:orderEvidence.groupReturn', { count: returnItems.length }) },
   ];
-  const record = canRecordNow(summarizeOrderEvidence(items.map((i) => i.state)));
+  const record = canRecordNow(summarizePackEvidence(items));
 
   return (
     <Screen

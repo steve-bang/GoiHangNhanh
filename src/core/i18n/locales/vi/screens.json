@@ -439,7 +439,6 @@
     "copiedOrderCode": "Đã sao chép mã đơn.",
     "recordPack": "Quay đóng gói",
     "viewEvidence": "Xem bằng chứng",
-    "recordNow": "Quay ngay",
     "history": "Lịch sử hoạt động",
     "historyCreated": "Đã tạo đơn",
     "historySession": "Đã bắt đầu phiên quay kiện {{index}}",
@@ -453,7 +452,7 @@
     "emptyTitle": "Đơn này chưa có bằng chứng.",
     "emptyMessage": "Bạn có thể quay đóng gói cho đơn này.",
     "emptyReturnTitle": "Chưa có bằng chứng hàng hoàn.",
-    "emptyReturnMessage": "Bằng chứng hàng hoàn của đơn này sẽ hiện ở đây.",
+    "emptyReturnMessage": "Đơn này chưa có tệp hàng hoàn nào.",
     "recordPack": "Quay đóng gói",
     "kind": {
       "pack": { "video": "Video đóng gói", "photo": "Ảnh đóng gói" },

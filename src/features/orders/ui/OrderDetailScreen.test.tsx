@@ -6,7 +6,6 @@ import { typography } from '@/core/theme';
 import { AppError } from '@/core/errors/app-error';
 import type { PackageId, SessionId, ShopId } from '@/core/ids';
 import { ROUTES } from '@/core/navigation';
-import type { FileState } from '@/features/evidence';
 import { resetMockScanner } from '@/test-utils/mock-barcode-scanner';
 import {
   mockNavigation,
@@ -31,10 +30,8 @@ jest.mock(
 );
 const mockCopy = jest.fn<Promise<boolean>, [string]>();
 jest.mock('@/platform/clipboard', () => ({ copyText: (text: string) => mockCopy(text) }));
-const mockEvidence = new Map<string, FileState[]>();
 const mockItems: OrderEvidenceItem[] = [];
 jest.mock('../data/order-evidence-source', () => ({
-  loadEvidenceStates: async () => mockEvidence,
   loadEvidenceItems: async () => mockItems,
 }));
 
@@ -43,7 +40,6 @@ beforeEach(() => {
   resetMockScanner();
   mockCopy.mockReset();
   mockCopy.mockResolvedValue(true);
-  mockEvidence.clear();
   mockItems.length = 0;
 });
 
@@ -272,20 +268,22 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
       const store = createMemoryOrderStore();
       const d = makeOrder('HAS-EV', { at: CREATED });
       await store.saveNewOrder(d);
-      mockEvidence.set(d.order.id, ['verified', 'uploaded']);
+      mockItems.push(
+        { id: 'v', group: 'pack', kind: 'video', capturedAtDevice: CREATED, state: 'verified' },
+        { id: 'u', group: 'pack', kind: 'video', capturedAtDevice: CREATED, state: 'uploaded' },
+      );
       await open(store, d.order.id);
       await screen.findByTestId('detail-order-code');
       expect(screen.queryByTestId('order-detail-record')).toBeNull();
       expect(screen.getByText('Đã tải lên')).toBeOnTheScreen(); // không che bằng "Đã xác minh"
       expect(screen.queryByTestId('detail-no-evidence')).toBeNull();
-      expect(screen.queryByTestId('detail-evidence-counts')).toBeNull(); // không có mục tệp thật: không bịa số
+      expect(screen.getByTestId('detail-evidence-counts')).toHaveTextContent('2 video · 0 ảnh'); // số đếm cùng nguồn với nhãn
     });
 
     it('có mục tệp thật thì hiện số video/ảnh đếm từ chính các mục đó', async () => {
       const store = createMemoryOrderStore();
       const d = makeOrder('CNT', { at: CREATED });
       await store.saveNewOrder(d);
-      mockEvidence.set(d.order.id, ['queued', 'queued', 'queued']);
       mockItems.push(
         { id: 'a', group: 'pack', kind: 'video', capturedAtDevice: CREATED, state: 'queued' },
         { id: 'b', group: 'pack', kind: 'photo', capturedAtDevice: CREATED, state: 'queued' },
@@ -296,6 +294,24 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
         '1 video · 2 ảnh',
       );
     });
+  });
+
+  it('đơn chỉ có tệp hàng hoàn: vẫn "Chưa có video đóng gói." và vẫn có nút Quay đóng gói', async () => {
+    const store = createMemoryOrderStore();
+    const d = makeOrder('RET-ONLY', { at: CREATED });
+    await store.saveNewOrder(d);
+    mockItems.push({
+      id: 'r',
+      group: 'return',
+      kind: 'video',
+      capturedAtDevice: CREATED,
+      state: 'queued',
+    });
+    await open(store, d.order.id);
+    expect(await screen.findByTestId('detail-no-evidence')).toHaveTextContent(
+      'Chưa có video đóng gói.',
+    );
+    expect(screen.getByTestId('order-detail-record')).toBeOnTheScreen();
   });
 
   it('nút Xem bằng chứng mở UI-E03 bằng ID đơn; không có nút Sửa, Tiếp nhận hàng hoàn, Đã giao/Đã hủy', async () => {
