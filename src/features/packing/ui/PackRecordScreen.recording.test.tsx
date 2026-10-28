@@ -2,8 +2,11 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import type { EvidenceId } from '@/core/ids';
 import { ROUTES } from '@/core/navigation';
-import { createMemoryEvidenceFileStore, createMemoryOrderStore } from '@/features/orders';
-import { LOCAL_SHOP_ID } from '@/features/orders';
+import {
+  LOCAL_SHOP_ID,
+  createMemoryEvidenceFileStore,
+  createMemoryOrderStore,
+} from '@/features/orders';
 import { mockRecorder, resetMockRecorder } from '@/test-utils/mock-camera-recorder';
 import { resetMockScanner } from '@/test-utils/mock-barcode-scanner';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';

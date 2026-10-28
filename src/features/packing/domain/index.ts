@@ -1,6 +1,12 @@
 export { formatElapsed } from './elapsed';
 export { RECORDER_ENABLED } from './recorder';
 export {
+  hasPendingEvidence,
+  summarizeSessionEvidence,
+  type SessionEvidenceSummary,
+  type UploadProblem,
+} from './session-evidence';
+export {
   isPersistentPath,
   recoverInterruptedRecordings,
   SESSION_STATUS,

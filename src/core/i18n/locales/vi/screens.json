@@ -169,7 +169,11 @@
     "savingNow": "Đang lưu video trên máy…",
     "uploadingMessage": "Video đã lưu trên thiết bị. Đang tải lên máy chủ.",
     "uploadedMessage": "Máy chủ đã nhận video. Đang kiểm tra tệp.",
-    "verifiedMessage": "Máy chủ đã kiểm tra: tệp khớp với bản trên máy."
+    "verifiedMessage": "Máy chủ đã kiểm tra: tệp khớp với bản trên máy.",
+    "uploadFailedMessage": "Video vẫn lưu trên máy. Tải lên chưa được, app sẽ tự thử lại.",
+    "uploadAttentionMessage": "Video vẫn lưu trên máy. Việc tải lên cần bạn xử lý ở phần bằng chứng của đơn.",
+    "hashMismatchMessage": "Máy chủ báo tệp không khớp bản trên máy. Video gốc vẫn được giữ trên máy.",
+    "partialFailed": "Một số video chưa lưu được trên máy. Video còn lại đã lưu trên máy."
   },
   "packDone": {
     "nothingSaved": "Bản thử giao diện: chưa có video nào được lưu.",
@@ -179,7 +183,8 @@
     "viewEvidence": "Xem bằng chứng",
     "noVideo": "Phiên này chưa có video nào được lưu.",
     "summaryQueued": "Phiên đóng gói đã hoàn tất. Video đã lưu trên thiết bị, đang chờ đồng bộ.",
-    "summaryUploaded": "Phiên đóng gói đã hoàn tất. Máy chủ đã nhận video."
+    "summaryUploaded": "Phiên đóng gói đã hoàn tất. Máy chủ đã nhận video.",
+    "summaryPartial": "Phiên chưa trọn vẹn: có video chưa lưu xong. Video còn lại đã lưu trên máy."
   },
   "returns": {
     "search": "Tìm theo mã đơn, mã vận đơn hoặc mã hoàn",

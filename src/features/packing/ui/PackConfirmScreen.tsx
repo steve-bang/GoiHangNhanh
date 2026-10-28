@@ -5,18 +5,19 @@ import { ROUTES } from '@/core/navigation';
 import { useAppNavigation } from '@/platform';
 import { Button, Card, EvidenceStatusBadge, Icon, Screen, Text, useTheme } from '@/shared/ui';
 
-import { toDisplayStatus } from '@/features/evidence';
-
-import { RECORDER_ENABLED } from '../domain';
+import { RECORDER_ENABLED, summarizeSessionEvidence } from '../domain';
 import { PackNotRecorded } from './PackNotRecorded';
+import { PROBLEM_MESSAGE_KEY } from './session-evidence-text';
 import { usePackEvidence } from './use-pack-evidence';
 import { usePackSession } from './use-pack-session';
 
 /**
  * UI-C04 Kết thúc và xác nhận video (đặc tả A06). Chỉ có nghĩa khi đã ghi tệp thật
- * (`RECORDER_ENABLED=true`) và chỉ nói điều TỆP THẬT của phiên cho phép: *Đã lưu trên máy* khi tệp đã
- * đóng, đọc được và có mã băm (trạng thái hàng đợi); đang lưu thì nói đang lưu; lỗi thì báo chưa lưu
- * được, KHÔNG nhãn "đã lưu" (bất biến 3, 11; docs/09 mục 5.5, A.1). Khi chưa có recorder hoặc phiên
+ * (`RECORDER_ENABLED=true`) và chỉ nói điều TỆP THẬT của phiên cho phép, xét MỌI tệp của phiên (không
+ * chỉ tệp cuối): *Đã lưu trên máy* khi tệp đã đóng, đọc được và có mã băm (trạng thái hàng đợi); đang
+ * lưu thì nói đang lưu; lỗi LƯU trên máy thì báo chưa lưu được, còn lỗi TẢI LÊN thì nói video vẫn đã lưu
+ * trên máy (không bảo quay lại); KHÔNG nhãn "đã lưu" cho tệp chưa lưu được (bất biến 3, 11; docs/09
+ * mục 5.5, A.1). Khi chưa có recorder hoặc phiên
  * chưa có tệp nào màn này chỉ báo "chưa có video nào được lưu" (`PackNotRecorded`). Mở bằng `sessionId`;
  * mã đơn lấy từ phiên (bất biến 2). "Xem lại" và "Ghi thêm đoạn riêng" chưa có logic.
  */
@@ -47,8 +48,8 @@ export function PackConfirmScreen() {
       </Screen>
     );
   }
-  const file = evidence[evidence.length - 1];
-  if (!file) {
+  const summary = summarizeSessionEvidence(evidence);
+  if (summary.total === 0) {
     return (
       <PackNotRecorded
         title={t('nav:titles.UI-C04')}
@@ -57,8 +58,8 @@ export function PackConfirmScreen() {
       />
     );
   }
-  const display = toDisplayStatus(file.state);
-  if (display.kind === 'label' && display.label === 'error') {
+  // Mọi tệp của phiên đều chưa lưu được trên máy (khác với lỗi tải lên: video đó đã nằm trên máy).
+  if (summary.saved === 0 && summary.inProgress === 0) {
     return (
       <PackNotRecorded
         title={t('nav:titles.UI-C04')}
@@ -67,6 +68,7 @@ export function PackConfirmScreen() {
       />
     );
   }
+  const saving = summary.inProgress > 0;
 
   return (
     <Screen
@@ -77,7 +79,7 @@ export function PackConfirmScreen() {
           <Button
             label={t('screens:confirm.save')}
             onPress={() => navigation.replace(ROUTES.packDone, { sessionId: session.id })}
-            disabled={display.kind === 'capture'}
+            disabled={saving}
           />
           <Button
             variant="secondary"
@@ -111,12 +113,20 @@ export function PackConfirmScreen() {
       <Card>
         <View style={{ gap: tokens.space.sm }}>
           <Text>{`${t('screens:confirm.orderCode')}: ${session.snapshot.orderCode}`}</Text>
-          {display.kind === 'label' ? (
-            <EvidenceStatusBadge status={display.label} />
-          ) : (
-            <Text>{t('screens:confirm.savingNow')}</Text>
-          )}
-          {display.kind === 'label' ? <Text>{t(confirmMessageKey(display.label))}</Text> : null}
+          {summary.label ? <EvidenceStatusBadge status={summary.label} /> : null}
+          {saving ? <Text>{t('screens:confirm.savingNow')}</Text> : null}
+          {summary.label ? (
+            <Text>
+              {t(
+                summary.problem
+                  ? PROBLEM_MESSAGE_KEY[summary.problem]
+                  : confirmMessageKey(summary.label),
+              )}
+            </Text>
+          ) : null}
+          {summary.notSaved > 0 ? (
+            <Text accessibilityRole="alert">{t('screens:confirm.partialFailed')}</Text>
+          ) : null}
         </View>
       </Card>
     </Screen>
