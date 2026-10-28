@@ -105,7 +105,15 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     expectTabBarVisible(true);
   });
 
-  it('vào Gói dịch vụ từ tab Cá nhân vẫn giữ thanh tab', async () => {
+  it('tab Cá nhân không còn lối vào Gói dịch vụ (đã ẩn, Q-21ag): không thẻ gói, không mục menu', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.profile.path });
+    expect(await screen.findByTestId('screen-UI-I01')).toBeOnTheScreen();
+    expect(screen.queryByTestId('plan-card')).toBeNull();
+    expect(screen.queryByTestId('menu-UI-H01')).toBeNull();
+    expect(screen.queryByText(/Gói dịch vụ/)).toBeNull();
+  });
+
+  it('route Gói dịch vụ vẫn mở được khi vào thẳng (mã được giữ để bật lại) và giữ thanh tab', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.plan.path });
     expect(screen.getByTestId('screen-UI-H01')).toBeOnTheScreen();
     expectTabBarVisible(true);
