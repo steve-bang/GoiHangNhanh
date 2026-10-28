@@ -15,7 +15,7 @@ interface OrderCardProps {
   /** Mã đơn chỉ là chuỗi tìm kiếm/hiển thị, không phải ID (CLAUDE.md bất biến #1). */
   orderCode: string;
   sourceLabel: string;
-  /** Có thì hiện logo nguồn bán nhỏ cạnh nhãn chữ (trang trí). */
+  /** Có thì hiện logo nguồn bán trong ô bên trái thẻ (thay ảnh sản phẩm; trang trí). */
   source?: OrderSource;
   /** Đã ghép nhãn, ví dụ "Mã vận đơn: SPX123". Không có thì không hiện dòng. */
   trackingLabel?: string;
@@ -24,6 +24,8 @@ interface OrderCardProps {
    * báo sản phẩm* (CHỈ khi chưa có dòng nào; docs/09 mục 5.5 A.6).
    */
   product: { name: string; variant?: string | null } | null;
+  /** Đã ghép nhãn, ví dụ "SL: 2" (số lượng dòng đầu, do người dùng nhập). */
+  quantityLabel?: string;
   /** Ví dụ "và 2 sản phẩm khác"; chỉ khi đơn có nhiều dòng. */
   extraProductsLabel?: string;
   dateLabel: string;
@@ -39,10 +41,11 @@ interface OrderCardProps {
 }
 
 /**
- * Thẻ đơn (UI-E01), cỡ gọn theo nhóm chữ form (decisions.md Q-18): hàng đầu là mã đơn (15sp đậm,
- * nổi bật nhất) + MỘT trạng thái bằng chứng; kế đó nguồn bán + mã vận đơn (13sp), sản phẩm đầu tiên
- * (hoặc *Chưa khai báo sản phẩm*); chân thẻ là thời điểm tạo + MỘT hành động. Màu không là tín hiệu
- * duy nhất: trạng thái luôn có chữ + biểu tượng (do `statusBadge`). Chân thẻ là vùng riêng, nút hành
+ * Thẻ đơn (UI-E01; ORD-01), cỡ gọn theo nhóm chữ form (decisions.md Q-18, Q-22). Bên trái là ô logo
+ * nguồn bán (thay ảnh sản phẩm: app không có ảnh sản phẩm). Bên phải: hàng đầu mã đơn (15sp đậm) +
+ * MỘT trạng thái bằng chứng ở mức đơn; kế đó nguồn bán + mã vận đơn, sản phẩm đầu tiên + SL (hoặc
+ * *Chưa khai báo sản phẩm*). Chân thẻ là thời điểm tạo + MỘT hành động. Màu không là tín hiệu duy
+ * nhất: trạng thái luôn có chữ + biểu tượng (do `statusBadge`). Chân thẻ là vùng riêng, nút hành động
  * cao đủ vùng chạm tối thiểu (`getMinTouchTarget`) và KHÔNG dùng `hitSlop` mở ra ngoài, nên không
  * chồng lên vùng thông tin (chạm vùng đó luôn chỉ mở chi tiết, không bấm nhầm hành động).
  */
@@ -52,6 +55,7 @@ export function OrderCard({
   source,
   trackingLabel,
   product,
+  quantityLabel,
   extraProductsLabel,
   dateLabel,
   statusBadge,
@@ -69,6 +73,7 @@ export function OrderCard({
     sourceLabel,
     trackingLabel,
     product ? [product.name, product.variant].filter(Boolean).join(', ') : undeclared,
+    quantityLabel,
     extraProductsLabel,
     dateLabel,
     statusText,
@@ -93,67 +98,72 @@ export function OrderCard({
         accessibilityLabel={spoken}
         onPress={onPress}
         style={({ pressed }) => [
+          styles.body,
           {
             paddingHorizontal: tokens.space.md,
             paddingTop: tokens.space.sm + tokens.space.xxs,
-            paddingBottom: 0,
-            gap: tokens.space.xs,
+            gap: tokens.space.md,
             opacity: pressed ? tokens.opacity.pressed : 1,
           },
         ]}
       >
-        <View style={[styles.codeRow, { gap: tokens.space.sm }]}>
-          <Text variant="body" bold numberOfLines={1} ellipsizeMode="middle" style={styles.code}>
-            {orderCode}
-          </Text>
-          <View testID={testID ? `${testID}-status` : undefined}>{statusBadge}</View>
-        </View>
-        <View style={[styles.wrapRow, { columnGap: tokens.space.md }]}>
-          <View style={styles.sourceRow}>
-            {source ? <SourceIcon source={source} size={18} /> : null}
+        {source ? <SourceIcon source={source} size={tokens.component.tile.md} /> : null}
+        <View style={[styles.shrink, { gap: tokens.space.xs }]}>
+          <View style={[styles.codeRow, { gap: tokens.space.sm }]}>
+            <Text variant="body" bold numberOfLines={1} ellipsizeMode="middle" style={styles.code}>
+              {orderCode}
+            </Text>
+            <View testID={testID ? `${testID}-status` : undefined}>{statusBadge}</View>
+          </View>
+          <View style={[styles.wrapRow, { columnGap: tokens.space.md }]}>
             <Text variant="formLabel" color="inkMuted" style={styles.shrink}>
               {sourceLabel}
             </Text>
+            {trackingLabel ? (
+              <Text
+                variant="formLabel"
+                color="inkMuted"
+                numberOfLines={1}
+                ellipsizeMode="middle"
+                style={styles.shrink}
+              >
+                {trackingLabel}
+              </Text>
+            ) : null}
           </View>
-          {trackingLabel ? (
-            <Text
-              variant="formLabel"
-              color="inkMuted"
-              numberOfLines={1}
-              ellipsizeMode="middle"
-              style={styles.shrink}
-            >
-              {trackingLabel}
-            </Text>
-          ) : null}
+          {product ? (
+            <View style={[styles.wrapRow, { columnGap: tokens.space.sm }]}>
+              <Text variant="formButton" color="ink" numberOfLines={1} style={styles.shrink}>
+                {product.name}
+              </Text>
+              {product.variant ? (
+                <Text variant="formBody" color="inkMuted" numberOfLines={1} style={styles.shrink}>
+                  {product.variant}
+                </Text>
+              ) : null}
+              {quantityLabel ? (
+                <Text variant="formBody" color="inkMuted">
+                  {quantityLabel}
+                </Text>
+              ) : null}
+              {extraProductsLabel ? (
+                <Text variant="caption" color="inkMuted">
+                  {extraProductsLabel}
+                </Text>
+              ) : null}
+            </View>
+          ) : (
+            <View style={styles.undeclared}>
+              <Icon name="info" size={16} color={tokens.color.feedback.warning.fg} />
+              <Text
+                variant="formButton"
+                style={[styles.shrink, { color: tokens.color.feedback.warning.fg }]}
+              >
+                {undeclared}
+              </Text>
+            </View>
+          )}
         </View>
-        {product ? (
-          <View style={[styles.wrapRow, { columnGap: tokens.space.sm }]}>
-            <Text variant="formButton" color="ink" numberOfLines={1} style={styles.shrink}>
-              {product.name}
-            </Text>
-            {product.variant ? (
-              <Text variant="formBody" color="inkMuted" numberOfLines={1} style={styles.shrink}>
-                {product.variant}
-              </Text>
-            ) : null}
-            {extraProductsLabel ? (
-              <Text variant="caption" color="inkMuted">
-                {extraProductsLabel}
-              </Text>
-            ) : null}
-          </View>
-        ) : (
-          <View style={styles.undeclared}>
-            <Icon name="info" size={16} color={tokens.color.feedback.warning.fg} />
-            <Text
-              variant="formButton"
-              style={[styles.shrink, { color: tokens.color.feedback.warning.fg }]}
-            >
-              {undeclared}
-            </Text>
-          </View>
-        )}
       </Pressable>
       <View
         style={[styles.footer, { paddingLeft: tokens.space.md, paddingRight: tokens.space.xs }]}
@@ -185,10 +195,10 @@ export function OrderCard({
 
 const styles = StyleSheet.create({
   card: { borderWidth: layout.borderWidth.thin, overflow: 'hidden' },
+  body: { flexDirection: 'row', alignItems: 'flex-start' },
   codeRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
   code: { flexShrink: 1 },
   wrapRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', rowGap: 0 },
-  sourceRow: { flexDirection: 'row', alignItems: 'center', gap: layout.space.tight, flexShrink: 1 },
   shrink: { flexShrink: 1 },
   undeclared: { flexDirection: 'row', alignItems: 'center', gap: layout.space.tight },
   footer: {

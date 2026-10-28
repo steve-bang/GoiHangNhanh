@@ -112,11 +112,23 @@ describe('UI-E01 Danh sách đơn (dữ liệu thật)', () => {
     expect(flat.fontSize).toBe(typography.formTitle.fontSize);
   });
 
+  it('ô tìm có nút quét mã ở cuối khi trống; gõ chữ thì nút xóa thế chỗ', async () => {
+    await open();
+    await screen.findByTestId('orders-empty');
+    await fireEvent.press(screen.getByTestId('orders-scan'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.scan);
+    await fireEvent.changeText(screen.getByTestId('orders-search'), 'DH');
+    expect(screen.queryByTestId('orders-scan')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Xóa nội dung đã nhập' }));
+    expect(screen.getByTestId('orders-scan')).toBeOnTheScreen();
+  });
+
   it('chưa có đơn nào: trạng thái rỗng có hành động tạo đơn đầu tiên', async () => {
     await open();
-    expect(await screen.findByText('Chưa có đơn nào')).toBeOnTheScreen();
-    expect(screen.queryByText('Không tìm thấy đơn phù hợp')).toBeNull();
-    await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn đầu tiên' }));
+    expect(await screen.findByText('Chưa có đơn hàng nào')).toBeOnTheScreen();
+    expect(screen.getByText('Tạo đơn đầu tiên để bắt đầu nhé.')).toBeOnTheScreen();
+    expect(screen.queryByText('Không có kết quả')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn hàng' }));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.quickOrder);
   });
 
@@ -139,6 +151,7 @@ describe('UI-E01 Danh sách đơn (dữ liệu thật)', () => {
     expect(within(card).getByText('Mã vận đơn: SPX-1')).toBeOnTheScreen();
     expect(within(card).getByText('Áo thun cotton')).toBeOnTheScreen();
     expect(within(card).getByText('Đen / XL')).toBeOnTheScreen();
+    expect(within(card).getByText('SL: 2')).toBeOnTheScreen();
     expect(within(card).getByText('và 2 sản phẩm khác')).toBeOnTheScreen();
     expect(within(card).getByText(`Tạo lúc ${formatDeviceDateTime(NOW)}`)).toBeOnTheScreen();
     expect(within(card).getByText('Chưa có video')).toBeOnTheScreen();
@@ -220,8 +233,8 @@ describe('UI-E01 Danh sách đơn (dữ liệu thật)', () => {
       await seeded();
       await fireEvent.changeText(screen.getByTestId('orders-search'), 'khong-co-ma-nay');
       expect(await screen.findByTestId('orders-no-results')).toBeOnTheScreen();
-      expect(screen.getByText('Không tìm thấy đơn phù hợp')).toBeOnTheScreen();
-      expect(screen.queryByText('Chưa có đơn nào')).toBeNull();
+      expect(screen.getByText('Không có kết quả')).toBeOnTheScreen();
+      expect(screen.queryByText('Chưa có đơn hàng nào')).toBeNull();
       expect(screen.queryByTestId('orders-error')).toBeNull();
       await fireEvent.press(screen.getByRole('button', { name: 'Xóa nội dung đã nhập' }));
       await waitFor(() => expect(cards()).toHaveLength(2));
@@ -388,11 +401,15 @@ describe('UI-E01 Danh sách đơn (dữ liệu thật)', () => {
       };
       await open(flaky);
       expect(await screen.findByTestId('orders-error')).toBeOnTheScreen();
-      expect(screen.getByText('Chưa tải được danh sách đơn. Bạn thử lại nhé.')).toBeOnTheScreen();
-      expect(screen.queryByText('Chưa có đơn nào')).toBeNull();
-      expect(screen.queryByText('Không tìm thấy đơn phù hợp')).toBeNull();
+      expect(
+        screen.getByText('Chưa tải được danh sách đơn hàng. Bạn thử lại nhé.'),
+      ).toBeOnTheScreen();
+      expect(screen.queryByText('Chưa có đơn hàng nào')).toBeNull();
+      expect(screen.queryByText('Không có kết quả')).toBeNull();
       broken = false;
-      await fireEvent.press(screen.getByTestId('orders-retry'));
+      await fireEvent.press(
+        within(screen.getByTestId('orders-error')).getByRole('button', { name: 'Thử lại' }),
+      );
       await waitFor(() => expect(cards()).toHaveLength(1));
       expect(screen.queryByTestId('orders-error')).toBeNull();
     });
@@ -630,7 +647,7 @@ describe('UI-E01 Danh sách đơn (dữ liệu thật)', () => {
     await screen.findByTestId('orders-empty');
     await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn' }));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.scan);
-    await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn mới' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn' }));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.quickOrder);
     expect(screen.getByText('Đơn hàng')).toBeOnTheScreen();
   });

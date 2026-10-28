@@ -433,7 +433,7 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
   describe('tab Đơn hàng: danh sách thật và chi tiết (router thật, kho bộ nhớ)', () => {
     /** Tạo một đơn bằng UI (nút + ở đầu danh sách -> Tạo đơn nhanh -> Lưu), rồi lùi về danh sách. */
     async function createOrderFromList(code: string, product?: string) {
-      await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn mới' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn' }));
       expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
       await fireEvent.changeText(screen.getByTestId('quick-order-code'), code);
       if (product) await fireEvent.changeText(screen.getByTestId('line-name-0'), product);

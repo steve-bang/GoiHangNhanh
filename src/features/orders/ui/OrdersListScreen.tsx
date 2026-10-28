@@ -15,6 +15,7 @@ import {
   Button,
   Card,
   EmptyState,
+  ErrorState,
   FilterChips,
   Icon,
   OrderCard,
@@ -106,23 +107,6 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
       : base;
   })();
 
-  const headerRight = (
-    <View style={styles.headerButtons}>
-      <HeaderButton
-        testID="orders-scan"
-        icon="scan"
-        label={t('screens:orders.scanAction')}
-        onPress={() => navigation.push(ROUTES.scan)}
-      />
-      <HeaderButton
-        testID="orders-create"
-        icon="add"
-        label={t('screens:orders.createAction')}
-        onPress={() => navigation.push(ROUTES.quickOrder)}
-      />
-    </View>
-  );
-
   const clearAll = () => setFilters(EMPTY_FILTERS);
 
   const emptyComponent = (() => {
@@ -140,19 +124,13 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
     }
     if (list.status === 'error') {
       return (
-        <Card compact tone="danger" testID="orders-error">
-          <View style={{ gap: tokens.space.sm }}>
-            <Text variant="formBody" accessibilityRole="alert">
-              {t('screens:orders.loadError')}
-            </Text>
-            <Button
-              size="slim"
-              label={t('common:actions.retry')}
-              onPress={list.retry}
-              testID="orders-retry"
-            />
-          </View>
-        </Card>
+        <ErrorState
+          variant="card"
+          testID="orders-error"
+          title={t('screens:orders.loadError')}
+          retryLabel={t('common:actions.retry')}
+          onRetry={list.retry}
+        />
       );
     }
     if (filtered) {
@@ -160,6 +138,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
         <View testID="orders-no-results">
           <EmptyState
             compact
+            iconCircle
             icon="search"
             title={t('screens:orders.noResultsTitle')}
             message={t('screens:orders.noResultsMessage')}
@@ -173,6 +152,9 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
       <View testID="orders-empty">
         <EmptyState
           compact
+          iconCircle
+          icon="package"
+          actionVariant="primary"
           title={t('screens:orders.emptyTitle')}
           message={t('screens:orders.emptyMessage')}
           actionLabel={t('screens:orders.emptyAction')}
@@ -186,19 +168,32 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
     <Screen
       form
       title={t('nav:titles.UI-E01')}
-      headerRight={headerRight}
       contentGap={tokens.space.sm}
       scroll={false}
       inTabs
       testID="screen-UI-E01"
     >
-      <SearchField
-        compact
-        testID="orders-search"
-        value={filters.search}
-        onChangeText={(search) => setFilters((prev) => ({ ...prev, search }))}
-        placeholder={t('screens:orders.search')}
-      />
+      <View style={[styles.searchRow, { gap: tokens.space.sm }]}>
+        <View style={styles.flex}>
+          <SearchField
+            compact
+            testID="orders-search"
+            value={filters.search}
+            onChangeText={(search) => setFilters((prev) => ({ ...prev, search }))}
+            placeholder={t('screens:orders.search')}
+            onScan={() => navigation.push(ROUTES.scan)}
+            scanLabel={t('screens:orders.scanAction')}
+            scanTestID="orders-scan"
+          />
+        </View>
+        <Button
+          size="compact"
+          testID="orders-create"
+          icon="add"
+          label={t('screens:orders.createAction')}
+          onPress={() => navigation.push(ROUTES.quickOrder)}
+        />
+      </View>
       <FilterChips
         size="compact"
         options={chipOptions}
@@ -254,19 +249,13 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
         </Pressable>
       </View>
       {list.error && list.rows.length > 0 ? (
-        <Card compact tone="danger" testID="orders-refresh-error">
-          <View style={{ gap: tokens.space.sm }}>
-            <Text variant="formBody" accessibilityRole="alert">
-              {t('screens:orders.loadError')}
-            </Text>
-            <Button
-              size="slim"
-              variant="secondary"
-              label={t('common:actions.retry')}
-              onPress={list.retry}
-            />
-          </View>
-        </Card>
+        <ErrorState
+          variant="card"
+          testID="orders-refresh-error"
+          title={t('screens:orders.loadError')}
+          retryLabel={t('common:actions.retry')}
+          onRetry={list.retry}
+        />
       ) : null}
       {start.error ? (
         <Card compact tone="danger" testID="orders-start-error">
@@ -351,6 +340,9 @@ function OrderRow({
         ? { trackingLabel: t('screens:orders.card.tracking', { code: order.trackingCode }) }
         : {})}
       product={firstLine ? { name: firstLine.name, variant: firstLine.variant } : null}
+      {...(firstLine
+        ? { quantityLabel: t('screens:orders.card.quantity', { count: firstLine.quantity }) }
+        : {})}
       {...(lineCount > 1
         ? { extraProductsLabel: t('screens:orders.card.moreLines', { count: lineCount - 1 }) }
         : {})}
@@ -366,38 +358,12 @@ function OrderRow({
   );
 }
 
-function HeaderButton({
-  icon,
-  label,
-  onPress,
-  testID,
-}: {
-  icon: 'scan' | 'add';
-  label: string;
-  onPress: () => void;
-  testID: string;
-}) {
-  const { tokens } = useTheme();
-  const touch = getMinTouchTarget();
-  return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={{ minWidth: touch, minHeight: touch, alignItems: 'center', justifyContent: 'center' }}
-    >
-      <Icon name={icon} size={22} color={tokens.color.action.primary} />
-    </Pressable>
-  );
-}
-
 /** Chiều cao nhìn thấy của nút Bộ lọc; vùng chạm được bù bằng hitSlop. */
 const FILTER_BUTTON_HEIGHT = 34;
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  headerButtons: { flexDirection: 'row', alignItems: 'center' },
+  searchRow: { flexDirection: 'row', alignItems: 'center' },
   countRow: { flexDirection: 'row', alignItems: 'center' },
   filterButton: {
     flexDirection: 'row',
