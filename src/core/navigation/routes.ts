@@ -164,6 +164,9 @@ export const ROUTES = {
   profile: route('/account', 'UI-I01', true),
   // PER-02/03: sửa họ tên, route con của UI-I01 (Q-20k).
   editProfile: subRoute('/account/edit-profile', 'profile', 'UI-I01', true, true),
+  // PER-11/12: dữ liệu bằng chứng và chi tiết thời hạn lưu, route con của UI-I01 (Q-21b, Q-21y; không mã UI mới).
+  evidenceData: subRoute('/account/evidence', 'profile', 'UI-I01', true, true),
+  retentionDetail: subRoute('/account/retention', 'profile', 'UI-I01', true, true),
   shopSettings: route('/account/shop-settings', 'UI-I02', true),
   shopEdit: subRoute('/account/shop-settings/edit', 'shopSettings', 'UI-I02', true, true),
   shopSwitch: subRoute('/account/shop-settings/switch', 'shopSettings', 'UI-I02', true, true),

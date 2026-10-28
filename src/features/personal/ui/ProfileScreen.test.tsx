@@ -151,6 +151,21 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.sync);
   });
 
+  it('tiêu đề khối bằng chứng là nút có "›" mở Dữ liệu bằng chứng (khung 11)', async () => {
+    await renderProfile(createFakePersonalGateways(NAMED));
+    const title = screen.getByTestId('evidence-overview-title');
+    expect(title.props.accessibilityRole).toBe('button');
+    expect(title.props.accessibilityLabel).toBe('Dữ liệu bằng chứng');
+    expect(title.props.accessibilityHint).toBe('Xem chi tiết dữ liệu bằng chứng');
+    // Đề mục vẫn là header cho VoiceOver/TalkBack, tách khỏi nút mở.
+    expect(screen.getByRole('header', { name: 'Dữ liệu bằng chứng' })).toBeOnTheScreen();
+    const hit = StyleSheet.flatten(title.props.style as never) as Record<string, number>;
+    expect(hit.minWidth).toBeGreaterThanOrEqual(44);
+    expect(hit.minHeight).toBeGreaterThanOrEqual(44);
+    await fireEvent.press(title);
+    expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.evidenceData);
+  });
+
   it('các thẻ không có chiều cao cố định (chữ lớn không bị cắt)', async () => {
     await renderProfile(createFakePersonalGateways(NAMED));
     await waitFor(() => expect(screen.getByTestId('shop-card')).toBeOnTheScreen());
