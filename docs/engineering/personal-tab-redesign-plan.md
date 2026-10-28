@@ -7,7 +7,7 @@
 - **Nguồn:** `docs/assets/ui/07-personal-tab-redesign-board.png` (1536x1024, designer giao). Tên board: "Tab Cá nhân - Thiết kế giao diện mobile".
 - **Mục tiêu:** giao diện mọi màn của tab Cá nhân **giống board** trên cổng giả và bản "chưa kết nối", nhưng **nội dung trung thực** (không số liệu/gói/trạng thái bịa; xem mục 5). Bố cục, thứ bậc chữ, màu thẻ, icon, nút, header và thanh tab theo board; chỗ board vẽ nội dung trái bất biến thì giữ khung và đổi nội dung (D1..D27).
 - **Ngoài phạm vi:** màn khách đã xác nhận (`scripts/design-token-scope.cjs`); đổi nghiệp vụ; Firebase thật cho hồ sơ/đổi mật khẩu (Q-20t); thanh toán/gói thật (O-06, O-16); xóa tài khoản thật (Q-20e).
-- **Ràng buộc kỹ thuật:** chỉ dùng `useTheme().tokens` (không hex/số thiết kế thô); prop mới của thành phần dùng chung chỉ **tùy chọn** và mặc định giữ nguyên (test `frozen-*-equivalence` phải xanh); chuỗi qua i18n; cô lập theo shop; trợ năng, chữ lớn, 320/360/390px.
+- **Ràng buộc kỹ thuật:** chỉ dùng `useTheme().tokens` (không hex/số thiết kế thô); prop mới của thành phần dùng chung chỉ **tùy chọn** và mặc định giữ nguyên (test `frozen-*-equivalence` phải xanh; hai test đó chỉ phủ `Button`/`Text`/`Icon`, các thành phần khác được bảo vệ bằng test mặc-định-giữ-nguyên, xem mục 6.1); chuỗi qua i18n; cô lập theo shop; trợ năng, chữ lớn, 320/360/390px.
 - **Độ tin cậy khi đọc board:** mỗi khung đã cắt và phóng 5-7 lần rồi đọc lại (script Pillow trong thư mục tạm, không commit). Board là ảnh 1536px nên chữ nhỏ bị nhòe; chỗ không đọc chắc chắn ghi ở mục 2.3.
 
 ## 2. Mô tả từng khung
@@ -118,7 +118,7 @@ Có sẵn (`src/core/theme`): jade 950/700/100, green 700/100, amber 700/50, red
 | Ô nhiều dòng (khung 17) | `components.field.minHeight` cho 1 dòng | **Mới `components.field.multilineMinHeight`** (120) |
 | Công tắc | `Switch` đã có, màu bật `action.primary` | Kiểm tra tương phản khi xây ở PR-G |
 | Hộp thoại | `overlay.scrim`, `radius.lg`, tile 52 | Không mới |
-| Bóng thẻ | - | **Không thêm bóng** (Q-21g): thẻ dùng viền `border.field` (mint) |
+| Bóng thẻ | - | **Không thêm bóng** (Q-21g): thẻ dùng viền `border.default` như `Card` hiện có (board vẽ viền mint nhạt; `border.field` đậm hơn và sẽ đổi tông mọi thẻ khác) |
 | Cỡ chữ số lớn | - | Không cần (board không có số lớn: giá trị là "Chưa có thông tin") |
 | Chuyển sắc nút/hero | - | Không (Q-21a) |
 
@@ -181,8 +181,8 @@ Mỗi PR: nhánh tách từ `main` mới nhất sau khi PR trước merge; theo 
 ### 6.1 Trạng thái PR-A (đã làm, chờ duyệt)
 
 - **Token:** đúng danh sách mục 4 (`palette.blue[50/700]`, `color.accent.blue`, `color.text.onBrandMuted`, `components.progress.height`, `components.checkbox.size`, `components.field.multilineMinHeight`); không bóng, không gradient, không thư viện; `colors.ts`/golden không đổi; tương phản có test; `check:tokens` xanh (baseline ngoại lệ không tăng).
-- **Thành phần mới** (`src/shared/ui`): `HeroCard`, `IconTile` (+ `tone.ts`), `MetricTile` (mới, không mở rộng `StatTile` vì thẻ nền màu/số lớn khác mục đích), `StatusCard`, `Checkbox`; glyph mới: `disconnect`, `warning-solid`, `receipt`, `play`, `cloud`, `document`, `person`.
-- **Prop tùy chọn mới** (mặc định giữ nguyên, test đóng băng xanh): `ConfirmDialog` (`icon`, `iconTone`, `actionsLayout`), `TextField` (`counterMax`, `multiline`), `ErrorState` (`variant="card"`), `EmptyState` (`iconTone`, `actionVariant`; `actionLabel`/`onAction` thành tùy chọn), `ScreenHeader` (`backIcon`). `EmptyState` đã có `icon` và `ScreenHeader` đã có `trailing` và căn trái sẵn từ trước, nên không thêm gì cho các việc đó.
+- **Thành phần mới** (`src/shared/ui`): `HeroCard`, `IconTile` (+ `tone.ts`), `MetricTile` (mới, không mở rộng `StatTile` vì thẻ nền màu/số lớn khác mục đích), `StatusCard` (kiểu union: `progress` chỉ với `status="uploading"`; nhãn trạng thái bằng chứng không ghi đè được; `title` chỉ ở nhánh `tone`; `progress` không hữu hạn bị bỏ, ngoài 0-100 bị kẹp), `Checkbox`; `HeroCard` có `badgeLabel` để huy hiệu được đọc; glyph mới chỉ còn `disconnect` (ngoại tuyến, PR-B) và `receipt` (lịch sử thanh toán trống, PR-E). Các glyph `warning-solid`, `play` (D26: không dựng nút phát), `cloud`, `document`, `person` đã bỏ vì chưa có nơi dùng; PR dùng đến thì thêm lại.
+- **Prop tùy chọn mới** (mặc định giữ nguyên; bảo vệ bằng test mặc-định-giữ-nguyên trong `redesign-components.test.tsx` cho `ConfirmDialog`/`TextField`/`ErrorState`/`EmptyState`/`ScreenHeader`: không truyền prop mới thì cùng cấu trúc/style như trước. Hai test `frozen-*-equivalence` chỉ phủ `Button`/`Text`/`Icon`, không phủ năm thành phần này): `ConfirmDialog` (`icon`, `iconTone`, `actionsLayout`), `TextField` (`counterMax`, `multiline`), `ErrorState` (`variant="card"`), `EmptyState` (`iconTone`, `actionVariant`; `actionLabel` và `onAction` cùng có hoặc cùng không, kiểu union nên thiếu một trong hai là lỗi biên dịch), `ScreenHeader` (`backIcon`). `EmptyState` đã có `icon` và `ScreenHeader` đã có `trailing` và căn trái sẵn từ trước, nên không thêm gì cho các việc đó.
 - **Lệch so với plan/board:** (1) `TextField` dùng `counterMax` (đếm theo `value.length`) thay vì chuỗi "20/50" tự truyền, để D22 đúng từ gốc; (2) viền hộp kiểm dùng `text.secondary` thay `border.default` (tương phản); (3) thẻ "Đang quay video" của khung 21 chưa dựng (ngoại lệ D-18 chỉ cho chấm ghi hình); (4) nhãn mặc định `StatusCard` theo nhãn chuẩn docs/09, không phải chữ board; (5) icon hộp thoại trong ô tròn nền nhạt thay vì biểu tượng đặc; (6) ngắt kết nối dùng `unlink-outline`. Chi tiết và ảnh: `docs/assets/screens/personal-tab-v3/README.md`.
 - **Chưa làm ở PR-A:** `ConfirmDialog` chưa có nút xác nhận vô hiệu (khung 7c) và chưa có liên kết "Vẫn đăng xuất" (D21): để PR-C/PR-D. Chưa kiểm chứng trên thiết bị, chưa chụp ở chữ lớn.
 
