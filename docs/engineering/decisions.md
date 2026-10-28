@@ -424,6 +424,8 @@ Kế hoạch chi tiết ở [personal-tab-redesign-plan.md](personal-tab-redesig
 | l | Khung 1a chỉ có hàng "Cài đặt ›", phần dưới bị che, và board không có khung trung tâm "Cài đặt" | 1) Giữ các hàng Thông báo, Quyền riêng tư và bảo mật, Trợ giúp, Điều khoản và chính sách, Đăng xuất dưới nút "Xem trung tâm đồng bộ" (không thêm màn trung tâm); 2) Thêm màn trung tâm Cài đặt | 1, chờ designer |
 | m | Câu chữ board trái trung thực chờ BA duyệt: D19 (khung 12 "vẫn xem được trên thiết bị"), D20 ("Chính sách đổi trả"), D25 ("Đã đăng xuất khỏi tất cả thiết bị"), "Đã xác thực" ở 1a (chỉ hiện khi cổng trả email đã xác minh) | 1) Bỏ hoặc đổi câu như kế hoạch mục 5; 2) Giữ nguyên board | 1 |
 | n | Mã UI chính thức và bảng ánh xạ PER-xx/UI-xx cho màn mới (liên quan Q-20b) | BA gán mã; cập nhật `routes.ts` và `personal-tab-plan.md` | Chờ BA; dev dùng route con tạm (câu b) |
+| o | (PR-B) Huy hiệu "Đã xác thực" ở khung 1a cần dữ liệu: `UserProfile` chưa có `emailVerified` | 1) Thêm `emailVerified` vào `UserProfile` và cổng (Firebase Auth có `user.emailVerified`), hiện huy hiệu chỉ khi `true`; 2) Không hiện huy hiệu | 1 khi BA xác nhận ý nghĩa ("email đã xác minh", không hàm ý tài khoản được kiểm chứng); hôm nay làm 2 |
+| p | (PR-B) Số liệu ba ô "Dữ liệu bằng chứng": đếm theo cửa hàng hay cả máy, nguồn nào, và tên "Trên đám mây" so "Trên máy chủ" (O-28c) | 1) Giữ ba nhãn như board, mỗi ô có giá trị "Chưa có số liệu" (đồng nhất, không số giả; nhãn trần dễ bị hiểu là lỗi hiển thị) tới khi có tệp bằng chứng, PR-F chốt nguồn; 2) Dùng `countUnsyncedOnDevice` (cả máy) | 1 |
 
 
 ## Rủi ro nền tảng phát hiện (tóm tắt)

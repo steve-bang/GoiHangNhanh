@@ -83,9 +83,11 @@ export const ICON_GLYPHS = {
   'flash-off': 'flash-off',
   alert: 'alert-circle',
   'scan-solid': 'scan',
-  // thiết kế lại tab Cá nhân (board 07): chỉ glyph PR sau cần ngay (ngoại tuyến PR-B, lịch sử thanh toán PR-E)
+  // thiết kế lại tab Cá nhân (board 07): chỉ glyph PR sau cần ngay (ngoại tuyến PR-B, lịch sử thanh toán PR-E, đám mây PR-B)
   disconnect: 'unlink-outline',
   receipt: 'receipt-outline',
+  // khối "Dữ liệu bằng chứng" của tab Cá nhân (PR-B): đám mây trung tính, không hàm ý đã tải xong
+  cloud: 'cloud-outline',
 } as const satisfies Record<string, GlyphName>;
 
 export type IconName = keyof typeof ICON_GLYPHS;

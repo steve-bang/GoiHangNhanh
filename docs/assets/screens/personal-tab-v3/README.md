@@ -18,3 +18,35 @@
 - **Ô số liệu:** không có chấm cam ở ô "Đang chờ đồng bộ".
 - **Hộp kiểm:** viền chưa chọn dùng `text.secondary` (>= 3:1), không dùng `border.default` (~1.5:1) như bảng token đề xuất.
 - **Bộ đếm** đếm theo độ dài thật (D22), không phải "20/50" của board.
+
+---
+
+# Ảnh đối chiếu PR-B: màn chính tab Cá nhân (UI-I01, khung 1a-1e)
+
+**Lưu ý trung thực:** ảnh render **bản web** (react-native-web trong Chromium) của màn thật `/account` trên **cổng giả**, **không phải ảnh chụp trên iOS/Android thật**. Để chụp được các trạng thái, bản sao ngoài repo có thêm hai thay đổi tạm KHÔNG commit: cổng giả đọc tham số URL (`named=1` họ tên "Trần Văn Minh" + cửa hàng "Shop Thời Trang" như board; `slow=1` chờ vô hạn; `fail=1` lỗi hồ sơ) và `useIsOffline` đọc `offline=1` (trong app thật hàm này luôn `false`, nên khung 1d chưa xảy ra trên máy). Họ tên/cửa hàng/email là dữ liệu giả lập. Font, vùng an toàn, thanh tab, font scale lớn trên thiết bị thật có thể khác; **chưa chụp ở chữ lớn**.
+
+| Ảnh | Nội dung |
+| --- | --- |
+| `pr-b-1a-main-{320x568,360x800,390x844}.png`, `pr-b-1a-main-scrolled-390x844.png` | 1a: mặc định (có họ tên); bản "scrolled" cuộn xuống cuối |
+| `pr-b-1b-loading-*.png` | 1b: đang tải, khung chờ theo hình mới |
+| `pr-b-1c-error-*.png` | 1c: lỗi hồ sơ (thẻ lỗi trên khung chờ mờ), thẻ cửa hàng vẫn hiện |
+| `pr-b-1d-offline-*.png` | 1d: ngoại tuyến và chưa có dữ liệu hồ sơ |
+| `pr-b-1e-no-name-*.png` | 1e: chưa có họ tên (thay thẻ hồ sơ; phần còn lại giữ) |
+| `pr-b-board-reference-1a-1e.png` | Khung 1a-1e cắt từ board 07 |
+| `pr-b-compare-board-vs-app-390.png` | Hàng trên: board; hàng dưới: app 390x844, cùng cột = cùng khung |
+
+## Checklist "giống design"
+
+| Hạng mục | 1a | 1b | 1c | 1d | 1e | Ghi chú lệch |
+| --- | --- | --- | --- | --- | --- | --- |
+| Bố cục và thứ tự khối | đạt | đạt | đạt | đạt | đạt (Q-21e: giữ phần còn lại) | 1d/1e board là trống toàn màn; app giữ các khối thật bên dưới |
+| Thứ bậc chữ | đạt | - | đạt | đạt | đạt | tiêu đề trạng thái trống dùng `sectionTitle` |
+| Màu thẻ/nền | gần (hero phẳng, Q-21a) | đạt | đạt (nền lỗi `danger.bg`) | đạt | đạt | hero `brand.deep` không chuyển sắc |
+| Icon | gần | - | đạt | gần | gần | glyph Ionicons gần nghĩa; ngắt kết nối `unlink-outline`; không chấm cam |
+| Khoảng cách | gần (<= 4dp) | gần | gần | gần | gần | quy về token |
+| Nút | đạt | - | đạt (nút chính) | đạt | đạt | nút phẳng |
+| Header | lệch có chủ đích | như 1a | như 1a | như 1a | như 1a | không mũi tên quay lại, không icon phải (D28) |
+| Trạng thái | đạt | đạt | đạt | đạt | đạt | |
+| Chuỗi chữ | lệch có chủ đích | - | lệch | lệch | lệch | xem mục 6.2 của plan (huy hiệu, gói, câu lỗi, "Hãy" thay "Vui lòng") |
+
+**Ảnh `pr-b-1a-*` chưa chụp lại sau review PR #15** (không có trình duyệt/react-native-web trong môi trường): ba ô "Dữ liệu bằng chứng" nay có thêm dòng "Chưa có số liệu" dưới nhãn; ảnh hiện còn là bản chỉ nhãn. Khung 1b khác ảnh ở trợ năng (mỗi thẻ một phần tử "Đang tải"), hình không đổi.

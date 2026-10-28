@@ -10,7 +10,10 @@ import type { IconName } from '@/shared/ui';
  */
 export type MenuAvailability = 'available' | 'coming_soon' | 'hidden';
 
-/** Nhóm hiển thị trên UI-I01. Hai nhóm đầu còn có thẻ động (hồ sơ, cửa hàng) do màn dựng. */
+/**
+ * Nhóm hiển thị trên UI-I01. `shopAndPlan`: mục `plan` được màn dựng thành thẻ gói (HeroCard), các mục
+ * còn lại (nếu có) thành hàng dưới thẻ cửa hàng. Thẻ hồ sơ/cửa hàng/dữ liệu bằng chứng do màn dựng.
+ */
 export type MenuGroupId = 'shopAndPlan' | 'settings' | 'support';
 
 export interface MenuItem {
@@ -69,4 +72,11 @@ export const ACCOUNT_MENU: readonly MenuItem[] = [
 /** Các mục hiện được của một nhóm (bỏ mục `hidden`), giữ thứ tự khai báo. */
 export function visibleMenuItems(group: MenuGroupId): readonly MenuItem[] {
   return ACCOUNT_MENU.filter((item) => item.group === group && item.availability !== 'hidden');
+}
+
+/** Mục `plan` của menu (thẻ gói trên UI-I01 theo dõi `availability` của nó). */
+export function planMenuItem(): MenuItem {
+  const item = ACCOUNT_MENU.find((entry) => entry.id === 'plan');
+  if (!item) throw new Error('ACCOUNT_MENU thiếu mục plan');
+  return item;
 }

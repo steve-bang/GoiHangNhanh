@@ -149,7 +149,7 @@ describe('Đăng xuất an toàn (PER-21)', () => {
 
     await fireEvent.press(screen.getByTestId('probe-begin-b'));
     await waitFor(() => expect(screen.getByTestId('probe-key')).toHaveTextContent('user-b:shop-b'));
-    await waitFor(() => expect(screen.getByTestId('profile-summary')).toBeOnTheScreen());
+    await waitFor(() => expect(screen.getByTestId('profile-no-name')).toBeOnTheScreen());
     expect(screen.queryByText('Tên riêng của A')).toBeNull();
   });
 

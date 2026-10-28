@@ -47,6 +47,13 @@
     "changePasswordEntry": "Đổi mật khẩu",
     "addName": "Thêm họ tên",
     "editHint": "Mở trang sửa họ tên",
+    "noNameTitle": "Chưa có họ tên",
+    "noNameMessage": "Hãy cập nhật họ tên để hoàn tất thông tin cá nhân.",
+    "noNameAction": "Cập nhật",
+    "offlineTitle": "Đang ngoại tuyến",
+    "offlineMessage": "Chưa tải được thông tin cá nhân. Hãy kết nối mạng rồi thử lại.",
+    "shopEyebrow": "Cửa hàng của bạn",
+    "shopManage": "Quản lý cửa hàng",
     "version": "Đơn Chứng · phiên bản {{version}}"
   },
   "signOut": {
@@ -124,6 +131,19 @@
     "unsyncedContinue": "Vẫn chuyển cửa hàng",
     "openSync": "Xem trung tâm đồng bộ",
     "suspendedHint": "Cửa hàng đang tạm khóa nên chưa chuyển vào được."
+  },
+  "plan": {
+    "eyebrow": "Gói dịch vụ",
+    "title": "Chưa có thông tin",
+    "retention": "Thời hạn lưu: Chưa có thông tin"
+  },
+  "evidenceOverview": {
+    "title": "Dữ liệu bằng chứng",
+    "onDevice": "Trên thiết bị",
+    "pendingSync": "Đang chờ đồng bộ",
+    "cloud": "Trên đám mây",
+    "noData": "Chưa có số liệu",
+    "openSync": "Xem trung tâm đồng bộ"
   },
   "groups": {
     "account": "Tài khoản",

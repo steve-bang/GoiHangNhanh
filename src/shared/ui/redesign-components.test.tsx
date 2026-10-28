@@ -361,6 +361,14 @@ describe('ErrorState variant=card', () => {
     expect(flat(alert).backgroundColor).toBe(color.feedback.danger.bg);
     await fireEvent.press(screen.getByRole('button', { name: 'Thử lại' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
+    // Nút thử lại của thẻ lỗi là nút chính (board 1c); mặc định `inline` vẫn là nút phụ như cũ.
+    expect(flat(screen.getByRole('button', { name: 'Thử lại' })).backgroundColor).toBe(
+      color.action.primary,
+    );
+    await rerender(<ErrorState title="Không thể tải" onRetry={onRetry} />);
+    expect(flat(screen.getByRole('button', { name: 'Thử lại' })).backgroundColor).not.toBe(
+      color.action.primary,
+    );
     await rerender(<ErrorState title="Không thể tải" />);
     expect(flat(screen.getByRole('alert')).backgroundColor).toBeUndefined();
     expect(screen.queryByRole('button')).toBeNull();
