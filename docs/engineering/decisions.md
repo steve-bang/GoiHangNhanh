@@ -173,7 +173,7 @@ Lý do: Rules chỉ cho tạo tài liệu bằng chứng khi `sessions/{sessionI
 
 ## ADR-020 — Ghi video thật, lưu bền, băm và gửi tệp (sau cờ, chưa kiểm chứng trên thiết bị)
 
-Người dùng chọn `expo-camera` cho ghi video và bật SAU CỜ (đã duyệt hướng làm, 2026-10-28). **Đề xuất, chờ người dùng/BA duyệt các điểm dưới; chưa chạy trên thiết bị.**
+Người dùng chọn `expo-camera` cho ghi video và bật SAU CỜ (đã duyệt hướng làm, 2026-10-28). **Người dùng đã duyệt ADR-020 (2026-10-28); BA chưa xác nhận; chưa chạy trên thiết bị, cờ vẫn TẮT.**
 
 - **R-1. Cờ `EXPO_PUBLIC_RECORDER_ENABLED=1`** (mặc định TẮT; `features/packing/domain/recorder.ts`). Tắt: màn quay là bản thử giao diện như trước (camera chỉ xem trước, dải "chưa ghi video"), các màn xác nhận/hoàn tất báo "chưa có video nào được lưu". Bật chỉ sau khi thử trên máy thật.
 - **R-2. Ghi bằng `CameraView` `mode="video"` + `mute`, KHÔNG thu tiếng** (giữ `microphonePermission: false`; có thu tiếng hay không là O-09, chưa quyết). `expo-camera` không có sự kiện "đã bắt đầu ghi": coi là đang ghi khi `recordAsync` đã gọi mà chưa báo lỗi.
