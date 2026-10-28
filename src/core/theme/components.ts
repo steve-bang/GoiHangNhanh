@@ -12,10 +12,14 @@ export const components = {
     borderWidth: { regular: borderWidthScale.strong, slim: borderWidthScale.thin },
   },
   /** Ô nhập/tìm kiếm: cao tối thiểu, lớn hơn vùng chạm để gõ một tay. */
-  field: { minHeight: 52 },
+  field: { minHeight: 52, multilineMinHeight: 120 },
   /** Ô vuông chứa biểu tượng/ảnh nhỏ (avatar, thumbnail dòng sản phẩm, lối tắt tròn). */
   tile: { sm: 28, md: 44, lg: 52, xl: 56 },
   actionCard: { minHeight: 88 },
+  /** Thanh tiến độ ngang (thẻ trạng thái). */
+  progress: { height: 6 },
+  /** Hộp kiểm vuông; vùng chạm của cả hàng vẫn theo `getMinTouchTarget`. */
+  checkbox: { size: 24 },
   stepper: { valueMinWidth: 48 },
   scanFrame: { cornerRadius: 14 },
   record: {
