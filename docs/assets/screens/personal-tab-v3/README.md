@@ -187,9 +187,11 @@
 
 **Lưu ý trung thực:** ảnh render **bản web** (react-native-web trong Chromium) của màn thật trên **cổng giả**, **không phải ảnh chụp trên iOS/Android thật**; 320x568, 360x800, 390x844 (hệ số 2) và chữ lớn 1.6 lần ở 320x568 (bản sao ngoài repo nhân cỡ chữ của `Text`; icon không phóng theo). Bản sao ngoài repo có tham số URL tạm (`state=savefail|loaderror|loading`, `method=google`, `fs=`) KHÔNG commit. Công tắc ở ảnh là cổng giả trong bộ nhớ.
 
+**Chưa chụp lại ảnh `pr-g-13-*`:** sau khi đổi tiêu đề thẻ thành "Thông báo đẩy" kèm nhãn "Sắp có" (trước đó "Thông báo đẩy: sắp có", báo "sắp có" hai lần), môi trường làm việc không có Chromium/Playwright nên ảnh `pr-g-13-*` còn hiện tiêu đề cũ. Cần chụp lại theo cách ở trên khi có trình duyệt.
+
 | Ảnh | Nội dung |
 | --- | --- |
-| `pr-g-13-notifications-{320x568,360x800,390x844}.png`, `...-largetext-320x568.png` | Khung 13: thẻ "Thông báo đẩy: sắp có" + bốn công tắc (mặc định cổng giả) |
+| `pr-g-13-notifications-{320x568,360x800,390x844}.png`, `...-largetext-320x568.png` | Khung 13: thẻ "Thông báo đẩy" kèm nhãn "Sắp có" + bốn công tắc (mặc định cổng giả) |
 | `pr-g-13-save-error-*.png` | Bấm "Đồng bộ dữ liệu" khi cổng báo lỗi lưu: công tắc hoàn về Tắt, thẻ cảnh báo "Chưa lưu được cài đặt. Bạn thử lại nhé." |
 | `pr-g-13-load-error-*.png` | Không tải được cài đặt (cổng chưa kết nối): thẻ lỗi + Thử lại, không công tắc |
 | `pr-g-14-security-*.png`, `...-largetext-320x568.png` | Khung 14, tài khoản mật khẩu |
@@ -202,7 +204,7 @@
 
 | Hạng mục | 13 | 14 | Ghi chú lệch |
 | --- | --- | --- | --- |
-| Bố cục và thứ tự khối | lệch có chủ đích | gần | 13: thẻ "Thông báo đẩy: sắp có" ở ĐẦU (board: thẻ cam quyền bị từ chối ở cuối, không dựng vì chưa có adapter đọc quyền); bốn công tắc (board năm). 14: nhóm một thẻ có đường kẻ (board: mỗi hàng một thẻ); "Xóa tài khoản" tách nhóm riêng |
+| Bố cục và thứ tự khối | lệch có chủ đích | gần | 13: thẻ "Thông báo đẩy" kèm nhãn "Sắp có" ở ĐẦU (board: thẻ cam quyền bị từ chối ở cuối, không dựng vì chưa có adapter đọc quyền); bốn công tắc (board năm). 14: nhóm một thẻ có đường kẻ (board: mỗi hàng một thẻ); "Xóa tài khoản" tách nhóm riêng |
 | Thứ bậc chữ | đạt | đạt | tiêu đề 14 xuống dòng ở 390px (chữ lớn hơn board) |
 | Màu thẻ/nền | gần | gần | không thẻ cam; hàng khóa mờ |
 | Icon | gần | gần | glyph Ionicons gần nghĩa, duyệt ở ảnh PR; "Xóa tài khoản" icon cảnh báo (board: thùng rác) |
