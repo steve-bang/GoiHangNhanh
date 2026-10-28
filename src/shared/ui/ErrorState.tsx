@@ -16,7 +16,7 @@ interface ErrorStateProps {
   retryLabel?: string;
   /** Đang thử lại: khóa nút, chống bấm đúp. */
   retrying?: boolean;
-  /** `card`: nền thẻ lỗi (board 07), căn giữa trong thẻ bo góc. Mặc định `inline` như cũ. */
+  /** `card`: nền thẻ lỗi (board 07), căn giữa trong thẻ bo góc, nút thử lại là nút chính. Mặc định `inline` như cũ. */
   variant?: 'inline' | 'card';
   testID?: string;
 }
@@ -66,7 +66,7 @@ export function ErrorState({
         <Button
           label={retryLabel ?? t('common:actions.retry')}
           onPress={onRetry}
-          variant="secondary"
+          variant={variant === 'card' ? 'primary' : 'secondary'}
           loading={retrying}
         />
       ) : null}
