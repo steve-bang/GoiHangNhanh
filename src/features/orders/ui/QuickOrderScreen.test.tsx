@@ -280,6 +280,43 @@ describe('UI-B04 Tạo đơn nhanh (ORD-05) và Xác nhận (ORD-06)', () => {
       expect(await allOrders(store, 'DH-77')).toHaveLength(1);
     });
 
+    it('lưu xong nhưng kết quả mất, rồi người dùng SỬA form: không mở bản cũ làm mất phần sửa, không ghi đè; đơn đã lưu hiện ở hộp trùng, Vẫn tạo thì tạo đơn mới với nội dung đã sửa', async () => {
+      const store = createMemoryOrderStore();
+      let first = true;
+      const lossy: OrderStore = {
+        ...store,
+        saveNewOrder: async (details) => {
+          await store.saveNewOrder(details);
+          if (first) {
+            first = false;
+            throw new AppError('ORDER_SAVE_FAILED');
+          }
+        },
+      };
+      await toConfirm(lossy);
+      await create();
+      expect(await screen.findByTestId('save-error')).toBeOnTheScreen();
+      await waitFor(() => expect(screen.getByTestId('quick-create')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('quick-back-edit'));
+      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo đã sửa');
+      await next();
+      await create();
+      expect(await screen.findByText('Đơn này đã có')).toBeOnTheScreen();
+      expect(mockNavigation.replace).not.toHaveBeenCalled();
+      const [old] = await allOrders(store, 'DH-77');
+      expect((await store.getOrder(LOCAL_SHOP_ID, old?.id as never))?.lines[0]?.name).toBe(
+        'Áo thun cotton',
+      ); // bản đã lưu không bị ghi đè
+      await fireEvent.press(screen.getByTestId('order-match-create-anyway'));
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      const orders = await allOrders(store, 'DH-77');
+      expect(orders).toHaveLength(2);
+      const created = orders.find((o) => o.id !== old?.id);
+      expect((await store.getOrder(LOCAL_SHOP_ID, created?.id as never))?.lines[0]?.name).toBe(
+        'Áo đã sửa',
+      );
+    });
+
     it('shop lấy LÚC BẤM Tạo: đổi shop giữa Tiếp tục và Tạo thì ghi vào shop mới', async () => {
       const store = createMemoryOrderStore();
       function Harness() {
@@ -333,7 +370,6 @@ describe('UI-B04 Tạo đơn nhanh (ORD-05) và Xác nhận (ORD-06)', () => {
       expect(await allOrders(store, 'DH1234567890')).toHaveLength(1);
       expect(await store.listSessionsOfOrder(LOCAL_SHOP_ID, existing.order.id)).toEqual([]);
       expect(mockNavigation.replace).not.toHaveBeenCalled();
-      expect(screen.queryByText(/Tạo hồ sơ mới|Vẫn tạo/)).toBeNull();
     });
 
     it('Xem đơn hiện có mở chi tiết bằng ID của đơn đã có', async () => {
@@ -349,6 +385,50 @@ describe('UI-B04 Tạo đơn nhanh (ORD-05) và Xác nhận (ORD-06)', () => {
       await fireEvent.press(await screen.findByTestId('order-match-back-edit'));
       expect(screen.queryByTestId('order-match-sheet')).toBeNull();
       expect(screen.getByTestId('quick-create')).toBeEnabled();
+    });
+
+    it('trùng mã đơn + nguồn vẫn có nút phụ Vẫn tạo đơn mới (khôi phục hành vi cũ); nút chính là xem đơn hiện có', async () => {
+      const { store, existing } = await setup();
+      expect(await screen.findByTestId('order-match-create-anyway')).toBeOnTheScreen();
+      await fireEvent.press(screen.getByTestId('order-match-create-anyway'));
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      const orders = await allOrders(store, 'DH1234567890');
+      expect(orders).toHaveLength(2);
+      const created = orders.find((o) => o.id !== existing.order.id);
+      expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.orderDetail, {
+        orderId: created?.id,
+      });
+      // đơn cũ không bị đổi, không gắn phiên/dòng nào vào nó
+      expect((await store.getOrder(LOCAL_SHOP_ID, existing.order.id))?.lines).toEqual([]);
+      expect(await store.listSessionsOfOrder(LOCAL_SHOP_ID, existing.order.id)).toEqual([]);
+    });
+
+    it('bấm Vẫn tạo đơn mới hai lần liên tiếp: chỉ thêm MỘT đơn (cùng ID)', async () => {
+      const { store } = await setup();
+      const button = await screen.findByTestId('order-match-create-anyway');
+      await act(async () => {
+        void fireEvent.press(button);
+        void fireEvent.press(button);
+      });
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      expect(await allOrders(store, 'DH1234567890')).toHaveLength(2);
+      expect(mockNavigation.replace).toHaveBeenCalledTimes(1);
+    });
+
+    it('trùng mã vận đơn (kiện gộp hai đơn chung mã vận đơn): vẫn tạo được đơn mới', async () => {
+      const { store, existing } = await setup({
+        source: 'other',
+        code: 'DH-GOP-2',
+        tracking: 'spx1234567890',
+      });
+      expect(await screen.findByText('Trùng mã vận đơn')).toBeOnTheScreen();
+      await fireEvent.press(screen.getByTestId('order-match-create-anyway'));
+      await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+      expect(await allOrders(store, 'DH-GOP-2')).toHaveLength(1);
+      expect(await allOrders(store, 'DH1234567890')).toHaveLength(1);
+      expect((await store.getOrder(LOCAL_SHOP_ID, existing.order.id))?.order.trackingCode).toBe(
+        'SPX1234567890',
+      );
     });
 
     it('cùng mã nhưng khác nguồn bán thì không coi là trùng', async () => {

@@ -461,14 +461,15 @@
     "manyTitle": "Có nhiều đơn trùng mã",
     "manyMessage": "Hãy chọn đúng đơn trước khi tiếp tục.",
     "duplicateTitle": "Đơn này đã có",
-    "duplicateMessage": "Mã này đã có trong máy. Hãy xem đơn hiện có hoặc quay lại sửa mã.",
+    "duplicateMessage": "Mã này đã có trong máy. Hãy xem đơn hiện có, hoặc tạo thêm đơn mới nếu đây là đơn khác.",
     "backToEdit": "Quay lại chỉnh sửa",
     "createInstead": "Không phải đơn nào ở trên: tạo đơn mới với mã này",
     "error": "Chưa tìm được lúc này. Bạn thử lại nhé.",
     "reason": {
       "orderCode": "Trùng mã đơn",
       "trackingCode": "Trùng mã vận đơn"
-    }
+    },
+    "createAnyway": "Vẫn tạo đơn mới"
   },
   "orderSearch": {
     "placeholder": "Nhập mã đơn hoặc mã vận đơn",

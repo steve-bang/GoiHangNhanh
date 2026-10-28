@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { isAppError } from '@/core/errors/app-error';
 import type { ErrorCode } from '@/core/errors/codes';
-import type { OrderId, OrderLineId } from '@/core/ids';
+import type { OrderId, OrderLineId, PackageId } from '@/core/ids';
 import { ROUTES } from '@/core/navigation';
 import { toOrderSource, type OrderSource } from '@/core/orders/order-source';
 import {
@@ -41,6 +41,7 @@ import {
   toCodeKey,
   type DraftError,
   type IdFactory,
+  type OrderDetails,
   type OrderDraft,
   type OrderLine,
 } from '../domain';
@@ -52,6 +53,26 @@ import { useOrderLookup } from './use-order-lookup';
 
 /** Số dòng lịch sử đọc để gợi ý (đủ cho vài chục đơn gần nhất; đọc một lần khi mở màn). */
 const HISTORY_LIMIT = 200;
+
+interface IdSet {
+  orderId: OrderId;
+  packageId: PackageId;
+  lineIds: OrderLineId[];
+}
+
+/** Nội dung nhập (mã, nguồn, mã vận đơn, dòng) của hai bản đơn có giống nhau không (bỏ qua ID/thời gian). */
+function sameContent(a: OrderDetails, b: OrderDetails): boolean {
+  return (
+    a.order.orderCode === b.order.orderCode &&
+    a.order.source === b.order.source &&
+    a.order.trackingCode === b.order.trackingCode &&
+    a.lines.length === b.lines.length &&
+    a.lines.every((l, i) => {
+      const o = b.lines[i];
+      return o && l.name === o.name && l.variant === o.variant && l.quantity === o.quantity;
+    })
+  );
+}
 
 type FieldError = DraftError | { kind: 'code_required' };
 type Step = 'form' | 'confirm';
@@ -103,9 +124,13 @@ export function QuickOrderScreen() {
     shopIdRef.current = shopId;
   }, [shopId]);
   // ID sinh MỘT lần cho cả lần tạo này (thử lại dùng lại đúng các ID này).
-  const [orderIdOnce] = useState(() => newOrderId());
-  const [packageIdOnce] = useState(() => newPackageId());
-  const lineIdsRef = useRef<OrderLineId[]>([]);
+  // Bộ ID của lần tạo này; chỉ đọc/ghi trong handler (không trong render). Xoay bộ mới khi nội dung
+  // đổi sau một lần lưu đã xong (xem `createOrder`) để không ghi đè đơn đã lưu.
+  const idSetRef = useRef<IdSet | null>(null);
+  const getIdSet = (): IdSet => {
+    idSetRef.current ??= { orderId: newOrderId(), packageId: newPackageId(), lineIds: [] };
+    return idSetRef.current;
+  };
 
   useEffect(() => {
     let alive = true;
@@ -155,11 +180,12 @@ export function QuickOrderScreen() {
   /** Bộ sinh ID MỚI cho mỗi lần dựng: ID đơn/kiện cố định, ID dòng lấy lần lượt từ bể cố định. */
   const makeIds = (): IdFactory => {
     let n = 0;
+    const set = getIdSet();
     return {
-      orderId: () => orderIdOnce,
-      packageId: () => packageIdOnce,
+      orderId: () => set.orderId,
+      packageId: () => set.packageId,
       lineId: () => {
-        const pool = lineIdsRef.current;
+        const pool = set.lineIds;
         while (pool.length <= n) pool.push(newOrderLineId());
         const id = pool[n] as OrderLineId;
         n += 1;
@@ -185,24 +211,39 @@ export function QuickOrderScreen() {
     setStep('confirm');
   };
 
-  /** ORD-06 Tạo đơn hàng: kiểm trùng, lưu MỘT lần, mở chi tiết. */
-  const createOrder = async () => {
+  /**
+   * ORD-06 Tạo đơn hàng: kiểm trùng, lưu MỘT lần, mở chi tiết. `force` (nút *Vẫn tạo đơn mới* ở hộp
+   * trùng) bỏ qua kiểm trùng nhưng vẫn dùng đúng ID đã sinh nên bấm lại không tạo thêm bản ghi.
+   */
+  const createOrder = async (force = false) => {
     if (savingRef.current) return; // chống bấm đúp: không tạo đơn hai lần
     savingRef.current = true;
     setSaving(true);
     setSaveError(null);
     try {
       const shop = shopIdRef.current; // shop tại thời điểm bấm
-      const built = buildOrder(draft, { shopId: shop, ids: makeIds(), nowDevice: Date.now() });
+      let built = buildOrder(draft, { shopId: shop, ids: makeIds(), nowDevice: Date.now() });
       if (!built.ok) {
         setFieldError(built.error);
         setStep('form');
         return;
       }
+      // Lần trước đã lưu xong nhưng kết quả bị mất (hoặc đã lưu rồi người dùng quay lại sửa):
+      // - nội dung y hệt: không tạo bản thứ hai, chỉ mở đơn đó;
+      // - nội dung đã đổi: KHÔNG mở bản cũ (sẽ bỏ phần vừa sửa) và KHÔNG ghi đè nó: xoay sang bộ ID
+      //   mới; đơn đã lưu sẽ hiện ở kiểm trùng bên dưới để người dùng tự quyết (không mất dữ liệu).
+      const already = await store.getOrder(shop, built.details.order.id);
+      if (already && sameContent(already, built.details)) {
+        setExit({ kind: 'detail', orderId: already.order.id });
+        return;
+      }
+      if (already) {
+        idSetRef.current = null;
+        built = buildOrder(draft, { shopId: shop, ids: makeIds(), nowDevice: Date.now() });
+        if (!built.ok) return;
+      }
       const { order } = built.details;
-      // Lần trước đã lưu xong nhưng kết quả bị mất: không tạo bản thứ hai, chỉ mở đơn đó.
-      const already = await store.getOrder(shop, order.id);
-      if (!already) {
+      if (!force) {
         const matches = await store.findOrdersByCodes(shop, {
           orderCodeKey: toCodeKey(order.orderCode),
           ...(order.trackingCode ? { trackingCodeKey: toCodeKey(order.trackingCode) } : {}),
@@ -218,8 +259,9 @@ export function QuickOrderScreen() {
           await match.showDuplicates(order.orderCode, shop, items);
           return;
         }
-        await store.saveNewOrder(built.details);
       }
+      await store.saveNewOrder(built.details);
+      match.reset();
       setExit({ kind: 'detail', orderId: order.id });
     } catch (caught) {
       setSaveError(isAppError(caught) ? caught.code : 'ORDER_SAVE_FAILED');
@@ -369,6 +411,7 @@ export function QuickOrderScreen() {
           state={match.state}
           onClose={match.reset}
           onRetry={() => void createOrder()}
+          onCreateAnyway={() => void createOrder(true)}
         />
         {leaveDialog}
       </Screen>

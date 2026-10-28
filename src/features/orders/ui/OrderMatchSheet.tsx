@@ -22,12 +22,18 @@ export function OrderMatchSheet({
   onClose,
   onRetry,
   onOpened,
+  onCreateAnyway,
 }: {
   state: LookupState;
   onClose: () => void;
   onRetry: (code: string) => void;
   /** Gọi ngay trước khi điều hướng sang đơn/tạo đơn (ví dụ ghi lịch sử tìm). */
   onOpened?: (code: string) => void;
+  /**
+   * Chỉ cho chế độ `duplicate`: người dùng CHỦ ĐỘNG tạo thêm đơn dù trùng (khôi phục hành vi cũ, ADR-011;
+   * ví dụ kiện gộp hai đơn chung mã vận đơn). Không gộp, không gắn gì vào đơn cũ. Bỏ trống = không có nút.
+   */
+  onCreateAnyway?: () => void;
 }) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
@@ -143,6 +149,15 @@ export function OrderMatchSheet({
                 />
               ))}
             </View>
+            {onCreateAnyway ? (
+              <Button
+                size="slim"
+                variant="secondary"
+                testID="order-match-create-anyway"
+                label={t('screens:orderMatch.createAnyway')}
+                onPress={onCreateAnyway}
+              />
+            ) : null}
             <Button
               size="slim"
               variant="secondary"
