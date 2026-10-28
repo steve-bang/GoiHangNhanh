@@ -2,6 +2,7 @@ import type { OrderId, OrderLineId, SessionId, ShopId } from '@/core/ids';
 import { AppError } from '@/core/errors/app-error';
 
 import { toCodeKey } from '../domain/codes';
+import { MAX_RECENT_SEARCHES } from '../domain/search';
 import type { OrderStore } from '../domain/order-store';
 import {
   compareListItems,
@@ -28,6 +29,8 @@ export function createMemoryOrderStore(): OrderStore {
   const lines = new Map<OrderLineId, OrderLine>();
   const packages = new Map<string, OrderPackage>();
   const sessions = new Map<SessionId, PackingSession>();
+  /** shopId -> (khóa chuẩn hóa -> mục). */
+  const searches = new Map<string, Map<string, { text: string; lastUsedAtDevice: number }>>();
 
   const linesOf = (orderId: OrderId) =>
     [...lines.values()]
@@ -122,6 +125,30 @@ export function createMemoryOrderStore(): OrderStore {
       if (sessionsOf(shopId, line.orderId).length > 0) throw new AppError('ORDER_HAS_SESSION');
       lines.set(lineId, { ...line, quantity });
     },
+    async updateOrder(shopId, orderId, edit) {
+      const order = orderOf(shopId, orderId);
+      if (!order) throw new AppError('ORDER_NOT_FOUND');
+      if (sessionsOf(shopId, orderId).length > 0) throw new AppError('ORDER_HAS_SESSION');
+      const incoming = copy(edit.lines);
+      // Kiểm tra trước khi ghi (bộ nhớ không có giao dịch): dòng phải thuộc đơn này, ID dòng mới
+      // không được trùng dòng của đơn khác; sai thì không đổi gì.
+      for (const line of incoming) {
+        const other = lines.get(line.id);
+        if (line.orderId !== orderId || (other && other.orderId !== orderId)) {
+          throw new AppError('ORDER_SAVE_FAILED');
+        }
+      }
+      orders.set(orderId, { ...order, source: edit.source, trackingCode: edit.trackingCode });
+      const keep = new Set(incoming.map((l) => l.id));
+      for (const existing of linesOf(orderId))
+        if (!keep.has(existing.id)) lines.delete(existing.id);
+      for (const line of incoming) lines.set(line.id, line);
+      return copy<OrderDetails>({
+        order: orders.get(orderId) as Order,
+        lines: linesOf(orderId),
+        packages: packagesOf(orderId),
+      });
+    },
     async addPackage(shopId, pkg) {
       if (
         !orderOf(shopId, pkg.orderId) ||
@@ -159,6 +186,29 @@ export function createMemoryOrderStore(): OrderStore {
     },
     async hasRecordingOnDevice() {
       return [...sessions.values()].some((s) => isSessionStatusRecording(s.sessionStatus));
+    },
+    async recordSearch(shopId, text, nowDevice) {
+      const clean = text.trim().replace(/\s+/g, ' ');
+      if (clean.length === 0) return;
+      const mine = searches.get(shopId) ?? new Map();
+      mine.set(toCodeKey(clean), { text: clean, lastUsedAtDevice: nowDevice });
+      const newestFirst = [...mine.entries()].sort(
+        (a, b) => b[1].lastUsedAtDevice - a[1].lastUsedAtDevice,
+      );
+      for (const [key] of newestFirst.slice(MAX_RECENT_SEARCHES)) mine.delete(key);
+      searches.set(shopId, mine);
+    },
+    async listRecentSearches(shopId, limit) {
+      return [...(searches.get(shopId)?.values() ?? [])]
+        .sort((a, b) => b.lastUsedAtDevice - a.lastUsedAtDevice)
+        .slice(0, limit)
+        .map((s) => ({ ...s }));
+    },
+    async removeRecentSearch(shopId, text) {
+      searches.get(shopId)?.delete(toCodeKey(text));
+    },
+    async clearRecentSearches(shopId) {
+      searches.delete(shopId);
     },
     async hasRecordingInProgress(shopId) {
       return [...sessions.values()].some(

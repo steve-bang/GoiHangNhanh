@@ -18,13 +18,21 @@ import {
 } from '@/shared/ui';
 import { layout } from '@/core/theme';
 
-import { canRecordNow, formatDeviceDateTime, isSessionActive } from '../domain';
+import {
+  canRecordNow,
+  countEvidence,
+  formatDeviceDateTime,
+  isSessionActive,
+  type OrderDetails,
+  type OrderEvidenceItem,
+  type OrderEvidenceSummary,
+  type PackingSession,
+} from '../domain';
 import { CopyButton } from './CopyButton';
-import { OrderEvidenceBadge } from './OrderEvidenceBadge';
+import { CopyableOrderCode } from './CopyableOrderCode';
+import { EvidenceSummaryCard } from './EvidenceSummaryCard';
 import { useOrderDetail } from './use-order-detail';
-import { useStartPacking } from './use-start-packing';
-
-type CopyTarget = 'orderCode' | 'trackingCode';
+import { useRecordOrder } from './use-record-order';
 
 /**
  * UI-E02 Chi tiết đơn, CHỈ ĐỌC (sửa đơn là việc sau). Mở bằng ID nội bộ; ID không có hoặc thuộc shop
@@ -37,13 +45,9 @@ export function OrderDetailScreen() {
   const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const params = useRouteParams();
-  const start = useStartPacking({ navigate: 'push' });
-  const { state, reload } = useOrderDetail(params.orderId as OrderId | undefined);
-  const [copied, setCopied] = useState<CopyTarget | 'failed' | null>(null);
+  const orderId = params.orderId as OrderId | undefined;
+  const { state, reload } = useOrderDetail(orderId);
 
-  const copy = async (target: CopyTarget, text: string) => {
-    setCopied((await copyText(text)) ? target : 'failed');
-  };
   const header = {
     form: true,
     contentGap: tokens.space.md,
@@ -93,13 +97,49 @@ export function OrderDetailScreen() {
     );
   }
 
-  const { details, sessions, evidence } = state;
+  return (
+    <DetailReady
+      header={header}
+      details={state.details}
+      sessions={state.sessions}
+      evidence={state.evidence}
+      items={state.items}
+    />
+  );
+}
+
+type DetailHeader = {
+  readonly form: true;
+  readonly contentGap: number;
+  readonly title: string;
+  readonly onBack: () => void;
+  readonly inTabs: true;
+  readonly testID: string;
+};
+
+function DetailReady({
+  header,
+  details,
+  sessions,
+  evidence,
+  items,
+}: {
+  header: DetailHeader;
+  details: OrderDetails;
+  sessions: readonly PackingSession[];
+  evidence: OrderEvidenceSummary;
+  items: readonly OrderEvidenceItem[];
+}) {
+  const { t } = useTranslation();
+  const { tokens } = useTheme();
+  const navigation = useAppNavigation();
+  const [copied, setCopied] = useState<'trackingCode' | 'failed' | null>(null);
   const { order, lines, packages } = details;
   const activeSession = sessions.find(isSessionActive) ?? null; // mới nhất trước; cùng quy tắc với danh sách
+  const { start, recordNow } = useRecordOrder(order.id, activeSession);
   const record = canRecordNow(evidence);
-  const recordNow = () => {
-    if (activeSession) start.begin(order.id, activeSession.packageId);
-    else navigation.push(ROUTES.orderPreview, { orderId: order.id });
+  const copyTracking = async (text: string) => {
+    setCopied((await copyText(text)) ? 'trackingCode' : 'failed');
   };
 
   const history = [
@@ -115,50 +155,38 @@ export function OrderDetailScreen() {
     <Screen
       {...header}
       footer={
-        record || start.error ? (
-          <>
-            {start.error ? (
-              <Card compact tone="danger" testID="order-detail-start-error">
-                <Text variant="formBody" accessibilityRole="alert">
-                  {t(`errors:${start.error}`)}
-                </Text>
-              </Card>
-            ) : null}
-            {record ? (
-              <Button
-                size="compact"
-                testID="order-detail-record"
-                label={t('screens:orderDetail.recordNow')}
-                loading={start.busy}
-                onPress={recordNow}
-              />
-            ) : null}
-          </>
-        ) : undefined
+        <>
+          {start.error ? (
+            <Card compact tone="danger" testID="order-detail-start-error">
+              <Text variant="formBody" accessibilityRole="alert">
+                {t(`errors:${start.error}`)}
+              </Text>
+            </Card>
+          ) : null}
+          {record ? (
+            <Button
+              size="compact"
+              testID="order-detail-record"
+              label={t('screens:orderDetail.recordPack')}
+              loading={start.busy}
+              onPress={recordNow}
+            />
+          ) : null}
+          <Button
+            size="compact"
+            variant={record ? 'secondary' : 'primary'}
+            testID="order-detail-view-evidence"
+            label={t('screens:orderDetail.viewEvidence')}
+            onPress={() => navigation.push(ROUTES.orderEvidence, { orderId: order.id })}
+          />
+        </>
       }
     >
       <Card compact>
         <View style={{ gap: tokens.space.sm }}>
-          <Text variant="formButton" color="ink" accessibilityRole="header">
-            {t('screens:orderDetail.identity')}
-          </Text>
+          <CopyableOrderCode orderCode={order.orderCode} />
           <View style={styles.row}>
-            <View style={styles.flex}>
-              <Text variant="formLabel" color="inkMuted">
-                {t('screens:orderDetail.orderCode')}
-              </Text>
-              <Text variant="formTitle" accessibilityRole="text" testID="detail-order-code">
-                {order.orderCode}
-              </Text>
-            </View>
-            <CopyButton
-              testID="copy-order-code"
-              label={t('screens:orderDetail.copyOrderCode')}
-              onPress={() => void copy('orderCode', order.orderCode)}
-            />
-          </View>
-          <View style={styles.row}>
-            <SourceIcon source={order.source} size={24} />
+            <SourceIcon source={order.source} size={tokens.component.tile.sm} />
             <View style={styles.flex}>
               <Text variant="formLabel" color="inkMuted">
                 {t('screens:orderDetail.source')}
@@ -181,7 +209,7 @@ export function OrderDetailScreen() {
               <CopyButton
                 testID="copy-tracking-code"
                 label={t('screens:orderDetail.copyTrackingCode')}
-                onPress={() => void copy('trackingCode', order.trackingCode ?? '')}
+                onPress={() => void copyTracking(order.trackingCode ?? '')}
               />
             </View>
           ) : (
@@ -213,6 +241,20 @@ export function OrderDetailScreen() {
           <Text variant="caption" color="textMuted">
             {t('screens:orderDetail.enteredByYou')}
           </Text>
+          {sessions.length === 0 ? (
+            <Button
+              size="slim"
+              variant="secondary"
+              testID="order-detail-edit"
+              label={t('screens:orderDetail.edit')}
+              onPress={() => navigation.push(ROUTES.orderEdit, { orderId: order.id })}
+            />
+          ) : (
+            // Đơn đã bắt đầu quay: chưa sửa được (chưa có lịch sử thay đổi; bất biến 7, Q-22ah).
+            <Text variant="caption" color="textMuted" testID="detail-edit-locked">
+              {t('screens:orderEdit.lockedMessage')}
+            </Text>
+          )}
         </View>
       </Card>
 
@@ -263,20 +305,10 @@ export function OrderDetailScreen() {
         </View>
       </Card>
 
-      <Card compact>
-        <View style={{ gap: tokens.space.sm }}>
-          <Text variant="formButton" color="ink" accessibilityRole="header">
-            {t('screens:orderDetail.evidence')}
-          </Text>
-          {evidence.kind === 'none' ? (
-            <Text variant="formBody" color="ink" testID="detail-no-evidence">
-              {t('screens:orderDetail.noEvidence')}
-            </Text>
-          ) : (
-            <OrderEvidenceBadge summary={evidence} />
-          )}
-        </View>
-      </Card>
+      <EvidenceSummaryCard
+        summary={evidence}
+        counts={items.length > 0 ? countEvidence(items) : null}
+      />
 
       <Card compact>
         <View style={{ gap: tokens.space.sm }}>

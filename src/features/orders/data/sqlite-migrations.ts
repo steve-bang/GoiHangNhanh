@@ -48,4 +48,15 @@ export const MIGRATIONS: readonly string[] = [
     session_status TEXT NOT NULL
   );
   `,
+  // v2: lịch sử tìm kiếm cục bộ theo shop (UI-B03; Q-22u). Không đụng bảng của v1.
+  `
+  CREATE TABLE search_history (
+    shop_id TEXT NOT NULL,
+    query_key TEXT NOT NULL,
+    query_text TEXT NOT NULL,
+    last_used_at_device INTEGER NOT NULL,
+    PRIMARY KEY (shop_id, query_key)
+  );
+  CREATE INDEX idx_search_history_shop_recent ON search_history (shop_id, last_used_at_device DESC);
+  `,
 ];

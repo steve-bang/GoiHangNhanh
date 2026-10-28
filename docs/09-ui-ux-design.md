@@ -105,7 +105,7 @@ Mỗi màn: mục đích, thành phần, hành động chính. Quy tắc nghiệ
 | UI-B01 | Tổng quan | Thứ tự trên xuống: tên shop + menu tài khoản; khối đồng bộ (nếu có lỗi/tệp chờ); hai nút lớn *Đóng gói đơn*, *Nhận hàng hoàn*; đơn gần đây; việc cần xử lý (video lỗi, phiên chưa hoàn tất, dung lượng). **Không** biểu đồ doanh thu/lợi nhuận |
 | UI-B02 | Trung tâm quét mã | Camera quét ngay; đèn pin, nhập tay, tìm đơn đã lưu; hiện mã vừa quét; quét xong tự tra cứu (không nút "Tìm"); chống quét lặp; mã không nhận diện → nhập lại hoặc tạo nhanh |
 | UI-B03 | Tìm đơn thủ công | Ô tìm lớn theo mã đơn/vận đơn; lịch sử tìm; kết quả: mã đơn, nguồn bán, ngày, trạng thái bằng chứng; trùng mã giữa nhiều nguồn → bắt chọn đúng hồ sơ |
-| UI-B04 | Tạo hồ sơ đơn nhanh | Mã đơn (điền từ mã quét), nguồn bán, mã vận đơn (tùy chọn), sản phẩm (gợi ý từ lịch sử), variant, số lượng (tăng/giảm nhanh, mặc định 1). Nút chính *Lưu và quay video*; phụ *Bỏ qua thông tin sản phẩm*. Mã chưa có → "Chưa có hồ sơ đơn này", không giả vờ lấy dữ liệu từ sàn |
+| UI-B04 | Tạo hồ sơ đơn nhanh | Mã đơn (điền từ mã quét), nguồn bán, mã vận đơn (tùy chọn), sản phẩm (gợi ý từ lịch sử), variant, số lượng (tăng/giảm nhanh, mặc định 1). Nút chính *Tiếp tục* (chỉ kiểm tra) -> bước *Xác nhận đơn hàng* (tóm tắt, *Quay lại chỉnh sửa*, *Tạo đơn hàng*) -> lưu rồi mở chi tiết đơn; **quay bắt đầu từ chi tiết (luồng mới, Q-22a; chờ BA chỉnh các mô tả quay ngay ở dưới)**. Mã chưa có → "Chưa có hồ sơ đơn này", không giả vờ lấy dữ liệu từ sàn |
 | UI-B05 | Chế độ xử lý liên tục | Đếm số đơn đã quét trong phiên; mỗi mã một mục trong danh sách tạm; quét tiếp/sửa nhanh/mở để quay; khi quay khóa đúng đơn và kiện; **không tự chuyển đơn khi video đang ghi** |
 
 ### Nhóm C — Đóng gói và quay video gửi hàng
@@ -114,7 +114,7 @@ Luồng rút gọn: Quét/nhập mã → tra cứu hoặc tạo nhanh → (kiể
 
 | Mã | Màn | Nội dung chính |
 |---|---|---|
-| UI-C01 | Xem nhanh đơn trước khi quay | Mã đơn + nguồn bán nổi bật; sản phẩm dạng tóm tắt; nhãn *Chưa khai báo sản phẩm* nếu có; thêm nhiều dòng; đơn nhiều kiện → chọn/tạo kiện. CTA chính **Bắt đầu quay** (đồng thời là bước tạo phiên) |
+| UI-C01 | Xem nhanh đơn trước khi quay | *(Từ PR4: chỉ dùng cho đơn ĐÃ có, vào từ Quay đóng gói ở chi tiết/danh sách; bước xem lại đơn MỚI nằm trong UI-B04, chờ BA chỉnh.)* Mã đơn + nguồn bán nổi bật; sản phẩm dạng tóm tắt; nhãn *Chưa khai báo sản phẩm* nếu có; thêm nhiều dòng; đơn nhiều kiện → chọn/tạo kiện. CTA chính **Bắt đầu quay** (đồng thời là bước tạo phiên) |
 | UI-C02 | Kiểm tra trước khi quay | Camera, micro, bộ nhớ đủ cho phiên dự kiến, quyền, khả năng lưu cục bộ. **Chạy ngầm; chỉ hiện khi có điều kiện không đạt**, kèm cách khắc phục cụ thể. Chỉ cho quay khi đủ điều kiện ghi và lưu an toàn |
 | UI-C03 | Quay video | Khung camera chiếm phần lớn; mã đơn, mã kiện, đồng hồ luôn hiện; nút ghi/dừng rõ; cảnh báo camera gián đoạn/gần hết bộ nhớ; **không** bộ lọc/làm đẹp/chỉnh sửa; không đổi đơn khi đang quay; gián đoạn phải ghi nhận và hiển thị |
 | UI-C04 | Kết thúc và xác nhận | Thumbnail, thời lượng, mã đơn; xem lại / ghi thêm đoạn riêng / dùng video; nhãn "phiên quay bị gián đoạn" nếu có; CTA *Lưu bằng chứng* — báo lưu thành công chỉ sau khi tệp đã ghi an toàn |
@@ -140,7 +140,7 @@ Phải khác luồng đóng gói: ghi nhận tình trạng kiện **trước** k
 | Mã | Màn | Nội dung chính |
 |---|---|---|
 | UI-E01 | Danh sách đơn | Tìm theo mã đơn/vận đơn; lọc nguồn bán, thời gian, trạng thái bằng chứng; thẻ: mã, nguồn bán, ngày, số video — không nhồi nhiều trường |
-| UI-E02 | Chi tiết đơn | Khu vực thu gọn được: nhận diện; sản phẩm/variant khai báo; kiện; bằng chứng đóng gói; hàng hoàn liên quan; lịch sử. CTA chính *Xem bằng chứng*; sửa thông tin là hành động phụ |
+| UI-E02 | Chi tiết đơn | Khu vực thu gọn được: nhận diện; sản phẩm/variant khai báo; kiện; bằng chứng đóng gói; hàng hoàn liên quan; lịch sử. CTA chính *Xem bằng chứng*; sửa thông tin là hành động phụ *(PR5: chỉ khi đơn chưa có phiên quay; đơn đã quay chưa sửa được vì chưa có lịch sử thay đổi, Q-22ah; chờ BA)* |
 | UI-E03 | Danh sách bằng chứng | Thumbnail; loại (đóng gói, mở kiện hoàn, ảnh tình trạng kiện, ảnh kiểm hàng); thời gian, thời lượng; trạng thái theo chuẩn mục 3 — không chỉ thumbnail xanh/dấu tick |
 | UI-E04 | Chi tiết video | Trình phát; mã đơn/kiện, thời điểm, thời lượng; trạng thái tải lên/xác minh; thông tin phiên quay kể cả gián đoạn; chia sẻ/xuất nếu được phép. Thêm phiên mới không ghi đè bản gốc |
 | UI-E05 | Lịch sử thay đổi | Ai, lúc nào, trường nào; trường quan trọng có giá trị trước/sau; phân biệt dữ liệu người dùng nhập với dữ liệu xác nhận từ nguồn tích hợp (nếu có sau này); không sửa/xóa theo cách thông thường |

@@ -23,6 +23,10 @@ import {
 } from '@/shared/ui';
 import { layout } from '@/core/theme';
 
+import { validateCode } from '../domain';
+import { OrderMatchSheet } from './OrderMatchSheet';
+import { useOrderLookup } from './use-order-lookup';
+
 /** Cùng một mã đọc lại trong khoảng này (mili giây) bị bỏ qua: camera đọc liên tục cùng một mã. */
 const REPEAT_SCAN_WINDOW_MS = 2000;
 const FRAME_MAX = 260;
@@ -32,9 +36,9 @@ const CORNER_THICKNESS = 4;
 
 /**
  * UI-B02 Quét mã đơn hàng (đặc tả A02; mockup docs/assets/ui/02-home-and-scan.png). Camera thật
- * qua adapter `@/platform` (ADR-016). Quét xong chuyển ngay mã sang Tạo đơn nhanh (UI-B04), không
- * nút "Tìm"; chống quét lặp; mã vừa quét hiện lên. Chưa có tra cứu thật nên không tự chọn đơn nào
- * (bất biến 5). Là route cấp gốc (`/scan`) nên Back về đúng màn đứng trước khi bấm Quét (Q-16a). Ngoại lệ: chưa cấp/bị chặn quyền camera, camera không mở được
+ * qua adapter `@/platform` (ADR-016). Quét/nhập xong TRA CỨU trong kho cục bộ rồi mở `OrderMatchSheet`
+ * (một đơn / không thấy / nhiều đơn; Q-22x); không nút "Tìm", không tự tạo hay chọn đơn (bất biến 5).
+ * Chống quét lặp; trong lúc hộp kết quả mở, mã mới bị bỏ qua (một mã chỉ một truy vấn). Là route cấp gốc (`/scan`) nên Back về đúng màn đứng trước khi bấm Quét (Q-16a). Ngoại lệ: chưa cấp/bị chặn quyền camera, camera không mở được
  * -> vẫn nhập tay được.
  */
 export function ScanScreen() {
@@ -50,19 +54,19 @@ export function ScanScreen() {
   const [torch, setTorch] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [code, setCode] = useState('');
+  const [codeError, setCodeError] = useState(false);
   const [lastCode, setLastCode] = useState<string | null>(null);
   const [cameraFailed, setCameraFailed] = useState(false);
   const [permissionDismissed, setPermissionDismissed] = useState(false);
   const lastScan = useRef<{ code: string; at: number } | null>(null);
   const handled = useRef(false);
-  const unlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const match = useOrderLookup();
+  const [scanInvalid, setScanInvalid] = useState(false);
 
-  useEffect(
-    () => () => {
-      if (unlockTimer.current) clearTimeout(unlockTimer.current);
-    },
-    [],
-  );
+  // Hộp kết quả về trạng thái nghỉ (đóng, hoặc tự ẩn vì đổi shop): lại nhận mã mới từ camera.
+  useEffect(() => {
+    if (match.state.kind === 'idle') handled.current = false;
+  }, [match.state.kind]);
 
   const frame = Math.min(FRAME_MAX, Math.round(width * FRAME_RATIO));
   const trimmed = code.trim();
@@ -74,8 +78,23 @@ export function ScanScreen() {
     !manualOpen;
 
   const lookup = (value: string) => {
+    const checked = validateCode(value);
+    if (!checked.ok) {
+      setCodeError(true);
+      return false;
+    }
+    setCodeError(false);
     setManualOpen(false);
-    navigation.push(ROUTES.quickOrder, { code: value });
+    handled.current = true;
+    void match.lookup(checked.code);
+    return true;
+  };
+
+  // Đóng hộp kết quả: lại nhận mã mới; cùng mã vừa tra vẫn bị chặn trong khoảng chống lặp.
+  const closeMatch = () => {
+    lastScan.current = lastScan.current ? { ...lastScan.current, at: Date.now() } : null;
+    handled.current = false;
+    match.reset();
   };
 
   const onScan = (scanned: string) => {
@@ -88,13 +107,16 @@ export function ScanScreen() {
       return;
     }
     lastScan.current = { code: scanned, at: now };
+    if (!validateCode(scanned).ok) {
+      // Mã camera không hợp lệ (quá dài, ký tự điều khiển): không tra cứu, không hiện "Vừa quét".
+      setScanInvalid(true);
+      return;
+    }
+    setScanInvalid(false);
     handled.current = true;
     setLastCode(scanned);
-    lookup(scanned);
-    // Mở khóa sau khoảng chống lặp: quay lại màn quét thì quét được mã tiếp theo.
-    unlockTimer.current = setTimeout(() => {
-      handled.current = false;
-    }, REPEAT_SCAN_WINDOW_MS);
+    // `handled` giữ true cho tới khi đóng hộp kết quả (closeMatch): không chồng hai hộp, mỗi mã một truy vấn.
+    if (!lookup(scanned)) handled.current = false;
   };
 
   const headerButton = {
@@ -141,24 +163,6 @@ export function ScanScreen() {
           {t('nav:titles.UI-B02')}
         </Text>
         <View style={styles.headerRight}>
-          {cameraReady ? (
-            <Pressable
-              testID="scan-torch"
-              accessibilityRole="button"
-              accessibilityState={{ selected: torch }}
-              accessibilityLabel={t(
-                torch ? 'screens:scan.flashlightOff' : 'screens:scan.flashlightOn',
-              )}
-              onPress={() => setTorch((value) => !value)}
-              style={headerButton}
-            >
-              <Icon
-                name={torch ? 'flash' : 'flash-off'}
-                size={24}
-                color={tokens.color.camera.onCamera}
-              />
-            </Pressable>
-          ) : null}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('screens:scan.help')}
@@ -196,6 +200,17 @@ export function ScanScreen() {
             <Text style={[styles.hint, { color: tokens.color.camera.onCamera }]}>
               {t('screens:scan.hint')}
             </Text>
+            {scanInvalid ? (
+              <Text
+                testID="scan-invalid"
+                variant="caption"
+                bold
+                accessibilityRole="alert"
+                style={{ color: tokens.color.camera.onCamera }}
+              >
+                {t('errors:INVALID_CODE')}
+              </Text>
+            ) : null}
             {lastCode ? (
               <Text variant="caption" bold style={{ color: tokens.color.camera.scanAccent }}>
                 {t('screens:scan.lastScanned', { code: lastCode })}
@@ -212,27 +227,58 @@ export function ScanScreen() {
         )}
       </View>
 
-      <Pressable
-        testID="scan-manual-open"
-        accessibilityRole="button"
-        accessibilityLabel={t('screens:scan.manualButton')}
-        onPress={() => setManualOpen(true)}
-        style={[
-          styles.manual,
-          {
-            backgroundColor: tokens.color.camera.control,
-            borderRadius: tokens.radius.lg,
-            minHeight: Math.max(touch, layout.component.field.minHeight),
-            marginHorizontal: tokens.space.lg,
-          },
-        ]}
-      >
-        <Icon name="keyboard" size={22} color={tokens.color.camera.onCamera} />
-        <Text bold style={[styles.manualLabel, { color: tokens.color.camera.onCamera }]}>
-          {t('screens:scan.manualButton')}
-        </Text>
-        <Icon name="forward" size={20} color={tokens.color.camera.onCamera} />
-      </Pressable>
+      <View style={[styles.bottomRow, { gap: tokens.space.md, marginHorizontal: tokens.space.lg }]}>
+        <Pressable
+          testID="scan-manual-open"
+          accessibilityRole="button"
+          accessibilityLabel={t('screens:scan.manualButton')}
+          onPress={() => setManualOpen(true)}
+          style={[
+            styles.manual,
+            {
+              backgroundColor: tokens.color.camera.control,
+              borderRadius: tokens.radius.lg,
+              minHeight: Math.max(touch, layout.component.field.minHeight),
+              flex: 1,
+            },
+          ]}
+        >
+          <Icon name="keyboard" size={22} color={tokens.color.camera.onCamera} />
+          <Text bold style={[styles.manualLabel, { color: tokens.color.camera.onCamera }]}>
+            {t('screens:scan.manualButton')}
+          </Text>
+          <Icon name="forward" size={20} color={tokens.color.camera.onCamera} />
+        </Pressable>
+
+        {cameraReady ? (
+          <Pressable
+            testID="scan-torch"
+            accessibilityRole="button"
+            accessibilityState={{ selected: torch }}
+            accessibilityLabel={t(
+              torch ? 'screens:scan.flashlightOff' : 'screens:scan.flashlightOn',
+            )}
+            onPress={() => setTorch((value) => !value)}
+            style={[
+              styles.torch,
+              {
+                minWidth: Math.max(touch, layout.component.field.minHeight),
+                minHeight: Math.max(touch, layout.component.field.minHeight),
+                backgroundColor: torch
+                  ? tokens.color.camera.scanAccent
+                  : tokens.color.camera.control,
+                borderRadius: tokens.radius.full,
+              },
+            ]}
+          >
+            <Icon
+              name={torch ? 'flash' : 'flash-off'}
+              size={24}
+              color={tokens.color.camera.onCamera}
+            />
+          </Pressable>
+        ) : null}
+      </View>
 
       <View
         style={[
@@ -281,6 +327,12 @@ export function ScanScreen() {
         allowTestID="scan-permission-allow"
       />
 
+      <OrderMatchSheet
+        state={match.state}
+        onClose={closeMatch}
+        onRetry={(retryCode) => void match.lookup(retryCode)}
+      />
+
       <BottomSheet
         visible={manualOpen}
         onClose={() => setManualOpen(false)}
@@ -292,7 +344,11 @@ export function ScanScreen() {
             label={t('screens:scan.manualLabel')}
             placeholder={t('screens:scan.manualPlaceholder')}
             value={code}
-            onChangeText={setCode}
+            onChangeText={(value) => {
+              setCode(value);
+              setCodeError(false);
+            }}
+            {...(codeError ? { error: t('errors:INVALID_CODE') } : {})}
             returnKeyType="search"
             autoCapitalize="characters"
             onSubmitEditing={() => {
@@ -418,9 +474,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: layout.space.md,
     paddingHorizontal: layout.space.lg,
-    marginBottom: layout.space.lg,
   },
   manualLabel: { flex: 1 },
+  bottomRow: { flexDirection: 'row', alignItems: 'center', marginBottom: layout.space.lg },
+  torch: { alignItems: 'center', justifyContent: 'center' },
   tips: {},
   tipsBox: {},
   tipRow: { flexDirection: 'row', alignItems: 'center', gap: layout.space.sm },

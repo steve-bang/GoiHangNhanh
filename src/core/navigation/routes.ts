@@ -142,6 +142,8 @@ export const ROUTES = {
   orderDetail: route('/orders/[orderId]', 'UI-E02', true),
   orderEvidence: route('/orders/[orderId]/evidence', 'UI-E03', true),
   evidenceDetail: route('/orders/[orderId]/evidence/[evidenceId]', 'UI-E04', true),
+  // PR5 (ORD-08): sửa đơn, route con của UI-E02 (Q-22g, không mã UI mới), ẩn thanh tab.
+  orderEdit: subRoute('/orders/[orderId]/edit', 'orderDetail', 'UI-E02', true, true),
   orderHistory: route('/orders/[orderId]/history', 'UI-E05', true),
   // Nhóm F - tab Đồng bộ
   sync: route('/sync', 'UI-F01'),

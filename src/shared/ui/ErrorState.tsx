@@ -23,7 +23,7 @@ interface ErrorStateProps {
 
 /**
  * Trạng thái lỗi cục bộ của một khu vực (hồ sơ, cửa hàng, gói...), độc lập với khu vực khác. Không
- * thay cho `EmptyState` (chưa có dữ liệu). Chữ do bên gọi lấy từ i18n theo mã lỗi (docs/09 mục 5.1).
+ * thay cho `EmptyState` (chưa có dữ liệu). Container KHÔNG `accessible` (để nút Thử lại focus được bằng VoiceOver iOS); role alert chỉ ở tiêu đề. Chữ do bên gọi lấy từ i18n theo mã lỗi (docs/09 mục 5.1).
  */
 export function ErrorState({
   title,
@@ -39,8 +39,6 @@ export function ErrorState({
   return (
     <View
       testID={testID}
-      accessible
-      accessibilityRole="alert"
       style={[
         styles.container,
         { gap: tokens.space.sm, padding: tokens.space.lg },
@@ -54,7 +52,7 @@ export function ErrorState({
       ]}
     >
       <Icon name="alert" size={32} color={tokens.color.feedback.danger.fg} />
-      <Text bold style={styles.centered}>
+      <Text bold accessibilityRole="alert" style={styles.centered}>
         {title}
       </Text>
       {message ? (

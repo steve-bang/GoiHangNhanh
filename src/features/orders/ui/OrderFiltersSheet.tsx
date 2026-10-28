@@ -101,20 +101,24 @@ export function OrderFiltersSheet({
             onSelect={(key) => setDraft({ ...draft, declaration: key === 'all' ? null : key })}
           />
         </View>
-        <View style={{ gap: tokens.space.sm }}>
-          <Button
-            size="compact"
-            testID="orders-filters-apply"
-            label={t('screens:orders.filters.apply')}
-            onPress={() => onApply(draft)}
-          />
-          <Button
-            testID="orders-filters-clear"
-            size="slim"
-            variant="secondary"
-            label={t('screens:orders.filters.clear')}
-            onPress={() => setDraft({ ...draft, period: null, source: null, declaration: null })}
-          />
+        <View style={{ flexDirection: 'row', gap: tokens.space.sm }}>
+          <View style={{ flex: 1 }}>
+            <Button
+              testID="orders-filters-clear"
+              size="compact"
+              variant="secondary"
+              label={t('screens:orders.filters.clear')}
+              onPress={() => setDraft({ ...draft, period: null, source: null, declaration: null })}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button
+              size="compact"
+              testID="orders-filters-apply"
+              label={t('screens:orders.filters.apply')}
+              onPress={() => onApply(draft)}
+            />
+          </View>
         </View>
       </View>
     </BottomSheet>

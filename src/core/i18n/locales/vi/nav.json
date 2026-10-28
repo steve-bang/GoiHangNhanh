@@ -30,7 +30,7 @@
     "UI-A09": "Mật khẩu mới",
     "UI-B01": "Trang chủ",
     "UI-B02": "Quét mã đơn hàng",
-    "UI-B03": "Tìm đơn thủ công",
+    "UI-B03": "Tìm đơn hàng",
     "UI-B04": "Tạo đơn nhanh",
     "UI-B05": "Xử lý liên tục",
     "UI-C01": "Xác nhận đơn trước khi quay",
@@ -48,7 +48,7 @@
     "UI-D07": "Hoàn tất tiếp nhận",
     "UI-E01": "Đơn hàng",
     "UI-E02": "Chi tiết đơn",
-    "UI-E03": "Danh sách bằng chứng",
+    "UI-E03": "Bằng chứng của đơn",
     "UI-E04": "Chi tiết video",
     "UI-E05": "Lịch sử thay đổi",
     "UI-F01": "Đồng bộ",
@@ -84,6 +84,7 @@
     "helpArticle": "Bài hướng dẫn",
     "helpContact": "Liên hệ hỗ trợ",
     "helpLegal": "Điều khoản và chính sách",
-    "deleteAccount": "Xóa tài khoản"
+    "deleteAccount": "Xóa tài khoản",
+    "orderEdit": "Sửa thông tin đơn"
   }
 }

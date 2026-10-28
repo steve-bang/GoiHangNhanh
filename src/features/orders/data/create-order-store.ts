@@ -31,6 +31,7 @@ export function createLocalOrderStore(open: () => Promise<SqlDatabase | null>): 
     findOrdersByCodes: async (s, q) => (await get()).findOrdersByCodes(s, q),
     listRecentLines: async (s, l) => (await get()).listRecentLines(s, l),
     updateLineQuantity: async (shop, id, q) => (await get()).updateLineQuantity(shop, id, q),
+    updateOrder: async (shop, id, edit) => (await get()).updateOrder(shop, id, edit),
     addPackage: async (shop, p) => (await get()).addPackage(shop, p),
     saveSession: async (s) => (await get()).saveSession(s),
     getSession: async (shop, id) => (await get()).getSession(shop, id),
@@ -39,5 +40,9 @@ export function createLocalOrderStore(open: () => Promise<SqlDatabase | null>): 
     hasRecordingInProgress: async (shop) => (await get()).hasRecordingInProgress(shop),
     countUnsyncedOnDevice: async () => (await get()).countUnsyncedOnDevice(),
     hasRecordingOnDevice: async () => (await get()).hasRecordingOnDevice(),
+    recordSearch: async (s, t, n) => (await get()).recordSearch(s, t, n),
+    listRecentSearches: async (s, l) => (await get()).listRecentSearches(s, l),
+    removeRecentSearch: async (s, t) => (await get()).removeRecentSearch(s, t),
+    clearRecentSearches: async (s) => (await get()).clearRecentSearches(s),
   };
 }

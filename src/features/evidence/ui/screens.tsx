@@ -1,5 +1,4 @@
 import { PlaceholderScreen } from '@/shared/ui';
 
-/** Danh sách bằng chứng (UI-E03) và chi tiết video (UI-E04); nằm trong tab Đơn hàng. */
-export const OrderEvidenceScreen = () => <PlaceholderScreen uiCode="UI-E03" inTabs />;
+/** Chi tiết video (UI-E04); nằm trong tab Đơn hàng. Danh sách bằng chứng của đơn (UI-E03) ở `features/orders` (cần dữ liệu đơn; tránh phụ thuộc vòng). */
 export const EvidenceDetailScreen = () => <PlaceholderScreen uiCode="UI-E04" inTabs />;

@@ -450,9 +450,11 @@ describe('ErrorState variant=card', () => {
         message="Vui lòng thử lại."
         onRetry={onRetry}
         variant="card"
+        testID="es"
       />,
     );
-    const alert = screen.getByRole('alert');
+    const alert = screen.getByTestId('es');
+    expect(screen.getByRole('alert')).toHaveTextContent('Không thể tải');
     expect(flat(alert).backgroundColor).toBe(color.feedback.danger.bg);
     await fireEvent.press(screen.getByRole('button', { name: 'Thử lại' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
@@ -464,8 +466,8 @@ describe('ErrorState variant=card', () => {
     expect(flat(screen.getByRole('button', { name: 'Thử lại' })).backgroundColor).not.toBe(
       color.action.primary,
     );
-    await rerender(<ErrorState title="Không thể tải" />);
-    expect(flat(screen.getByRole('alert')).backgroundColor).toBeUndefined();
+    await rerender(<ErrorState title="Không thể tải" testID="es" />);
+    expect(flat(screen.getByTestId('es')).backgroundColor).toBeUndefined();
     expect(screen.queryByRole('button')).toBeNull();
   });
 });

@@ -164,6 +164,12 @@ describe('Avatar', () => {
 });
 
 describe('ErrorState', () => {
+  it('container không gộp thành một phần tử truy cập: nút Thử lại focus được riêng (VoiceOver iOS)', async () => {
+    await renderWithProviders(<ErrorState title="Lỗi." onRetry={jest.fn()} testID="es" />);
+    expect(screen.getByTestId('es').props.accessible).not.toBe(true);
+    expect(screen.getByRole('alert')).toHaveTextContent('Lỗi.');
+  });
+
   it('báo lỗi (alert), có nút Thử lại gọi đúng hàm; khóa khi đang thử lại', async () => {
     const onRetry = jest.fn();
     const { rerender } = await renderWithProviders(

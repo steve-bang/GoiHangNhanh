@@ -30,9 +30,22 @@ export type {
 } from './order-list';
 export { canRecordNow, summarizeOrderEvidence } from './order-evidence';
 export type { OrderEvidenceSummary } from './order-evidence';
+export { countEvidence, packItems, summarizePackEvidence } from './evidence-items';
+export type { EvidenceCounts, OrderEvidenceItem } from './evidence-items';
+export { classifyLookup, matchReasons } from './lookup';
+export type { LookupMatch, LookupResult, MatchReason } from './lookup';
+export {
+  MAX_RECENT_SEARCHES,
+  MIN_SEARCH_LENGTH,
+  SEARCH_DEBOUNCE_MS,
+  SEARCH_RESULT_LIMIT,
+  normalizeSearchInput,
+} from './search';
+export { buildOrderEdit, isEditUnchanged } from './update-order';
+export type { EditBuildResult, EditLineDraft, OrderEdit, OrderEditDraft } from './update-order';
 export { formatDeviceDateTime } from './format';
 export { LOCAL_SHOP_ID } from './local-shop';
-export type { OrderStore } from './order-store';
+export type { OrderStore, RecentSearch } from './order-store';
 export {
   buildPackingSession,
   findActiveSession,

@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Button } from './Button';
 import { Icon, type IconName } from './Icon';
+import { IconTile } from './IconTile';
 import { Text } from './Text';
 import { toneColors, type IconTone } from './tone';
 import { useTheme } from './theme';
@@ -24,6 +25,8 @@ type EmptyStateProps = EmptyStateAction & {
   actionVariant?: 'primary' | 'secondary';
   /** Cỡ gọn của nhóm màn form: icon 32, tiêu đề 15sp đậm, mô tả 14sp, nút `slim`. */
   compact?: boolean;
+  /** Biểu tượng nằm trong ô tròn nền nhạt theo `iconTone` (mặc định `brand`; mockup tab Đơn hàng ORD-14). */
+  iconCircle?: boolean;
 };
 
 export function EmptyState({
@@ -35,13 +38,17 @@ export function EmptyState({
   iconTone,
   actionVariant = 'secondary',
   compact = false,
+  iconCircle = false,
 }: EmptyStateProps) {
   const { tokens } = useTheme();
   const iconColor = iconTone ? toneColors(tokens, iconTone).fg : tokens.color.text.secondary;
+  const circle = iconCircle ? (
+    <IconTile icon={icon} tone={iconTone ?? 'brand'} size="lg" shape="circle" />
+  ) : null;
   if (compact) {
     return (
       <View style={[styles.container, { gap: tokens.space.sm, padding: tokens.space.lg }]}>
-        <Icon name={icon} size={32} color={iconColor} />
+        {circle ?? <Icon name={icon} size={32} color={iconColor} />}
         <Text bold style={styles.centered}>
           {title}
         </Text>
@@ -56,7 +63,7 @@ export function EmptyState({
   }
   return (
     <View style={[styles.container, { gap: tokens.space.md, padding: tokens.space.xl }]}>
-      <Icon name={icon} size={40} color={iconColor} />
+      {circle ?? <Icon name={icon} size={40} color={iconColor} />}
       <Text variant="sectionTitle" style={styles.centered}>
         {title}
       </Text>
