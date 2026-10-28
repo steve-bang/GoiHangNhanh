@@ -174,7 +174,7 @@ Mỗi PR: nhánh tách từ `main` mới nhất sau khi PR trước merge; theo 
 | **D** (đã làm, mục 6.4) | Cửa hàng: cài đặt, sửa tên, chuyển + 2 hộp thoại | `ShopSettingsScreen.tsx`, `ShopEditScreen.tsx`, `ShopSwitchScreen.tsx`, `use-switch-shop.ts` | Không route mới | Test hiện có + bộ đếm, "Bị khóa", ô tìm | Khớp 5, 6, 7a-c; "Xóa cửa hàng" ẩn | A |
 | **E** (đã làm, mục 6.5) | Gói, chi tiết gói, lịch sử thanh toán | `src/app/(tabs)/account/plan/{index,detail,payments}.tsx`, màn mới trong `features/personal/ui`, `routes.ts` (route con của `plan`, `UI-H01`), `nav.json` | `plan` (có sẵn) + 2 route con `parent` (Q-21b) | `routes.test.ts` (route con khai báo `parent`), màn | Khớp 8, 9, 10; mọi giá trị "Chưa có thông tin"; nút nâng cấp khóa | A, Q-21b |
 | **F** (đã làm, mục 6.6) | Dữ liệu bằng chứng, thời hạn lưu | màn mới + `routes.ts` (route con của `profile` UI-I01) | 2 route con | Ba ô và tổng "Chưa có số liệu" (mục 6.6, Q-21y/aa), chữ "Chưa có thông tin" ở khung 12 | Khớp 11, 12; không số bịa; thẻ ghi chú theo D19 | A, B |
-| **G** | Thông báo, Quyền riêng tư và bảo mật | `NotificationsScreen`, `SecurityScreen`, `SettingsGateway` (bản giả + chưa kết nối), `account-menu.ts` (đổi `available`) | `notifications`, `security` (có sẵn) | Test công tắc lưu/đọc cục bộ, thẻ quyền bị từ chối, hàng khóa | Khớp 13, 14; không hứa đẩy | A, C |
+| **G** (đã làm, mục 6.7) | Thông báo, Quyền riêng tư và bảo mật | `NotificationsScreen`, `SecurityScreen`, `SettingsGateway` (bản giả + chưa kết nối), `account-menu.ts` (đổi `available`) | `notifications`, `security` (có sẵn) | Test công tắc lưu/đọc cục bộ, thẻ quyền bị từ chối, hàng khóa | Khớp 13, 14; không hứa đẩy | A, C |
 | **H** | Trợ giúp, bài hướng dẫn, liên hệ, điều khoản (+ Về ứng dụng nếu Q-21j chốt giữ) | màn mới, nội dung tĩnh trong `personal.json`, `legal-links.ts` | `help` (có sẵn) + route con bài/liên hệ/điều khoản | Test tìm kiếm tĩnh, mở email soạn sẵn không "đã gửi" | Khớp 15-18; không "Chính sách đổi trả" | A, Q-21j/k cho tài nguyên |
 | **I** | Xóa tài khoản | màn mới, `Checkbox`, kết nối `use-sign-out` (đếm tệp) | route con của `security` | Test điều kiện thật, nút khóa | Khớp 20; không xóa thật | A, G, Q-21h, Q-20e |
 
@@ -319,6 +319,26 @@ Hai route con mới của UI-I01, KHÔNG mã UI mới (Q-21b): `ROUTES.evidenceD
 5. Tiêu đề khối ở màn chính vẫn là `header` (Text); nút "›" là phần tử `button` riêng (vùng chạm >= 44, nhãn "Dữ liệu bằng chứng", hint mở chi tiết); vùng bấm ngoài chỉ phục vụ cảm ứng, không phải phần tử trợ năng.
 
 **Chưa kiểm chứng:** thiết bị iOS/Android thật; VoiceOver/TalkBack; chữ lớn chỉ bằng bản thử nhân cỡ chữ; không có dữ liệu thật để thử các số đếm.
+
+### 6.7 Trạng thái PR-G (đã làm, chờ duyệt)
+
+KHÔNG route mới: dùng route gốc `notifications` (UI-I04) và `security` (UI-I05), thay placeholder của `features/shop` bằng `NotificationsScreen` và `SecurityScreen` (`features/personal/ui`); `changePassword` vẫn là route con của UI-I05 (`hideTabBar`). Hai mục menu `notifications` và `security` đổi `available` (lý do: màn có nội dung trung thực hữu ích). "Trợ giúp" vẫn khóa (PR-H). Thanh tab vẫn hiện ở hai route gốc (Q-21t). `Switch` thêm prop tùy chọn `icon`/`iconTone`. Mã lỗi đề xuất mới `SETTINGS_SAVE_FAILED` (Q-21ab). Ảnh: `docs/assets/screens/personal-tab-v3/pr-g-*.png`, checklist ở README thư mục đó.
+
+| Khung | Cách làm |
+| --- | --- |
+| 13 Thông báo | Thẻ "Thông báo đẩy: sắp có" + "Ứng dụng chưa gửi thông báo nào. Lựa chọn của bạn sẽ được dùng khi tính năng này sẵn sàng."; bốn công tắc (có ô icon, nhãn, mô tả) theo docs/09 UI-I04: Tải lên lỗi hoặc cần xử lý, Đồng bộ dữ liệu, Dung lượng sắp đầy, Gói sắp hết hạn; mặc định lấy từ cổng (cổng giả: `FAKE_NOTIFICATION_DEFAULTS`, không tự chốt, Q-20b); bật/tắt gọi `updateNotificationPreferences` với đủ bốn giá trị, hiện giá trị mới tức thì, hoàn về giá trị cũ nếu lỗi; đang lưu thì mọi công tắc khóa (không gửi lặp, không ghi chồng); toast "Đã lưu lựa chọn." chỉ SAU KHI cổng xác nhận; lỗi hiện thẻ cảnh báo "Chưa lưu được cài đặt. Bạn thử lại nhé."; lỗi tải: thẻ lỗi + Thử lại, không công tắc; khóa theo `session.key` (đổi tài khoản/cửa hàng thì tải lại, kết quả lưu muộn của phiên cũ bị bỏ) |
+| 14 Quyền riêng tư và bảo mật | Tiêu đề "Quyền riêng tư và bảo mật" (D17; đổi cả tên mục menu và `nav:titles.UI-I05`). "Đổi mật khẩu" mở route con khi tài khoản dùng mật khẩu; Apple/Google: hàng ghi chú "Mật khẩu do {nhà cung cấp} quản lý." không điều hướng; đang tải hồ sơ: khung chờ không bấm được; lỗi: hàng báo lỗi, chạm để thử lại. Bốn hàng KHÓA "Sắp có", đọc "không dùng được" kèm gợi ý, không điều hướng: Xác nhận 2 lớp, Thiết bị đăng nhập, Dữ liệu và quyền truy cập, Xóa tài khoản (nhóm riêng, chữ đỏ, không luồng xóa; PR-I) |
+
+**Lệch có chủ đích so với board**
+
+1. Khung 13 bốn công tắc, không phải năm. Docs/09 UI-I04 có đúng bốn loại; board vẽ "Tài khoản" và "Cập nhật sản phẩm" (không có đặc tả, thêm loại thông báo là quyết định sản phẩm) và thiếu "Tải lên lỗi hoặc cần xử lý" (loại quan trọng nhất theo docs/09). "Thời hạn lưu" của board chưa ánh xạ chắc vào loại nào: giữ "Gói sắp hết hạn" và "Dung lượng sắp đầy" của docs/09. Chờ BA (Q-21ab).
+2. Không thẻ cam "Quyền thông báo bị từ chối" + "Mở Cài đặt": app chưa có adapter đọc quyền thông báo và chưa xin quyền nên thẻ sẽ là chức năng giả. Khi có hạ tầng thông báo đẩy: thêm adapter `platform` + thẻ, dùng `openAppSettings` (đã có). Không xin quyền khi mở màn (PER-13).
+3. Thẻ "Thông báo đẩy: sắp có" ở đầu màn (board không có): ngăn người dùng tưởng sẽ nhận thông báo. D9.
+4. Khung 14: "Xác nhận 2 lớp" thay "Xác thực 2 lớp" (test cụm cấm chặn "xác thực"), khóa "Sắp có" thay nhãn đỏ "Chưa bật" (chưa có MFA: "Chưa bật" nghe như có tính năng). Không chevron ở hàng khóa. "Dữ liệu và quyền truy cập" khóa vì màn Dữ liệu bằng chứng (PR-F) nói về số đếm, không phải quyền truy cập/quyền riêng tư. "Xóa tài khoản" khóa (Q-20e, Q-21h).
+5. Một thẻ nhóm có đường kẻ thay cho từng hàng một thẻ; thanh tab vẫn hiện ở hai route gốc (Q-21t).
+6. Hàng "Đổi mật khẩu" ở màn chính Cá nhân (nhóm Tài khoản) vẫn còn nên có hai lối tới Đổi mật khẩu; chưa gỡ (không nằm trong yêu cầu PR-G; board 1a không vẽ nhóm này).
+
+**Chưa kiểm chứng:** thiết bị iOS/Android thật; VoiceOver/TalkBack (công tắc `switch` có nhãn, trạng thái, gợi ý; hàng khóa `disabled` + gợi ý); chữ lớn chỉ bằng bản thử nhân cỡ chữ; lưu bền (cổng giả trong bộ nhớ; bản build thường dùng cổng "chưa kết nối" nên màn hiện lỗi tải, chưa lưu được thật); không có thông báo đẩy nào để thử.
 
 ## 7. Rủi ro
 
