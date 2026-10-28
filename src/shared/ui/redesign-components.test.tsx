@@ -11,7 +11,6 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { EmptyState } from './EmptyState';
 import { ErrorState } from './ErrorState';
 import { HeroCard } from './HeroCard';
-import { ICON_GLYPHS } from './Icon';
 import { IconTile } from './IconTile';
 import { MetricTile } from './MetricTile';
 import { ScreenHeader } from './ScreenHeader';
@@ -92,6 +91,23 @@ describe('HeroCard', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it('badgeLabel được nối vào nhãn trợ năng, cả khi không bấm được và khi bấm được', async () => {
+    const { rerender } = await renderWithProviders(
+      <HeroCard
+        eyebrow="Gói dịch vụ"
+        title="Chưa có thông tin"
+        badge={<StatusBadge label="Sắp có" />}
+        badgeLabel="Sắp có"
+        testID="hero"
+      />,
+    );
+    expect(screen.getByTestId('hero').props.accessibilityLabel).toBe(
+      'Gói dịch vụ. Chưa có thông tin. Sắp có',
+    );
+    await rerender(<HeroCard title="Tiêu chuẩn" badgeLabel="Sắp có" onPress={jest.fn()} />);
+    expect(screen.getByRole('button', { name: 'Tiêu chuẩn. Sắp có' })).toBeOnTheScreen();
+  });
+
   it('không đặt chiều cao cố định (chữ lớn)', async () => {
     await renderWithProviders(<HeroCard title="Tiêu đề rất dài" testID="hero" />);
     expect(flat(screen.getByTestId('hero')).height).toBeUndefined();
@@ -100,7 +116,7 @@ describe('HeroCard', () => {
 
 describe('MetricTile', () => {
   it('chỉ có nhãn khi chưa có giá trị (không số giả)', async () => {
-    await renderWithProviders(<MetricTile label="Trên thiết bị" icon="document" />);
+    await renderWithProviders(<MetricTile label="Trên thiết bị" icon="clipboard" />);
     expect(screen.getByLabelText('Trên thiết bị')).toBeOnTheScreen();
   });
 
@@ -124,7 +140,7 @@ describe('MetricTile', () => {
   });
 
   it('số 0 thật vẫn hiển thị', async () => {
-    await renderWithProviders(<MetricTile label="Trên thiết bị" value={0} icon="document" />);
+    await renderWithProviders(<MetricTile label="Trên thiết bị" value={0} icon="clipboard" />);
     expect(screen.getByLabelText('Trên thiết bị: 0')).toBeOnTheScreen();
     expect(screen.getByText('0')).toBeOnTheScreen();
   });
@@ -151,6 +167,32 @@ describe('StatusCard', () => {
     expect(screen.queryByRole('progressbar', HIDDEN)).toBeNull();
     await rerender(<StatusCard status="uploading" progress={180} />);
     expect(screen.getByRole('progressbar', HIDDEN).props.accessibilityValue.now).toBe(100);
+  });
+
+  it('progress NaN/Infinity/âm không hiện "NaN%"; âm kẹp về 0', async () => {
+    const { rerender } = await renderWithProviders(
+      <StatusCard status="uploading" progress={Number.NaN} />,
+    );
+    expect(screen.queryByRole('progressbar', HIDDEN)).toBeNull();
+    expect(screen.queryByText(/NaN/)).toBeNull();
+    await rerender(<StatusCard status="uploading" progress={Number.POSITIVE_INFINITY} />);
+    expect(screen.queryByRole('progressbar', HIDDEN)).toBeNull();
+    await rerender(<StatusCard status="uploading" progress={-5} />);
+    expect(screen.getByRole('progressbar', HIDDEN).props.accessibilityValue.now).toBe(0);
+    expect(screen.getByText('0%')).toBeOnTheScreen();
+  });
+
+  it('nhãn nhánh status luôn là nhãn chuẩn; title/progress sai kiểu bị TypeScript chặn', async () => {
+    const { rerender } = await renderWithProviders(
+      // @ts-expect-error title không được ghi đè nhãn chuẩn của trạng thái bằng chứng
+      <StatusCard status="verified" title="Đã đồng bộ" />,
+    );
+    expect(screen.getByText('Đã xác minh')).toBeOnTheScreen();
+    expect(screen.queryByText('Đã đồng bộ')).toBeNull();
+    // @ts-expect-error progress chỉ hợp lệ khi status là uploading
+    await rerender(<StatusCard status="verified" progress={70} />);
+    expect(screen.queryByRole('progressbar', HIDDEN)).toBeNull();
+    expect(screen.queryByText('70%')).toBeNull();
   });
 
   it('thẻ theo tông (ví dụ hạn lưu) có chữ + biểu tượng, màu tông cảnh báo', async () => {
@@ -222,12 +264,20 @@ describe('ConfirmDialog: icon và bố cục hàng', () => {
 
   it('không icon: không có ô icon (mặc định giữ nguyên)', async () => {
     await renderWithProviders(<ConfirmDialog {...base} />);
-    expect(screen.queryByTestId('x', HIDDEN)).toBeNull();
+    expect(screen.queryByTestId(/^icon-/, HIDDEN)).toBeNull();
+    expect(flat(screen.getByText('Xác nhận đăng xuất')).textAlign).toBeUndefined();
     expect(flat(screen.getByText('Bạn có chắc chắn muốn đăng xuất?')).textAlign).toBeUndefined();
+  });
+
+  it('không truyền prop mới: hai nút xếp dọc, nút xác nhận (chính) ở trên như trước', async () => {
+    await renderWithProviders(<ConfirmDialog {...base} />);
+    const labels = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel);
+    expect(labels).toEqual(['Đăng xuất', 'Ở lại ứng dụng']);
   });
 
   it('có icon: căn giữa nội dung, tiêu đề vẫn là header, hai nút còn bấm được', async () => {
     await renderWithProviders(<ConfirmDialog {...base} icon="sign-out" iconTone="warning" />);
+    expect(screen.getByTestId('icon-log-out-outline', HIDDEN)).toBeOnTheScreen();
     expect(flat(screen.getByText('Xác nhận đăng xuất')).textAlign).toBe('center');
     expect(screen.getByRole('header', { name: 'Xác nhận đăng xuất' })).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'Ở lại ứng dụng' }));
@@ -291,6 +341,8 @@ describe('TextField: counterMax và multiline', () => {
     );
     expect(flat(screen.getByTestId('in')).minHeight).toBe(Math.max(52, getMinTouchTarget()));
     expect(screen.getByTestId('in').props.multiline).toBeUndefined();
+    expect(screen.getByTestId('in').props.textAlignVertical).toBeUndefined();
+    expect(screen.queryByText(/\/\d+$/)).toBeNull();
   });
 });
 
@@ -311,6 +363,7 @@ describe('ErrorState variant=card', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
     await rerender(<ErrorState title="Không thể tải" />);
     expect(flat(screen.getByRole('alert')).backgroundColor).toBeUndefined();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });
 
@@ -325,6 +378,16 @@ describe('EmptyState: icon, hành động tùy chọn', () => {
     );
     expect(screen.queryByRole('button')).toBeNull();
     expect(screen.getByText('Chưa có lịch sử')).toBeOnTheScreen();
+    expect(screen.getByTestId('icon-receipt-outline', HIDDEN)).toBeOnTheScreen();
+  });
+
+  it('không truyền prop mới: icon hộp thư, màu chữ phụ, nút phụ như trước', async () => {
+    await renderWithProviders(
+      <EmptyState title="Trống" message="Chưa có gì." actionLabel="Tạo" onAction={jest.fn()} />,
+    );
+    const glyph = screen.getByTestId('icon-file-tray-outline', HIDDEN);
+    expect(flat(glyph).color).toBe(color.text.secondary);
+    expect(screen.getByRole('button', { name: 'Tạo' })).toBeOnTheScreen();
   });
 
   it('có hành động chính bấm được', async () => {
@@ -339,6 +402,10 @@ describe('EmptyState: icon, hành động tùy chọn', () => {
         actionVariant="primary"
         onAction={onAction}
       />,
+    );
+    expect(screen.getByTestId('icon-unlink-outline', HIDDEN)).toBeOnTheScreen();
+    expect(flat(screen.getByTestId('icon-unlink-outline', HIDDEN)).color).toBe(
+      color.accent.blue.fg,
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Thử lại' }));
     expect(onAction).toHaveBeenCalledTimes(1);
@@ -362,18 +429,16 @@ describe('ScreenHeader: trailing và kiểu nút quay lại', () => {
     expect(onBack).toHaveBeenCalled();
     expect(screen.getByText('Sắp có')).toBeOnTheScreen();
   });
-});
 
-describe('Icon: glyph mới', () => {
-  it.each([
-    'disconnect',
-    'warning-solid',
-    'receipt',
-    'play',
-    'cloud',
-    'document',
-    'person',
-  ] as const)('%s có glyph', (name) => {
-    expect(ICON_GLYPHS[name]).toBeTruthy();
+  it('backIcon="arrow" đổi glyph so với mặc định (chevron)', async () => {
+    const { rerender } = await renderWithProviders(
+      <ScreenHeader title="Tiêu đề" onBack={jest.fn()} />,
+    );
+    expect(screen.getByTestId('icon-chevron-back', HIDDEN)).toBeOnTheScreen();
+    expect(screen.queryByTestId('icon-arrow-back', HIDDEN)).toBeNull();
+    expect(screen.queryByText('Sắp có')).toBeNull();
+    await rerender(<ScreenHeader title="Tiêu đề" onBack={jest.fn()} backIcon="arrow" />);
+    expect(screen.getByTestId('icon-arrow-back', HIDDEN)).toBeOnTheScreen();
+    expect(screen.queryByTestId('icon-chevron-back', HIDDEN)).toBeNull();
   });
 });
