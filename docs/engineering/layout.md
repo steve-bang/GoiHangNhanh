@@ -44,10 +44,10 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 | `/verify-otp` | UI-A08 | chưa có đặc tả | ẩn | `shop`: `VerifyOtpScreen` | Màn thật, cổng giả; chặn vào khi chưa xin mã (mục 2.3) |
 | `/new-password` | UI-A09 | chưa có đặc tả | ẩn | `shop`: `NewPasswordScreen` | Màn thật, cổng giả; chặn vào khi chưa có vé (mục 2.3) |
 | `/create-shop` | UI-A04 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `CreateShopScreen` | Màn thật theo mockup 5.1, cổng giả (xem mục 2.2) |
-| `/permissions` | UI-A05 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `PermissionsScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/permissions` | UI-A05 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `PermissionsScreen` | Màn thật (ORD-02, Q-22u): ô tìm có nút quét, debounce 350 ms, bỏ kết quả cũ, chuỗi rỗng/dưới 2 ký tự không truy vấn, tối đa 20 kết quả; Enter = xác nhận (ghi lịch sử; đúng một khớp chính xác thì mở chi tiết; nhiều thì `OrderMatchSheet`); không thấy -> Tạo đơn với mã này; lịch sử tìm gần đây theo shop (SQLite `search_history`), có xóa từng mục/tất cả. Chưa kiểm chứng trên thiết bị |
 | `/setup-done` | UI-A06 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SetupDoneScreen` | Màn thật theo mockup 5.1, cổng giả (xem mục 2.2) |
 | `/home` | UI-B01 | A01 | hiện | `orders`: `HomeScreen` | Màn dựng theo mockup 02 (D-16, Q-16) + dữ liệu minh họa |
-| `/scan` | UI-B02 | A02 | ẩn (route cấp gốc ngoài nhóm tab) | `orders`: `ScanScreen` | Màn thật theo mockup 02: camera thật (`expo-camera`, ADR-016), nhập tay, đèn pin, xử lý quyền (Q-16) |
+| `/scan` | UI-B02 | A02 | ẩn (route cấp gốc ngoài nhóm tab) | `orders`: `ScanScreen` | Màn thật theo mockup 02/03: camera thật (`expo-camera`, ADR-016), nhập tay, đèn pin (hàng dưới cạnh nút nhập tay), xử lý quyền (Q-16). Quét/nhập xong TRA CỨU rồi mở `OrderMatchSheet` (Q-22x): một đơn -> Xem chi tiết; không thấy -> Tạo đơn với mã này (mã điền sẵn, không tự tạo); nhiều đơn -> bắt chọn kèm nguồn bán/lý do khớp; lỗi -> giữ mã + Thử lại. Chống quét lặp + một mã một truy vấn; hộp mở thì bỏ mã mới |
 | `/home/search` | UI-B03 | A02 | hiện | `orders`: `SearchScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/quick-order` | UI-B04 | A02 | ẩn (route cấp gốc) | `orders`: `QuickOrderScreen` | Màn thật theo mockup 03, lưu cục bộ SQLite (mục 2.5, Q-17) |
 | `/home/batch` | UI-B05 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `BatchScreen` | Placeholder (route + tiêu đề + lối quay lại) |

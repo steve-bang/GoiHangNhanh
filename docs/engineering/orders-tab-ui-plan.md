@@ -1,6 +1,6 @@
 # Kế hoạch triển khai giao diện mới tab Đơn hàng (ORD-01…ORD-16)
 
-> Trạng thái: **người dùng đã duyệt đề xuất cho câu a, b, c, f** (2026-10-28; ghi ở `decisions.md` Q-22); câu d, e, g vẫn là đề xuất (không chặn PR1–3). Không phải quyết định D-xx. **PR1 (Nền và danh sách) đã làm** (nhánh `claude/orders-tab-ui-pr1`); PR2–6 chưa làm. Số mục Q của kế hoạch này là **Q-22** (Q-21 đã dùng cho tab Cá nhân).
+> Trạng thái: **người dùng đã duyệt đề xuất cho câu a, b, c, f** (2026-10-28; ghi ở `decisions.md` Q-22); câu d, e, g vẫn là đề xuất (không chặn PR1–3). Không phải quyết định D-xx. **PR1 (Nền và danh sách) đã làm** (nhánh `claude/orders-tab-ui-pr1`); PR3 (Tìm kiếm, quét, xác định đơn; kế hoạch chi tiết `orders-tab-ui-pr3-plan.md`) đã làm trên nhánh `claude/orders-tab-ui-pr3`; PR2, PR4–6 chưa tính ở nhánh này. Số mục Q của kế hoạch này là **Q-22** (Q-21 đã dùng cho tab Cá nhân).
 
 ## 1. Bối cảnh
 

@@ -96,6 +96,20 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     expect(screen.getByTestId('screen-UI-E01')).toBeOnTheScreen();
   });
 
+  it('từ màn quét mở Tìm đơn đã lưu (UI-B03), Back về màn quét', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
+    await fireEvent.press(tabButton('Đơn hàng'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn hàng' }));
+    await fireEvent.press(screen.getByTestId('scan-manual-open'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Tìm đơn đã lưu' }));
+    expect(await screen.findByTestId('screen-UI-B03')).toBeOnTheScreen();
+    expect(screen.getByTestId('search-input')).toBeOnTheScreen();
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-B02')).toBeOnTheScreen();
+  });
+
   it('chuyển qua lại giữa các tab Đơn hàng, Thông báo, Cá nhân; thanh tab vẫn hiện', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
     await fireEvent.press(tabButton('Đơn hàng'));

@@ -1,6 +1,6 @@
 # Kế hoạch PR3 "Tìm kiếm, quét, xác định đơn" (ORD-02, 03, 04, 14)
 
-> Trạng thái: **kế hoạch, chờ người dùng chốt các câu ở mục 3 trước khi viết mã.** Chưa có mã, chưa mở PR. Thuộc [orders-tab-ui-plan.md](orders-tab-ui-plan.md) mục 5 (PR3 chỉ phụ thuộc PR1 / #22); nhánh `claude/orders-tab-ui-pr3` rẽ từ `claude/orders-tab-ui-pr1`, **không** lấy mã PR2 (#24). Câu chữ/quyết định đã duyệt: `decisions.md` Q-22 (a, b, c, f); các câu mới đề xuất đánh số Q-22u… (mục 3).
+> Trạng thái: **người dùng đã duyệt Q-22u (bảng `search_history`) và Q-22x (tra cứu trước khi sang Tạo đơn); v, w, y giữ mặc định, z chờ BA xem câu chữ. PR3 đã làm** (nhánh `claude/orders-tab-ui-pr3`); lệch so với kế hoạch ghi ở `decisions.md` Q-22u, Q-22aa. Thuộc [orders-tab-ui-plan.md](orders-tab-ui-plan.md) mục 5 (PR3 chỉ phụ thuộc PR1 / #22); nhánh `claude/orders-tab-ui-pr3` rẽ từ `claude/orders-tab-ui-pr1`, **không** lấy mã PR2 (#24). Câu chữ/quyết định đã duyệt: `decisions.md` Q-22 (a, b, c, f); các câu mới đề xuất đánh số Q-22u… (mục 3).
 
 ## 1. Hiện trạng đã xác minh trong mã
 
