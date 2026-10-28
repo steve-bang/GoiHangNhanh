@@ -49,6 +49,8 @@ interface TextFieldProps {
   counterMax?: number;
   /** Ô nhiều dòng (cao tối thiểu `field.multilineMinHeight`, chữ bắt đầu từ trên). Không kết hợp với `trailing`. */
   multiline?: boolean;
+  /** Trường bắt buộc: thêm dấu sao đỏ sau nhãn (chỉ trang trí, ẩn khỏi trình đọc) và báo `aria-required`. */
+  required?: boolean;
 }
 
 /** Ô nhập có nhãn luôn hiện (không dùng placeholder thay nhãn). Cao tối thiểu theo vùng chạm. */
@@ -72,6 +74,7 @@ export function TextField({
   autoComplete,
   counterMax,
   multiline = false,
+  required = false,
 }: TextFieldProps) {
   const { t } = useTranslation();
   const { tokens, typography } = useTheme();
@@ -98,6 +101,7 @@ export function TextField({
       ref={inputRef as ComponentProps<typeof TextInput>['ref']}
       testID={testID}
       accessibilityLabel={label}
+      {...(required ? { 'aria-required': true } : {})}
       value={value}
       onChangeText={onChangeText}
       {...(placeholder ? { placeholder } : {})}
@@ -138,14 +142,30 @@ export function TextField({
       ]}
     />
   );
+  const labelText = compact ? (
+    <Text variant="formLabel" color="ink">
+      {label}
+    </Text>
+  ) : (
+    <Text bold>{label}</Text>
+  );
   return (
     <View style={styles.container}>
-      {compact ? (
-        <Text variant="formLabel" color="ink">
-          {label}
-        </Text>
+      {required ? (
+        <View style={styles.labelRow}>
+          {labelText}
+          <Text
+            bold
+            color="danger"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            testID={testID ? `${testID}-required` : undefined}
+          >
+            {' *'}
+          </Text>
+        </View>
       ) : (
-        <Text bold>{label}</Text>
+        labelText
       )}
       {trailing ? (
         <View
@@ -198,6 +218,7 @@ export function TextField({
 
 const styles = StyleSheet.create({
   container: { gap: layout.space.tight },
+  labelRow: { flexDirection: 'row', alignItems: 'baseline' },
   row: { flexDirection: 'row', alignItems: 'center' },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   errorText: { flex: 1 },

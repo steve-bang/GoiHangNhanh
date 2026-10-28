@@ -289,6 +289,38 @@ describe('ConfirmDialog: icon và bố cục hàng', () => {
     const labels = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel);
     expect(labels).toEqual(['Ở lại ứng dụng', 'Đăng xuất']);
   });
+
+  it('hideConfirm: chỉ một nút (nút chính), bấm là hủy; không có nút xác nhận', async () => {
+    const onCancel = jest.fn();
+    await renderWithProviders(
+      <ConfirmDialog
+        visible
+        hideConfirm
+        icon="camera"
+        title="Đang quay video"
+        message="Hãy dừng quay trước khi đăng xuất."
+        cancelLabel="Ở lại ứng dụng"
+        onCancel={onCancel}
+      />,
+    );
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.map((b) => b.props.accessibilityLabel)).toEqual(['Ở lại ứng dụng']);
+    await fireEvent.press(buttons[0]!);
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('không destructive, primary=confirm: nút xác nhận chính ở trên, nút hủy thứ yếu (hộp thoại cảnh báo có lối đi tiếp)', async () => {
+    await renderWithProviders(
+      <ConfirmDialog
+        {...base}
+        confirmLabel="Xem trung tâm đồng bộ"
+        icon="alert-triangle"
+        iconTone="warning"
+      />,
+    );
+    const labels = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel);
+    expect(labels).toEqual(['Xem trung tâm đồng bộ', 'Ở lại ứng dụng']);
+  });
 });
 
 describe('TextField: counterMax và multiline', () => {
@@ -343,6 +375,26 @@ describe('TextField: counterMax và multiline', () => {
     expect(screen.getByTestId('in').props.multiline).toBeUndefined();
     expect(screen.getByTestId('in').props.textAlignVertical).toBeUndefined();
     expect(screen.queryByText(/\/\d+$/)).toBeNull();
+  });
+});
+
+describe('TextField: required', () => {
+  it('có dấu sao đỏ ẩn khỏi trình đọc và báo aria-required; nhãn truy cập không đổi', async () => {
+    await renderWithProviders(
+      <TextField label="Họ và tên" value="" onChangeText={() => undefined} required testID="in" />,
+    );
+    expect(screen.getByText('Họ và tên')).toBeOnTheScreen();
+    expect(screen.getByTestId('in-required', HIDDEN)).toHaveTextContent('*');
+    expect(screen.getByTestId('in').props['aria-required']).toBe(true);
+    expect(screen.getByTestId('in').props.accessibilityLabel).toBe('Họ và tên');
+  });
+
+  it('mặc định không có dấu sao', async () => {
+    await renderWithProviders(
+      <TextField label="Họ và tên" value="" onChangeText={() => undefined} testID="in" />,
+    );
+    expect(screen.queryByText('*', { exact: false, ...HIDDEN })).toBeNull();
+    expect(screen.getByTestId('in').props['aria-required']).toBeUndefined();
   });
 });
 

@@ -7,15 +7,12 @@ import type { IconTone } from './tone';
 import { Text } from './Text';
 import { useTheme } from './theme';
 
-interface ConfirmDialogProps {
+interface ConfirmDialogBaseProps {
   visible: boolean;
   title: string;
   /** Nêu rõ hậu quả và dữ liệu bị ảnh hưởng (docs/09 mục 6). */
   message: string;
-  /** Nhãn CỤ THỂ cho cả hai nút; cấm "OK"/"Tiếp tục" mơ hồ khi có thể nêu hành động. */
-  confirmLabel: string;
   cancelLabel: string;
-  onConfirm: () => void;
   onCancel: () => void;
   /** Hành động xác nhận gây mất dữ liệu/khó đảo ngược: nút xác nhận màu đỏ (đỏ chỉ cho trường hợp này). */
   destructive?: boolean;
@@ -35,6 +32,21 @@ interface ConfirmDialogProps {
   actionsLayout?: 'column' | 'row';
 }
 
+/**
+ * Hộp thoại thường có hai nút. Hộp thoại CHỈ CHẶN (không có hành động xác nhận, ví dụ "đang quay video")
+ * dùng `hideConfirm`: chỉ còn nút `cancelLabel` (nút chính), không nhận `confirmLabel`/`onConfirm`.
+ */
+type ConfirmDialogProps = ConfirmDialogBaseProps &
+  (
+    | {
+        /** Nhãn CỤ THỂ cho cả hai nút; cấm "OK"/"Tiếp tục" mơ hồ khi có thể nêu hành động. */
+        confirmLabel: string;
+        onConfirm: () => void;
+        hideConfirm?: false;
+      }
+    | { hideConfirm: true; confirmLabel?: never; onConfirm?: never }
+  );
+
 /** Hộp thoại xác nhận, chỉ dùng cho hành động quan trọng (xóa, đóng hồ sơ, rời phiên quay). */
 export function ConfirmDialog({
   visible,
@@ -44,6 +56,7 @@ export function ConfirmDialog({
   cancelLabel,
   onConfirm,
   onCancel,
+  hideConfirm = false,
   destructive = false,
   detail,
   confirmOutlined = false,
@@ -99,7 +112,11 @@ export function ConfirmDialog({
                 {detail}
               </Text>
             ) : null}
-            {actionsLayout === 'row' ? (
+            {hideConfirm ? (
+              <View style={{ marginTop: tokens.space.sm }}>
+                <Button label={cancelLabel} onPress={onCancel} variant="primary" />
+              </View>
+            ) : actionsLayout === 'row' ? (
               <View
                 style={[styles.actionsRow, { gap: tokens.space.sm, marginTop: tokens.space.sm }]}
               >
@@ -112,8 +129,8 @@ export function ConfirmDialog({
                 </View>
                 <View style={styles.flexOne}>
                   <Button
-                    label={confirmLabel}
-                    onPress={onConfirm}
+                    label={confirmLabel ?? ''}
+                    onPress={onConfirm ?? onCancel}
                     variant={
                       destructive ? 'destructive' : primary === 'confirm' ? 'primary' : 'secondary'
                     }
@@ -127,8 +144,8 @@ export function ConfirmDialog({
                   <>
                     <Button label={cancelLabel} onPress={onCancel} variant="primary" />
                     <Button
-                      label={confirmLabel}
-                      onPress={onConfirm}
+                      label={confirmLabel ?? ''}
+                      onPress={onConfirm ?? onCancel}
                       variant={destructive ? 'destructive' : 'secondary'}
                       {...(destructive && confirmOutlined ? { outlined: true } : {})}
                     />
@@ -136,8 +153,8 @@ export function ConfirmDialog({
                 ) : (
                   <>
                     <Button
-                      label={confirmLabel}
-                      onPress={onConfirm}
+                      label={confirmLabel ?? ''}
+                      onPress={onConfirm ?? onCancel}
                       variant={destructive ? 'destructive' : 'primary'}
                     />
                     <Button label={cancelLabel} onPress={onCancel} variant="secondary" />
