@@ -341,6 +341,10 @@ KHÔNG route mới: dùng route gốc `notifications` (UI-I04) và `security` (U
 
 **Chưa kiểm chứng:** thiết bị iOS/Android thật; VoiceOver/TalkBack (công tắc `switch` có nhãn, trạng thái, gợi ý; hàng khóa `disabled` + gợi ý); chữ lớn chỉ bằng bản thử nhân cỡ chữ; lưu bền (cổng giả trong bộ nhớ; bản build thường dùng cổng "chưa kết nối" nên màn hiện lỗi tải, chưa lưu được thật); không có thông báo đẩy nào để thử.
 
+### 6.8 Trạng thái PR-H (đã làm, chờ duyệt)
+
+Khung 15-18 làm trên UI-I06: `HelpScreen` thay placeholder (`/account/help`, giữ thanh tab) và bốn route con `hideTabBar` không mã UI mới (Q-21b): `helpCategory`, `helpArticle`, `helpContact`, `helpLegal`. Nội dung bài tĩnh trong `personal.json` (`help.articles.*`), cấu trúc ở `domain/help-content.ts`; tìm cục bộ không dấu theo từ (từ cuối khớp đầu từ), trạng thái rỗng có lối "Liên hệ hỗ trợ". Chi tiết bài: tiêu đề, mô tả, các bước đánh số, "Tiếp theo" chỉ khi có bài kế tiếp thật; không ảnh/nút phát (D26), không "hữu ích không?". Liên hệ: Họ và tên điền sẵn (chưa có thì trống), Chủ đề, Mã đơn (tùy chọn), Nội dung + bộ đếm; nút "Soạn email hỗ trợ" khóa vì chưa có địa chỉ thật (Q-20g), không bao giờ giả "đã gửi". Điều khoản: hai hàng khóa "Sắp có" vì URL giữ chỗ; không "Chính sách đổi trả" (D20). Mục "Trợ giúp" ở menu Cá nhân đã bật. Lệch board và câu hỏi: decisions.md Q-21ae. Ảnh: `docs/assets/screens/personal-tab-v3/pr-h-*.png` (đã chụp lại `pr-g-13-notifications-*`; `pr-g-13-save-error/load-error` chưa chụp lại). Chưa kiểm chứng trên iOS/Android thật (mailto, bàn phím, TalkBack/VoiceOver, chữ lớn).
+
 ## 7. Rủi ro
 
 1. **Board độ phân giải thấp**: chữ nhỏ, icon, khoảng cách ước lượng. Giảm: yêu cầu bản >= 3000px (Q-21k), designer duyệt ảnh PR.
