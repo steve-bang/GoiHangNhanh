@@ -53,10 +53,17 @@ export function CameraRecorder({
               : { ok: false, reason: 'RECORDER_FAILED' },
           (): RecorderResult => ({ ok: false, reason: 'RECORDER_FAILED' }),
         );
+        // Giữ chính đối tượng camera đang ghi: khi màn bị gỡ, React tháo `cameraRef` TRƯỚC các cleanup nên
+        // `cameraRef.current?.stopRecording()` lúc đó là no-op. Dừng qua tay cầm này không phụ thuộc màn.
+        // Nếu view native đã bị hủy, lời gọi có thể không còn tác dụng (cần kiểm chứng trên thiết bị).
         return {
           done,
           stop: () => {
-            void cameraRef.current?.stopRecording();
+            try {
+              Promise.resolve(camera.stopRecording()).catch(() => undefined);
+            } catch {
+              // camera đã bị hủy: kết quả ghi (nếu có) vẫn tới qua `done`
+            }
           },
         };
       },

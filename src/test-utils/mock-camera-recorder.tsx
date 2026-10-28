@@ -19,6 +19,8 @@ export const mockRecorder = {
   onReady: undefined as undefined | (() => void),
   onError: undefined as undefined | (() => void),
   resolveDone: undefined as undefined | ((result: RecorderResult) => void),
+  /** Chạy ĐỒNG BỘ ngay khi `record()` được gọi (mô phỏng màn bị gỡ đúng lúc bắt đầu ghi). */
+  onRecord: undefined as undefined | (() => void),
   signalReady() {
     mockRecorder.onReady?.();
   },
@@ -38,6 +40,7 @@ export function resetMockRecorder(): void {
   mockRecorder.onReady = undefined;
   mockRecorder.onError = undefined;
   mockRecorder.resolveDone = undefined;
+  mockRecorder.onRecord = undefined;
 }
 
 export const cameraRecorderMock = {
@@ -62,10 +65,12 @@ export const cameraRecorderMock = {
       handleRef.current = {
         record: () => {
           mockRecorder.recordCalls += 1;
+          const done = new Promise<RecorderResult>((resolve) => {
+            mockRecorder.resolveDone = resolve;
+          });
+          mockRecorder.onRecord?.();
           return {
-            done: new Promise<RecorderResult>((resolve) => {
-              mockRecorder.resolveDone = resolve;
-            }),
+            done,
             stop: () => {
               mockRecorder.stopCalls += 1;
             },

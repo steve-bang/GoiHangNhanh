@@ -149,8 +149,10 @@
     "saving": "Đang lưu video trên máy…",
     "saveFailed": "Chưa lưu được video. Hãy quay lại đơn để thử lại.",
     "storageFull": "Máy đã đầy bộ nhớ nên chưa lưu được video. Hãy giải phóng dung lượng rồi quay lại.",
-    "recorderFailed": "Camera dừng đột ngột nên video có thể chưa đầy đủ. Hãy quay lại đơn để kiểm tra.",
+    "recorderFailed": "Camera dừng đột ngột. Video chưa được lưu.",
     "startFailed": "Chưa bắt đầu quay được. Hãy quay lại đơn để thử lại.",
+    "leavePreparing": "Chưa bắt đầu ghi video. Thoát sẽ đưa bạn về màn hình đơn.",
+    "leaveSaving": "Video đang được lưu trên máy. Bạn có thể về màn hình đơn, việc lưu vẫn tiếp tục.",
     "backToOrder": "Về đơn hàng"
   },
   "confirm": {

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import type { EvidenceId } from '@/core/ids';
@@ -62,8 +63,8 @@ async function setup(ui: React.ReactElement) {
   const session = sampleSession(details, Date.now());
   await orders.saveSession(session);
   mockNavigation.params = { sessionId: session.id };
-  await renderWithProviders(ui, { orderStore: orders, evidenceFileStore: files });
-  return { session, files };
+  const view = await renderWithProviders(ui, { orderStore: orders, evidenceFileStore: files });
+  return { session, files, orders, view };
 }
 
 const filesOf = async (
@@ -136,7 +137,7 @@ describe('màn quay khi bộ ghi thật bật', () => {
     await act(async () => mockRecorder.signalReady());
     await screen.findByText('Đang quay');
     await act(async () => mockRecorder.finish({ ok: false, reason: 'RECORDER_FAILED' }));
-    expect(await screen.findByText(/Camera dừng đột ngột/)).toBeOnTheScreen();
+    expect(await screen.findByText('Camera dừng đột ngột. Video chưa được lưu.')).toBeOnTheScreen();
   });
 
   it('camera không mở được: không treo ở "Đang quay"', async () => {
@@ -144,6 +145,106 @@ describe('màn quay khi bộ ghi thật bật', () => {
     await act(async () => mockRecorder.mountError());
     expect(await screen.findByText(/Chưa bắt đầu quay được/)).toBeOnTheScreen();
     expect(screen.queryByText('Đang quay')).toBeNull();
+  });
+});
+
+describe('rời màn quay (vòng đời bộ ghi)', () => {
+  const closeAndEnd = async () => {
+    await fireEvent.press(screen.getByRole('button', { name: 'Rời màn quay' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Kết thúc phiên' }));
+  };
+
+  it('màn bị gỡ khi đang ghi: vẫn dừng ghi đúng một lần qua tay cầm đã giữ', async () => {
+    const { view } = await setup(<PackRecordScreen />);
+    await act(async () => mockRecorder.signalReady());
+    await screen.findByText('Đang quay');
+    await act(async () => view.unmount());
+    expect(mockRecorder.stopCalls).toBe(1);
+  });
+
+  it('màn bị gỡ ngay lúc bắt đầu ghi (trước khi startRecording trả về): dừng ngay, không ghi mãi', async () => {
+    let hide: () => void = () => undefined;
+    function Host() {
+      const [shown, setShown] = useState(true);
+      hide = () => setShown(false);
+      return shown ? <PackRecordScreen /> : null;
+    }
+    await setup(<Host />);
+    mockRecorder.onRecord = () => hide();
+    await act(async () => mockRecorder.signalReady());
+    await act(async () => undefined);
+    expect(mockRecorder.recordCalls).toBe(1);
+    expect(mockRecorder.stopCalls).toBe(1);
+  });
+
+  it('hộp thoại ở pha chuẩn bị (chưa bắt đầu ghi): về đơn, không tạo tệp, sau đó camera sẵn sàng cũng không ghi', async () => {
+    const { session, files } = await setup(<PackRecordScreen />);
+    await screen.findByText('Xem trước');
+    await closeAndEnd();
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.orderPreview, {
+      orderId: session.orderId,
+    });
+    await act(async () => mockRecorder.signalReady());
+    expect(mockRecorder.recordCalls).toBe(0);
+    expect(await filesOf(files, session.id)).toEqual([]);
+  });
+
+  it('hộp thoại khi bản ghi đang khởi động: dừng ngay khi bắt đầu xong, rồi lưu và sang xác nhận', async () => {
+    const orders = createMemoryOrderStore();
+    const base = createMemoryEvidenceFileStore();
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const files = {
+      ...base,
+      create: async (input: Parameters<typeof base.create>[0]) => {
+        await gate;
+        return base.create(input);
+      },
+    };
+    const details = await seedOrder(orders, sampleOrder());
+    const session = sampleSession(details, Date.now());
+    await orders.saveSession(session);
+    mockNavigation.params = { sessionId: session.id };
+    await renderWithProviders(<PackRecordScreen />, {
+      orderStore: orders,
+      evidenceFileStore: files,
+    });
+    await act(async () => mockRecorder.signalReady()); // begin chờ files.create
+    await closeAndEnd();
+    expect(mockRecorder.stopCalls).toBe(0);
+    await act(async () => release());
+    await act(async () => undefined);
+    expect(mockRecorder.recordCalls).toBe(1);
+    expect(mockRecorder.stopCalls).toBe(1);
+    await act(async () => mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mp4' }));
+    await act(async () => undefined);
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packConfirm, {
+      sessionId: session.id,
+    });
+  });
+
+  it('hộp thoại khi đang ghi: dừng và lưu như "Dừng quay"', async () => {
+    await setup(<PackRecordScreen />);
+    await act(async () => mockRecorder.signalReady());
+    await screen.findByText('Đang quay');
+    await closeAndEnd();
+    expect(mockRecorder.stopCalls).toBe(1);
+    expect(await screen.findByTestId('recording-notice')).toBeOnTheScreen();
+  });
+
+  it('hộp thoại khi đang lưu: nói việc lưu tiếp tục và về đơn; không dừng lần hai', async () => {
+    const { session } = await setup(<PackRecordScreen />);
+    await act(async () => mockRecorder.signalReady());
+    await screen.findByText('Đang quay');
+    await fireEvent.press(screen.getByRole('button', { name: 'Dừng quay' }));
+    await screen.findByTestId('recording-notice');
+    await fireEvent.press(screen.getByRole('button', { name: 'Rời màn quay' }));
+    expect(await screen.findByText(/việc lưu vẫn tiếp tục/)).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Kết thúc phiên' }));
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.orderPreview, {
+      orderId: session.orderId,
+    });
+    expect(mockRecorder.stopCalls).toBe(1);
   });
 });
 
