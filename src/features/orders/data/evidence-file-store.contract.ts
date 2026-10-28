@@ -211,6 +211,19 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
       });
     });
 
+    it('listShopsWithStates: các shop có tệp ở trạng thái đó (không trùng), rỗng thì rỗng', async () => {
+      const h = await make();
+      const a = await seedFile(h, 'S1');
+      const b = await seedFile(h, 'S2', { id: 'ev-S2', shopId: 'shop-khac' as ShopId });
+      await h.files.create(a);
+      await h.files.create(b);
+      expect([...(await h.files.listShopsWithStates(['recording']))].sort()).toEqual(
+        [LOCAL_SHOP_ID, 'shop-khac'].sort(),
+      );
+      expect(await h.files.listShopsWithStates(['queued'])).toEqual([]);
+      expect(await h.files.listShopsWithStates([])).toEqual([]);
+    });
+
     it('listByOrders: tệp của nhiều đơn, cô lập shop, danh sách rỗng thì rỗng', async () => {
       const h = await make();
       const a = await seedFile(h, 'L1');

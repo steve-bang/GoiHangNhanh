@@ -33,11 +33,13 @@ jest.mock(
   '@/platform/camera-recorder',
   () => jest.requireActual('@/test-utils/mock-camera-recorder').cameraRecorderMock,
 );
+let mockFreeBytes: number | null = 10 * 1024 * 1024 * 1024;
 const mockPersist = jest.fn();
 const mockHash = jest.fn();
 jest.mock('@/platform/recording-files', () => ({
   persistRecording: (...args: unknown[]) => mockPersist(...args),
   recordingExists: () => true,
+  getAvailableDiskBytes: () => mockFreeBytes,
 }));
 jest.mock('@/platform/file-hasher', () => ({
   HASH_CHUNK_BYTES: 1,
@@ -45,6 +47,7 @@ jest.mock('@/platform/file-hasher', () => ({
 }));
 
 beforeEach(() => {
+  mockFreeBytes = 10 * 1024 * 1024 * 1024;
   resetMockNavigation();
   resetMockScanner();
   resetMockRecorder();
@@ -138,6 +141,30 @@ describe('màn quay khi bộ ghi thật bật', () => {
     await screen.findByText('Đang quay');
     await act(async () => mockRecorder.finish({ ok: false, reason: 'RECORDER_FAILED' }));
     expect(await screen.findByText('Camera dừng đột ngột. Video chưa được lưu.')).toBeOnTheScreen();
+  });
+
+  it('A04: dung lượng trống dưới ngưỡng: từ chối bắt đầu với thông báo INSUFFICIENT_STORAGE, chưa tạo tệp/phiên recording, chưa ghi', async () => {
+    mockFreeBytes = 10 * 1024 * 1024;
+    const { session, files, orders } = await setup(<PackRecordScreen />);
+    await act(async () => mockRecorder.signalReady());
+    expect(
+      await screen.findByText(/Dung lượng thiết bị không đủ để bắt đầu an toàn/),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText('Đang quay')).toBeNull();
+    expect(mockRecorder.recordCalls).toBe(0);
+    expect(await filesOf(files, session.id)).toEqual([]);
+    expect((await orders.getSession(LOCAL_SHOP_ID, session.id))?.sessionStatus).toBe('created');
+    await fireEvent.press(screen.getByRole('button', { name: 'Về đơn hàng' }));
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.orderPreview, {
+      orderId: session.orderId,
+    });
+  });
+
+  it('không đọc được dung lượng trống (null): không chặn quay', async () => {
+    mockFreeBytes = null;
+    await setup(<PackRecordScreen />);
+    await act(async () => mockRecorder.signalReady());
+    expect(await screen.findByText('Đang quay')).toBeOnTheScreen();
   });
 
   it('camera không mở được: không treo ở "Đang quay"', async () => {

@@ -8,6 +8,7 @@ import {
 import { sampleOrder, sampleSession, seedOrder } from '@/test-utils/order-fixtures';
 
 import {
+  MIN_FREE_BYTES_TO_RECORD,
   recoverInterruptedRecordings,
   startRecording,
   type PersistOutcome,
@@ -225,6 +226,39 @@ describe('startRecording', () => {
       state: 'local_save_failed',
       localPath: 'file:///docs/evidence/ev-1.mp4',
     });
+  });
+
+  it('A04: dung lượng trống dưới ngưỡng thì từ chối bắt đầu, chưa tạo tệp hay phiên recording, chưa gọi bộ ghi', async () => {
+    const t = await setup();
+    let recordCalls = 0;
+    const ports: RecordingPorts = {
+      ...t.ports,
+      availableBytes: () => MIN_FREE_BYTES_TO_RECORD - 1,
+      recorder: {
+        record: () => {
+          recordCalls += 1;
+          return t.ports.recorder.record();
+        },
+      },
+    };
+    expect(await startRecording(ports, t.session)).toEqual({
+      kind: 'failed',
+      reason: 'INSUFFICIENT_STORAGE',
+    });
+    expect(recordCalls).toBe(0);
+    expect(await t.fileState()).toBeUndefined();
+    expect((await t.orders.getSession(LOCAL_SHOP_ID, t.session.id))?.sessionStatus).toBe('created');
+  });
+
+  it('A04: đủ dung lượng hoặc không biết dung lượng thì bắt đầu bình thường', async () => {
+    for (const available of [MIN_FREE_BYTES_TO_RECORD, null]) {
+      const t = await setup();
+      const active = await startRecording(
+        { ...t.ports, availableBytes: () => available },
+        t.session,
+      );
+      expect('kind' in active).toBe(false);
+    }
   });
 
   it('camera không bắt đầu được: không treo ở "đang quay"', async () => {

@@ -168,6 +168,16 @@ export function createSqliteEvidenceFileStore(db: SqlDatabase): EvidenceFileStor
         );
         return rows.map(toFile);
       }),
+    listShopsWithStates: (states) =>
+      guarded(async () => {
+        if (states.length === 0) return [];
+        const marks = states.map(() => '?').join(', ');
+        const rows = await db.getAllAsync<{ shop_id: string }>(
+          `SELECT DISTINCT shop_id FROM evidence_files WHERE state IN (${marks}) ORDER BY shop_id`,
+          [...states],
+        );
+        return rows.map((r) => r.shop_id as ShopId);
+      }),
     listByOrders: (shopId, orderIds) =>
       guarded(async () => {
         if (orderIds.length === 0) return [];

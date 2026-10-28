@@ -5,6 +5,7 @@ import { ROUTES } from '@/core/navigation';
 import { useEvidenceFileStore, useOrderStore, type PackingSession } from '@/features/orders';
 import {
   CameraRecorder,
+  getAvailableDiskBytes,
   hashFile,
   newEvidenceId,
   persistRecording,
@@ -26,14 +27,16 @@ import {
 const CLOCK_TICK_MS = 1000;
 
 type Phase = 'preparing' | 'recording' | 'saving' | 'failed';
-type FailureKey = 'saveFailed' | 'storageFull' | 'recorderFailed' | 'startFailed';
+type FailureKey =
+  'saveFailed' | 'storageFull' | 'recorderFailed' | 'startFailed' | 'insufficientStorage';
 
 const FAILURE_BY_REASON: Record<
-  Extract<RecordingOutcome, { kind: 'failed' }>['reason'] | 'START',
+  Extract<RecordingOutcome, { kind: 'failed' }>['reason'] | 'START' | 'INSUFFICIENT_STORAGE',
   FailureKey
 > = {
   LOCAL_STORE: 'startFailed',
   START: 'startFailed',
+  INSUFFICIENT_STORAGE: 'insufficientStorage',
   RECORDER_FAILED: 'recorderFailed',
   STORAGE_FULL: 'storageFull',
   SAVE_FAILED: 'saveFailed',
@@ -117,6 +120,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
       },
       persist: persistRecording,
       hash: hashFile,
+      availableBytes: getAvailableDiskBytes,
       newEvidenceId,
       now: Date.now,
     }),
@@ -190,7 +194,11 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
         testID="screen-UI-C03"
         footer={<Button label={t('screens:record.backToOrder')} onPress={toOrder} />}
       >
-        <Text accessibilityRole="alert">{t(`screens:record.${failure ?? 'saveFailed'}`)}</Text>
+        <Text accessibilityRole="alert">
+          {failure === 'insufficientStorage'
+            ? t('errors:INSUFFICIENT_STORAGE')
+            : t(`screens:record.${failure ?? 'saveFailed'}`)}
+        </Text>
       </Screen>
     );
   }

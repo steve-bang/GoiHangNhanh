@@ -136,6 +136,11 @@ export interface EvidenceFileStore {
   ): Promise<ApplyEventResult>;
   /** Tệp của shop đang ở một trong các trạng thái, cũ nhất trước (hàng đợi tải lên). */
   listByStates(shopId: ShopId, states: readonly FileState[]): Promise<readonly EvidenceFile[]>;
+  /**
+   * Các shop trên máy này có tệp ở một trong các trạng thái. CHỈ để khôi phục sau khi app bị đóng giữa
+   * chừng (phiên của shop khác/shop tạm không được treo mãi ở "đang quay"); không dùng để hiển thị dữ liệu.
+   */
+  listShopsWithStates(states: readonly FileState[]): Promise<readonly ShopId[]>;
   /** Tệp của nhiều đơn cùng lúc (danh sách đơn), cũ nhất trước. */
   listByOrders(shopId: ShopId, orderIds: readonly OrderId[]): Promise<readonly EvidenceFile[]>;
   /** Mọi tệp của một đơn, cũ nhất trước. */

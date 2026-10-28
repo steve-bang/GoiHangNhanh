@@ -1,15 +1,13 @@
-import { act, render } from '@testing-library/react-native';
+import { act, screen } from '@testing-library/react-native';
 
 import type { EvidenceId, OrderId, PackageId, SessionId } from '@/core/ids';
 import {
-  CurrentShopProvider,
-  EvidenceFileStoreProvider,
   LOCAL_SHOP_ID,
-  OrderStoreProvider,
   createMemoryEvidenceFileStore,
   createMemoryOrderStore,
 } from '@/features/orders';
 import { sampleOrder, sampleSession, seedOrder } from '@/test-utils/order-fixtures';
+import { renderWithProviders } from '@/test-utils/render';
 
 import { RecordingRecovery } from './RecordingRecovery';
 
@@ -20,8 +18,9 @@ jest.mock('../domain/recorder', () => ({
   },
 }));
 jest.mock('@/platform/recording-files', () => ({
-  persistRecording: () => ({ ok: true, uri: 'file:///docs/evidence/ev-1.mp4', sizeBytes: 9 }),
+  persistRecording: () => ({ ok: true, uri: 'evidence/ev-1.mp4', sizeBytes: 9 }),
   recordingExists: () => false,
+  findPersistedRecording: () => null,
 }));
 jest.mock('@/platform/file-hasher', () => ({
   HASH_CHUNK_BYTES: 1,
@@ -30,50 +29,83 @@ jest.mock('@/platform/file-hasher', () => ({
 
 const flush = () => act(async () => void (await new Promise((r) => setTimeout(r, 0))));
 
-async function setup(shopId: string) {
+type Files = ReturnType<typeof createMemoryEvidenceFileStore>;
+
+async function seedFile(files: Files, shopId: string, id: string, sessionId: string) {
+  await files.create({
+    id: id as EvidenceId,
+    shopId: shopId as never,
+    orderId: 'o' as OrderId,
+    packageId: 'p' as PackageId,
+    sessionId: sessionId as SessionId,
+    group: 'pack',
+    kind: 'video',
+    createdAtDevice: 1,
+  });
+}
+
+async function setup(shopIds: string[]) {
   const orders = createMemoryOrderStore();
   const files = createMemoryEvidenceFileStore();
   const details = await seedOrder(orders, sampleOrder());
   const session = sampleSession(details, 1);
   await orders.saveSession(session);
-  await files.create({
-    id: 'ev-1' as EvidenceId,
-    shopId: shopId as never,
-    orderId: 'o' as OrderId,
-    packageId: 'p' as PackageId,
-    sessionId: session.id as SessionId,
-    group: 'pack',
-    kind: 'video',
-    createdAtDevice: 1,
+  await orders.updateSessionStatus(LOCAL_SHOP_ID, session.id, 'recording');
+  for (const [index, shopId] of shopIds.entries()) {
+    await seedFile(files, shopId, `ev-${index + 1}`, session.id);
+  }
+  const view = await renderWithProviders(<RecordingRecovery />, {
+    orderStore: orders,
+    evidenceFileStore: files,
   });
-  await render(
-    <CurrentShopProvider shopId={shopId}>
-      <OrderStoreProvider store={orders}>
-        <EvidenceFileStoreProvider store={files}>
-          <RecordingRecovery />
-        </EvidenceFileStoreProvider>
-      </OrderStoreProvider>
-    </CurrentShopProvider>,
-  );
   await flush();
-  return files;
+  return { files, orders, session, view };
 }
 
 describe('RecordingRecovery', () => {
-  it('bộ ghi bật, shop thật: tệp đang ghi dở bị app kill thành unrecoverable (ghi nhận thiếu)', async () => {
+  it('bộ ghi bật: tệp đang ghi dở bị app kill thành unrecoverable, phiên interrupted, và có thông báo riêng', async () => {
     mockEnabled = true;
-    const files = await setup('shop-that');
-    expect((await files.get('shop-that' as never, 'ev-1' as EvidenceId))?.state).toBe(
-      'unrecoverable',
-    );
+    const { files, orders, session } = await setup([LOCAL_SHOP_ID]);
+    expect((await files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId))?.state).toBe('unrecoverable');
+    expect((await orders.getSession(LOCAL_SHOP_ID, session.id))?.sessionStatus).toBe('interrupted');
+    expect(await screen.findByText(/Lần quay trước bị gián đoạn/)).toBeOnTheScreen();
   });
 
-  it('bộ ghi tắt hoặc shop cục bộ tạm: không động vào dữ liệu', async () => {
-    mockEnabled = false;
-    const off = await setup('shop-that');
-    expect((await off.get('shop-that' as never, 'ev-1' as EvidenceId))?.state).toBe('recording');
+  it('khôi phục MỌI shop trên máy (shop cục bộ tạm và shop khác), để phiên không treo "đang quay" mãi', async () => {
     mockEnabled = true;
-    const local = await setup(LOCAL_SHOP_ID);
-    expect((await local.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId))?.state).toBe('recording');
+    const { files } = await setup(['shop-that', 'shop-khac', LOCAL_SHOP_ID]);
+    for (const [index, shopId] of ['shop-that', 'shop-khac', LOCAL_SHOP_ID].entries()) {
+      expect((await files.get(shopId as never, `ev-${index + 1}` as EvidenceId))?.state).toBe(
+        'unrecoverable',
+      );
+    }
+  });
+
+  it('không có lần quay dở dang: không thông báo', async () => {
+    mockEnabled = true;
+    await setup([]);
+    expect(screen.queryByText(/Lần quay trước bị gián đoạn/)).toBeNull();
+  });
+
+  it('bộ ghi tắt: không động vào dữ liệu và không thông báo', async () => {
+    mockEnabled = false;
+    const { files } = await setup(['shop-that']);
+    expect((await files.get('shop-that' as never, 'ev-1' as EvidenceId))?.state).toBe('recording');
+    expect(screen.queryByText(/Lần quay trước bị gián đoạn/)).toBeNull();
+  });
+
+  it('chỉ chạy MỘT lần cho mỗi kho: gắn lại không đè lên lần quay mới đang diễn ra', async () => {
+    mockEnabled = true;
+    const { files, orders, session, view } = await setup([]);
+    await seedFile(files, 'shop-that', 'ev-moi', session.id); // lần quay mới bắt đầu sau khi app đã mở
+    await view.unmount();
+    await renderWithProviders(<RecordingRecovery />, {
+      orderStore: orders,
+      evidenceFileStore: files,
+    });
+    await flush();
+    expect((await files.get('shop-that' as never, 'ev-moi' as EvidenceId))?.state).toBe(
+      'recording',
+    );
   });
 });

@@ -151,6 +151,7 @@
     "storageFull": "Máy đã đầy bộ nhớ nên chưa lưu được video. Hãy giải phóng dung lượng rồi quay lại.",
     "recorderFailed": "Camera dừng đột ngột. Video chưa được lưu.",
     "startFailed": "Chưa bắt đầu quay được. Hãy quay lại đơn để thử lại.",
+    "interruptedNotice": "Lần quay trước bị gián đoạn. Hãy mở đơn để kiểm tra video.",
     "alreadyRecorded": "Phiên này đã quay rồi nên không quay thêm vào được. Hãy bắt đầu phiên mới từ đơn.",
     "leavePreparing": "Chưa bắt đầu ghi video. Thoát sẽ đưa bạn về màn hình đơn.",
     "leaveSaving": "Video đang được lưu trên máy. Bạn có thể về màn hình đơn, việc lưu vẫn tiếp tục.",

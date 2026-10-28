@@ -8,6 +8,7 @@ export {
 } from './session-evidence';
 export {
   isPersistentPath,
+  MIN_FREE_BYTES_TO_RECORD,
   recoverInterruptedRecordings,
   SESSION_STATUS,
   startRecording,
