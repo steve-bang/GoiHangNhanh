@@ -145,7 +145,13 @@
     "torchOn": "Bật đèn pin",
     "torchOff": "Tắt đèn pin",
     "sessionMissing": "Không mở được phiên quay này.",
-    "cameraError": "Không mở được camera. Có thể ứng dụng khác đang dùng camera."
+    "cameraError": "Không mở được camera. Có thể ứng dụng khác đang dùng camera.",
+    "saving": "Đang lưu video trên máy…",
+    "saveFailed": "Chưa lưu được video. Hãy quay lại đơn để thử lại.",
+    "storageFull": "Máy đã đầy bộ nhớ nên chưa lưu được video. Hãy giải phóng dung lượng rồi quay lại.",
+    "recorderFailed": "Camera dừng đột ngột nên video có thể chưa đầy đủ. Hãy quay lại đơn để kiểm tra.",
+    "startFailed": "Chưa bắt đầu quay được. Hãy quay lại đơn để thử lại.",
+    "backToOrder": "Về đơn hàng"
   },
   "confirm": {
     "nothingSaved": "Bản thử giao diện: chưa có video nào được lưu.",
@@ -157,14 +163,23 @@
     "savedMessage": "Video đã lưu trên thiết bị. Đang chờ tải lên máy chủ.",
     "review": "Xem lại video",
     "addSegment": "Ghi thêm đoạn riêng",
-    "save": "Lưu bằng chứng"
+    "save": "Lưu bằng chứng",
+    "noVideo": "Phiên này chưa có video nào được lưu.",
+    "saveFailed": "Chưa lưu được video của phiên này. Hãy quay lại đơn để thử lại.",
+    "savingNow": "Đang lưu video trên máy…",
+    "uploadingMessage": "Video đã lưu trên thiết bị. Đang tải lên máy chủ.",
+    "uploadedMessage": "Máy chủ đã nhận video. Đang kiểm tra tệp.",
+    "verifiedMessage": "Máy chủ đã kiểm tra: tệp khớp với bản trên máy."
   },
   "packDone": {
     "nothingSaved": "Bản thử giao diện: chưa có video nào được lưu.",
     "summary": "Phiên đóng gói đã hoàn tất. Video đã lưu trên thiết bị, đang chờ đồng bộ.",
     "videoCount": "Số video",
     "next": "Đóng gói đơn tiếp theo",
-    "viewEvidence": "Xem bằng chứng"
+    "viewEvidence": "Xem bằng chứng",
+    "noVideo": "Phiên này chưa có video nào được lưu.",
+    "summaryQueued": "Phiên đóng gói đã hoàn tất. Video đã lưu trên thiết bị, đang chờ đồng bộ.",
+    "summaryUploaded": "Phiên đóng gói đã hoàn tất. Máy chủ đã nhận video."
   },
   "returns": {
     "search": "Tìm theo mã đơn, mã vận đơn hoặc mã hoàn",
@@ -462,8 +477,14 @@
     "emptyReturnMessage": "Đơn này chưa có tệp hàng hoàn nào.",
     "recordPack": "Quay đóng gói",
     "kind": {
-      "pack": { "video": "Video đóng gói", "photo": "Ảnh đóng gói" },
-      "return": { "video": "Video hàng hoàn", "photo": "Ảnh hàng hoàn" }
+      "pack": {
+        "video": "Video đóng gói",
+        "photo": "Ảnh đóng gói"
+      },
+      "return": {
+        "video": "Video hàng hoàn",
+        "photo": "Ảnh hàng hoàn"
+      }
     },
     "capturedAt": "Ghi lúc {{time}} (giờ thiết bị)",
     "errorHint": "Tệp này cần xử lý.",

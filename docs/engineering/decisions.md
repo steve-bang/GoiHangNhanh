@@ -171,6 +171,22 @@ Lý do: Rules chỉ cho tạo tài liệu bằng chứng khi `sessions/{sessionI
 
 ---
 
+## ADR-020 — Ghi video thật, lưu bền, băm và gửi tệp (sau cờ, chưa kiểm chứng trên thiết bị)
+
+Người dùng chọn `expo-camera` cho ghi video và bật SAU CỜ (đã duyệt hướng làm, 2026-10-28). **Đề xuất, chờ người dùng/BA duyệt các điểm dưới; chưa chạy trên thiết bị.**
+
+- **R-1. Cờ `EXPO_PUBLIC_RECORDER_ENABLED=1`** (mặc định TẮT; `features/packing/domain/recorder.ts`). Tắt: màn quay là bản thử giao diện như trước (camera chỉ xem trước, dải "chưa ghi video"), các màn xác nhận/hoàn tất báo "chưa có video nào được lưu". Bật chỉ sau khi thử trên máy thật.
+- **R-2. Ghi bằng `CameraView` `mode="video"` + `mute`, KHÔNG thu tiếng** (giữ `microphonePermission: false`; có thu tiếng hay không là O-09, chưa quyết). `expo-camera` không có sự kiện "đã bắt đầu ghi": coi là đang ghi khi `recordAsync` đã gọi mà chưa báo lỗi.
+- **R-3. Luồng một lần quay (`recording-controller.ts`):** bản ghi tệp + phiên `recording` tạo TRƯỚC khi ghi (bất biến 2) -> dừng: `saving_local` (ghi đường dẫn tệp tạm) -> chuyển (move) khỏi thư mục tạm vào `documentDirectory/evidence/<id>.<đuôi>` -> băm SHA-256 theo khối 1 MB -> `queued` (đường dẫn, kích thước, mã băm) -> phiên `ended`. Lỗi ở bước nào thì ghi `local_save_failed` (kèm vị trí tệp nếu đã chuyển), phiên `needs_attention`/`interrupted`, và màn nói đúng điều đã xảy ra, KHÔNG "đã lưu". Không có đường nào xóa tệp tạm/gốc.
+- **R-4. Phục hồi khi app bị kill (`recoverInterruptedRecordings`, chạy lúc mở app khi cờ bật):** đang `recording` -> `unrecoverable` (không biết tệp tạm ở đâu; ghi nhận thiếu, không dựng video giả, bất biến 6); đang `saving_local` còn tệp -> chuyển + băm + `queued`; mất tệp -> `unrecoverable`. Phiên luôn `interrupted` (không tự nhận là đầy đủ, A05).
+- **R-5. SHA-256 thuần JS tăng dần** (`core/crypto/sha256.ts`, đối chiếu `node:crypto`) vì `expo-crypto.digest` chỉ nhận toàn bộ dữ liệu một lần. Tốc độ trên Hermes với video lớn CHƯA đo; nếu quá chậm, cân nhắc module native.
+- **R-6. Gửi tệp:** POST tới URL ký của `createUploadSession` để mở phiên tải, rồi PUT nguyên tệp bằng `uploadAsync` (native, theo luồng). **Giới hạn:** mỗi lần thử gửi lại từ đầu (chưa tiếp tục giữa chừng bằng `Content-Range`); chưa tải nền khi app bị đóng (iOS/Android giới hạn chạy nền); hàng đợi chạy khi app mở (gắn, foreground, mỗi 60 giây).
+- **R-7. Nối dữ liệu thật:** `loadEvidenceStates/Items` đọc kho tệp; kho SQLite đếm chưa đồng bộ (`countUnsynced*`, dùng cho đăng xuất/chuyển shop) và lọc `withoutVideo` theo `evidence_files`; `openLocalDatabase` dùng MỘT kết nối chung. Kho bộ nhớ (web/test) không có tệp nên `withoutVideo` không lọc.
+- **R-8. Màn UI-C04/C06 theo tệp thật của phiên:** nhãn theo trạng thái tệp (`saved_on_device`, `uploading`, `uploaded`, `verified`); bỏ dòng "Thời lượng 00:00" (chưa đo thời lượng) và "minh họa". "Xem lại" và "Ghi thêm đoạn riêng" vẫn chưa có logic.
+- **Phải kiểm chứng trên iOS và Android thật trước khi bật cờ:** quay 5-10 phút liên tục; ngắt bởi cuộc gọi/thông báo/nền; hết bộ nhớ; app bị kill khi quay và khi lưu; chuyển tệp khỏi thư mục tạm; tốc độ băm; gửi tệp 100 MB+ trên mạng yếu/mất mạng giữa chừng; iOS `mode="video"` với `mute` khi KHÔNG có mô tả quyền micro (nguy cơ hệ điều hành đóng app: nếu xảy ra phải thêm `NSMicrophoneUsageDescription` và quyết O-09); migration SQLite v3/v4; Rules/Functions đã deploy (`position`, `createUploadSession`, `verifyEvidence`) và quyền ký URL (`signBlob`).
+
+---
+
 ## Câu hỏi cần người dùng / BA duyệt
 
 Mỗi câu có phương án và khuyến nghị. Không có câu nào trong số này chốt O-xx.

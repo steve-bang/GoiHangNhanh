@@ -14,6 +14,7 @@ import {
 import { RecordingFrame, Screen, Text } from '@/shared/ui';
 
 import { RECORDER_ENABLED, formatElapsed } from '../domain';
+import { PackRecordLive } from './PackRecordLive';
 
 const CLOCK_TICK_MS = 1000;
 
@@ -70,13 +71,14 @@ export function PackRecordScreen() {
     );
   }
 
+  // Bộ ghi thật bật: màn riêng, ghi tệp thật và chỉ chuyển bước khi tệp đã lưu bền.
+  if (RECORDER_ENABLED) return <PackRecordLive session={session} />;
+
   const goNext = () =>
-    RECORDER_ENABLED
-      ? navigation.replace(ROUTES.packConfirm, { sessionId: session.id })
-      : navigation.replace(ROUTES.orderPreview, {
-          orderId: session.orderId,
-          notice: 'not_recorded',
-        });
+    navigation.replace(ROUTES.orderPreview, {
+      orderId: session.orderId,
+      notice: 'not_recorded',
+    });
   const cameraReady = permission.status === 'granted' && !cameraFailed;
 
   return (
@@ -86,10 +88,10 @@ export function PackRecordScreen() {
       secondaryLabel={t('screens:record.package', { index: session.snapshot.packageIndex })}
       clockLabel={formatElapsed(session.startedAtDevice, now)}
       guidance={t('screens:record.packGuidance')}
-      recording={RECORDER_ENABLED}
+      recording={false}
       badgeLabel={t('screens:record.badge')}
       previewLabel={t('screens:record.previewBadge')}
-      {...(RECORDER_ENABLED ? {} : { notice: t('screens:record.notRecording') })}
+      notice={t('screens:record.notRecording')}
       leaveMessage={t('screens:record.packLeavePreview')}
       preview={
         cameraReady && focused ? (
