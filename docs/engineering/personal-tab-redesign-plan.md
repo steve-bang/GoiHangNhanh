@@ -1,6 +1,6 @@
 # Kế hoạch nâng cấp giao diện tab Cá nhân theo design board 07
 
-> Trạng thái: **kế hoạch đã được người dùng duyệt; các mặc định Q-21a..i đã được ủy quyền áp dụng** (xem [decisions.md Q-21](decisions.md)). Câu hỏi chưa chốt (Q-21j..n) cần designer/BA. **PR-A (token + thành phần dùng chung) đã squash-merge vào `main`** (mục 6.1); **PR-B (màn chính 1a-1e) đã làm trên nhánh `claude/personal-tab-redesign-pr-b`, đang review ở PR #15** (mục 6.2); các PR C-I chưa làm.
+> Trạng thái: **kế hoạch đã được người dùng duyệt; các mặc định Q-21a..i đã được ủy quyền áp dụng** (xem [decisions.md Q-21](decisions.md)). Câu hỏi chưa chốt (Q-21j..n) cần designer/BA. **PR-A (token + thành phần dùng chung) đã squash-merge vào `main`** (mục 6.1); **PR-B (màn chính 1a-1e) đã squash-merge vào `main`** (mục 6.2); **PR-C (Sửa họ tên, Đổi mật khẩu, hộp thoại Đăng xuất) đã làm trên nhánh `claude/personal-tab-redesign-pr-c`** (mục 6.3); các PR D-I chưa làm.
 
 ## 1. Mục tiêu, nguồn và phạm vi
 
@@ -150,7 +150,7 @@ D1..D17 theo bản nháp đã chỉnh; D18..D29 là phát hiện thêm sau khi p
 | D18 | Khung 3 hiện **cả form lẫn thẻ Apple/Google** | Tài khoản Apple/Google không có mật khẩu để đổi (Q-20c) | Thẻ thay cho form khi đăng nhập social; hiện form khi email+mật khẩu |
 | D19 | Khung 12: "dữ liệu có thể vẫn xem được trên thiết bị của bạn" sau hết hạn | docs/06 chưa chốt xử lý khi hết hạn và bản cục bộ (O-06); không được hứa | Đổi thành câu trung thực ("Thời hạn lưu theo gói; thông tin chi tiết sẽ cập nhật khi gói được chốt") hoặc bỏ thẻ; BA duyệt |
 | D20 | Khung 18: "Chính sách đổi trả" | Đơn Chứng không bán hàng, không có chính sách này | **Không dựng** hàng này; 3 hàng còn lại |
-| D21 | Khung 4c: không có lối "Đăng xuất" | Q-20l đã chọn "Vẫn đăng xuất" khi còn tệp chưa đồng bộ (dữ liệu cục bộ giữ lại) | Giữ hai nút theo board; thêm lối "Vẫn đăng xuất" **dạng liên kết chữ nhỏ** dưới nút phụ (không đổi bố cục chính); BA/designer duyệt |
+| D21 | Khung 4c: không có lối "Đăng xuất" | Q-20l (2a) đang áp dụng là chỉ chặn; (2b) "Vẫn đăng xuất" chờ BA | **PR-C: giữ đúng board, chỉ chặn** (Q-21q); nếu BA chọn (2b) thì thêm liên kết chữ nhỏ dưới nút phụ |
 | D22 | Khung 6: "20/50" trong khi tên có 15 ký tự | Số đếm sai | Đếm theo độ dài thật |
 | D23 | Khung 5: hàng "Vai trò", "Trạng thái" có chevron | Hàng thuộc tính không mở được màn nào | Bỏ chevron |
 | D24 | Khung 7b/7c: tiêu đề nền ghi "Gói dịch vụ" | Lỗi minh họa | Nền là màn "Chuyển cửa hàng" |
@@ -170,7 +170,7 @@ Mỗi PR: nhánh tách từ `main` mới nhất sau khi PR trước merge; theo 
 |---|---|---|---|---|---|---|
 | **A** | Token + thành phần dùng chung | `src/core/theme/{primitives,semantic,components}.ts`, `theme.test.ts`, `docs/design-token-spec.md`; `src/shared/ui/{HeroCard,IconTile,MetricTile,StatusCard,Checkbox}.tsx`, sửa `ConfirmDialog.tsx` (`icon`, `iconTone`, `actionsLayout`), `TextField.tsx` (`counter`), `ErrorState.tsx` (`variant="card"`), `EmptyState.tsx` (`icon`, `action`), `ScreenHeader.tsx` (`trailing`, căn trái), `Icon.tsx` (glyph mới), `index.ts`, `README.md` | Không đổi route | Test từng thành phần + tương phản token; `frozen-*-equivalence` xanh; `check:tokens` | `npm run check` xanh; ảnh các thành phần ở sáng; prop mới tùy chọn, mặc định cũ | Không |
 | **B** | Màn chính + 5 trạng thái (1a-1e) | `ProfileScreen.tsx`, `ProfileSummaryCard.tsx`, `MenuRow.tsx`, `RegionParts.tsx`, `account-menu.ts`, `nav.json`, `personal.json` | Không route mới; thẻ gói/dữ liệu bằng chứng mở route đã có hoặc khóa "Sắp có" | `ProfileScreen.test.tsx` đủ 5 trạng thái, chữ lớn, 320/360/390 | Khớp checklist 1a-1e (mục 8); không số giả | A |
-| **C** | Sửa họ tên, Đổi mật khẩu, hộp thoại Đăng xuất | `EditProfileScreen.tsx`, `ChangePasswordScreen.tsx`, `use-sign-out.ts`, `ProfileScreen.tsx` (hộp thoại) | Không route mới | Cập nhật test hiện có + test thẻ social thay form | Khớp 2, 3, 4a-c; vẫn chặn khi quay, vẫn đủ lối đăng xuất (D21) | A |
+| **C** (đã làm, mục 6.3) | Sửa họ tên, Đổi mật khẩu, hộp thoại Đăng xuất | `EditProfileScreen.tsx`, `ChangePasswordScreen.tsx`, `use-sign-out.ts`, `ProfileScreen.tsx` (hộp thoại) | Không route mới | Cập nhật test hiện có + test thẻ social thay form | Khớp 2, 3, 4a-c; vẫn chặn khi quay, vẫn đủ lối đăng xuất (D21) | A |
 | **D** | Cửa hàng: cài đặt, sửa tên, chuyển + 2 hộp thoại | `ShopSettingsScreen.tsx`, `ShopEditScreen.tsx`, `ShopSwitchScreen.tsx`, `use-switch-shop.ts` | Không route mới | Test hiện có + bộ đếm, "Bị khóa", ô tìm | Khớp 5, 6, 7a-c; "Xóa cửa hàng" ẩn | A |
 | **E** | Gói, chi tiết gói, lịch sử thanh toán | `src/app/(tabs)/account/{plan,plan-detail,payment-history}.tsx`, màn mới trong `features/personal/ui`, `routes.ts` (route con của `plan`, `UI-H01`), `nav.json` | `plan` (có sẵn) + 2 route con `parent` (Q-21b) | `routes.test.ts` (route con khai báo `parent`), màn | Khớp 8, 9, 10; mọi giá trị "Chưa có thông tin"; nút nâng cấp khóa | A, Q-21b |
 | **F** | Dữ liệu bằng chứng, thời hạn lưu | màn mới + `routes.ts` (route con của `profile` UI-I01) | 2 route con | Test đếm thật (0) và chữ "Chưa có thông tin" | Khớp 11, 12; không số bịa; thẻ ghi chú theo D19 | A, B |
@@ -186,9 +186,9 @@ Mỗi PR: nhánh tách từ `main` mới nhất sau khi PR trước merge; theo 
 - **Lệch so với plan/board:** (1) `TextField` dùng `counterMax` (đếm theo `value.length`) thay vì chuỗi "20/50" tự truyền, để D22 đúng từ gốc; (2) viền hộp kiểm dùng `text.secondary` thay `border.default` (tương phản); (3) thẻ "Đang quay video" của khung 21 chưa dựng (ngoại lệ D-18 chỉ cho chấm ghi hình); (4) nhãn mặc định `StatusCard` theo nhãn chuẩn docs/09, không phải chữ board; (5) icon hộp thoại trong ô tròn nền nhạt thay vì biểu tượng đặc; (6) ngắt kết nối dùng `unlink-outline`. Chi tiết và ảnh: `docs/assets/screens/personal-tab-v3/README.md`.
 - **Chưa làm ở PR-A:** `ConfirmDialog` chưa có nút xác nhận vô hiệu (khung 7c) và chưa có liên kết "Vẫn đăng xuất" (D21): để PR-C/PR-D. Chưa kiểm chứng trên thiết bị, chưa chụp ở chữ lớn.
 
-### 6.2 Trạng thái PR-B (đã làm, đang review ở PR #15)
+### 6.2 Trạng thái PR-B (đã merge)
 
-Màn UI-I01 dựng lại theo khung 1a-1e; **không route/mã UI mới** (Q-21b). Tệp: `ProfileScreen.tsx`, `ProfileCards.tsx` (thẻ cửa hàng, thẻ gói, khối dữ liệu bằng chứng, trạng thái 1d/1e), `ProfileSkeletons.tsx` (khung chờ 1b/1c), `ProfileSummaryCard.tsx`, `RegionParts.tsx` (`RegionError card`), `account-menu.ts` (`planMenuItem`), `personal.json`; dùng chung: glyph `cloud` mới, `ErrorState variant="card"` có nút thử lại là nút chính. Ảnh: `docs/assets/screens/personal-tab-v3/pr-b-*.png` (xem README ở đó). **Ảnh `pr-b-1a-*` chưa chụp lại sau review**: môi trường này không có trình duyệt và không có react-native-web; ba ô bằng chứng nay có thêm dòng "Chưa có số liệu" dưới nhãn, ảnh cũ còn ở dạng chỉ nhãn. Chụp lại ở lần có trình duyệt.
+Màn UI-I01 dựng lại theo khung 1a-1e; **không route/mã UI mới** (Q-21b). Tệp: `ProfileScreen.tsx`, `ProfileCards.tsx` (thẻ cửa hàng, thẻ gói, khối dữ liệu bằng chứng, trạng thái 1d/1e), `ProfileSkeletons.tsx` (khung chờ 1b/1c), `ProfileSummaryCard.tsx`, `RegionParts.tsx` (`RegionError card`), `account-menu.ts` (`planMenuItem`), `personal.json`; dùng chung: glyph `cloud` mới, `ErrorState variant="card"` có nút thử lại là nút chính. Ảnh: `docs/assets/screens/personal-tab-v3/pr-b-*.png` (xem README ở đó). Ảnh `pr-b-1a-*` đã chụp lại ở PR-C (có dòng "Chưa có số liệu" dưới nhãn ba ô bằng chứng).
 
 **Cách thể hiện từng khung**
 
@@ -215,6 +215,31 @@ Màn UI-I01 dựng lại theo khung 1a-1e; **không route/mã UI mới** (Q-21b)
 9. Hero nền phẳng, nút chính phẳng (không chuyển sắc); thẻ viền `border.default` không bóng (Q-21g).
 
 **Chưa kiểm chứng:** trạng thái ngoại tuyến **không xảy ra trong app thật** vì `useIsOffline` (khung tạm) luôn trả `false`; khung 1d chỉ được test bằng mock và chụp bằng bản thử đổi ở bản sao ngoài repo. Chưa chụp ở chữ lớn (font scale), chưa chạy trên iOS/Android thật.
+
+### 6.3 Trạng thái PR-C (đã làm, chờ duyệt)
+
+Không route/mã UI mới (`UI-I01`/`UI-I05` giữ nguyên). Ảnh: `docs/assets/screens/personal-tab-v3/pr-c-*.png` (bản web, cổng giả, 320/360/390), ảnh ghép `pr-c-compare-board-vs-app-390.png`, checklist ở README thư mục đó.
+
+| Khung | Cách làm |
+|---|---|
+| 2 Sửa họ tên | Nhãn "Họ và tên *" (`TextField required`: dấu sao đỏ chỉ trang trí, ẩn khỏi trình đọc, ô báo `aria-required`), ô chữ, nút "Lưu" ngay dưới ô (không ghim đáy; chỉ hiện khi đã tải hồ sơ). Bỏ ô email chỉ đọc và `ReadOnlyField` (email vẫn thấy ở thẻ hồ sơ màn Cá nhân). Giữ: Lưu tắt khi chưa đổi/đang gửi, kiểm tra khi bấm + focus ô lỗi, toast chỉ sau khi cổng xác nhận, `PROFILE_SAVE_FAILED` tại màn, hủy khi có thay đổi thì hỏi |
+| 3 Đổi mật khẩu | Ba ô có icon mắt (đã có), nhãn có dấu sao, gợi ý nhập theo board ("Nhập mật khẩu hiện tại"/"mới"/"Nhập lại mật khẩu mới"), nhãn ô ba "Xác nhận mật khẩu mới", dòng yêu cầu thời gian thực "Tối thiểu 8 ký tự" (biểu tượng + chữ, theo D-13; KHÔNG "chữ và số" vì app không kiểm tra, D29), nút "Lưu" ngay dưới. Màn tự đọc `signInMethod`: Apple/Google thấy thẻ "Tài khoản Apple/Google" (nêu đúng nhà cung cấp) THAY form; đang tải/lỗi tải hồ sơ không hiện form. Giữ `AUTH_WRONG_CURRENT_PASSWORD`, `AUTH_WEAK_PASSWORD`, `AUTH_REQUIRES_RECENT_LOGIN`/`AUTH_SESSION_EXPIRED` (nút "Đăng nhập lại"), chống gửi lặp, không log mật khẩu. Bỏ câu mô tả đầu trang (board không có) |
+| 4a | `ConfirmDialog` có icon `sign-out`; nút chính "Ở lại ứng dụng", nút viền đỏ "Đăng xuất"; câu "Video và dữ liệu trên máy này vẫn được giữ lại." giữ làm dòng phụ vì đúng hành vi (Q-20h) |
+| 4b | Icon camera, tiêu đề "Đang quay video", "Bạn đang quay video đóng gói. Hãy dừng quay trước khi đăng xuất."; MỘT nút "Ở lại ứng dụng" (`ConfirmDialog hideConfirm`) |
+| 4c | Icon cảnh báo (tông warning), "Còn bằng chứng chưa đồng bộ"; nút chính "Xem trung tâm đồng bộ", nút phụ "Ở lại ứng dụng"; KHÔNG có "Đăng xuất" (giữ chỉ chặn, Q-20l; Q-21q) |
+
+**Thành phần dùng chung (prop tùy chọn, mặc định giữ nguyên, có test):** `TextField.required`; `ConfirmDialog.hideConfirm` (kiểu union: không nhận `confirmLabel`/`onConfirm`), `messageTestID`, `confirmTestID`. Chưa thêm nút xác nhận vô hiệu cho khung 7c (PR-D sẽ thêm khi dùng). `useSignOut` không đổi logic (chỉ sửa chú thích); `ProfileScreen` bỏ `BottomSheet` ở hai nhánh chặn/cảnh báo.
+
+**Lệch có chủ đích so với board**
+
+1. Khung 3: thẻ Apple/Google thay form thay vì hiện cùng form (D18, Q-21s); nêu đúng "Apple" hoặc "Google"; câu "Hãy đổi trong cài đặt tài khoản Apple/Google" thay "Vui lòng ..." (test từ cấm).
+2. Khung 3: gợi ý "Tối thiểu 8 ký tự" không có "bao gồm chữ và số" (D29).
+3. Khung 3 và 2: board không có lỗi tại ô nên không so được; app giữ lỗi tại ô (đã duyệt từ PR 4b).
+4. Hộp thoại: icon trong ô tròn nền nhạt (PR-A), lề thẻ 24dp thay ~12dp (Q-21r), nút phụ 4c có viền xanh đậm hơn viền teal nhạt của board; nội dung 4a thêm dòng phụ về dữ liệu trên máy; tiêu đề/nội dung 4c nêu đúng hành vi chặn ("Hãy đồng bộ xong rồi đăng xuất", số tệp thật) thay "Đăng xuất có thể làm gián đoạn..." (câu đó ngụ ý được phép đăng xuất).
+5. Khung 2: ô nhập hiện viền xanh khi đang focus (board vẽ viền mint ở trạng thái thường).
+6. Thanh tab ẩn trên khung 2/3 (khớp board, đã làm ở PR 4b); 4a-4c hiện trên màn Cá nhân có thanh tab dưới lớp tối (board che bằng khung giả không thanh tab).
+
+**Chưa kiểm chứng:** thiết bị iOS/Android thật, chữ lớn (font scale) chưa chụp, VoiceOver/TalkBack (dấu sao ẩn, `aria-required`, hộp thoại `accessibilityViewIsModal`), bàn phím che nút Lưu trên màn hẹp (nút nằm trong nội dung cuộn được).
 
 ## 7. Rủi ro
 
