@@ -85,3 +85,37 @@
 | Trạng thái | đạt | đạt (lỗi tại ô, Apple/Google, tải, lỗi tải) | đạt | đạt | đạt | |
 | Chuỗi chữ | đạt (không có ô email) | lệch: "Tối thiểu 8 ký tự" (không "chữ và số", D29); thẻ nêu đúng Apple hoặc Google | đạt + dòng phụ về dữ liệu trên máy | đạt ("Hãy" thay "Vui lòng") | lệch: nêu số tệp thật và "Hãy đồng bộ xong rồi đăng xuất" | xem mục 6.3 của plan |
 
+
+---
+
+# Ảnh đối chiếu PR-D: Cửa hàng (khung 5, 6, 7a-7c)
+
+**Lưu ý trung thực:** ảnh render **bản web** (react-native-web trong Chromium) của màn thật trên **cổng giả**, **không phải ảnh chụp trên iOS/Android thật**; 320x568, 360x800, 390x844 (hệ số 2); **chưa chụp ở chữ lớn**. Bản sao ngoài repo (không thêm phụ thuộc vào repo) có thay đổi tạm KHÔNG commit: cổng giả đọc `?shops=4|7` (Shop Thời Trang đang dùng, Mỹ Phẩm, Gia Dụng, Phụ Kiện bị khóa, thêm ba shop khi `7`), kho bộ nhớ đọc `?recording=1` và `?unsynced=3`. Tên "Shop Thời Trang" là dữ liệu giả lập. Thanh tab ở khung 5 vẫn hiện (xem lệch bên dưới).
+
+| Ảnh | Nội dung |
+| --- | --- |
+| `pr-d-5-shop-settings-*.png` | Khung 5, tài khoản có từ hai cửa hàng (có hàng Chuyển cửa hàng) |
+| `pr-d-5-shop-settings-single-*.png` | Khung 5, một cửa hàng (không có hàng Chuyển cửa hàng) |
+| `pr-d-6-edit-name-*.png`, `-pristine-*`, `-error-*` | Khung 6: đã sửa (Lưu bật, 19/50); chưa sửa (Lưu tắt); 55 ký tự (báo lỗi tại ô) |
+| `pr-d-7a-switch-list-*.png`, `-initial-*` | Khung 7a: đã chọn Shop Mỹ Phẩm (dấu tích phải, "Xác nhận" bật); chưa chọn (nút tắt) |
+| `pr-d-7a-switch-search-*.png`, `-search-all-*` | 7a với 7 cửa hàng: ô tìm (đã gõ "do choi"; chưa gõ) |
+| `pr-d-7b-switch-confirm-*.png` | Khung 7b |
+| `pr-d-7c-switch-recording-*.png` | Khung 7c (đang quay) |
+| `pr-d-7x-switch-unsynced-*.png` | Cảnh báo còn 3 tệp chưa đồng bộ (không có trong board; giữ theo Q-20o) |
+| `pr-d-board-reference-5-7.png` | Khung 5, 6, 7a, 7b, 7c cắt từ board 07 |
+| `pr-d-compare-board-vs-app-390.png` | Hàng trên board, hàng dưới app 390x844, cùng cột = cùng khung |
+
+## Checklist "giống design"
+
+| Hạng mục | 5 | 6 | 7a | 7b | 7c | Ghi chú lệch |
+| --- | --- | --- | --- | --- | --- | --- |
+| Bố cục và thứ tự khối | đạt | đạt | đạt | đạt | đạt | khung 5 không có dòng ID |
+| Thứ bậc chữ | đạt | đạt | đạt | đạt | đạt | |
+| Màu thẻ/nền | đạt | đạt | gần | đạt | đạt | Bị khóa dùng tông cảnh báo, không đỏ |
+| Icon | gần | - | gần | gần | gần | Ionicons gần nghĩa; icon 7c không đỏ, không có khóa trên camera |
+| Khoảng cách | gần | gần | gần | gần | gần | quy về token |
+| Nút | đạt | đạt | đạt | đạt | gần | nút phụ có viền (board nền nhạt không viền); nút vô hiệu 7c dạng viền mờ |
+| Header | đạt | đạt | đạt | - | - | |
+| Thanh tab | lệch có chủ đích (hiện) | ẩn (đạt) | ẩn (đạt) | dưới lớp tối | như 7b | Q-21t |
+| Trạng thái | đạt | đạt (đã sửa, chưa sửa, lỗi) | đạt (chưa chọn, đã chọn, tìm, không khớp) | đạt | đạt | |
+| Chuỗi chữ | lệch | lệch | lệch | lệch | lệch | xem mục 6.4 của plan |

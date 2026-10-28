@@ -1,6 +1,6 @@
 # Kế hoạch nâng cấp giao diện tab Cá nhân theo design board 07
 
-> Trạng thái: **kế hoạch đã được người dùng duyệt; các mặc định Q-21a..i đã được ủy quyền áp dụng** (xem [decisions.md Q-21](decisions.md)). Câu hỏi chưa chốt (Q-21j..n) cần designer/BA. **PR-A (token + thành phần dùng chung) đã squash-merge vào `main`** (mục 6.1); **PR-B (màn chính 1a-1e) đã squash-merge vào `main`** (mục 6.2); **PR-C (Sửa họ tên, Đổi mật khẩu, hộp thoại Đăng xuất) đã làm trên nhánh `claude/personal-tab-redesign-pr-c`** (mục 6.3); các PR D-I chưa làm.
+> Trạng thái: **kế hoạch đã được người dùng duyệt; các mặc định Q-21a..i đã được ủy quyền áp dụng** (xem [decisions.md Q-21](decisions.md)). Câu hỏi chưa chốt (Q-21j..n) cần designer/BA. **PR-A (token + thành phần dùng chung) đã squash-merge vào `main`** (mục 6.1); **PR-B (màn chính 1a-1e) đã squash-merge vào `main`** (mục 6.2); **PR-C (Sửa họ tên, Đổi mật khẩu, hộp thoại Đăng xuất) đã squash-merge vào `main`** (mục 6.3); **PR-D (Cửa hàng: khung 5, 6, 7a-7c) đã làm trên nhánh `claude/personal-tab-redesign-pr-d`** (mục 6.4); các PR E-I chưa làm.
 
 ## 1. Mục tiêu, nguồn và phạm vi
 
@@ -171,7 +171,7 @@ Mỗi PR: nhánh tách từ `main` mới nhất sau khi PR trước merge; theo 
 | **A** | Token + thành phần dùng chung | `src/core/theme/{primitives,semantic,components}.ts`, `theme.test.ts`, `docs/design-token-spec.md`; `src/shared/ui/{HeroCard,IconTile,MetricTile,StatusCard,Checkbox}.tsx`, sửa `ConfirmDialog.tsx` (`icon`, `iconTone`, `actionsLayout`), `TextField.tsx` (`counter`), `ErrorState.tsx` (`variant="card"`), `EmptyState.tsx` (`icon`, `action`), `ScreenHeader.tsx` (`trailing`, căn trái), `Icon.tsx` (glyph mới), `index.ts`, `README.md` | Không đổi route | Test từng thành phần + tương phản token; `frozen-*-equivalence` xanh; `check:tokens` | `npm run check` xanh; ảnh các thành phần ở sáng; prop mới tùy chọn, mặc định cũ | Không |
 | **B** | Màn chính + 5 trạng thái (1a-1e) | `ProfileScreen.tsx`, `ProfileSummaryCard.tsx`, `MenuRow.tsx`, `RegionParts.tsx`, `account-menu.ts`, `nav.json`, `personal.json` | Không route mới; thẻ gói/dữ liệu bằng chứng mở route đã có hoặc khóa "Sắp có" | `ProfileScreen.test.tsx` đủ 5 trạng thái, chữ lớn, 320/360/390 | Khớp checklist 1a-1e (mục 8); không số giả | A |
 | **C** (đã làm, mục 6.3) | Sửa họ tên, Đổi mật khẩu, hộp thoại Đăng xuất | `EditProfileScreen.tsx`, `ChangePasswordScreen.tsx`, `use-sign-out.ts`, `ProfileScreen.tsx` (hộp thoại) | Không route mới | Cập nhật test hiện có + test thẻ social thay form | Khớp 2, 3, 4a-c; vẫn chặn khi quay, vẫn đủ lối đăng xuất (D21) | A |
-| **D** | Cửa hàng: cài đặt, sửa tên, chuyển + 2 hộp thoại | `ShopSettingsScreen.tsx`, `ShopEditScreen.tsx`, `ShopSwitchScreen.tsx`, `use-switch-shop.ts` | Không route mới | Test hiện có + bộ đếm, "Bị khóa", ô tìm | Khớp 5, 6, 7a-c; "Xóa cửa hàng" ẩn | A |
+| **D** (đã làm, mục 6.4) | Cửa hàng: cài đặt, sửa tên, chuyển + 2 hộp thoại | `ShopSettingsScreen.tsx`, `ShopEditScreen.tsx`, `ShopSwitchScreen.tsx`, `use-switch-shop.ts` | Không route mới | Test hiện có + bộ đếm, "Bị khóa", ô tìm | Khớp 5, 6, 7a-c; "Xóa cửa hàng" ẩn | A |
 | **E** | Gói, chi tiết gói, lịch sử thanh toán | `src/app/(tabs)/account/{plan,plan-detail,payment-history}.tsx`, màn mới trong `features/personal/ui`, `routes.ts` (route con của `plan`, `UI-H01`), `nav.json` | `plan` (có sẵn) + 2 route con `parent` (Q-21b) | `routes.test.ts` (route con khai báo `parent`), màn | Khớp 8, 9, 10; mọi giá trị "Chưa có thông tin"; nút nâng cấp khóa | A, Q-21b |
 | **F** | Dữ liệu bằng chứng, thời hạn lưu | màn mới + `routes.ts` (route con của `profile` UI-I01) | 2 route con | Test đếm thật (0) và chữ "Chưa có thông tin" | Khớp 11, 12; không số bịa; thẻ ghi chú theo D19 | A, B |
 | **G** | Thông báo, Quyền riêng tư và bảo mật | `NotificationsScreen`, `SecurityScreen`, `SettingsGateway` (bản giả + chưa kết nối), `account-menu.ts` (đổi `available`) | `notifications`, `security` (có sẵn) | Test công tắc lưu/đọc cục bộ, thẻ quyền bị từ chối, hàng khóa | Khớp 13, 14; không hứa đẩy | A, C |
@@ -216,7 +216,7 @@ Màn UI-I01 dựng lại theo khung 1a-1e; **không route/mã UI mới** (Q-21b)
 
 **Chưa kiểm chứng:** trạng thái ngoại tuyến **không xảy ra trong app thật** vì `useIsOffline` (khung tạm) luôn trả `false`; khung 1d chỉ được test bằng mock và chụp bằng bản thử đổi ở bản sao ngoài repo. Chưa chụp ở chữ lớn (font scale), chưa chạy trên iOS/Android thật.
 
-### 6.3 Trạng thái PR-C (đã làm, chờ duyệt)
+### 6.3 Trạng thái PR-C (đã merge)
 
 Không route/mã UI mới (`UI-I01`/`UI-I05` giữ nguyên). Ảnh: `docs/assets/screens/personal-tab-v3/pr-c-*.png` (bản web, cổng giả, 320/360/390), ảnh ghép `pr-c-compare-board-vs-app-390.png`, checklist ở README thư mục đó.
 
@@ -228,7 +228,7 @@ Không route/mã UI mới (`UI-I01`/`UI-I05` giữ nguyên). Ảnh: `docs/assets
 | 4b | Icon camera, tiêu đề "Đang quay video", "Bạn đang quay video đóng gói. Hãy dừng quay trước khi đăng xuất."; MỘT nút "Ở lại ứng dụng" (`ConfirmDialog hideConfirm`) |
 | 4c | Icon cảnh báo (tông warning), "Còn bằng chứng chưa đồng bộ"; nút chính "Xem trung tâm đồng bộ", nút phụ "Ở lại ứng dụng"; KHÔNG có "Đăng xuất" (giữ chỉ chặn, Q-20l; Q-21q) |
 
-**Thành phần dùng chung (prop tùy chọn, mặc định giữ nguyên, có test):** `TextField.required`; `ConfirmDialog.hideConfirm` (kiểu union: không nhận `confirmLabel`/`onConfirm`), `messageTestID`, `confirmTestID`. Chưa thêm nút xác nhận vô hiệu cho khung 7c (PR-D sẽ thêm khi dùng). `useSignOut` không đổi logic (chỉ sửa chú thích); `ProfileScreen` bỏ `BottomSheet` ở hai nhánh chặn/cảnh báo.
+**Thành phần dùng chung (prop tùy chọn, mặc định giữ nguyên, có test):** `TextField.required`; `ConfirmDialog.hideConfirm` (kiểu union: không nhận `confirmLabel`/`onConfirm`), `messageTestID`, `confirmTestID`. Nút xác nhận vô hiệu cho khung 7c do PR-D thêm (`confirmDisabled`). `useSignOut` không đổi logic (chỉ sửa chú thích); `ProfileScreen` bỏ `BottomSheet` ở hai nhánh chặn/cảnh báo.
 
 **Lệch có chủ đích so với board**
 
@@ -240,6 +240,38 @@ Không route/mã UI mới (`UI-I01`/`UI-I05` giữ nguyên). Ảnh: `docs/assets
 6. Thanh tab ẩn trên khung 2/3 (khớp board, đã làm ở PR 4b); 4a-4c hiện trên màn Cá nhân có thanh tab dưới lớp tối (board che bằng khung giả không thanh tab).
 
 **Chưa kiểm chứng:** thiết bị iOS/Android thật, chữ lớn (font scale) chưa chụp, VoiceOver/TalkBack (dấu sao ẩn, `aria-required`, hộp thoại `accessibilityViewIsModal`), bàn phím che nút Lưu trên màn hẹp (nút nằm trong nội dung cuộn được).
+
+**Ghi chú:** PR-C đổi chuỗi `switchShop.unsyncedTitle` từ "Còn video chưa lưu lên máy chủ" thành "Còn bằng chứng chưa đồng bộ" (cả `signOut` và `switchShop`) cho khớp 4c; tiêu đề cảnh báo chưa đồng bộ khi chuyển cửa hàng đổi theo, nội dung giữ.
+
+### 6.4 Trạng thái PR-D (đã làm, chờ duyệt)
+
+Không route/mã UI mới (`UI-I02` giữ nguyên, Q-21b). Ảnh: `docs/assets/screens/personal-tab-v3/pr-d-*.png` (bản web, cổng giả, 320/360/390), ảnh ghép `pr-d-compare-board-vs-app-390.png`, checklist ở README thư mục đó. Tệp chính: `ShopSettingsScreen.tsx`, `ShopEditScreen.tsx`, `ShopSwitchScreen.tsx`, `ShopSwitchRow.tsx` (mới), `domain/shop-list.ts` (mới: lọc theo tên không dấu, ngưỡng ô tìm), `personal.json`/`nav.json`; dùng chung: `ConfirmDialog.confirmDisabled`, dấu sao `TextField required` màu trung tính.
+
+| Khung | Cách làm |
+| --- | --- |
+| 5 | Header "Cửa hàng"; thẻ thông tin (ô icon cửa hàng, tên, huy hiệu trạng thái); hai hàng Vai trò/Trạng thái chỉ đọc, KHÔNG thẻ nền, KHÔNG mũi tên (D23); mỗi hành động một thẻ: "Sửa tên cửa hàng" (khi `canEdit`), "Chuyển cửa hàng" (khi từ hai cửa hàng). Bỏ câu mô tả đầu trang. **Không có "Xóa cửa hàng"** (Q-21d, bất biến 9) và **không có dòng "ID"** (D1, Q-20n). Vai trò theo cổng ("Chủ cửa hàng"/"Thành viên"), không bịa "Quản lý" (D15) |
+| 6 | Nhãn "Tên cửa hàng *" (`required`), bộ đếm theo độ dài thật `n/50` (D22), nút Lưu ngay dưới ô; giữ: Lưu tắt khi chưa đổi/đang gửi, kiểm tra khi bấm + focus, hủy hỏi xác nhận, toast sau khi cổng xác nhận, quyền theo `canEdit`. Giữ câu "Đổi tên không làm thay đổi video và lịch sử đã lưu." dưới nút |
+| 7a | Danh sách: ô icon, tên, dòng trạng thái màu ("Đang dùng"/"Đang hoạt động"/"Bị khóa") kèm vai trò, dấu tích phải khi được chọn; "Đang dùng" và "Bị khóa" KHÔNG chọn được. Luồng mới: chọn hàng rồi nút "Xác nhận" ở chân màn (tắt khi chưa chọn); điều kiện bảo vệ dữ liệu chạy khi bấm "Xác nhận". Ô tìm (không phân biệt dấu) chỉ khi từ 6 cửa hàng (`SHOP_SEARCH_MIN_SHOPS`, đề xuất) |
+| 7b | `ConfirmDialog` icon `swap`, "Xác nhận chuyển cửa hàng", "Bạn có chắc chắn muốn chuyển sang {tên}?", dòng phụ "Dữ liệu của cửa hàng hiện tại vẫn được giữ trên máy.", hai nút cạnh nhau "Hủy"/"Xác nhận" |
+| 7c | `ConfirmDialog` icon `camera`, "Không thể chuyển cửa hàng", "Bạn đang quay video đóng gói. Hãy dừng quay trước khi chuyển."; "Ở lại" (nút chính) và "Chuyển cửa hàng" vô hiệu (`confirmDisabled`) |
+| Giữ | Cảnh báo chưa đồng bộ (BottomSheet có "Xem trung tâm đồng bộ" và "Vẫn chuyển cửa hàng", Q-20o), chặn bảo thủ khi không đọc được kho (`SHOP_SWITCH_FAILED`), phiên chỉ đổi sau khi cổng xác nhận, cô lập dữ liệu A -> B (test) |
+
+**Lệch có chủ đích so với board**
+
+1. Dấu sao `required` màu trung tính (`text.secondary`), board vẽ đỏ: `docs/design-system.md` chỉ cho đỏ lỗi/phá hủy. Áp dụng cho mọi `TextField required` (cả Sửa họ tên, Đổi mật khẩu của PR-C).
+2. Khung 5: không "ID", không "Xóa cửa hàng", không nhãn nhỏ dưới logo (có thể là "Sửa": không có chỗ lưu logo), vai trò không "Quản lý", hàng thuộc tính không mũi tên, thanh tab vẫn hiện (route gốc UI-I02; Q-21t).
+3. "Bị khóa" dùng tông cảnh báo (cam) và nhãn "Bị khóa" thay "Tạm khóa" ở cả màn Cửa hàng; board vẽ đỏ (đỏ chỉ cho lỗi/phá hủy). Hàng có thêm vai trò sau trạng thái.
+4. Trạng thái "Đang hoạt động" ở khung 5 và 7a dùng tông info/brand, không `success` (dành cho việc máy chủ xác nhận).
+5. 7a: không chọn gì thì nút "Xác nhận" tắt (board vẽ bật); dấu tích phải là "đã chọn" (board gắn với cửa hàng đang dùng). Đang dùng có dấu tích trái như board.
+6. Icon 7b/7c: ô tròn nền nhạt, glyph `swap`/`camera` (board: khiên đặc, máy quay có khóa đỏ); nút phụ có viền, nút vô hiệu 7c dạng viền mờ. 7b có thêm dòng phụ về dữ liệu trên máy. Lề hộp thoại 24dp (Q-21r).
+7. Bỏ câu "Chọn cửa hàng bạn muốn làm việc." (board không có).
+8. Cảnh báo chưa đồng bộ khi chuyển giữ BottomSheet (board không có khung; cần ba lối nên không vừa `ConfirmDialog` hai nút).
+9. Board vẽ ô tìm với 4 cửa hàng; app chỉ hiện ô tìm từ 6 cửa hàng (`SHOP_SEARCH_MIN_SHOPS`, Q-21u).
+10. Trợ năng 7a: danh sách là `radiogroup`; chỉ hàng đang chọn trong phiên báo `selected`, hàng "Đang dùng" chỉ có nhãn "Đang dùng" (tránh lẫn với hàng vừa chọn). Lọc không dấu có đường lui khi thiếu `normalize` (so khớp chữ thường).
+
+**Docs:** đã cập nhật `docs/09-ui-ux-design.md` (dòng UI-I02: tên màn Cửa hàng, nhãn "Bị khóa" thay "Tạm khóa", luồng Xác nhận, ngưỡng ô tìm); chờ BA xác nhận.
+
+**Chưa kiểm chứng:** thiết bị iOS/Android thật, chữ lớn (chưa chụp), VoiceOver/TalkBack (`radio` + `selected`/`disabled`), `String.prototype.normalize` của Hermes trên cả hai nền tảng (lọc không dấu), bàn phím trên màn hẹp, 7c nút vô hiệu đọc bởi trình đọc màn hình.
 
 ## 7. Rủi ro
 

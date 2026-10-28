@@ -2,7 +2,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import { useState } from 'react';
 
-import { semantic } from '@/core/theme';
+import { colors, semantic } from '@/core/theme';
 import { getMinTouchTarget } from '@/platform';
 import { renderWithProviders } from '@/test-utils/render';
 
@@ -315,6 +315,34 @@ describe('ConfirmDialog: icon và bố cục hàng', () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
+  it('confirmDisabled: nút xác nhận hiện nhưng vô hiệu, bấm không gọi onConfirm; hủy vẫn bấm được', async () => {
+    const onConfirm = jest.fn();
+    const onCancel = jest.fn();
+    await renderWithProviders(
+      <ConfirmDialog
+        {...base}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+        actionsLayout="row"
+        confirmDisabled
+        confirmTestID="ok"
+      />,
+    );
+    expect(screen.getByTestId('ok').props.accessibilityState).toMatchObject({ disabled: true });
+    await fireEvent.press(screen.getByTestId('ok'));
+    expect(onConfirm).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Ở lại ứng dụng' }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('mặc định (không truyền confirmDisabled): nút xác nhận bấm được như trước', async () => {
+    const onConfirm = jest.fn();
+    await renderWithProviders(<ConfirmDialog {...base} onConfirm={onConfirm} confirmTestID="ok" />);
+    expect(screen.getByTestId('ok').props.accessibilityState).toMatchObject({ disabled: false });
+    await fireEvent.press(screen.getByTestId('ok'));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
   it('không destructive, primary=confirm: nút xác nhận chính ở trên, nút hủy thứ yếu (hộp thoại cảnh báo có lối đi tiếp)', async () => {
     await renderWithProviders(
       <ConfirmDialog
@@ -393,6 +421,15 @@ describe('TextField: required', () => {
     expect(screen.getByTestId('in-required', HIDDEN)).toHaveTextContent('*');
     expect(screen.getByTestId('in').props['aria-required']).toBe(true);
     expect(screen.getByTestId('in').props.accessibilityLabel).toBe('Họ và tên');
+  });
+
+  it('dấu sao màu trung tính (textMuted), không đỏ: đỏ chỉ dành cho lỗi', async () => {
+    await renderWithProviders(
+      <TextField label="Họ và tên" value="" onChangeText={() => undefined} required testID="in" />,
+    );
+    const star = flat(screen.getByTestId('in-required', HIDDEN));
+    expect(star.color).toBe(colors.textMuted);
+    expect(star.color).not.toBe(colors.danger);
   });
 
   it('mặc định không có dấu sao', async () => {
