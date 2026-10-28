@@ -6,12 +6,17 @@ import { Text } from './Text';
 import { toneColors, type IconTone } from './tone';
 import { useTheme } from './theme';
 
-interface EmptyStateProps {
+type EmptyStateAction =
+  | {
+      /** Hành động CỤ THỂ cho bước tiếp theo (docs/09 mục 3: empty state có hành động cụ thể). */
+      actionLabel: string;
+      onAction: () => void;
+    }
+  | { actionLabel?: never; onAction?: never };
+
+type EmptyStateProps = EmptyStateAction & {
   title: string;
   message: string;
-  /** Hành động CỤ THỂ cho bước tiếp theo (docs/09 mục 3: empty state có hành động cụ thể). */
-  actionLabel?: string;
-  onAction?: () => void;
   icon?: IconName;
   /** Tô biểu tượng theo tông (board 07). Bỏ trống: màu chữ phụ như cũ. */
   iconTone?: IconTone;
@@ -19,7 +24,7 @@ interface EmptyStateProps {
   actionVariant?: 'primary' | 'secondary';
   /** Cỡ gọn của nhóm màn form: icon 32, tiêu đề 15sp đậm, mô tả 14sp, nút `slim`. */
   compact?: boolean;
-}
+};
 
 export function EmptyState({
   title,
@@ -33,7 +38,6 @@ export function EmptyState({
 }: EmptyStateProps) {
   const { tokens } = useTheme();
   const iconColor = iconTone ? toneColors(tokens, iconTone).fg : tokens.color.text.secondary;
-  const hasAction = actionLabel !== undefined && onAction !== undefined;
   if (compact) {
     return (
       <View style={[styles.container, { gap: tokens.space.sm, padding: tokens.space.lg }]}>
@@ -44,7 +48,7 @@ export function EmptyState({
         <Text variant="formBody" color="inkMuted" style={styles.centered}>
           {message}
         </Text>
-        {hasAction ? (
+        {actionLabel !== undefined ? (
           <Button label={actionLabel} onPress={onAction} variant={actionVariant} size="slim" />
         ) : null}
       </View>
@@ -59,7 +63,9 @@ export function EmptyState({
       <Text color="textMuted" style={styles.centered}>
         {message}
       </Text>
-      {hasAction ? <Button label={actionLabel} onPress={onAction} variant={actionVariant} /> : null}
+      {actionLabel !== undefined ? (
+        <Button label={actionLabel} onPress={onAction} variant={actionVariant} />
+      ) : null}
     </View>
   );
 }
