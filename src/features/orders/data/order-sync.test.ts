@@ -74,9 +74,20 @@ describe('đồng bộ đơn một chiều', () => {
 
   it('trạng thái lạ không được đăng', async () => {
     const t = await setup();
-    const a = await t.addOrder('C', 1000);
+    await t.addOrder('C', 1000);
     await t.sync.runOnce(LOCAL_SHOP_ID);
-    await t.store.updateSessionStatus(LOCAL_SHOP_ID, a.sessionId as SessionId, 'xyz');
+    // Kho không cho đặt trạng thái lạ qua updateSessionStatus; trạng thái lạ chỉ có thể đến từ bản ghi
+    // do bản app khác lưu. Dựng bằng cách lưu thẳng một phiên có trạng thái lạ.
+    const odd = await t.addOrder('C2', 1100, false);
+    const pkg = odd.details.packages[0];
+    if (!pkg) throw new Error('fixture');
+    const built = buildPackingSession(odd.details, pkg.id, {
+      sessionId: 's-C2' as SessionId,
+      nowDevice: 1200,
+    });
+    if (!built.ok) throw new Error('fixture');
+    await t.store.saveSession({ ...built.session, sessionStatus: 'xyz' as never });
+    await t.sync.runOnce(LOCAL_SHOP_ID); // đăng đơn C2
     expect((await t.sync.runOnce(LOCAL_SHOP_ID)).sessionsPublished).toBe(0);
   });
 

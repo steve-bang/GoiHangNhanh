@@ -22,6 +22,7 @@ import {
   RECORDING_SESSION_STATUS,
 } from '../domain/start-session';
 import { MAX_RECENT_SEARCHES } from '../domain/search';
+import { canChangeSessionStatus } from '../domain/session-status';
 import { runSerialized } from './db-queue';
 import { LEGACY_EVIDENCE_FILE_COLUMNS, MIGRATIONS } from './sqlite-migrations';
 
@@ -545,15 +546,21 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
       }),
     updateSessionStatus: (shopId, id, status) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
-        const row = await db.getFirstAsync<{ id: string }>(
-          'SELECT id FROM packing_sessions WHERE id = ? AND shop_id = ?',
-          [id, shopId],
-        );
-        if (!row) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
-        await db.runAsync('UPDATE packing_sessions SET session_status = ? WHERE id = ?', [
-          status,
-          id,
-        ]);
+        // Đọc + kiểm tra + ghi trong một giao dịch (và hàng đợi tuần tự): không lùi trạng thái.
+        await db.withTransactionAsync(async () => {
+          const row = await db.getFirstAsync<{ session_status: string }>(
+            'SELECT session_status FROM packing_sessions WHERE id = ? AND shop_id = ?',
+            [id, shopId],
+          );
+          if (!row || !canChangeSessionStatus(row.session_status, status)) {
+            throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+          }
+          if (row.session_status === status) return;
+          await db.runAsync(
+            'UPDATE packing_sessions SET session_status = ? WHERE id = ? AND shop_id = ?',
+            [status, id, shopId],
+          );
+        });
       }),
     listSessionsOfOrder: (shopId, orderId) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', () => sessionsOfOrder(shopId, orderId)),

@@ -11,6 +11,7 @@ import {
   matchesListQuery,
   type OrderListItem,
 } from '../domain/order-list';
+import { canChangeSessionStatus } from '../domain/session-status';
 import {
   findActiveSession,
   isSessionActive,
@@ -179,6 +180,9 @@ export function createMemoryOrderStore(): OrderStore {
     async updateSessionStatus(shopId, id, status) {
       const session = sessions.get(id);
       if (!session || session.shopId !== shopId) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+      if (!canChangeSessionStatus(session.sessionStatus, status)) {
+        throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+      }
       sessions.set(id, { ...session, sessionStatus: status as PackingSession['sessionStatus'] });
     },
     async listSessionsOfOrder(shopId, orderId) {

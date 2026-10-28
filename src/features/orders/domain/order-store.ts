@@ -45,8 +45,11 @@ export interface OrderStore {
   saveSession(session: PackingSession): Promise<void>;
   getSession(shopId: ShopId, id: SessionId): Promise<PackingSession | null>;
   /**
-   * Đặt trạng thái phiên cục bộ (luồng ghi video: `recording`, `ended`...). Phiên không có hoặc của
-   * shop khác thì ném `LOCAL_SAVE_UNAVAILABLE`. Không đổi ảnh chụp đơn của phiên.
+   * Đặt trạng thái phiên cục bộ (luồng ghi video: `recording`, `ended`...) theo bảng chuyển hợp lệ
+   * (`canChangeSessionStatus`, session-status.ts): lùi (ví dụ `confirmed` -> `recording`), nhảy cóc
+   * và trạng thái lạ đều bị từ chối; đặt lại đúng trạng thái hiện tại là không đổi gì. Phiên không có
+   * hoặc của shop khác, hoặc chuyển không hợp lệ thì ném `LOCAL_SAVE_UNAVAILABLE` và KHÔNG đổi gì.
+   * Không đổi ảnh chụp đơn của phiên. Chưa có lịch sử đổi trạng thái (xem decisions.md, mục theo dõi).
    */
   updateSessionStatus(shopId: ShopId, id: SessionId, status: string): Promise<void>;
   /**
