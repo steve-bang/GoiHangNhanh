@@ -21,6 +21,5 @@ export const CheckoutScreen = () => <PlaceholderScreen uiCode="UI-H03" />;
 export const PlanLimitScreen = () => <PlaceholderScreen uiCode="UI-H04" />;
 
 export const MembersScreen = () => <PlaceholderScreen uiCode="UI-I03" />;
-export const HelpScreen = () => <PlaceholderScreen uiCode="UI-I06" />;
 /** Tab Thông báo (danh sách): khung, chưa có dữ liệu thông báo thật (D-16). */
 export const NotificationListScreen = () => <PlaceholderScreen uiCode="UI-I07" hideBack inTabs />;

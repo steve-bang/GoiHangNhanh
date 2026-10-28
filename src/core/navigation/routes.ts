@@ -176,6 +176,11 @@ export const ROUTES = {
   // PER-04: đổi mật khẩu, route con của UI-I05 (Q-20k).
   changePassword: subRoute('/account/change-password', 'security', 'UI-I05', true, true),
   help: route('/account/help', 'UI-I06', true),
+  // PER-16..19: danh mục, bài hướng dẫn, liên hệ hỗ trợ, điều khoản và chính sách; route con của UI-I06 (Q-21b, Q-21ae; không mã UI mới).
+  helpCategory: subRoute('/account/help/category/[categoryId]', 'help', 'UI-I06', true, true),
+  helpArticle: subRoute('/account/help/[articleId]', 'help', 'UI-I06', true, true),
+  helpContact: subRoute('/account/help/contact', 'help', 'UI-I06', true, true),
+  helpLegal: subRoute('/account/help/legal', 'help', 'UI-I06', true, true),
   // Tab Thông báo (danh sách thông báo). Mã UI-I07 do dự án thêm, chưa có trong docs/09 gốc (D-16).
   notificationList: route('/notifications', 'UI-I07', true),
 } as const;

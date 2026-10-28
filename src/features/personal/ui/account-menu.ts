@@ -68,7 +68,8 @@ export const ACCOUNT_MENU: readonly MenuItem[] = [
     route: ROUTES.help,
     labelKey: 'nav:account.help',
     icon: 'help',
-    availability: 'coming_soon',
+    // Bật vì UI-I06 đã có Trung tâm trợ giúp với bài viết tĩnh trung thực, Liên hệ hỗ trợ và Điều khoản (khóa "Sắp có" khi chưa có URL).
+    availability: 'available',
   },
 ];
 

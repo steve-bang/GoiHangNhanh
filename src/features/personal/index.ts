@@ -3,6 +3,10 @@ export { PersonalGatewaysProvider, usePersonalGateways } from './ui/PersonalGate
 export { ChangePasswordScreen } from './ui/ChangePasswordScreen';
 export { EditProfileScreen } from './ui/EditProfileScreen';
 export { EvidenceDataScreen } from './ui/EvidenceDataScreen';
+export { HelpArticleScreen } from './ui/HelpArticleScreen';
+export { HelpCategoryScreen } from './ui/HelpCategoryScreen';
+export { HelpScreen } from './ui/HelpScreen';
+export { LegalScreen } from './ui/LegalScreen';
 export { NotificationsScreen } from './ui/NotificationsScreen';
 export { PaymentHistoryScreen } from './ui/PaymentHistoryScreen';
 export { PlanDetailScreen } from './ui/PlanDetailScreen';
@@ -13,6 +17,7 @@ export { SecurityScreen } from './ui/SecurityScreen';
 export { ShopEditScreen } from './ui/ShopEditScreen';
 export { ShopSettingsScreen } from './ui/ShopSettingsScreen';
 export { ShopSwitchScreen } from './ui/ShopSwitchScreen';
+export { SupportContactScreen } from './ui/SupportContactScreen';
 export { SessionHydrator } from './ui/SessionHydrator';
 export { SessionShopProvider } from './ui/SessionShopProvider';
 export { SessionProvider, useSession } from './ui/SessionProvider';

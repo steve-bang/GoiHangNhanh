@@ -199,44 +199,36 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     expect(screen.queryByRole('button', { name: 'Quay lại' })).toBeNull();
   });
 
-  it('Thông báo và Quyền riêng tư và bảo mật đã mở được (PR-G), không còn nhãn "Sắp có"', async () => {
+  it('Thông báo, Quyền riêng tư và bảo mật (PR-G) và Trợ giúp (PR-H) đã mở được, không còn nhãn "Sắp có"', async () => {
     await renderProfile();
     for (const [code, route] of [
       ['UI-I04', ROUTES.notifications],
       ['UI-I05', ROUTES.security],
+      ['UI-I06', ROUTES.help],
     ] as const) {
       const row = screen.getByTestId(`menu-${code}`);
       expect(row).not.toHaveTextContent(/Sắp có/);
       await fireEvent.press(row);
       expect(mockNavigation.push).toHaveBeenLastCalledWith(route);
     }
+    expect(screen.getByTestId('menu-UI-I05')).toBeOnTheScreen();
     expect(screen.getByTestId('menu-UI-I05')).toHaveTextContent(/Quyền riêng tư và bảo mật/);
   });
 
-  it('mục chưa làm: nhãn "Sắp có", khóa, không điều hướng, đọc đúng trợ năng', async () => {
-    await renderProfile();
-    for (const code of ['UI-I06']) {
-      const row = screen.getByTestId(`menu-${code}`);
-      expect(row).toHaveTextContent(/Sắp có/);
-      expect(row.props.accessibilityState).toMatchObject({ disabled: true });
-      expect(row.props.accessibilityLabel).toMatch(/\. Sắp có$/);
-      await fireEvent.press(row);
-    }
-    expect(mockNavigation.push).not.toHaveBeenCalled();
-  });
-
-  it('cấu hình menu là MỘT chỗ duy nhất: đổi availability thì hàng mở được', async () => {
+  it('cấu hình menu là MỘT chỗ duy nhất: đặt coming_soon thì hàng khóa "Sắp có", không điều hướng, đọc đúng trợ năng', async () => {
     const item = ACCOUNT_MENU.find((entry) => entry.id === 'help');
     expect(item).toBeDefined();
     const mutable = item as { availability: MenuAvailability };
     const before = mutable.availability;
-    mutable.availability = 'available';
+    mutable.availability = 'coming_soon';
     try {
       await renderProfile();
       const row = screen.getByTestId('menu-UI-I06');
-      expect(row).not.toHaveTextContent(/Sắp có/);
+      expect(row).toHaveTextContent(/Sắp có/);
+      expect(row.props.accessibilityState).toMatchObject({ disabled: true });
+      expect(row.props.accessibilityLabel).toMatch(/\. Sắp có$/);
       await fireEvent.press(row);
-      expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.help);
+      expect(mockNavigation.push).not.toHaveBeenCalled();
     } finally {
       mutable.availability = before;
     }
