@@ -86,6 +86,16 @@ EXPO_PUBLIC_BACKEND=firebase EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=10.0.2.2 npm sta
 - Chạy emulator với `--project ghn-test-67b39` (không dùng `demo-doncung`) để trùng mã dự án trong tệp cấu hình app. Emulator không gọi dịch vụ thật.
 - Cần dev build có tệp cấu hình Firebase (mục 3); không chạy được trong Expo Go.
 
+**Một lệnh mở máy ảo + chạy theo môi trường (macOS)** *(chưa thử trên máy)*: `scripts/dev-emulator.sh`, môi trường ở `scripts/env/*.env`, tệp Firebase theo môi trường ở `firebase/config/<env>/` (xem `firebase/config/README.md`).
+
+| Lệnh | Việc |
+|---|---|
+| `npm run dev:ios` / `dev:android` | Mở máy ảo, nối Firebase thật của dự án **dev**, chạy dev client (chưa cài thì build bằng `expo run:*`) |
+| `npm run prod:ios` / `prod:android` | Như trên nhưng nối Firebase **prod** (cần điền `FIREBASE_PROJECT_ID` và đặt tệp cấu hình prod) |
+| `npm run fake:ios` / `fake:android` | Cổng giả trong Expo Go, không Firebase |
+
+Firebase thật cần dev client nên không chạy trong Expo Go; build native iOS vẫn bị chặn với Xcode 16.4 (CLAUDE.md).
+
 ## 5. Deploy lên dự án dev
 
 Chạy ở gốc repo, trên máy của người có quyền với dự án.
@@ -136,6 +146,7 @@ Làm sau khi deploy và có dev build (EAS hoặc `expo prebuild` + Xcode/Androi
 | `Failed to get Firebase project` | Sai tài khoản/không có quyền: `npx firebase login:list`, đăng xuất rồi đăng nhập đúng tài khoản |
 | `Your project must be on the Blaze plan` | Nâng gói ở Console |
 | Lỗi quyền Cloud Build ở lần deploy đầu | Đợi vài phút sau khi bật API, chạy lại cùng lệnh |
+| `xcodebuild`: `firebase-ios-sdk ... contains incompatible tools version (6.2.0)` | `@react-native-firebase` 27 dùng firebase-ios-sdk 13.1.1 (Swift tools 6.2): cần **Xcode 26.2 trở lên** (kiểm tra `xcodebuild -version`). Không nâng được Xcode thì build iOS bằng EAS (image Xcode mới) hoặc hạ `@react-native-firebase` xuống ≤ 24.1.1 (firebase-ios-sdk 12.10, còn CocoaPods) — hướng hạ phiên bản chưa kiểm chứng với Expo 58 / RN 0.88 |
 | `pod install`: `SPM + static linkage is not supported` | `@react-native-firebase` 27 dùng Swift Package nên iOS phải dùng `useFrameworks: "dynamic"` (đã đặt trong `app.json`, plugin `expo-build-properties`); sau khi đổi chạy lại `npx expo prebuild --platform ios --clean` |
 | Lỗi build TypeScript ở predeploy | `npm --prefix firebase/functions run build` để xem lỗi; kiểm tra đã `npm --prefix firebase/functions ci` |
 | App báo "Hệ thống đang bận" ngay khi mở | Thiếu tệp cấu hình Firebase (rơi về "chưa kết nối") hoặc SDK chưa khởi tạo được; kiểm tra mục 3 và log dev |
