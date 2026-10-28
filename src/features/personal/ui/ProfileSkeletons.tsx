@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { layout } from '@/core/theme';
 import { Card, Skeleton, useTheme } from '@/shared/ui';
@@ -13,6 +14,21 @@ function useBars() {
   return { title: tokens.space.lg, line: tokens.space.md, gap: tokens.space.sm };
 }
 
+/**
+ * Một thẻ khung chờ = MỘT phần tử "Đang tải" cho trình đọc màn hình; các thanh con bị ẩn (tránh nghe
+ * hàng chục lần "Đang tải"). Bọc phần ruột của thẻ, không đổi bố cục.
+ */
+function LoadingGroup({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <View accessible accessibilityLabel={t('common:loading')} accessibilityState={{ busy: true }}>
+      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        {children}
+      </View>
+    </View>
+  );
+}
+
 /** Thẻ hồ sơ: vòng tròn + ba thanh. */
 export function ProfileCardSkeleton({ testID }: { testID?: string }) {
   const { tokens } = useTheme();
@@ -20,14 +36,16 @@ export function ProfileCardSkeleton({ testID }: { testID?: string }) {
   const size = layout.component.tile.lg;
   return (
     <Card testID={testID}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.md }}>
-        <Skeleton circle width={size} height={size} />
-        <View style={{ flex: 1, gap: bar.gap }}>
-          <Skeleton width="55%" height={bar.title} />
-          <Skeleton width="80%" height={bar.line} />
-          <Skeleton width="35%" height={bar.line} />
+      <LoadingGroup>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.md }}>
+          <Skeleton circle width={size} height={size} />
+          <View style={{ flex: 1, gap: bar.gap }}>
+            <Skeleton width="55%" height={bar.title} />
+            <Skeleton width="80%" height={bar.line} />
+            <Skeleton width="35%" height={bar.line} />
+          </View>
         </View>
-      </View>
+      </LoadingGroup>
     </Card>
   );
 }
@@ -39,15 +57,17 @@ export function ShopCardSkeleton({ testID }: { testID?: string }) {
   const size = layout.component.tile.lg;
   return (
     <Card testID={testID}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.md }}>
-        <Skeleton width={size} height={size} />
-        <View style={{ flex: 1, gap: bar.gap }}>
-          <Skeleton width="40%" height={bar.line} />
-          <Skeleton width="65%" height={bar.title} />
-          <Skeleton width="45%" height={bar.line} />
+      <LoadingGroup>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.md }}>
+          <Skeleton width={size} height={size} />
+          <View style={{ flex: 1, gap: bar.gap }}>
+            <Skeleton width="40%" height={bar.line} />
+            <Skeleton width="65%" height={bar.title} />
+            <Skeleton width="45%" height={bar.line} />
+          </View>
+          <Skeleton width={tokens.space.lg} height={tokens.space.lg} />
         </View>
-        <Skeleton width={tokens.space.lg} height={tokens.space.lg} />
-      </View>
+      </LoadingGroup>
     </Card>
   );
 }
@@ -59,15 +79,17 @@ export function PlanCardSkeleton({ testID }: { testID?: string }) {
   const size = layout.component.tile.lg;
   return (
     <Card testID={testID}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.md }}>
-        <Skeleton width={size} height={size} />
-        <View style={{ flex: 1, gap: bar.gap }}>
-          <Skeleton width="35%" height={bar.line} />
-          <Skeleton width="60%" height={bar.title} />
-          <Skeleton width="70%" height={bar.line} />
+      <LoadingGroup>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.md }}>
+          <Skeleton width={size} height={size} />
+          <View style={{ flex: 1, gap: bar.gap }}>
+            <Skeleton width="35%" height={bar.line} />
+            <Skeleton width="60%" height={bar.title} />
+            <Skeleton width="70%" height={bar.line} />
+          </View>
+          <Skeleton width={size} height={bar.title} />
         </View>
-        <Skeleton width={size} height={bar.title} />
-      </View>
+      </LoadingGroup>
     </Card>
   );
 }
@@ -79,18 +101,20 @@ export function EvidenceCardSkeleton({ testID }: { testID?: string }) {
   const size = layout.component.tile.md;
   return (
     <Card testID={testID}>
-      <View style={{ gap: tokens.space.lg }}>
-        <Skeleton width="45%" height={bar.title} />
-        <View style={{ flexDirection: 'row', gap: tokens.space.md }}>
-          {[0, 1, 2].map((index) => (
-            <View key={index} style={{ flex: 1, alignItems: 'center', gap: bar.gap }}>
-              <Skeleton width={size} height={size} />
-              <Skeleton width="80%" height={bar.line} />
-            </View>
-          ))}
+      <LoadingGroup>
+        <View style={{ gap: tokens.space.lg }}>
+          <Skeleton width="45%" height={bar.title} />
+          <View style={{ flexDirection: 'row', gap: tokens.space.md }}>
+            {[0, 1, 2].map((index) => (
+              <View key={index} style={{ flex: 1, alignItems: 'center', gap: bar.gap }}>
+                <Skeleton width={size} height={size} />
+                <Skeleton width="80%" height={bar.line} />
+              </View>
+            ))}
+          </View>
+          <Skeleton height={size} />
         </View>
-        <Skeleton height={size} />
-      </View>
+      </LoadingGroup>
     </Card>
   );
 }
@@ -101,11 +125,13 @@ export function MenuCardSkeleton({ testID }: { testID?: string }) {
   const bar = useBars();
   return (
     <Card testID={testID}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.md }}>
-        <Skeleton width="50%" height={bar.title} />
-        <View style={{ flex: 1 }} />
-        <Skeleton width={tokens.space.lg} height={tokens.space.lg} />
-      </View>
+      <LoadingGroup>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.md }}>
+          <Skeleton width="50%" height={bar.title} />
+          <View style={{ flex: 1 }} />
+          <Skeleton width={tokens.space.lg} height={tokens.space.lg} />
+        </View>
+      </LoadingGroup>
     </Card>
   );
 }
