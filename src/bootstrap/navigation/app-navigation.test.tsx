@@ -217,6 +217,15 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
       router.back();
     });
     expect(screen.getByTestId('screen-UI-I05')).toBeOnTheScreen();
+    // Xóa tài khoản (PER-22, khung 20): route con ẩn thanh tab; Back về Quyền riêng tư và bảo mật.
+    await fireEvent.press(screen.getByTestId('security-deleteAccount'));
+    expect(screen.getByTestId('screen-UI-I05-delete-account')).toBeOnTheScreen();
+    expect(screen.getByTestId('delete-submit')).toBeDisabled();
+    expectTabBarVisible(false);
+    await act(async () => {
+      router.back();
+    });
+    expect(screen.getByTestId('screen-UI-I05')).toBeOnTheScreen();
     await act(async () => {
       router.back();
     });

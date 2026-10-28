@@ -97,7 +97,7 @@ Mức: S nhỏ, M vừa, L lớn. "Có sẵn" lấy từ `src/features/personal/
 | 17 | Liên hệ hỗ trợ | Chưa có | Form 3 trường, ô nhiều dòng M | Gửi bằng email soạn sẵn, không giả "đã gửi" (Q-21i) | `TextField` (nhiều dòng), `FormField` |
 | 18 | Điều khoản | Chưa có | 4 hàng liên kết M | Mở URL từ `legal-links.ts`; **không có "Chính sách đổi trả"** (D20) | `ListGroup` |
 | 19 | (thiếu) | - | - | Q-21j | - |
-| 20 | Xóa tài khoản | Hoãn (Q-20e) | Màn xác nhận đầy đủ M | Chỉ thông tin + điều kiện thật + nút xóa khóa (Q-21h) | `Checkbox`, `Button` |
+| 20 | Xóa tài khoản | Route con `deleteAccount` của `security` (PR-I) | Màn xác nhận đầy đủ M | Chỉ thông tin + điều kiện thật + nút xóa khóa (Q-21h) | `Checkbox`, `Button` |
 | 21 | Dải trạng thái | Không có | Tám thẻ trạng thái M | `StatusCard` dựng và test; **không hiển thị ở app thật** khi chưa có dữ liệu (Q-21i, D10) | Mới `StatusCard`; tái dùng `EvidenceStatusBadge` nếu hợp |
 
 ## 4. Ánh xạ token
@@ -176,7 +176,7 @@ Mỗi PR: nhánh tách từ `main` mới nhất sau khi PR trước merge; theo 
 | **F** (đã làm, mục 6.6) | Dữ liệu bằng chứng, thời hạn lưu | màn mới + `routes.ts` (route con của `profile` UI-I01) | 2 route con | Ba ô và tổng "Chưa có số liệu" (mục 6.6, Q-21y/aa), chữ "Chưa có thông tin" ở khung 12 | Khớp 11, 12; không số bịa; thẻ ghi chú theo D19 | A, B |
 | **G** (đã làm, mục 6.7) | Thông báo, Quyền riêng tư và bảo mật | `NotificationsScreen`, `SecurityScreen`, `SettingsGateway` (bản giả + chưa kết nối), `account-menu.ts` (đổi `available`) | `notifications`, `security` (có sẵn) | Test công tắc lưu/đọc cục bộ, thẻ quyền bị từ chối, hàng khóa | Khớp 13, 14; không hứa đẩy | A, C |
 | **H** | Trợ giúp, bài hướng dẫn, liên hệ, điều khoản (+ Về ứng dụng nếu Q-21j chốt giữ) | màn mới, nội dung tĩnh trong `personal.json`, `legal-links.ts` | `help` (có sẵn) + route con bài/liên hệ/điều khoản | Test tìm kiếm tĩnh, mở email soạn sẵn không "đã gửi" | Khớp 15-18; không "Chính sách đổi trả" | A, Q-21j/k cho tài nguyên |
-| **I** | Xóa tài khoản | màn mới, `Checkbox`, kết nối `use-sign-out` (đếm tệp) | route con của `security` | Test điều kiện thật, nút khóa | Khớp 20; không xóa thật | A, G, Q-21h, Q-20e |
+| **I** (đã làm, mục 6.9) | Xóa tài khoản | màn mới, `Checkbox`, kết nối kho đơn (đang quay, tệp chưa đồng bộ) | route con của `security` | Test điều kiện thật, nút khóa | Khớp 20; không xóa thật | A, G, Q-21h, Q-20e |
 
 ### 6.1 Trạng thái PR-A (đã làm, chờ duyệt)
 
@@ -344,6 +344,38 @@ KHÔNG route mới: dùng route gốc `notifications` (UI-I04) và `security` (U
 ### 6.8 Trạng thái PR-H (đã làm, chờ duyệt)
 
 Khung 15-18 làm trên UI-I06: `HelpScreen` thay placeholder (`/account/help`, giữ thanh tab) và bốn route con `hideTabBar` không mã UI mới (Q-21b): `helpCategory`, `helpArticle`, `helpContact`, `helpLegal`. Nội dung bài tĩnh trong `personal.json` (`help.articles.*`), cấu trúc ở `domain/help-content.ts`; tìm cục bộ không dấu theo từ (từ cuối khớp đầu từ), trạng thái rỗng có lối "Liên hệ hỗ trợ". Chi tiết bài: tiêu đề, mô tả, các bước đánh số, "Tiếp theo" chỉ khi có bài kế tiếp thật; không ảnh/nút phát (D26), không "hữu ích không?". Liên hệ: Họ và tên điền sẵn (chưa có thì trống), Chủ đề, Mã đơn (tùy chọn), Nội dung + bộ đếm; nút "Soạn email hỗ trợ" khóa vì chưa có địa chỉ thật (Q-20g), không bao giờ giả "đã gửi". Điều khoản: hai hàng khóa "Sắp có" vì URL giữ chỗ; không "Chính sách đổi trả" (D20). Mục "Trợ giúp" ở menu Cá nhân đã bật. Lệch board và câu hỏi: decisions.md Q-21ae. Ảnh: `docs/assets/screens/personal-tab-v3/pr-h-*.png` (đã chụp lại `pr-g-13-notifications-*`; `pr-g-13-save-error/load-error` chưa chụp lại). Chưa kiểm chứng trên iOS/Android thật (mailto, bàn phím, TalkBack/VoiceOver, chữ lớn).
+
+### 6.9 Trạng thái PR-I (đã làm, chờ duyệt)
+
+Một route con mới của UI-I05, KHÔNG mã UI mới (Q-21b): `ROUTES.deleteAccount` (`/account/delete-account`, `hideTabBar`; `routes.test.ts` cập nhật danh sách route con và route form có chủ đích). Màn `DeleteAccountScreen`, logic thuần `domain/delete-account-conditions.ts`. Hàng "Xóa tài khoản" ở UI-I05 (chữ đỏ, nhóm riêng) nay MỞ màn này; ba hàng còn lại vẫn khóa "Sắp có". Không thành phần dùng chung mới, không `deleteAccount` trong `AccountGateway` (Q-20e). Ảnh bản web: **chưa chụp** (môi trường không có Chromium, không tải được), chỉ có `pr-i-board-reference-20.png` (khung 20 cắt từ board); xem README ảnh v3.
+
+| Khung | Cách làm |
+| --- | --- |
+| 20 | Header "Xóa tài khoản"; icon cảnh báo đỏ trong vòng tròn, tiêu đề "Xóa tài khoản?", câu dẫn theo BA ("Đây là thao tác quan trọng. Hãy đọc kỹ thông tin về dữ liệu và quyền truy cập trước khi tiếp tục."); nhóm "Điều kiện" bốn hàng, mỗi hàng icon + chữ trạng thái ("Đạt" / "Cần xử lý" / "Chưa kiểm tra được" / "Đang kiểm tra") + dòng chi tiết; khối "Dữ liệu sẽ ra sao"; hộp kiểm "Tôi hiểu và đồng ý"; nút đỏ "Xóa tài khoản" LUÔN KHÓA (`accessibilityHint`: chưa dùng được) + dòng "Sắp có. Hiện chưa xóa được tài khoản trong ứng dụng."; nút "Giữ tài khoản của tôi" (quay lại) |
+
+**Điều kiện (thật):** không đang quay (`hasRecordingOnDevice`), không còn tệp chưa đồng bộ trên máy (`countUnsyncedOnDevice`, đếm cả máy như đăng xuất; hôm nay luôn 0 vì chưa có tệp bằng chứng, nên "Đạt" có nghĩa "không có tệp nào đang chờ"), cửa hàng bạn là chủ (đếm `role === 'owner'` từ `listShops`; có thì "Cần xử lý" + "cách xử lý cửa hàng chưa được công bố"), bằng chứng đang tranh chấp hoặc cần giữ lại (chưa có nguồn: LUÔN "Chưa kiểm tra được"). Đọc lỗi cũng là "Chưa kiểm tra được". Kết quả gắn khóa phiên (đổi tài khoản/cửa hàng thì bỏ kết quả cũ). Còn tệp chưa đồng bộ thì có nút tới Trung tâm đồng bộ.
+
+**Lệch có chủ đích so với board** (lý do)
+
+1. Nút xóa luôn khóa, kể cả khi sạch và đã chọn hộp kiểm (board vẽ nút bật): chưa có chính sách/hạ tầng (Q-20e, Q-21h, bất biến 9). Hộp kiểm bật được nhưng không mở khóa gì.
+2. Tiêu đề "Xóa tài khoản?" và câu dẫn theo BA thay "Xác nhận xóa tài khoản" và "Tài khoản của bạn sẽ bị xóa vĩnh viễn. Dữ liệu có thể không thể khôi phục." (câu này hứa/dọa điều chưa có chính sách).
+3. Bốn điều kiện có chữ trạng thái; bỏ "Đã đăng xuất khỏi tất cả thiết bị" (không có theo dõi thiết bị, PER-15), thêm "Bằng chứng đang tranh chấp..." và "Cửa hàng bạn là chủ" (PER-22). Không dấu tích giả.
+4. Thêm khối "Dữ liệu sẽ ra sao" (PER-22; chỉ điều docs/06 có, còn lại "chưa được công bố"); thêm nút "Giữ tài khoản của tôi" và dòng "Sắp có".
+5. Đường dẫn "Liên hệ hỗ trợ" chỉ hiện khi `SUPPORT_EMAIL` có địa chỉ thật (hôm nay `null`: không hiện).
+6. Thanh tab ẩn (route con), icon cảnh báo trong vòng tròn nền nhạt (glyph `alert`), nút đỏ dạng nút phá hủy của hệ thống thiết kế.
+
+**Chưa kiểm chứng:** ảnh bản web (không có Chromium), chữ lớn, 320/360/390px chỉ qua test cấu trúc (chưa xem bằng mắt), VoiceOver/TalkBack (hộp kiểm có nhãn, nút khóa có hint, hàng điều kiện đọc thành một câu), thiết bị iOS/Android thật.
+
+### 6.10 Tổng kết đợt nâng cấp A-I
+
+Mã của PR-A đến PR-I đã xong (PR-A..H đã merge; PR-I chờ duyệt). **Còn thiếu hoặc chờ BA/designer/hạ tầng:**
+
+- Khung 19 "Về Đơn Chứng": chưa làm (Q-21j chờ designer). Khung 21 (dải trạng thái) chỉ có thành phần + test, không có màn (Q-21z). Thẻ "Đang quay video" của khung 21 chưa dựng.
+- Khung 16: chưa có ảnh/video hướng dẫn (D26, Q-21k). Huy hiệu "Đã xác thực" (Q-21m) chưa có dữ liệu. Thành viên và quyền (UI-I03, O-03, O-07) chưa làm.
+- Dữ liệu thật còn thiếu: địa chỉ hỗ trợ (`SUPPORT_EMAIL = null`), URL Điều khoản/Quyền riêng tư (giữ chỗ), gói và thanh toán (mọi giá trị "Chưa có thông tin", nút nâng cấp khóa), số đếm bằng chứng (chưa có tệp; Q-21aa), thời hạn lưu (O-06).
+- Chưa có hạ tầng: xóa tài khoản (Q-20e, Q-21af), xác nhận 2 lớp, thiết bị đăng nhập, dữ liệu và quyền truy cập, thông báo đẩy và thẻ quyền hệ điều hành (Q-21ab), lưu bền tùy chọn thông báo, ngoại tuyến thật (`useIsOffline` là khung tạm).
+- Kiểm chứng: toàn bộ chỉ qua Jest/emulator và ảnh bản web; chưa chạy trên iOS/Android thật; chữ lớn, VoiceOver/TalkBack, bàn phím trên màn hẹp, `normalize` của Hermes chưa kiểm. Ảnh PR-I và `pr-g-13-save-error/load-error` chưa chụp (không có Chromium).
+- Docs chờ BA chỉnh: docs/09 UI-I05/UI-J15 (Q-21ac, Q-21af), docs/06-07 (chính sách xóa tài khoản), tên "cửa hàng" (Q-20q), tên "Trên đám mây" (O-28c).
 
 ## 7. Rủi ro
 

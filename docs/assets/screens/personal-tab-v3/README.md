@@ -247,3 +247,24 @@
 | Chữ lớn | đạt | đạt | đạt | đạt | xuống dòng, không cắt |
 | Chuỗi chữ | lệch có chủ đích | lệch có chủ đích | lệch có chủ đích | lệch có chủ đích | bài viết do dev viết tạm; "Soạn email hỗ trợ"; "Chính sách quyền riêng tư"; bỏ "đổi trả", "dữ liệu" |
 
+---
+
+# Ảnh đối chiếu PR-I: Xóa tài khoản (khung 20)
+
+**Lưu ý trung thực:** PR-I **chưa có ảnh bản web của màn thật**. Môi trường làm việc không có Chromium/Playwright (tải trình duyệt thất bại, cùng tình trạng ghi ở PR-G), nên chưa chụp 320x568, 360x800, 390x844, chữ lớn, các trạng thái điều kiện (đang kiểm tra, đang quay, còn tệp, là chủ cửa hàng, đọc lỗi), và chưa chụp lại `pr-g-13-save-error`/`pr-g-13-load-error`. Cần chụp theo cách của các mục trên (bản sao ngoài repo có `react-native-web`; không thêm phụ thuộc vào repo; không sửa mã sản phẩm) khi có trình duyệt. Hành vi hiện được kiểm bằng test cấu trúc (`DeleteAccountScreen.test.tsx`), không phải bằng mắt.
+
+| Ảnh | Nội dung |
+| --- | --- |
+| `pr-i-board-reference-20.png` | Khung 20 cắt từ board 07 (phóng 4x, board độ phân giải thấp) |
+
+## Checklist "giống design" (theo mã, chưa đối chiếu bằng ảnh)
+
+| Hạng mục | 20 | Ghi chú lệch |
+| --- | --- | --- |
+| Bố cục và thứ tự khối | gần | icon, tiêu đề, câu dẫn, Điều kiện, hộp kiểm, nút đỏ như board; thêm khối "Dữ liệu sẽ ra sao", dòng "Sắp có", nút "Giữ tài khoản của tôi" |
+| Icon | gần | cảnh báo trong vòng tròn nền nhạt (board: dấu chấm than đặc); trạng thái điều kiện là icon + chữ |
+| Nút | lệch có chủ đích | nút đỏ LUÔN KHÓA (board bật); hộp kiểm không mở khóa |
+| Điều kiện | lệch có chủ đích | bốn mục thật; tranh chấp "Chưa kiểm tra được"; bỏ "Đã đăng xuất khỏi tất cả thiết bị" |
+| Header, thanh tab | đạt, ẩn | route con |
+| Chuỗi chữ | lệch có chủ đích | "Xóa tài khoản?" và câu dẫn theo BA; không "xóa vĩnh viễn/không thể khôi phục" |
+| Chữ lớn, 320/360/390 | chưa chụp | |
