@@ -47,9 +47,11 @@ let mockDevice: { batteryLevel: number | null; charging: boolean | null; thermal
     thermal: null,
   };
 jest.mock('@/platform/device-condition', () => ({
-  readDeviceCondition: async () => mockDevice,
+  readDeviceCondition: () =>
+    mockDeviceHang ? new Promise(() => undefined) : Promise.resolve(mockDevice),
   UNKNOWN_DEVICE_CONDITION: { batteryLevel: null, charging: null, thermal: null },
 }));
+let mockDeviceHang = false;
 const mockOpenSettings = jest.fn();
 jest.mock('@/platform/external-link', () => ({
   openExternalLink: jest.fn(),
@@ -61,6 +63,7 @@ beforeEach(() => {
   mockFree = MIN_FREE_BYTES_TO_RECORD + 1;
   mockWritable = true;
   mockDevice = { batteryLevel: 0.8, charging: false, thermal: null };
+  mockDeviceHang = false;
   mockProbe.mockClear();
   mockOpenSettings.mockReset();
   resetMockNavigation();
@@ -166,6 +169,7 @@ describe('UI-C02 Kiểm tra trước khi quay', () => {
     expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packRecord, {
       sessionId: session.id,
     });
+    expect(mockProbe).not.toHaveBeenCalled();
   });
 
   it('không có phiên (mã sai/liên kết sâu): báo không mở được, không chuyển', async () => {
@@ -173,6 +177,7 @@ describe('UI-C02 Kiểm tra trước khi quay', () => {
     await renderWithProviders(<PackPrecheckScreen />);
     expect(await screen.findByText('Không mở được phiên quay này.')).toBeOnTheScreen();
     expect(mockNavigation.replace).not.toHaveBeenCalled();
+    expect(mockProbe).not.toHaveBeenCalled();
   });
 
   it('bộ ghi tắt: không kiểm tra, không chuyển, nói chưa ghi video', async () => {
@@ -214,6 +219,49 @@ describe('UI-C02 Kiểm tra trước khi quay', () => {
     const session = await open();
     expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packRecord, {
       sessionId: session.id,
+    });
+  });
+
+  it('thăm dò ghi tệp chạy trong effect, mỗi lượt đúng một lần (Kiểm tra lại = lượt mới), không chạy lại khi render lại', async () => {
+    mockFree = MIN_FREE_BYTES_TO_RECORD - 1;
+    await open();
+    expect(await screen.findByTestId('precheck-issue-storage')).toBeOnTheScreen();
+    expect(mockProbe).toHaveBeenCalledTimes(1);
+    mockScanner.permission = 'askable';
+    await fireEvent.press(screen.getByRole('button', { name: 'Kiểm tra lại' }));
+    await act(async () => undefined);
+    expect(mockProbe).toHaveBeenCalledTimes(2);
+  });
+
+  describe('đọc pin treo', () => {
+    beforeEach(() => jest.useFakeTimers({ doNotFake: ['nextTick', 'queueMicrotask'] }));
+    afterEach(() => jest.useRealTimers());
+
+    it('treo: lúc đầu "Đang kiểm tra máy…", quá 3 giây coi là không biết (không chặn) và vào quay', async () => {
+      mockDeviceHang = true;
+      const session = await open();
+      expect(screen.getByText('Đang kiểm tra máy…')).toBeOnTheScreen();
+      await act(async () => {
+        jest.advanceTimersByTime(2900);
+      });
+      expect(mockNavigation.replace).not.toHaveBeenCalled();
+      await act(async () => {
+        jest.advanceTimersByTime(200);
+      });
+      expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packRecord, {
+        sessionId: session.id,
+      });
+    });
+
+    it('treo nhưng thiếu dung lượng: sau 3 giây vẫn chặn vì lý do dung lượng', async () => {
+      mockDeviceHang = true;
+      mockFree = 1;
+      await open();
+      await act(async () => {
+        jest.advanceTimersByTime(3100);
+      });
+      expect(screen.getByTestId('precheck-issue-storage')).toBeOnTheScreen();
+      expect(mockNavigation.replace).not.toHaveBeenCalled();
     });
   });
 });

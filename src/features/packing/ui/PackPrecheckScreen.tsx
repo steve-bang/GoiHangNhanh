@@ -8,6 +8,7 @@ import {
   openAppSettings,
   probeEvidenceDirWritable,
   readDeviceCondition,
+  UNKNOWN_DEVICE_CONDITION,
   useAppNavigation,
   type DeviceCondition,
   useScannerPermission,
@@ -17,6 +18,9 @@ import { Button, Card, Screen, Text, useTheme } from '@/shared/ui';
 import { ACTIVE_RECORDING_POLICY, RECORDER_ENABLED, runPrecheck } from '../domain';
 import { PackNotRecorded } from './PackNotRecorded';
 import { usePackSession } from './use-pack-session';
+
+/** Đọc pin/nhiệt độ treo quá hạn này thì coi là "không biết" (không chặn quay). */
+const DEVICE_READ_TIMEOUT_MS = 3000;
 
 /**
  * UI-C02 Kiểm tra trước khi quay (đặc tả A04). CHẠY NGẦM: khi đạt hết thì chuyển thẳng sang màn quay,
@@ -34,32 +38,59 @@ export function PackPrecheckScreen() {
   const session = usePackSession();
   const permission = useScannerPermission();
   const [round, setRound] = useState(0);
-  // Pin/nhiệt độ đọc bất đồng bộ cho từng lượt kiểm tra; chưa có kết quả của lượt này thì chờ.
+  // Chỉ đo máy khi bộ ghi bật và phiên còn ở `created` (phiên thiếu/đã qua `created` thì không có gì để chuẩn bị).
+  const needsCheck =
+    RECORDER_ENABLED &&
+    session !== 'loading' &&
+    session !== null &&
+    session.sessionStatus === 'created';
+  // Pin/nhiệt độ, dung lượng trống và thử ghi đo trong effect (không I/O lúc render) theo từng lượt `round`;
+  // chưa có kết quả của lượt này thì chờ (tránh chuyển sang quay bằng số liệu cũ).
   const [device, setDevice] = useState<{ round: number; value: DeviceCondition } | null>(null);
+  const [disk, setDisk] = useState<{
+    round: number;
+    freeBytes: number | null;
+    writable: boolean;
+  } | null>(null);
   useEffect(() => {
-    if (!RECORDER_ENABLED) return undefined;
+    if (!needsCheck) return undefined;
     let alive = true;
-    void readDeviceCondition().then((value) => alive && setDevice({ round, value }));
+    const measured = {
+      round,
+      freeBytes: getAvailableDiskBytes(),
+      writable: probeEvidenceDirWritable(),
+    };
+    // Đọc pin treo thì không kẹt mãi ở "Đang kiểm tra máy…": quá hạn coi là "không biết" (không chặn).
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const unknown = new Promise<DeviceCondition>((resolve) => {
+      timer = setTimeout(() => resolve(UNKNOWN_DEVICE_CONDITION), DEVICE_READ_TIMEOUT_MS);
+    });
+    void Promise.race([readDeviceCondition(), unknown])
+      .catch(() => UNKNOWN_DEVICE_CONDITION)
+      .then((value) => {
+        clearTimeout(timer);
+        if (!alive) return;
+        setDisk(measured);
+        setDevice({ round, value });
+      });
     return () => {
       alive = false;
+      clearTimeout(timer);
     };
-  }, [round]);
+  }, [needsCheck, round]);
 
-  // Mỗi lần bấm "Kiểm tra lại" (round) hoặc quyền đổi thì đo lại dung lượng và thử ghi.
   const result = useMemo(
     () =>
-      // Bộ ghi tắt thì KHÔNG đo máy hay thử ghi (không có gì để chuẩn bị). Chưa có pin/nhiệt độ của lượt
-      // này thì chưa kết luận (tránh chuyển sang quay bằng số liệu cũ).
-      RECORDER_ENABLED && device?.round === round
+      needsCheck && device?.round === round && disk?.round === round
         ? runPrecheck({
             camera: permission.status,
-            freeBytes: getAvailableDiskBytes(),
-            canWrite: probeEvidenceDirWritable,
+            freeBytes: disk.freeBytes,
+            canWrite: () => disk.writable,
             device: device.value,
             policy: ACTIVE_RECORDING_POLICY,
           })
         : ({ status: 'pending' } as const),
-    [permission.status, round, device],
+    [needsCheck, permission.status, round, device, disk],
   );
 
   const sessionId = session && session !== 'loading' ? session.id : null;
