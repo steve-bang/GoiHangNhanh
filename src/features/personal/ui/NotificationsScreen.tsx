@@ -64,7 +64,9 @@ export function NotificationsScreen() {
     value: boolean;
   } | null>(null);
   const [saveError, setSaveError] = useState<{ key: string; code: ErrorCode } | null>(null);
-  const busyRef = useRef(false);
+  // Khóa phiên của lần lưu đang chạy (null = rảnh). Chỉ coi là bận khi trùng phiên hiện tại: lần lưu treo của
+  // phiên cũ không được làm công tắc của phiên mới "chết".
+  const busyScopeRef = useRef<string | null>(null);
   const scopeRef = useRef(session.key);
   useEffect(() => {
     scopeRef.current = session.key;
@@ -75,9 +77,9 @@ export function NotificationsScreen() {
 
   const toggle = useCallback(
     async (option: NotificationPreferenceKey, value: boolean) => {
-      if (busyRef.current || !base) return;
       const scope = session.key;
-      busyRef.current = true;
+      if (busyScopeRef.current === scope || !base) return;
+      busyScopeRef.current = scope;
       setSaveError(null);
       setPending({ key: scope, option, value });
       try {
@@ -92,7 +94,7 @@ export function NotificationsScreen() {
           code: error instanceof AppError ? error.code : 'SETTINGS_SAVE_FAILED',
         });
       } finally {
-        busyRef.current = false;
+        if (busyScopeRef.current === scope) busyScopeRef.current = null;
         setPending((current) => (current?.key === scope ? null : current));
       }
     },

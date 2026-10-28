@@ -239,6 +239,44 @@ describe('NotificationsScreen (UI-I04, khung 13)', () => {
       expect(screen.queryByTestId('notification-save-error')).toBeNull();
     });
 
+    it('lần lưu của phiên A còn treo: công tắc ở phiên B vẫn gọi được cổng; kết quả muộn của A bị bỏ', async () => {
+      const calls: NotificationPreferences[] = [];
+      const resolvers: ((value: NotificationPreferences) => void)[] = [];
+      const gateways: PersonalGateways = {
+        ...createFakePersonalGateways(),
+        settings: {
+          getNotificationPreferences: async () => FAKE_NOTIFICATION_DEFAULTS,
+          updateNotificationPreferences: (next) => {
+            calls.push(next);
+            return new Promise<NotificationPreferences>((res) => resolvers.push(res));
+          },
+        },
+      };
+      await renderWithProviders(
+        <>
+          <SwitchProbe />
+          <NotificationsScreen />
+        </>,
+        { personalGateways: gateways },
+      );
+      await waitFor(() => expect(screen.getByTestId('notification-options')).toBeOnTheScreen());
+      await fireEvent.press(sw('syncCompleted'));
+      expect(calls).toHaveLength(1);
+      await fireEvent.press(screen.getByTestId('switch-session'));
+      await waitFor(() =>
+        expect(sw('syncCompleted').props.accessibilityState).toMatchObject({ disabled: false }),
+      );
+      await fireEvent.press(sw('planExpiring'));
+      expect(calls).toHaveLength(2);
+      expect(calls[1]).toEqual({ ...FAKE_NOTIFICATION_DEFAULTS, planExpiring: false });
+      // Kết quả muộn của A: không toast, không đổi công tắc phiên B (vẫn đang chờ lần lưu của B).
+      await act(async () => resolvers[0]?.({ ...FAKE_NOTIFICATION_DEFAULTS, syncCompleted: true }));
+      expect(screen.queryByText('Đã lưu lựa chọn.')).toBeNull();
+      expect(sw('syncCompleted').props.accessibilityState).toMatchObject({ checked: false });
+      await act(async () => resolvers[1]?.({ ...FAKE_NOTIFICATION_DEFAULTS, planExpiring: false }));
+      expect(screen.getByText('Đã lưu lựa chọn.')).toBeOnTheScreen();
+    });
+
     it('cổng giả đặt lại tùy chọn khi đăng xuất (tài khoản sau không thấy lựa chọn của tài khoản trước)', async () => {
       const gateways = createFakePersonalGateways();
       await gateways.settings.updateNotificationPreferences({
