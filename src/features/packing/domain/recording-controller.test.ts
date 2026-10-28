@@ -8,7 +8,6 @@ import {
 import { sampleOrder, sampleSession, seedOrder } from '@/test-utils/order-fixtures';
 
 import {
-  MIN_FREE_BYTES_TO_RECORD,
   reconcileSavedSessions,
   recoverInterruptedRecordings,
   startRecording,
@@ -17,6 +16,7 @@ import {
   type RecordResult,
   type RecordingPorts,
 } from './recording-controller';
+import { MIN_FREE_BYTES_TO_RECORD } from './recording-policy';
 
 async function setup() {
   const orders = createMemoryOrderStore();

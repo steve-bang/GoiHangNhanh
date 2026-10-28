@@ -2,6 +2,8 @@ import type { EvidenceId } from '@/core/ids';
 import type { EvidenceFile, EvidenceFileStore, FileEventType } from '@/features/evidence';
 import type { OrderStore, PackingSession } from '@/features/orders';
 
+import { MIN_FREE_BYTES_TO_RECORD } from './recording-policy';
+
 /** Kết quả ghi do bộ ghi (camera) trả về khi dừng. */
 export type RecordResult =
   | { readonly ok: true; readonly tempUri: string }
@@ -45,12 +47,6 @@ export interface RecordingPorts {
    */
   availableBytes?(): number | null;
 }
-
-/**
- * Dung lượng trống tối thiểu để bắt đầu quay (A04: `INSUFFICIENT_STORAGE`). GIÁ TRỊ TẠM (500 MB): ngưỡng
- * vận hành thật chờ O-05 và đo bitrate thực trên thiết bị; một video 5-10 phút có thể vài trăm MB.
- */
-export const MIN_FREE_BYTES_TO_RECORD = 500 * 1024 * 1024;
 
 export type RecordingOutcome =
   | { readonly kind: 'saved'; readonly evidenceId: EvidenceId }

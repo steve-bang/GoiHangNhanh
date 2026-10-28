@@ -1,22 +1,44 @@
 import type { ErrorCode } from '@/core/errors/codes';
 
-import { MIN_FREE_BYTES_TO_RECORD } from './recording-controller';
+import {
+  DEFAULT_RECORDING_POLICY,
+  MIN_BATTERY_LEVEL,
+  requiredFreeBytes,
+  type RecordingPolicy,
+} from './recording-policy';
 
 /** Quyền camera như `useScannerPermission` báo. */
 export type CameraStatus = 'checking' | 'granted' | 'askable' | 'blocked';
 
+/** Mức nhiệt do hệ điều hành báo. */
+export type ThermalLevel = 'nominal' | 'fair' | 'serious' | 'critical';
+
+/** Tình trạng máy; mỗi trường `null` = không biết (không đoán, không chặn). */
+export interface DeviceConditionInput {
+  /** Mức pin 0..1. */
+  readonly batteryLevel: number | null;
+  /** Đang sạc hoặc đã đầy. */
+  readonly charging: boolean | null;
+  readonly thermal: ThermalLevel | null;
+}
+
 /** Điều kiện BẮT BUỘC của A04 mà app kiểm được (micro chưa kiểm: ghi không tiếng tới khi O-09 chốt). */
-export type PrecheckId = 'camera' | 'storage' | 'localWrite';
+export type PrecheckId = 'camera' | 'storage' | 'localWrite' | 'battery' | 'thermal';
 
 /** Cách khắc phục hiển thị cho người dùng (không tự thực hiện thay họ). */
-export type PrecheckFix = 'request_permission' | 'open_settings' | 'free_storage' | 'retry';
+export type PrecheckFix =
+  'request_permission' | 'open_settings' | 'free_storage' | 'retry' | 'charge' | 'cool_down';
 
 export interface PrecheckIssue {
   readonly id: PrecheckId;
-  /** Mã lỗi của docs/04 A04 (thông báo lấy từ `errors:<code>`). */
+  /** Mã lỗi (thông báo lấy từ `errors:<code>`); `BATTERY_LOW`/`DEVICE_OVERHEATED` là mã đề xuất chờ BA. */
   readonly code: Extract<
     ErrorCode,
-    'CAMERA_PERMISSION_DENIED' | 'INSUFFICIENT_STORAGE' | 'LOCAL_SAVE_UNAVAILABLE'
+    | 'CAMERA_PERMISSION_DENIED'
+    | 'INSUFFICIENT_STORAGE'
+    | 'LOCAL_SAVE_UNAVAILABLE'
+    | 'BATTERY_LOW'
+    | 'DEVICE_OVERHEATED'
   >;
   readonly fix: PrecheckFix;
 }
@@ -33,15 +55,18 @@ export interface PrecheckPorts {
   readonly freeBytes: number | null;
   /** Thử ghi vào nơi lưu bền; `false` = không ghi được (chặn). */
   readonly canWrite: () => boolean;
-  /** Ngưỡng dung lượng tối thiểu; mặc định giá trị tạm chờ O-05. */
-  readonly minFreeBytes?: number;
+  /** Pin và nhiệt độ; không truyền = không biết. */
+  readonly device?: DeviceConditionInput;
+  /** Chính sách thời lượng tối thiểu (O-05); mặc định 10 phút, về sau theo gói. */
+  readonly policy?: RecordingPolicy;
 }
 
 /**
- * Kiểm tra sẵn sàng ghi hình (docs/04 A04): quyền camera, dung lượng trống so với ngưỡng, khả năng ghi
- * tệp cục bộ. Hàm thuần, chạy ngầm; chỉ trả `blocked` khi có điều kiện bắt buộc không đạt, và liệt kê
- * TẤT CẢ điều kiện không đạt để người dùng xử lý một lượt. Không đọc dung lượng thì không chặn; thử ghi
- * lỗi thì chặn (video có thể không lưu được). Quyền camera còn `checking` thì `pending`, chưa kết luận.
+ * Kiểm tra sẵn sàng ghi hình (docs/04 A04): quyền camera, chỗ trống đủ quay tối thiểu theo chính sách
+ * (mặc định 10 phút, O-05), khả năng ghi tệp cục bộ, pin và nhiệt độ. Hàm thuần, chạy ngầm; chỉ trả
+ * `blocked` khi có điều kiện không đạt, và liệt kê TẤT CẢ để người dùng xử lý một lượt. Không đọc được
+ * dung lượng, pin hay nhiệt độ thì KHÔNG chặn (không đoán); thử ghi lỗi thì chặn. Pin chỉ chặn khi không
+ * cắm sạc. Quyền camera còn `checking` thì `pending`, chưa kết luận.
  */
 export function runPrecheck(ports: PrecheckPorts): PrecheckResult {
   if (ports.camera === 'checking') return { status: 'pending' };
@@ -53,12 +78,23 @@ export function runPrecheck(ports: PrecheckPorts): PrecheckResult {
       fix: ports.camera === 'askable' ? 'request_permission' : 'open_settings',
     });
   }
-  const min = ports.minFreeBytes ?? MIN_FREE_BYTES_TO_RECORD;
+  const min = requiredFreeBytes(ports.policy ?? DEFAULT_RECORDING_POLICY);
   if (ports.freeBytes !== null && ports.freeBytes < min) {
     issues.push({ id: 'storage', code: 'INSUFFICIENT_STORAGE', fix: 'free_storage' });
   }
   if (!ports.canWrite()) {
     issues.push({ id: 'localWrite', code: 'LOCAL_SAVE_UNAVAILABLE', fix: 'retry' });
+  }
+  const { batteryLevel, charging, thermal } = ports.device ?? {
+    batteryLevel: null,
+    charging: null,
+    thermal: null,
+  };
+  if (batteryLevel !== null && batteryLevel <= MIN_BATTERY_LEVEL && charging !== true) {
+    issues.push({ id: 'battery', code: 'BATTERY_LOW', fix: 'charge' });
+  }
+  if (thermal === 'serious' || thermal === 'critical') {
+    issues.push({ id: 'thermal', code: 'DEVICE_OVERHEATED', fix: 'cool_down' });
   }
   return issues.length === 0 ? { status: 'ready' } : { status: 'blocked', issues };
 }

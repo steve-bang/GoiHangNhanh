@@ -7,7 +7,9 @@ import {
   getAvailableDiskBytes,
   openAppSettings,
   probeEvidenceDirWritable,
+  readDeviceCondition,
   useAppNavigation,
+  type DeviceCondition,
   useScannerPermission,
 } from '@/platform';
 import { Button, Card, Screen, Text, useTheme } from '@/shared/ui';
@@ -22,7 +24,8 @@ import { usePackSession } from './use-pack-session';
  * khả năng ghi tệp cục bộ), kèm cách khắc phục cụ thể, nút Kiểm tra lại và Về đơn hàng (không mất dữ
  * liệu đơn). Mở bằng `sessionId` (bất biến 2); phiên không còn ở trạng thái `created` thì để màn quay
  * nói đúng tình trạng. Chỉ có nghĩa khi bộ ghi thật bật (`RECORDER_ENABLED`). Micro chưa kiểm: ghi
- * không tiếng tới khi O-09 chốt. Ngưỡng dung lượng tạm chờ O-05. Chưa kiểm chứng trên thiết bị.
+ * không tiếng tới khi O-09 chốt. Chỗ trống phải đủ quay 10 phút (O-05, về sau theo gói); pin thấp khi không
+ * sạc và máy quá nóng cũng chặn (nhiệt độ chưa có nguồn trên Expo). Chưa kiểm chứng trên thiết bị.
  */
 export function PackPrecheckScreen() {
   const { t } = useTranslation();
@@ -31,20 +34,31 @@ export function PackPrecheckScreen() {
   const session = usePackSession();
   const permission = useScannerPermission();
   const [round, setRound] = useState(0);
+  // Pin/nhiệt độ đọc bất đồng bộ cho từng lượt kiểm tra; chưa có kết quả của lượt này thì chờ.
+  const [device, setDevice] = useState<{ round: number; value: DeviceCondition } | null>(null);
+  useEffect(() => {
+    if (!RECORDER_ENABLED) return undefined;
+    let alive = true;
+    void readDeviceCondition().then((value) => alive && setDevice({ round, value }));
+    return () => {
+      alive = false;
+    };
+  }, [round]);
 
   // Mỗi lần bấm "Kiểm tra lại" (round) hoặc quyền đổi thì đo lại dung lượng và thử ghi.
   const result = useMemo(
     () =>
-      // Bộ ghi tắt thì KHÔNG đo máy hay thử ghi (không có gì để chuẩn bị).
-      RECORDER_ENABLED
+      // Bộ ghi tắt thì KHÔNG đo máy hay thử ghi (không có gì để chuẩn bị). Chưa có pin/nhiệt độ của lượt
+      // này thì chưa kết luận (tránh chuyển sang quay bằng số liệu cũ).
+      RECORDER_ENABLED && device?.round === round
         ? runPrecheck({
             camera: permission.status,
             freeBytes: getAvailableDiskBytes(),
             canWrite: probeEvidenceDirWritable,
+            device: device.value,
           })
         : ({ status: 'pending' } as const),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `round` chỉ để buộc kiểm tra lại
-    [permission.status, round],
+    [permission.status, round, device],
   );
 
   const sessionId = session && session !== 'loading' ? session.id : null;

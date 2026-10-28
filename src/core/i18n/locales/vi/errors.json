@@ -79,5 +79,7 @@
   "SUPPORT_MAIL_UNAVAILABLE": {
     "title": "Chưa mở được ứng dụng email.",
     "hint": "Bạn thử lại nhé."
-  }
+  },
+  "BATTERY_LOW": "Pin còn quá thấp để quay an toàn. Hãy cắm sạc rồi kiểm tra lại.",
+  "DEVICE_OVERHEATED": "Máy đang quá nóng để quay an toàn. Hãy để máy nguội rồi kiểm tra lại."
 }

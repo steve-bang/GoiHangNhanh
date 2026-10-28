@@ -40,6 +40,16 @@ jest.mock('@/platform/recording-files', () => ({
   findPersistedRecording: jest.fn(),
   resolveRecordingUri: (uri: string) => uri,
 }));
+let mockDevice: { batteryLevel: number | null; charging: boolean | null; thermal: string | null } =
+  {
+    batteryLevel: 0.8,
+    charging: false,
+    thermal: null,
+  };
+jest.mock('@/platform/device-condition', () => ({
+  readDeviceCondition: async () => mockDevice,
+  UNKNOWN_DEVICE_CONDITION: { batteryLevel: null, charging: null, thermal: null },
+}));
 const mockOpenSettings = jest.fn();
 jest.mock('@/platform/external-link', () => ({
   openExternalLink: jest.fn(),
@@ -50,6 +60,7 @@ beforeEach(() => {
   mockEnabled = true;
   mockFree = MIN_FREE_BYTES_TO_RECORD + 1;
   mockWritable = true;
+  mockDevice = { batteryLevel: 0.8, charging: false, thermal: null };
   mockProbe.mockClear();
   mockOpenSettings.mockReset();
   resetMockNavigation();
@@ -170,5 +181,39 @@ describe('UI-C02 Kiểm tra trước khi quay', () => {
     expect(await screen.findByTestId('pack-not-recorded')).toBeOnTheScreen();
     expect(mockProbe).not.toHaveBeenCalled();
     expect(mockNavigation.replace).not.toHaveBeenCalled();
+  });
+
+  it('pin thấp khi không sạc: báo BATTERY_LOW kèm lời khuyên cắm sạc, chặn quay; cắm sạc rồi Kiểm tra lại thì vào quay', async () => {
+    mockDevice = { batteryLevel: 0.05, charging: false, thermal: null };
+    const session = await open();
+    expect(await screen.findByTestId('precheck-issue-battery')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Pin còn quá thấp để quay an toàn. Hãy cắm sạc rồi kiểm tra lại.'),
+    ).toBeOnTheScreen();
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    mockDevice = { batteryLevel: 0.05, charging: true, thermal: null };
+    await fireEvent.press(screen.getByRole('button', { name: 'Kiểm tra lại' }));
+    await act(async () => undefined);
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packRecord, {
+      sessionId: session.id,
+    });
+  });
+
+  it('máy quá nóng (khi hệ điều hành báo): báo DEVICE_OVERHEATED, chặn quay', async () => {
+    mockDevice = { batteryLevel: 0.9, charging: false, thermal: 'serious' };
+    await open();
+    expect(await screen.findByTestId('precheck-issue-thermal')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Máy đang quá nóng để quay an toàn. Hãy để máy nguội rồi kiểm tra lại.'),
+    ).toBeOnTheScreen();
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+  });
+
+  it('không biết pin/nhiệt độ: không chặn', async () => {
+    mockDevice = { batteryLevel: null, charging: null, thermal: null };
+    const session = await open();
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packRecord, {
+      sessionId: session.id,
+    });
   });
 });

@@ -34,3 +34,5 @@ export { classifyUploadStatus, uploadFileResumable } from './resumable-upload';
 export type { UploadFileResult, UploadSessionRequest } from './resumable-upload';
 export { CameraRecorder } from './camera-recorder';
 export type { CameraRecorderHandle, RecorderResult } from './camera-recorder';
+export { readDeviceCondition, UNKNOWN_DEVICE_CONDITION } from './device-condition';
+export type { DeviceCondition, ThermalLevel } from './device-condition';

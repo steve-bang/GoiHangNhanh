@@ -1,5 +1,10 @@
 import { runPrecheck } from './precheck';
-import { MIN_FREE_BYTES_TO_RECORD } from './recording-controller';
+import {
+  ESTIMATED_BYTES_PER_MINUTE,
+  MIN_BATTERY_LEVEL,
+  MIN_FREE_BYTES_TO_RECORD,
+  requiredFreeBytes,
+} from './recording-policy';
 
 const ok = {
   camera: 'granted' as const,
@@ -56,8 +61,90 @@ describe('runPrecheck (A04)', () => {
     ]);
   });
 
-  it('ngưỡng cấu hình được (chờ O-05)', () => {
-    expect(runPrecheck({ ...ok, freeBytes: 10, minFreeBytes: 10 })).toEqual({ status: 'ready' });
-    expect(runPrecheck({ ...ok, freeBytes: 9, minFreeBytes: 10 }).status).toBe('blocked');
+  it('chính sách mặc định (O-05): chỗ trống phải đủ quay 10 phút', () => {
+    expect(MIN_FREE_BYTES_TO_RECORD).toBe(10 * ESTIMATED_BYTES_PER_MINUTE);
+    expect(requiredFreeBytes()).toBe(MIN_FREE_BYTES_TO_RECORD);
+  });
+
+  it('thời lượng tối thiểu theo chính sách (về sau theo gói): đổi chính sách thì đổi ngưỡng', () => {
+    const free = requiredFreeBytes({ minRecordMinutes: 30 }) - 1;
+    expect(runPrecheck({ ...ok, freeBytes: free }).status).toBe('ready');
+    expect(runPrecheck({ ...ok, freeBytes: free, policy: { minRecordMinutes: 30 } }).status).toBe(
+      'blocked',
+    );
+    expect(
+      runPrecheck({ ...ok, freeBytes: free + 1, policy: { minRecordMinutes: 30 } }).status,
+    ).toBe('ready');
+  });
+
+  describe('pin và nhiệt độ (A04, người dùng khuyến khích chặn)', () => {
+    const low = MIN_BATTERY_LEVEL;
+    const blockedIds = (r: ReturnType<typeof runPrecheck>) =>
+      r.status === 'blocked' ? r.issues.map((i) => i.id) : [];
+
+    it('pin thấp và KHÔNG cắm sạc: chặn BATTERY_LOW, khuyên cắm sạc', () => {
+      expect(
+        runPrecheck({ ...ok, device: { batteryLevel: low, charging: false, thermal: null } }),
+      ).toEqual({
+        status: 'blocked',
+        issues: [{ id: 'battery', code: 'BATTERY_LOW', fix: 'charge' }],
+      });
+    });
+
+    it('pin thấp nhưng đang sạc, hoặc pin trên ngưỡng: không chặn', () => {
+      expect(
+        runPrecheck({ ...ok, device: { batteryLevel: 0.02, charging: true, thermal: null } }),
+      ).toEqual({ status: 'ready' });
+      expect(
+        runPrecheck({
+          ...ok,
+          device: { batteryLevel: low + 0.01, charging: false, thermal: null },
+        }),
+      ).toEqual({ status: 'ready' });
+    });
+
+    it('pin thấp mà không rõ có sạc không: vẫn chặn (không đoán là đang sạc)', () => {
+      expect(
+        blockedIds(
+          runPrecheck({ ...ok, device: { batteryLevel: low, charging: null, thermal: null } }),
+        ),
+      ).toEqual(['battery']);
+    });
+
+    it('không biết pin hay nhiệt độ (máy không cung cấp): không chặn', () => {
+      expect(
+        runPrecheck({ ...ok, device: { batteryLevel: null, charging: null, thermal: null } }),
+      ).toEqual({ status: 'ready' });
+      expect(runPrecheck(ok)).toEqual({ status: 'ready' });
+    });
+
+    it('máy nóng mức serious/critical: chặn DEVICE_OVERHEATED; nominal/fair thì không', () => {
+      for (const thermal of ['serious', 'critical'] as const) {
+        expect(
+          runPrecheck({ ...ok, device: { batteryLevel: 0.9, charging: false, thermal } }),
+        ).toEqual({
+          status: 'blocked',
+          issues: [{ id: 'thermal', code: 'DEVICE_OVERHEATED', fix: 'cool_down' }],
+        });
+      }
+      for (const thermal of ['nominal', 'fair'] as const) {
+        expect(
+          runPrecheck({ ...ok, device: { batteryLevel: 0.9, charging: false, thermal } }).status,
+        ).toBe('ready');
+      }
+    });
+
+    it('liệt kê đủ cả 5 điều kiện khi tất cả không đạt', () => {
+      expect(
+        blockedIds(
+          runPrecheck({
+            camera: 'blocked',
+            freeBytes: 1,
+            canWrite: () => false,
+            device: { batteryLevel: 0.01, charging: false, thermal: 'critical' },
+          }),
+        ),
+      ).toEqual(['camera', 'storage', 'localWrite', 'battery', 'thermal']);
+    });
   });
 });
