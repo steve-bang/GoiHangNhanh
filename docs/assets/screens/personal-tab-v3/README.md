@@ -7,7 +7,7 @@
 | `pr-a-components-390x844.png` | Năm khung 390x844 ghép ngang: (1-3) cuộn khung thử: `HeroCard` kèm huy hiệu, sáu tông `IconTile`, ba `MetricTile` xếp dọc + một dạng hàng, sáu `StatusCard` (đang tải 70%, đã xác minh, lưu trên máy, đám mây, sắp hết hạn, lỗi), hai `Checkbox` (chọn, viền đỏ), `TextField` có bộ đếm và ô nhiều dòng, `ErrorState variant="card"`, `EmptyState` có/không nút; (4) `ConfirmDialog` có icon, hai nút dọc; (5) `ConfirmDialog` có icon, hai nút cạnh nhau |
 | `pr-a-board-reference-crops.png` | Khung tương ứng cắt từ board 07 (phóng 2x): 4a, 7b, 1c, 1d và dải trạng thái khung 21 |
 
-**Ảnh chưa chụp lại sau đợt sửa review:** không có trình duyệt/khung thử trong môi trường này. Hai thay đổi nhìn thấy được (nếu có): glyph `cloud`/`document`/`person`/`play`/`warning-solid` đã bỏ khỏi bảng icon (ô `MetricTile` trong ảnh có thể đang dùng icon này), và `HeroCard` thêm `badgeLabel` (chỉ ảnh hưởng trợ năng, không đổi hình). Cần chụp lại khi dựng màn dùng `MetricTile` (PR-F).
+**Ảnh `pr-b-1b..1e` đã chụp lại ở PR-F** (khung chờ/lỗi/ngoại tuyến/chưa có họ tên theo mã hiện tại). Bản sao ngoài repo có thêm tham số tạm `?state=loading|error|offline|noname` (cổng giả và `useIsOffline`), KHÔNG commit.
 
 ## Khác biệt so với board (ghi trung thực)
 
@@ -151,4 +151,32 @@
 | Trạng thái | đạt | đạt | đạt | chưa có dữ liệu gói nên chưa dựng hết hạn/sắp hết hạn |
 | Chuỗi chữ | lệch có chủ đích | lệch có chủ đích | lệch | không "Gói tiêu chuẩn", "Đang hoạt động", "Hỗ trợ 24/7", "Xem tất cả"; xem mục 6.5 của plan |
 
-**Ảnh `pr-e-8*`, `pr-e-9*` chưa chụp lại sau review:** tiêu đề mục "Quyền lợi" / "Quyền lợi chi tiết" đã đổi thành "Chính sách lưu trữ dự kiến" (Q-21w) và nút "Nâng cấp gói" thêm gợi ý trợ năng (không đổi hình). Môi trường này không có trình duyệt để render lại; ảnh hiện còn tiêu đề cũ. Cần chụp lại khi có Chromium.
+**Ảnh `pr-e-8*`, `pr-e-9*` đã chụp lại ở PR-F** (tiêu đề "Chính sách lưu trữ dự kiến").
+
+# Ảnh đối chiếu PR-F: Dữ liệu bằng chứng, Thời hạn lưu (khung 11, 12) và dải trạng thái (khung 21)
+
+**Lưu ý trung thực:** ảnh render **bản web** (react-native-web trong Chromium) của màn thật trên **cổng giả**, **không phải ảnh chụp trên iOS/Android thật**; 320x568, 360x800, 390x844 (hệ số 2) và chữ lớn 1.6 lần ở 320x568 (bản sao ngoài repo nhân cỡ chữ của `Text`; icon không phóng theo). Hai màn là nội dung tĩnh (chưa có tệp bằng chứng, chưa có dữ liệu gói). Bản sao ngoài repo (không thêm phụ thuộc) có thay đổi tạm KHÔNG commit: `?named=1`, `?fs=1.6`, `?state=...`. Khung 21 KHÔNG có ảnh app: không có màn tương ứng (xem plan mục 6.6).
+
+| Ảnh | Nội dung |
+| --- | --- |
+| `pr-f-11-evidence-data-{320x568,360x800,390x844}.png` | Khung 11 Dữ liệu bằng chứng |
+| `pr-f-12-retention-*.png` | Khung 12 Thời hạn lưu |
+| `pr-f-{11-evidence-data,12-retention}-largetext-320x568.png` | Chữ lớn (1.6 lần) |
+| `pr-f-1a-main-with-evidence-link-*.png` | Màn Cá nhân: tiêu đề khối "Dữ liệu bằng chứng" có "›" |
+| `pr-f-board-reference-11-12-21.png`, `pr-f-board-reference-21-strip.png` | Khung 11, 12 và dải khung 21 cắt từ board 07 |
+| `pr-f-compare-board-vs-app-390.png` | Hàng trên board, hàng dưới app 390x844 |
+
+## Checklist "giống design"
+
+| Hạng mục | 11 | 12 | Ghi chú lệch |
+| --- | --- | --- | --- |
+| Bố cục và thứ tự khối | gần | đạt | khung 11 thêm đoạn giải thích ba mục và hàng "Thời hạn lưu" (lối vào khung 12) |
+| Thứ bậc chữ | đạt | đạt | |
+| Màu thẻ/nền | gần | gần | khung 11: ba hàng trong một nhóm có đường kẻ (board: hàng có đường kẻ); khung 12: thẻ ghi chú nền trắng viền, icon xanh dương (không có tông thẻ xanh dương nhạt) |
+| Icon | gần | gần | chấm cam đặc của board thay bằng ô icon tông cảnh báo; icon từng hàng chọn theo nghĩa |
+| Nút | đạt | - | "Xem trung tâm đồng bộ" |
+| Header | đạt | đạt | khung 11 đúng "Dữ liệu bằng chứng" (board đặt tiêu đề khung "Quản lý dữ liệu bằng chứng") |
+| Thanh tab | ẩn | ẩn | route con `hideTabBar` |
+| Chữ lớn | đạt | đạt | hàng thời hạn xuống dòng, giá trị rớt xuống dưới nhãn |
+| Chuỗi chữ | lệch có chủ đích | lệch có chủ đích | "Chưa có số liệu"/"Chưa có thông tin" thay số; không "Gói tiêu chuẩn"; ghi chú khung 12 đổi câu (D19) |
+
