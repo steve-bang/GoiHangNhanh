@@ -152,7 +152,7 @@
     "recorderFailed": "Camera dừng đột ngột. Video chưa được lưu.",
     "startFailed": "Chưa bắt đầu quay được. Hãy quay lại đơn để thử lại.",
     "interruptedNotice": "Lần quay trước bị gián đoạn. Hãy mở đơn để kiểm tra video.",
-    "alreadyRecorded": "Phiên này đã quay rồi nên không quay thêm vào được. Hãy bắt đầu phiên mới từ đơn.",
+    "alreadyRecorded": "Phiên này không quay thêm được. Hãy mở đơn và chọn Xem bằng chứng.",
     "leavePreparing": "Chưa bắt đầu ghi video. Thoát sẽ đưa bạn về màn hình đơn.",
     "leaveSaving": "Video đang được lưu trên máy. Bạn có thể về màn hình đơn, việc lưu vẫn tiếp tục.",
     "backToOrder": "Về đơn hàng"

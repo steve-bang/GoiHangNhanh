@@ -9,7 +9,7 @@ import { newSessionId, openAppSettings, useAppNavigation, useScannerPermission }
 import { CameraPermissionSheet } from '@/shared/ui';
 
 import { useCurrentShopId, useOrderStore } from '../data';
-import { buildPackingSession, findActiveSession } from '../domain';
+import { buildPackingSession, findActiveSession, findBlockingSession } from '../domain';
 
 interface Pending {
   orderId: OrderId;
@@ -20,8 +20,9 @@ interface Pending {
  * Bắt đầu quay (đặc tả A04 rút gọn): (1) chưa có quyền camera -> hộp thoại xin quyền dùng chung;
  * (2) có quyền -> tạo phiên + giữ kiện + ảnh chụp đơn và LƯU TRƯỚC khi mở camera, rồi `replace` sang
  * màn quay bằng `sessionId` (không truyền mã đơn; bất biến 2). Kiện đã có phiên đang thực hiện thì
- * mở lại phiên đó thay vì tạo phiên mới (an toàn hơn phiên chồng; hộp hỏi "tạo phiên mới" cần đặc tả
- * cách kết thúc phiên cũ, làm cùng recorder). Dùng chung cho "Kiểm tra camera và
+ * mở lại phiên đó thay vì tạo phiên mới (an toàn hơn phiên chồng). Kiện đã có phiên đã kết thúc
+ * (`ended`/`confirmed`) hoặc dở dang (`interrupted`/`needs_attention`) thì KHÔNG tạo phiên mới: báo lỗi
+ * `PACKAGE_ALREADY_RECORDED`/`PACKAGE_RECORDING_UNFINISHED` (ADR-020 R-11, chờ BA). Dùng chung cho "Kiểm tra camera và
  * bắt đầu" (UI-C01) và "Bỏ qua, quay ngay" (UI-B04).
  *
  * CHƯA làm (chưa ghi video thật): kiểm tra dung lượng (`INSUFFICIENT_STORAGE`) và micro
@@ -61,13 +62,22 @@ export function useStartPacking(options: { navigate?: 'push' | 'replace' } = {})
         }
         // Kiện đã có phiên đang thực hiện: MỞ LẠI phiên đó, không tạo phiên chồng (docs/04 A03:
         // "Kiện này đã có phiên đang thực hiện"; decisions.md Q-17).
-        const active = findActiveSession(
-          await store.listSessionsOfOrder(shopId, target.orderId),
-          target.packageId,
-        );
+        const sessions = await store.listSessionsOfOrder(shopId, target.orderId);
+        const active = findActiveSession(sessions, target.packageId);
         if (active) {
           setPending(null);
           go(ROUTES.packRecord, { sessionId: active.id });
+          return;
+        }
+        // Kiện đã quay xong (hoặc có lần quay dở): KHÔNG tự tạo phiên mới (docs/04 A01; ADR-020 R-11).
+        const blocking = findBlockingSession(sessions, target.packageId);
+        if (blocking) {
+          setPending(null);
+          setError(
+            blocking.kind === 'recorded'
+              ? 'PACKAGE_ALREADY_RECORDED'
+              : 'PACKAGE_RECORDING_UNFINISHED',
+          );
           return;
         }
         const built = buildPackingSession(details, target.packageId, {

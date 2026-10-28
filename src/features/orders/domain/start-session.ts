@@ -71,3 +71,26 @@ export function findActiveSession(
 ): PackingSession | null {
   return sessions.find((s) => s.packageId === packageId && isSessionActive(s)) ?? null;
 }
+
+/**
+ * Phiên đã khép lại (hoặc dừng giữa chừng) của một kiện, chặn việc tạo phiên đóng gói MỚI cho kiện đó
+ * (docs/04 A01: phiên đã hoàn tất thì "không tự bắt đầu quay mới"; ADR-020 R-11, phương án a theo khuyến nghị
+ * reviewer, chờ BA xác nhận). `recorded` = `ended`/`confirmed` (kiện đã quay xong); `unfinished` =
+ * `interrupted`/`needs_attention` (lần quay dở: luồng "tiếp tục" chưa được BA chốt, Q-23j, nên cũng chặn,
+ * thận trọng). Trạng thái lạ KHÔNG chặn (cùng lý do với `isSessionStatusActive`). Chỉ cho luồng đóng gói;
+ * quay hàng hoàn không dùng hàm này.
+ */
+export type BlockingSession = { kind: 'recorded' | 'unfinished'; session: PackingSession };
+
+export function findBlockingSession(
+  sessions: readonly PackingSession[],
+  packageId: PackageId,
+): BlockingSession | null {
+  const ofPackage = sessions.filter((s) => s.packageId === packageId);
+  const recorded = ofPackage.find((s) => ['ended', 'confirmed'].includes(s.sessionStatus));
+  if (recorded) return { kind: 'recorded', session: recorded };
+  const unfinished = ofPackage.find((s) =>
+    ['interrupted', 'needs_attention'].includes(s.sessionStatus),
+  );
+  return unfinished ? { kind: 'unfinished', session: unfinished } : null;
+}

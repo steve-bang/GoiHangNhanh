@@ -193,7 +193,7 @@ describe('chỉ phiên created được quay', () => {
         orderStore: orders,
         evidenceFileStore: files,
       });
-      expect(await screen.findByText(/Phiên này đã quay rồi/)).toBeOnTheScreen();
+      expect(await screen.findByText(/Phiên này không quay thêm được/)).toBeOnTheScreen();
       expect(mockRecorder.mounted).toBe(false);
       expect(mockRecorder.recordCalls).toBe(0);
       expect(await filesOf(files, session.id)).toEqual([]);

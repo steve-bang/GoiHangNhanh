@@ -247,6 +247,35 @@ describe('UI-C01 Xác nhận đơn trước khi quay', () => {
       expect(await store.listSessionsOfOrder(LOCAL_SHOP_ID, details.order.id)).toHaveLength(1);
     });
 
+    it.each([
+      ['ended', /Kiện này đã quay xong/],
+      ['confirmed', /Kiện này đã quay xong/],
+      ['interrupted', /lần quay chưa hoàn tất/],
+      ['needs_attention', /lần quay chưa hoàn tất/],
+    ])(
+      'kiện đã có phiên %s: KHÔNG tạo phiên mới, báo trung thực và chỉ đường xem bằng chứng (R-11)',
+      async (status, message) => {
+        const { store, details } = await open();
+        await fireEvent.press(screen.getByTestId('preview-start'));
+        await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalledTimes(1));
+        const first = mockNavigation.replace.mock.calls[0] as [unknown, { sessionId: string }];
+        const id = first[1].sessionId as never;
+        // Đi qua bảng chuyển hợp lệ tới trạng thái cần thử.
+        await store.updateSessionStatus(LOCAL_SHOP_ID, id, 'recording');
+        await store.updateSessionStatus(
+          LOCAL_SHOP_ID,
+          id,
+          status === 'confirmed' ? 'ended' : status,
+        );
+        if (status === 'confirmed') await store.updateSessionStatus(LOCAL_SHOP_ID, id, 'confirmed');
+        await fireEvent.press(screen.getByTestId('preview-start'));
+        expect(await screen.findByText(message)).toBeOnTheScreen();
+        expect(screen.getByText(/Xem bằng chứng/)).toBeOnTheScreen();
+        expect(mockNavigation.replace).toHaveBeenCalledTimes(1);
+        expect(await store.listSessionsOfOrder(LOCAL_SHOP_ID, details.order.id)).toHaveLength(1);
+      },
+    );
+
     it('bấm đúp chỉ tạo một phiên', async () => {
       await open();
       const button = screen.getByTestId('preview-start');
