@@ -87,27 +87,46 @@ export function EvidenceOverviewCard() {
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const navigation = useAppNavigation();
+  const openDetail = () => navigation.push(ROUTES.evidenceData);
   return (
     <Card testID="evidence-overview">
       <View style={{ gap: tokens.space.md }}>
+        {/* Đề mục (header) và nút mở là hai phần tử trợ năng riêng; vùng bấm ngoài chỉ phục vụ cảm ứng. */}
         <Pressable
-          onPress={() => navigation.push(ROUTES.evidenceData)}
-          accessibilityRole="button"
-          accessibilityLabel={t('personal:evidenceOverview.title')}
-          accessibilityHint={t('personal:evidenceOverview.openDetail')}
-          testID="evidence-overview-title"
-          style={({ pressed }) => ({
+          onPress={openDetail}
+          accessible={false}
+          testID="evidence-overview-row"
+          style={{
             flexDirection: 'row',
             alignItems: 'center',
             gap: tokens.space.sm,
             minHeight: getMinTouchTarget(),
-            opacity: pressed ? tokens.opacity.pressed : 1,
-          })}
+          }}
         >
-          <Text variant="sectionTitle" style={{ flex: 1, flexShrink: 1 }}>
+          <Text
+            variant="sectionTitle"
+            accessibilityRole="header"
+            style={{ flex: 1, flexShrink: 1 }}
+            testID="evidence-overview-heading"
+          >
             {t('personal:evidenceOverview.title')}
           </Text>
-          <Icon name="forward" size={18} color={tokens.color.text.secondary} />
+          <Pressable
+            onPress={openDetail}
+            accessibilityRole="button"
+            accessibilityLabel={t('personal:evidenceOverview.title')}
+            accessibilityHint={t('personal:evidenceOverview.openDetail')}
+            testID="evidence-overview-title"
+            style={({ pressed }) => ({
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: getMinTouchTarget(),
+              minHeight: getMinTouchTarget(),
+              opacity: pressed ? tokens.opacity.pressed : 1,
+            })}
+          >
+            <Icon name="forward" size={18} color={tokens.color.text.secondary} />
+          </Pressable>
         </Pressable>
         <View style={{ flexDirection: 'row' }}>
           <MetricTile
