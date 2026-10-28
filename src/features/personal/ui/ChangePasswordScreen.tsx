@@ -9,9 +9,12 @@ import { ROUTES } from '@/core/navigation';
 import { useAppNavigation, useIsScreenActive } from '@/platform';
 import {
   Button,
+  Card,
+  ErrorState,
   Icon,
   PasswordField,
   Screen,
+  Skeleton,
   Text,
   useTheme,
   useToast,
@@ -25,14 +28,18 @@ import {
   validateCurrentPassword,
   validateNewPassword,
 } from '../domain/validation';
+import type { SignInMethod } from '../domain/types';
 import { usePersonalGateways } from './PersonalGatewaysProvider';
+import { useSession } from './SessionProvider';
+import { useRegion } from './use-region';
 
 /** Mã lỗi buộc đăng nhập lại: không có cách nào sửa ngay tại màn này. */
 const NEEDS_SIGN_IN: readonly ErrorCode[] = ['AUTH_REQUIRES_RECENT_LOGIN', 'AUTH_SESSION_EXPIRED'];
 
 /**
- * Đổi mật khẩu (PER-04), route con của UI-I05 (decisions.md Q-20k). Chỉ dành cho tài khoản đăng nhập
- * bằng mật khẩu (D-13, Q-20c): màn vào từ UI-I01 chỉ hiện lối vào đó khi `signInMethod === 'password'`.
+ * Đổi mật khẩu (PER-04), route con của UI-I05 (decisions.md Q-20k), dựng theo board 07 khung 3. Chỉ có
+ * form với tài khoản đăng nhập bằng mật khẩu (D-13, Q-20c); Apple/Google thấy thẻ giải thích THAY form
+ * (màn tự đọc `signInMethod`, không dựa vào lối vào ở UI-I01). Nút Lưu ngay dưới các ô, không ghim đáy.
  * Không log, không giữ mật khẩu ngoài state của màn; thành công chỉ báo SAU KHI cổng xác nhận. Nút luôn
  * bật khi chưa gửi; kiểm tra khi bấm, lỗi hiện tại ô và focus vào ô lỗi đầu tiên. Yêu cầu độ dài hiện
  * theo thời gian thực (biểu tượng + chữ, không chỉ màu).
@@ -44,6 +51,9 @@ export function ChangePasswordScreen() {
   const toast = useToast();
   const isActive = useIsScreenActive();
   const { account } = usePersonalGateways();
+  const session = useSession();
+  // Chỉ tài khoản đăng nhập bằng mật khẩu mới có mật khẩu để đổi (D-13, Q-20c): cần biết cách đăng nhập.
+  const profile = useRegion(() => account.getProfile(), session.key);
 
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -78,6 +88,11 @@ export function ChangePasswordScreen() {
     submitted && confirmIssue
       ? t(`personal:validation.confirmNewPassword.${confirmIssue}`)
       : undefined;
+
+  const loadMessage = resolveErrorMessage(
+    t,
+    profile.state.status === 'error' ? profile.state.code : 'AUTH_SERVICE_UNAVAILABLE',
+  );
 
   const bannerCode = serverError && !wrongCurrent && !weakNext ? serverError : null;
   const bannerMessage = bannerCode ? errorText(resolveErrorMessage(t, bannerCode)) : null;
@@ -117,69 +132,118 @@ export function ChangePasswordScreen() {
       title={t('nav:subTitles.changePassword')}
       onBack={navigation.back}
       testID="screen-UI-I05-change-password"
-      footer={
-        <Button
-          label={t('personal:changePassword.submit')}
-          onPress={() => void submit()}
-          disabled={saving}
-          loading={saving}
-          testID="change-password-submit"
-        />
-      }
     >
-      <Text color="textMuted" testID="change-password-intro">
-        {t('personal:changePassword.intro')}
-      </Text>
-      <View style={{ gap: tokens.space.lg }}>
-        <PasswordField
-          label={t('personal:fields.currentPassword')}
-          value={current}
-          onChangeText={edit(setCurrent)}
-          autoComplete="current-password"
-          inputRef={currentRef}
-          {...(currentError ? { error: currentError } : {})}
-          testID="change-password-current"
-        />
-        <View style={{ gap: tokens.space.sm }}>
-          <PasswordField
-            label={t('personal:fields.newPassword')}
-            value={next}
-            onChangeText={edit(setNext)}
-            autoComplete="new-password"
-            inputRef={nextRef}
-            {...(nextError ? { error: nextError } : {})}
-            testID="change-password-new"
-          />
-          <LengthRequirement met={textLength(next) >= MIN_PASSWORD_LENGTH} />
-        </View>
-        <PasswordField
-          label={t('personal:fields.confirmNewPassword')}
-          value={confirm}
-          onChangeText={edit(setConfirm)}
-          autoComplete="new-password"
-          inputRef={confirmRef}
-          returnKeyType="done"
-          onSubmitEditing={() => void submit()}
-          {...(confirmError ? { error: confirmError } : {})}
-          testID="change-password-confirm"
-        />
-        {bannerMessage && bannerCode ? (
+      {profile.state.status === 'loading' ? (
+        <Card testID="change-password-loading">
           <View style={{ gap: tokens.space.sm }}>
-            <Text color="danger" accessibilityRole="alert" testID="change-password-error">
-              {bannerMessage}
-            </Text>
-            {NEEDS_SIGN_IN.includes(bannerCode) ? (
-              <Button
-                label={t('personal:changePassword.signInAgain')}
-                variant="secondary"
-                onPress={() => navigation.reset(ROUTES.signIn)}
-                testID="change-password-sign-in"
-              />
-            ) : null}
+            <Skeleton width="60%" height={20} />
+            <Skeleton width="80%" />
           </View>
-        ) : null}
-      </View>
+        </Card>
+      ) : null}
+      {profile.state.status === 'error' ? (
+        <Card>
+          <ErrorState
+            testID="change-password-load-error"
+            title={loadMessage.title}
+            {...(loadMessage.hint ? { message: loadMessage.hint } : {})}
+            onRetry={() => void profile.reload()}
+            retrying={profile.refreshing}
+          />
+        </Card>
+      ) : null}
+      {profile.state.status === 'ready' && profile.state.data.signInMethod !== 'password' ? (
+        <SocialAccountNotice method={profile.state.data.signInMethod} />
+      ) : null}
+      {profile.state.status === 'ready' && profile.state.data.signInMethod === 'password' ? (
+        <View style={{ gap: tokens.space.lg }}>
+          <PasswordField
+            label={t('personal:fields.currentPassword')}
+            placeholder={t('personal:placeholders.currentPassword')}
+            required
+            value={current}
+            onChangeText={edit(setCurrent)}
+            autoComplete="current-password"
+            inputRef={currentRef}
+            {...(currentError ? { error: currentError } : {})}
+            testID="change-password-current"
+          />
+          <View style={{ gap: tokens.space.sm }}>
+            <PasswordField
+              label={t('personal:fields.newPassword')}
+              placeholder={t('personal:placeholders.newPassword')}
+              required
+              value={next}
+              onChangeText={edit(setNext)}
+              autoComplete="new-password"
+              inputRef={nextRef}
+              {...(nextError ? { error: nextError } : {})}
+              testID="change-password-new"
+            />
+            <LengthRequirement met={textLength(next) >= MIN_PASSWORD_LENGTH} />
+          </View>
+          <PasswordField
+            label={t('personal:fields.confirmNewPassword')}
+            placeholder={t('personal:placeholders.confirmNewPassword')}
+            required
+            value={confirm}
+            onChangeText={edit(setConfirm)}
+            autoComplete="new-password"
+            inputRef={confirmRef}
+            returnKeyType="done"
+            onSubmitEditing={() => void submit()}
+            {...(confirmError ? { error: confirmError } : {})}
+            testID="change-password-confirm"
+          />
+          {bannerMessage && bannerCode ? (
+            <View style={{ gap: tokens.space.sm }}>
+              <Text color="danger" accessibilityRole="alert" testID="change-password-error">
+                {bannerMessage}
+              </Text>
+              {NEEDS_SIGN_IN.includes(bannerCode) ? (
+                <Button
+                  label={t('personal:changePassword.signInAgain')}
+                  variant="secondary"
+                  onPress={() => navigation.reset(ROUTES.signIn)}
+                  testID="change-password-sign-in"
+                />
+              ) : null}
+            </View>
+          ) : null}
+          {/* Board 07 khung 3: Lưu ngay dưới các ô (không ghim đáy). */}
+          <Button
+            label={t('personal:changePassword.submit')}
+            onPress={() => void submit()}
+            disabled={saving}
+            loading={saving}
+            testID="change-password-submit"
+          />
+        </View>
+      ) : null}
     </Screen>
+  );
+}
+
+/**
+ * Tài khoản Apple/Google không có mật khẩu của Đơn Chứng để đổi (Q-20c, D-13): thay form bằng thẻ giải
+ * thích (board 07 khung 3 vẽ cả form lẫn thẻ; hiện form cho tài khoản không đổi được là chức năng giả).
+ */
+function SocialAccountNotice({ method }: { method: Exclude<SignInMethod, 'password'> }) {
+  const { t } = useTranslation();
+  const { tokens } = useTheme();
+  const provider = t(`personal:changePassword.provider.${method}`);
+  return (
+    <Card tone="brand" testID="change-password-social">
+      <View style={{ gap: tokens.space.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm }}>
+          <Icon name={method} size={20} color={tokens.color.text.primary} />
+          <Text bold accessibilityRole="header" style={{ flex: 1 }}>
+            {t('personal:changePassword.socialTitle', { provider })}
+          </Text>
+        </View>
+        <Text color="textMuted">{t('personal:changePassword.socialMessage', { provider })}</Text>
+      </View>
+    </Card>
   );
 }
 

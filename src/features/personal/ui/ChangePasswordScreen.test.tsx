@@ -19,6 +19,7 @@ beforeEach(() => {
 
 async function renderChange(gateways = createFakePersonalGateways()) {
   await renderWithProviders(<ChangePasswordScreen />, { personalGateways: gateways });
+  await waitFor(() => expect(screen.getByTestId('change-password-current')).toBeOnTheScreen());
   return gateways;
 }
 
@@ -55,11 +56,29 @@ describe('ChangePasswordScreen (route con của UI-I05)', () => {
     expect(gateways.account.changePasswordCalls).toBe(0);
   });
 
-  it('có mô tả đầu trang; nút luôn bật khi chưa gửi, không bật/tắt theo nội dung', async () => {
+  it('khung 3: ba ô có dấu sao bắt buộc và gợi ý nhập, chỉ nêu quy tắc thật (8 ký tự), nút "Lưu"', async () => {
     await renderChange();
-    expect(
-      screen.getByText('Đặt mật khẩu mới để giữ tài khoản của bạn an toàn.'),
-    ).toBeOnTheScreen();
+    for (const [id, label, placeholder] of [
+      ['current', 'Mật khẩu hiện tại', 'Nhập mật khẩu hiện tại'],
+      ['new', 'Mật khẩu mới', 'Nhập mật khẩu mới'],
+      ['confirm', 'Xác nhận mật khẩu mới', 'Nhập lại mật khẩu mới'],
+    ] as const) {
+      const input = screen.getByTestId(`change-password-${id}`);
+      expect(input.props.accessibilityLabel).toBe(label);
+      expect(input.props.placeholder).toBe(placeholder);
+      expect(
+        screen.getByTestId(`change-password-${id}-required`, { includeHiddenElements: true }),
+      ).toHaveTextContent('*');
+    }
+    expect(screen.getByText('Tối thiểu 8 ký tự')).toBeOnTheScreen();
+    expect(screen.queryByText(/chữ và số/)).toBeNull();
+    expect(screen.queryByText(/giữ tài khoản của bạn an toàn/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Lưu' })).toBeOnTheScreen();
+    expect(screen.queryByTestId('change-password-social')).toBeNull();
+  });
+
+  it('nút luôn bật khi chưa gửi, không bật/tắt theo nội dung', async () => {
+    await renderChange();
     const button = screen.getByTestId('change-password-submit');
     expect(button.props.accessibilityState?.disabled).toBe(false);
     await fill('a', 'b', 'c');
@@ -86,18 +105,18 @@ describe('ChangePasswordScreen (route con của UI-I05)', () => {
     focusSpy.mockRestore();
   });
 
-  it('yêu cầu "Từ 8 ký tự" đổi biểu tượng, chữ đọc và trạng thái khi đạt, không chỉ đổi màu', async () => {
+  it('yêu cầu "Tối thiểu 8 ký tự" đổi biểu tượng, chữ đọc và trạng thái khi đạt, không chỉ đổi màu', async () => {
     await renderChange();
     const row = screen.getByTestId('change-password-requirement');
-    expect(row.props.accessibilityLabel).toBe('Từ 8 ký tự. Chưa đạt');
+    expect(row.props.accessibilityLabel).toBe('Tối thiểu 8 ký tự. Chưa đạt');
     expect(screen.getByTestId('icon-ellipse-outline')).toBeOnTheScreen();
     await fireEvent.changeText(screen.getByTestId('change-password-new'), '1234567');
     expect(screen.getByTestId('change-password-requirement').props.accessibilityLabel).toBe(
-      'Từ 8 ký tự. Chưa đạt',
+      'Tối thiểu 8 ký tự. Chưa đạt',
     );
     await fireEvent.changeText(screen.getByTestId('change-password-new'), '12345678');
     expect(screen.getByTestId('change-password-requirement').props.accessibilityLabel).toBe(
-      'Từ 8 ký tự. Đã đạt',
+      'Tối thiểu 8 ký tự. Đã đạt',
     );
     expect(screen.getByTestId('icon-checkmark-circle')).toBeOnTheScreen();
     expect(screen.queryByTestId('icon-ellipse-outline')).toBeNull();
@@ -194,5 +213,43 @@ describe('ChangePasswordScreen (route con của UI-I05)', () => {
     expect(screen.queryByText('Đã đổi mật khẩu.')).toBeNull();
     await submit();
     await waitFor(() => expect(mockNavigation.back).toHaveBeenCalledTimes(1));
+  });
+
+  it.each([
+    ['apple', 'Apple'],
+    ['google', 'Google'],
+  ] as const)(
+    'tài khoản %s: thẻ giải thích THAY form, không ô mật khẩu, không nút Lưu, không gọi cổng',
+    async (signInMethod, provider) => {
+      const gateways = createFakePersonalGateways({ profile: { signInMethod } });
+      await renderWithProviders(<ChangePasswordScreen />, { personalGateways: gateways });
+      expect(await screen.findByTestId('change-password-social')).toBeOnTheScreen();
+      expect(screen.getByText(`Tài khoản ${provider}`)).toBeOnTheScreen();
+      expect(screen.getByText(new RegExp(`Bạn đang đăng nhập bằng ${provider}`))).toBeOnTheScreen();
+      for (const id of ['current', 'new', 'confirm']) {
+        expect(screen.queryByTestId(`change-password-${id}`)).toBeNull();
+      }
+      expect(screen.queryByTestId('change-password-submit')).toBeNull();
+      expect(gateways.account.changePasswordCalls).toBe(0);
+    },
+  );
+
+  it('đang tải cách đăng nhập: chưa hiện form (không hiện nhầm form cho tài khoản Apple/Google)', async () => {
+    const gateways = createFakePersonalGateways();
+    gateways.account.getProfile = () => new Promise(() => undefined);
+    await renderWithProviders(<ChangePasswordScreen />, { personalGateways: gateways });
+    expect(screen.getByTestId('change-password-loading')).toBeOnTheScreen();
+    expect(screen.queryByTestId('change-password-current')).toBeNull();
+    expect(screen.queryByTestId('change-password-submit')).toBeNull();
+  });
+
+  it('không tải được hồ sơ: lỗi tại màn có Thử lại, không form; thử lại xong thì hiện form', async () => {
+    const gateways = createFakePersonalGateways();
+    gateways.account.failNext('AUTH_NETWORK_ERROR');
+    await renderWithProviders(<ChangePasswordScreen />, { personalGateways: gateways });
+    expect(await screen.findByTestId('change-password-load-error')).toBeOnTheScreen();
+    expect(screen.queryByTestId('change-password-current')).toBeNull();
+    await fireEvent.press(screen.getByText('Thử lại'));
+    await waitFor(() => expect(screen.getByTestId('change-password-current')).toBeOnTheScreen());
   });
 });

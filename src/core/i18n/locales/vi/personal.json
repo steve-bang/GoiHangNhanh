@@ -1,9 +1,14 @@
 {
+  "placeholders": {
+    "currentPassword": "Nhập mật khẩu hiện tại",
+    "newPassword": "Nhập mật khẩu mới",
+    "confirmNewPassword": "Nhập lại mật khẩu mới"
+  },
   "fields": {
     "displayName": "Họ và tên",
     "currentPassword": "Mật khẩu hiện tại",
     "newPassword": "Mật khẩu mới",
-    "confirmNewPassword": "Nhập lại mật khẩu mới",
+    "confirmNewPassword": "Xác nhận mật khẩu mới",
     "shopName": "Tên cửa hàng"
   },
   "validation": {
@@ -78,11 +83,13 @@
     "leaveCancel": "Tiếp tục sửa"
   },
   "changePassword": {
-    "submit": "Đổi mật khẩu",
+    "submit": "Lưu",
     "saved": "Đã đổi mật khẩu.",
     "signInAgain": "Đăng nhập lại",
-    "intro": "Đặt mật khẩu mới để giữ tài khoản của bạn an toàn.",
-    "requirementLength": "Từ {{min}} ký tự",
+    "socialTitle": "Tài khoản {{provider}}",
+    "socialMessage": "Bạn đang đăng nhập bằng {{provider}}. Mật khẩu do {{provider}} quản lý, hãy đổi trong cài đặt tài khoản {{provider}}.",
+    "provider": { "apple": "Apple", "google": "Google" },
+    "requirementLength": "Tối thiểu {{min}} ký tự",
     "requirementMet": "Đã đạt",
     "requirementUnmet": "Chưa đạt"
   },
