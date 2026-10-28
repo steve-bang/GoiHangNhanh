@@ -377,6 +377,10 @@ Mã của PR-A đến PR-I đã xong (PR-A..H đã merge; PR-I chờ duyệt). *
 - Kiểm chứng: toàn bộ chỉ qua Jest/emulator và ảnh bản web; chưa chạy trên iOS/Android thật; chữ lớn, VoiceOver/TalkBack, bàn phím trên màn hẹp, `normalize` của Hermes chưa kiểm. Ảnh PR-I và `pr-g-13-save-error/load-error` chưa chụp (không có Chromium).
 - Docs chờ BA chỉnh: docs/09 UI-I05/UI-J15 (Q-21ac, Q-21af), docs/06-07 (chính sách xóa tài khoản), tên "cửa hàng" (Q-20q), tên "Trên đám mây" (O-28c).
 
+### 6.11 Quyết định sau đợt A-I: ẩn Gói dịch vụ khỏi tab Cá nhân (Q-21ag)
+
+Theo yêu cầu người dùng, **thẻ gói trên UI-I01 và mục menu "Gói dịch vụ" đã ẩn** (các khung 1a-1e không còn khối gói; khung chờ còn 4 khối). Mã và route UI-H01 (khung 8, 9, 10) được giữ để bật lại, nhưng không còn lối vào từ giao diện; "Thời hạn lưu" và "Dữ liệu bằng chứng" không có lối dẫn tới màn gói nên không đổi. **Cách bật lại:** đổi `availability` của mục `plan` ở `src/features/personal/ui/account-menu.ts` từ `'hidden'` thành `'available'` (thẻ gói và mục menu quay lại; test `ProfileScreen.test.tsx` có nhánh này). Chờ O-06 (thời hạn lưu theo gói) và O-16 (thanh toán) trước khi bật. Các ảnh `pr-*` cũ có thẻ gói là bản lỗi thời so với màn hiện tại.
+
 ## 7. Rủi ro
 
 1. **Board độ phân giải thấp**: chữ nhỏ, icon, khoảng cách ước lượng. Giảm: yêu cầu bản >= 3000px (Q-21k), designer duyệt ảnh PR.
