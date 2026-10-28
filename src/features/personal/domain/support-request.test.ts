@@ -1,5 +1,6 @@
 import {
   SUPPORT_MESSAGE_MAX_LENGTH,
+  SUPPORT_ORDER_CODE_MAX_LENGTH,
   SUPPORT_SUBJECT_MAX_LENGTH,
   buildSupportMailto,
   validateSupportRequest,
@@ -32,6 +33,15 @@ describe('validateSupportRequest', () => {
     expect(
       validateSupportRequest({ ...OK, subject: 'a'.repeat(SUPPORT_SUBJECT_MAX_LENGTH + 1) }),
     ).toEqual({ subject: 'too_long' });
+  });
+
+  it('mã đơn tùy chọn nhưng có giới hạn: đúng ranh giới thì hợp lệ, vượt thì too_long (tính sau trim)', () => {
+    const at = 'a'.repeat(SUPPORT_ORDER_CODE_MAX_LENGTH);
+    expect(validateSupportRequest({ ...OK, orderCode: ` ${at} ` })).toEqual({});
+    expect(validateSupportRequest({ ...OK, orderCode: `${at}a` })).toEqual({
+      orderCode: 'too_long',
+    });
+    expect(validateSupportRequest({ ...OK, orderCode: '   ' })).toEqual({});
   });
 });
 

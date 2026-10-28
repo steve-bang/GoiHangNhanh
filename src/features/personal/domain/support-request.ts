@@ -16,23 +16,25 @@ export interface SupportRequestInput {
   readonly message: string;
 }
 
-export type SupportRequestField = 'name' | 'subject' | 'message';
+export type SupportRequestField = 'name' | 'subject' | 'orderCode' | 'message';
 export type SupportRequestIssue = 'required' | 'too_long';
 export type SupportRequestIssues = Partial<Record<SupportRequestField, SupportRequestIssue>>;
 
 const LIMITS: Record<SupportRequestField, number> = {
   name: SUPPORT_NAME_MAX_LENGTH,
   subject: SUPPORT_SUBJECT_MAX_LENGTH,
+  orderCode: SUPPORT_ORDER_CODE_MAX_LENGTH,
   message: SUPPORT_MESSAGE_MAX_LENGTH,
 };
 
-/** Kiểm tra ba ô bắt buộc (họ tên, chủ đề, nội dung); mã đơn là tùy chọn. Rỗng = chỉ có khoảng trắng. */
+/** Kiểm tra ba ô bắt buộc (họ tên, chủ đề, nội dung); mã đơn tùy chọn nhưng có giới hạn độ dài (không để `mailto:` bị cắt âm thầm). Rỗng = chỉ có khoảng trắng. */
 export function validateSupportRequest(input: SupportRequestInput): SupportRequestIssues {
   const issues: SupportRequestIssues = {};
-  for (const field of ['name', 'subject', 'message'] as const) {
+  for (const field of ['name', 'subject', 'orderCode', 'message'] as const) {
     const value = input[field].trim();
-    if (value === '') issues[field] = 'required';
-    else if (value.length > LIMITS[field]) issues[field] = 'too_long';
+    if (value === '') {
+      if (field !== 'orderCode') issues[field] = 'required';
+    } else if (value.length > LIMITS[field]) issues[field] = 'too_long';
   }
   return issues;
 }

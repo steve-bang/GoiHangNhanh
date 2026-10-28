@@ -17,6 +17,7 @@ import {
 
 import {
   SUPPORT_MESSAGE_MAX_LENGTH,
+  SUPPORT_ORDER_CODE_MAX_LENGTH,
   buildSupportMailto,
   validateSupportRequest,
   type SupportRequestField,
@@ -56,6 +57,7 @@ export function SupportContactScreen() {
   const busyRef = useRef(false);
   const nameRef = useRef<TextFieldInput>(null);
   const subjectRef = useRef<TextFieldInput>(null);
+  const orderCodeRef = useRef<TextFieldInput>(null);
   const messageRef = useRef<TextFieldInput>(null);
 
   const prefill = profile.state.status === 'ready' ? (profile.state.data.displayName ?? '') : '';
@@ -69,10 +71,14 @@ export function SupportContactScreen() {
 
   const send = async () => {
     if (busyRef.current || !supportEmail) return;
-    const firstInvalid = (['name', 'subject', 'message'] as const).find((f) => issues[f]);
+    const firstInvalid = (['name', 'subject', 'orderCode', 'message'] as const).find(
+      (f) => issues[f],
+    );
     if (firstInvalid) {
       setSubmitted(true);
-      ({ name: nameRef, subject: subjectRef, message: messageRef })[firstInvalid].current?.focus();
+      ({ name: nameRef, subject: subjectRef, orderCode: orderCodeRef, message: messageRef })[
+        firstInvalid
+      ].current?.focus();
       return;
     }
     busyRef.current = true;
@@ -137,6 +143,9 @@ export function SupportContactScreen() {
           onChangeText={setOrderCode}
           autoCapitalize="none"
           returnKeyType="next"
+          inputRef={orderCodeRef}
+          maxLength={SUPPORT_ORDER_CODE_MAX_LENGTH + 1}
+          {...errorFor('orderCode')}
           testID="support-order-code"
         />
         <FormField
