@@ -4,16 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
 import { getAppVersion, useAppNavigation, useIsOffline } from '@/platform';
-import {
-  BottomSheet,
-  Button,
-  ConfirmDialog,
-  ListGroup,
-  ListItem,
-  Screen,
-  Text,
-  useTheme,
-} from '@/shared/ui';
+import { ConfirmDialog, ListGroup, ListItem, Screen, Text, useTheme } from '@/shared/ui';
 
 import { visibleMenuItems } from './account-menu';
 import { MenuRow } from './MenuRow';
@@ -210,11 +201,12 @@ export function ProfileScreen() {
         ) : null}
       </View>
 
-      {/* PER-21. UI-J15 (còn tệp chưa đồng bộ) chưa có mã/route nên là BottomSheet tại chỗ (Q-20b). */}
+      {/* PER-21, board 07 khung 4a/4b/4c: ba hộp thoại giữa màn có icon. UI-J15 (còn tệp chưa đồng bộ) chưa có mã/route nên là hộp thoại tại chỗ (Q-20b). */}
       <ConfirmDialog
         visible={signOut.step === 'confirm'}
         destructive
         confirmOutlined
+        icon="sign-out"
         title={t('personal:signOut.dialogTitle')}
         message={t('personal:signOut.dialogMessage')}
         detail={t('personal:signOut.dataNote')}
@@ -223,29 +215,29 @@ export function ProfileScreen() {
         onCancel={signOut.dismiss}
         onConfirm={() => void signOut.confirm()}
       />
-      <BottomSheet
+      <ConfirmDialog
         visible={signOut.step === 'blocked_recording'}
-        onClose={signOut.dismiss}
+        hideConfirm
+        icon="camera"
         title={t('personal:signOut.recordingTitle')}
-      >
-        <Text testID="sign-out-recording">{t('personal:signOut.recordingMessage')}</Text>
-      </BottomSheet>
-      <BottomSheet
+        message={t('personal:signOut.recordingMessage')}
+        messageTestID="sign-out-recording"
+        cancelLabel={t('personal:signOut.cancel')}
+        onCancel={signOut.dismiss}
+      />
+      <ConfirmDialog
         visible={signOut.step === 'unsynced'}
-        onClose={signOut.dismiss}
+        icon="alert-triangle"
+        iconTone="warning"
         title={t('personal:signOut.unsyncedTitle')}
-      >
-        <View style={{ gap: tokens.space.md }}>
-          <Text testID="sign-out-unsynced">
-            {t('personal:signOut.unsyncedMessage', { count: signOut.unsyncedCount })}
-          </Text>
-          <Button
-            label={t('personal:signOut.openSync')}
-            onPress={signOut.openSyncCenter}
-            testID="sign-out-open-sync"
-          />
-        </View>
-      </BottomSheet>
+        message={t('personal:signOut.unsyncedMessage', { count: signOut.unsyncedCount })}
+        messageTestID="sign-out-unsynced"
+        confirmLabel={t('personal:signOut.openSync')}
+        confirmTestID="sign-out-open-sync"
+        cancelLabel={t('personal:signOut.cancel')}
+        onConfirm={signOut.openSyncCenter}
+        onCancel={signOut.dismiss}
+      />
     </Screen>
   );
 }

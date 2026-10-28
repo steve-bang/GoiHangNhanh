@@ -10,7 +10,7 @@ import { useToast } from '@/shared/ui';
 import { evaluateSignOutGuard, type SignOutGuard } from '../domain/sign-out-guard';
 import { useSession } from './SessionProvider';
 
-/** Bước của luồng đăng xuất: hộp xác nhận, hoặc cảnh báo chặn (UI-J15 chưa có mã/route: BottomSheet tại chỗ). */
+/** Bước của luồng đăng xuất: hộp xác nhận, hoặc cảnh báo chặn (UI-J15 chưa có mã/route: hộp thoại tại chỗ). */
 export type SignOutStep = 'closed' | 'confirm' | 'blocked_recording' | 'unsynced';
 
 /**

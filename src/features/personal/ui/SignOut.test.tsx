@@ -76,11 +76,15 @@ const withStore = (overrides: Partial<OrderStore>): OrderStore => ({
 });
 
 describe('Đăng xuất an toàn (PER-21)', () => {
-  it('hộp thoại nói rõ sẽ phải đăng nhập lại và dữ liệu trên máy được giữ; Ở lại ứng dụng không gọi cổng', async () => {
+  it('hộp thoại (khung 4a) có icon, hỏi xác nhận và nói dữ liệu trên máy được giữ; Ở lại ứng dụng không gọi cổng', async () => {
     const gateways = await setup();
     await openDialog();
-    expect(screen.getByText('Bạn muốn đăng xuất?')).toBeOnTheScreen();
-    expect(screen.getByText('Bạn sẽ cần đăng nhập lại.')).toBeOnTheScreen();
+    expect(screen.getByText('Xác nhận đăng xuất')).toBeOnTheScreen();
+    expect(screen.getByText('Bạn có chắc muốn đăng xuất khỏi ứng dụng?')).toBeOnTheScreen();
+    // Hàng "Đăng xuất" của màn nền và icon của hộp thoại cùng dùng glyph này.
+    expect(
+      screen.getAllByTestId('icon-log-out-outline', { includeHiddenElements: true }),
+    ).toHaveLength(2);
     expect(screen.getByText('Video và dữ liệu trên máy này vẫn được giữ lại.')).toBeOnTheScreen();
     // "Ở lại ứng dụng" là nút chính (xanh đặc); "Đăng xuất" là nút phụ viền và chữ đỏ.
     const stay = StyleSheet.flatten(
@@ -94,7 +98,7 @@ describe('Đăng xuất an toàn (PER-21)', () => {
     expect(confirm).toHaveLength(1);
     expect(confirm[0]).toMatchObject({ backgroundColor: colors.surface });
     await fireEvent.press(screen.getByText('Ở lại ứng dụng'));
-    expect(screen.queryByText('Bạn muốn đăng xuất?')).toBeNull();
+    expect(screen.queryByText('Xác nhận đăng xuất')).toBeNull();
     expect(gateways.account.signOutCalls).toBe(0);
     expect(screen.getByTestId('probe-status')).toHaveTextContent('signed_in');
   });
@@ -161,7 +165,21 @@ describe('Đăng xuất an toàn (PER-21)', () => {
     await openDialog();
     await confirmSignOut();
     await waitFor(() => expect(screen.getByTestId('sign-out-recording')).toBeOnTheScreen());
-    expect(screen.getByText(/kết thúc phiên quay trước khi đăng xuất/)).toBeOnTheScreen();
+    expect(screen.getByTestId('sign-out-recording')).toHaveTextContent(
+      'Bạn đang quay video đóng gói. Hãy dừng quay trước khi đăng xuất.',
+    );
+    // Khung 4b: icon camera, CHỈ một nút "Ở lại ứng dụng" (không có lối đăng xuất).
+    expect(screen.getByText('Đang quay video')).toBeOnTheScreen();
+    expect(
+      screen.getByTestId('icon-videocam-outline', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+    // Chỉ còn hàng "Đăng xuất" của màn nền; hộp thoại không có nút đăng xuất.
+    expect(
+      screen.getAllByRole('button', { name: 'Đăng xuất' }).map((b) => b.props.testID as string),
+    ).toEqual(['sign-out']);
+    await fireEvent.press(screen.getByRole('button', { name: 'Ở lại ứng dụng' }));
+    expect(screen.queryByTestId('sign-out-recording')).toBeNull();
+    expect(gateways.account.signOutCalls).toBe(0);
     expect(hasRecording).toHaveBeenCalledTimes(1);
     expect(gateways.account.signOutCalls).toBe(0);
     expect(mockNavigation.reset).not.toHaveBeenCalled();
@@ -179,6 +197,13 @@ describe('Đăng xuất an toàn (PER-21)', () => {
     expect(screen.getByTestId('sign-out-unsynced')).toHaveTextContent(/Còn 3 tệp bằng chứng/);
     expect(gateways.account.signOutCalls).toBe(0);
     expect(mockNavigation.reset).not.toHaveBeenCalled();
+
+    // Khung 4c: nút chính "Xem trung tâm đồng bộ", nút phụ "Ở lại ứng dụng"; KHÔNG có "Đăng xuất" (Q-20l).
+    expect(screen.getByText('Còn bằng chứng chưa đồng bộ')).toBeOnTheScreen();
+    expect(
+      screen.getAllByRole('button', { name: 'Đăng xuất' }).map((b) => b.props.testID as string),
+    ).toEqual(['sign-out']);
+    expect(screen.getByRole('button', { name: 'Ở lại ứng dụng' })).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByTestId('sign-out-open-sync'));
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.sync);
