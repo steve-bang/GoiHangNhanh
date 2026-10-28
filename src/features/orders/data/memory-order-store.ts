@@ -29,6 +29,8 @@ export function createMemoryOrderStore(): OrderStore {
   const lines = new Map<OrderLineId, OrderLine>();
   const packages = new Map<string, OrderPackage>();
   const sessions = new Map<SessionId, PackingSession>();
+  const publishedOrders = new Map<OrderId, number>();
+  const publishedSessions = new Map<SessionId, string>();
   /** shopId -> (khóa chuẩn hóa -> mục). */
   const searches = new Map<string, Map<string, { text: string; lastUsedAtDevice: number }>>();
 
@@ -174,6 +176,11 @@ export function createMemoryOrderStore(): OrderStore {
       const session = sessions.get(id);
       return session && session.shopId === shopId ? copy(session) : null;
     },
+    async updateSessionStatus(shopId, id, status) {
+      const session = sessions.get(id);
+      if (!session || session.shopId !== shopId) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+      sessions.set(id, { ...session, sessionStatus: status as PackingSession['sessionStatus'] });
+    },
     async listSessionsOfOrder(shopId, orderId) {
       return sessionsOf(shopId, orderId).map(copy);
     },
@@ -209,6 +216,40 @@ export function createMemoryOrderStore(): OrderStore {
     },
     async clearRecentSearches(shopId) {
       searches.delete(shopId);
+    },
+    async listOrdersPendingRemote(shopId, limit) {
+      return [...orders.values()]
+        .filter(
+          (o) =>
+            o.shopId === shopId &&
+            !publishedOrders.has(o.id) &&
+            sessionsOf(shopId, o.id).length > 0,
+        )
+        .sort((a, b) => a.createdAtDevice - b.createdAtDevice)
+        .slice(0, limit)
+        .map((o) =>
+          copy<OrderDetails>({ order: o, lines: linesOf(o.id), packages: packagesOf(o.id) }),
+        );
+    },
+    async markOrderPublished(shopId, orderId, atDevice) {
+      if (orderOf(shopId, orderId)) publishedOrders.set(orderId, atDevice);
+    },
+    async listSessionsPendingRemote(shopId, limit) {
+      return [...sessions.values()]
+        .filter(
+          (s) =>
+            s.shopId === shopId &&
+            s.sessionStatus !== 'created' &&
+            publishedSessions.get(s.id) !== s.sessionStatus &&
+            publishedOrders.has(s.orderId),
+        )
+        .sort((a, b) => a.startedAtDevice - b.startedAtDevice)
+        .slice(0, limit)
+        .map((s) => ({ session: copy(s), status: s.sessionStatus as string }));
+    },
+    async markSessionPublished(shopId, sessionId, status) {
+      const session = sessions.get(sessionId);
+      if (session && session.shopId === shopId) publishedSessions.set(sessionId, status);
     },
     async hasRecordingInProgress(shopId) {
       return [...sessions.values()].some(

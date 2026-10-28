@@ -85,4 +85,11 @@ export const MIGRATIONS: readonly string[] = [
   CREATE INDEX idx_evidence_files_session ON evidence_files (shop_id, session_id);
   CREATE INDEX idx_evidence_files_state ON evidence_files (shop_id, state);
   `,
+  // v4: dấu đã đẩy lên Firestore (đồng bộ một chiều, không có hàng đợi riêng: việc cần làm suy ra từ
+  // dữ liệu). `remote_synced_at_device`: đơn đã đăng lên máy chủ. `remote_status`: trạng thái phiên
+  // đã đăng gần nhất.
+  `
+  ALTER TABLE orders ADD COLUMN remote_synced_at_device INTEGER;
+  ALTER TABLE packing_sessions ADD COLUMN remote_status TEXT;
+  `,
 ];

@@ -35,6 +35,7 @@ export function createLocalOrderStore(open: () => Promise<SqlDatabase | null>): 
     addPackage: async (shop, p) => (await get()).addPackage(shop, p),
     saveSession: async (s) => (await get()).saveSession(s),
     getSession: async (shop, id) => (await get()).getSession(shop, id),
+    updateSessionStatus: async (shop, id, st) => (await get()).updateSessionStatus(shop, id, st),
     listSessionsOfOrder: async (shop, order) => (await get()).listSessionsOfOrder(shop, order),
     countUnsynced: async (shop) => (await get()).countUnsynced(shop),
     hasRecordingInProgress: async (shop) => (await get()).hasRecordingInProgress(shop),
@@ -44,5 +45,9 @@ export function createLocalOrderStore(open: () => Promise<SqlDatabase | null>): 
     listRecentSearches: async (s, l) => (await get()).listRecentSearches(s, l),
     removeRecentSearch: async (s, t) => (await get()).removeRecentSearch(s, t),
     clearRecentSearches: async (s) => (await get()).clearRecentSearches(s),
+    listOrdersPendingRemote: async (s, l) => (await get()).listOrdersPendingRemote(s, l),
+    markOrderPublished: async (s, o, a) => (await get()).markOrderPublished(s, o, a),
+    listSessionsPendingRemote: async (s, l) => (await get()).listSessionsPendingRemote(s, l),
+    markSessionPublished: async (s, i, st) => (await get()).markSessionPublished(s, i, st),
   };
 }

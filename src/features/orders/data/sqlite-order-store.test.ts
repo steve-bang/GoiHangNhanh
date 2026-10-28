@@ -5,6 +5,7 @@ import { buildPackingSession } from '../domain/start-session';
 import { createNodeSqliteDatabase } from '@/test-utils/node-sqlite';
 
 import { runOrderStoreContract, makeOrder } from './order-store.contract';
+import { runPendingRemoteContract } from './pending-remote.contract';
 import { MIGRATIONS } from './sqlite-migrations';
 import { createSqliteOrderStore, parseSnapshot } from './sqlite-order-store';
 
@@ -12,6 +13,10 @@ import { createSqliteOrderStore, parseSnapshot } from './sqlite-order-store';
 runOrderStoreContract('SQLite (node:sqlite)', async () =>
   createSqliteOrderStore(createNodeSqliteDatabase()),
 );
+
+runPendingRemoteContract('SQLite (node:sqlite)', async () => ({
+  store: createSqliteOrderStore(createNodeSqliteDatabase()),
+}));
 
 describe('kho SQLite: migration và lỗi', () => {
   it('tạo schema ở lần dùng đầu, đặt user_version, và chạy lại không lỗi', async () => {

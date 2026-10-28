@@ -63,3 +63,5 @@ export type {
   OrderSnapshot,
   PackingSession,
 } from './types';
+export * from './order-sync';
+export * from './remote-documents';

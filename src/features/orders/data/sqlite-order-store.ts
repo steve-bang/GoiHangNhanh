@@ -8,6 +8,7 @@ import { applyConnectionSettings, type SqlDatabase } from '@/platform/sql-databa
 import type { OrderStore } from '../domain/order-store';
 import type {
   Order,
+  OrderDetails,
   OrderLine,
   OrderPackage,
   OrderSnapshot,
@@ -524,11 +525,67 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
         );
         return row ? toSession(row) : null;
       }),
+    updateSessionStatus: (shopId, id, status) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        const row = await db.getFirstAsync<{ id: string }>(
+          'SELECT id FROM packing_sessions WHERE id = ? AND shop_id = ?',
+          [id, shopId],
+        );
+        if (!row) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+        await db.runAsync('UPDATE packing_sessions SET session_status = ? WHERE id = ?', [
+          status,
+          id,
+        ]);
+      }),
     listSessionsOfOrder: (shopId, orderId) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', () => sessionsOfOrder(shopId, orderId)),
     // Chưa có bảng tệp bằng chứng: không có tệp nào để chưa đồng bộ (xem OrderStore.countUnsynced).
     countUnsynced: async () => 0,
     countUnsyncedOnDevice: async () => 0,
+    listOrdersPendingRemote: (shopId, limit) =>
+      guarded('ORDER_SAVE_FAILED', async () => {
+        const rows = await db.getAllAsync<{ id: string }>(
+          `SELECT o.id FROM orders o
+           WHERE o.shop_id = ? AND o.remote_synced_at_device IS NULL
+             AND EXISTS (SELECT 1 FROM packing_sessions s WHERE s.order_id = o.id)
+           ORDER BY o.created_at_device, o.id LIMIT ?`,
+          [shopId, limit],
+        );
+        const result: OrderDetails[] = [];
+        for (const row of rows) {
+          const details = await orderDetails(shopId, row.id as OrderId);
+          if (details) result.push(details);
+        }
+        return result;
+      }),
+    markOrderPublished: (shopId, orderId, atDevice) =>
+      guarded('ORDER_SAVE_FAILED', () =>
+        db.runAsync('UPDATE orders SET remote_synced_at_device = ? WHERE id = ? AND shop_id = ?', [
+          atDevice,
+          orderId,
+          shopId,
+        ]),
+      ),
+    listSessionsPendingRemote: (shopId, limit) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        const rows = await db.getAllAsync<SessionRow>(
+          `SELECT s.* FROM packing_sessions s JOIN orders o ON o.id = s.order_id
+           WHERE s.shop_id = ? AND s.session_status != 'created'
+             AND (s.remote_status IS NULL OR s.remote_status != s.session_status)
+             AND o.remote_synced_at_device IS NOT NULL
+           ORDER BY s.started_at_device, s.id LIMIT ?`,
+          [shopId, limit],
+        );
+        return rows.map((row) => ({ session: toSession(row), status: row.session_status }));
+      }),
+    markSessionPublished: (shopId, sessionId, status) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', () =>
+        db.runAsync('UPDATE packing_sessions SET remote_status = ? WHERE id = ? AND shop_id = ?', [
+          status,
+          sessionId,
+          shopId,
+        ]),
+      ),
     hasRecordingOnDevice: () =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
         const row = await db.getFirstAsync<{ id: string }>(

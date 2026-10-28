@@ -248,4 +248,10 @@ module.exports = [
     files: ['**/*.test.ts', '**/*.test.tsx', 'firebase/tests/**/*.ts'],
     rules: { 'no-console': 'off' },
   },
+  // Test Rules đối chiếu hình dạng tài liệu do MÃ ỨNG DỤNG dựng với Rules thật, nên được import sâu
+  // vào domain thuần (không kéo theo UI/React).
+  {
+    files: ['firebase/tests/**/*.ts'],
+    rules: { 'no-restricted-imports': 'off' },
+  },
 ];

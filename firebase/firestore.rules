@@ -131,8 +131,8 @@ service cloud.firestore {
           allow read: if isActiveMember(shopId);
           allow create: if canManageOrders(shopId)
             && request.resource.data.keys().hasOnly([
-              'shopId', 'orderId', 'name', 'variant', 'quantity', 'dataSource', 'createdAt',
-              'createdBy'
+              'shopId', 'orderId', 'name', 'variant', 'quantity', 'position', 'dataSource',
+              'createdAt', 'createdBy'
             ])
             && request.resource.data.keys().hasAll([
               'shopId', 'orderId', 'name', 'quantity', 'dataSource', 'createdAt', 'createdBy'
@@ -144,6 +144,8 @@ service cloud.firestore {
             && request.resource.data.name.size() <= 200
             && request.resource.data.quantity is int
             && request.resource.data.quantity >= 1
+            && (!('position' in request.resource.data)
+                || (request.resource.data.position is int && request.resource.data.position >= 0))
             && request.resource.data.dataSource == 'user_entered'
             && request.resource.data.createdAt == request.time
             && request.resource.data.createdBy == request.auth.uid;

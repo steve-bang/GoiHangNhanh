@@ -147,6 +147,18 @@ Kiểm tra phiên bản: 2026-10-27, theo `node_modules/expo/bundledNativeModule
 
 ---
 
+## ADR-019 — Đồng bộ đơn và phiên lên Firestore (một chiều, đăng khi đơn đã có phiên)
+
+Lý do: Rules chỉ cho tạo tài liệu bằng chứng khi `sessions/{sessionId}` đã có và khớp đơn/kiện (`firestore.rules`), mà đơn/phiên hôm nay chỉ nằm ở SQLite. Quyết định (Q-23, **đề xuất, chờ người dùng/BA duyệt**):
+
+- **Q-23a. Đăng đơn khi đơn đã có ít nhất một phiên.** Từ lúc có phiên, đơn không còn sửa được (Q-22ah, `ORDER_HAS_SESSION`), nên đăng chỉ là THAO TÁC TẠO: không cần cập nhật/xóa dòng (Rules cấm xóa dòng, sửa đơn cần `rev`). Hệ quả: đơn nháp chưa có phiên KHÔNG lên máy chủ và máy khác chưa thấy. Muốn đăng cả đơn nháp thì phải làm đồng bộ hai chiều + xử lý sửa/xóa dòng (việc lớn hơn, chưa làm).
+- **Q-23b. Một chiều (thiết bị -> Firestore), không hàng đợi riêng.** Việc cần làm suy ra từ dữ liệu: migration v4 thêm `orders.remote_synced_at_device` và `packing_sessions.remote_status`; `OrderStore` có `listOrdersPendingRemote`, `listSessionsPendingRemote`, `markOrderPublished`, `markSessionPublished`. Tắt app giữa chừng vẫn đúng; bên ghi phải idempotent (tài liệu đã có thì giữ, không ghi đè). Chưa kéo dữ liệu máy chủ về (đa thiết bị là bước sau).
+- **Q-23c. Phiên chỉ đăng khi trạng thái khác `created`.** Rules chỉ cho tạo phiên ở `recording`, sau đó đổi sang `ended|interrupted|confirmed|needs_attention`; phiên `created` chưa có bằng chứng nên không đăng. Thêm `OrderStore.updateSessionStatus` (luồng ghi video sẽ dùng). Trạng thái cục bộ lạ không được đăng.
+- **Q-23d. Rules cho dòng thêm khóa `position` (số nguyên >= 0, tùy chọn)** để giữ thứ tự dòng của đơn. Hình dạng tài liệu ứng dụng ghi nằm ở `src/features/orders/domain/remote-documents.ts` và có test đối chiếu với Rules thật (`firebase/tests/rules/order-sync.rules.test.ts`).
+- **Chưa làm:** adapter Firestore native của `RemoteOrderWriter` (kiểm tra tồn tại rồi tạo phần còn thiếu, lấy `uid` từ phiên đăng nhập) và nối `createOrderSync` vào vòng đời app (khi vào foreground, sau khi đổi trạng thái phiên, khi có mạng); chưa chạy trên thiết bị. Đồng bộ chỉ có ý nghĩa với backend Firebase thật.
+
+---
+
 ## Câu hỏi cần người dùng / BA duyệt
 
 Mỗi câu có phương án và khuyến nghị. Không có câu nào trong số này chốt O-xx.
