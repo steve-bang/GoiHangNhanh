@@ -20,6 +20,7 @@ import {
   isSessionStatusActive,
   RECORDING_SESSION_STATUS,
 } from '../domain/start-session';
+import { MAX_RECENT_SEARCHES } from '../domain/search';
 import { MIGRATIONS } from './sqlite-migrations';
 
 interface OrderRow {
@@ -467,6 +468,44 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
           [RECORDING_SESSION_STATUS],
         );
         return row !== null;
+      }),
+    recordSearch: (shopId, text, nowDevice) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        const clean = text.trim().replace(/\s+/g, ' ');
+        if (clean.length === 0) return;
+        await db.runAsync(
+          `INSERT INTO search_history (shop_id, query_key, query_text, last_used_at_device)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT (shop_id, query_key) DO UPDATE SET
+             query_text = excluded.query_text, last_used_at_device = excluded.last_used_at_device`,
+          [shopId, toCodeKey(clean), clean, nowDevice],
+        );
+        await db.runAsync(
+          `DELETE FROM search_history WHERE shop_id = ? AND query_key NOT IN (
+             SELECT query_key FROM search_history WHERE shop_id = ?
+             ORDER BY last_used_at_device DESC, query_key LIMIT ?)`,
+          [shopId, shopId, MAX_RECENT_SEARCHES],
+        );
+      }),
+    listRecentSearches: (shopId, limit) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        const rows = await db.getAllAsync<{ query_text: string; last_used_at_device: number }>(
+          `SELECT query_text, last_used_at_device FROM search_history WHERE shop_id = ?
+           ORDER BY last_used_at_device DESC, query_key LIMIT ?`,
+          [shopId, limit],
+        );
+        return rows.map((r) => ({ text: r.query_text, lastUsedAtDevice: r.last_used_at_device }));
+      }),
+    removeRecentSearch: (shopId, text) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        await db.runAsync('DELETE FROM search_history WHERE shop_id = ? AND query_key = ?', [
+          shopId,
+          toCodeKey(text),
+        ]);
+      }),
+    clearRecentSearches: (shopId) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        await db.runAsync('DELETE FROM search_history WHERE shop_id = ?', [shopId]);
       }),
     hasRecordingInProgress: (shopId) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {

@@ -39,5 +39,9 @@ export function createLocalOrderStore(open: () => Promise<SqlDatabase | null>): 
     hasRecordingInProgress: async (shop) => (await get()).hasRecordingInProgress(shop),
     countUnsyncedOnDevice: async () => (await get()).countUnsyncedOnDevice(),
     hasRecordingOnDevice: async () => (await get()).hasRecordingOnDevice(),
+    recordSearch: async (s, t, n) => (await get()).recordSearch(s, t, n),
+    listRecentSearches: async (s, l) => (await get()).listRecentSearches(s, l),
+    removeRecentSearch: async (s, t) => (await get()).removeRecentSearch(s, t),
+    clearRecentSearches: async (s) => (await get()).clearRecentSearches(s),
   };
 }

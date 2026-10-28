@@ -70,4 +70,23 @@ export interface OrderStore {
   countUnsyncedOnDevice(): Promise<number>;
   /** Như `hasRecordingInProgress` nhưng cho mọi shop trên máy này (chỉ để chặn đăng xuất). Lỗi đọc ném `LOCAL_SAVE_UNAVAILABLE`. */
   hasRecordingOnDevice(): Promise<boolean>;
+  /**
+   * Lịch sử tìm kiếm gần đây (UI-B03; Q-22f/u). CHỈ lưu chuỗi người dùng đã chủ động tìm, cục bộ,
+   * THEO shop (mọi hàm nhận `shopId`), không tạo/đổi dữ liệu đơn. `recordSearch` upsert theo khóa chuẩn
+   * hóa (`toCodeKey`, nên "dh1" và "DH1" là một mục; chuỗi hiển thị lấy bản mới nhất), giữ tối đa
+   * `MAX_RECENT_SEARCHES` mục mới nhất mỗi shop và bỏ mục cũ nhất khi vượt. Chuỗi rỗng bị bỏ qua.
+   */
+  recordSearch(shopId: ShopId, text: string, nowDevice: number): Promise<void>;
+  /** Mới nhất trước, tối đa `limit`. */
+  listRecentSearches(shopId: ShopId, limit: number): Promise<RecentSearch[]>;
+  /** Xóa một mục theo chuỗi (so theo khóa chuẩn hóa) của shop; không có mục thì không lỗi. */
+  removeRecentSearch(shopId: ShopId, text: string): Promise<void>;
+  /** Xóa toàn bộ lịch sử tìm của MỘT shop (không đụng shop khác). */
+  clearRecentSearches(shopId: ShopId): Promise<void>;
+}
+
+export interface RecentSearch {
+  readonly text: string;
+  /** Thời gian THIẾT BỊ lần tìm gần nhất. */
+  readonly lastUsedAtDevice: number;
 }

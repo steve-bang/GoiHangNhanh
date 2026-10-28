@@ -611,5 +611,73 @@ export function runOrderStoreContract(name: string, create: () => Promise<OrderS
         expect(theirPage.items).toHaveLength(1);
       });
     });
+
+    describe('lịch sử tìm kiếm (recordSearch, listRecentSearches, removeRecentSearch, clearRecentSearches)', () => {
+      const A = LOCAL_SHOP_ID;
+      const B = 'shop-khac' as ShopId;
+
+      it('mới nhất trước; cùng chuỗi (không phân biệt hoa/thường, khoảng trắng) là MỘT mục và lên đầu', async () => {
+        const store = await create();
+        await store.recordSearch(A, 'DH-1', 10);
+        await store.recordSearch(A, 'spx 99', 20);
+        await store.recordSearch(A, '  dh-1  ', 30);
+        expect(await store.listRecentSearches(A, 10)).toEqual([
+          { text: 'dh-1', lastUsedAtDevice: 30 },
+          { text: 'spx 99', lastUsedAtDevice: 20 },
+        ]);
+        expect(await store.listRecentSearches(A, 1)).toHaveLength(1);
+      });
+
+      it('giữ tối đa 10 mục mới nhất mỗi shop, bỏ mục cũ nhất', async () => {
+        const store = await create();
+        for (let i = 1; i <= 12; i += 1) await store.recordSearch(A, `MA-${i}`, i);
+        const list = await store.listRecentSearches(A, 50);
+        expect(list).toHaveLength(10);
+        expect(list[0]?.text).toBe('MA-12');
+        expect(list.at(-1)?.text).toBe('MA-3');
+      });
+
+      it('bỏ qua chuỗi rỗng', async () => {
+        const store = await create();
+        await store.recordSearch(A, '   ', 1);
+        expect(await store.listRecentSearches(A, 10)).toEqual([]);
+      });
+
+      it('cô lập theo shop: không thấy, không bị xóa chéo, giới hạn 10 tính riêng từng shop', async () => {
+        const store = await create();
+        await store.recordSearch(A, 'CHUNG', 1);
+        await store.recordSearch(B, 'CHUNG', 2);
+        await store.recordSearch(B, 'RIENG-B', 3);
+        expect((await store.listRecentSearches(A, 10)).map((r) => r.text)).toEqual(['CHUNG']);
+        expect((await store.listRecentSearches(B, 10)).map((r) => r.text)).toEqual([
+          'RIENG-B',
+          'CHUNG',
+        ]);
+        for (let i = 1; i <= 11; i += 1) await store.recordSearch(B, `B-${i}`, 10 + i);
+        expect(await store.listRecentSearches(A, 10)).toHaveLength(1);
+        await store.removeRecentSearch(B, 'chung');
+        expect((await store.listRecentSearches(A, 10)).map((r) => r.text)).toEqual(['CHUNG']);
+        await store.clearRecentSearches(B);
+        expect(await store.listRecentSearches(B, 10)).toEqual([]);
+        expect(await store.listRecentSearches(A, 10)).toHaveLength(1);
+      });
+
+      it('removeRecentSearch xóa đúng một mục (so theo khóa chuẩn hóa); mục không có thì không lỗi', async () => {
+        const store = await create();
+        await store.recordSearch(A, 'X1', 1);
+        await store.recordSearch(A, 'X2', 2);
+        await store.removeRecentSearch(A, 'x1');
+        await store.removeRecentSearch(A, 'khong-co');
+        expect((await store.listRecentSearches(A, 10)).map((r) => r.text)).toEqual(['X2']);
+      });
+
+      it('không tạo hay đổi dữ liệu đơn', async () => {
+        const store = await create();
+        await store.saveNewOrder(makeOrder('KEEP', { at: 5 }));
+        await store.recordSearch(A, 'KEEP', 6);
+        await store.clearRecentSearches(A);
+        expect(await store.countOrders(A, {})).toBe(1);
+      });
+    });
   });
 }
