@@ -311,7 +311,7 @@ describe('ConfirmDialog: icon và bố cục hàng', () => {
     );
     const buttons = screen.getAllByRole('button');
     expect(buttons.map((b) => b.props.accessibilityLabel)).toEqual(['Ở lại ứng dụng']);
-    await fireEvent.press(buttons[0]!);
+    await fireEvent.press(screen.getByRole('button', { name: 'Ở lại ứng dụng' }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
