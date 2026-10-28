@@ -7,6 +7,7 @@ import {
   CameraRecorder,
   getAvailableDiskBytes,
   hashFile,
+  monotonicNow,
   newEvidenceId,
   persistRecording,
   useAppNavigation,
@@ -17,10 +18,11 @@ import {
 import { Button, RecordingFrame, Screen, Text, useToast } from '@/shared/ui';
 
 import {
-  DEFAULT_RECORDING_POLICY,
+  ACTIVE_RECORDING_POLICY,
   WARN_BEFORE_LIMIT_SECONDS,
   formatElapsed,
   maxRecordSeconds,
+  requiredFreeBytes,
   startRecording,
   type ActiveRecording,
   type RecordingOutcome,
@@ -31,9 +33,9 @@ const CLOCK_TICK_MS = 1000;
 
 /**
  * Giới hạn quay (O-05): mặc định tối đa 10 phút mỗi lần, quá thì app tự dừng. Về sau theo gói của người
- * dùng: thay `DEFAULT_RECORDING_POLICY` bằng chính sách của gói.
+ * dùng: đổi `ACTIVE_RECORDING_POLICY` (cùng nguồn với UI-C02).
  */
-const POLICY = DEFAULT_RECORDING_POLICY;
+const POLICY = ACTIVE_RECORDING_POLICY;
 const LIMIT_SECONDS = maxRecordSeconds(POLICY);
 /** Sai lệch cho phép khi camera tự dừng đúng hạn (đồng hồ camera và JS lệch nhau chút ít). */
 const LIMIT_TOLERANCE_MS = 3000;
@@ -90,12 +92,18 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
   const pendingStop = useRef(false);
   const stopRequested = useRef(false);
   const startedAtRef = useRef<number | null>(null);
+  /**
+   * Mốc (đồng hồ đơn điệu) lúc gọi lệnh ghi và lúc camera TRẢ kết quả, chốt ngay trong bộ ghi, TRƯỚC khi
+   * lưu bền và băm (có thể mất hàng chục giây). Dùng để biết camera dừng ở thời lượng nào; không dùng
+   * thời điểm xử lý xong, nếu không quay bị ngắt sớm mà lưu chậm sẽ bị báo nhầm là "tự dừng vì giới hạn".
+   */
+  const cameraTiming = useRef<{ begin: number; end: number | null } | null>(null);
   /** App tự dừng vì hết thời lượng tối đa (khác với người dùng chủ động dừng). */
   const limitHit = useRef(false);
   const [phase, setPhase] = useState<Phase>('preparing');
   const [failure, setFailure] = useState<FailureKey | null>(null);
   const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(() => monotonicNow());
   const [torch, setTorch] = useState(false);
   const [cameraFailed, setCameraFailed] = useState(false);
   /** Bản trạng thái của `limitHit` để hiển thị (ref không được đọc lúc render). */
@@ -127,15 +135,37 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
         record: (options) => {
           const handle = handleRef.current;
           if (!handle) throw new Error('camera_not_ready');
-          return handle.record(options);
+          const timing: { begin: number; end: number | null } = {
+            begin: monotonicNow(),
+            end: null,
+          };
+          cameraTiming.current = timing;
+          const recording = handle.record(options);
+          const mark = () => {
+            timing.end ??= monotonicNow();
+          };
+          return {
+            ...recording,
+            done: recording.done.then(
+              (result) => {
+                mark();
+                return result;
+              },
+              (error: unknown) => {
+                mark();
+                throw error;
+              },
+            ),
+          };
         },
       },
+      minFreeBytes: requiredFreeBytes(POLICY),
       persist: persistRecording,
       hash: hashFile,
       availableBytes: getAvailableDiskBytes,
       maxDurationSec: LIMIT_SECONDS,
       newEvidenceId,
-      now: Date.now,
+      now: Date.now, // giờ THIẾT BỊ cho dấu thời gian bằng chứng (không dùng đồng hồ đơn điệu)
     }),
     [files, orders],
   );
@@ -160,11 +190,14 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
       if (!mounted.current) return;
       if (outcome.kind === 'saved') {
         // Dừng do hết thời lượng tối đa (bộ đếm của app, hoặc camera tự dừng đúng hạn): báo người dùng.
-        const began = startedAtRef.current;
+        // Chỉ nêu nguyên nhân khi chắc: bộ đếm của app đã đặt `limitHit`, hoặc camera trả tệp ở đúng hạn
+        // (đo lúc camera trả kết quả). Ngắt sớm hơn (cuộc gọi, OS...) thì KHÔNG nói là do giới hạn.
+        const timing = cameraTiming.current;
         const stoppedByCamera =
           !stopRequested.current &&
-          began !== null &&
-          Date.now() - began >= LIMIT_SECONDS * 1000 - LIMIT_TOLERANCE_MS;
+          timing !== null &&
+          timing.end !== null &&
+          timing.end - timing.begin >= LIMIT_SECONDS * 1000 - LIMIT_TOLERANCE_MS;
         if (limitHit.current || stoppedByCamera) {
           toast.show(t('screens:record.limitReached', { minutes: POLICY.maxRecordMinutes }), {
             tone: 'info',
@@ -179,7 +212,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
     // Màn đã bị gỡ hoặc người dùng đã đòi kết thúc trong lúc khởi động: dừng ngay (không ai khác dừng).
     if (!mounted.current || pendingStop.current) requestStop();
     if (mounted.current) {
-      startedAtRef.current = Date.now();
+      startedAtRef.current = monotonicNow();
       setStartedAt(startedAtRef.current);
       setPhase(pendingStop.current ? 'saving' : 'recording');
     }
@@ -195,10 +228,17 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
   useEffect(() => {
     if (phase !== 'recording') return undefined;
     const timer = setInterval(() => {
-      const current = Date.now();
+      const current = monotonicNow();
       setNow(current);
       const began = startedAtRef.current;
-      if (began !== null && current - began >= LIMIT_SECONDS * 1000 && !limitHit.current) {
+      // Camera đã trả kết quả (dừng sớm vì lý do khác, đang lưu/băm) thì bộ đếm không còn là nguyên nhân dừng.
+      const cameraEnded = cameraTiming.current?.end != null;
+      if (
+        began !== null &&
+        !cameraEnded &&
+        current - began >= LIMIT_SECONDS * 1000 &&
+        !limitHit.current
+      ) {
         limitHit.current = true;
         setLimitReached(true);
         stop();

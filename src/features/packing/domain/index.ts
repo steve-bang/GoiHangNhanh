@@ -37,6 +37,7 @@ export {
   type PrecheckResult,
 } from './precheck';
 export {
+  ACTIVE_RECORDING_POLICY,
   DEFAULT_RECORDING_POLICY,
   ESTIMATED_BYTES_PER_MINUTE,
   MIN_BATTERY_LEVEL,

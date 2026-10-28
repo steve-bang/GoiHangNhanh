@@ -14,7 +14,7 @@ import {
 } from '@/platform';
 import { Button, Card, Screen, Text, useTheme } from '@/shared/ui';
 
-import { DEFAULT_RECORDING_POLICY, RECORDER_ENABLED, runPrecheck } from '../domain';
+import { ACTIVE_RECORDING_POLICY, RECORDER_ENABLED, runPrecheck } from '../domain';
 import { PackNotRecorded } from './PackNotRecorded';
 import { usePackSession } from './use-pack-session';
 
@@ -56,6 +56,7 @@ export function PackPrecheckScreen() {
             freeBytes: getAvailableDiskBytes(),
             canWrite: probeEvidenceDirWritable,
             device: device.value,
+            policy: ACTIVE_RECORDING_POLICY,
           })
         : ({ status: 'pending' } as const),
     [permission.status, round, device],
@@ -134,7 +135,7 @@ export function PackPrecheckScreen() {
             <Text accessibilityRole="alert">
               {issue.code === 'INSUFFICIENT_STORAGE'
                 ? t('screens:precheck.storageMinutes', {
-                    minutes: DEFAULT_RECORDING_POLICY.maxRecordMinutes,
+                    minutes: ACTIVE_RECORDING_POLICY.maxRecordMinutes,
                   })
                 : t(`errors:${issue.code}`)}
             </Text>

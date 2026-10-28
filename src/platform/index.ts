@@ -19,6 +19,7 @@ export { newEvidenceId, newOrderId, newOrderLineId, newPackageId, newSessionId }
 export { openLocalDatabase } from './local-db';
 export type { SqlDatabase, SqlParam } from './sql-database';
 export { subscribeAppActive } from './app-state';
+export { monotonicNow } from './monotonic-clock';
 export { hashFile, HASH_CHUNK_BYTES } from './file-hasher';
 export type { HashFileResult } from './file-hasher';
 export {

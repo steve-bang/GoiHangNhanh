@@ -50,6 +50,11 @@ export interface RecordingPorts {
    * dung lượng lúc lưu). Không truyền thì bỏ qua kiểm tra (A04).
    */
   availableBytes?(): number | null;
+  /**
+   * Dung lượng trống tối thiểu (byte) để cho bắt đầu quay; theo `RecordingPolicy` của người dùng
+   * (`requiredFreeBytes`). Không truyền = `MIN_FREE_BYTES_TO_RECORD` (chính sách mặc định).
+   */
+  readonly minFreeBytes?: number;
   /** Giới hạn thời lượng một lần quay (giây); không truyền = không giới hạn ở camera. */
   readonly maxDurationSec?: number;
 }
@@ -87,7 +92,7 @@ const extensionOf = (uri: string): string => {
 
 /**
  * Điều phối MỘT lần quay (docs/04 A05), nối bộ ghi với kho tệp bằng chứng và trạng thái phiên:
- * 0. Dung lượng trống dưới ngưỡng (`MIN_FREE_BYTES_TO_RECORD`) thì từ chối bắt đầu (A04), chưa tạo gì.
+ * 0. Dung lượng trống dưới ngưỡng (`ports.minFreeBytes`, mặc định `MIN_FREE_BYTES_TO_RECORD`) thì từ chối bắt đầu (A04), chưa tạo gì.
  * 1. ID bằng chứng + bản ghi tệp (`recording`, gắn phiên + kiện + đơn) được tạo TRƯỚC khi mở camera
  *    (bất biến 2); không tạo được thì KHÔNG quay.
  * 2. Phiên chuyển `recording` rồi mới ghi.
@@ -113,7 +118,7 @@ export async function startRecording(
   const { files, orders, recorder, newEvidenceId, now } = ports;
   // A04: kiểm dung lượng TRƯỚC khi tạo bất cứ thứ gì, để không có tệp/phiên `recording` mồ côi.
   const free = ports.availableBytes?.() ?? null;
-  if (free !== null && free < MIN_FREE_BYTES_TO_RECORD) {
+  if (free !== null && free < (ports.minFreeBytes ?? MIN_FREE_BYTES_TO_RECORD)) {
     return { kind: 'failed', reason: 'INSUFFICIENT_STORAGE' };
   }
   const evidenceId = newEvidenceId();

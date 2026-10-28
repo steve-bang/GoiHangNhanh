@@ -407,7 +407,7 @@ describe('Xác nhận / Hoàn tất theo tệp thật của phiên', () => {
 });
 
 describe('giới hạn quay tối đa 10 phút (O-05)', () => {
-  // Chỉ giả lập đồng hồ (setInterval + Date) để nhảy qua 10 phút; các hẹn giờ khác và microtask vẫn thật
+  // Chỉ giả lập đồng hồ (setInterval + Date + performance) để nhảy qua 10 phút; các hẹn giờ khác và microtask vẫn thật
   // để React/RNTL chạy bình thường.
   beforeEach(() =>
     jest.useFakeTimers({
@@ -419,7 +419,6 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
         'clearImmediate',
         'nextTick',
         'queueMicrotask',
-        'performance',
         'requestAnimationFrame',
         'cancelAnimationFrame',
         'requestIdleCallback',
@@ -486,6 +485,33 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
     expect(
       screen.getByText('Mỗi lần quay tối đa 10 phút nên app đã tự dừng. Video đã lưu trên máy.'),
     ).toBeOnTheScreen();
+  });
+
+  it('OS/camera ngắt sớm (phút 9) rồi lưu + băm chậm quá 10 phút: KHÔNG báo giới hạn (không rõ nguyên nhân thì không nêu)', async () => {
+    let finishHash: (value: unknown) => void = () => undefined;
+    mockHash.mockReturnValue(new Promise((resolve) => (finishHash = resolve)));
+    const { session } = await startRecordingNow();
+    await advance(9 * 60);
+    // camera trả tệp ở phút 9 (ví dụ bị cuộc gọi ngắt); băm chạy lâu
+    await act(async () => mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mp4' }));
+    await advance(2 * 60); // vượt mốc 10 phút của bộ đếm app trong lúc đang băm
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    await act(async () => finishHash({ ok: true, sha256: 'ab'.repeat(32), sizeBytes: 4096 }));
+    await advance(0);
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packConfirm, {
+      sessionId: session.id,
+    });
+    expect(screen.queryByText(/app đã tự dừng/)).toBeNull();
+    expect(screen.queryByText(/Đã đủ 10 phút/)).toBeNull();
+  });
+
+  it('giờ máy nhảy tiến (đồng bộ giờ mạng): bộ đếm đơn điệu KHÔNG tự dừng sớm', async () => {
+    await startRecordingNow();
+    await advance(60);
+    jest.setSystemTime(Date.now() + 20 * 60 * 1000);
+    await advance(1);
+    expect(mockRecorder.stopCalls).toBe(0);
+    expect(screen.getByText('Đang quay')).toBeOnTheScreen();
   });
 
   it('người dùng tự dừng sớm: không có thông báo giới hạn', async () => {

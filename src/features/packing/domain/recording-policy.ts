@@ -13,6 +13,12 @@ export interface RecordingPolicy {
 export const DEFAULT_RECORDING_POLICY: RecordingPolicy = { maxRecordMinutes: 10 };
 
 /**
+ * Chính sách đang áp dụng: NGUỒN DUY NHẤT cho UI-C02 (`runPrecheck`) và màn quay (giới hạn giờ + ngưỡng
+ * dung lượng của lưới an toàn trong `startRecording`). Khi có dữ liệu gói, chỉ đổi ở đây.
+ */
+export const ACTIVE_RECORDING_POLICY: RecordingPolicy = DEFAULT_RECORDING_POLICY;
+
+/**
  * Ước lượng dung lượng một phút video (byte) để đổi "phút" ra "byte": 60 MB/phút (khoảng 8 Mbps, 1080p).
  * GIÁ TRỊ ƯỚC LƯỢNG chưa đo trên thiết bị (bitrate thực phụ thuộc máy và mã hóa của expo-camera): cần
  * đo rồi chỉnh. Chỉ dùng để quy đổi ngưỡng, không hiển thị cho người dùng.
@@ -31,7 +37,11 @@ export function maxRecordSeconds(policy: RecordingPolicy = DEFAULT_RECORDING_POL
 /** Báo "sắp tự dừng" khi còn chừng này giây (người dùng kịp kết thúc gọn). */
 export const WARN_BEFORE_LIMIT_SECONDS = 60;
 
-/** Dung lượng trống tối thiểu để bắt đầu quay theo chính sách mặc định (đủ quay trọn 10 phút). */
+/**
+ * Dung lượng trống tối thiểu theo chính sách MẶC ĐỊNH (đủ quay trọn 10 phút). Chỉ là giá trị mặc định
+ * của `startRecording` khi không truyền `RecordingPorts.minFreeBytes`; màn quay truyền ngưỡng theo
+ * `ACTIVE_RECORDING_POLICY` (cùng nguồn với UI-C02).
+ */
 export const MIN_FREE_BYTES_TO_RECORD = requiredFreeBytes();
 
 /**
