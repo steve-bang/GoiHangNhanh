@@ -47,7 +47,7 @@ import { useReloadOnShopUpdated } from './use-shop-revision-reload';
  * nút mở Trung tâm đồng bộ, rồi các nhóm Tài khoản/Cài đặt/Hỗ trợ và Đăng xuất riêng. Hồ sơ và cửa
  * hàng tải riêng: lỗi/chậm ở một khu vực không che khu vực kia; kéo xuống để làm mới và vẫn giữ dữ liệu
  * cũ nếu làm mới lỗi. Trạng thái: 1b đang tải (cả hai khu vực chưa xong thì khung chờ cho mọi khối),
- * 1c lỗi (thẻ lỗi), 1d ngoại tuyến khi chưa có dữ liệu hồ sơ nào để hiện (có dữ liệu cũ thì giữ dữ
+ * 1c lỗi (thẻ lỗi), 1d ngoại tuyến + lỗi mạng khi chưa có dữ liệu hồ sơ nào để hiện (có dữ liệu cũ thì giữ dữ
  * liệu kèm thẻ cảnh báo), 1e chưa có họ tên (thay thẻ hồ sơ, Q-21e). Sửa họ tên và đổi mật khẩu là
  * route con (decisions.md Q-20k). Mục chưa làm: cấu hình ở `account-menu.ts`.
  */
@@ -88,6 +88,10 @@ export function ProfileScreen() {
     (profile.state.status === 'ready' && profile.state.refreshError !== null) ||
     (shop.state.status === 'ready' && shop.state.refreshError !== null);
 
+  // Khung 1d chỉ khi đang ngoại tuyến VÀ lỗi đúng là lỗi mạng; lỗi khác (dịch vụ...) đi khung 1c.
+  const networkDown =
+    offline && profile.state.status === 'error' && profile.state.code === 'AUTH_NETWORK_ERROR';
+
   const planId = 'plan';
   const shopExtras = visibleMenuItems('shopAndPlan').filter((item) => item.id !== planId);
   const profileState = profile.state;
@@ -111,10 +115,10 @@ export function ProfileScreen() {
       ) : null}
 
       {profileState.status === 'loading' ? <ProfileCardSkeleton testID="profile-loading" /> : null}
-      {profileState.status === 'error' && offline ? (
+      {profileState.status === 'error' && networkDown ? (
         <ProfileOffline onRetry={() => void profile.reload()} />
       ) : null}
-      {profileState.status === 'error' && !offline ? (
+      {profileState.status === 'error' && !networkDown ? (
         <View style={{ gap: tokens.space.md }}>
           <DimmedPlaceholder>
             <ProfileCardSkeleton />
