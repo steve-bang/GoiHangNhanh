@@ -55,8 +55,9 @@ export function ShopCard({ shop }: { shop: ShopSummary | null }) {
 
 /**
  * Thẻ gói của UI-I01 (board 1a). Gói/thời hạn chưa có nguồn dữ liệu (O-06, O-16; Q-21c) nên mọi giá
- * trị là "Chưa có thông tin", huy hiệu "Sắp có"; KHÔNG bịa tên gói hay "Đang hoạt động". Chỉ mở được
- * khi mục `plan` ở `account-menu.ts` được bật; hôm nay khóa (không mũi tên, không điều hướng).
+ * trị là "Chưa có thông tin", huy hiệu "Sắp có" (luôn hiện, kể cả khi mở được); KHÔNG bịa tên gói hay
+ * "Đang hoạt động". Mở UI-H01 khi mục `plan` ở `account-menu.ts` được bật (hôm nay bật); tắt thì khóa
+ * (không mũi tên, không điều hướng).
  */
 export function PlanHeroCard() {
   const { t } = useTranslation();
@@ -69,7 +70,8 @@ export function PlanHeroCard() {
       eyebrow={t('personal:plan.eyebrow')}
       title={t('personal:plan.title')}
       subtitle={t('personal:plan.retention')}
-      {...(open ? {} : { badge: <StatusBadge label={soonLabel} />, badgeLabel: soonLabel })}
+      badge={<StatusBadge label={soonLabel} />}
+      badgeLabel={soonLabel}
       {...(open ? { onPress: () => navigation.push(item.route) } : {})}
       testID="plan-card"
     />

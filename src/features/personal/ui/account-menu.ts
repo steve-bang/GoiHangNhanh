@@ -32,7 +32,8 @@ export const ACCOUNT_MENU: readonly MenuItem[] = [
     route: ROUTES.plan,
     labelKey: 'nav:account.plan',
     icon: 'sparkle',
-    availability: 'coming_soon',
+    // Bật vì UI-H01 đã có nội dung trung thực hữu ích (nguyên tắc lưu trữ, "Chưa có thông tin") và lối vào Chi tiết/Lịch sử.
+    availability: 'available',
   },
   // Thành viên và quyền: mô hình thành viên/vai trò chưa chốt (O-03, O-07) nên không hiện.
   {

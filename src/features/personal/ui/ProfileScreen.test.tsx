@@ -100,7 +100,7 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     expect(screen.queryByText(/Đang hoạt động/)).toBeNull();
   });
 
-  it('thẻ gói: "Chưa có thông tin", huy hiệu "Sắp có", khóa, không tên gói/số/hạn giả', async () => {
+  it('thẻ gói: "Chưa có thông tin", huy hiệu "Sắp có", mở UI-H01, không tên gói/số/hạn giả', async () => {
     await renderProfile(createFakePersonalGateways(NAMED));
     const plan = screen.getByTestId('plan-card');
     expect(plan).toHaveTextContent(/Gói dịch vụ/);
@@ -109,22 +109,22 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     expect(plan).toHaveTextContent(/Sắp có/);
     expect(plan).not.toHaveTextContent(/\d|Gói tiêu chuẩn|Đang hoạt động/);
     expect(plan.props.accessibilityLabel).toMatch(/\. Sắp có$/);
-    expect(plan.props.accessibilityRole).not.toBe('button');
     await fireEvent.press(plan);
-    expect(mockNavigation.push).not.toHaveBeenCalled();
+    expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.plan);
   });
 
-  it('thẻ gói mở được khi mục plan được bật ở account-menu (một chỗ duy nhất)', async () => {
+  it('thẻ gói khóa khi mục plan bị tắt ở account-menu (một chỗ duy nhất): không điều hướng', async () => {
     const item = ACCOUNT_MENU.find((entry) => entry.id === 'plan');
     const mutable = item as { availability: MenuAvailability };
     const before = mutable.availability;
-    mutable.availability = 'available';
+    mutable.availability = 'coming_soon';
     try {
       await renderProfile();
       const plan = screen.getByTestId('plan-card');
-      expect(plan).not.toHaveTextContent(/Sắp có/);
+      expect(plan).toHaveTextContent(/Sắp có/);
+      expect(plan.props.accessibilityRole).not.toBe('button');
       await fireEvent.press(plan);
-      expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.plan);
+      expect(mockNavigation.push).not.toHaveBeenCalled();
     } finally {
       mutable.availability = before;
     }
