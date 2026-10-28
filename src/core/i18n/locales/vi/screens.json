@@ -433,12 +433,34 @@
     "package": "Kiện {{index}}",
     "packageActiveSession": "Có phiên quay đang mở, bắt đầu lúc {{time}}",
     "packageNoSession": "Chưa có phiên quay",
-    "evidence": "Bằng chứng đóng gói",
+    "evidence": "Bằng chứng",
     "noEvidence": "Chưa có video đóng gói.",
+    "evidenceCounts": "{{videos}} video · {{photos}} ảnh",
+    "copiedOrderCode": "Đã sao chép mã đơn.",
+    "recordPack": "Quay đóng gói",
+    "viewEvidence": "Xem bằng chứng",
     "recordNow": "Quay ngay",
     "history": "Lịch sử hoạt động",
     "historyCreated": "Đã tạo đơn",
     "historySession": "Đã bắt đầu phiên quay kiện {{index}}",
     "historyNote": "Suy ra từ dữ liệu trên máy, theo giờ của thiết bị."
+  },
+  "orderEvidence": {
+    "loading": "Đang mở bằng chứng…",
+    "loadError": "Chưa mở được bằng chứng của đơn. Bạn thử lại nhé.",
+    "groupPack": "Đóng gói ({{count}})",
+    "groupReturn": "Hàng hoàn ({{count}})",
+    "emptyTitle": "Đơn này chưa có bằng chứng.",
+    "emptyMessage": "Bạn có thể quay đóng gói cho đơn này.",
+    "emptyReturnTitle": "Chưa có bằng chứng hàng hoàn.",
+    "emptyReturnMessage": "Bằng chứng hàng hoàn của đơn này sẽ hiện ở đây.",
+    "recordPack": "Quay đóng gói",
+    "kind": {
+      "pack": { "video": "Video đóng gói", "photo": "Ảnh đóng gói" },
+      "return": { "video": "Video hàng hoàn", "photo": "Ảnh hàng hoàn" }
+    },
+    "capturedAt": "Ghi lúc {{time}} (giờ thiết bị)",
+    "errorHint": "Tệp này cần xử lý.",
+    "openSync": "Mở trung tâm đồng bộ"
   }
 }
