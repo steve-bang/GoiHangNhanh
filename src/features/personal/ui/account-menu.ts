@@ -11,7 +11,7 @@ import type { IconName } from '@/shared/ui';
 export type MenuAvailability = 'available' | 'coming_soon' | 'hidden';
 
 /**
- * Nhóm hiển thị trên UI-I01. `shopAndPlan`: mục `plan` được màn dựng thành thẻ gói (HeroCard), các mục
+ * Nhóm hiển thị trên UI-I01. `shopAndPlan`: mục `plan` được màn dựng thành thẻ gói (HeroCard; hôm nay `hidden`, Q-21ag), các mục
  * còn lại (nếu có) thành hàng dưới thẻ cửa hàng. Thẻ hồ sơ/cửa hàng/dữ liệu bằng chứng do màn dựng.
  */
 export type MenuGroupId = 'shopAndPlan' | 'settings' | 'support';
@@ -32,8 +32,9 @@ export const ACCOUNT_MENU: readonly MenuItem[] = [
     route: ROUTES.plan,
     labelKey: 'nav:account.plan',
     icon: 'sparkle',
-    // Bật vì UI-H01 đã có nội dung trung thực hữu ích (nguyên tắc lưu trữ, "Chưa có thông tin") và lối vào Chi tiết/Lịch sử.
-    availability: 'available',
+    // Ẩn theo yêu cầu người dùng (Q-21ag): chưa có dữ liệu gói/thanh toán (O-06, O-16). Ẩn cả mục menu lẫn thẻ gói
+    // ở UI-I01. Mã và route UI-H01 giữ nguyên; bật lại: đổi dòng này thành 'available'.
+    availability: 'hidden',
   },
   // Thành viên và quyền: mô hình thành viên/vai trò chưa chốt (O-03, O-07) nên không hiện.
   {
@@ -78,7 +79,7 @@ export function visibleMenuItems(group: MenuGroupId): readonly MenuItem[] {
   return ACCOUNT_MENU.filter((item) => item.group === group && item.availability !== 'hidden');
 }
 
-/** Mục `plan` của menu (thẻ gói trên UI-I01 theo dõi `availability` của nó). */
+/** Mục `plan` của menu (thẻ gói trên UI-I01 chỉ hiện khi `availability` của nó khác `hidden`). */
 export function planMenuItem(): MenuItem {
   const item = ACCOUNT_MENU.find((entry) => entry.id === 'plan');
   if (!item) throw new Error('ACCOUNT_MENU thiếu mục plan');

@@ -1,3 +1,5 @@
+> **Cập nhật sau khi ẩn Gói dịch vụ (Q-21ag):** màn chính tab Cá nhân đã bỏ thẻ gói và mục menu "Gói dịch vụ". Các ảnh màn chính `pr-b-*`, `pr-c-*` (nếu có thẻ gói) và ảnh Gói dịch vụ `pr-e-*` là **bản lỗi thời** so với màn hiện tại (khung E vẫn là mã đã giữ, chỉ vào được bằng URL). **Chưa chụp lại màn chính mới:** môi trường làm việc không có Chromium/Playwright (không tải được trình duyệt), nên chưa có ảnh bản web của màn mới; cần chụp lại khi có môi trường, theo cách ghi ở các mục dưới (bản sao ngoài repo, không sửa mã sản phẩm).
+
 # Ảnh đối chiếu PR-A: token và thành phần dùng chung (tab Cá nhân, board 07)
 
 **Lưu ý trung thực:** ảnh render **bản web** (react-native-web trong Chromium), không phải ảnh chụp trên iOS/Android thật. Đây **không phải màn của app**: là một khung thử tạm (tệp route chỉ có ở bản sao ngoài repo, không commit) ghép các thành phần mới với dữ liệu minh họa để so với board. Font, vòng focus (khung đen quanh nút đầu tiên của hộp thoại là vòng focus của trình duyệt, không có trên thiết bị), bóng, vùng an toàn và chữ lớn trên thiết bị thật có thể khác. Chưa chụp ở chữ lớn (Dynamic Type/font scale), chưa chạy trên thiết bị.

@@ -64,7 +64,6 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     const order = [
       'profile-card',
       'shop-card',
-      'plan-card',
       'evidence-overview',
       'group-settings',
       'group-support',
@@ -100,20 +99,50 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     expect(screen.queryByText(/Đang hoạt động/)).toBeNull();
   });
 
-  it('thẻ gói: "Chưa có thông tin", huy hiệu "Sắp có", mở UI-H01, không tên gói/số/hạn giả', async () => {
+  it('gói dịch vụ đang ẩn (Q-21ag): màn Cá nhân không có thẻ gói, khung chờ gói, mục menu "Gói dịch vụ" hay chữ "Gói dịch vụ"', async () => {
     await renderProfile(createFakePersonalGateways(NAMED));
-    const plan = screen.getByTestId('plan-card');
-    expect(plan).toHaveTextContent(/Gói dịch vụ/);
-    expect(plan).toHaveTextContent(/Chưa có thông tin/);
-    expect(plan).toHaveTextContent(/Thời hạn lưu: Chưa có thông tin/);
-    expect(plan).toHaveTextContent(/Sắp có/);
-    expect(plan).not.toHaveTextContent(/\d|Gói tiêu chuẩn|Đang hoạt động/);
-    expect(plan.props.accessibilityLabel).toMatch(/\. Sắp có$/);
-    await fireEvent.press(plan);
-    expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.plan);
+    await waitFor(() => expect(screen.getByTestId('profile-summary')).toBeOnTheScreen());
+    expect(screen.queryByTestId('plan-card')).toBeNull();
+    expect(screen.queryByTestId('plan-loading')).toBeNull();
+    expect(screen.queryByTestId('menu-UI-H01')).toBeNull();
+    expect(screen.queryByTestId('group-shop')).toBeNull();
+    expect(screen.queryByText(/Gói dịch vụ/)).toBeNull();
+    expect(screen.queryByText(/Nâng cấp/)).toBeNull();
+    // Các khối còn lại (PR-B..I) vẫn đủ.
+    for (const id of [
+      'shop-card',
+      'evidence-overview',
+      'group-settings',
+      'group-support',
+      'group-sign-out',
+      'sign-out',
+    ]) {
+      expect(screen.getByTestId(id)).toBeOnTheScreen();
+    }
   });
 
-  it('thẻ gói khóa khi mục plan bị tắt ở account-menu (một chỗ duy nhất): không điều hướng', async () => {
+  it('bật lại gói bằng một dòng ở account-menu (availability available): thẻ gói hiện, "Chưa có thông tin", "Sắp có", mở UI-H01', async () => {
+    const item = ACCOUNT_MENU.find((entry) => entry.id === 'plan');
+    const mutable = item as { availability: MenuAvailability };
+    const before = mutable.availability;
+    mutable.availability = 'available';
+    try {
+      await renderProfile(createFakePersonalGateways(NAMED));
+      const plan = screen.getByTestId('plan-card');
+      expect(plan).toHaveTextContent(/Gói dịch vụ/);
+      expect(plan).toHaveTextContent(/Chưa có thông tin/);
+      expect(plan).toHaveTextContent(/Thời hạn lưu: Chưa có thông tin/);
+      expect(plan).toHaveTextContent(/Sắp có/);
+      expect(plan).not.toHaveTextContent(/\d|Gói tiêu chuẩn|Đang hoạt động/);
+      expect(plan.props.accessibilityLabel).toMatch(/\. Sắp có$/);
+      await fireEvent.press(plan);
+      expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.plan);
+    } finally {
+      mutable.availability = before;
+    }
+  });
+
+  it('bật lại gói ở trạng thái coming_soon: thẻ gói khóa, không điều hướng', async () => {
     const item = ACCOUNT_MENU.find((entry) => entry.id === 'plan');
     const mutable = item as { availability: MenuAvailability };
     const before = mutable.availability;
@@ -169,7 +198,7 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
   it('các thẻ không có chiều cao cố định (chữ lớn không bị cắt)', async () => {
     await renderProfile(createFakePersonalGateways(NAMED));
     await waitFor(() => expect(screen.getByTestId('shop-card')).toBeOnTheScreen());
-    for (const id of ['plan-card', 'shop-card', 'profile-summary']) {
+    for (const id of ['shop-card', 'profile-summary']) {
       const style = StyleSheet.flatten(screen.getByTestId(id).props.style as never) as Record<
         string,
         unknown
@@ -238,9 +267,9 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     await renderProfile(createUnavailablePersonalGateways() as never);
     await waitFor(() => expect(screen.getByTestId('profile-error')).toBeOnTheScreen());
     expect(screen.getByTestId('shop-error')).toBeOnTheScreen();
-    // Menu, thẻ gói, khối bằng chứng và Đăng xuất vẫn hiện; khu vực lỗi không chặn gì.
+    // Menu, khối bằng chứng và Đăng xuất vẫn hiện; khu vực lỗi không chặn gì.
     expect(screen.getByTestId('menu-UI-I06')).toBeOnTheScreen();
-    expect(screen.getByTestId('plan-card')).toBeOnTheScreen();
+    expect(screen.queryByTestId('plan-card')).toBeNull();
     expect(screen.getByTestId('sign-out')).toBeOnTheScreen();
   });
 
@@ -426,27 +455,21 @@ describe('ProfileScreen khung 1b: đang tải', () => {
     jest.spyOn(gateways.account, 'getProfile').mockReturnValue(pending());
     jest.spyOn(gateways.account, 'getShopSummary').mockReturnValue(pending());
     await renderProfile(gateways);
-    for (const id of [
-      'profile-loading',
-      'shop-loading',
-      'plan-loading',
-      'evidence-loading',
-      'menu-loading',
-    ]) {
+    for (const id of ['profile-loading', 'shop-loading', 'evidence-loading', 'menu-loading']) {
       expect(screen.getByTestId(id)).toBeOnTheScreen();
     }
-    expect(screen.queryByTestId('plan-card')).toBeNull();
+    expect(screen.queryByTestId('plan-loading')).toBeNull();
     expect(screen.queryByTestId('evidence-overview')).toBeNull();
     expect(screen.queryByText('Chưa có thông tin')).toBeNull();
     expect(screen.getByTestId('sign-out')).toBeOnTheScreen();
   });
 
-  it('trình đọc màn hình: mỗi thẻ khung chờ là MỘT phần tử "Đang tải" (5 thẻ), không phần tử con lẻ', async () => {
+  it('trình đọc màn hình: mỗi thẻ khung chờ là MỘT phần tử "Đang tải" (4 thẻ), không phần tử con lẻ', async () => {
     const gateways = createFakePersonalGateways();
     jest.spyOn(gateways.account, 'getProfile').mockReturnValue(pending());
     jest.spyOn(gateways.account, 'getShopSummary').mockReturnValue(pending());
     await renderProfile(gateways);
-    expect(screen.getAllByLabelText('Đang tải')).toHaveLength(5);
+    expect(screen.getAllByLabelText('Đang tải')).toHaveLength(4);
   });
 
   it('hồ sơ chậm nhưng cửa hàng đã xong: chỉ thẻ hồ sơ là khung chờ, thẻ cửa hàng và các khối khác hiện', async () => {
@@ -455,7 +478,7 @@ describe('ProfileScreen khung 1b: đang tải', () => {
     await renderProfile(gateways);
     await waitFor(() => expect(screen.getByTestId('shop-card')).toBeOnTheScreen());
     expect(screen.getByTestId('profile-loading')).toBeOnTheScreen();
-    expect(screen.getByTestId('plan-card')).toBeOnTheScreen();
+    expect(screen.queryByTestId('plan-card')).toBeNull();
     expect(screen.getByTestId('evidence-overview')).toBeOnTheScreen();
     expect(screen.queryByTestId('plan-loading')).toBeNull();
   });
@@ -490,7 +513,7 @@ describe('ProfileScreen khung 1c: lỗi', () => {
     await renderProfile(gateways);
     await waitFor(() => expect(screen.getByTestId('shop-error')).toBeOnTheScreen());
     expect(screen.getByTestId('profile-summary')).toHaveTextContent(/Lan Anh/);
-    expect(screen.getByTestId('plan-card')).toBeOnTheScreen();
+    expect(screen.queryByTestId('plan-card')).toBeNull();
     await fireEvent.press(screen.getByText('Thử lại'));
     await waitFor(() => expect(screen.getByTestId('shop-card')).toBeOnTheScreen());
     expect(screen.queryByTestId('shop-error')).toBeNull();
@@ -515,7 +538,7 @@ describe('ProfileScreen khung 1d: ngoại tuyến', () => {
     await waitFor(() => expect(screen.getByTestId('profile-offline')).toBeOnTheScreen());
     expect(screen.getByText('Đang ngoại tuyến')).toBeOnTheScreen();
     expect(screen.queryByTestId('profile-error')).toBeNull();
-    // Các khối còn lại vẫn có (cửa hàng đã tải, thẻ gói, Đăng xuất): không phải màn trống toàn màn.
+    // Các khối còn lại vẫn có (cửa hàng đã tải, Đăng xuất): không phải màn trống toàn màn.
     expect(screen.getByText('Cửa hàng minh họa')).toBeOnTheScreen();
     expect(screen.getByTestId('sign-out')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Thử lại'));
@@ -543,7 +566,7 @@ describe('ProfileScreen khung 1e: chưa có họ tên', () => {
     expect(screen.queryByText('D')).toBeNull();
     expect(screen.queryByText('demo')).toBeNull();
     expect(screen.getByTestId('shop-card')).toBeOnTheScreen();
-    expect(screen.getByTestId('plan-card')).toBeOnTheScreen();
+    expect(screen.queryByTestId('plan-card')).toBeNull();
     expect(screen.getByTestId('evidence-overview')).toBeOnTheScreen();
     expect(screen.getByTestId('sign-out')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'Cập nhật' }));

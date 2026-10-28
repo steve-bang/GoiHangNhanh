@@ -6,7 +6,7 @@ import { ROUTES } from '@/core/navigation';
 import { getAppVersion, useAppNavigation, useIsOffline } from '@/platform';
 import { ConfirmDialog, ListGroup, ListItem, Screen, Text, useTheme } from '@/shared/ui';
 
-import { visibleMenuItems } from './account-menu';
+import { planMenuItem, visibleMenuItems } from './account-menu';
 import { MenuRow } from './MenuRow';
 import { Notice } from './Notice';
 import { usePersonalGateways } from './PersonalGatewaysProvider';
@@ -34,7 +34,7 @@ import { useReloadOnShopUpdated } from './use-shop-revision-reload';
 
 /**
  * UI-I01 Cá nhân (PER-01, xem hồ sơ PER-02), dựng theo board 07 khung 1a-1e (personal-tab-redesign-plan.md):
- * thẻ hồ sơ, thẻ cửa hàng, thẻ gói (chưa có dữ liệu: "Chưa có thông tin"), khối "Dữ liệu bằng chứng" +
+ * thẻ hồ sơ, thẻ cửa hàng, (thẻ gói: ĐANG ẨN, Q-21ag), khối "Dữ liệu bằng chứng" +
  * nút mở Trung tâm đồng bộ, rồi các nhóm Tài khoản/Cài đặt/Hỗ trợ và Đăng xuất riêng. Hồ sơ và cửa
  * hàng tải riêng: lỗi/chậm ở một khu vực không che khu vực kia; kéo xuống để làm mới và vẫn giữ dữ liệu
  * cũ nếu làm mới lỗi. Trạng thái: 1b đang tải (cả hai khu vực chưa xong thì khung chờ cho mọi khối),
@@ -84,6 +84,8 @@ export function ProfileScreen() {
     offline && profile.state.status === 'error' && profile.state.code === 'AUTH_NETWORK_ERROR';
 
   const planId = 'plan';
+  // Gói dịch vụ đang ẩn (Q-21ag): thẻ gói và khung chờ của nó chỉ hiện khi mục `plan` được bật lại.
+  const showPlan = planMenuItem().availability !== 'hidden';
   const shopExtras = visibleMenuItems('shopAndPlan').filter((item) => item.id !== planId);
   const profileState = profile.state;
   const showPasswordRow =
@@ -139,7 +141,13 @@ export function ProfileScreen() {
         </ListGroup>
       ) : null}
 
-      {initialLoading ? <PlanCardSkeleton testID="plan-loading" /> : <PlanHeroCard />}
+      {showPlan ? (
+        initialLoading ? (
+          <PlanCardSkeleton testID="plan-loading" />
+        ) : (
+          <PlanHeroCard />
+        )
+      ) : null}
       {initialLoading ? (
         <EvidenceCardSkeleton testID="evidence-loading" />
       ) : (
