@@ -52,7 +52,7 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 | `/quick-order` | UI-B04 | A02 | ẩn (route cấp gốc) | `orders`: `QuickOrderScreen` | Màn thật (ORD-05/06, PR4, Q-22): form *Tiếp tục* (chỉ kiểm tra) -> bước Xác nhận trong cùng màn -> *Tạo đơn hàng* lưu rồi `replace` sang chi tiết; lưu cục bộ SQLite (mục 2.5, Q-17) |
 | `/home/batch` | UI-B05 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `BatchScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/order-preview` | UI-C01 | A03 | ẩn (route cấp gốc) | `orders`: `OrderPreviewScreen` | Màn thật theo mockup 03, mở bằng `orderId`, tạo phiên trước khi quay (mục 2.5). Từ PR4 KHÔNG còn là bước sau khi tạo đơn: chỉ cho đơn đã có (Quay đóng gói/Quay ngay) |
-| `/pack-precheck` | UI-C02 | A04 | ẩn | `packing`: `PackPrecheckScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/pack-precheck` | UI-C02 | A04 | ẩn | `packing`: `PackPrecheckScreen` | Mở bằng `sessionId` khi bộ ghi thật bật (`RECORDER_ENABLED`): chạy ngầm (`runPrecheck`: quyền camera, dung lượng, thử ghi), đạt thì `replace` sang `/record-pack`, không đạt thì hiện lỗi + cách khắc phục + Kiểm tra lại + Về đơn hàng (ADR-020 R-14). Cờ tắt: không ai điều hướng tới |
 | `/record-pack` | UI-C03 | A05 | ẩn | `packing`: `PackRecordScreen` | Giao diện theo mockup 03, mở bằng `sessionId`, camera xem trước thật, **chưa ghi video** (mục 2.5) |
 | `/pack-confirm` | UI-C04 | A06 | ẩn | `packing`: `PackConfirmScreen` | Mở bằng `sessionId`; chỉ có nội dung "đã lưu" khi `RECORDER_ENABLED=true`, hiện tại chỉ báo "chưa có video nào được lưu" (Q-17m) |
 | `/pack-saved` | UI-C05 | A07 | ẩn | `upload`: `PackSavedScreen` | Placeholder (route + tiêu đề + lối quay lại) |

@@ -486,8 +486,14 @@
     "emptyReturnMessage": "Đơn này chưa có tệp hàng hoàn nào.",
     "recordPack": "Quay đóng gói",
     "kind": {
-      "pack": { "video": "Video đóng gói", "photo": "Ảnh đóng gói" },
-      "return": { "video": "Video hàng hoàn", "photo": "Ảnh hàng hoàn" }
+      "pack": {
+        "video": "Video đóng gói",
+        "photo": "Ảnh đóng gói"
+      },
+      "return": {
+        "video": "Video hàng hoàn",
+        "photo": "Ảnh hàng hoàn"
+      }
     },
     "capturedAt": "Ghi lúc {{time}} (giờ thiết bị)",
     "errorHint": "Tệp này cần xử lý.",
@@ -553,5 +559,13 @@
       "stay": "Tiếp tục sửa",
       "discard": "Bỏ thay đổi"
     }
+  },
+  "precheck": {
+    "checking": "Đang kiểm tra máy…",
+    "intro": "Cần xử lý trước khi quay.",
+    "recheck": "Kiểm tra lại",
+    "requestCamera": "Cấp quyền camera",
+    "openSettings": "Mở Cài đặt",
+    "backToOrder": "Về đơn hàng"
   }
 }

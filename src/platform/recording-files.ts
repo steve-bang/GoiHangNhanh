@@ -113,3 +113,30 @@ export function getAvailableDiskBytes(): number | null {
     return null;
   }
 }
+
+const PROBE_PREFIX = '.probe-';
+
+/**
+ * Thử ghi vào thư mục bằng chứng (A04 "khả năng ghi tệp cục bộ"): tạo, ghi vài byte rồi xóa MỘT tệp
+ * thăm dò riêng (`.probe-<giờ>`). Không bao giờ đụng tệp bằng chứng. `true` = ghi được. Thăm dò sót
+ * lại (app bị kill giữa chừng) vô hại và bị dọn ở lần sau. Chưa kiểm chứng trên thiết bị.
+ */
+export function probeEvidenceDirWritable(): boolean {
+  let probe: File | null = null;
+  try {
+    const directory = new Directory(Paths.document, EVIDENCE_DIR);
+    if (!directory.exists) directory.create({ intermediates: true });
+    probe = new File(directory, `${PROBE_PREFIX}${Date.now()}`);
+    probe.create();
+    probe.write(new Uint8Array([0]));
+    return true;
+  } catch {
+    return false;
+  } finally {
+    try {
+      probe?.delete();
+    } catch {
+      // không xóa được tệp thăm dò: bỏ qua
+    }
+  }
+}

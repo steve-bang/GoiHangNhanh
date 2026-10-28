@@ -25,6 +25,7 @@ export {
   findPersistedRecording,
   getAvailableDiskBytes,
   persistRecording,
+  probeEvidenceDirWritable,
   recordingExists,
   resolveRecordingUri,
 } from './recording-files';

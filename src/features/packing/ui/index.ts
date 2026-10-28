@@ -1,5 +1,5 @@
 export { PackConfirmScreen } from './PackConfirmScreen';
 export { PackDoneScreen } from './PackDoneScreen';
 export { PackRecordScreen } from './PackRecordScreen';
-export * from './placeholders';
+export { PackPrecheckScreen } from './PackPrecheckScreen';
 export { RecordingRecovery } from './RecordingRecovery';

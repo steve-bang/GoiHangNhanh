@@ -26,3 +26,12 @@ export {
   type RecordingPorts,
   type RecordResult,
 } from './recording-controller';
+export {
+  runPrecheck,
+  type CameraStatus,
+  type PrecheckFix,
+  type PrecheckId,
+  type PrecheckIssue,
+  type PrecheckPorts,
+  type PrecheckResult,
+} from './precheck';

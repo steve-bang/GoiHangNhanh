@@ -1,9 +1,2 @@
-/**
- * Đã bật bộ ghi video thật chưa. Mặc định `false` (cờ `EXPO_PUBLIC_RECORDER_ENABLED=1` mới bật): màn
- * quay (UI-C03) chỉ là bản thử GIAO DIỆN, camera chỉ xem trước, KHÔNG ghi tệp, nên luôn hiện dải
- * "chưa ghi video" để không nói dối "Đang quay" (bất biến 3, 11; docs/04 A05). Bộ ghi thật
- * (`recording-controller.ts` + `platform/camera-recorder.tsx`) đã viết nhưng CHƯA kiểm chứng trên
- * thiết bị (tệp bền, ghi dài, ngắt cuộc gọi/nền, hết bộ nhớ); chỉ bật khi đã thử trên máy thật. Metro
- * thay giá trị lúc đóng gói nên truy cập trực tiếp `process.env.EXPO_PUBLIC_*`.
- */
-export const RECORDER_ENABLED = process.env.EXPO_PUBLIC_RECORDER_ENABLED === '1';
+/** Cờ bộ ghi video thật: định nghĩa và giải thích ở `core/config/recorder.ts` (ADR-020). */
+export { RECORDER_ENABLED } from '@/core/config/recorder';
