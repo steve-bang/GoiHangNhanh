@@ -40,7 +40,7 @@ function fakeDocs() {
 }
 
 async function storeWithSession(shopId: string) {
-  const store = createMemoryOrderStore();
+  const store = createMemoryOrderStore({ creatorUid: () => 'uid' });
   const details = makeOrder('R-1', { shopId: shopId as never, lines: [{ name: 'Áo' }] });
   await store.saveNewOrder(details);
   const pkg = details.packages[0];
@@ -76,14 +76,14 @@ describe('OrderSyncRunner', () => {
     await mount(store, t.docs, REAL_SHOP);
     await flush();
     expect(t.created.some((p) => p.startsWith(`shops/${REAL_SHOP}/orders/`))).toBe(true);
-    expect(await store.listOrdersPendingRemote(REAL_SHOP as never, 5)).toEqual([]);
+    expect(await store.listOrdersPendingRemote(REAL_SHOP as never, 5, 'uid')).toEqual([]);
   });
 
   it('không có cổng (cổng giả/test/thiếu cấu hình): không làm gì', async () => {
     const { store } = await storeWithSession(REAL_SHOP);
     await mount(store, null, REAL_SHOP);
     await flush();
-    expect(await store.listOrdersPendingRemote(REAL_SHOP as never, 5)).toHaveLength(1);
+    expect(await store.listOrdersPendingRemote(REAL_SHOP as never, 5, 'uid')).toHaveLength(1);
   });
 
   it('shop cục bộ tạm hoặc chưa biết shop: không bao giờ đăng', async () => {

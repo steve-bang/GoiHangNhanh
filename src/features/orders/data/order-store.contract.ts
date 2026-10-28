@@ -384,6 +384,7 @@ export function runOrderStoreContract(name: string, create: () => Promise<OrderS
       expect((await store.getSession(LOCAL_SHOP_ID, built.session.id))?.sessionStatus).toBe(
         'created',
       );
+      await store.updateSessionStatus(LOCAL_SHOP_ID, built.session.id, 'recording');
       await store.updateSessionStatus(LOCAL_SHOP_ID, built.session.id, 'ended');
       expect((await store.getSession(LOCAL_SHOP_ID, built.session.id))?.sessionStatus).toBe(
         'ended',
@@ -417,6 +418,60 @@ export function runOrderStoreContract(name: string, create: () => Promise<OrderS
       expect(await store.hasRecordingInProgress(LOCAL_SHOP_ID)).toBe(false);
       expect(await store.hasRecordingInProgress(other)).toBe(true);
       expect(await store.hasRecordingOnDevice()).toBe(true);
+    });
+
+    it('đổi trạng thái phiên theo bảng chuyển: đi tới được, đặt lại đúng trạng thái là no-op, lùi/nhảy cóc/lạ bị từ chối và không đổi gì', async () => {
+      const store = await create();
+      const session = await startSession(store, makeOrder('ST'), 'sess-st', undefined, true);
+      const status = async () => {
+        // Trạng thái hiện tại đọc qua hasRecordingInProgress (recording) và listSessionsPendingRemote.
+        return store.hasRecordingInProgress(LOCAL_SHOP_ID);
+      };
+      const set = (to: string) => store.updateSessionStatus(LOCAL_SHOP_ID, session.id, to);
+      const rejects = (to: string) =>
+        expect(set(to)).rejects.toMatchObject({ code: 'LOCAL_SAVE_UNAVAILABLE' });
+
+      await rejects('ended'); // created chưa quay thì không kết thúc được
+      await rejects('confirmed');
+      await rejects('xyz'); // trạng thái lạ
+      expect(await status()).toBe(false);
+
+      await set('recording');
+      await set('recording'); // đặt lại đúng trạng thái: không lỗi
+      expect(await status()).toBe(true);
+      await rejects('created'); // lùi
+      expect(await status()).toBe(true);
+      await rejects('confirmed'); // nhảy cóc qua ended
+
+      await set('ended');
+      expect(await status()).toBe(false);
+      await rejects('recording'); // lùi từ ended
+      await set('confirmed');
+      for (const to of ['recording', 'ended', 'interrupted', 'created', 'needs_attention']) {
+        await rejects(to); // confirmed là điểm cuối
+      }
+      expect(await status()).toBe(false);
+    });
+
+    it('đổi trạng thái phiên: nhánh gián đoạn / cần xử lý đi tiếp được; phiên lạ hoặc shop khác bị từ chối', async () => {
+      const store = await create();
+      const a = await startSession(store, makeOrder('ST2'), 'sess-st2', undefined, true);
+      const set = (id: SessionId, to: string, shop: ShopId = LOCAL_SHOP_ID) =>
+        store.updateSessionStatus(shop, id, to);
+      await set(a.id, 'recording');
+      await set(a.id, 'interrupted');
+      await set(a.id, 'recording'); // tiếp tục sau gián đoạn (docs/04)
+      await set(a.id, 'needs_attention');
+      await set(a.id, 'confirmed');
+
+      await expect(set('khong-co' as SessionId, 'recording')).rejects.toMatchObject({
+        code: 'LOCAL_SAVE_UNAVAILABLE',
+      });
+      const b = await startSession(store, makeOrder('ST3'), 'sess-st3', undefined, true);
+      await expect(set(b.id, 'recording', 'shop-khac' as ShopId)).rejects.toMatchObject({
+        code: 'LOCAL_SAVE_UNAVAILABLE',
+      });
+      expect(await store.hasRecordingInProgress(LOCAL_SHOP_ID)).toBe(false); // b vẫn created
     });
 
     it('cô lập shop: shop khác không đọc, không sửa, không thêm kiện, không tạo phiên dù biết ID', async () => {

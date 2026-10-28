@@ -20,6 +20,12 @@ export interface Order {
   readonly trackingCode: string | null;
   readonly dataOrigin: DataOrigin;
   readonly createdAtDevice: number;
+  /**
+   * uid người tạo, do KHO điền lúc lưu (giá trị truyền vào bị bỏ qua) khi biết ai đang đăng nhập. Chỉ
+   * để đăng lên máy chủ đúng người (Rules ép `createdBy == auth.uid`): bản ghi không có giá trị này
+   * (tạo trước khi có cột, hoặc lúc chưa biết uid) KHÔNG bao giờ được đăng. Xem ADR-019, Q-23g.
+   */
+  readonly createdBy?: string;
 }
 
 /** Một dòng sản phẩm để đối chiếu. Tên và variant là hai trường riêng; không bao giờ gộp variant. */
@@ -41,6 +47,8 @@ export interface OrderPackage {
   readonly orderId: OrderId;
   readonly index: number;
   readonly createdAtDevice: number;
+  /** uid người tạo kiện (xem `Order.createdBy`). */
+  readonly createdBy?: string;
 }
 
 export interface OrderDetails {
@@ -79,4 +87,6 @@ export interface PackingSession {
   readonly startedAtDevice: number;
   readonly snapshot: OrderSnapshot;
   readonly sessionStatus: string;
+  /** uid người bắt đầu phiên (xem `Order.createdBy`). */
+  readonly createdBy?: string;
 }

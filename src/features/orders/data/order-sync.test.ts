@@ -1,13 +1,15 @@
 import type { SessionId } from '@/core/ids';
 import { createMemoryOrderStore } from './memory-order-store';
-import { makeOrder } from './order-store.contract';
+import { makeOrder, testIds } from './order-store.contract';
 
 import { createOrderSync, type RemoteOrderWriter } from '../domain/order-sync';
 import { LOCAL_SHOP_ID } from '../domain/local-shop';
+import { buildNextPackage } from '../domain/build-order';
 import { buildPackingSession } from '../domain/start-session';
 
-async function setup(options: { online?: boolean } = {}) {
-  const store = createMemoryOrderStore();
+async function setup(options: { online?: boolean; uid?: string | null } = {}) {
+  let uid: string | null = options.uid === undefined ? 'u1' : options.uid;
+  const store = createMemoryOrderStore({ creatorUid: () => uid });
   const calls: string[] = [];
   const fail = { order: false, session: false };
   let online = options.online ?? true;
@@ -16,12 +18,21 @@ async function setup(options: { online?: boolean } = {}) {
       calls.push(`order:${d.order.orderCode}`);
       if (fail.order) throw new Error('denied');
     },
+    publishPackage: async (_order, pkg) => {
+      calls.push(`package:${pkg.index}`);
+    },
     publishSession: async (s, status) => {
       calls.push(`session:${s.id}:${status}`);
       if (fail.session) throw new Error('denied');
     },
   };
-  const sync = createOrderSync({ store, remote, now: () => 7000, isOnline: () => online });
+  const sync = createOrderSync({
+    store,
+    remote,
+    now: () => 7000,
+    isOnline: () => online,
+    currentUid: () => uid,
+  });
   const addOrder = async (code: string, at: number, withSession = true) => {
     const details = makeOrder(code, { lines: [{ name: 'Áo' }], at });
     await store.saveNewOrder(details);
@@ -35,7 +46,15 @@ async function setup(options: { online?: boolean } = {}) {
     await store.saveSession(built.session);
     return { details, sessionId: built.session.id };
   };
-  return { store, sync, calls, fail, addOrder, setOnline: (v: boolean) => void (online = v) };
+  return {
+    store,
+    sync,
+    calls,
+    fail,
+    addOrder,
+    setOnline: (v: boolean) => void (online = v),
+    setUid: (v: string | null) => void (uid = v),
+  };
 }
 
 describe('đồng bộ đơn một chiều', () => {
@@ -55,7 +74,7 @@ describe('đồng bộ đơn một chiều', () => {
     expect(t.calls).toEqual(['order:A']);
   });
 
-  it('phiên created không đăng; phiên recording đăng sau đơn, kèm đảm bảo kiện', async () => {
+  it('phiên created không đăng; phiên recording đăng sau đơn (kiện đầu đã đăng cùng đơn nên không đăng lại)', async () => {
     const t = await setup();
     const a = await t.addOrder('B', 1000);
     await t.sync.runOnce(LOCAL_SHOP_ID);
@@ -65,6 +84,7 @@ describe('đồng bộ đơn một chiều', () => {
     const summary = await t.sync.runOnce(LOCAL_SHOP_ID);
     expect(summary.sessionsPublished).toBe(1);
     expect(t.calls.slice(-2)).toEqual(['order:B', 'session:s-B:recording']);
+    expect(t.calls.some((c) => c.startsWith('package:'))).toBe(false);
     await t.store.updateSessionStatus(LOCAL_SHOP_ID, a.sessionId as SessionId, 'ended');
     await t.sync.runOnce(LOCAL_SHOP_ID);
     expect(t.calls[t.calls.length - 1]).toBe('session:s-B:ended');
@@ -72,11 +92,61 @@ describe('đồng bộ đơn một chiều', () => {
     expect(t.calls.filter((c) => c.startsWith('session'))).toHaveLength(2);
   });
 
+  it('đổi trạng thái phiên nhiều lần: kiện chỉ được đảm bảo MỘT lần, các lần sau không đọc lại cây đơn', async () => {
+    const t = await setup();
+    const a = await t.addOrder('PK', 1000);
+    await t.sync.runOnce(LOCAL_SHOP_ID);
+    await t.store.updateSessionStatus(LOCAL_SHOP_ID, a.sessionId as SessionId, 'recording');
+    await t.sync.runOnce(LOCAL_SHOP_ID);
+    await t.store.updateSessionStatus(LOCAL_SHOP_ID, a.sessionId as SessionId, 'ended');
+    await t.sync.runOnce(LOCAL_SHOP_ID);
+    await t.store.updateSessionStatus(LOCAL_SHOP_ID, a.sessionId as SessionId, 'confirmed');
+    await t.sync.runOnce(LOCAL_SHOP_ID);
+    // Kiện đầu đã đăng cùng đơn nên không cần đăng kiện lần nào; chỉ có 3 lần đăng phiên.
+    expect(t.calls).toEqual([
+      'order:PK',
+      'session:s-PK:recording',
+      'session:s-PK:ended',
+      'session:s-PK:confirmed',
+    ]);
+  });
+
+  it('kiện thêm sau khi đơn đã đăng: được đăng một lần trước phiên của nó, lượt sau không lặp', async () => {
+    const t = await setup();
+    const a = await t.addOrder('PK2', 1000);
+    await t.sync.runOnce(LOCAL_SHOP_ID);
+    const next = buildNextPackage(a.details, { ids: testIds, nowDevice: 2000 });
+    await t.store.addPackage(LOCAL_SHOP_ID, next);
+    const built = buildPackingSession(
+      { ...a.details, packages: [...a.details.packages, next] },
+      next.id,
+      { sessionId: 's-PK2b' as SessionId, nowDevice: 3000 },
+    );
+    if (!built.ok) throw new Error('fixture');
+    await t.store.saveSession(built.session);
+    await t.store.updateSessionStatus(LOCAL_SHOP_ID, built.session.id, 'recording');
+    await t.sync.runOnce(LOCAL_SHOP_ID);
+    await t.store.updateSessionStatus(LOCAL_SHOP_ID, built.session.id, 'ended');
+    await t.sync.runOnce(LOCAL_SHOP_ID);
+    expect(t.calls.filter((c) => c.startsWith('package:'))).toEqual(['package:2']);
+  });
+
   it('trạng thái lạ không được đăng', async () => {
     const t = await setup();
-    const a = await t.addOrder('C', 1000);
+    await t.addOrder('C', 1000);
     await t.sync.runOnce(LOCAL_SHOP_ID);
-    await t.store.updateSessionStatus(LOCAL_SHOP_ID, a.sessionId as SessionId, 'xyz');
+    // Kho không cho đặt trạng thái lạ qua updateSessionStatus; trạng thái lạ chỉ có thể đến từ bản ghi
+    // do bản app khác lưu. Dựng bằng cách lưu thẳng một phiên có trạng thái lạ.
+    const odd = await t.addOrder('C2', 1100, false);
+    const pkg = odd.details.packages[0];
+    if (!pkg) throw new Error('fixture');
+    const built = buildPackingSession(odd.details, pkg.id, {
+      sessionId: 's-C2' as SessionId,
+      nowDevice: 1200,
+    });
+    if (!built.ok) throw new Error('fixture');
+    await t.store.saveSession({ ...built.session, sessionStatus: 'xyz' as never });
+    await t.sync.runOnce(LOCAL_SHOP_ID); // đăng đơn C2
     expect((await t.sync.runOnce(LOCAL_SHOP_ID)).sessionsPublished).toBe(0);
   });
 
@@ -97,6 +167,38 @@ describe('đồng bộ đơn một chiều', () => {
     const original = t.calls.length;
     await t.sync.runOnce(LOCAL_SHOP_ID);
     expect(t.calls.length - original).toBe(2); // thử cả hai
+  });
+
+  it('chưa đăng nhập: không đăng gì và không đánh dấu', async () => {
+    const t = await setup({ uid: 'u1' });
+    await t.addOrder('G', 1000);
+    t.setUid(null);
+    expect((await t.sync.runOnce(LOCAL_SHOP_ID)).skipped).toBe('signed_out');
+    expect(t.calls).toEqual([]);
+    t.setUid('u1');
+    expect((await t.sync.runOnce(LOCAL_SHOP_ID)).ordersPublished).toBe(1);
+  });
+
+  it('máy dùng chung: đơn của người khác ở lại máy, chỉ đăng khi chính họ đăng nhập (không ghi nhầm người tạo)', async () => {
+    const t = await setup({ uid: 'u1' });
+    await t.addOrder('H1', 1000); // của u1
+    t.setUid('u2');
+    await t.addOrder('H2', 2000); // của u2
+    // u2 đang đăng nhập: chỉ đăng đơn của u2.
+    expect(await t.sync.runOnce(LOCAL_SHOP_ID)).toMatchObject({ ordersPublished: 1, failed: 0 });
+    expect(t.calls).toEqual(['order:H2']);
+    // u1 đăng nhập lại: đăng nốt đơn của u1.
+    t.setUid('u1');
+    expect(await t.sync.runOnce(LOCAL_SHOP_ID)).toMatchObject({ ordersPublished: 1, failed: 0 });
+    expect(t.calls).toEqual(['order:H2', 'order:H1']);
+  });
+
+  it('bản ghi cũ chưa có người tạo (tạo trước khi có cột / lúc chưa biết uid) không bao giờ được đăng', async () => {
+    const t = await setup({ uid: null });
+    await t.addOrder('OLD', 1000);
+    t.setUid('u1');
+    expect(await t.sync.runOnce(LOCAL_SHOP_ID)).toMatchObject({ ordersPublished: 0, failed: 0 });
+    expect(t.calls).toEqual([]);
   });
 
   it('ngoại tuyến thì bỏ qua; lượt chồng nhau thì busy', async () => {

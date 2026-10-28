@@ -184,7 +184,10 @@ describe('chỉ phiên created được quay', () => {
       const details = await seedOrder(orders, sampleOrder());
       const session = sampleSession(details, Date.now());
       await orders.saveSession(session);
-      await orders.updateSessionStatus(LOCAL_SHOP_ID, session.id, status);
+      // Theo bảng chuyển hợp lệ: created -> recording -> (ended | interrupted | needs_attention).
+      await orders.updateSessionStatus(LOCAL_SHOP_ID, session.id, 'recording');
+      if (status !== 'recording')
+        await orders.updateSessionStatus(LOCAL_SHOP_ID, session.id, status);
       mockNavigation.params = { sessionId: session.id };
       await renderWithProviders(<PackRecordScreen />, {
         orderStore: orders,

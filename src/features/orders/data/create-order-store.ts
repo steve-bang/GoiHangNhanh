@@ -1,6 +1,7 @@
 import { AppError } from '@/core/errors/app-error';
 import type { SqlDatabase } from '@/platform';
 
+import type { CreatorUidProvider } from '../domain/creator';
 import type { OrderStore } from '../domain/order-store';
 import { createMemoryOrderStore } from './memory-order-store';
 import { createSqliteOrderStore } from './sqlite-order-store';
@@ -10,12 +11,15 @@ import { createSqliteOrderStore } from './sqlite-order-store';
  * Mở SQLite LỖI thì mọi thao tác báo `ORDER_SAVE_FAILED`: KHÔNG lặng lẽ chuyển sang bộ nhớ vì
  * sẽ mất dữ liệu khi đóng app mà người dùng tưởng đã lưu (bất biến 3, 11).
  */
-export function createLocalOrderStore(open: () => Promise<SqlDatabase | null>): OrderStore {
+export function createLocalOrderStore(
+  open: () => Promise<SqlDatabase | null>,
+  options: { creatorUid?: CreatorUidProvider } = {},
+): OrderStore {
   let resolved: Promise<OrderStore> | null = null;
   const get = () => {
     if (!resolved) {
       resolved = open()
-        .then((db) => (db ? createSqliteOrderStore(db) : createMemoryOrderStore()))
+        .then((db) => (db ? createSqliteOrderStore(db, options) : createMemoryOrderStore(options)))
         .catch((error: unknown) => {
           resolved = null; // lần sau thử mở lại
           throw new AppError('ORDER_SAVE_FAILED', {}, { cause: error });
@@ -45,9 +49,10 @@ export function createLocalOrderStore(open: () => Promise<SqlDatabase | null>): 
     listRecentSearches: async (s, l) => (await get()).listRecentSearches(s, l),
     removeRecentSearch: async (s, t) => (await get()).removeRecentSearch(s, t),
     clearRecentSearches: async (s) => (await get()).clearRecentSearches(s),
-    listOrdersPendingRemote: async (s, l) => (await get()).listOrdersPendingRemote(s, l),
-    markOrderPublished: async (s, o, a) => (await get()).markOrderPublished(s, o, a),
-    listSessionsPendingRemote: async (s, l) => (await get()).listSessionsPendingRemote(s, l),
+    listOrdersPendingRemote: async (s, l, u) => (await get()).listOrdersPendingRemote(s, l, u),
+    markOrderPublished: async (s, o, a, u) => (await get()).markOrderPublished(s, o, a, u),
+    markPackagePublished: async (s, p, a) => (await get()).markPackagePublished(s, p, a),
+    listSessionsPendingRemote: async (s, l, u) => (await get()).listSessionsPendingRemote(s, l, u),
     markSessionPublished: async (s, i, st) => (await get()).markSessionPublished(s, i, st),
   };
 }

@@ -31,6 +31,7 @@ export function OrderSyncRunner({ docs }: { docs: RemoteDocuments | null }) {
             remote: createRemoteOrderWriter(docs, getAppVersion() ?? undefined),
             now: Date.now,
             isOnline: () => !offline,
+            currentUid: docs.currentUid,
           })
         : null,
     [docs, store, offline],

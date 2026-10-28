@@ -92,4 +92,31 @@ export const MIGRATIONS: readonly string[] = [
   ALTER TABLE orders ADD COLUMN remote_synced_at_device INTEGER;
   ALTER TABLE packing_sessions ADD COLUMN remote_status TEXT;
   `,
+  // v5: uid người tạo đơn/kiện/phiên (nullable). Rules ép `createdBy == auth.uid` nên chỉ người tạo
+  // mới đăng được bản ghi của mình; máy dùng chung không được ghi nhầm người tạo (ADR-019, Q-23g).
+  // Bản ghi có trước cột này giữ NULL và KHÔNG bao giờ được đăng.
+  `
+  ALTER TABLE orders ADD COLUMN created_by TEXT;
+  ALTER TABLE packages ADD COLUMN created_by TEXT;
+  ALTER TABLE packing_sessions ADD COLUMN created_by TEXT;
+  `,
+  // v6: kiện đã đăng lên máy chủ chưa, để đăng phiên không phải đọc lại cả cây đơn (mỗi lần phiên đổi
+  // trạng thái) chỉ để biết "kiện thêm sau" đã có chưa (chi phí đọc Firestore). Kiện có trước cột này
+  // giữ NULL: lần đăng phiên đầu tiên kiểm tra một lần (idempotent) rồi đánh dấu.
+  `
+  ALTER TABLE packages ADD COLUMN remote_synced_at_device INTEGER;
+  `,
+];
+
+/**
+ * Cột của `evidence_files` mà bản v3 ĐẦU TIÊN (đã lỡ chạy trên vài máy dev/Expo Go ở các nhánh xếp
+ * chồng) chưa có: v3 sau đó được sửa tại chỗ để thêm chúng, nên máy đã chạy v3 cũ có
+ * `user_version` = 3 mà thiếu cột. Quy tắc từ nay: không sửa migration đã phát hành; việc sửa schema
+ * lệch nằm ở `repairLegacySchema` (sqlite-order-store.ts), chỉ ADD COLUMN nullable/có mặc định
+ * (idempotent).
+ */
+export const LEGACY_EVIDENCE_FILE_COLUMNS: readonly { name: string; ddl: string }[] = [
+  { name: 'attempt_count', ddl: 'INTEGER NOT NULL DEFAULT 0' },
+  { name: 'next_attempt_at_device', ddl: 'INTEGER' },
+  { name: 'last_error_code', ddl: 'TEXT' },
 ];

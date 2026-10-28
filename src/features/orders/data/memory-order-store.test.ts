@@ -4,4 +4,10 @@ import { runPendingRemoteContract } from './pending-remote.contract';
 
 runOrderStoreContract('bộ nhớ', async () => createMemoryOrderStore());
 
-runPendingRemoteContract('bộ nhớ', async () => ({ store: createMemoryOrderStore() }));
+runPendingRemoteContract('bộ nhớ', async () => {
+  let uid: string | null = 'user-a';
+  return {
+    store: createMemoryOrderStore({ creatorUid: () => uid }),
+    setUid: (value) => void (uid = value),
+  };
+});

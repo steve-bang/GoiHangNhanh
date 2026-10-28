@@ -58,8 +58,6 @@ async function setup() {
     newEvidenceId: () => 'ev-1' as EvidenceId,
     now: () => 5000,
   };
-  const statusOf = async () =>
-    (await orders.listSessionsPendingRemote(LOCAL_SHOP_ID, 10)).map((s) => s.status);
   return {
     ports,
     orders,
@@ -70,7 +68,6 @@ async function setup() {
     finish: (r: RecordResult) => resolveDone(r),
     crash: () => rejectDone(new Error('x')),
     fileState: async () => (await files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId))?.state,
-    statusOf,
   };
 }
 

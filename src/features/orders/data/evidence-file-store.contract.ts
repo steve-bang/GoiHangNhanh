@@ -62,6 +62,63 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
       expect(await h.files.get(LOCAL_SHOP_ID, input.id)).toEqual(file);
     });
 
+    it('bộ ba kiện-phiên-đơn phải thuộc nhau và cùng shop: lệch thì ném lỗi và không lưu gì', async () => {
+      const h = await make();
+      const a = await seedFile(h, 'TRI-A');
+      const b = await seedFile(h, 'TRI-B');
+      const bad = (patch: Partial<NewEvidenceFile>, id: string) =>
+        h.files.create({ ...a, id: id as EvidenceId, ...patch });
+      // phiên của đơn khác
+      await expect(bad({ sessionId: b.sessionId }, 'ev-t1')).rejects.toMatchObject({
+        code: 'LOCAL_SAVE_UNAVAILABLE',
+      });
+      // kiện của đơn khác
+      await expect(bad({ packageId: b.packageId }, 'ev-t2')).rejects.toMatchObject({
+        code: 'LOCAL_SAVE_UNAVAILABLE',
+      });
+      // đơn khác với đơn của phiên
+      await expect(bad({ orderId: b.orderId }, 'ev-t3')).rejects.toMatchObject({
+        code: 'LOCAL_SAVE_UNAVAILABLE',
+      });
+      // shop khác với shop của phiên
+      await expect(bad({ shopId: 'shop-khac' as ShopId }, 'ev-t4')).rejects.toMatchObject({
+        code: 'LOCAL_SAVE_UNAVAILABLE',
+      });
+      // phiên không tồn tại
+      await expect(bad({ sessionId: 'khong-co' as SessionId }, 'ev-t5')).rejects.toMatchObject({
+        code: 'LOCAL_SAVE_UNAVAILABLE',
+      });
+      for (const id of ['ev-t1', 'ev-t2', 'ev-t3', 'ev-t4', 'ev-t5']) {
+        expect(await h.files.get(LOCAL_SHOP_ID, id as EvidenceId)).toBeNull();
+        expect(await h.files.get('shop-khac' as ShopId, id as EvidenceId)).toBeNull();
+      }
+      expect(await h.files.countUnsynced(LOCAL_SHOP_ID)).toBe(0);
+    });
+
+    it('cùng id nhưng gắn phiên/kiện/đơn/shop/nhóm/loại khác: ném lỗi, không trả bản cũ trong im lặng', async () => {
+      const h = await make();
+      const a = await seedFile(h, 'DUP-A');
+      const b = await seedFile(h, 'DUP-B');
+      const first = await h.files.create(a);
+      const attempts: Partial<NewEvidenceFile>[] = [
+        { sessionId: b.sessionId, packageId: b.packageId, orderId: b.orderId },
+        { sessionId: b.sessionId },
+        { packageId: b.packageId },
+        { orderId: b.orderId },
+        { shopId: 'shop-khac' as ShopId },
+        { group: 'return' },
+        { kind: 'photo' },
+      ];
+      for (const patch of attempts) {
+        await expect(h.files.create({ ...a, ...patch })).rejects.toMatchObject({
+          code: 'LOCAL_SAVE_UNAVAILABLE',
+        });
+      }
+      // Bản cũ không đổi; gọi lại đúng liên kết vẫn trả bản cũ (thử lại an toàn).
+      expect(await h.files.get(LOCAL_SHOP_ID, a.id)).toEqual(first);
+      expect(await h.files.create({ ...a, createdAtDevice: 99999 })).toEqual(first);
+    });
+
     it('tạo lại cùng id không ghi đè (an toàn khi thử lại)', async () => {
       const h = await make();
       const input = await seedFile(h, 'B');
@@ -86,6 +143,105 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
       expect(closed).toMatchObject({
         ok: true,
         file: { state: 'queued', ...CLOSED, durationMs: 60000, updatedAtDevice: 5000 },
+      });
+    });
+
+    it('chi tiết tệp đã đóng bất biến: mã băm/kích thước/thời lượng chỉ đặt MỘT lần ở sự kiện đóng tệp', async () => {
+      const h = await make();
+      const input = await seedFile(h, 'IMM');
+      await h.files.create(input);
+      const apply = (type: string, now: number, patch?: object) =>
+        h.files.applyEvent(LOCAL_SHOP_ID, input.id, device(type), now, patch);
+      // Không đặt được ở sự kiện không phải đóng tệp.
+      expect(await apply('STOP_RECORDING', 1, { sha256Client: 'cd'.repeat(32) })).toEqual({
+        ok: false,
+        error: 'IMMUTABLE_FIELD',
+      });
+      expect(await apply('STOP_RECORDING', 1, { sizeBytes: 5 })).toEqual({
+        ok: false,
+        error: 'IMMUTABLE_FIELD',
+      });
+      expect((await h.files.get(LOCAL_SHOP_ID, input.id))?.state).toBe('recording'); // không đổi gì
+      await apply('STOP_RECORDING', 2, { localPath: 'file:///tmp/1.mp4' });
+      await apply('LOCAL_FILE_READABLE', 3, { ...CLOSED, durationMs: 1000 });
+      // Sau khi đóng: không đổi được, kể cả qua sự kiện upload hay đóng lại.
+      for (const patch of [
+        { sha256Client: 'cd'.repeat(32) },
+        { sizeBytes: 99 },
+        { durationMs: 5 },
+        { localPath: 'file:///khac.mp4' },
+      ]) {
+        expect(await apply('UPLOAD_STARTED', 4, patch)).toEqual({
+          ok: false,
+          error: 'IMMUTABLE_FIELD',
+        });
+      }
+      expect(await h.files.get(LOCAL_SHOP_ID, input.id)).toMatchObject({
+        state: 'queued',
+        ...CLOSED,
+        durationMs: 1000,
+      });
+      // Patch số lần thử vẫn đi bình thường.
+      expect(await apply('UPLOAD_STARTED', 5, { attemptCount: 1 })).toMatchObject({ ok: true });
+    });
+
+    it('vị trí tệp: đặt khi chưa có, ghi vị trí thật khi chuyển tệp (trước khi đóng), không đổi sau khi đóng', async () => {
+      const h = await make();
+      const input = await seedFile(h, 'LOC');
+      await h.files.create(input);
+      const apply = (type: string, now: number, patch?: object) =>
+        h.files.applyEvent(LOCAL_SHOP_ID, input.id, device(type), now, patch);
+      expect(await apply('STOP_RECORDING', 1, { localPath: 'file:///tmp/a.mp4' })).toMatchObject({
+        ok: true,
+        file: { localPath: 'file:///tmp/a.mp4' },
+      });
+      // Chuyển sang thư mục bền rồi lỗi: ghi vị trí thật.
+      expect(
+        await apply('LOCAL_WRITE_FAILED', 2, { localPath: 'file:///evidence/a.mp4' }),
+      ).toMatchObject({
+        ok: true,
+        file: { state: 'local_save_failed', localPath: 'file:///evidence/a.mp4' },
+      });
+      await apply('RETRY_LOCAL_SAVE', 3);
+      // Đóng tệp có thể ghi vị trí bền (khác vị trí tạm đã lưu).
+      expect(
+        await apply('LOCAL_FILE_READABLE', 4, { ...CLOSED, localPath: 'file:///evidence/b.mp4' }),
+      ).toMatchObject({ ok: true, file: { state: 'queued', localPath: 'file:///evidence/b.mp4' } });
+      // Đặt lại đúng giá trị cũ là hợp lệ; đổi khác thì không.
+      expect(
+        await apply('UPLOAD_STARTED', 5, { localPath: 'file:///evidence/b.mp4' }),
+      ).toMatchObject({
+        ok: true,
+      });
+      expect(await apply('UPLOAD_FAILED', 6, { localPath: 'file:///x.mp4' })).toEqual({
+        ok: false,
+        error: 'IMMUTABLE_FIELD',
+      });
+    });
+
+    it('LOCAL_FILE_MOVED: ghi đường dẫn bền mới khi đang saving_local (trước khi băm), vẫn saving_local, không đóng tệp', async () => {
+      const h = await make();
+      const input = await seedFile(h, 'MOV');
+      await h.files.create(input);
+      const apply = (type: string, now: number, patch?: object) =>
+        h.files.applyEvent(LOCAL_SHOP_ID, input.id, device(type), now, patch);
+      await apply('STOP_RECORDING', 1, { localPath: 'file:///tmp/a.mp4' });
+      expect(await apply('LOCAL_FILE_MOVED', 2, { localPath: 'evidence/a.mp4' })).toMatchObject({
+        ok: true,
+        file: { state: 'saving_local', localPath: 'evidence/a.mp4', sha256Client: null },
+      });
+      // Không thành chi tiết đã chốt: không đặt được mã băm/kích thước qua sự kiện này.
+      expect(await apply('LOCAL_FILE_MOVED', 3, { sha256Client: 'cd'.repeat(32) })).toEqual({
+        ok: false,
+        error: 'IMMUTABLE_FIELD',
+      });
+      expect(
+        await apply('LOCAL_FILE_READABLE', 4, { ...CLOSED, localPath: 'evidence/a.mp4' }),
+      ).toMatchObject({ ok: true, file: { state: 'queued' } });
+      // Sau khi đóng (có mã băm) không còn đổi được vị trí, và sự kiện này cũng hết hợp lệ.
+      expect(await apply('LOCAL_FILE_MOVED', 5, { localPath: 'evidence/khac.mp4' })).toEqual({
+        ok: false,
+        error: 'ILLEGAL_TRANSITION',
       });
     });
 

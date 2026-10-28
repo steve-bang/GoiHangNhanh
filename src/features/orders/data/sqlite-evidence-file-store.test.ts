@@ -27,6 +27,36 @@ describe('kho tệp SQLite: schema và ràng buộc', () => {
     expect(table).not.toBeNull();
   });
 
+  it('nâng cấp từ schema v3 CŨ (thiếu 3 cột hàng đợi, user_version = 3): tự thêm cột và dùng được', async () => {
+    const db = createNodeSqliteDatabase();
+    // Dựng đúng trạng thái máy đã chạy v3 đầu tiên: v1, v2, v3 không có 3 cột, user_version = 3.
+    await db.execAsync(MIGRATIONS[0] ?? '');
+    await db.execAsync(MIGRATIONS[1] ?? '');
+    await db.execAsync(
+      (MIGRATIONS[2] ?? '')
+        .replace('attempt_count INTEGER NOT NULL DEFAULT 0,', '')
+        .replace('next_attempt_at_device INTEGER,', '')
+        .replace('last_error_code TEXT,', ''),
+    );
+    await db.execAsync('PRAGMA user_version = 3');
+    const before = await db.getAllAsync<{ name: string }>('PRAGMA table_info(evidence_files)');
+    expect(before.map((c) => c.name)).not.toContain('attempt_count');
+
+    const files = createSqliteEvidenceFileStore(db);
+    const orders = createSqliteOrderStore(db);
+    await expect(files.countUnsynced(LOCAL_SHOP_ID)).resolves.toBe(0);
+    const after = await db.getAllAsync<{ name: string }>('PRAGMA table_info(evidence_files)');
+    expect(after.map((c) => c.name)).toEqual(
+      expect.arrayContaining(['attempt_count', 'next_attempt_at_device', 'last_error_code']),
+    );
+    const input = await seedFile({ files, orders }, 'LEG');
+    await files.create(input);
+    expect((await files.get(LOCAL_SHOP_ID, input.id))?.attemptCount).toBe(0);
+    // Mở lần hai trên cùng cơ sở dữ liệu: sửa lệch là no-op, không lỗi.
+    const again = createSqliteEvidenceFileStore(db);
+    await expect(again.countUnsynced(LOCAL_SHOP_ID)).resolves.toBe(1);
+  });
+
   it('tệp phải gắn với phiên có thật (khóa ngoại): phiên lạ bị từ chối', async () => {
     const h = await harness();
     const input = await seedFile(h, 'FK');

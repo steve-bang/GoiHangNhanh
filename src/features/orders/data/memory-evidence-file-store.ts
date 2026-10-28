@@ -1,13 +1,26 @@
 import type { EvidenceId, OrderId, SessionId, ShopId } from '@/core/ids';
+import { AppError } from '@/core/errors/app-error';
 import {
   applyEventToFile,
+  hasSameBinding,
   isUnsynced,
   type EvidenceFile,
   type EvidenceFileStore,
 } from '@/features/evidence';
 
-/** Kho tệp bằng chứng trong bộ nhớ: cho web và test. Cùng hợp đồng với bản SQLite. */
-export function createMemoryEvidenceFileStore(): EvidenceFileStore {
+import type { OrderStore } from '../domain/order-store';
+
+/** Tra phiên để kiểm bộ ba kiện-phiên-đơn khi tạo tệp; `OrderStore` thỏa mãn giao diện này. */
+export type SessionLookup = Pick<OrderStore, 'getSession'>;
+
+/**
+ * Kho tệp bằng chứng trong bộ nhớ: cho web và test. Cùng hợp đồng với bản SQLite.
+ * `sessions` (thường là kho đơn cùng bộ nhớ) bật kiểm tra liên kết khi tạo; không truyền thì chỉ kiểm
+ * liên kết khi `id` đã có (dành cho test độc lập không dựng đơn). Đường chạy thật luôn truyền.
+ */
+export function createMemoryEvidenceFileStore(
+  options: { sessions?: SessionLookup } = {},
+): EvidenceFileStore {
   const files = new Map<string, EvidenceFile>();
   const ofShop = (shopId: ShopId) => [...files.values()].filter((f) => f.shopId === shopId);
   const oldestFirst = (a: EvidenceFile, b: EvidenceFile) => a.createdAtDevice - b.createdAtDevice;
@@ -15,7 +28,21 @@ export function createMemoryEvidenceFileStore(): EvidenceFileStore {
   return {
     create: async (input) => {
       const existing = files.get(input.id);
-      if (existing) return existing;
+      if (existing) {
+        if (!hasSameBinding(existing, input)) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+        return existing;
+      }
+      if (options.sessions) {
+        const session = await options.sessions.getSession(input.shopId, input.sessionId);
+        if (
+          !session ||
+          session.shopId !== input.shopId ||
+          session.orderId !== input.orderId ||
+          session.packageId !== input.packageId
+        ) {
+          throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+        }
+      }
       const file: EvidenceFile = {
         ...input,
         state: 'recording',

@@ -1,4 +1,4 @@
-import type { OrderId, OrderLineId, SessionId, ShopId } from '@/core/ids';
+import type { OrderId, OrderLineId, PackageId, SessionId, ShopId } from '@/core/ids';
 
 import type { OrderListPage, OrderListPageRequest, OrderListQuery } from './order-list';
 import type { Order, OrderDetails, OrderLine, OrderPackage, PackingSession } from './types';
@@ -45,8 +45,11 @@ export interface OrderStore {
   saveSession(session: PackingSession): Promise<void>;
   getSession(shopId: ShopId, id: SessionId): Promise<PackingSession | null>;
   /**
-   * Đặt trạng thái phiên cục bộ (luồng ghi video: `recording`, `ended`...). Phiên không có hoặc của
-   * shop khác thì ném `LOCAL_SAVE_UNAVAILABLE`. Không đổi ảnh chụp đơn của phiên.
+   * Đặt trạng thái phiên cục bộ (luồng ghi video: `recording`, `ended`...) theo bảng chuyển hợp lệ
+   * (`canChangeSessionStatus`, session-status.ts): lùi (ví dụ `confirmed` -> `recording`), nhảy cóc
+   * và trạng thái lạ đều bị từ chối; đặt lại đúng trạng thái hiện tại là không đổi gì. Phiên không có
+   * hoặc của shop khác, hoặc chuyển không hợp lệ thì ném `LOCAL_SAVE_UNAVAILABLE` và KHÔNG đổi gì.
+   * Không đổi ảnh chụp đơn của phiên. Chưa có lịch sử đổi trạng thái (xem decisions.md, mục theo dõi).
    */
   updateSessionStatus(shopId: ShopId, id: SessionId, status: string): Promise<void>;
   /**
@@ -97,23 +100,52 @@ export interface OrderStore {
   /** Xóa toàn bộ lịch sử tìm của MỘT shop (không đụng shop khác). */
   clearRecentSearches(shopId: ShopId): Promise<void>;
   /**
-   * Đơn CẦN đăng lên máy chủ: đã có ít nhất một phiên (từ đó đơn không còn sửa được nên đăng là
-   * thao tác tạo thuần, không cần cập nhật/xóa dòng; Q-23a) và chưa đăng. Cũ nhất trước.
+   * Đơn CẦN đăng lên máy chủ bởi `creatorUid`: đã có ít nhất một phiên (từ đó đơn không còn sửa được
+   * nên đăng là thao tác tạo thuần, không cần cập nhật/xóa dòng; Q-23a), chưa đăng, và do CHÍNH
+   * `creatorUid` tạo (`createdBy`). Đơn của người khác dùng chung máy, hoặc không rõ người tạo (tạo
+   * trước khi có cột / lúc chưa biết uid), không bao giờ có mặt ở đây (Q-23g). Cũ nhất trước.
    */
-  listOrdersPendingRemote(shopId: ShopId, limit: number): Promise<OrderDetails[]>;
-  /** Ghi nhận đơn đã có trên máy chủ (idempotent). */
-  markOrderPublished(shopId: ShopId, orderId: OrderId, atDevice: number): Promise<void>;
+  listOrdersPendingRemote(
+    shopId: ShopId,
+    limit: number,
+    creatorUid: string,
+  ): Promise<OrderDetails[]>;
   /**
-   * Phiên CẦN đăng/cập nhật trạng thái trên máy chủ: trạng thái khác `created` (phiên `created` chưa
-   * có bằng chứng nên không đăng), khác trạng thái đã đăng gần nhất, và đơn của nó đã đăng.
-   * `status` là trạng thái cục bộ hiện tại. Cũ nhất trước.
+   * Ghi nhận đơn đã có trên máy chủ (idempotent), cùng các kiện của đơn do `creatorUid` tạo (cùng
+   * lần đăng với đơn). Kiện của người khác thêm vào đơn này vẫn chờ chính họ đăng.
+   */
+  markOrderPublished(
+    shopId: ShopId,
+    orderId: OrderId,
+    atDevice: number,
+    creatorUid: string,
+  ): Promise<void>;
+  /** Ghi nhận một kiện đã có trên máy chủ (idempotent). */
+  markPackagePublished(shopId: ShopId, packageId: PackageId, atDevice: number): Promise<void>;
+  /**
+   * Phiên CẦN đăng/cập nhật trạng thái trên máy chủ bởi `creatorUid`: do chính `creatorUid` bắt đầu,
+   * trạng thái khác `created` (phiên `created` chưa có bằng chứng nên không đăng), khác trạng thái đã
+   * đăng gần nhất, và đơn của nó đã đăng. `status` là trạng thái cục bộ hiện tại. Cũ nhất trước.
    */
   listSessionsPendingRemote(
     shopId: ShopId,
     limit: number,
-  ): Promise<{ session: PackingSession; status: string }[]>;
+    creatorUid: string,
+  ): Promise<PendingSession[]>;
   /** Ghi nhận phiên đã đăng với `status` (idempotent). */
   markSessionPublished(shopId: ShopId, sessionId: SessionId, status: string): Promise<void>;
+}
+
+/**
+ * Một phiên cần đăng. `packagePending`: kiện của phiên (do chính `creatorUid` tạo) CHƯA được ghi nhận
+ * là đã đăng, nên phải đảm bảo kiện có trên máy chủ trước khi đăng phiên; `false` thì không cần đọc
+ * hay ghi gì thêm cho kiện. Phiên trên kiện do người khác tạo mà kiện chưa đăng thì KHÔNG có mặt ở
+ * danh sách (chờ họ đăng kiện).
+ */
+export interface PendingSession {
+  readonly session: PackingSession;
+  readonly status: string;
+  readonly packagePending: boolean;
 }
 
 export interface RecentSearch {

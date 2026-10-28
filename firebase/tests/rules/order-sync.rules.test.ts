@@ -44,6 +44,19 @@ describe('đăng đơn và phiên đúng hình dạng Rules yêu cầu', () => {
     await assertSucceeds(batch.commit());
   });
 
+  it('createdBy khác uid đang đăng nhập bị từ chối (đơn, kiện, phiên): không đăng thay người khác', async () => {
+    const { details, session } = makeOrderFixture(SHOP_A, 'sync-order-7');
+    const db = as(USERS.packerA);
+    for (const w of orderWrites(details, 'nguoi-khac', values)) {
+      await assertFails(setDoc(doc(db, w.path), w.data));
+    }
+    const mine = writeBatch(db);
+    for (const w of orderWrites(details, USERS.packerA, values)) mine.set(doc(db, w.path), w.data);
+    await assertSucceeds(mine.commit());
+    const write = sessionWrite(session, 'nguoi-khac', values);
+    await assertFails(setDoc(doc(db, write.path), write.data));
+  });
+
   it('đăng phiên sau đơn với trạng thái recording, rồi đổi sang ended', async () => {
     const { details, session } = makeOrderFixture(SHOP_A, 'sync-order-2');
     const db = as(USERS.packerA);

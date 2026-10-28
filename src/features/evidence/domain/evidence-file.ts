@@ -59,7 +59,12 @@ export interface EvidenceFilePatch {
   readonly lastErrorCode?: string | null;
 }
 
-export type ApplyEventError = TransitionError | 'FILE_NOT_FOUND' | 'MISSING_FILE_DETAILS';
+export type ApplyEventError =
+  | TransitionError
+  | 'FILE_NOT_FOUND'
+  | 'MISSING_FILE_DETAILS'
+  /** Patch cố đổi chi tiết đã chốt của tệp đã đóng (mã băm, kích thước, thời lượng, vị trí). */
+  | 'IMMUTABLE_FIELD';
 
 export type ApplyEventResult =
   | { readonly ok: true; readonly file: EvidenceFile }
@@ -89,6 +94,68 @@ function hasQueueDetails(file: EvidenceFile, patch: EvidenceFilePatch): boolean 
 }
 
 /**
+ * Hai bản ghi có cùng liên kết đơn + kiện + phiên + shop + nhóm + loại không. Dùng khi `create` gặp
+ * `id` đã có: cùng liên kết thì là lần thử lại (trả bản cũ), khác thì là gọi sai, KHÔNG được trả bản
+ * cũ trong im lặng (bất biến 2).
+ */
+export function hasSameBinding(
+  existing: Pick<EvidenceFile, 'shopId' | 'orderId' | 'packageId' | 'sessionId' | 'group' | 'kind'>,
+  input: Pick<NewEvidenceFile, 'shopId' | 'orderId' | 'packageId' | 'sessionId' | 'group' | 'kind'>,
+): boolean {
+  return (
+    existing.shopId === input.shopId &&
+    existing.orderId === input.orderId &&
+    existing.packageId === input.packageId &&
+    existing.sessionId === input.sessionId &&
+    existing.group === input.group &&
+    existing.kind === input.kind
+  );
+}
+
+/** Sự kiện được phép ghi VỊ TRÍ THẬT của tệp khi chuyển từ thư mục tạm sang thư mục bền. */
+const RELOCATION_EVENTS: readonly FileEvent['type'][] = [
+  'LOCAL_FILE_READABLE',
+  'LOCAL_FILE_MOVED',
+  'LOCAL_WRITE_FAILED',
+  'RECOVERY_FOUND_FILE',
+];
+
+/**
+ * Bản gốc bất biến (bất biến 4) nên chi tiết của tệp đã đóng không đổi được qua `patch`:
+ * - `sha256Client`, `sizeBytes`, `durationMs`: chỉ đặt ở sự kiện đóng tệp (`LOCAL_FILE_READABLE`) và
+ *   chỉ MỘT lần (đặt lại đúng giá trị cũ là hợp lệ, để thử lại an toàn). Mã băm gốc dùng để so sánh
+ *   trước khi tải nên không đổi được về sau.
+ * - `localPath`: đặt được khi chưa có; đổi từ giá trị cũ sang giá trị khác chỉ ở sự kiện chuyển tệp
+ *   (`RELOCATION_EVENTS`) và chỉ khi tệp CHƯA đóng (chưa có mã băm).
+ * Vi phạm thì từ chối cả sự kiện (không im lặng bỏ qua phần patch), kho không đổi gì.
+ */
+function violatesImmutability(
+  file: EvidenceFile,
+  event: FileEvent,
+  patch: EvidenceFilePatch,
+): boolean {
+  const closing = event.type === 'LOCAL_FILE_READABLE';
+  const frozen = [
+    [patch.sha256Client, file.sha256Client],
+    [patch.sizeBytes, file.sizeBytes],
+    [patch.durationMs, file.durationMs],
+  ] as const;
+  for (const [incoming, current] of frozen) {
+    if (incoming === undefined) continue;
+    if (!closing) return true;
+    if (current !== null && current !== incoming) return true;
+  }
+  if (
+    patch.localPath !== undefined &&
+    file.localPath !== null &&
+    patch.localPath !== file.localPath
+  ) {
+    return file.sha256Client !== null || !RELOCATION_EVENTS.includes(event.type);
+  }
+  return false;
+}
+
+/**
  * Hàm thuần dùng chung cho mọi cài đặt kho: áp dụng một sự kiện lên bản ghi qua máy trạng thái
  * (`transition`), kiểm điều kiện chi tiết, rồi trả bản ghi mới. Không I/O.
  */
@@ -100,6 +167,7 @@ export function applyEventToFile(
 ): ApplyEventResult {
   const result = transition(file.state, event);
   if (!result.ok) return { ok: false, error: result.error };
+  if (violatesImmutability(file, event, patch)) return { ok: false, error: 'IMMUTABLE_FIELD' };
   const next: EvidenceFile = {
     ...file,
     state: result.state,
@@ -123,7 +191,12 @@ export function applyEventToFile(
 
 /** Kho tệp bằng chứng cục bộ. Mọi truy vấn có `shopId` (cô lập shop, bất biến 8). */
 export interface EvidenceFileStore {
-  /** Tạo tệp ở `recording`. Cùng `id` đã có thì trả bản đã có, không ghi đè (an toàn khi thử lại). */
+  /**
+   * Tạo tệp ở `recording`. Bộ ba kiện-phiên-đơn phải thuộc nhau và cùng shop với tệp (phiên có thật,
+   * `session.orderId`/`packageId` khớp, kiện thuộc đơn): lệch thì ném `LOCAL_SAVE_UNAVAILABLE` và không
+   * lưu gì. Cùng `id` đã có VÀ cùng liên kết thì trả bản đã có, không ghi đè (an toàn khi thử lại);
+   * cùng `id` mà gắn phiên/đơn/kiện/shop khác thì ném `LOCAL_SAVE_UNAVAILABLE` (không trả bản cũ).
+   */
   create(file: NewEvidenceFile): Promise<EvidenceFile>;
   get(shopId: ShopId, id: EvidenceId): Promise<EvidenceFile | null>;
   /** Áp sự kiện qua máy trạng thái; lỗi nghiệp vụ trả `ok: false`, lỗi lưu trữ ném `AppError`. */
