@@ -406,6 +406,72 @@ export function createSqliteOrderStore(db: SqlDatabase): OrderStore {
           await db.runAsync('UPDATE order_lines SET quantity = ? WHERE id = ?', [quantity, lineId]);
         }),
       ),
+    updateOrder: (shopId, orderId, edit) =>
+      guarded('ORDER_SAVE_FAILED', async () => {
+        await db.withTransactionAsync(async () => {
+          const owner = await db.getFirstAsync<{ id: string }>(
+            'SELECT id FROM orders WHERE id = ? AND shop_id = ?',
+            [orderId, shopId],
+          );
+          if (!owner) throw new AppError('ORDER_NOT_FOUND');
+          const session = await db.getFirstAsync<{ id: string }>(
+            'SELECT id FROM packing_sessions WHERE order_id = ? LIMIT 1',
+            [orderId],
+          );
+          if (session) throw new AppError('ORDER_HAS_SESSION');
+          for (const l of edit.lines) {
+            if (l.orderId !== orderId) throw new AppError('ORDER_SAVE_FAILED');
+          }
+          await db.runAsync(
+            'UPDATE orders SET source = ?, tracking_code = ?, tracking_code_key = ? WHERE id = ?',
+            [
+              edit.source,
+              edit.trackingCode,
+              edit.trackingCode === null ? null : toCodeKey(edit.trackingCode),
+              orderId,
+            ],
+          );
+          // Xóa dòng không còn trong bản sửa, rồi cập nhật/thêm từng dòng theo thứ tự mới.
+          const placeholders = edit.lines.map(() => '?').join(', ');
+          await db.runAsync(
+            edit.lines.length > 0
+              ? `DELETE FROM order_lines WHERE order_id = ? AND id NOT IN (${placeholders})`
+              : 'DELETE FROM order_lines WHERE order_id = ?',
+            [orderId, ...edit.lines.map((l) => l.id)],
+          );
+          for (const l of edit.lines) {
+            const present = await db.getFirstAsync<{ order_id: string }>(
+              'SELECT order_id FROM order_lines WHERE id = ?',
+              [l.id],
+            );
+            if (present && present.order_id !== orderId) throw new AppError('ORDER_SAVE_FAILED');
+            if (present) {
+              await db.runAsync(
+                'UPDATE order_lines SET name = ?, variant = ?, quantity = ?, position = ? WHERE id = ?',
+                [l.name, l.variant, l.quantity, l.position, l.id],
+              );
+            } else {
+              await db.runAsync(
+                `INSERT INTO order_lines (id, order_id, name, variant, quantity, position, data_origin,
+                  created_at_device) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                  l.id,
+                  orderId,
+                  l.name,
+                  l.variant,
+                  l.quantity,
+                  l.position,
+                  l.dataOrigin,
+                  l.createdAtDevice,
+                ],
+              );
+            }
+          }
+        });
+        const details = await orderDetails(shopId, orderId);
+        if (!details) throw new AppError('ORDER_NOT_FOUND');
+        return details;
+      }),
     addPackage: (shopId, pkg) =>
       guarded('ORDER_SAVE_FAILED', () =>
         db.withTransactionAsync(async () => {

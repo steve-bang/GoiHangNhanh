@@ -125,6 +125,30 @@ export function createMemoryOrderStore(): OrderStore {
       if (sessionsOf(shopId, line.orderId).length > 0) throw new AppError('ORDER_HAS_SESSION');
       lines.set(lineId, { ...line, quantity });
     },
+    async updateOrder(shopId, orderId, edit) {
+      const order = orderOf(shopId, orderId);
+      if (!order) throw new AppError('ORDER_NOT_FOUND');
+      if (sessionsOf(shopId, orderId).length > 0) throw new AppError('ORDER_HAS_SESSION');
+      const incoming = copy(edit.lines);
+      // Kiểm tra trước khi ghi (bộ nhớ không có giao dịch): dòng phải thuộc đơn này, ID dòng mới
+      // không được trùng dòng của đơn khác; sai thì không đổi gì.
+      for (const line of incoming) {
+        const other = lines.get(line.id);
+        if (line.orderId !== orderId || (other && other.orderId !== orderId)) {
+          throw new AppError('ORDER_SAVE_FAILED');
+        }
+      }
+      orders.set(orderId, { ...order, source: edit.source, trackingCode: edit.trackingCode });
+      const keep = new Set(incoming.map((l) => l.id));
+      for (const existing of linesOf(orderId))
+        if (!keep.has(existing.id)) lines.delete(existing.id);
+      for (const line of incoming) lines.set(line.id, line);
+      return copy<OrderDetails>({
+        order: orders.get(orderId) as Order,
+        lines: linesOf(orderId),
+        packages: packagesOf(orderId),
+      });
+    },
     async addPackage(shopId, pkg) {
       if (
         !orderOf(shopId, pkg.orderId) ||
