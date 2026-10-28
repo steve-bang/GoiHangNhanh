@@ -4,6 +4,7 @@ import { logger } from '@/core/logging/logger';
 import {
   applyEventToFile,
   ALL_FILE_STATES,
+  hasSameBinding,
   isUnsynced,
   type EvidenceFile,
   type EvidenceFileStore,
@@ -109,23 +110,47 @@ export function createSqliteEvidenceFileStore(db: SqlDatabase): EvidenceFileStor
   return {
     create: (input) =>
       guarded(async () => {
-        await db.runAsync(
-          `INSERT OR IGNORE INTO evidence_files (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, 'recording', NULL, NULL, NULL, NULL, 0, NULL, NULL, ?, ?)`,
-          [
-            input.id,
-            input.shopId,
-            input.orderId,
-            input.packageId,
-            input.sessionId,
-            input.group,
-            input.kind,
-            input.createdAtDevice,
-            input.createdAtDevice,
-          ],
-        );
-        const row = await getRow(input.shopId, input.id);
-        if (!row) throw new AppError('LOCAL_SAVE_UNAVAILABLE'); // id đã thuộc shop khác
-        return toFile(row);
+        const holder: { row: FileRow | null } = { row: null };
+        // Đọc-kiểm-ghi trong một giao dịch: id đã có thì phải cùng liên kết; chưa có thì bộ ba kiện,
+        // phiên, đơn phải thuộc nhau và cùng shop (khóa ngoại chỉ kiểm từng cột có tồn tại).
+        await db.withTransactionAsync(async () => {
+          const existing = await db.getFirstAsync<FileRow>(
+            `SELECT ${COLUMNS} FROM evidence_files WHERE id = ?`,
+            [input.id],
+          );
+          if (existing) {
+            if (!hasSameBinding(toFile(existing), input)) {
+              throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+            }
+            holder.row = existing;
+            return;
+          }
+          const linked = await db.getFirstAsync<{ id: string }>(
+            `SELECT s.id FROM packing_sessions s
+             JOIN orders o ON o.id = s.order_id
+             JOIN packages p ON p.id = s.package_id AND p.order_id = o.id
+             WHERE s.id = ? AND s.shop_id = ? AND o.shop_id = ? AND o.id = ? AND p.id = ?`,
+            [input.sessionId, input.shopId, input.shopId, input.orderId, input.packageId],
+          );
+          if (!linked) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+          await db.runAsync(
+            `INSERT INTO evidence_files (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, 'recording', NULL, NULL, NULL, NULL, 0, NULL, NULL, ?, ?)`,
+            [
+              input.id,
+              input.shopId,
+              input.orderId,
+              input.packageId,
+              input.sessionId,
+              input.group,
+              input.kind,
+              input.createdAtDevice,
+              input.createdAtDevice,
+            ],
+          );
+          holder.row = await getRow(input.shopId, input.id);
+        });
+        if (!holder.row) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
+        return toFile(holder.row);
       }),
     get: (shopId, id) =>
       guarded(async () => {
