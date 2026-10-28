@@ -181,4 +181,34 @@
 | Chuỗi chữ | lệch có chủ đích | lệch có chủ đích | "Chưa có số liệu"/"Chưa có thông tin" thay số; không "Gói tiêu chuẩn"; ghi chú khung 12 đổi câu (D19) |
 
 
-**Lưu ý sau review PR #19:** chữ thẻ ghi chú của ảnh `pr-f-12-*` đã cũ (câu mới: "Theo chính sách dự kiến, bằng chứng đang tranh chấp được giữ lại và hạ cấp gói không xóa bằng chứng ngay. Cách xử lý khi hết thời hạn lưu chưa được công bố."). Chưa chụp lại vì không dựng được bản sao ngoài repo trong môi trường này; chụp lại khi có điều kiện.
+**Ảnh `pr-f-12-*` đã chụp lại ở PR-G** với câu ghi chú mới theo D19 ("Theo chính sách dự kiến...").
+
+# Ảnh đối chiếu PR-G: Cài đặt thông báo (khung 13) và Quyền riêng tư và bảo mật (khung 14)
+
+**Lưu ý trung thực:** ảnh render **bản web** (react-native-web trong Chromium) của màn thật trên **cổng giả**, **không phải ảnh chụp trên iOS/Android thật**; 320x568, 360x800, 390x844 (hệ số 2) và chữ lớn 1.6 lần ở 320x568 (bản sao ngoài repo nhân cỡ chữ của `Text`; icon không phóng theo). Bản sao ngoài repo có tham số URL tạm (`state=savefail|loaderror|loading`, `method=google`, `fs=`) KHÔNG commit. Công tắc ở ảnh là cổng giả trong bộ nhớ.
+
+| Ảnh | Nội dung |
+| --- | --- |
+| `pr-g-13-notifications-{320x568,360x800,390x844}.png`, `...-largetext-320x568.png` | Khung 13: thẻ "Thông báo đẩy: sắp có" + bốn công tắc (mặc định cổng giả) |
+| `pr-g-13-save-error-*.png` | Bấm "Đồng bộ dữ liệu" khi cổng báo lỗi lưu: công tắc hoàn về Tắt, thẻ cảnh báo "Chưa lưu được cài đặt. Bạn thử lại nhé." |
+| `pr-g-13-load-error-*.png` | Không tải được cài đặt (cổng chưa kết nối): thẻ lỗi + Thử lại, không công tắc |
+| `pr-g-14-security-*.png`, `...-largetext-320x568.png` | Khung 14, tài khoản mật khẩu |
+| `pr-g-14-security-google-*.png` | Khung 14, tài khoản Google: hàng Đổi mật khẩu chỉ là ghi chú |
+| `pr-g-board-reference-13.png`, `-14.png`, `-13-14.png` | Khung 13, 14 cắt từ board 07 (phóng 4x, board độ phân giải thấp) |
+| `pr-g-compare-board-vs-app-390.png` | Hàng trên board, hàng dưới app 390x844 |
+| `pr-f-12-retention-*.png` | Chụp lại khung 12 (câu ghi chú D19 mới) |
+
+## Checklist "giống design"
+
+| Hạng mục | 13 | 14 | Ghi chú lệch |
+| --- | --- | --- | --- |
+| Bố cục và thứ tự khối | lệch có chủ đích | gần | 13: thẻ "Thông báo đẩy: sắp có" ở ĐẦU (board: thẻ cam quyền bị từ chối ở cuối, không dựng vì chưa có adapter đọc quyền); bốn công tắc (board năm). 14: nhóm một thẻ có đường kẻ (board: mỗi hàng một thẻ); "Xóa tài khoản" tách nhóm riêng |
+| Thứ bậc chữ | đạt | đạt | tiêu đề 14 xuống dòng ở 390px (chữ lớn hơn board) |
+| Màu thẻ/nền | gần | gần | không thẻ cam; hàng khóa mờ |
+| Icon | gần | gần | glyph Ionicons gần nghĩa, duyệt ở ảnh PR; "Xóa tài khoản" icon cảnh báo (board: thùng rác) |
+| Nút | - | - | không nút "Mở Cài đặt" (không có thẻ quyền) |
+| Header | đạt | đạt | mũi tên trái, tiêu đề lệch trái |
+| Thanh tab | hiện | hiện | route gốc UI-I04/UI-I05 (Q-21t); Đổi mật khẩu (route con) ẩn |
+| Trạng thái | đạt | đạt | 13: tải, lỗi tải, lỗi lưu, đang lưu (công tắc khóa); 14: tải/lỗi hồ sơ, tài khoản Apple/Google |
+| Chữ lớn | đạt | đạt | nhãn và huy hiệu "Sắp có" xuống dòng |
+| Chuỗi chữ | lệch có chủ đích | lệch có chủ đích | 13: bỏ "Tài khoản", "Cập nhật sản phẩm"; "Thời hạn lưu" -> "Dung lượng sắp đầy"/"Gói sắp hết hạn", thêm "Tải lên lỗi hoặc cần xử lý" (docs/09). 14: "Xác nhận 2 lớp" + "Sắp có" (board "Xác thực 2 lớp: Chưa bật"); mọi hàng chưa làm "Sắp có"; xem mục 6.7 của plan |
