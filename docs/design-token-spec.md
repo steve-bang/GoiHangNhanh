@@ -53,6 +53,8 @@ src/core/theme/
 
 ## 4. Giá trị cuối cùng
 
+> **Cập nhật v3 (Bright Orange):** bảng 4.1 và 4.3 dưới đây mô tả bảng màu **cũ (jade)** vẫn là nguồn của `colors.ts` đóng băng (Splash, đăng nhập, thiết lập đã khách xác nhận). Màn **trong app** dùng bảng màu mới ở mục [4.8](#48-bright-orange-v3); các hàng ghi `jade`/`neutral` ở 4.3 chỉ còn đúng cho bảng cũ.
+
 ### 4.1. Primitives — màu (từ `colors.ts` hiện tại)
 
 Đặt tên theo họ màu + độ đậm, không theo vai trò.
@@ -60,7 +62,6 @@ src/core/theme/
 | Primitive | Hex | Nguồn khóa cũ |
 |---|---|---|
 | `jade.950` | `#14382A` | `brandDark` |
-| `jade.800` | `#0F5F41` | (mới, v2) trạng thái nhấn nút chính; trắng trên 800 ≈ 8.4:1 |
 | `jade.700` | `#157852` | `brand` |
 | `jade.100` | `#E6F0E9` | `brandSoft` |
 | `green.700` | `#1E7A3C` | `success` |
@@ -74,10 +75,7 @@ src/core/theme/
 | `neutral.0` | `#FFFFFF` | `surface`, `formBackground`, `onBrand`… |
 | `neutral.50` | `#FAF8F2` | `background` |
 | `neutral.100` | `#F3F6F5` | `surfaceMuted` |
-| `neutral.200` | `#E8E5DC` | (mới, v2) đường kẻ phân nhóm nhẹ |
 | `neutral.300` | `#D9D6CC` | `border` |
-| `neutral.400` | `#8E9491` | (mới, v2) ranh giới điều khiển ≥ 3:1 trên trắng; chữ/biểu tượng vô hiệu hóa |
-| `neutral.500` | `#6B706D` | (mới, v2) chữ cấp ba ≥ 4.5:1 trên nền màn và thẻ |
 | `neutral.600` | `#5A5F5C` | `textMuted` |
 | `neutral.900` | `#1B1B1B` | `text` |
 | `slate.900` | `#0E2B3F` | `ink` |
@@ -160,6 +158,31 @@ Ngoài 6 nhãn bằng chứng, `semantic.status` có thêm bộ riêng (không t
 | `status.syncPending` / `status.synced` | `amber` / `green` | Hàng đợi đồng bộ còn việc / đã đối soát xong | `synced` chỉ dùng khi máy chủ đã xác nhận |
 
 Test (`theme.test.ts`) khóa: đủ tương phản 4.5:1 và chỉ `error` + `recording` được dùng sắc đỏ.
+
+### 4.8. Bright Orange (v3)
+
+Bảng màu thương hiệu của màn trong app (khách duyệt 2026-10-29). Primitive mới: `orange`, `stone`, `leaf`, `ember`, `sky`. Họ `jade`/`neutral`/`slate`/`mint` giữ lại **chỉ** cho `colors.ts` đóng băng.
+
+| Token ngữ nghĩa | Giá trị | Ghi chú tương phản |
+|---|---|---|
+| `brand.primary` | `#EE4D2D` | Biểu tượng, nút Quét, tab đang chọn, viền chọn, thanh tiến độ. Trên trắng 3.66:1 (đồ họa ≥ 3:1 đạt). **Không** làm nền chữ trắng cỡ thường |
+| `brand.hover` / `brand.pressed` | `#FF6A45` / `#D93B20` | `hover` dùng cho khung quét trên nền camera tối (6:1) |
+| `action.primary` | `#D93B20` | **Nền nút chính, thẻ hành động chính.** Chữ trắng trên nó 4.57:1 (AA). Là sắc cam sáng nhất còn đạt AA với chữ trắng |
+| `action.primaryPressed` | `#B02E17` | Trạng thái nhấn, trắng trên nó 6.46:1 |
+| `action.link` / `brand.onSoft` | `#B02E17` | Chữ cam trên nền màn, trắng và `brand.soft`/`softStrong` (≥ 4.5:1 cả ba) |
+| `brand.soft` / `brand.softStrong` | `#FFF1EC` / `#FCE5DE` | Chỉ nhấn vùng nhỏ (chip chọn, ô icon). Không tô cả thẻ/màn |
+| `brand.deep` | `#7C2D12` | Nền thương hiệu đậm (hero), chữ trắng 9.4:1 |
+| `surface.screen` / `raised` / `muted` | `#FFFAF7` / `#FFFFFF` / `#FFF5F0` | Nền màn / thẻ / khối nhấn nhẹ (`surface.secondary`) |
+| `text.primary` / `secondary` | `#292524` / `#746D68` | `secondary` tối hơn gợi ý ban đầu `#78716C` một chút để đạt 4.5:1 trên `#FFF5F0` (4.74:1; `#78716C` chỉ 4.47:1) |
+| `border.default` / `field` / `strong` | `#F0E4DE` / `#D8CBC3` / `#9A938D` | `default` là đường viền thẻ tinh tế (trang trí); `strong` ≥ 3:1 cho ranh giới điều khiển |
+| `feedback.success` | `#15803D` trên `#DCFCE7` | 4.57:1 |
+| `feedback.warning` | `#B45309` trên `#FDF3E7` | 4.58:1 |
+| `feedback.danger` / `action.destructive` | `#B91C1C` trên `#FEE2E2` | 5.30:1. Gần sắc với cam thương hiệu (tương phản giữa hai màu 1.42:1) nên lỗi LUÔN kèm biểu tượng cảnh báo + chữ và nền hồng nhạt |
+| `feedback.info` | `#0369A1` trên `#F0F9FF` | 5.57:1 |
+
+**Quy tắc phân vai màu:** cam chỉ cho hành động chính, biểu tượng quan trọng và điều hướng đang chọn. Trạng thái nghiệp vụ không dùng cam: đã tải/đã xác minh = xanh lá; **đang tải = xanh dương** (trước đây xanh thương hiệu); chờ tải/ngoại tuyến/gián đoạn = vàng cam `amber`; lỗi = đỏ. Test `theme.test.ts` (nhóm "Bright Orange (v3)") khóa giá trị, tương phản và việc màu thương hiệu không bị dùng cho `status`.
+
+**Cơ chế phạm vi:** `Button`/`Text`/`Icon` dùng chung với màn đóng băng đọc bảng phẳng `colors`. `Screen` bọc nội dung trong `AppThemeScope` nên `useTheme().colors` trả `appColors` (suy từ token ở trên); ngoài `Screen` vẫn là bảng cũ. Nhờ vậy Splash/đăng nhập/thiết lập không đổi một điểm ảnh (`colors.golden.json` và `frozen-style-equivalence.test.tsx` giữ nguyên). Trong app, nút phụ `secondary` có viền trung tính + chữ cam để mỗi màn chỉ một nút cam đặc.
 
 ### 4.5. Typography
 

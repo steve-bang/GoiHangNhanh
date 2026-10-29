@@ -2,7 +2,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import { StyleSheet, Text as RNText, View } from 'react-native';
 import { createRef } from 'react';
 
-import { colors, layout } from '@/core/theme';
+import { colors, layout, semantic } from '@/core/theme';
 import { renderWithProviders } from '@/test-utils/render';
 
 import { Avatar } from './Avatar';
@@ -63,7 +63,7 @@ describe('ListItem: leading, titleWeight, actionTitle, disabled', () => {
         onPress={() => undefined}
       />,
     );
-    expect(flat(screen.getByText('Thêm họ tên')).color).toBe(colors.brand);
+    expect(flat(screen.getByText('Thêm họ tên')).color).toBe(semantic.color.action.link);
     expect(screen.getByTestId('dan-dau')).toBeOnTheScreen();
     expect(screen.queryByTestId('icon-person-circle-outline')).toBeNull();
   });
@@ -92,7 +92,8 @@ describe('ListGroup', () => {
     expect(screen.getByRole('header', { name: 'Cài đặt' })).toBeOnTheScreen();
     const card = screen.getByTestId('nhom').children[1] as unknown as { children: unknown[] };
     const dividers = (card.children as { props: { style?: unknown } }[]).filter(
-      (child) => flat(child).height === 1 && flat(child).backgroundColor === colors.border,
+      (child) =>
+        flat(child).height === 1 && flat(child).backgroundColor === semantic.color.border.default,
     );
     expect(dividers).toHaveLength(2); // ba hàng => hai đường kẻ
   });

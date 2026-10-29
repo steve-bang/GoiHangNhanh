@@ -49,13 +49,20 @@ export function Button({
   accessibilityHint,
   testID,
 }: ButtonProps) {
-  const { colors, spacing, radius } = useTheme();
+  const { colors, spacing, radius, tokens, scope } = useTheme();
   const slim = size === 'slim';
   const palette = {
     primary: { bg: colors.brand, fg: colors.onBrand, border: colors.brand },
     secondary: slim
       ? { bg: colors.surface, fg: colors.ink, border: colors.fieldBorder }
-      : { bg: colors.surface, fg: colors.brand, border: colors.brand },
+      : scope === 'app'
+        ? // Trong app: nút phụ viền trung tính + chữ cam, để chỉ MỘT nút cam đặc nổi bật mỗi màn.
+          {
+            bg: tokens.color.surface.raised,
+            fg: tokens.color.action.link,
+            border: tokens.color.border.field,
+          }
+        : { bg: colors.surface, fg: colors.brand, border: colors.brand },
     destructive: outlined
       ? { bg: colors.surface, fg: colors.danger, border: colors.danger }
       : { bg: colors.danger, fg: colors.onDanger, border: colors.danger },

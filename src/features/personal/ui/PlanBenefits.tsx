@@ -25,7 +25,7 @@ export function PlanBenefitList({ mark, testID }: { mark: 'plain' | 'circle'; te
           <Icon
             name={mark === 'circle' ? 'check-circle' : 'check'}
             size={20}
-            color={tokens.color.action.primary}
+            color={tokens.color.brand.primary}
           />
           <Text style={{ flex: 1, flexShrink: 1 }}>{t(`personal:planScreen.benefits.${key}`)}</Text>
         </View>

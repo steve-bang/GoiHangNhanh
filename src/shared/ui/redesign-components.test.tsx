@@ -10,6 +10,7 @@ import { Checkbox } from './Checkbox';
 import { ConfirmDialog } from './ConfirmDialog';
 import { EmptyState } from './EmptyState';
 import { ErrorState } from './ErrorState';
+import { AppThemeScope } from './theme';
 import { HeroCard } from './HeroCard';
 import { IconTile } from './IconTile';
 import { MetricTile } from './MetricTile';
@@ -445,13 +446,15 @@ describe('ErrorState variant=card', () => {
   it('nền thẻ lỗi, vẫn là alert và có nút thử lại; mặc định không có nền', async () => {
     const onRetry = jest.fn();
     const { rerender } = await renderWithProviders(
-      <ErrorState
-        title="Không thể tải"
-        message="Vui lòng thử lại."
-        onRetry={onRetry}
-        variant="card"
-        testID="es"
-      />,
+      <AppThemeScope>
+        <ErrorState
+          title="Không thể tải"
+          message="Vui lòng thử lại."
+          onRetry={onRetry}
+          variant="card"
+          testID="es"
+        />
+      </AppThemeScope>,
     );
     const alert = screen.getByTestId('es');
     expect(screen.getByRole('alert')).toHaveTextContent('Không thể tải');
@@ -462,11 +465,19 @@ describe('ErrorState variant=card', () => {
     expect(flat(screen.getByRole('button', { name: 'Thử lại' })).backgroundColor).toBe(
       color.action.primary,
     );
-    await rerender(<ErrorState title="Không thể tải" onRetry={onRetry} />);
+    await rerender(
+      <AppThemeScope>
+        <ErrorState title="Không thể tải" onRetry={onRetry} />
+      </AppThemeScope>,
+    );
     expect(flat(screen.getByRole('button', { name: 'Thử lại' })).backgroundColor).not.toBe(
       color.action.primary,
     );
-    await rerender(<ErrorState title="Không thể tải" testID="es" />);
+    await rerender(
+      <AppThemeScope>
+        <ErrorState title="Không thể tải" testID="es" />
+      </AppThemeScope>,
+    );
     expect(flat(screen.getByTestId('es')).backgroundColor).toBeUndefined();
     expect(screen.queryByRole('button')).toBeNull();
   });

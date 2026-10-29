@@ -15,7 +15,7 @@ interface ListItemProps {
   leading?: ReactNode;
   /** `regular` cho hàng menu (tên người/cửa hàng giữ in đậm). Mặc định `bold` như cũ. */
   titleWeight?: 'bold' | 'regular';
-  /** Tiêu đề màu hành động (`action.primary`), dùng cho lời mời hành động như "Thêm họ tên". */
+  /** Tiêu đề màu hành động (`action.link`), dùng cho lời mời hành động như "Thêm họ tên". */
   actionTitle?: boolean;
   /** Phần tử bên phải (nhãn trạng thái, giá trị...). Tự chịu trách nhiệm trợ năng. */
   trailing?: ReactNode;
@@ -57,7 +57,7 @@ export function ListItem({
   const titleColor = destructive
     ? tokens.color.feedback.danger.fg
     : actionTitle
-      ? tokens.color.action.primary
+      ? tokens.color.action.link
       : tokens.color.text.primary;
   const label = accessibilityLabel ?? [title, subtitle].filter(Boolean).join('. ');
 

@@ -30,7 +30,7 @@ export function Checkbox({
   const border = error
     ? tokens.color.action.destructive
     : checked
-      ? tokens.color.action.primary
+      ? tokens.color.brand.primary
       : tokens.color.text.secondary;
   return (
     <Pressable
@@ -58,7 +58,7 @@ export function Checkbox({
             borderRadius: tokens.radius.sm,
             borderWidth: tokens.borderWidth.emphasis,
             borderColor: border,
-            backgroundColor: checked ? tokens.color.action.primary : tokens.color.surface.raised,
+            backgroundColor: checked ? tokens.color.brand.primary : tokens.color.surface.raised,
           },
         ]}
       >

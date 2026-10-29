@@ -69,7 +69,7 @@ export function ShopSwitchRow({
         </Text>
       </View>
       {isSelected ? (
-        <Icon name="check-circle" size={24} color={tokens.color.action.primary} />
+        <Icon name="check-circle" size={24} color={tokens.color.brand.primary} />
       ) : null}
     </>
   );

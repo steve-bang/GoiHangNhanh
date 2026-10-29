@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
 | Chữ chính / phụ / trên nút | `color.text.primary` / `.secondary` / `.onAction` (nhóm màn form: `.strong`, `.subtle`) |
 | Nền màn / thẻ / khối xám | `color.surface.screen` / `.raised` / `.muted` |
 | Viền thẻ / viền ô nhập | `color.border.default` / `.field` |
-| Nút, liên kết, tab đang chọn | `color.action.primary`; hành động phá hủy `color.action.destructive` (đỏ chỉ cho lỗi/phá hủy/nguy cơ mất dữ liệu) |
+| Nền nút chính (chữ trắng) · chữ liên kết · biểu tượng/tab đang chọn/nút Quét | `color.action.primary` · `color.action.link` · `color.brand.primary` (đồ họa, không làm nền chữ trắng cỡ thường: 3.66:1); hành động phá hủy `color.action.destructive` (đỏ chỉ cho lỗi/phá hủy/nguy cơ mất dữ liệu) |
 | Thông báo thành công / cảnh báo / lỗi | `color.feedback.{success,warning,danger}.{fg,bg}` |
 | Trạng thái bằng chứng | `status.<savedOnDevice\|waitingUpload\|uploading\|uploaded\|verified\|error>.{fg,bg,border}` — qua `EvidenceStatusBadge` / `EVIDENCE_STATUS_PRESENTATION`, **không tự dựng**; không gộp các trạng thái |
 | Màu trên khung camera | `color.camera.*` (cố định, không đổi theo sáng/tối) |
@@ -131,3 +131,13 @@ Hợp lệ: màu thương hiệu bên thứ ba, màu hình minh họa, giới h�
 - **Danh sách:** tiêu đề dòng dùng `cardTitle`; dòng phụ `formBody` màu phụ; dòng ngày/giai đoạn là chú thích. Chip lọc dùng `size="compact"` ở danh sách có nhiều chip để không chiếm 3 hàng (vẫn xuống dòng khi chữ lớn, không cuộn ngang).
 - **Số liệu** dùng `numeric` (không phải `screenTitle`), để không bị đọc thành tiêu đề.
 - **Chưa làm:** chế độ tối (token đã tách `surface.elevated`, `text.*`, `status.*` để làm sau, câu hỏi mở O-17); `Button` chưa dùng `primaryPressed` vì dùng chung với màn đã khách xác nhận.
+
+## 7. Bright Orange (v3)
+
+Chi tiết giá trị, tương phản và cơ chế phạm vi: [design-token-spec.md mục 4.8](design-token-spec.md#48-bright-orange-v3). Tóm tắt cho developer:
+
+- Nền nút chính = `action.primary` (#D93B20), **không** phải `brand.primary` (#EE4D2D): chữ trắng trên #EE4D2D chỉ 3.66:1. Muốn dùng #EE4D2D làm nền nút phải tăng cỡ chữ lên "chữ lớn" (≥ 24px hoặc ≥ 18.66px đậm) và được duyệt lại.
+- Chữ cam trên nền màn/trắng/cam nhạt: `action.link`. Biểu tượng, viền chọn, tiến độ, nút Quét: `brand.primary`.
+- Trạng thái nghiệp vụ lấy từ `status.*` / `feedback.*`, không bao giờ dùng cam.
+- Màn mới phải nằm trong `Screen` (hoặc bọc `AppThemeScope`) để `Button`/`Text`/`Icon` nhận bảng màu mới.
+- Ảnh icon ứng dụng, Splash gốc và các tệp ảnh tĩnh (`assets/`) vẫn màu cũ (jade): ngoài phạm vi, cần thiết kế lại riêng.

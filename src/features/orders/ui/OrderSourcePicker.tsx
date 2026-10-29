@@ -51,7 +51,7 @@ export function OrderSourcePicker({
             <Icon
               name={selected ? 'check-circle' : 'forward'}
               size={22}
-              color={selected ? tokens.color.action.primary : tokens.color.text.secondary}
+              color={selected ? tokens.color.brand.primary : tokens.color.text.secondary}
             />
           </Pressable>
         );

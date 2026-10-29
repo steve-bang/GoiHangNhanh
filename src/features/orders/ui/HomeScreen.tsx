@@ -45,7 +45,7 @@ export function HomeScreen() {
         importantForAccessibility="no-hide-descendants"
         style={[styles.avatar, { backgroundColor: tokens.color.brand.soft }]}
       >
-        <Icon name="store" size={26} color={tokens.color.action.primary} />
+        <Icon name="store" size={26} color={tokens.color.brand.primary} />
       </View>
       <View style={styles.headerText}>
         <Text variant="sectionTitle" numberOfLines={1}>
@@ -103,7 +103,7 @@ export function HomeScreen() {
           onPress={() => navigation.push(ROUTES.returns)}
           style={{ minHeight: touch, justifyContent: 'center', alignSelf: 'flex-end' }}
         >
-          <Text variant="caption" bold style={{ color: tokens.color.action.primary }}>
+          <Text variant="caption" bold style={{ color: tokens.color.action.link }}>
             {t('screens:home.returnsList')}
           </Text>
         </Pressable>
@@ -141,7 +141,7 @@ export function HomeScreen() {
             onPress={() => navigation.push(ROUTES.sync)}
             style={{ minHeight: touch, justifyContent: 'center' }}
           >
-            <Text variant="caption" bold style={{ color: tokens.color.action.primary }}>
+            <Text variant="caption" bold style={{ color: tokens.color.action.link }}>
               {t('screens:home.todayDetail')}
             </Text>
           </Pressable>
@@ -157,7 +157,7 @@ export function HomeScreen() {
           />
           <StatTile
             testID="home-stat-uploaded"
-            tone="brand"
+            tone="info"
             icon="cloud-up"
             value={ILLUSTRATIVE_TODAY_STATS.uploaded}
             label={t('screens:home.stat.uploaded')}
@@ -181,7 +181,7 @@ export function HomeScreen() {
         accessibilityLabel={`${t('screens:home.tipTitle')}. ${t('screens:home.tipHint')}`}
       >
         <View style={[styles.helpRow, { padding: tokens.space.lg, gap: tokens.space.md }]}>
-          <Icon name="help" size={tokens.icon.lg} color={tokens.color.action.primary} />
+          <Icon name="help" size={tokens.icon.lg} color={tokens.color.brand.primary} />
           <View style={styles.flex}>
             <Text variant="cardTitle">{t('screens:home.tipTitle')}</Text>
             <Text variant="caption" color="textMuted">
@@ -236,14 +236,16 @@ function HomeActionCard({
             styles.cardIcon,
             {
               borderRadius: tokens.radius.md,
-              backgroundColor: primary ? tokens.color.brand.deep : tokens.color.brand.soft,
+              backgroundColor: primary
+                ? tokens.color.action.primaryPressed
+                : tokens.color.brand.soft,
             },
           ]}
         >
           <Icon
             name={icon}
             size={tokens.icon.xl}
-            color={primary ? tokens.color.text.onAction : tokens.color.action.primary}
+            color={primary ? tokens.color.text.onAction : tokens.color.brand.primary}
           />
         </View>
         <View style={styles.flex}>

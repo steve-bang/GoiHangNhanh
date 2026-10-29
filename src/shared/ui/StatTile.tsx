@@ -5,7 +5,7 @@ import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
 import { useTheme } from './theme';
 
-type StatTone = 'success' | 'brand' | 'danger';
+type StatTone = 'success' | 'info' | 'brand' | 'danger';
 
 interface StatTileProps {
   value: number;
@@ -22,7 +22,8 @@ export function StatTile({ value, label, icon, tone, onPress, testID }: StatTile
   const { tokens } = useTheme();
   const palette = {
     success: { fg: tokens.color.feedback.success.fg, bg: tokens.color.feedback.success.bg },
-    brand: { fg: tokens.color.action.primary, bg: tokens.color.brand.soft },
+    info: { fg: tokens.color.feedback.info.fg, bg: tokens.color.feedback.info.bg },
+    brand: { fg: tokens.color.brand.onSoft, bg: tokens.color.brand.soft },
     danger: { fg: tokens.color.feedback.danger.fg, bg: tokens.color.feedback.danger.bg },
   }[tone];
   return (

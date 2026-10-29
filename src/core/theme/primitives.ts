@@ -5,7 +5,37 @@
  * `colors` đang chạy (không có màu mới): đổi giá trị ở đây là đổi giao diện.
  */
 export const palette = {
-  jade: { 950: '#14382A', 800: '#0F5F41', 700: '#157852', 100: '#E6F0E9' },
+  /**
+   * Bright Orange (v3): màu thương hiệu của màn trong app. Họ `jade` bên dưới được GIỮ cho bảng màu cũ
+   * đóng băng (`colors.ts`: Splash, đăng nhập, thiết lập đã khách xác nhận); màn trong app không đọc nó.
+   * 600 = màu nhận diện (biểu tượng, nút Quét, thanh tiến độ: đồ họa >= 3:1). 700 = nền nút chính và
+   * liên kết: là sắc cam SÁNG NHẤT cho chữ trắng đạt 4.5:1 (trắng trên 600 chỉ 3.66:1). 800 = chữ cam
+   * trên nền cam nhạt và trạng thái nhấn. 900 = nền thương hiệu đậm.
+   */
+  orange: {
+    50: '#FFF1EC',
+    100: '#FCE5DE',
+    500: '#FF6A45',
+    600: '#EE4D2D',
+    700: '#D93B20',
+    800: '#B02E17',
+    900: '#7C2D12',
+  },
+  /** Trung tính ấm đi cùng Bright Orange (nền, chữ, đường viền). */
+  stone: {
+    25: '#FFFAF7',
+    50: '#FFF5F0',
+    200: '#F0E4DE',
+    300: '#D8CBC3',
+    400: '#9A938D',
+    500: '#746D68',
+    900: '#292524',
+  },
+  /** Màu trạng thái nghiệp vụ (v3): xanh lá, đỏ, xanh dương; vàng cam dùng `amber`. */
+  leaf: { 700: '#15803D', 100: '#DCFCE7' },
+  ember: { 700: '#B91C1C', 100: '#FEE2E2', 50: '#FEF2F2' },
+  sky: { 700: '#0369A1', 100: '#E0F2FE', 50: '#F0F9FF' },
+  jade: { 950: '#14382A', 700: '#157852', 100: '#E6F0E9' },
   green: { 700: '#1E7A3C', 100: '#E3F1E7' },
   amber: { 700: '#B45309', 50: '#FDF3E7' },
   red: { 700: '#B3261E', 50: '#FCEBEA' },
@@ -15,13 +45,7 @@ export const palette = {
     0: '#FFFFFF',
     50: '#FAF8F2',
     100: '#F3F6F5',
-    /** Đường kẻ phân nhóm rất nhẹ (trong thẻ/danh sách); không dùng làm ranh giới ô nhập. */
-    200: '#E8E5DC',
     300: '#D9D6CC',
-    /** Ranh giới điều khiển (>= 3:1 trên nền trắng, WCAG 1.4.11) và chữ/biểu tượng vô hiệu hóa. */
-    400: '#8E9491',
-    /** Chữ cấp ba: gợi ý trong ô nhập, ghi chú phụ (>= 4.5:1 trên nền màn và nền thẻ). */
-    500: '#6B706D',
     600: '#5A5F5C',
     900: '#1B1B1B',
   },

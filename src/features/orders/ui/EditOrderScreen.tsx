@@ -447,8 +447,8 @@ function EditForm({ header, details }: { header: EditHeader; details: OrderDetai
         }}
         style={[styles.addLine, { minHeight: touch, gap: tokens.space.sm }]}
       >
-        <Icon name="add" size={18} color={tokens.color.action.primary} />
-        <Text variant="formButton" style={{ color: tokens.color.action.primary }}>
+        <Icon name="add" size={18} color={tokens.color.brand.primary} />
+        <Text variant="formButton" style={{ color: tokens.color.action.link }}>
           {t('screens:quickOrder.addLine')}
         </Text>
       </Pressable>

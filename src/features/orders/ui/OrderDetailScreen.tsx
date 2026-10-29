@@ -317,7 +317,7 @@ function DetailReady({
           </Text>
           {history.map((event) => (
             <View key={event.key} style={styles.row} testID="detail-history-item">
-              <View style={[styles.dot, { backgroundColor: tokens.color.action.primary }]} />
+              <View style={[styles.dot, { backgroundColor: tokens.color.brand.primary }]} />
               <View style={styles.flex}>
                 <Text variant="formBody" color="ink">
                   {event.text}

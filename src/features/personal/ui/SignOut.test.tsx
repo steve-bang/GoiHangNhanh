@@ -9,7 +9,7 @@ import {
   type OrderStore,
 } from '@/features/orders';
 import { ROUTES } from '@/core/navigation';
-import { colors } from '@/core/theme';
+import { appColors as colors } from '@/core/theme';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { createNodeSqliteDatabase } from '@/test-utils/node-sqlite';
 import { sampleOrder, sampleSession } from '@/test-utils/order-fixtures';

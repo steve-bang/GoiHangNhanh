@@ -14,7 +14,7 @@ import { getKeyboardAvoidingBehavior, useIsOffline } from '@/platform';
 import { OfflineBanner } from './OfflineBanner';
 import { ScreenHeader } from './ScreenHeader';
 import { Text } from './Text';
-import { useTheme } from './theme';
+import { AppThemeScope, useTheme } from './theme';
 
 interface ScreenProps {
   title: string;
@@ -82,51 +82,53 @@ export function Screen({
   const contentStyle = { padding: tokens.space.lg, gap: contentGap ?? tokens.space.lg } as const;
 
   return (
-    <View
-      testID={testID}
-      style={[styles.root, { backgroundColor: background, paddingTop: insets.top }]}
-    >
-      {header ?? (
-        <ScreenHeader
-          title={title}
-          compact={form}
-          {...(onBack ? { onBack } : {})}
-          {...(headerRight ? { trailing: headerRight } : {})}
-        />
-      )}
-      <OfflineBanner visible={offline} />
-      <KeyboardAvoidingView style={styles.flex} behavior={getKeyboardAvoidingBehavior()}>
-        {scroll ? (
-          <ScrollView
-            {...(testID ? { testID: `${testID}-scroll` } : {})}
-            style={styles.flex}
-            contentContainerStyle={contentStyle}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            {...(refreshControl ? { refreshControl } : {})}
-          >
-            {content}
-          </ScrollView>
-        ) : (
-          <View style={[styles.flex, contentStyle]}>{content}</View>
+    <AppThemeScope>
+      <View
+        testID={testID}
+        style={[styles.root, { backgroundColor: background, paddingTop: insets.top }]}
+      >
+        {header ?? (
+          <ScreenHeader
+            title={title}
+            compact={form}
+            {...(onBack ? { onBack } : {})}
+            {...(headerRight ? { trailing: headerRight } : {})}
+          />
         )}
-        {footer ? (
-          <View
-            style={{
-              paddingHorizontal: tokens.space.lg,
-              paddingTop: tokens.space.md,
-              paddingBottom: inTabs ? tokens.space.lg : Math.max(insets.bottom, tokens.space.lg),
-              gap: tokens.space.sm,
-              backgroundColor: background,
-              borderTopColor: tokens.color.border.default,
-              borderTopWidth: StyleSheet.hairlineWidth,
-            }}
-          >
-            {footer}
-          </View>
-        ) : null}
-      </KeyboardAvoidingView>
-    </View>
+        <OfflineBanner visible={offline} />
+        <KeyboardAvoidingView style={styles.flex} behavior={getKeyboardAvoidingBehavior()}>
+          {scroll ? (
+            <ScrollView
+              {...(testID ? { testID: `${testID}-scroll` } : {})}
+              style={styles.flex}
+              contentContainerStyle={contentStyle}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              {...(refreshControl ? { refreshControl } : {})}
+            >
+              {content}
+            </ScrollView>
+          ) : (
+            <View style={[styles.flex, contentStyle]}>{content}</View>
+          )}
+          {footer ? (
+            <View
+              style={{
+                paddingHorizontal: tokens.space.lg,
+                paddingTop: tokens.space.md,
+                paddingBottom: inTabs ? tokens.space.lg : Math.max(insets.bottom, tokens.space.lg),
+                gap: tokens.space.sm,
+                backgroundColor: background,
+                borderTopColor: tokens.color.border.default,
+                borderTopWidth: StyleSheet.hairlineWidth,
+              }}
+            >
+              {footer}
+            </View>
+          ) : null}
+        </KeyboardAvoidingView>
+      </View>
+    </AppThemeScope>
   );
 }
 

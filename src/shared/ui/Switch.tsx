@@ -69,7 +69,7 @@ export function Switch({
         <RNSwitch
           value={value}
           disabled={disabled}
-          trackColor={{ false: tokens.color.border.default, true: tokens.color.action.primary }}
+          trackColor={{ false: tokens.color.border.default, true: tokens.color.brand.primary }}
           thumbColor={tokens.color.surface.raised}
           ios_backgroundColor={tokens.color.border.default}
         />

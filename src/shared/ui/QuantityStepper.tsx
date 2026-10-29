@@ -41,7 +41,7 @@ export function QuantityStepper({ value, onChange, min = 1 }: QuantityStepperPro
         },
       ]}
     >
-      <Icon name={icon} size={20} color={tokens.color.action.primary} />
+      <Icon name={icon} size={20} color={tokens.color.brand.primary} />
     </Pressable>
   );
   return (
@@ -50,7 +50,7 @@ export function QuantityStepper({ value, onChange, min = 1 }: QuantityStepperPro
       style={[
         styles.box,
         {
-          borderColor: tokens.color.action.primary,
+          borderColor: tokens.color.brand.primary,
           borderRadius: tokens.radius.md,
           backgroundColor: tokens.color.surface.raised,
         },

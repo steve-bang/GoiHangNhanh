@@ -98,7 +98,7 @@ export function SearchScreen() {
                 onPress={() => setConfirmClear(true)}
                 style={{ minHeight: getMinTouchTarget(), justifyContent: 'center' }}
               >
-                <Text variant="formButtonSmall" style={{ color: tokens.color.action.primary }}>
+                <Text variant="formButtonSmall" style={{ color: tokens.color.action.link }}>
                   {t('screens:orderSearch.clearAll')}
                 </Text>
               </Pressable>

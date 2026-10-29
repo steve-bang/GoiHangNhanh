@@ -151,6 +151,7 @@ export function EvidenceOverviewCard() {
           />
         </View>
         <Button
+          variant="secondary"
           label={t('personal:evidenceOverview.openSync')}
           onPress={() => navigation.push(ROUTES.sync)}
           testID="open-sync-center"

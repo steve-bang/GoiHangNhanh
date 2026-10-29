@@ -2,6 +2,7 @@ import { components } from './components';
 import { semantic } from './semantic';
 
 export { colors } from './colors';
+export { appColors } from './app-colors';
 export type { ColorRole } from './colors';
 export { typography, spacing, radius, MIN_TOUCH_TARGET } from './typography';
 export { palette, space, fontWeight, iconSizeScale } from './primitives';
