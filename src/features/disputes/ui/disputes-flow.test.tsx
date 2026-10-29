@@ -8,7 +8,7 @@ import {
   LOCAL_SHOP_ID,
   OrderDetailScreen,
 } from '@/features/orders';
-import { createMemoryReturnStore } from '@/features/returns';
+import { createMemoryReturnStore, type ReturnStore } from '@/features/returns';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { sampleOrder, sampleSession, seedOrder } from '@/test-utils/order-fixtures';
 import { renderWithProviders } from '@/test-utils/render';
@@ -244,6 +244,54 @@ describe('UI-G02 Tạo hồ sơ tranh chấp', () => {
   });
 });
 
+const PHOTO_READY = {
+  localPath: 'evidence/p.jpg',
+  sizeBytes: 5,
+  sha256Client: 'cd'.repeat(32),
+};
+
+/** Tạo hồ sơ hàng hoàn kèm ảnh kiện: `queued` (đã lưu trên máy) hoặc `local_save_failed` (lưu lỗi). */
+async function seedReturnWithPhoto(
+  returns: ReturnStore,
+  returnId: string,
+  mediaId: string,
+  state: 'queued' | 'local_save_failed',
+) {
+  if (!(await returns.getReturn(SHOP, returnId as ReturnCaseId))) {
+    await returns.createReturn({
+      id: returnId as ReturnCaseId,
+      shopId: SHOP,
+      atDevice: 1,
+      eventId: `ev-${returnId}`,
+      observedCode: null,
+      link: null,
+      lines: [],
+    });
+  }
+  await returns.createMedia({
+    id: mediaId,
+    shopId: SHOP,
+    returnId: returnId as ReturnCaseId,
+    kind: 'photo',
+    atDevice: 150,
+  });
+  const apply = (
+    type: 'STOP_RECORDING' | 'LOCAL_FILE_READABLE' | 'LOCAL_WRITE_FAILED',
+    patch?: object,
+  ) => returns.applyMediaEvent(SHOP, mediaId, { type, origin: 'device' }, 151, patch);
+  await apply('STOP_RECORDING', { localPath: 'tmp.jpg' });
+  if (state === 'queued') await apply('LOCAL_FILE_READABLE', PHOTO_READY);
+  else await apply('LOCAL_WRITE_FAILED');
+}
+
+const returnSubject = (returnId: string, orderId: string | null = null) => ({
+  kind: 'return' as const,
+  returnId: returnId as ReturnCaseId,
+  label: 'RH-00001',
+  orderId: orderId as OrderId | null,
+  openingEvidenceLimit: false,
+});
+
 describe('UI-G03 Chọn bằng chứng', () => {
   async function setup() {
     const orders = createMemoryOrderStore();
@@ -314,6 +362,56 @@ describe('UI-G03 Chọn bằng chứng', () => {
     expect(empty).toHaveTextContent(/chưa liên kết đơn gốc/);
   });
 
+  it('hồ sơ hoàn: liệt kê thêm ảnh kiện của CHÍNH hồ sơ đó (nhóm Hàng hoàn), không lấy ảnh hồ sơ khác hay ảnh lưu lỗi', async () => {
+    const returns = createMemoryReturnStore();
+    await seedReturnWithPhoto(returns, 'r-own', 'photo-own', 'queued');
+    await seedReturnWithPhoto(returns, 'r-own', 'photo-failed', 'local_save_failed');
+    await seedReturnWithPhoto(returns, 'r-other', 'photo-other', 'queued');
+    const store = createMemoryDisputeStore();
+    const dispute = await store.createDispute(newDispute({ subject: returnSubject('r-own') }));
+    mockNavigation.params = { disputeId: dispute.dispute.id };
+    await renderWithProviders(<DisputeSelectEvidenceScreen />, {
+      disputeStore: store,
+      returnStore: returns,
+    });
+    const row = await screen.findByTestId('dispute-file-photo-own');
+    expect(within(row).getByText(/Ảnh · Hàng hoàn/)).toBeOnTheScreen();
+    expect(within(row).getByText('Đã lưu trên máy')).toBeOnTheScreen();
+    expect(screen.getByTestId('dispute-file-caution-photo-own')).toBeOnTheScreen();
+    expect(screen.queryByTestId('dispute-file-photo-failed')).toBeNull();
+    expect(screen.queryByTestId('dispute-file-photo-other')).toBeNull();
+
+    await fireEvent.press(screen.getByTestId('dispute-file-check-photo-own'));
+    await fireEvent.press(screen.getByTestId('dispute-add-evidence'));
+    await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+    expect(
+      (await store.getDispute(SHOP, dispute.dispute.id))?.evidence.map((e) => e.evidenceId),
+    ).toEqual(['photo-own']);
+    expect(await store.listHeldEvidenceIds(SHOP)).toEqual(['photo-own']);
+  });
+
+  it('hồ sơ hoàn có đơn gốc: ảnh hàng hoàn nằm chung danh sách với tệp đóng gói', async () => {
+    const orders = createMemoryOrderStore();
+    await seedOrder(orders, sampleOrder());
+    const files = createMemoryEvidenceFileStore();
+    const packFile = await addFile(files, orders, 'verified', 100);
+    const returns = createMemoryReturnStore();
+    await seedReturnWithPhoto(returns, 'r-own', 'photo-own', 'queued');
+    const store = createMemoryDisputeStore();
+    const dispute = await store.createDispute(
+      newDispute({ subject: returnSubject('r-own', 'order-fixture') }),
+    );
+    mockNavigation.params = { disputeId: dispute.dispute.id };
+    await renderWithProviders(<DisputeSelectEvidenceScreen />, {
+      orderStore: orders,
+      evidenceFileStore: files,
+      disputeStore: store,
+      returnStore: returns,
+    });
+    expect(await screen.findByTestId(`dispute-file-${packFile}`)).toBeOnTheScreen();
+    expect(screen.getByTestId('dispute-file-photo-own')).toBeOnTheScreen();
+  });
+
   it('hồ sơ đã đóng: không có nút thêm', async () => {
     const store = createMemoryDisputeStore();
     const dispute = await store.createDispute(newDispute());
@@ -369,6 +467,26 @@ describe('UI-G04 Xem trước và xuất', () => {
     expect(screen.getByTestId(`dispute-export-file-${local}`)).toBeOnTheScreen();
     await fireEvent.press(screen.getByTestId('dispute-share'));
     expect(mockShare.mock.calls[0]?.[0]).toContain('hạn chế bằng chứng mở kiện');
+  });
+
+  it('ảnh hàng hoàn đã chọn được tính vào danh sách và bản chia sẻ, kèm nhãn Hàng hoàn và trạng thái "Đã lưu trên máy"', async () => {
+    const returns = createMemoryReturnStore();
+    await seedReturnWithPhoto(returns, 'r-own', 'photo-own', 'queued');
+    const store = createMemoryDisputeStore();
+    const dispute = await store.createDispute(newDispute({ subject: returnSubject('r-own') }));
+    await store.addEvidence(SHOP, dispute.dispute.id, ['photo-own' as EvidenceId], 300);
+    mockNavigation.params = { disputeId: dispute.dispute.id };
+    await renderWithProviders(<DisputeExportScreen />, {
+      disputeStore: store,
+      returnStore: returns,
+    });
+    const card = await screen.findByTestId('dispute-export-file-photo-own');
+    expect(within(card).getByText(/Ảnh \(Hàng hoàn\)/)).toBeOnTheScreen();
+    expect(screen.getByTestId('dispute-notice-not_on_cloud')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByTestId('dispute-share'));
+    const shared = String(mockShare.mock.calls[0]?.[0]);
+    expect(shared).toContain('Bằng chứng (1)');
+    expect(shared).toContain('Ảnh (Hàng hoàn)');
   });
 });
 

@@ -8,7 +8,6 @@ import type { EvidenceId } from '@/core/ids';
 import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
 import { logger } from '@/core/logging/logger';
 import { ROUTES } from '@/core/navigation';
-import type { EvidenceFile } from '@/features/evidence';
 import { formatDeviceDateTime } from '@/features/orders';
 import { useAppNavigation, useRouteParams } from '@/platform';
 import {
@@ -29,10 +28,10 @@ import { evidenceCaution, type DisputeDetails } from '../domain';
 import { DisputeLoadState } from './DisputeLoadState';
 import { FileStatus } from './FileStatus';
 import { useDispute } from './use-dispute';
-import { useDisputeFiles } from './use-dispute-files';
+import { useDisputeFiles, type DisputeFileItem } from './use-dispute-files';
 
 /**
- * UI-G03 Chọn bằng chứng. Liệt kê video/ảnh của đơn gắn với hồ sơ theo thời gian, chọn nhiều. Tệp chưa
+ * UI-G03 Chọn bằng chứng. Liệt kê video/ảnh của đơn gắn với hồ sơ (và ảnh kiện của chính hồ sơ hoàn, nhóm "Hàng hoàn") theo thời gian, chọn nhiều. Tệp chưa
  * lên máy chủ hoặc đang lỗi vẫn chọn được nhưng được cảnh báo (và ghi vào bản xuất). Tệp đã chọn được đánh
  * dấu "giữ" khi hồ sơ còn mở (bất biến 9). Không tự chọn hộ. Hồ sơ đã đóng không thêm được.
  */
@@ -60,7 +59,8 @@ function SelectBody({
   const store = useDisputeStore();
   const { dispute } = details;
   const orderId = dispute.subject.orderId;
-  const { state, reload } = useDisputeFiles(shopId, orderId);
+  const returnId = dispute.subject.kind === 'return' ? dispute.subject.returnId : null;
+  const { state, reload } = useDisputeFiles(shopId, orderId, returnId);
   const [picked, setPicked] = useState<ReadonlySet<EvidenceId>>(new Set());
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<ErrorCode | null>(null);
@@ -75,7 +75,7 @@ function SelectBody({
       return next;
     });
 
-  const files: readonly EvidenceFile[] =
+  const files: readonly DisputeFileItem[] =
     state.kind === 'ready'
       ? [...state.files].sort((a, b) => a.createdAtDevice - b.createdAtDevice)
       : [];

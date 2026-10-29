@@ -7,5 +7,5 @@ export {
   createSqliteReturnStore,
   useReturnStore,
 } from './data';
-export { hasOpeningEvidenceLimit } from './domain';
-export type { ReturnDetails, ReturnStore, ReturnSummary } from './domain';
+export { hasOpeningEvidenceLimit, isMediaSavedLocally } from './domain';
+export type { ReturnDetails, ReturnMedia, ReturnStore, ReturnSummary } from './domain';

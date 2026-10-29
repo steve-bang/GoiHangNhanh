@@ -39,7 +39,11 @@ function ExportBody({
   const navigation = useAppNavigation();
   const statusText = useFileStatusText();
   const { dispute } = details;
-  const { state, reload } = useDisputeFiles(shopId, dispute.subject.orderId);
+  const { state, reload } = useDisputeFiles(
+    shopId,
+    dispute.subject.orderId,
+    dispute.subject.kind === 'return' ? dispute.subject.returnId : null,
+  );
   const chosen =
     state.kind === 'ready'
       ? state.files
@@ -47,6 +51,11 @@ function ExportBody({
           .sort((a, b) => a.createdAtDevice - b.createdAtDevice)
       : [];
   const notices = state.kind === 'ready' ? exportNotices(details, chosen) : [];
+  /** "Ảnh (Hàng hoàn)" cho ảnh kiện của hồ sơ hoàn, để phân biệt với ảnh đóng gói. */
+  const kindLabel = (f: { kind: 'video' | 'photo'; group: string }) =>
+    f.group === 'return'
+      ? `${t(`disputes:select.${f.kind}`)} (${t('disputes:select.group_return')})`
+      : t(`disputes:select.${f.kind}`);
   const subject = t(`disputes:subject.${dispute.subject.kind}`, { code: dispute.subject.label });
 
   const share = () => {
@@ -63,7 +72,7 @@ function ExportBody({
       t('disputes:export.text.filesHeader', { count: chosen.length }),
       ...chosen.map((f) =>
         t('disputes:export.text.file', {
-          kind: t(`disputes:select.${f.kind}`),
+          kind: kindLabel(f),
           time: formatDeviceDateTime(f.createdAtDevice),
           state: statusText(f.state),
         }),
@@ -151,9 +160,7 @@ function ExportBody({
         chosen.map((f) => (
           <Card key={f.id} compact testID={`dispute-export-file-${f.id}`}>
             <View style={{ gap: tokens.space.xs }}>
-              <Text
-                bold
-              >{`${t(`disputes:select.${f.kind}`)} · ${formatDeviceDateTime(f.createdAtDevice)}`}</Text>
+              <Text bold>{`${kindLabel(f)} · ${formatDeviceDateTime(f.createdAtDevice)}`}</Text>
               <FileStatus state={f.state} />
             </View>
           </Card>
