@@ -12,6 +12,7 @@ import {
   type OrderStore,
 } from '@/features/orders';
 import type { EvidenceFileStore } from '@/features/evidence';
+import { ReturnStoreProvider, createMemoryReturnStore, type ReturnStore } from '@/features/returns';
 import {
   PersonalGatewaysProvider,
   SessionProvider,
@@ -36,11 +37,13 @@ export function renderWithProviders(
     gateways?: Gateways;
     orderStore?: OrderStore;
     evidenceFileStore?: EvidenceFileStore;
+    returnStore?: ReturnStore;
     personalGateways?: PersonalGateways;
   } = {},
 ) {
   const orderStore = options.orderStore ?? createMemoryOrderStore();
   const evidenceFileStore = options.evidenceFileStore ?? createMemoryEvidenceFileStore();
+  const returnStore = options.returnStore ?? createMemoryReturnStore();
   return render(
     <SafeAreaProvider initialMetrics={METRICS}>
       <I18nextProvider i18n={initI18n()}>
@@ -53,7 +56,7 @@ export function renderWithProviders(
                 <SessionShopProvider>
                   <OrderStoreProvider store={orderStore}>
                     <EvidenceFileStoreProvider store={evidenceFileStore}>
-                      {ui}
+                      <ReturnStoreProvider store={returnStore}>{ui}</ReturnStoreProvider>
                     </EvidenceFileStoreProvider>
                   </OrderStoreProvider>
                 </SessionShopProvider>

@@ -15,7 +15,15 @@ export type { ScannerPermission } from './barcode-scanner';
 export { hideNativeSplash, holdNativeSplash } from './native-splash';
 export { CameraPreview } from './camera-preview';
 export { copyText } from './clipboard';
-export { newEvidenceId, newOrderId, newOrderLineId, newPackageId, newSessionId } from './ids';
+export {
+  newEvidenceId,
+  newOrderId,
+  newOrderLineId,
+  newPackageId,
+  newReturnCaseId,
+  newReturnRecordId,
+  newSessionId,
+} from './ids';
 export { openLocalDatabase } from './local-db';
 export type { SqlDatabase, SqlParam } from './sql-database';
 export { subscribeAppActive } from './app-state';

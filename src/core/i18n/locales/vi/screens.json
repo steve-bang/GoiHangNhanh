@@ -189,21 +189,6 @@
     "summaryUploaded": "Phiên đóng gói đã hoàn tất. Máy chủ đã nhận video.",
     "summaryPartial": "Phiên chưa trọn vẹn: có video chưa lưu xong. Video còn lại đã lưu trên máy."
   },
-  "returns": {
-    "search": "Mã đơn, mã vận đơn, mã hoàn",
-    "filterAll": "Tất cả",
-    "filter": {
-      "receiving": "Đang tiếp nhận",
-      "checking": "Đang kiểm tra",
-      "checked": "Đã kiểm tra",
-      "discrepancy": "Có sai lệch",
-      "unsynced": "Chưa đồng bộ"
-    },
-    "unlinked": "Chưa liên kết đơn gốc",
-    "receive": "Tiếp nhận hàng hoàn",
-    "emptyTitle": "Chưa có hồ sơ hàng hoàn nào",
-    "emptyMessage": "Khi nhận kiện hoàn, hãy tiếp nhận để ghi lại tình trạng kiện trước khi mở."
-  },
   "orders": {
     "search": "Tìm mã đơn, mã vận đơn…",
     "filterAll": "Tất cả",

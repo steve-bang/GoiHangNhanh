@@ -29,6 +29,9 @@ export const ERROR_CODES = {
   SOURCE_ORDER_AMBIGUOUS: 'SOURCE_ORDER_AMBIGUOUS',
   RETURN_CODE_DUPLICATE: 'RETURN_CODE_DUPLICATE',
   RETURN_ORDER_CONFLICT: 'RETURN_ORDER_CONFLICT',
+  // Đề xuất (chờ BA, R1 hàng hoàn): lưu hồ sơ hàng hoàn cục bộ; hồ sơ đã xác nhận không sửa được
+  RETURN_SAVE_FAILED: 'RETURN_SAVE_FAILED',
+  RETURN_ALREADY_CONFIRMED: 'RETURN_ALREADY_CONFIRMED',
   // Đề xuất (chờ BA, Q-04/Q-17): lưu đơn/dòng/kiện cục bộ và quy tắc phiên (docs/04 A03)
   ORDER_SAVE_FAILED: 'ORDER_SAVE_FAILED',
   ORDER_HAS_SESSION: 'ORDER_HAS_SESSION',

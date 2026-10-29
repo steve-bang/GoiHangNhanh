@@ -12,46 +12,6 @@ export const ILLUSTRATIVE_SYNC_COUNTS = { uploading: 1, waiting_upload: 1, error
 /** Số liệu "hôm nay" của Trang chủ (minh họa; nhãn theo docs/09 mục 3, không phải "Đã đồng bộ"). */
 export const ILLUSTRATIVE_TODAY_STATS = { packed: 12, uploaded: 11, error: 1 } as const;
 
-export type IllustrativeReturnStage =
-  'receiving' | 'checking' | 'checked' | 'discrepancy' | 'unsynced';
-
-export interface IllustrativeReturnCase {
-  id: string;
-  /** Mã hoàn / mã vận đơn hiển thị (chỉ là chuỗi tìm kiếm). */
-  code: string;
-  /** Mã đơn gốc; vắng = hồ sơ chưa liên kết đơn gốc (CLAUDE.md #5). */
-  originalOrderCode?: string;
-  stage: IllustrativeReturnStage;
-  dateLabel: string;
-  status: EvidenceStatusLabel;
-}
-
-export const ILLUSTRATIVE_RETURN_CASES: readonly IllustrativeReturnCase[] = [
-  {
-    id: 'demo-return-1',
-    code: 'DEMO-HOAN-01',
-    originalOrderCode: 'DEMO-0003',
-    stage: 'checking',
-    dateLabel: '26/10/2026 10:15',
-    status: 'uploading',
-  },
-  {
-    id: 'demo-return-2',
-    code: 'DEMO-HOAN-02',
-    stage: 'receiving',
-    dateLabel: '26/10/2026 09:30',
-    status: 'saved_on_device',
-  },
-  {
-    id: 'demo-return-3',
-    code: 'DEMO-HOAN-03',
-    originalOrderCode: 'DEMO-0001',
-    stage: 'discrepancy',
-    dateLabel: '23/10/2026 15:00',
-    status: 'verified',
-  },
-];
-
 export type IllustrativeSyncFilter = 'uploading' | 'waiting_upload' | 'error' | 'uploaded';
 
 export interface IllustrativeSyncJob {

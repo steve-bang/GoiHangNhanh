@@ -127,6 +127,81 @@ export const MIGRATIONS: readonly string[] = [
   );
   CREATE INDEX idx_orders_shop_activity ON orders (shop_id, last_activity_device DESC, id DESC);
   `,
+  // v8 (R1 hàng hoàn): hồ sơ hàng hoàn cục bộ (docs/02, 05). Chỉ thêm bảng. Hồ sơ có thể CHƯA liên kết
+  // đơn gốc nên `source_order_id` nullable và KHÔNG có khóa ngoại (không bắt buộc đơn tồn tại, không
+  // xóa theo đơn). Dòng dự kiến là bản SAO (`expected_*`) nên sửa đơn không làm đổi. `return_events`,
+  // `return_link_events` chỉ thêm (bất biến 7). Chưa có bảng tệp bằng chứng cho hàng hoàn: bảng
+  // `evidence_files` bắt buộc đơn + kiện + phiên đóng gói nên chưa dùng được cho hồ sơ chưa liên kết (R2).
+  `
+  CREATE TABLE return_cases (
+    id TEXT PRIMARY KEY NOT NULL,
+    shop_id TEXT NOT NULL,
+    seq INTEGER NOT NULL,
+    code TEXT NOT NULL,
+    status TEXT NOT NULL,
+    source_order_id TEXT,
+    observed_code TEXT,
+    observed_code_key TEXT,
+    exterior_json TEXT,
+    opened_before_json TEXT,
+    opening_video_json TEXT,
+    final_note TEXT NOT NULL DEFAULT '',
+    confirmed_at_device INTEGER,
+    created_at_device INTEGER NOT NULL,
+    updated_at_device INTEGER NOT NULL,
+    created_by TEXT,
+    UNIQUE (shop_id, seq)
+  );
+  CREATE INDEX idx_return_cases_shop_recent ON return_cases (shop_id, updated_at_device DESC, id DESC);
+  CREATE INDEX idx_return_cases_order ON return_cases (shop_id, source_order_id);
+  CREATE INDEX idx_return_cases_code ON return_cases (shop_id, observed_code_key);
+  CREATE TABLE return_link_events (
+    id TEXT PRIMARY KEY NOT NULL,
+    return_id TEXT NOT NULL REFERENCES return_cases (id),
+    shop_id TEXT NOT NULL,
+    order_id TEXT NOT NULL,
+    basis TEXT NOT NULL,
+    at_device INTEGER NOT NULL,
+    by_uid TEXT
+  );
+  CREATE INDEX idx_return_links_return ON return_link_events (return_id, at_device);
+  CREATE TABLE return_lines (
+    id TEXT PRIMARY KEY NOT NULL,
+    return_id TEXT NOT NULL REFERENCES return_cases (id),
+    shop_id TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    variant TEXT,
+    received_quantity INTEGER CHECK (received_quantity IS NULL OR received_quantity >= 0),
+    condition TEXT,
+    note TEXT NOT NULL DEFAULT '',
+    expected_order_line_id TEXT,
+    expected_name TEXT,
+    expected_variant TEXT,
+    expected_quantity INTEGER
+  );
+  CREATE INDEX idx_return_lines_return ON return_lines (return_id, position);
+  CREATE TABLE return_discrepancies (
+    id TEXT PRIMARY KEY NOT NULL,
+    return_id TEXT NOT NULL REFERENCES return_cases (id),
+    shop_id TEXT NOT NULL,
+    line_id TEXT,
+    kind TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    at_device INTEGER NOT NULL,
+    by_uid TEXT
+  );
+  CREATE INDEX idx_return_discrepancies_return ON return_discrepancies (return_id, at_device);
+  CREATE TABLE return_events (
+    id TEXT PRIMARY KEY NOT NULL,
+    return_id TEXT NOT NULL REFERENCES return_cases (id),
+    shop_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    at_device INTEGER NOT NULL,
+    by_uid TEXT
+  );
+  CREATE INDEX idx_return_events_return ON return_events (return_id, at_device);
+  `,
 ];
 
 /**
