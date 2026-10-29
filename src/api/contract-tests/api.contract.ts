@@ -87,6 +87,24 @@ export function describeApiContract(name: string, makeApi: () => ApiClient): voi
       expect(['signed_out', 'signed_in_no_shop', 'signed_in']).toContain(result);
     });
 
+    it('identity trả null hoặc danh tính có uid; signOut resolve hoặc ném AppError', async () => {
+      const api = makeApi();
+      try {
+        const identity = await api.session.identity();
+        if (identity !== null) {
+          expect(typeof identity.uid).toBe('string');
+          expect(identity.shopId === null || typeof identity.shopId === 'string').toBe(true);
+        }
+      } catch (error) {
+        expect(error).toBeInstanceOf(AppError);
+      }
+      const out = await api.auth.signOut().then(
+        () => 'ok',
+        (error: unknown) => error,
+      );
+      expect(out === 'ok' || out instanceof AppError).toBe(true);
+    });
+
     // Chưa kiểm được ở bản giả (cổng shop giả không biết tài khoản hiện tại); bản Firebase phải
     // thêm ca thật: gọi createShop hai lần cùng một tài khoản trả CÙNG shop, không tạo shop thứ hai.
     it.todo('createShop idempotent theo tài khoản (decisions.md Q-13b)');

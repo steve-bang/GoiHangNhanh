@@ -16,8 +16,8 @@ export type {
   VerifiedRecovery,
   VerifyRecoveryCodeInput,
 } from './auth';
-export type { CreatedShop, CreateShopInput, ShopApi, UpdateShopInput } from './shop';
-export type { SessionApi, SessionState } from './session';
+export type { CreatedShop, CreateShopInput, ShopApi, ShopDetails, UpdateShopInput } from './shop';
+export type { SessionApi, SessionIdentity, SessionState } from './session';
 
 export interface ApiClient {
   readonly auth: AuthApi;

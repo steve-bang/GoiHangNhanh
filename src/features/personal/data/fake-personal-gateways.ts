@@ -13,6 +13,7 @@ import type {
   ChangePasswordInput,
   NotificationPreferences,
   PersonalGateways,
+  SessionIdentity,
   ShopSummary,
   SettingsGateway,
   SignInMethod,
@@ -137,6 +138,17 @@ export class FakeAccountGateway implements AccountGateway {
   /** Lần gọi kế tiếp (bất kể loại) thất bại với mã này, rồi trở lại bình thường. */
   failNext(code: ErrorCode): void {
     this.failure.set(code);
+  }
+
+  /** Bản giả: ghép từ hồ sơ + shop đang dùng (cùng hành vi cũ của SessionHydrator). */
+  async getSessionIdentity(): Promise<SessionIdentity | null> {
+    const [profile, shop] = await Promise.all([this.getProfile(), this.getShopSummary()]);
+    return {
+      uid: profile.uid,
+      email: profile.email,
+      displayName: profile.displayName,
+      shopId: shop?.id ?? null,
+    };
   }
 
   async getProfile(): Promise<UserProfile> {

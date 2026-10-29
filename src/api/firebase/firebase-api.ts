@@ -5,6 +5,7 @@ import type {
   AuthApi,
   CreatedShop,
   SessionApi,
+  SessionIdentity,
   SessionState,
   ShopApi,
 } from '../contract';
@@ -35,11 +36,13 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
     signInWithPassword: (input) =>
       guard(async () => {
         const user = await ops.signIn(input.email.trim(), input.password);
+        const shopId = await ops.readShopId(user.uid);
         return {
           uid: user.uid,
           email: user.email ?? input.email.trim(),
           emailVerified: user.emailVerified,
-          hasShop: (await ops.readShopId(user.uid)) !== null,
+          hasShop: shopId !== null,
+          shopId,
         };
       }),
     // Đăng nhập Apple/Google chưa làm (O-15); khôi phục mật khẩu chờ O-22 (hướng B): không giả vờ thành công.
@@ -47,11 +50,17 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
     requestPasswordRecovery: unavailable,
     verifyRecoveryCode: unavailable,
     resetPassword: unavailable,
+    signOut: () => guard(() => ops.signOut()),
   };
 
   const shop: ShopApi = {
     createShop: (input) => guard(() => ops.callShop('createShop', input)),
     updateShop: (input) => guard(() => ops.callShop('updateShop', input)),
+    getShop: (shopId) =>
+      guard(async () => {
+        const user = await ops.restoreUser();
+        return user ? ops.readShopDetails(shopId, user.uid) : null;
+      }),
   };
 
   const session: SessionApi = {
@@ -62,6 +71,19 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
         return (await ops.readShopIdForRestore(user.uid)) !== null
           ? 'signed_in'
           : 'signed_in_no_shop';
+      }),
+    // Không bịa ID: `readShopIdForRestore` thử bộ nhớ đệm rồi máy chủ; lỗi (offline, chưa có đệm) thì
+    // ném lên để bên gọi giữ trạng thái "chưa biết" thay vì coi là không có shop.
+    identity: (): Promise<SessionIdentity | null> =>
+      guard(async () => {
+        const user = await ops.restoreUser();
+        if (!user) return null;
+        return {
+          uid: user.uid,
+          email: user.email ?? '',
+          displayName: user.displayName,
+          shopId: await ops.readShopIdForRestore(user.uid),
+        };
       }),
   };
 

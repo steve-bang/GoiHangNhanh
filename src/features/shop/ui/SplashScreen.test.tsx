@@ -33,10 +33,12 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
 const mockWindow = jest.mocked(useWindowDimensions);
 
 /** Cổng với phiên giả: `restore` do bài test điều khiển. */
-function gatewaysWith(session: SessionGateway): Gateways {
-  return { ...createFakeApi(), session };
+type RestoreOnly = Pick<SessionGateway, 'restore'>;
+function gatewaysWith(session: RestoreOnly): Gateways {
+  const fake = createFakeApi();
+  return { ...fake, session: { identity: () => fake.session.identity(), ...session } };
 }
-const restoring = (state: SessionState, latencyMs = 0): SessionGateway => ({
+const restoring = (state: SessionState, latencyMs = 0): RestoreOnly => ({
   restore: () => new Promise((resolve) => setTimeout(() => resolve(state), latencyMs)),
 });
 
@@ -267,7 +269,7 @@ describe('UI-A01 Splash: thời gian và điều hướng', () => {
   });
 
   it('cổng ném lỗi đồng bộ hoặc trả giá trị lạ: cũng là chưa đăng nhập', async () => {
-    const throwing: SessionGateway = {
+    const throwing: RestoreOnly = {
       restore: () => {
         throw new Error('boom');
       },

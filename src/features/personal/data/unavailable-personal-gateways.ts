@@ -12,6 +12,7 @@ const unavailable = () => Promise.reject(new AppError('AUTH_SERVICE_UNAVAILABLE'
 export function createUnavailablePersonalGateways(): PersonalGateways {
   return {
     account: {
+      getSessionIdentity: unavailable,
       getProfile: unavailable,
       getShopSummary: unavailable,
       listShops: unavailable,

@@ -11,4 +11,17 @@ export type SessionState = 'signed_out' | 'signed_in_no_shop' | 'signed_in';
  */
 export interface SessionApi {
   restore(): Promise<SessionState>;
+  /**
+   * Danh tính của phiên đã lưu trên máy (uid, email, shop). KHÔNG chờ mạng khi đã biết shop từ bộ nhớ đệm.
+   * `null` = chưa đăng nhập. `shopId` null = đã đăng nhập nhưng chưa biết/chưa có shop (không bịa ID).
+   * Lỗi thì ném `AppError`; bên gọi không được suy đoán phiên.
+   */
+  identity(): Promise<SessionIdentity | null>;
+}
+
+export interface SessionIdentity {
+  readonly uid: string;
+  readonly email: string;
+  readonly displayName: string | null;
+  readonly shopId: string | null;
 }

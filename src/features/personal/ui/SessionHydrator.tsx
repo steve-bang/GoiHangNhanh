@@ -7,9 +7,9 @@ import { useSession } from './SessionProvider';
  * Nạp danh tính vào `SessionProvider` khi app vào khu có thanh tab mà phiên trong bộ nhớ còn trống
  * (phiên được khôi phục lúc mở app: `SessionGateway.restore` của Splash chỉ trả trạng thái, không
  * trả danh tính nên không có `beginSession`). Không đổi Splash (đã được khách xác nhận). Không hiển
- * thị gì. Chỉ chạy một lần khi gắn; lỗi (cổng chưa sẵn sàng) thì giữ nguyên, không suy đoán phiên.
- * Đăng nhập xong giữa chừng thì bỏ kết quả. Q-20m: khi có Firebase Auth, thay bằng người dùng hiện tại
- * của SDK đọc ngay ở Splash.
+ * thị gì. Danh tính lấy từ `getSessionIdentity` (Firebase Auth + `userShops/{uid}`, Q-20m; không chờ mạng
+ * khi đã có bộ nhớ đệm). Chỉ chạy một lần khi gắn; lỗi hoặc chưa đăng nhập thì giữ nguyên, không suy đoán
+ * phiên. Đăng nhập xong giữa chừng thì bỏ kết quả.
  */
 export function SessionHydrator() {
   const { account } = usePersonalGateways();
@@ -24,12 +24,12 @@ export function SessionHydrator() {
   useEffect(() => {
     if (alreadyHydrated) return;
     let cancelled = false;
-    void Promise.all([account.getProfile(), account.getShopSummary()]).then(
-      ([profile, shop]) => {
-        if (cancelled || statusRef.current === 'signed_in') return;
+    void account.getSessionIdentity().then(
+      (identity) => {
+        if (cancelled || statusRef.current === 'signed_in' || !identity) return;
         begin(
-          { uid: profile.uid, email: profile.email, displayName: profile.displayName },
-          shop?.id ?? null,
+          { uid: identity.uid, email: identity.email, displayName: identity.displayName },
+          identity.shopId,
         );
       },
       () => undefined,

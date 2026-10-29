@@ -10,6 +10,8 @@ export interface AuthAccount {
 /** Tài khoản sau khi đăng nhập: cho biết đã có shop chưa để biết đi Tổng quan hay tạo shop. */
 export interface SignedInAccount extends AuthAccount {
   readonly hasShop: boolean;
+  /** ID shop đang dùng của tài khoản (nguồn: máy chủ); `null` = chưa có shop. `hasShop` = `shopId !== null`. */
+  readonly shopId: string | null;
 }
 
 export interface SignInWithPasswordInput {
@@ -64,4 +66,9 @@ export interface AuthApi {
   verifyRecoveryCode(input: VerifyRecoveryCodeInput): Promise<VerifiedRecovery>;
   /** Phiên đặt lại hết hạn: `AUTH_RESET_SESSION_EXPIRED`. Máy chủ phải thu hồi phiên cũ khi thành công. */
   resetPassword(input: ResetPasswordInput): Promise<void>;
+  /**
+   * Thoát tài khoản thật (xóa phiên Auth trên máy). Chỉ resolve khi đã thoát; lỗi thì ném `AppError`
+   * và bên gọi KHÔNG được xả phiên (không báo đăng xuất giả). Không xóa dữ liệu cục bộ (Q-20h).
+   */
+  signOut(): Promise<void>;
 }

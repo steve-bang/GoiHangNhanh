@@ -1,3 +1,4 @@
+import { createFakeApi } from '@/api/testing';
 import { AppError } from '@/core/errors/app-error';
 
 import { createFakePersonalGateways, FAKE_ACCOUNT_PASSWORD } from './fake-personal-gateways';
@@ -290,6 +291,14 @@ describe('chọn cổng theo môi trường (cùng cơ chế với src/api/creat
       expect(await codeOf(account.signOut())).toBe('AUTH_SERVICE_UNAVAILABLE');
       expect(await codeOf(settings.getNotificationPreferences())).toBe('AUTH_SERVICE_UNAVAILABLE');
     }
+  });
+
+  it('chế độ Firebase với API thật: đăng xuất đi qua auth.signOut của API, phần còn lại vẫn chưa kết nối', async () => {
+    const api = createFakeApi();
+    const { account } = createPersonalGateways(prod, () => api);
+    await account.signOut();
+    expect(api.auth.signOutCalls).toBe(1);
+    expect(await codeOf(account.listShops())).toBe('AUTH_SERVICE_UNAVAILABLE');
   });
 
   it('cổng mặc định là một thể hiện cho cả phiên', () => {

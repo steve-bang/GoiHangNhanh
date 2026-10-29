@@ -5,6 +5,7 @@
   "src/features/shop/ui/SignUpScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện.",
   "src/features/shop/ui/VerifyOtpScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện.",
   "src/features/shop/ui/onboarding/OnboardingParts.tsx": "Chỉ chuyển helper resolveErrorMessage/errorText/ErrorMessage sang core/i18n/error-message (dùng chung với tab Cá nhân); giữ nguyên giao diện.",
-  "src/features/shop/ui/SignInScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện. Thêm ghi phiên toàn app (session.beginSession) sau khi đăng nhập thành công, chỉ tầng logic.",
+  "src/features/shop/ui/SignInScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện. Thêm ghi phiên toàn app (session.beginSession) sau khi đăng nhập thành công, chỉ tầng logic. PR1 gia cố: truyền shopId do cổng trả vào beginSession (không đổi giao diện).",
+  "src/features/shop/ui/CreateShopScreen.tsx": "PR1 gia cố phát hành: sau khi máy chủ xác nhận tạo/sửa shop, ghi shopId vào phiên toàn app (useSession). Chỉ tầng logic, không đổi JSX hay giao diện.",
   "src/test-utils/mock-camera-recorder.tsx": "Tệp mới chỉ cho test (mock bộ ghi camera, ADR-020); không phải giao diện và không đổi màn đã xác nhận."
 }
