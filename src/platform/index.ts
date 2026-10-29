@@ -20,10 +20,13 @@ export {
   newOrderId,
   newOrderLineId,
   newPackageId,
+  newDisputeId,
+  newDisputeRecordId,
   newReturnCaseId,
   newReturnRecordId,
   newSessionId,
 } from './ids';
+export { shareText } from './share-text';
 export { openLocalDatabase } from './local-db';
 export type { SqlDatabase, SqlParam } from './sql-database';
 export { subscribeAppActive } from './app-state';

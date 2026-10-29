@@ -262,6 +262,13 @@ function DetailReady({
         summary={evidence}
         counts={items.length > 0 ? countEvidence(items) : null}
       />
+      <Button
+        size="slim"
+        variant="secondary"
+        testID="order-detail-dispute"
+        label={t('disputes:list.create')}
+        onPress={() => navigation.push(ROUTES.disputeNew, { orderId: order.id })}
+      />
 
       <Card compact>
         <View style={{ gap: tokens.space.sm }}>

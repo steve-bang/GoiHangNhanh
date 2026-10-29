@@ -5,6 +5,7 @@ import type {
   OrderId,
   OrderLineId,
   PackageId,
+  DisputeId,
   ReturnCaseId,
   SessionId,
 } from '@/core/ids';
@@ -20,4 +21,7 @@ export const newSessionId = (): SessionId => randomUUID() as SessionId;
 export const newEvidenceId = (): EvidenceId => randomUUID() as EvidenceId;
 export const newReturnCaseId = (): ReturnCaseId => randomUUID() as ReturnCaseId;
 /** ID cho bản ghi con của hồ sơ hàng hoàn (dòng nhận về, sai lệch, sự kiện liên kết, lịch sử). */
+export const newDisputeId = (): DisputeId => randomUUID() as DisputeId;
+/** ID cho bản ghi con của hồ sơ tranh chấp (sự kiện lịch sử). */
+export const newDisputeRecordId = (): string => randomUUID();
 export const newReturnRecordId = (): string => randomUUID();

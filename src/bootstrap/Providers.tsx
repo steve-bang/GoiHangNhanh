@@ -6,6 +6,7 @@ import { getDefaultRemoteDocuments } from '@/api/create-remote-documents';
 import { initI18n } from '@/core/i18n';
 import { EvidenceFileStoreProvider, OrderStoreProvider, OrderSyncRunner } from '@/features/orders';
 import { RecordingRecovery } from '@/features/packing';
+import { DisputeStoreProvider } from '@/features/disputes';
 import { ReturnStoreProvider } from '@/features/returns';
 import {
   PersonalGatewaysProvider,
@@ -34,10 +35,12 @@ export function AppProviders({ children }: { children: ReactNode }) {
                 <OrderStoreProvider>
                   <EvidenceFileStoreProvider>
                     <ReturnStoreProvider>
-                      <RecordingRecovery />
-                      <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
-                      <UploadRunner docs={getDefaultRemoteDocuments()} />
-                      {children}
+                      <DisputeStoreProvider>
+                        <RecordingRecovery />
+                        <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
+                        <UploadRunner docs={getDefaultRemoteDocuments()} />
+                        {children}
+                      </DisputeStoreProvider>
                     </ReturnStoreProvider>
                   </EvidenceFileStoreProvider>
                 </OrderStoreProvider>

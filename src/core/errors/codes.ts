@@ -32,6 +32,9 @@ export const ERROR_CODES = {
   // Đề xuất (chờ BA, R1 hàng hoàn): lưu hồ sơ hàng hoàn cục bộ; hồ sơ đã xác nhận không sửa được
   RETURN_SAVE_FAILED: 'RETURN_SAVE_FAILED',
   RETURN_ALREADY_CONFIRMED: 'RETURN_ALREADY_CONFIRMED',
+  // Đề xuất (chờ BA, Q-27): lưu hồ sơ tranh chấp cục bộ; hồ sơ đã đóng không sửa được
+  DISPUTE_SAVE_FAILED: 'DISPUTE_SAVE_FAILED',
+  DISPUTE_CLOSED: 'DISPUTE_CLOSED',
   // Đề xuất (chờ BA, Q-04/Q-17): lưu đơn/dòng/kiện cục bộ và quy tắc phiên (docs/04 A03)
   ORDER_SAVE_FAILED: 'ORDER_SAVE_FAILED',
   ORDER_HAS_SESSION: 'ORDER_HAS_SESSION',

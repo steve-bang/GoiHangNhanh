@@ -103,6 +103,12 @@ function DoneBody({ details }: { details: ReturnDetails }) {
           </Text>
         </View>
       ) : null}
+      <Button
+        testID="return-open-dispute"
+        variant="secondary"
+        label={t('disputes:list.create')}
+        onPress={() => navigation.push(ROUTES.disputeNew, { returnId: returnCase.id })}
+      />
       <Card compact testID="return-history">
         <View style={{ gap: tokens.space.xs }}>
           <Text variant="formButton" accessibilityRole="header">

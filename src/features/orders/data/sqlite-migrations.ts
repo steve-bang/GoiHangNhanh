@@ -202,6 +202,51 @@ export const MIGRATIONS: readonly string[] = [
   );
   CREATE INDEX idx_return_events_return ON return_events (return_id, at_device);
   `,
+  // v9 (hồ sơ tranh chấp cục bộ, Q-27). Chỉ thêm bảng. Tham chiếu đơn/hồ sơ hoàn bằng ID, KHÔNG khóa
+  // ngoại (đơn/hồ sơ không bị xóa theo). `subject_label` là mã chụp lại để hiển thị. `dispute_evidence`
+  // và `dispute_events` chỉ thêm, không xóa (bất biến 7, 9): đóng hồ sơ chỉ đổi `status`.
+  `
+  CREATE TABLE disputes (
+    id TEXT PRIMARY KEY NOT NULL,
+    shop_id TEXT NOT NULL,
+    seq INTEGER NOT NULL,
+    code TEXT NOT NULL,
+    status TEXT NOT NULL,
+    subject_kind TEXT NOT NULL CHECK (subject_kind IN ('order', 'return')),
+    order_id TEXT,
+    return_id TEXT,
+    subject_label TEXT NOT NULL,
+    opening_evidence_limit INTEGER NOT NULL DEFAULT 0,
+    issue_type TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    close_note TEXT NOT NULL DEFAULT '',
+    created_at_device INTEGER NOT NULL,
+    updated_at_device INTEGER NOT NULL,
+    closed_at_device INTEGER,
+    created_by TEXT,
+    UNIQUE (shop_id, seq)
+  );
+  CREATE INDEX idx_disputes_shop_recent ON disputes (shop_id, updated_at_device DESC, id DESC);
+  CREATE TABLE dispute_evidence (
+    dispute_id TEXT NOT NULL REFERENCES disputes (id),
+    shop_id TEXT NOT NULL,
+    evidence_id TEXT NOT NULL,
+    added_at_device INTEGER NOT NULL,
+    by_uid TEXT,
+    PRIMARY KEY (dispute_id, evidence_id)
+  );
+  CREATE INDEX idx_dispute_evidence_shop ON dispute_evidence (shop_id, evidence_id);
+  CREATE TABLE dispute_events (
+    id TEXT PRIMARY KEY NOT NULL,
+    dispute_id TEXT NOT NULL REFERENCES disputes (id),
+    shop_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    at_device INTEGER NOT NULL,
+    by_uid TEXT
+  );
+  CREATE INDEX idx_dispute_events_dispute ON dispute_events (dispute_id, at_device);
+  `,
 ];
 
 /**
