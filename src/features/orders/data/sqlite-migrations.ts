@@ -106,6 +106,27 @@ export const MIGRATIONS: readonly string[] = [
   `
   ALTER TABLE packages ADD COLUMN remote_synced_at_device INTEGER;
   `,
+  // v7 (PR3, R6): index cho truy vấn danh sách + cột mốc hoạt động. Chỉ thêm, không mất dữ liệu.
+  // - `evidence_files (order_id, kind)`: bộ lọc "Chưa có video" tra theo đơn, không quét cả bảng.
+  // - `packing_sessions (shop_id, order_id)`: tra phiên theo đơn (luôn kèm shop_id, bất biến 8).
+  // - `orders.last_activity_device` = MAX(created_at_device, started_at_device lớn nhất của các phiên
+  //   của đơn): giữ cho danh sách sắp xếp/keyset bằng index thay vì nhóm cả bảng phiên mỗi lần.
+  //   Phiên chỉ được thêm (started_at_device không đổi) nên chỉ cần cập nhật khi tạo phiên.
+  // Backfill chạy SAU khi có index phiên để truy vấn con không quét cả bảng.
+  `
+  CREATE INDEX idx_evidence_files_order_kind ON evidence_files (order_id, kind);
+  CREATE INDEX idx_sessions_shop_order ON packing_sessions (shop_id, order_id);
+  ALTER TABLE orders ADD COLUMN last_activity_device INTEGER NOT NULL DEFAULT 0;
+  UPDATE orders SET last_activity_device = MAX(
+    created_at_device,
+    COALESCE(
+      (SELECT MAX(s.started_at_device) FROM packing_sessions s
+       WHERE s.shop_id = orders.shop_id AND s.order_id = orders.id),
+      0
+    )
+  );
+  CREATE INDEX idx_orders_shop_activity ON orders (shop_id, last_activity_device DESC, id DESC);
+  `,
 ];
 
 /**
