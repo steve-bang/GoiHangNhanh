@@ -614,3 +614,40 @@ Mã lỗi/thông báo mới phát sinh từ PR2/PR4/PR5 (mất mạng, tệp tha
 **Quyết định kỹ thuật:** (1) Đóng hồ sơ KHÔNG xóa bằng chứng hay lịch sử; chỉ bỏ trạng thái "giữ" của hồ sơ đó (`listHeldEvidenceIds` chỉ tính hồ sơ ĐANG MỞ). Hôm nay chưa có thao tác xóa/hết hạn tệp nên "giữ" mới là dữ liệu đánh dấu; khi làm hết hạn (O-07) phải đọc tập này trước khi xóa (bất biến 9). (2) Nhãn "Hạn chế bằng chứng" của hồ sơ hoàn được CHỤP vào hồ sơ tranh chấp lúc tạo (Q-26h) và hiện ở danh sách, chi tiết, bản xem trước và bản chia sẻ. (3) Bản xuất chỉ là văn bản tóm tắt qua bảng chia sẻ của hệ điều hành (thông tin, giờ THIẾT BỊ, trạng thái từng tệp, điều thiếu); KHÔNG có nhãn "đầy đủ" (chưa có chính sách bộ bằng chứng bắt buộc) và không kết luận nguyên nhân. Gói tệp video/ảnh chưa có, màn ghi "sắp có". (4) Hồ sơ hoàn chưa liên kết đơn gốc chưa có bằng chứng đóng gói để chọn (ảnh/video hàng hoàn là R2) và màn nói rõ. (5) Chỉ lưu trên máy này, chưa đồng bộ lên máy chủ (không có Rules/Functions mới); mã `TC-00001` tăng theo shop trên máy, hai máy có thể trùng mã hiển thị. (6) Mã lỗi mới `DISPUTE_SAVE_FAILED`, `DISPUTE_CLOSED` (tên đề xuất, chờ BA).
 
 **Chờ duyệt:** **Q-27a.** Danh mục loại vấn đề (hiện 5 loại theo docs/09 UI-G02). **Q-27b.** Có cho mở lại hồ sơ đã đóng không (hiện không). **Q-27c.** Định dạng gói xuất thật (PDF + tệp, thời hạn liên kết) và việc cấp URL có thời hạn (bất biến 8). **Q-27d.** Tệp của tranh chấp thuộc hồ sơ hoàn: ảnh kiện (R2a) đã chọn được ở G03 (xem Q-26 R2a); video mở kiện (R2b) chưa có. **Q-27e.** Đồng bộ hồ sơ lên máy chủ và trigger kiểm toán (bất biến 7).
+
+### Q-28 — R2b: tải ảnh/video hàng hoàn lên máy chủ và video mở kiện thật (thiết kế, chờ duyệt)
+
+**Nguồn:** người dùng đã duyệt HƯỚNG ĐI ở Q-26i (tải ảnh cùng video hàng hoàn qua hàng đợi hiện có; giữ 5 ảnh). Mục này là thiết kế kỹ thuật chi tiết, **chưa được người dùng/BA duyệt từng điểm**; phương án chọn là phương án ÍT thay đổi nhất. Cập nhật khi làm từng bước (xem "Tiến độ" ở cuối mục).
+
+**Mô hình dữ liệu máy chủ (phương án chọn).**
+
+| Thứ | Đường dẫn | Ghi chú |
+|---|---|---|
+| "Neo" hồ sơ hoàn | `shops/{shopId}/returns/{returnId}` | Tạo MỘT lần, bất biến, không xóa. Chỉ chứa định danh: `shopId`, `code` (nhãn hiển thị `RH-00001`, KHÔNG phải ID), `dataSource: 'user_entered'`, `createdAtDevice`, `createdAt` (giờ máy chủ), `createdBy`, `appVersion?`. **Không** chứa đơn gốc, tình trạng, dòng, sai lệch, vị trí (đồng bộ nội dung hồ sơ là Q-26c, chưa làm). Hồ sơ chưa liên kết đơn gốc vẫn đăng được (không có khóa nào bắt buộc đơn). |
+| Bằng chứng hàng hoàn | `shops/{shopId}/evidence/{evidenceId}` (CÙNG collection với bằng chứng đóng gói) | Hình dạng thứ hai, phân biệt bằng `ownerKind: 'return'` + `returnId`; KHÔNG có `sessionId/orderId/packageId`. `kind` là `photo` hoặc `original_video`. Bằng chứng đóng gói giữ nguyên hình dạng cũ (không có `ownerKind`). Map `server.*` vẫn do `verifyEvidence` sở hữu. |
+| Tệp trên Storage | `shops/{shopId}/evidence/{evidenceId}/original` (KHÔNG đổi) | Đề xuất ban đầu `shops/{shopId}/returns/{returnId}/{evidenceId}` bị BỎ: đường dẫn theo `evidenceId` giúp `createUploadSession` và `verifyEvidence` dùng nguyên (không nhân đôi), vì cả hai chỉ cần `shopId + evidenceId`. `returnId` nằm ở tài liệu bằng chứng. `storage.rules` vẫn từ chối mọi truy cập client (ADR-006). |
+
+**Rules (Firestore).** `returns/{returnId}`: đọc = thành viên đang hoạt động; tạo = `canManageOrders` (khung vai trò tạm, chờ O-07; "nhân viên hàng hoàn" của docs/07 chưa có vai trò thật) + đúng tập khóa + `createdBy == auth.uid` + `createdAt == request.time`; sửa/xóa = từ chối. `evidence`: tạo hình dạng hàng hoàn khi hồ sơ `returns/{returnId}` ĐÃ tồn tại cùng shop, `clientFileState == 'queued'`, `origin == 'in_app_capture'`, mã băm 64 ký tự, `sizeBytes` số nguyên > 0, `mimeType` thuộc danh sách (khớp `kind`: ảnh `image/*`, video `video/*`), `createdBy == auth.uid`; cập nhật như cũ (chỉ `clientFileState` trong tập thiết bị, `lastError`, `retryCount`); không xóa. Client KHÔNG đặt được `server.*`. Chéo shop và đoán ID bị từ chối ở cả hai.
+
+**Functions.** `createUploadSession` và `verifyEvidence` tổng quát hóa theo "chủ sở hữu" (đóng gói | hàng hoàn) mà KHÔNG nhân đôi: đường dẫn và băm giữ nguyên; thêm kiểm tra hồ sơ hoàn tồn tại khi `ownerKind == 'return'` và ghi `ownerKind/returnId` vào kiểm toán cấp phiên tải. URL ký vẫn tạo-một-lần (header `x-goog-if-generation-match: 0`).
+
+**Đăng hồ sơ từ client.** Một chiều thiết bị -> máy chủ, idempotent (`createMissing`), chạy cùng nhịp với `OrderSyncRunner`; không bao giờ đăng với `LOCAL_SHOP_ID`; chỉ đăng bản ghi do CHÍNH uid đang đăng nhập tạo (`created_by`, như Q-23g; bản ghi không có người tạo KHÔNG bao giờ đăng). **Đăng khi nào:** khi hồ sơ có ít nhất một tệp media đã lưu bền trên máy (`queued` trở đi), vì neo chỉ cần khi có gì để gắn; hồ sơ nháp chưa có tệp không lên máy chủ. Dấu đã đăng: migration v12 (`return_cases.remote_synced_at_device`, chỉ ADD COLUMN). Tệp media chỉ vào hàng đợi tải khi neo của hồ sơ đã đăng.
+
+**Ảnh bị xóa (R2a-2).** Giữ nguyên: chỉ xóa khi chưa lên máy chủ. R2b siết thêm: ảnh ĐÃ TỪNG bắt đầu tải (`attemptCount > 0`, hoặc đang ở `uploading/upload_failed/needs_attention` sau lần thử) KHÔNG xóa được, vì máy chủ có thể đã nhận một phần hoặc đã nhận đủ mà app mất phản hồi (QA-05). Ảnh `queued` chưa từng thử vẫn xóa được. Máy chủ không có thao tác xóa nên không có "xóa trên máy chủ".
+
+**Hàng đợi tải lên.** `createUploadQueue` nhận danh sách NGUỒN (`UploadSource`) thay vì một kho: nguồn tệp đóng gói (`EvidenceFileStore`) và nguồn media hàng hoàn (`ReturnStore`) đi qua cùng một vòng đối soát/backoff/tối đa 8 lần. Trạng thái chỉ đổi bằng `transition()`; sự kiện `origin: 'server'` chỉ từ phản hồi của cổng máy chủ. `UploadRequest` có thêm `owner` (đóng gói: đơn/kiện/phiên; hàng hoàn: `returnId`).
+
+**Video mở kiện (bước 4).** Bảng `return_media` được tạo lại bằng migration (cho phép `kind = 'video'`, thêm `duration_ms`), điều phối quay theo khuôn `recording-controller` (tạo bản ghi trước khi mở camera, chuyển tệp khỏi thư mục tạm, ghi vị trí mới ngay trước khi băm, không xóa tệp ở nhánh lỗi), sau cờ `RECORDER_ENABLED` (ADR-020), không thu tiếng (O-09). Mỗi hồ sơ có TỐI ĐA MỘT video mở kiện trong R2b; quay bổ sung (B05 "phiên bổ sung liên kết phiên trước") chưa làm.
+
+**Câu hỏi còn mở (chờ người dùng/BA):**
+
+| # | Câu hỏi | Phương án | Khuyến nghị |
+|---|---|---|---|
+| a | Có đưa VỊ TRÍ ảnh (Q-26k) lên máy chủ không? | A. Không (hôm nay chỉ ở máy). B. Có, kèm cập nhật chính sách quyền riêng tư/khai báo cửa hàng (Q-26k a-d) | A cho tới khi chính sách quyền riêng tư có |
+| b | Trần dung lượng mỗi tệp (ảnh/video) trong Rules | A. Chưa đặt (chỉ `> 0`). B. Đặt cùng O-05/Q-24c | B khi chốt O-05; hôm nay A |
+| c | Đồng bộ nội dung hồ sơ hoàn (liên kết đơn, tình trạng, dòng, sai lệch) và mã `RH-` nhiều máy | Q-26c | Làm riêng; có trigger kiểm toán (Q-23k) |
+| d | Quay bổ sung video mở kiện (B05) | A. Chưa. B. Phiên mới liên kết phiên trước | B, cần BA đặc tả |
+| e | Vai trò "nhân viên hàng hoàn" ghi được hồ sơ/bằng chứng hàng hoàn | Hôm nay Rules dùng `canManageOrders` (owner/manager/packer) | Chờ O-07 |
+| f | Mã lỗi mới đề xuất (chờ BA) | Xem phần Tiến độ | |
+
+**Tiến độ:** (cập nhật theo từng bước ở dưới.)
