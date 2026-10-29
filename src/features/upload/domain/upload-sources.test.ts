@@ -233,7 +233,7 @@ describe('hàng đợi tải lên với nguồn media hàng hoàn (Q-28)', () =>
   it('video hàng hoàn: giữ kind video, đi hết cổng thật (mime video, khai báo original_video) và tới uploaded', async () => {
     const returns = createMemoryReturnStore({ creatorUid: () => 'uid-1' });
     const returnId = await returnWithPhoto(returns, 'vd-1', true, 'video');
-    const declared: Array<ReturnType<typeof evidenceWrite>['data']> = [];
+    const declared: ReturnType<typeof evidenceWrite>['data'][] = [];
     const sent: string[] = [];
     const gateway = createUploadGateway({
       declarer: {
