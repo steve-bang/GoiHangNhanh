@@ -36,6 +36,7 @@ interface OrderRow {
   tracking_code: string | null;
   created_at_device: number;
   created_by: string | null;
+  last_activity_device: number;
 }
 interface LineRow {
   id: string;
@@ -67,7 +68,7 @@ interface SessionRow {
 const UNSYNCED_SQL = UNSYNCED_STATES.map((state) => `'${state}'`).join(', ');
 
 /** Điều kiện WHERE (tham số hóa) cho danh sách/đếm; luôn bắt đầu bằng cô lập shop (bất biến 8). */
-function listConditions(shopId: ShopId, query: OrderListQuery) {
+export function listConditions(shopId: ShopId, query: OrderListQuery) {
   const conditions = ['o.shop_id = ?'];
   const params: (string | number)[] = [shopId];
   if (query.searchKey !== undefined && query.searchKey !== '') {
@@ -91,7 +92,8 @@ function listConditions(shopId: ShopId, query: OrderListQuery) {
   }
   if (query.withoutVideo) {
     // "Có video" = có MỘT tệp video bất kỳ (kể cả đang ghi/lỗi: cùng nghĩa với summarizeOrderEvidence);
-    // phiên `created` không phải bằng chứng nên không tính (bất biến 3).
+    // phiên `created` không phải bằng chứng nên không tính (bất biến 3). Tra theo index
+    // `evidence_files (order_id, kind)`; `o.id` đã thuộc shop đang lọc nên không cần thêm shop_id.
     conditions.push(
       "NOT EXISTS (SELECT 1 FROM evidence_files ev WHERE ev.order_id = o.id AND ev.kind = 'video')",
     );
@@ -283,25 +285,18 @@ export function createSqliteOrderStore(
     listOrders: (shopId, query, page) =>
       guarded('ORDER_SAVE_FAILED', async () => {
         const { where, params } = listConditions(shopId, query);
-        // Mốc hoạt động tính một lần cho mỗi đơn (nhóm phiên theo đơn), rồi lọc keyset ở truy vấn ngoài.
+        // Mốc hoạt động là cột `orders.last_activity_device` (v7) nên sắp xếp + keyset đi theo index
+        // (shop_id, last_activity_device DESC, id DESC), không nhóm cả bảng phiên.
         const cursor = page.after
-          ? 'WHERE (last_activity < ? OR (last_activity = ? AND id < ?))'
+          ? ' AND (o.last_activity_device < ? OR (o.last_activity_device = ? AND o.id < ?))'
           : '';
         const cursorParams = page.after
           ? [page.after.lastActivityDevice, page.after.lastActivityDevice, page.after.orderId]
           : [];
-        const rows = await db.getAllAsync<OrderRow & { last_activity: number }>(
-          `SELECT * FROM (
-             SELECT o.*, MAX(o.created_at_device, COALESCE(s.last_session, 0)) AS last_activity
-             FROM orders o
-             LEFT JOIN (
-               SELECT order_id, MAX(started_at_device) AS last_session
-               FROM packing_sessions WHERE shop_id = ? GROUP BY order_id
-             ) s ON s.order_id = o.id
-             WHERE ${where}
-           ) ${cursor}
-           ORDER BY last_activity DESC, id DESC LIMIT ?`,
-          [shopId, ...params, ...cursorParams, page.limit + 1],
+        const rows = await db.getAllAsync<OrderRow>(
+          `SELECT o.* FROM orders o WHERE ${where}${cursor}
+           ORDER BY o.last_activity_device DESC, o.id DESC LIMIT ?`,
+          [...params, ...cursorParams, page.limit + 1],
         );
         const pageRows = rows.slice(0, page.limit);
         const ids = pageRows.map((r) => r.id);
@@ -337,7 +332,7 @@ export function createSqliteOrderStore(
             activeSession: active
               ? { id: active.id as SessionId, packageId: active.package_id as PackageId }
               : null,
-            lastActivityDevice: row.last_activity,
+            lastActivityDevice: row.last_activity_device,
           };
         });
         const last = items[items.length - 1];
@@ -365,8 +360,8 @@ export function createSqliteOrderStore(
           const uid = creatorUid();
           await db.runAsync(
             `INSERT INTO orders (id, shop_id, order_code, order_code_key, source, tracking_code,
-              tracking_code_key, data_origin, created_at_device, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              tracking_code_key, data_origin, created_at_device, created_by, last_activity_device)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               o.id,
               o.shopId,
@@ -378,6 +373,7 @@ export function createSqliteOrderStore(
               o.dataOrigin,
               o.createdAtDevice,
               uid,
+              o.createdAtDevice,
             ],
           );
           for (const l of details.lines) {
@@ -444,8 +440,8 @@ export function createSqliteOrderStore(
           );
           if (!found) throw new AppError('ORDER_SAVE_FAILED');
           const session = await db.getFirstAsync<{ id: string }>(
-            'SELECT id FROM packing_sessions WHERE order_id = ? LIMIT 1',
-            [found.order_id],
+            'SELECT id FROM packing_sessions WHERE order_id = ? AND shop_id = ? LIMIT 1',
+            [found.order_id, shopId],
           );
           if (session) throw new AppError('ORDER_HAS_SESSION');
           await db.runAsync('UPDATE order_lines SET quantity = ? WHERE id = ?', [quantity, lineId]);
@@ -460,8 +456,8 @@ export function createSqliteOrderStore(
           );
           if (!owner) throw new AppError('ORDER_NOT_FOUND');
           const session = await db.getFirstAsync<{ id: string }>(
-            'SELECT id FROM packing_sessions WHERE order_id = ? LIMIT 1',
-            [orderId],
+            'SELECT id FROM packing_sessions WHERE order_id = ? AND shop_id = ? LIMIT 1',
+            [orderId, shopId],
           );
           if (session) throw new AppError('ORDER_HAS_SESSION');
           for (const l of edit.lines) {
@@ -558,6 +554,11 @@ export function createSqliteOrderStore(
               creatorUid(),
             ],
           );
+          await db.runAsync(
+            `UPDATE orders SET last_activity_device = MAX(last_activity_device, ?)
+             WHERE id = ? AND shop_id = ?`,
+            [s.startedAtDevice, s.orderId, s.shopId],
+          );
         }),
       ),
     getSession: (shopId, id: SessionId) =>
@@ -608,7 +609,7 @@ export function createSqliteOrderStore(
         const rows = await db.getAllAsync<{ id: string }>(
           `SELECT o.id FROM orders o
            WHERE o.shop_id = ? AND o.remote_synced_at_device IS NULL AND o.created_by = ?
-             AND EXISTS (SELECT 1 FROM packing_sessions s WHERE s.order_id = o.id)
+             AND EXISTS (SELECT 1 FROM packing_sessions s WHERE s.order_id = o.id AND s.shop_id = o.shop_id)
            ORDER BY o.created_at_device, o.id LIMIT ?`,
           [shopId, uid, limit],
         );
