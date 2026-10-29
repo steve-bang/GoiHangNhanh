@@ -5,8 +5,8 @@ import { runReturnStoreContract, makeNewReturn } from './return-store.contract';
 import { createSqliteReturnStore } from './sqlite-return-store';
 
 // Chạy hợp đồng trên SQLite THẬT của Node (không phải expo-sqlite trên thiết bị).
-runReturnStoreContract('SQLite (node:sqlite)', async () =>
-  createSqliteReturnStore(createNodeSqliteDatabase()),
+runReturnStoreContract('SQLite (node:sqlite)', async (options) =>
+  createSqliteReturnStore(createNodeSqliteDatabase(), options),
 );
 
 describe('kho SQLite hàng hoàn: schema và người tạo', () => {
@@ -84,6 +84,30 @@ describe('kho SQLite hàng hoàn: schema và người tạo', () => {
         atDevice: null,
       }),
     ).toMatchObject({ ok: true });
+  });
+
+  it('migration v12 thêm cột dấu đã đăng vào hồ sơ có từ DB v11: hồ sơ cũ giữ nguyên, chưa đăng', async () => {
+    const db = createNodeSqliteDatabase();
+    for (const sql of MIGRATIONS.slice(0, 11)) await db.execAsync(sql);
+    await db.execAsync('PRAGMA user_version = 11');
+    await db.runAsync(
+      `INSERT INTO return_cases (id, shop_id, seq, code, status, created_at_device, updated_at_device, created_by)
+       VALUES ('r1', 's', 1, 'RH-00001', 'receiving', 1, 1, 'u-1')`,
+    );
+    await db.runAsync(
+      `INSERT INTO return_media (id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client, created_at_device, updated_at_device)
+       VALUES ('old', 'r1', 's', 'photo', 'queued', 'evidence/old.jpg', 5, ?, 1, 1)`,
+      ['a'.repeat(64)],
+    );
+    const store = createSqliteReturnStore(db);
+    const pending = await store.listReturnsPendingRemote('s' as never, 5, 'u-1');
+    expect(pending.map((r) => r.id)).toEqual(['r1']);
+    const columns = (await db.getAllAsync<{ name: string }>('PRAGMA table_info(return_cases)')).map(
+      (c) => c.name,
+    );
+    expect(columns).toContain('remote_synced_at_device');
+    await store.markReturnPublished('s' as never, 'r1' as never, 9);
+    expect(await store.listReturnsPendingRemote('s' as never, 5, 'u-1')).toEqual([]);
   });
 
   it('không xóa ảnh đã nằm trong hồ sơ tranh chấp (kể cả hồ sơ đã đóng); ghi giữ không bị mất', async () => {

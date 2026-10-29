@@ -13,6 +13,7 @@ import {
   applyMediaEvent,
   applyMediaLocation,
   assertMediaDeletable,
+  isMediaSavedLocally,
   type DeleteMediaResult,
   type ReturnMedia,
 } from '../domain/media';
@@ -61,6 +62,7 @@ export function createMemoryReturnStore(
   const rows = new Map<ReturnCaseId, Row>();
   const lastSeq = new Map<ShopId, number>();
   const media = new Map<string, ReturnMedia>();
+  const published = new Map<ReturnCaseId, number>();
 
   const checkMediaDeletable = async (shopId: ShopId, id: string): Promise<DeleteMediaResult> => {
     const current = media.get(id);
@@ -317,6 +319,26 @@ export function createMemoryReturnStore(
       touch(row, {}, atDevice);
       event(row, eventId, 'photo_deleted', atDevice);
       return checked;
+    },
+    async listReturnsPendingRemote(shopId, limit, uid) {
+      return [...rows.values()]
+        .map((r) => r.returnCase)
+        .filter(
+          (c) =>
+            c.shopId === shopId &&
+            c.createdBy === uid &&
+            !published.has(c.id) &&
+            [...media.values()].some(
+              (m) => m.returnId === c.id && m.shopId === shopId && isMediaSavedLocally(m),
+            ),
+        )
+        .sort((a, b) => a.createdAtDevice - b.createdAtDevice || (a.id < b.id ? -1 : 1))
+        .slice(0, limit)
+        .map(copy);
+    },
+    async markReturnPublished(shopId, id, atDevice) {
+      rowOf(shopId, id);
+      if (!published.has(id)) published.set(id, atDevice);
     },
     async listMedia(shopId, returnId) {
       return [...media.values()]

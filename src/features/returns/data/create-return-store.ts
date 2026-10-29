@@ -47,6 +47,9 @@ export function createLocalReturnStore(
       (await get()).setMediaLocation(shop, id, location),
     checkMediaDeletable: async (shop, id) => (await get()).checkMediaDeletable(shop, id),
     deleteMedia: async (shop, id, at, eventId) => (await get()).deleteMedia(shop, id, at, eventId),
+    listReturnsPendingRemote: async (shop, limit, uid) =>
+      (await get()).listReturnsPendingRemote(shop, limit, uid),
+    markReturnPublished: async (shop, id, at) => (await get()).markReturnPublished(shop, id, at),
     listMedia: async (shop, returnId) => (await get()).listMedia(shop, returnId),
   };
 }

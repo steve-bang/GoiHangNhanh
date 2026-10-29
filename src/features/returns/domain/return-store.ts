@@ -17,6 +17,7 @@ import type {
   LinkBasis,
   MissingVideoReason,
   OpenedBefore,
+  ReturnCase,
   ReturnDetails,
   ReturnExterior,
   ReturnSummary,
@@ -170,6 +171,14 @@ export interface ReturnStore {
     atDevice: number,
     eventId: string,
   ): Promise<DeleteMediaResult>;
+  /**
+   * Hồ sơ do CHÍNH `uid` tạo, chưa đăng bản "neo" lên máy chủ và đã có ít nhất một tệp media lưu bền
+   * (`queued` trở đi), mới nhất sau (Q-28). Hồ sơ không có người tạo hoặc do người khác tạo KHÔNG
+   * được trả (Rules ép `createdBy == auth.uid`; không đoán, như Q-23g).
+   */
+  listReturnsPendingRemote(shopId: ShopId, limit: number, uid: string): Promise<ReturnCase[]>;
+  /** Ghi nhận bản neo đã có trên máy chủ (idempotent: đánh dấu lại không đổi gì). */
+  markReturnPublished(shopId: ShopId, id: ReturnCaseId, atDevice: number): Promise<void>;
   /** Ảnh/video của hồ sơ, cũ nhất trước. */
   listMedia(shopId: ShopId, returnId: ReturnCaseId): Promise<readonly ReturnMedia[]>;
 }

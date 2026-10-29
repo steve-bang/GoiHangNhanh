@@ -7,7 +7,7 @@ import { initI18n } from '@/core/i18n';
 import { EvidenceFileStoreProvider, OrderStoreProvider, OrderSyncRunner } from '@/features/orders';
 import { RecordingRecovery } from '@/features/packing';
 import { DisputeStoreProvider } from '@/features/disputes';
-import { ReturnStoreProvider } from '@/features/returns';
+import { ReturnStoreProvider, ReturnSyncRunner } from '@/features/returns';
 import {
   PersonalGatewaysProvider,
   SessionProvider,
@@ -38,6 +38,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
                       <DisputeStoreProvider>
                         <RecordingRecovery />
                         <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
+                        <ReturnSyncRunner docs={getDefaultRemoteDocuments()} />
                         <UploadRunner docs={getDefaultRemoteDocuments()} />
                         {children}
                       </DisputeStoreProvider>

@@ -695,6 +695,33 @@ export function createSqliteReturnStore(
         return result;
       }),
 
+    listReturnsPendingRemote: (shopId, limit, uid) =>
+      guarded(async () => {
+        // Chỉ hồ sơ do CHÍNH uid tạo (created_by khớp; NULL không bao giờ khớp) và đã có media lưu bền.
+        const rows = await db.getAllAsync<CaseRow>(
+          `SELECT ${CASE_COLUMNS} FROM return_cases c
+           WHERE c.shop_id = ? AND c.created_by = ? AND c.remote_synced_at_device IS NULL
+             AND EXISTS (
+               SELECT 1 FROM return_media m
+               WHERE m.return_id = c.id AND m.shop_id = c.shop_id
+                 AND m.state NOT IN ('recording', 'saving_local', 'local_save_failed', 'unrecoverable')
+             )
+           ORDER BY c.created_at_device, c.rowid
+           LIMIT ?`,
+          [shopId, uid, limit],
+        );
+        return rows.map(toCase);
+      }),
+
+    markReturnPublished: (shopId, id, atDevice) =>
+      guarded(async () => {
+        await requireCase(shopId, id);
+        await db.runAsync(
+          'UPDATE return_cases SET remote_synced_at_device = COALESCE(remote_synced_at_device, ?) WHERE id = ? AND shop_id = ?',
+          [atDevice, id, shopId],
+        );
+      }),
+
     listMedia: (shopId, returnId) =>
       guarded(async () => {
         const rows = await db.getAllAsync<MediaRow>(

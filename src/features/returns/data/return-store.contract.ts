@@ -67,7 +67,10 @@ const exterior = (at = 2000) => ({
 });
 
 /** Hợp đồng chung cho mọi cài đặt `ReturnStore` (bộ nhớ, SQLite). */
-export function runReturnStoreContract(name: string, create: () => Promise<ReturnStore>): void {
+export function runReturnStoreContract(
+  name: string,
+  create: (options?: { creatorUid?: () => string | null }) => Promise<ReturnStore>,
+): void {
   describe(`ReturnStore (${name})`, () => {
     it('tạo hồ sơ chưa liên kết: mã RH tăng dần theo shop, trạng thái tiếp nhận, có lịch sử "created"', async () => {
       const store = await create();
@@ -767,6 +770,96 @@ export function runReturnStoreContract(name: string, create: () => Promise<Retur
             error: 'MEDIA_NOT_FOUND',
           });
         });
+      });
+    });
+
+    describe('đăng bản neo lên máy chủ (Q-28)', () => {
+      const dev = (type: FileEventType): FileEvent => ({ type, origin: 'device' });
+      const SHA = 'b'.repeat(64);
+      const withUid = (uid: string | null) => create({ creatorUid: () => uid });
+      /** Tạo ảnh và đưa tới `queued` (lưu bền) hoặc dừng ở trạng thái `stopAt`. */
+      const addMedia = async (
+        store: ReturnStore,
+        returnId: ReturnCaseId,
+        id: string,
+        upTo: 'recording' | 'saving_local' | 'queued',
+      ) => {
+        await store.createMedia({ id, shopId: SHOP, returnId, kind: 'photo', atDevice: 10 });
+        if (upTo === 'recording') return;
+        await store.applyMediaEvent(SHOP, id, dev('STOP_RECORDING'), 11, {
+          localPath: 'tmp/x.jpg',
+        });
+        if (upTo === 'saving_local') return;
+        await store.applyMediaEvent(SHOP, id, dev('LOCAL_FILE_READABLE'), 12, {
+          localPath: `evidence/${id}.jpg`,
+          sizeBytes: 100,
+          sha256Client: SHA,
+        });
+      };
+
+      it('chỉ trả hồ sơ do chính uid tạo, đã có media lưu bền; hồ sơ chưa liên kết đơn vẫn được', async () => {
+        const store = await withUid('u-1');
+        const unlinked = await store.createReturn(makeNewReturn({ atDevice: 100 }));
+        const linked = await store.createReturn(makeNewReturn({ atDevice: 200, orderId: 'o-1' }));
+        const draft = await store.createReturn(makeNewReturn({ atDevice: 300 }));
+        const inProgress = await store.createReturn(makeNewReturn({ atDevice: 400 }));
+        await addMedia(store, unlinked.returnCase.id, 'm-a', 'queued');
+        await addMedia(store, linked.returnCase.id, 'm-b', 'queued');
+        await addMedia(store, inProgress.returnCase.id, 'm-c', 'saving_local');
+        const pending = await store.listReturnsPendingRemote(SHOP, 10, 'u-1');
+        // `draft` chưa có media, `inProgress` mới ở saving_local: chưa cần neo.
+        expect(pending.map((r) => r.id)).toEqual([unlinked.returnCase.id, linked.returnCase.id]);
+        expect(pending[0]).toMatchObject({ sourceOrderId: null, createdBy: 'u-1' });
+        expect(draft.returnCase.id).not.toBe(pending[0]?.id);
+      });
+
+      it('không đăng thay người khác; hồ sơ không có người tạo không bao giờ được liệt kê', async () => {
+        const mine = await withUid('u-1');
+        const made = await mine.createReturn(makeNewReturn());
+        await addMedia(mine, made.returnCase.id, 'm-a', 'queued');
+        expect(await mine.listReturnsPendingRemote(SHOP, 10, 'u-2')).toEqual([]);
+        expect(await mine.listReturnsPendingRemote(SHOP, 10, '')).toEqual([]);
+        const anonymous = await create();
+        const noOwner = await anonymous.createReturn(makeNewReturn());
+        await addMedia(anonymous, noOwner.returnCase.id, 'm-z', 'queued');
+        expect(await anonymous.listReturnsPendingRemote(SHOP, 10, 'u-1')).toEqual([]);
+      });
+
+      it('cô lập shop: không liệt kê hồ sơ của shop khác; đánh dấu ID shop khác lỗi, không đổi gì', async () => {
+        const store = await withUid('u-1');
+        const made = await store.createReturn(makeNewReturn());
+        await addMedia(store, made.returnCase.id, 'm-a', 'queued');
+        expect(await store.listReturnsPendingRemote(OTHER, 10, 'u-1')).toEqual([]);
+        await expect(
+          store.markReturnPublished(OTHER, made.returnCase.id, 50),
+        ).rejects.toMatchObject({
+          code: 'RETURN_SAVE_FAILED',
+        });
+        expect(await store.listReturnsPendingRemote(SHOP, 10, 'u-1')).toHaveLength(1);
+      });
+
+      it('đánh dấu đã đăng: hết trong danh sách chờ, idempotent, không đổi hồ sơ hay lịch sử', async () => {
+        const store = await withUid('u-1');
+        const made = await store.createReturn(makeNewReturn({ atDevice: 100 }));
+        await addMedia(store, made.returnCase.id, 'm-a', 'queued');
+        const before = await store.getReturn(SHOP, made.returnCase.id);
+        await store.markReturnPublished(SHOP, made.returnCase.id, 500);
+        await store.markReturnPublished(SHOP, made.returnCase.id, 900);
+        expect(await store.listReturnsPendingRemote(SHOP, 10, 'u-1')).toEqual([]);
+        const after = await store.getReturn(SHOP, made.returnCase.id);
+        expect(after).toEqual(before);
+      });
+
+      it('giới hạn số lượng một lượt, cũ nhất trước', async () => {
+        const store = await withUid('u-1');
+        const ids: ReturnCaseId[] = [];
+        for (let i = 0; i < 3; i += 1) {
+          const made = await store.createReturn(makeNewReturn({ atDevice: 100 + i }));
+          await addMedia(store, made.returnCase.id, `m-${i}`, 'queued');
+          ids.push(made.returnCase.id);
+        }
+        const firstTwo = await store.listReturnsPendingRemote(SHOP, 2, 'u-1');
+        expect(firstTwo.map((r) => r.id)).toEqual(ids.slice(0, 2));
       });
     });
   });

@@ -3,7 +3,7 @@ import type { ReturnCaseId, ShopId } from '@/core/ids';
 import { createMemoryReturnStore } from './memory-return-store';
 import { makeNewReturn, runReturnStoreContract } from './return-store.contract';
 
-runReturnStoreContract('bộ nhớ', async () => createMemoryReturnStore());
+runReturnStoreContract('bộ nhớ', async (options) => createMemoryReturnStore(options));
 
 describe('kho bộ nhớ hàng hoàn: ảnh trong tranh chấp', () => {
   it('không xóa ảnh mà kho tranh chấp báo đang giữ; ảnh khác vẫn xóa được', async () => {

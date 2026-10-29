@@ -46,3 +46,12 @@ export type {
   ReturnMedia,
   ReturnMediaPatch,
 } from './media';
+export { returnAnchorWrite } from './remote-documents';
+export type { RemoteValues, RemoteWrite } from './remote-documents';
+export { createReturnSync } from './return-sync';
+export type {
+  RemoteReturnWriter,
+  ReturnSync,
+  ReturnSyncDeps,
+  ReturnSyncSummary,
+} from './return-sync';

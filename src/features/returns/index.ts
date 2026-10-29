@@ -5,6 +5,7 @@ export {
   createLocalReturnStore,
   createMemoryReturnStore,
   createSqliteReturnStore,
+  ReturnSyncRunner,
   useReturnStore,
 } from './data';
 export { hasOpeningEvidenceLimit, isMediaSavedLocally } from './domain';

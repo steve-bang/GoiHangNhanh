@@ -274,6 +274,11 @@ export const MIGRATIONS: readonly string[] = [
   ALTER TABLE return_media ADD COLUMN location_at_device INTEGER;
   ALTER TABLE return_media ADD COLUMN location_status TEXT CHECK (location_status IS NULL OR location_status IN ('ok', 'denied', 'unavailable', 'timeout', 'off'));
   `,
+  // v12 (R2b, Q-28): hồ sơ hàng hoàn đã đăng bản "neo" lên máy chủ chưa (giờ thiết bị). Chỉ ADD COLUMN
+  // nullable; hồ sơ có trước giữ NULL. Đăng một chiều, tạo một lần (không sửa bản neo).
+  `
+  ALTER TABLE return_cases ADD COLUMN remote_synced_at_device INTEGER;
+  `,
 ];
 
 /**
