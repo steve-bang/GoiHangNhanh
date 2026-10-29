@@ -14,8 +14,10 @@ import { useReturnStore } from '../data';
 import { recoverInterruptedMedia } from '../domain';
 import type { ReturnStore } from '../domain';
 
-/** Mỗi kho chỉ có MỘT lượt khôi phục chạy tại một thời điểm (không chồng lượt). */
+/** Kho đã khôi phục xong (không lỗi kho): không chạy lại trong phiên app này. */
 const recovered = new WeakSet<ReturnStore>();
+/** Mỗi kho chỉ có MỘT lượt đang chạy; effect mới (gắn lại) chờ lượt đó rồi tự thử tiếp nếu nó lỗi kho. */
+const inFlight = new WeakMap<ReturnStore, Promise<void>>();
 
 /**
  * Mốc app khởi động (giờ THIẾT BỊ). Chỉ media tạo TRƯỚC mốc này mới là tàn dư của lần chạy trước bị gián
@@ -43,17 +45,14 @@ export function ReturnMediaRecovery() {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
-    /** Chưa đọc được kho: gỡ đánh dấu, hẹn thử lại giãn cách tăng dần; hết lượt thì chờ lần mở app sau. */
+    /** Chưa đọc được kho: hẹn thử lại giãn cách tăng dần; hết lượt thì chờ lần mở app sau. */
     const retryLater = (attempt: number): void => {
-      recovered.delete(store);
       if (!cancelled && attempt < MAX_ATTEMPTS) {
         timer = setTimeout(() => void run(attempt + 1), RETRY_DELAY_MS * attempt);
       }
     };
 
-    const run = async (attempt: number): Promise<void> => {
-      if (cancelled || recovered.has(store)) return;
-      recovered.add(store);
+    const recover = async (attempt: number): Promise<void> => {
       try {
         const result = await recoverInterruptedMedia(
           {
@@ -71,8 +70,26 @@ export function ReturnMediaRecovery() {
           toast.show(t('returns:recovery.notice'), { tone: 'info', durationMs: 0 });
         }
         if (result.storeFailed) retryLater(attempt);
+        else recovered.add(store);
       } catch {
         retryLater(attempt); // phòng thủ: hàm khôi phục không ném lỗi, nhưng cổng nền tảng có thể
+      }
+    };
+
+    const run = async (attempt: number): Promise<void> => {
+      if (cancelled || recovered.has(store)) return;
+      const running = inFlight.get(store);
+      if (running) {
+        // Lượt của effect trước (đã cleanup) còn chạy: chờ nó rồi xét lại, để lỗi kho của nó vẫn được thử lại.
+        await running;
+        return run(attempt);
+      }
+      const current = recover(attempt);
+      inFlight.set(store, current);
+      try {
+        await current;
+      } finally {
+        inFlight.delete(store);
       }
     };
 
