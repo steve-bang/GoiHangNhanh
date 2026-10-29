@@ -60,10 +60,11 @@ function SelectBody({
   const { dispute } = details;
   const orderId = dispute.subject.orderId;
   const returnId = dispute.subject.kind === 'return' ? dispute.subject.returnId : null;
-  const { state, reload } = useDisputeFiles(shopId, orderId, returnId);
+  const { state, reload, fetchFiles } = useDisputeFiles(shopId, orderId, returnId);
   const [picked, setPicked] = useState<ReadonlySet<EvidenceId>>(new Set());
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<ErrorCode | null>(null);
+  const [staleCount, setStaleCount] = useState(0);
   const inDispute = useMemo(() => new Set(details.evidence.map((e) => e.evidenceId)), [details]);
   const closed = dispute.status === 'closed';
 
@@ -85,7 +86,19 @@ function SelectBody({
   const add = async () => {
     setBusy(true);
     setFailure(null);
+    setStaleCount(0);
     try {
+      // Danh sách đang hiển thị có thể cũ (ví dụ ảnh chụp nhầm vừa bị xóa): kiểm lại trong kho trước khi
+      // ghi, không đưa id không còn tồn tại (hoặc không thuộc đơn/hồ sơ này, cùng shop) vào hồ sơ.
+      const present = new Set((await fetchFiles()).files.map((f) => f.id));
+      const gone = [...picked].filter((id) => !present.has(id));
+      if (gone.length > 0) {
+        setPicked((prev) => new Set([...prev].filter((id) => present.has(id))));
+        setStaleCount(gone.length);
+        reload();
+        setBusy(false);
+        return;
+      }
       const next = await store.addEvidence(shopId, dispute.id, [...picked], Date.now());
       onSaved(next);
       navigation.replace(ROUTES.disputeDetail, { disputeId: dispute.id });
@@ -214,6 +227,11 @@ function SelectBody({
         </Card>
       ) : null}
       {body}
+      {staleCount > 0 ? (
+        <Text variant="formBody" testID="dispute-select-stale" accessibilityRole="alert">
+          {t('disputes:select.stale', { count: staleCount })}
+        </Text>
+      ) : null}
       {failure ? (
         <Text
           variant="formBody"

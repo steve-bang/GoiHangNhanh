@@ -403,6 +403,37 @@ describe('UI-G03 Chọn bằng chứng', () => {
     expect(await store.listHeldEvidenceIds(SHOP)).toEqual(['photo-own']);
   });
 
+  it('ảnh hàng hoàn bị xóa sau khi danh sách đã hiển thị: không ghi id đã xóa vào hồ sơ, báo ngắn và cập nhật danh sách', async () => {
+    const returns = createMemoryReturnStore();
+    await seedReturnWithPhoto(returns, 'r-own', 'photo-gone', 'queued');
+    await seedReturnWithPhoto(returns, 'r-own', 'photo-keep', 'queued');
+    const store = createMemoryDisputeStore();
+    const dispute = await store.createDispute(newDispute({ subject: returnSubject('r-own') }));
+    mockNavigation.params = { disputeId: dispute.dispute.id };
+    await renderWithProviders(<DisputeSelectEvidenceScreen />, {
+      disputeStore: store,
+      returnStore: returns,
+    });
+    await screen.findByTestId('dispute-file-photo-gone');
+    await fireEvent.press(screen.getByTestId('dispute-file-check-photo-gone'));
+    await fireEvent.press(screen.getByTestId('dispute-file-check-photo-keep'));
+    // Ảnh bị xóa ở nơi khác (xóa ảnh chụp nhầm) trong lúc màn này còn mở.
+    await returns.deleteMedia(SHOP, 'photo-gone', 9_000, 'ev-del');
+
+    await fireEvent.press(screen.getByTestId('dispute-add-evidence'));
+    expect(await screen.findByTestId('dispute-select-stale')).toBeOnTheScreen();
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    expect((await store.getDispute(SHOP, dispute.dispute.id))?.evidence).toEqual([]);
+    await waitFor(() => expect(screen.queryByTestId('dispute-file-photo-gone')).toBeNull());
+
+    // Bấm lại: chỉ ảnh còn tồn tại được thêm.
+    await fireEvent.press(screen.getByTestId('dispute-add-evidence'));
+    await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+    expect(
+      (await store.getDispute(SHOP, dispute.dispute.id))?.evidence.map((e) => e.evidenceId),
+    ).toEqual(['photo-keep']);
+  });
+
   it('hồ sơ hoàn: video mở kiện liệt kê như ảnh, nhãn theo trạng thái THẬT; chỉ video chưa lên máy chủ mới có cảnh báo', async () => {
     const returns = createMemoryReturnStore();
     await seedReturnWithPhoto(returns, 'r-own', 'video-local', 'queued', 'video');

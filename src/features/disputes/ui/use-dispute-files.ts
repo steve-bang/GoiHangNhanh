@@ -43,39 +43,50 @@ export function useDisputeFiles(
   shopId: ShopId,
   orderId: OrderId | null,
   returnId: ReturnCaseId | null = null,
-): { state: DisputeFilesState; reload: () => void } {
+): {
+  state: DisputeFilesState;
+  reload: () => void;
+  /** Đọc lại tệp hiện còn trong kho (để kiểm trước khi ghi, tránh danh sách cũ). */
+  fetchFiles: () => Promise<{ files: readonly DisputeFileItem[] }>;
+} {
   const evidenceFiles = useEvidenceFileStore();
   const disputes = useDisputeStore();
   const returns = useReturnStore();
   const [state, setState] = useState<DisputeFilesState>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
 
+  /** Đọc lại danh sách từ kho (nguồn sự thật), không dùng bản đang hiển thị (có thể đã cũ). */
+  const fetchFiles = useCallback(async () => {
+    const [files, photos, held] = await Promise.all([
+      orderId ? evidenceFiles.listByOrder(shopId, orderId) : Promise.resolve([]),
+      returnId ? returns.listMedia(shopId, returnId) : Promise.resolve([]),
+      disputes.listHeldEvidenceIds(shopId),
+    ]);
+    const items: DisputeFileItem[] = [
+      ...files.map((f) => ({
+        id: f.id,
+        kind: f.kind,
+        group: f.group,
+        state: f.state,
+        createdAtDevice: f.createdAtDevice,
+      })),
+      // Ảnh kiện VÀ video mở kiện của hồ sơ hoàn (R2b): liệt kê như nhau, chọn được, mang nhãn trạng thái thật.
+      ...photos.filter(isMediaSavedLocally).map((m) => ({
+        id: m.id as EvidenceId,
+        kind: m.kind,
+        group: 'return',
+        state: m.state,
+        createdAtDevice: m.createdAtDevice,
+      })),
+    ];
+    return { files: items, held: new Set(held) as ReadonlySet<EvidenceId> };
+  }, [evidenceFiles, disputes, returns, shopId, orderId, returnId]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [files, photos, held] = await Promise.all([
-        orderId ? evidenceFiles.listByOrder(shopId, orderId) : Promise.resolve([]),
-        returnId ? returns.listMedia(shopId, returnId) : Promise.resolve([]),
-        disputes.listHeldEvidenceIds(shopId),
-      ]);
-      const items: DisputeFileItem[] = [
-        ...files.map((f) => ({
-          id: f.id,
-          kind: f.kind,
-          group: f.group,
-          state: f.state,
-          createdAtDevice: f.createdAtDevice,
-        })),
-        // Ảnh kiện VÀ video mở kiện của hồ sơ hoàn (R2b): liệt kê như nhau, chọn được, mang nhãn trạng thái thật.
-        ...photos.filter(isMediaSavedLocally).map((m) => ({
-          id: m.id as EvidenceId,
-          kind: m.kind,
-          group: 'return',
-          state: m.state,
-          createdAtDevice: m.createdAtDevice,
-        })),
-      ];
-      if (!cancelled) setState({ kind: 'ready', files: items, held: new Set(held) });
+      const loaded = await fetchFiles();
+      if (!cancelled) setState({ kind: 'ready', files: loaded.files, held: loaded.held });
     })().catch((error: unknown) => {
       logger.warn('disputes.files_failed', {
         reason: error instanceof Error ? error.name : 'unknown',
@@ -85,11 +96,11 @@ export function useDisputeFiles(
     return () => {
       cancelled = true;
     };
-  }, [evidenceFiles, disputes, returns, shopId, orderId, returnId, attempt]);
+  }, [fetchFiles, attempt]);
 
   const reload = useCallback(() => {
     setState({ kind: 'loading' });
     setAttempt((n) => n + 1);
   }, []);
-  return { state, reload };
+  return { state, reload, fetchFiles };
 }

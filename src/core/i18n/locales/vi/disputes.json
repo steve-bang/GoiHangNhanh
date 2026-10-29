@@ -76,6 +76,7 @@
     "cautionOnDevice": "Mới lưu trên máy, chưa lên máy chủ",
     "cautionFailed": "Tệp đang lỗi, cần xử lý trước khi dùng",
     "cautionBanner": "Một số tệp đã chọn chưa lên máy chủ hoặc đang lỗi. Vẫn thêm được, nhưng hồ sơ sẽ ghi rõ.",
+    "stale": "Có tệp đã bị xóa nên chưa thêm được. Danh sách đã được cập nhật.",
     "add": "Thêm {{count}} bằng chứng",
     "addNone": "Chọn bằng chứng để thêm",
     "done": "Xong",
