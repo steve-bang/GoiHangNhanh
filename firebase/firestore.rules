@@ -302,10 +302,13 @@ service cloud.firestore {
               && request.resource.data.returnId is string
               && exists(/databases/$(database)/documents/shops/$(shopId)/returns/$(request.resource.data.returnId))
               && (
+                // Trần dung lượng (Q-28b): ảnh <= 25 MB; video <= 2 GB (quay tối đa 10 phút).
                 (request.resource.data.kind == 'photo'
-                  && request.resource.data.mimeType in ['image/jpeg', 'image/png'])
+                  && request.resource.data.mimeType in ['image/jpeg', 'image/png']
+                  && request.resource.data.sizeBytes <= 25000000)
                 || (request.resource.data.kind == 'original_video'
-                  && request.resource.data.mimeType in ['video/mp4', 'video/quicktime'])
+                  && request.resource.data.mimeType in ['video/mp4', 'video/quicktime']
+                  && request.resource.data.sizeBytes <= 2000000000)
               )
               && (!('durationMs' in request.resource.data)
                   || (request.resource.data.durationMs is int && request.resource.data.durationMs >= 0))

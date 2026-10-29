@@ -306,6 +306,25 @@ describe('evidence hàng hoàn: khai báo', () => {
         setDoc(doc(db, evidencePath('ph-f')), validPhoto(USERS.packerA, overrides)),
       );
     }
+    // Trần dung lượng (Q-28b): ảnh <= 25 MB, video <= 2 GB; đúng trần thì được.
+    await assertFails(
+      setDoc(doc(db, evidencePath('ph-big')), validPhoto(USERS.packerA, { sizeBytes: 25_000_001 })),
+    );
+    await assertSucceeds(
+      setDoc(doc(db, evidencePath('ph-max')), validPhoto(USERS.packerA, { sizeBytes: 25_000_000 })),
+    );
+    await assertFails(
+      setDoc(
+        doc(db, evidencePath('vid-big')),
+        validVideo(USERS.packerA, { sizeBytes: 2_000_000_001 }),
+      ),
+    );
+    await assertSucceeds(
+      setDoc(
+        doc(db, evidencePath('vid-max')),
+        validVideo(USERS.packerA, { sizeBytes: 2_000_000_000 }),
+      ),
+    );
     await assertFails(
       setDoc(doc(db, evidencePath('vid-f')), validVideo(USERS.packerA, { mimeType: 'image/jpeg' })),
     );
