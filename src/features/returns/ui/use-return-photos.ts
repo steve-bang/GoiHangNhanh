@@ -25,8 +25,22 @@ import {
  * Ảnh của MỘT hồ sơ hàng hoàn (cũ nhất trước). `media === null` là đang nạp (chưa biết có ảnh hay chưa:
  * không được nói "chưa có ảnh"). Lỗi đọc giữ `media` cũ (nếu có), không bịa danh sách rỗng.
  */
+/** Trạng thái còn thay đổi theo hàng đợi tải lên: màn đọc lại định kỳ để nhãn luôn đúng thực tế. */
+const POLL_STATES: readonly ReturnMedia['state'][] = [
+  'queued',
+  'uploading',
+  'uploaded',
+  'upload_failed',
+];
+const POLL_MS = 3000;
+
 export function useReturnMedia(returnId: ReturnCaseId | undefined): {
+  /** Mọi media của hồ sơ (ảnh và video). */
   media: readonly ReturnMedia[] | null;
+  /** Chỉ ảnh kiện. */
+  photos: readonly ReturnMedia[] | null;
+  /** Chỉ video mở kiện. */
+  videos: readonly ReturnMedia[] | null;
   reload: () => Promise<void>;
 } {
   const store = useReturnStore();
@@ -57,7 +71,17 @@ export function useReturnMedia(returnId: ReturnCaseId | undefined): {
     void reload();
   }, [reload]);
 
-  return { media, reload };
+  // Còn tệp đang đi qua hàng đợi tải lên: đọc lại định kỳ (nhãn theo trạng thái THẬT, không đoán).
+  const polling = media !== null && media.some((m) => POLL_STATES.includes(m.state));
+  useEffect(() => {
+    if (!polling) return undefined;
+    const timer = setInterval(() => void reload(), POLL_MS);
+    return () => clearInterval(timer);
+  }, [polling, reload]);
+
+  const photos = useMemo(() => media?.filter((m) => m.kind === 'photo') ?? null, [media]);
+  const videos = useMemo(() => media?.filter((m) => m.kind === 'video') ?? null, [media]);
+  return { media, photos, videos, reload };
 }
 
 /** Chụp một ảnh qua camera đang mở (`handleRef`) và lưu theo `capturePhoto`; không bao giờ ném lỗi. */

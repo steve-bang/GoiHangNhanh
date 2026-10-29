@@ -102,6 +102,18 @@ export interface ReturnStore {
     input: { reason: MissingVideoReason; atDevice: number; eventId: string },
   ): Promise<ReturnDetails>;
   /**
+   * Ghi nhận hồ sơ ĐÃ có video mở kiện (R2b, Q-28), chuyển sang `checking`. `mediaId` phải là video của
+   * CHÍNH hồ sơ này, đã lưu bền trên máy (`queued` trở đi). `interrupted`: chỉ cứu được phần đã ghi (app bị
+   * đóng giữa chừng), không được nhận là đầy đủ. Chỉ ghi MỘT lần: đã có video (hoặc đã ghi "không có
+   * video") thì ném `RETURN_SAVE_FAILED`, trừ ghi lại đúng `mediaId` đã có (idempotent, trả hồ sơ nguyên
+   * trạng). Không thay thế video đã có (bất biến 4, 6).
+   */
+  saveOpeningVideoRecorded(
+    shopId: ShopId,
+    id: ReturnCaseId,
+    input: { mediaId: string; interrupted: boolean; atDevice: number; eventId: string },
+  ): Promise<ReturnDetails>;
+  /**
    * Thay TOÀN BỘ hàng thực nhận và sai lệch (một giao dịch). Dữ liệu dự kiến trong dòng là bản sao,
    * không đổi theo đơn gốc. Hồ sơ `opening`/`checking` chuyển/giữ `checking`; `receiving` hoặc đã xác
    * nhận thì ném lỗi (`RETURN_SAVE_FAILED` / `RETURN_ALREADY_CONFIRMED`).

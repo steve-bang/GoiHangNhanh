@@ -4,6 +4,8 @@ import { stampCreator, type CreatorUidProvider } from '@/features/orders';
 
 import {
   assertCanConfirm,
+  assertNoRecordedVideo,
+  checkOpeningVideoRecordable,
   formatReturnCode,
   statusAfterExterior,
   statusAfterLines,
@@ -216,9 +218,42 @@ export function createMemoryReturnStore(
       }
       return details(row);
     },
+    async saveOpeningVideoRecorded(shopId, id, input) {
+      const row = rowOf(shopId, id);
+      const status = statusAfterVideoStep(row.returnCase.status);
+      const video = media.get(input.mediaId);
+      if (
+        !video ||
+        video.shopId !== shopId ||
+        video.returnId !== id ||
+        video.kind !== 'video' ||
+        !isMediaSavedLocally(video)
+      ) {
+        throw new AppError('RETURN_SAVE_FAILED', { reason: 'video_media' });
+      }
+      if (checkOpeningVideoRecordable(row.returnCase.openingVideo, input.mediaId) === 'same') {
+        return details(row);
+      }
+      touch(
+        row,
+        {
+          status,
+          openingVideo: {
+            kind: 'recorded',
+            mediaId: input.mediaId,
+            atDevice: input.atDevice,
+            interrupted: input.interrupted,
+          },
+        },
+        input.atDevice,
+      );
+      event(row, input.eventId, 'opening_video_recorded', input.atDevice);
+      return details(row);
+    },
     async saveOpeningVideoMissing(shopId, id, input) {
       const row = rowOf(shopId, id);
       const status = statusAfterVideoStep(row.returnCase.status);
+      assertNoRecordedVideo(row.returnCase.openingVideo);
       touch(
         row,
         {

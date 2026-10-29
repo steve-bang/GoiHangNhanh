@@ -110,6 +110,75 @@ describe('kho SQLite hàng hoàn: schema và người tạo', () => {
     expect(await store.listReturnsPendingRemote('s' as never, 5, 'u-1')).toEqual([]);
   });
 
+  it('migration v14 tạo lại return_media cho phép video: giữ MỌI dòng, thứ tự và cột (vị trí, hàng đợi); chỉ mục còn', async () => {
+    const db = createNodeSqliteDatabase();
+    for (const sql of MIGRATIONS.slice(0, 13)) await db.execAsync(sql);
+    await db.execAsync('PRAGMA user_version = 13');
+    await db.runAsync(
+      `INSERT INTO return_cases (id, shop_id, seq, code, status, created_at_device, updated_at_device, created_by)
+       VALUES ('r1', 's', 1, 'RH-00001', 'opening', 1, 1, 'u-1')`,
+    );
+    const insert = (id: string, at: number, extra: string) =>
+      db.runAsync(
+        `INSERT INTO return_media (id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client, created_at_device, updated_at_device, created_by, ${extra.split('|')[0]})
+         VALUES (?, 'r1', 's', 'photo', 'uploaded', ?, 7, ?, ?, ?, 'u-1', ${extra.split('|')[1]})`,
+        [id, `evidence/${id}.jpg`, 'a'.repeat(64), at, at],
+      );
+    await insert(
+      'p-b',
+      5,
+      "lat, lng, accuracy_m, location_at_device, location_status, attempt_count, last_error_code|10.5, 106.5, 9.5, 77, 'ok', 3, 'NETWORK'",
+    );
+    await insert('p-a', 4, "location_status, next_attempt_at_device|'denied', 999");
+    const store = createSqliteReturnStore(db);
+    const list = await store.listMedia('s' as never, 'r1' as never);
+    // thứ tự chèn/giờ tạo được giữ; không mất cột nào
+    expect(list.map((m) => m.id)).toEqual(['p-a', 'p-b']);
+    expect(list[1]).toMatchObject({
+      kind: 'photo',
+      state: 'uploaded',
+      localPath: 'evidence/p-b.jpg',
+      sizeBytes: 7,
+      attemptCount: 3,
+      lastErrorCode: 'NETWORK',
+      location: { status: 'ok', lat: 10.5, lng: 106.5, accuracyM: 9.5, atDevice: 77 },
+      createdBy: 'u-1',
+    });
+    expect(list[0]).toMatchObject({
+      nextAttemptAtDevice: 999,
+      location: { status: 'denied', lat: null },
+    });
+    const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+    expect(version?.user_version).toBe(MIGRATIONS.length);
+    // Nay nhận video, vẫn từ chối loại lạ.
+    await store.createMedia({
+      id: 'v1',
+      shopId: 's' as never,
+      returnId: 'r1' as never,
+      kind: 'video',
+      atDevice: 9,
+    });
+    expect((await store.listMedia('s' as never, 'r1' as never)).map((m) => m.kind)).toEqual([
+      'photo',
+      'photo',
+      'video',
+    ]);
+    await expect(
+      db.runAsync(
+        `INSERT INTO return_media (id, return_id, shop_id, kind, state, created_at_device, updated_at_device)
+         VALUES ('x', 'r1', 's', 'audio', 'recording', 1, 1)`,
+      ),
+    ).rejects.toThrow();
+    const indexes = await db.getAllAsync<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'return_media'",
+    );
+    expect(indexes.map((i) => i.name)).toContain('idx_return_media_return');
+    const tables = await db.getAllAsync<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'return_media%'",
+    );
+    expect(tables.map((t) => t.name)).toEqual(['return_media']);
+  });
+
   it('không xóa ảnh đã nằm trong hồ sơ tranh chấp (kể cả hồ sơ đã đóng); ghi giữ không bị mất', async () => {
     const db = createNodeSqliteDatabase();
     const store = createSqliteReturnStore(db);

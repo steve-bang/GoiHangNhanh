@@ -189,6 +189,40 @@ describe('hạn chế bằng chứng khi mở kiện', () => {
   });
 });
 
+describe('hạn chế bằng chứng khi đã quay video mở kiện (R2b)', () => {
+  const recorded = (interrupted: boolean) =>
+    ({ kind: 'recorded', mediaId: 'v1', atDevice: 1, interrupted }) as const;
+
+  it('video quay đầy đủ, kiện không mở trước: KHÔNG còn hạn chế mở kiện', () => {
+    expect(hasOpeningEvidenceLimit({ openingVideo: recorded(false), openedBefore: null })).toBe(
+      false,
+    );
+    expect(evidenceLimits(details({ openingVideo: recorded(false) }), null)).toEqual([
+      'not_linked',
+    ]);
+  });
+
+  it('video bị gián đoạn vẫn là hạn chế (không nhận là đầy đủ)', () => {
+    expect(hasOpeningEvidenceLimit({ openingVideo: recorded(true), openedBefore: null })).toBe(
+      true,
+    );
+    expect(evidenceLimits(details({ openingVideo: recorded(true) }), null)).toContain(
+      'interrupted_opening_video',
+    );
+    expect(evidenceLimits(details({ openingVideo: recorded(true) }), null)).not.toContain(
+      'no_opening_video',
+    );
+  });
+
+  it('kiện đã mở trước khi quay: có video cũng KHÔNG xóa hạn chế (không quay bù, bất biến 6)', () => {
+    const openedBefore = { reason: 'x', markedAtDevice: 1 };
+    expect(hasOpeningEvidenceLimit({ openingVideo: recorded(false), openedBefore })).toBe(true);
+    const limits = evidenceLimits(details({ openingVideo: recorded(false), openedBefore }), null);
+    expect(limits).toContain('opened_before_recording');
+    expect(limits).not.toContain('no_opening_video');
+  });
+});
+
 describe('giai đoạn và bộ lọc danh sách', () => {
   it('giai đoạn theo trạng thái; có sai lệch khi đang kiểm tra thì hiện "có sai lệch"', () => {
     expect(stageOf(summary({ status: 'receiving' }))).toBe('receiving');

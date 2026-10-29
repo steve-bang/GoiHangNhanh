@@ -10,6 +10,8 @@ import type { SqlDatabase } from '@/platform/sql-database';
 
 import {
   assertCanConfirm,
+  assertNoRecordedVideo,
+  checkOpeningVideoRecordable,
   formatReturnCode,
   statusAfterExterior,
   statusAfterLines,
@@ -19,6 +21,7 @@ import {
   applyMediaEvent,
   applyMediaLocation,
   assertMediaDeletable,
+  isMediaSavedLocally,
   type DeleteMediaResult,
   type LocationStatus,
   type ReturnMedia,
@@ -126,7 +129,7 @@ const toMedia = (r: MediaRow): ReturnMedia => ({
   id: r.id,
   shopId: r.shop_id as ShopId,
   returnId: r.return_id as ReturnCaseId,
-  kind: 'photo',
+  kind: r.kind === 'video' ? 'video' : 'photo',
   state: r.state as ReturnMedia['state'],
   localPath: r.local_path,
   sizeBytes: r.size_bytes,
@@ -183,11 +186,20 @@ const parseOpenedBefore = (json: string | null): OpenedBefore | null =>
       : null,
   );
 const parseOpeningVideo = (json: string | null): OpeningVideo =>
-  parseJson(json, (r) =>
-    r.kind === 'missing' && typeof r.reason === 'string' && typeof r.atDevice === 'number'
-      ? { kind: 'missing', reason: r.reason as 'user_skipped', atDevice: r.atDevice }
-      : null,
-  );
+  parseJson(json, (r): OpeningVideo => {
+    if (r.kind === 'missing' && typeof r.reason === 'string' && typeof r.atDevice === 'number') {
+      return { kind: 'missing', reason: r.reason as 'user_skipped', atDevice: r.atDevice };
+    }
+    if (r.kind === 'recorded' && typeof r.mediaId === 'string' && typeof r.atDevice === 'number') {
+      return {
+        kind: 'recorded',
+        mediaId: r.mediaId,
+        atDevice: r.atDevice,
+        interrupted: r.interrupted === true,
+      };
+    }
+    return null;
+  });
 
 const toCase = (r: CaseRow): ReturnCase => ({
   id: r.id as ReturnCaseId,
@@ -511,10 +523,51 @@ export function createSqliteReturnStore(
         return mustLoad(shopId, id);
       }),
 
+    saveOpeningVideoRecorded: (shopId, id, input) =>
+      guarded(async () => {
+        const current = await requireCase(shopId, id);
+        const status = statusAfterVideoStep(current.status as ReturnStatus);
+        const video = await db.getFirstAsync<MediaRow>(
+          `SELECT ${MEDIA_COLUMNS} FROM return_media WHERE id = ? AND shop_id = ? AND return_id = ?`,
+          [input.mediaId, shopId, id],
+        );
+        if (!video || video.kind !== 'video' || !isMediaSavedLocally(toMedia(video))) {
+          throw new AppError('RETURN_SAVE_FAILED', { reason: 'video_media' });
+        }
+        if (
+          checkOpeningVideoRecordable(
+            parseOpeningVideo(current.opening_video_json),
+            input.mediaId,
+          ) === 'same'
+        ) {
+          return mustLoad(shopId, id);
+        }
+        await db.withTransactionAsync(async () => {
+          await touch(
+            shopId,
+            id,
+            'status = ?, opening_video_json = ?',
+            [
+              status,
+              JSON.stringify({
+                kind: 'recorded',
+                mediaId: input.mediaId,
+                atDevice: input.atDevice,
+                interrupted: input.interrupted,
+              }),
+            ],
+            input.atDevice,
+          );
+          await insertEvent(shopId, id, input.eventId, 'opening_video_recorded', input.atDevice);
+        });
+        return mustLoad(shopId, id);
+      }),
+
     saveOpeningVideoMissing: (shopId, id, input) =>
       guarded(async () => {
         const current = await requireCase(shopId, id);
         const status = statusAfterVideoStep(current.status as ReturnStatus);
+        assertNoRecordedVideo(parseOpeningVideo(current.opening_video_json));
         await db.withTransactionAsync(async () => {
           await touch(
             shopId,
@@ -615,8 +668,16 @@ export function createSqliteReturnStore(
         if (current.status === 'confirmed') throw new AppError('RETURN_ALREADY_CONFIRMED');
         await db.runAsync(
           `INSERT INTO return_media (id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client, created_at_device, updated_at_device, created_by)
-           VALUES (?, ?, ?, 'photo', 'recording', NULL, NULL, NULL, ?, ?, ?)`,
-          [input.id, input.returnId, input.shopId, input.atDevice, input.atDevice, uid()],
+           VALUES (?, ?, ?, ?, 'recording', NULL, NULL, NULL, ?, ?, ?)`,
+          [
+            input.id,
+            input.returnId,
+            input.shopId,
+            input.kind,
+            input.atDevice,
+            input.atDevice,
+            uid(),
+          ],
         );
         const created = await db.getFirstAsync<MediaRow>(
           `SELECT ${MEDIA_COLUMNS} FROM return_media WHERE id = ?`,

@@ -161,6 +161,7 @@
     "limitsTitle": "Hạn chế về bằng chứng",
     "limits": {
       "no_opening_video": "Chưa có video mở kiện.",
+      "interrupted_opening_video": "Video mở kiện bị gián đoạn, chỉ giữ được phần đã lưu.",
       "opened_before_recording": "Kiện đã mở trước khi quay: thiếu bằng chứng quá trình mở ban đầu.",
       "no_exterior_photo": "Chưa có ảnh bên ngoài kiện.",
       "not_linked": "Chưa liên kết đơn gốc."
@@ -174,6 +175,9 @@
     "editItems": "Sửa kiểm kê",
     "videoReason": "Lý do: {{reason}}",
     "limitedBadge": "Hạn chế bằng chứng",
+    "videoRecorded": "Đã quay video mở kiện.",
+    "videoInterrupted": "Video mở kiện bị gián đoạn. Phần đã lưu được giữ lại, chưa phải video đầy đủ.",
+    "videoOpenedBefore": "Kiện đã mở trước khi quay: video này chỉ ghi lại tình trạng hiện tại, không phải quá trình mở.",
     "photosOnDevice": "Có {{count}} ảnh kiện.",
     "sync": {
       "verified": "{{count}} đã được máy chủ xác minh",
@@ -197,6 +201,7 @@
       "exterior_saved": "Ghi tình trạng bên ngoài",
       "opened_before_marked": "Đánh dấu kiện đã mở trước khi quay",
       "opening_video_missing": "Ghi nhận chưa có video mở kiện",
+      "opening_video_recorded": "Quay video mở kiện",
       "linked": "Liên kết đơn gốc",
       "lines_saved": "Lưu kiểm kê",
       "confirmed": "Xác nhận hồ sơ",

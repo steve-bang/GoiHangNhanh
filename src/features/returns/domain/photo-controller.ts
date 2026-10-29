@@ -130,7 +130,10 @@ export async function capturePhoto(
 
   try {
     const existing = await store.listMedia(shopId, returnId);
-    if (existing.filter(isMediaSavedLocally).length >= MAX_RETURN_PHOTOS) {
+    if (
+      existing.filter((m) => m.kind === 'photo' && isMediaSavedLocally(m)).length >=
+      MAX_RETURN_PHOTOS
+    ) {
       return fail('LIMIT_REACHED');
     }
     const id = newId();

@@ -809,6 +809,197 @@ export function runReturnStoreContract(
       });
     });
 
+    describe('video mở kiện (R2b)', () => {
+      const dev = (type: FileEventType): FileEvent => ({ type, origin: 'device' });
+      const SHA = 'e'.repeat(64);
+      const makeVideo = async (
+        store: ReturnStore,
+        returnId: ReturnCaseId,
+        id: string,
+        upTo: 'recording' | 'queued' = 'queued',
+      ) => {
+        await store.createMedia({ id, shopId: SHOP, returnId, kind: 'video', atDevice: 10 });
+        if (upTo === 'recording') return;
+        await store.applyMediaEvent(SHOP, id, dev('STOP_RECORDING'), 11, {
+          localPath: 'tmp/v.mp4',
+        });
+        await store.applyMediaEvent(SHOP, id, dev('LOCAL_FILE_MOVED'), 12, {
+          localPath: `evidence/${id}.mp4`,
+        });
+        await store.applyMediaEvent(SHOP, id, dev('LOCAL_FILE_READABLE'), 13, {
+          localPath: `evidence/${id}.mp4`,
+          sizeBytes: 5000,
+          sha256Client: SHA,
+        });
+      };
+      const toOpening = async (store: ReturnStore) => {
+        const made = await store.createReturn(makeNewReturn());
+        await store.saveExterior(SHOP, made.returnCase.id, exterior());
+        return made.returnCase.id;
+      };
+
+      it('tạo bản ghi video TRƯỚC khi quay, đi hết vòng đời tới queued; ảnh và video cùng nằm trong danh sách', async () => {
+        const store = await create();
+        const id = await toOpening(store);
+        await store.createMedia({
+          id: 'p1',
+          shopId: SHOP,
+          returnId: id,
+          kind: 'photo',
+          atDevice: 9,
+        });
+        await makeVideo(store, id, 'v1', 'recording');
+        expect(await store.listMedia(SHOP, id)).toMatchObject([
+          { id: 'p1', kind: 'photo' },
+          { id: 'v1', kind: 'video', state: 'recording', localPath: null },
+        ]);
+        await makeVideo(store, id, 'v2');
+        expect((await store.listMedia(SHOP, id)).find((m) => m.id === 'v2')).toMatchObject({
+          kind: 'video',
+          state: 'queued',
+          sizeBytes: 5000,
+          sha256Client: SHA,
+        });
+      });
+
+      it('ghi nhận video đã quay: sang checking, có lịch sử, đúng video của hồ sơ', async () => {
+        const store = await create();
+        const id = await toOpening(store);
+        await makeVideo(store, id, 'v1');
+        const saved = await store.saveOpeningVideoRecorded(SHOP, id, {
+          mediaId: 'v1',
+          interrupted: false,
+          atDevice: 20,
+          eventId: nid(),
+        });
+        expect(saved.returnCase.status).toBe('checking');
+        expect(saved.returnCase.openingVideo).toEqual({
+          kind: 'recorded',
+          mediaId: 'v1',
+          atDevice: 20,
+          interrupted: false,
+        });
+        const event = saved.events.find((e) => e.kind === 'opening_video_recorded');
+        expect(event).toMatchObject({ atDevice: 20 });
+        expect(JSON.stringify(event)).not.toMatch(/evidence|mp4|eeee/);
+      });
+
+      it('ghi lại đúng video đã có là idempotent (không thêm lịch sử); đổi sang video khác hoặc ghi "không có video" bị từ chối', async () => {
+        const store = await create();
+        const id = await toOpening(store);
+        await makeVideo(store, id, 'v1');
+        await makeVideo(store, id, 'v2');
+        const input = { mediaId: 'v1', interrupted: true, atDevice: 20, eventId: nid() };
+        await store.saveOpeningVideoRecorded(SHOP, id, input);
+        const before = (await store.getReturn(SHOP, id))?.events.length;
+        await store.saveOpeningVideoRecorded(SHOP, id, { ...input, eventId: nid(), atDevice: 99 });
+        const after = await store.getReturn(SHOP, id);
+        expect(after?.events).toHaveLength(before ?? -1);
+        expect(after?.returnCase.openingVideo).toMatchObject({ mediaId: 'v1', atDevice: 20 });
+        expect(
+          await code(
+            store.saveOpeningVideoRecorded(SHOP, id, { ...input, mediaId: 'v2', eventId: nid() }),
+          ),
+        ).toBe('RETURN_SAVE_FAILED');
+        expect(
+          await code(
+            store.saveOpeningVideoMissing(SHOP, id, {
+              reason: 'user_skipped',
+              atDevice: 30,
+              eventId: nid(),
+            }),
+          ),
+        ).toBe('RETURN_SAVE_FAILED');
+        expect((await store.getReturn(SHOP, id))?.returnCase.openingVideo?.kind).toBe('recorded');
+      });
+
+      it('đã ghi "không có video" thì không thay bằng video quay sau (không quay bù)', async () => {
+        const store = await create();
+        const id = await toOpening(store);
+        await store.saveOpeningVideoMissing(SHOP, id, {
+          reason: 'device_problem',
+          atDevice: 20,
+          eventId: nid(),
+        });
+        await makeVideo(store, id, 'v1');
+        expect(
+          await code(
+            store.saveOpeningVideoRecorded(SHOP, id, {
+              mediaId: 'v1',
+              interrupted: false,
+              atDevice: 21,
+              eventId: nid(),
+            }),
+          ),
+        ).toBe('RETURN_SAVE_FAILED');
+        expect((await store.getReturn(SHOP, id))?.returnCase.openingVideo?.kind).toBe('missing');
+      });
+
+      it('chỉ nhận video đã lưu bền của CHÍNH hồ sơ và shop: ảnh, video chưa đóng tệp, video hồ sơ khác, shop khác đều bị từ chối', async () => {
+        const store = await create();
+        const id = await toOpening(store);
+        const other = await toOpening(store);
+        await store.createMedia({
+          id: 'p1',
+          shopId: SHOP,
+          returnId: id,
+          kind: 'photo',
+          atDevice: 9,
+        });
+        await makeVideo(store, id, 'v-open', 'recording');
+        await makeVideo(store, other, 'v-other');
+        for (const mediaId of ['p1', 'v-open', 'v-other', 'khong-co']) {
+          expect(
+            await code(
+              store.saveOpeningVideoRecorded(SHOP, id, {
+                mediaId,
+                interrupted: false,
+                atDevice: 20,
+                eventId: nid(),
+              }),
+            ),
+          ).toBe('RETURN_SAVE_FAILED');
+        }
+        await makeVideo(store, id, 'v1');
+        expect(
+          await code(
+            store.saveOpeningVideoRecorded(OTHER, id, {
+              mediaId: 'v1',
+              interrupted: false,
+              atDevice: 20,
+              eventId: nid(),
+            }),
+          ),
+        ).toBe('RETURN_SAVE_FAILED');
+        expect((await store.getReturn(SHOP, id))?.returnCase.openingVideo).toBeNull();
+      });
+
+      it('chưa ghi tình trạng bên ngoài hoặc đã xác nhận thì không ghi nhận video (không nhảy cóc)', async () => {
+        const store = await create();
+        const fresh = await store.createReturn(makeNewReturn());
+        await makeVideo(store, fresh.returnCase.id, 'v1');
+        expect(
+          await code(
+            store.saveOpeningVideoRecorded(SHOP, fresh.returnCase.id, {
+              mediaId: 'v1',
+              interrupted: false,
+              atDevice: 20,
+              eventId: nid(),
+            }),
+          ),
+        ).toBe('RETURN_SAVE_FAILED');
+      });
+
+      it('video không xóa được dù hồ sơ chưa xác nhận và chưa tải (ngoại lệ chỉ cho ảnh)', async () => {
+        const store = await create();
+        const id = await toOpening(store);
+        await makeVideo(store, id, 'v1');
+        expect(await code(store.checkMediaDeletable(SHOP, 'v1'))).toBe('RETURN_PHOTO_IN_USE');
+        expect(await code(store.deleteMedia(SHOP, 'v1', 9, nid()))).toBe('RETURN_PHOTO_IN_USE');
+        expect(await store.listMedia(SHOP, id)).toHaveLength(1);
+      });
+    });
+
     describe('đăng bản neo lên máy chủ (Q-28)', () => {
       const dev = (type: FileEventType): FileEvent => ({ type, origin: 'device' });
       const SHA = 'b'.repeat(64);

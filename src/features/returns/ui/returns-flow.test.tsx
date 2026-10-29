@@ -585,9 +585,12 @@ describe('UI-D04 Quay video mở kiện (chưa nối camera ở R1)', () => {
     expect(screen.getByTestId('return-skip-reason-opened_before_recording')).toBeSelected();
     await fireEvent.press(screen.getByTestId('return-skip-confirm'));
     await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
-    expect((await store.getReturn(SHOP, made.returnCase.id))?.returnCase.openingVideo?.reason).toBe(
-      'opened_before_recording',
-    );
+    expect(
+      (await store.getReturn(SHOP, made.returnCase.id))?.returnCase.openingVideo,
+    ).toMatchObject({
+      kind: 'missing',
+      reason: 'opened_before_recording',
+    });
   });
 
   it('rời màn rồi "Kết thúc phiên" cũng phải qua bước hỏi lý do (không bỏ qua video âm thầm)', async () => {

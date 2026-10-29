@@ -286,6 +286,46 @@ export const MIGRATIONS: readonly string[] = [
   ALTER TABLE return_media ADD COLUMN next_attempt_at_device INTEGER;
   ALTER TABLE return_media ADD COLUMN last_error_code TEXT;
   `,
+  // v14 (R2b, Q-28): `return_media.kind` nhận thêm 'video' (video mở kiện). SQLite không đổi ràng buộc
+  // CHECK tại chỗ nên tạo lại bảng TRONG giao dịch của migration: bảng mới -> chép nguyên MỌI dòng và
+  // cột (giữ rowid/thứ tự, vị trí v11, hàng đợi v13) -> xóa bảng cũ -> đổi tên -> tạo lại chỉ mục. Không
+  // bảng nào tham chiếu `return_media` (tranh chấp tham chiếu bằng ID, không khóa ngoại) nên không mất ràng buộc.
+  `
+  CREATE TABLE return_media_v14 (
+    id TEXT PRIMARY KEY NOT NULL,
+    return_id TEXT NOT NULL REFERENCES return_cases (id),
+    shop_id TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('photo', 'video')),
+    state TEXT NOT NULL,
+    local_path TEXT,
+    size_bytes INTEGER,
+    sha256_client TEXT,
+    created_at_device INTEGER NOT NULL,
+    updated_at_device INTEGER NOT NULL,
+    created_by TEXT,
+    lat REAL,
+    lng REAL,
+    accuracy_m REAL,
+    location_at_device INTEGER,
+    location_status TEXT CHECK (location_status IS NULL OR location_status IN ('ok', 'denied', 'unavailable', 'timeout', 'off')),
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    next_attempt_at_device INTEGER,
+    last_error_code TEXT
+  );
+  INSERT INTO return_media_v14 (
+    id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client,
+    created_at_device, updated_at_device, created_by, lat, lng, accuracy_m, location_at_device,
+    location_status, attempt_count, next_attempt_at_device, last_error_code
+  )
+  SELECT
+    id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client,
+    created_at_device, updated_at_device, created_by, lat, lng, accuracy_m, location_at_device,
+    location_status, attempt_count, next_attempt_at_device, last_error_code
+  FROM return_media ORDER BY rowid;
+  DROP TABLE return_media;
+  ALTER TABLE return_media_v14 RENAME TO return_media;
+  CREATE INDEX idx_return_media_return ON return_media (return_id, created_at_device);
+  `,
 ];
 
 /**

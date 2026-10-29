@@ -219,6 +219,14 @@ describe('assertMediaDeletable (Q-26j + Q-28)', () => {
     );
   });
 
+  it('video mở kiện KHÔNG BAO GIỜ xóa được (ngoại lệ chỉ cho ảnh chụp nhầm), kể cả chưa tải', () => {
+    for (const state of ['recording', 'queued', 'local_save_failed', 'verified'] as const) {
+      expect(() => run({ kind: 'video', state })).toThrow(
+        expect.objectContaining({ code: 'RETURN_PHOTO_IN_USE' }),
+      );
+    }
+  });
+
   it('hồ sơ đã xác nhận hoặc ảnh trong tranh chấp thì không xóa dù chưa tải', () => {
     expect(() => run({ state: 'queued' }, { confirmed: true })).toThrow(
       expect.objectContaining({ code: 'RETURN_ALREADY_CONFIRMED' }),

@@ -1,6 +1,6 @@
 import { AppError } from '@/core/errors/app-error';
 
-import type { ReturnStatus } from './types';
+import type { OpeningVideo, ReturnStatus } from './types';
 
 /** Mã hiển thị của hồ sơ: RH-00001 (số thứ tự theo shop). Không phải ID. */
 export function formatReturnCode(seq: number): string {
@@ -33,5 +33,26 @@ export function assertCanConfirm(status: ReturnStatus, lineCount: number): void 
   assertEditable(status);
   if (status !== 'checking' || lineCount < 1) {
     throw new AppError('RETURN_SAVE_FAILED', { reason: 'not_ready_to_confirm' });
+  }
+}
+
+/**
+ * Ghi nhận video mở kiện đã quay: chỉ khi hồ sơ CHƯA có kết luận về video (`openingVideo === null`) hoặc
+ * ghi lại đúng video đã có (idempotent). Trả `'same'` nếu đã ghi đúng video này (không đổi gì), `'new'`
+ * nếu cần ghi. Đã có video khác hoặc đã ghi "không có video" thì ném lỗi: không thay thế (bất biến 4, 6, 7).
+ */
+export function checkOpeningVideoRecordable(
+  current: OpeningVideo,
+  mediaId: string,
+): 'new' | 'same' {
+  if (current === null) return 'new';
+  if (current.kind === 'recorded' && current.mediaId === mediaId) return 'same';
+  throw new AppError('RETURN_SAVE_FAILED', { reason: 'video_already_set' });
+}
+
+/** Ghi "không có video" khi đã có video quay xong thì từ chối: không xóa dấu vết video đã quay. */
+export function assertNoRecordedVideo(current: OpeningVideo): void {
+  if (current?.kind === 'recorded') {
+    throw new AppError('RETURN_SAVE_FAILED', { reason: 'video_already_set' });
   }
 }

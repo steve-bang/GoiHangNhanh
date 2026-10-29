@@ -66,9 +66,10 @@ export function useDisputeFiles(
           state: f.state,
           createdAtDevice: f.createdAtDevice,
         })),
+        // Ảnh kiện VÀ video mở kiện của hồ sơ hoàn (R2b): liệt kê như nhau, chọn được, mang nhãn trạng thái thật.
         ...photos.filter(isMediaSavedLocally).map((m) => ({
           id: m.id as EvidenceId,
-          kind: 'photo' as const,
+          kind: m.kind,
           group: 'return',
           state: m.state,
           createdAtDevice: m.createdAtDevice,

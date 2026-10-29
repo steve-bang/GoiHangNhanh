@@ -2,7 +2,8 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { toCodeKey } from '@/features/orders';
-import { Card, Icon, Text, useTheme } from '@/shared/ui';
+import { toDisplayStatus } from '@/features/evidence';
+import { Card, EvidenceStatusBadge, Icon, Text, useTheme } from '@/shared/ui';
 
 import {
   compareLine,
@@ -11,6 +12,7 @@ import {
   isMediaSavedLocally,
   summarizeMediaSync,
   type ReturnDetails,
+  type ReturnMedia,
 } from '../domain';
 import { useReturnMedia } from './use-return-photos';
 
@@ -62,15 +64,17 @@ export function ReturnSummaryCards({
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const { returnCase, lines, discrepancies } = details;
-  const { media } = useReturnMedia(returnCase.id);
-  const savedPhotos = media === null ? [] : media.filter(isMediaSavedLocally);
-  const photoCount = media === null ? null : savedPhotos.length;
+  const { photos, videos } = useReturnMedia(returnCase.id);
+  const savedPhotos = photos === null ? [] : photos.filter(isMediaSavedLocally);
+  const photoCount = photos === null ? null : savedPhotos.length;
   const sync = summarizeMediaSync(savedPhotos);
   const syncParts = SYNC_KEYS.filter((key) => sync[key] > 0).map((key) =>
     t(`returns:review.sync.${key}`, { count: sync[key] }),
   );
   const withLocation = savedPhotos.filter((m) => describeLocation(m).kind === 'has').length;
   const limits = evidenceLimits(details, photoCount);
+  const recordedId =
+    returnCase.openingVideo?.kind === 'recorded' ? returnCase.openingVideo.mediaId : null;
   const kindOf = (lineId: string | null) =>
     discrepancies.filter((d) => d.lineId === lineId).map((d) => t(`returns:items.kinds.${d.kind}`));
 
@@ -123,16 +127,26 @@ export function ReturnSummaryCards({
       </Section>
 
       <Section title={t('returns:review.video')} testID="return-summary-video">
-        <Text variant="formBody">
-          {returnCase.openingVideo ? t('returns:review.videoMissing') : '…'}
-        </Text>
-        {returnCase.openingVideo ? (
-          <Text variant="caption" color="textMuted" testID="return-video-reason">
-            {t('returns:review.videoReason', {
-              reason: t(`returns:record.skipReasons.${returnCase.openingVideo.reason}`),
-            })}
-          </Text>
-        ) : null}
+        {returnCase.openingVideo?.kind === 'recorded' ? (
+          <OpeningVideoStatus
+            interrupted={returnCase.openingVideo.interrupted}
+            openedBefore={returnCase.openedBefore !== null}
+            video={videos?.find((m) => m.id === recordedId) ?? null}
+          />
+        ) : (
+          <>
+            <Text variant="formBody">
+              {returnCase.openingVideo ? t('returns:review.videoMissing') : '…'}
+            </Text>
+            {returnCase.openingVideo?.kind === 'missing' ? (
+              <Text variant="caption" color="textMuted" testID="return-video-reason">
+                {t('returns:review.videoReason', {
+                  reason: t(`returns:record.skipReasons.${returnCase.openingVideo.reason}`),
+                })}
+              </Text>
+            ) : null}
+          </>
+        )}
       </Section>
 
       <Section title={t('returns:review.items')} testID="return-summary-items">
@@ -204,5 +218,38 @@ export function ReturnSummaryCards({
         {t('returns:review.localOnly')}
       </Text>
     </View>
+  );
+}
+
+/**
+ * Video mở kiện đã quay: nói đúng điều đã xảy ra. Nhãn theo trạng thái tệp THẬT (chỉ "Đã xác minh" khi
+ * máy chủ đã tính lại mã băm và khớp); video bị gián đoạn không được nhận là đầy đủ; kiện đã mở trước khi
+ * quay thì video chỉ ghi lại tình trạng hiện tại, không phải quá trình mở (bất biến 6).
+ */
+function OpeningVideoStatus({
+  interrupted,
+  openedBefore,
+  video,
+}: {
+  interrupted: boolean;
+  openedBefore: boolean;
+  video: ReturnMedia | null;
+}) {
+  const { t } = useTranslation();
+  const display = video ? toDisplayStatus(video.state) : null;
+  return (
+    <>
+      <Text variant="formBody" testID="return-video-recorded">
+        {t(interrupted ? 'returns:review.videoInterrupted' : 'returns:review.videoRecorded')}
+      </Text>
+      {display?.kind === 'label' ? (
+        <EvidenceStatusBadge compact status={display.label} testID="return-video-status" />
+      ) : null}
+      {openedBefore ? (
+        <Text variant="caption" color="textMuted" testID="return-video-opened-before">
+          {t('returns:review.videoOpenedBefore')}
+        </Text>
+      ) : null}
+    </>
   );
 }

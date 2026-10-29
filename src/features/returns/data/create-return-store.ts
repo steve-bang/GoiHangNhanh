@@ -37,6 +37,8 @@ export function createLocalReturnStore(
     saveExterior: async (shop, id, input) => (await get()).saveExterior(shop, id, input),
     saveOpeningVideoMissing: async (shop, id, input) =>
       (await get()).saveOpeningVideoMissing(shop, id, input),
+    saveOpeningVideoRecorded: async (shop, id, input) =>
+      (await get()).saveOpeningVideoRecorded(shop, id, input),
     saveLines: async (shop, id, input) => (await get()).saveLines(shop, id, input),
     confirmReturn: async (shop, id, input) => (await get()).confirmReturn(shop, id, input),
     linkSourceOrder: async (shop, id, input) => (await get()).linkSourceOrder(shop, id, input),

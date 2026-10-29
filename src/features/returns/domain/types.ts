@@ -31,14 +31,26 @@ export type MissingVideoReason =
   'recorder_unavailable' | 'opened_before_recording' | 'device_problem' | 'user_skipped';
 
 /**
- * Trạng thái video mở kiện của hồ sơ. R1 chỉ có `missing` (ghi video thật chưa bật và chưa kiểm
- * chứng trên thiết bị, ADR-020); `null` = chưa đến bước này.
+ * Trạng thái video mở kiện của hồ sơ; `null` = chưa đến bước này.
+ * - `missing`: không có video, kèm lý do do người dùng chọn (không bao giờ tạo video thay thế, bất biến 6).
+ * - `recorded` (R2b, Q-28): đã quay và lưu bền trên máy; `mediaId` là ID bản ghi `return_media` (gắn trước
+ *   khi quay). Chỉ nói video ở TRÊN MÁY; trạng thái tải lên/xác minh lấy từ trạng thái tệp (bất biến 3), không
+ *   nằm ở đây. `interrupted`: app bị đóng giữa lúc quay/lưu và chỉ cứu được phần đã ghi, nên KHÔNG được nhận
+ *   là đầy đủ (A05); vẫn tính là hạn chế bằng chứng.
  */
-export type OpeningVideo = {
-  readonly kind: 'missing';
-  readonly reason: MissingVideoReason;
-  readonly atDevice: number;
-} | null;
+export type OpeningVideo =
+  | {
+      readonly kind: 'missing';
+      readonly reason: MissingVideoReason;
+      readonly atDevice: number;
+    }
+  | {
+      readonly kind: 'recorded';
+      readonly mediaId: string;
+      readonly atDevice: number;
+      readonly interrupted: boolean;
+    }
+  | null;
 
 /** Căn cứ một lần liên kết đơn gốc (docs/05 B02): luôn do người dùng xác nhận, không tự ghép. */
 export type LinkBasis = 'code_match_confirmed' | 'chosen_from_candidates' | 'linked_later';
@@ -105,6 +117,7 @@ export type ReturnEventKind =
   | 'exterior_saved'
   | 'opened_before_marked'
   | 'opening_video_missing'
+  | 'opening_video_recorded'
   | 'linked'
   | 'lines_saved'
   | 'confirmed'

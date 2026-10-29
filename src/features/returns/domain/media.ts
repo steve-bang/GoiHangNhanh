@@ -36,7 +36,7 @@ export interface ReturnMedia {
   readonly id: string;
   readonly shopId: ShopId;
   readonly returnId: ReturnCaseId;
-  readonly kind: 'photo';
+  readonly kind: 'photo' | 'video';
   readonly state: FileState;
   /** Đường dẫn tương đối của tệp bền (xem `platform/recording-files.ts`); `null` khi chưa đóng tệp. */
   readonly localPath: string | null;
@@ -60,7 +60,7 @@ export interface NewReturnMedia {
   readonly id: string;
   readonly shopId: ShopId;
   readonly returnId: ReturnCaseId;
-  readonly kind: 'photo';
+  readonly kind: 'photo' | 'video';
   readonly atDevice: number;
 }
 
@@ -214,9 +214,11 @@ export function describeLocation(media: Pick<ReturnMedia, 'location'>): Location
  */
 export function assertMediaDeletable(input: {
   readonly returnConfirmed: boolean;
-  readonly media: Pick<ReturnMedia, 'state' | 'attemptCount' | 'lastErrorCode'>;
+  readonly media: Pick<ReturnMedia, 'kind' | 'state' | 'attemptCount' | 'lastErrorCode'>;
   readonly inDispute: boolean;
 }): void {
+  // Video mở kiện là bằng chứng chính, KHÔNG có ngoại lệ xóa (bất biến 4): chỉ ảnh chụp nhầm xóa được.
+  if (input.media.kind !== 'photo') throw new AppError('RETURN_PHOTO_IN_USE', { reason: 'video' });
   if (input.returnConfirmed) throw new AppError('RETURN_ALREADY_CONFIRMED');
   if (input.inDispute) throw new AppError('RETURN_PHOTO_IN_USE', { reason: 'dispute' });
   if (mayHaveReachedServer(input.media)) {

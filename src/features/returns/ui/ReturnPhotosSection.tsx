@@ -65,13 +65,14 @@ interface ReturnPhotosSectionProps {
 /**
  * Ảnh kiện hàng ở D03 (R2a). TÙY CHỌN, tối đa `MAX_RETURN_PHOTOS`. Có nút Xóa cho ảnh chụp nhầm khi hồ sơ chưa xác nhận (NGOẠI LỆ
  * của bất biến 4, Q-26j): có hộp thoại xác nhận; ảnh đang trong hồ sơ tranh chấp thì bị từ chối.
- * Ảnh chỉ "Đã lưu trên máy": chưa có đường tải lên nên không hiện trạng thái tải. Giờ hiển thị là giờ
+ * Mỗi ảnh hiện nhãn theo trạng thái tệp THẬT (Đã lưu trên máy -> Đang tải lên -> Đã tải lên -> Đã xác
+ * minh, hoặc Lỗi); chỉ video/ảnh nào máy chủ xác nhận mới được nói đã tải lên/xác minh. Giờ hiển thị là giờ
  * máy; mã băm chỉ chứng minh tệp không đổi, không chứng minh thời điểm chụp.
  */
 export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhotosSectionProps) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
-  const { media, reload } = useReturnMedia(returnId);
+  const { photos: media, reload } = useReturnMedia(returnId);
   const capture = useCaptureReturnPhoto(returnId);
   const removePhoto = useDeleteReturnPhoto();
   const toast = useToast();
