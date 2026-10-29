@@ -1,0 +1,171 @@
+---
+import { site } from '../config/site';
+import Icon from './Icon.astro';
+import DownloadCta from './DownloadCta.astro';
+import { navLinks } from '../config/nav';
+
+interface Props {
+  /** Đường dẫn trang hiện tại, để đánh dấu aria-current. */
+  current: string;
+}
+const { current } = Astro.props;
+
+---
+
+<header class="site-header">
+  <div class="container site-header__inner">
+    <a class="brand" href="/" aria-label={`${site.name}, về trang chủ`}>
+      <img src="/favicon.png" alt="" width="32" height="32" />
+      <span>{site.name}</span>
+    </a>
+
+    <!-- Màn rộng: thanh liên kết. -->
+    <nav class="nav-wide" aria-label="Chính">
+      <ul>
+        {
+          navLinks.map((l) => (
+            <li>
+              <a href={l.href} aria-current={l.href === current ? 'page' : undefined}>
+                {l.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <div class="nav-wide nav-wide__cta"><DownloadCta compact label="Sắp có" /></div>
+
+    <!-- Điện thoại: menu <details>, không dùng JavaScript. -->
+    <details class="nav-narrow">
+      <summary aria-label="Mở menu">
+        <span class="nav-narrow__open"><Icon name="menu" /></span>
+        <span class="nav-narrow__close"><Icon name="close" /></span>
+      </summary>
+      <nav aria-label="Chính (menu điện thoại)">
+        <ul>
+          {
+            navLinks.map((l) => (
+              <li>
+                <a href={l.href} aria-current={l.href === current ? 'page' : undefined}>
+                  {l.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <DownloadCta compact label="Sắp có trên App Store và Google Play" />
+      </nav>
+    </details>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: relative;
+    background: var(--surface-raised);
+    border-bottom: var(--border-thin) solid var(--border-default);
+  }
+  .site-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-16);
+    min-height: 64px;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+    min-height: var(--size-touch);
+    font-weight: 700;
+    font-size: var(--text-lg);
+    color: var(--brand-dark);
+    text-decoration: none;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  nav a {
+    display: flex;
+    align-items: center;
+    min-height: var(--size-touch);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  nav a[aria-current='page'] {
+    color: var(--action-primary);
+    box-shadow: inset 0 -3px 0 var(--action-primary);
+  }
+
+  .nav-wide {
+    display: none;
+  }
+
+  /* Menu điện thoại */
+  .nav-narrow summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size-touch);
+    height: var(--size-touch);
+    border-radius: var(--radius-12);
+    color: var(--brand-dark);
+    cursor: pointer;
+    list-style: none;
+  }
+  .nav-narrow summary::-webkit-details-marker {
+    display: none;
+  }
+  .nav-narrow__close,
+  .nav-narrow[open] .nav-narrow__open {
+    display: none;
+  }
+  .nav-narrow[open] .nav-narrow__close {
+    display: block;
+  }
+  .nav-narrow nav {
+    position: absolute;
+    inset-inline: 0;
+    top: 100%;
+    z-index: 5;
+    padding: var(--space-8) var(--space-16) var(--space-16);
+    background: var(--surface-raised);
+    border-bottom: var(--border-thin) solid var(--border-default);
+    box-shadow: var(--shadow-card);
+  }
+  .nav-narrow nav li + li {
+    border-top: var(--border-thin) solid var(--surface-muted);
+  }
+  .nav-narrow nav a[aria-current='page'] {
+    box-shadow: none;
+  }
+  .nav-narrow nav :global(.cta) {
+    width: 100%;
+    margin-top: var(--space-12);
+  }
+
+  @media (min-width: 60rem) {
+    .nav-narrow {
+      display: none;
+    }
+    .nav-wide {
+      display: block;
+    }
+    .nav-wide ul {
+      display: flex;
+      gap: var(--space-32);
+    }
+    .nav-wide a {
+      font-size: var(--text-sm);
+    }
+    .nav-wide__cta {
+      margin-left: 0;
+    }
+    .site-header__inner {
+      min-height: 72px;
+    }
+  }
+</style>

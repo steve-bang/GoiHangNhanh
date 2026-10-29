@@ -1,0 +1,122 @@
+---
+import Icon, { type IconName } from '../Icon.astro';
+import { site } from '../../config/site';
+
+const items: { icon: IconName; title: string; text: string; soon?: boolean }[] = [
+  {
+    icon: 'camera',
+    title: 'Quay đóng gói',
+    text: 'Quay từ lúc chưa đóng đến lúc niêm phong xong.',
+    soon: true,
+  },
+  {
+    icon: 'box',
+    title: 'Gắn đúng đơn',
+    text: 'Gắn video với đúng đơn và kiện, tránh lẫn khi làm nhiều đơn liền nhau.',
+  },
+  {
+    icon: 'search',
+    title: 'Tìm theo mã đơn',
+    text: 'Khách báo thiếu hàng? Gõ hoặc quét mã đơn để mở lại video của đơn đó.',
+    soon: true,
+  },
+];
+---
+
+<section id="loi-ich" class="why" aria-labelledby="vi-sao">
+  <div class="container">
+    <div class="why__panel">
+      <h2 id="vi-sao">Vì sao nên chọn {site.name}?</h2>
+      <ul class="why__list">
+        {
+          items.map((i) => (
+            <li>
+              <span class="why__icon">
+                <Icon name={i.icon} size={26} />
+              </span>
+              <div>
+                <h3>
+                  {i.title}
+                  {i.soon && <span class="badge">Sắp có</span>}
+                </h3>
+                <p>{i.text}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .why {
+    padding-block: var(--space-16) var(--space-32);
+  }
+  .why__panel {
+    padding: var(--space-24) var(--space-16);
+    border-radius: var(--radius-24);
+    background: var(--brand-soft);
+  }
+  .why__panel h2 {
+    font-size: var(--text-xl);
+  }
+  .why__list {
+    display: grid;
+    gap: var(--space-16);
+    list-style: none;
+    margin: var(--space-16) 0 0;
+    padding: 0;
+  }
+  .why__list li {
+    display: flex;
+    gap: var(--space-16);
+    max-width: none;
+  }
+  .why__icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-full);
+    background: var(--surface-raised);
+    color: var(--action-primary);
+  }
+  h3 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+    margin-bottom: var(--space-4);
+    font-size: var(--text-base);
+  }
+  p {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+  @media (min-width: 60rem) {
+    .why {
+      padding-block: var(--space-32) var(--space-48);
+    }
+    .why__panel {
+      display: grid;
+      grid-template-columns: 1fr 3fr;
+      gap: var(--space-32);
+      padding: var(--space-32);
+    }
+    .why__panel h2 {
+      font-size: var(--text-2xl);
+    }
+    .why__list {
+      grid-template-columns: repeat(3, 1fr);
+      margin: 0;
+      gap: var(--space-24);
+    }
+    .why__list li {
+      flex-direction: column;
+      gap: var(--space-12);
+    }
+  }
+</style>

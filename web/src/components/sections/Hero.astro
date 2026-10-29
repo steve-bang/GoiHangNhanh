@@ -1,0 +1,144 @@
+---
+import { site } from '../../config/site';
+import Icon from '../Icon.astro';
+import DownloadCta from '../DownloadCta.astro';
+import PhoneMockup from '../PhoneMockup.astro';
+import homeShot from '../../assets/app-01-home.png';
+---
+
+<section class="hero" aria-labelledby="tieu-de-chinh">
+  <div class="container hero__inner">
+    <div class="hero__text">
+      <p class="badge">Đang phát triển, chưa phát hành</p>
+      <h1 id="tieu-de-chinh">
+        <span>Quay video đóng hàng</span>
+        <span>Gắn đúng đơn</span>
+        <span>Tìm lại dễ dàng</span>
+      </h1>
+      <p class="hero__lead">
+        {site.name} giúp người bán hàng online quay video đóng hàng, gắn video đúng đơn và tìm lại
+        khi khách báo thiếu hàng hoặc hàng hoàn có vấn đề.
+      </p>
+      <div class="hero__actions">
+        <DownloadCta />
+        <a class="btn btn--ghost" href="#tinh-nang">
+          <Icon name="down" size={20} />
+          Xem tính năng
+        </a>
+      </div>
+      <p class="hero__note">Ứng dụng cho iPhone và Android. Chưa có liên kết tải.</p>
+    </div>
+
+    <figure class="hero__visual">
+      <div class="hero__stage">
+        <p class="hand" aria-hidden="true">Quay, gắn đơn,<br />tìm lại theo mã</p>
+        <PhoneMockup
+          src={homeShot}
+          alt="Màn hình Trang chủ của ứng dụng bản thử: nút Đóng gói đơn, Nhận hàng hoàn và lối tắt Quét mã đơn."
+          priority
+          sizes="(min-width: 60rem) 260px, 220px"
+        />
+      </div>
+      <figcaption>Giao diện minh họa, đang phát triển.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<style>
+  .hero {
+    padding-block: var(--space-24) var(--space-32);
+  }
+  .hero__inner {
+    display: grid;
+    gap: var(--space-24);
+  }
+  h1 {
+    margin-bottom: var(--space-16);
+    font-size: var(--text-2xl);
+    line-height: 1.2;
+  }
+  h1 span {
+    display: block;
+  }
+  .hero__lead {
+    font-size: var(--text-base);
+  }
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-12);
+    margin-bottom: var(--space-12);
+  }
+  .hero__actions :global(.btn) {
+    flex: 1 1 14rem;
+  }
+  .hero__note {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+  .hero__visual {
+    margin: 0;
+  }
+  .hero__stage {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    padding: var(--space-24) var(--space-16) 0;
+    height: 22rem;
+    overflow: hidden;
+    border-radius: var(--radius-24);
+    background: linear-gradient(135deg, var(--brand-soft), var(--mint-200));
+    --phone-width: 220px;
+  }
+  .hand {
+    position: absolute;
+    top: var(--space-16);
+    right: var(--space-16);
+    z-index: 1;
+    margin: 0;
+    padding: var(--space-4) var(--space-12);
+    border-radius: var(--radius-16);
+    background: var(--surface-raised);
+    color: var(--action-primary);
+    font-family: var(--font-hand);
+    font-style: italic;
+    font-size: var(--text-sm);
+    line-height: 1.4;
+    transform: rotate(-4deg);
+  }
+  figcaption {
+    margin-top: var(--space-8);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+  @media (min-width: 60rem) {
+    .hero {
+      padding-block: var(--space-48);
+    }
+    .hero__inner {
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: var(--space-48);
+    }
+    h1 {
+      font-size: var(--text-4xl);
+    }
+    .hero__lead {
+      font-size: var(--text-lg);
+    }
+    .hero__actions :global(.btn) {
+      flex: 0 0 auto;
+    }
+    .hero__stage {
+      height: 30rem;
+      padding-top: var(--space-32);
+      --phone-width: 260px;
+    }
+    .hand {
+      font-size: var(--text-lg);
+      top: var(--space-24);
+      right: var(--space-32);
+    }
+  }
+</style>

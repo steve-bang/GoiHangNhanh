@@ -1,0 +1,48 @@
+---
+import StoreButtons from './StoreButtons.astro';
+import { site } from '../config/site';
+
+interface Props {
+  /** Nền tối (footer) hay sáng. */
+  tone?: 'light' | 'dark';
+  /** Nhãn khi chưa có liên kết cửa hàng. */
+  label?: string;
+  compact?: boolean;
+}
+const { tone = 'light', label = 'Sắp có trên App Store và Google Play', compact = false } = Astro.props;
+
+// Chưa có liên kết cửa hàng nào: một nút vô hiệu, không có href. Có liên kết: dùng StoreButtons.
+const hasStore = Boolean(site.stores.appStore.url || site.stores.googlePlay.url);
+---
+
+{
+  hasStore ? (
+    <StoreButtons />
+  ) : (
+    <button
+      class:list={['btn', 'cta', `cta--${tone}`, { 'cta--compact': compact }]}
+      type="button"
+      disabled
+      aria-disabled="true"
+    >
+      {label}
+    </button>
+  )
+}
+
+<style>
+  .cta {
+    text-align: center;
+  }
+  .cta--compact {
+    min-height: var(--size-touch);
+    padding: var(--space-8) var(--space-16);
+    font-size: var(--text-sm);
+  }
+  /* Nền tối: viền và chữ sáng, vẫn đủ tương phản AA trên --brand-dark. */
+  .cta--dark[aria-disabled='true'] {
+    background: transparent;
+    border-color: var(--mint-200);
+    color: var(--mint-200);
+  }
+</style>

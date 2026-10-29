@@ -76,5 +76,16 @@
   --leading-tight: 1.25;
   --leading-body: 1.6;
   --measure: 65ch;
+
+  /*
+   * ĐỀ XUẤT, chờ designer/BA cập nhật docs/design-token-spec.md (chưa là token chính thức).
+   * Thang chữ/bóng/bo góc riêng của web theo bản design trang chủ; KHÔNG có màu mới.
+   * Font viết tay: chưa có font được cấp, dùng font hệ thống (chờ designer cấp font).
+   */
+  --text-4xl: 2.5rem;
+  --radius-24: 24px;
+  --shadow-card: 0 4px 16px rgb(20 56 42 / 0.08);
+  --shadow-phone: 0 16px 32px rgb(20 56 42 / 0.22);
+  --font-hand: 'Segoe Script', 'Bradley Hand', 'Snell Roundhand', 'Comic Sans MS', cursive;
   --page-max: 72rem;
 }

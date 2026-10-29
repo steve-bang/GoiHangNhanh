@@ -1,6 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import StoreButtons from '../components/StoreButtons.astro';
+import Hero from '../components/sections/Hero.astro';
+import WhyUs from '../components/sections/WhyUs.astro';
+import Features from '../components/sections/Features.astro';
+import Audience from '../components/sections/Audience.astro';
+import Steps from '../components/sections/Steps.astro';
+import FaqSection from '../components/sections/Faq.astro';
+import FinalCta from '../components/sections/FinalCta.astro';
 import { site } from '../config/site';
 import { faqLd, organizationLd, websiteLd, type Faq } from '../lib/jsonld';
 
@@ -11,25 +17,6 @@ const description =
 
 // NỘI DUNG GIỮ CHỖ chờ duyệt: câu hỏi dưới đây là bản nháp, chưa phải câu hỏi thật từ người bán.
 // Mọi tính năng ghi hình/tải lên hôm nay đều "sắp có" (xem CLAUDE.md, mục Trạng thái dự án).
-const steps = [
-  {
-    title: 'Quét mã hoặc nhập mã đơn',
-    text: 'Quét mã bằng camera. Chưa có đơn thì tạo nhanh. Chỉ cần mã đơn và nguồn bán.',
-  },
-  {
-    title: 'Quay đóng gói',
-    text: 'Quay từ lúc chưa đóng đến lúc niêm phong xong. Video gắn đúng đơn đang quay.',
-  },
-  {
-    title: 'Lưu và theo dõi',
-    text: 'Xem rõ video nào mới ở trong máy, video nào đã tải lên. Tải lên chạy nền, bạn làm đơn tiếp theo được.',
-  },
-  {
-    title: 'Tìm lại khi cần',
-    text: 'Khách báo thiếu hàng? Gõ hoặc quét mã đơn là thấy video của đơn đó.',
-  },
-];
-
 const faqs: Faq[] = [
   {
     question: `${site.name} là gì?`,
@@ -58,151 +45,11 @@ const faqs: Faq[] = [
   path="/"
   jsonLd={[organizationLd(), websiteLd(), faqLd(faqs)]}
 >
-  <section class="hero section">
-    <div class="container">
-      <p class="badge">Đang phát triển, chưa phát hành</p>
-      <h1>Có video đóng hàng đúng đơn, tìm lại trong vài giây</h1>
-      <p class="lead">
-        Khách báo thiếu hàng hay hàng hoàn về có vấn đề? {site.name} giúp bạn quay đóng gói, gắn video
-        đúng đơn và tìm lại khi cần.
-      </p>
-      <StoreButtons />
-      <p class="note">Ứng dụng cho iPhone và Android. Chưa có liên kết tải.</p>
-    </div>
-  </section>
-
-  <section id="van-de" class="section section--muted">
-    <div class="container">
-      <h2>Chuyện người bán hay gặp</h2>
-      <ul class="pain-list">
-        <li class="card">Khách báo thiếu hàng, sai hàng hoặc hàng hư hỏng.</li>
-        <li class="card">Hàng hoàn về không giống hàng đã gửi.</li>
-        <li class="card">Đã quay video nhưng không tìm ra video của đúng đơn.</li>
-        <li class="card">Video nằm trong thư viện điện thoại, dễ bị xóa hoặc thất lạc.</li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="giai-phap" class="section">
-    <div class="container">
-      <h2>Cách {site.name} giúp</h2>
-      <p>
-        Mỗi lần quay gắn với một đơn và một kiện cụ thể, tạo trước khi bấm quay. Chuyển sang đơn
-        sau không làm lẫn video của đơn trước.
-      </p>
-    </div>
-  </section>
-
-  <section id="cach-dung" class="section section--muted">
-    <div class="container">
-      <h2>Dùng thế nào: 4 bước</h2>
-      <p>
-        <span class="badge">Sắp có</span> Các bước này là thiết kế của ứng dụng. Hôm nay ứng dụng chưa ghi
-        video thật và chưa tải video lên.
-      </p>
-      <ol class="steps">
-        {
-          steps.map((s) => (
-            <li class="card">
-              <h3>{s.title}</h3>
-              <p>{s.text}</p>
-            </li>
-          ))
-        }
-      </ol>
-    </div>
-  </section>
-
-  <section id="loi-ich" class="section">
-    <div class="container">
-      <h2>Lợi ích</h2>
-      <ul class="benefits">
-        <li><strong>Đúng đơn.</strong> Video gắn với đơn và kiện, không dựa vào tên tệp.</li>
-        <li>
-          <strong>Biết rõ trạng thái.</strong> Phân biệt video mới lưu trong máy với video đã tải lên.
-        </li>
-        <li><strong>Tìm nhanh.</strong> Tìm theo mã đơn hoặc mã vận đơn.</li>
-        <li><strong>Ít phải gõ.</strong> Quét mã bằng camera, chỉ nhập khi cần.</li>
-      </ul>
-      <div class="card honest">
-        <h3>Điều chúng tôi không hứa</h3>
-        <ul>
-          <li>Không hứa thắng khiếu nại hay tranh chấp.</li>
-          <li>Không nói video là "bằng chứng pháp lý tuyệt đối".</li>
-          <li>
-            Tải lên chạy nền nhưng điện thoại có thể tạm dừng khi hết pin hoặc mất mạng. Ứng dụng sẽ
-            báo rõ video nào chưa tải xong.
-          </li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section id="cau-hoi" class="section section--muted">
-    <div class="container">
-      <h2>Câu hỏi thường gặp</h2>
-      {
-        faqs.map((f) => (
-          <div class="faq">
-            <h3>{f.question}</h3>
-            <p>{f.answer}</p>
-          </div>
-        ))
-      }
-    </div>
-  </section>
-
-  <section id="tai-ung-dung" class="section cta-final">
-    <div class="container">
-      <h2>Sẵn sàng khi ứng dụng ra mắt</h2>
-      <p>Chưa có liên kết tải. Khi phát hành, nút tải sẽ hiện ở đây.</p>
-      <StoreButtons />
-    </div>
-  </section>
+  <Hero />
+  <WhyUs />
+  <Features />
+  <Audience />
+  <Steps />
+  <FaqSection faqs={faqs} />
+  <FinalCta />
 </BaseLayout>
-
-<style>
-  .hero {
-    background: var(--brand-soft);
-  }
-  .lead {
-    font-size: var(--text-lg);
-  }
-  .note {
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-  }
-  .pain-list,
-  .steps,
-  .benefits {
-    list-style: none;
-    margin: 0 0 var(--space-24);
-    padding: 0;
-    display: grid;
-    gap: var(--space-12);
-  }
-  .benefits li {
-    max-width: none;
-  }
-  .steps {
-    counter-reset: step;
-  }
-  .steps li {
-    counter-increment: step;
-  }
-  .steps h3::before {
-    content: counter(step) '. ';
-  }
-  .faq h3 {
-    margin-bottom: var(--space-4);
-  }
-  .honest ul {
-    margin-bottom: 0;
-  }
-  @media (min-width: 48rem) {
-    .pain-list,
-    .steps {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-</style>

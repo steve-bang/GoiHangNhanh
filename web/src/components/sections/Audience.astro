@@ -1,0 +1,96 @@
+---
+import Icon, { type IconName } from '../Icon.astro';
+
+// Bốn tình huống có thật trong thiết kế sản phẩm (docs/01): một người, nhiều sàn, đơn lẻ, theo lô.
+const cases: { icon: IconName; label: string }[] = [
+  { icon: 'user', label: 'Bán một mình' },
+  { icon: 'store', label: 'Bán trên nhiều sàn' },
+  { icon: 'box', label: 'Đóng từng đơn' },
+  { icon: 'layers', label: 'Đóng theo lô' },
+];
+---
+
+<section class="audience" aria-labelledby="danh-cho">
+  <div class="container">
+    <div class="audience__panel">
+      <div>
+        <h2 id="danh-cho">Dành cho người bán hàng online</h2>
+        <p>
+          Dù bạn bán một mình hay bán trên nhiều sàn, đóng từng đơn hay đóng theo lô, cách dùng vẫn
+          là một: quét mã, quay, lưu.
+        </p>
+      </div>
+      <ul class="audience__list">
+        {
+          cases.map((c) => (
+            <li>
+              <Icon name={c.icon} size={32} />
+              <span>{c.label}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .audience {
+    padding-block: var(--space-16) var(--space-32);
+  }
+  .audience__panel {
+    display: grid;
+    gap: var(--space-24);
+    padding: var(--space-24) var(--space-16);
+    border-radius: var(--radius-24);
+    background: var(--brand-dark);
+    color: var(--text-on-action);
+  }
+  h2 {
+    color: var(--text-on-action);
+  }
+  p {
+    margin: 0;
+    color: var(--mint-200);
+  }
+  .audience__list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-12);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .audience__list li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-8);
+    min-height: 7rem;
+    padding: var(--space-12);
+    border-radius: var(--radius-16);
+    background: var(--surface-raised);
+    color: var(--brand-dark);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    text-align: center;
+  }
+  .audience__list li :global(svg) {
+    color: var(--action-primary);
+  }
+  @media (min-width: 60rem) {
+    .audience {
+      padding-block: var(--space-32) var(--space-48);
+    }
+    .audience__panel {
+      grid-template-columns: 1fr 1.4fr;
+      align-items: center;
+      gap: var(--space-48);
+      padding: var(--space-32);
+    }
+    .audience__list {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+</style>

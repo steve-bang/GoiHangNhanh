@@ -1,0 +1,149 @@
+---
+import Icon, { type IconName } from '../Icon.astro';
+import PhoneMockup from '../PhoneMockup.astro';
+import scanShot from '../../assets/app-02-scan.png';
+
+const features: { icon: IconName; title: string; text: string; soon?: boolean }[] = [
+  {
+    icon: 'scan',
+    title: 'Quét mã đơn hàng',
+    text: 'Quét mã hoặc nhập tay để bắt đầu. Chưa có đơn thì tạo nhanh, chỉ cần mã đơn và nguồn bán.',
+  },
+  {
+    icon: 'video',
+    title: 'Quay video đóng gói',
+    text: 'Quay từ lúc chưa đóng đến lúc niêm phong xong. Mỗi video gắn với một đơn và một kiện.',
+    soon: true,
+  },
+  {
+    icon: 'cloud',
+    title: 'Theo dõi trạng thái video',
+    text: 'Biết video nào mới lưu trong máy, video nào đã tải lên. Tải lên chạy nền khi ứng dụng đang mở.',
+    soon: true,
+  },
+];
+---
+
+<section id="tinh-nang" class="features" aria-labelledby="tinh-nang-noi-bat">
+  <div class="container features__inner">
+    <figure class="features__visual">
+      <div class="features__stage">
+        <PhoneMockup
+          src={scanShot}
+          alt="Màn hình Quét mã đơn của ứng dụng bản thử, có khung camera và ô nhập mã."
+          sizes="200px"
+        />
+      </div>
+      <figcaption>Giao diện minh họa, đang phát triển.</figcaption>
+    </figure>
+
+    <div>
+      <h2 id="tinh-nang-noi-bat">Tính năng nổi bật</h2>
+      <p class="features__note">Các tính năng này đang phát triển, chưa phát hành.</p>
+      <ul class="features__list">
+        {
+          features.map((f) => (
+            <li class="feature">
+              <span class="feature__icon">
+                <Icon name={f.icon} size={28} />
+              </span>
+              <div>
+                <h3>
+                  {f.title}
+                  {f.soon && <span class="badge">Sắp có</span>}
+                </h3>
+                <p>{f.text}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .features {
+    padding-block: var(--space-16) var(--space-32);
+  }
+  .features__inner {
+    display: grid;
+    gap: var(--space-24);
+  }
+  .features__visual {
+    margin: 0;
+  }
+  .features__stage {
+    display: flex;
+    justify-content: center;
+    height: 18rem;
+    padding: var(--space-24) var(--space-16) 0;
+    overflow: hidden;
+    border-radius: var(--radius-24);
+    background: linear-gradient(160deg, var(--mint-200), var(--brand-soft));
+    --phone-width: 200px;
+  }
+  figcaption {
+    margin-top: var(--space-8);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+  .features__note {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+  .features__list {
+    display: grid;
+    gap: var(--space-12);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .feature {
+    display: flex;
+    gap: var(--space-16);
+    align-items: flex-start;
+    max-width: none;
+    padding: var(--space-16);
+    border-radius: var(--radius-16);
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-card);
+  }
+  .feature__icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-full);
+    background: var(--brand-soft);
+    color: var(--action-primary);
+  }
+  h3 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+    margin-bottom: var(--space-4);
+    font-size: var(--text-base);
+  }
+  .feature p {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+  @media (min-width: 60rem) {
+    .features {
+      padding-block: var(--space-32) var(--space-48);
+    }
+    .features__inner {
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: var(--space-48);
+    }
+    .features__stage {
+      height: 26rem;
+      --phone-width: 230px;
+    }
+  }
+</style>
