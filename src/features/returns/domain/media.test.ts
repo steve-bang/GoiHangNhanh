@@ -4,6 +4,7 @@ import type { FileEvent, FileEventType } from '@/features/evidence';
 import {
   applyMediaEvent,
   applyMediaLocation,
+  assertMediaDeletable,
   describeLocation,
   type MediaLocation,
   type ReturnMedia,
@@ -22,6 +23,9 @@ const base = (overrides: Partial<ReturnMedia> = {}): ReturnMedia => ({
   sizeBytes: null,
   sha256Client: null,
   location: null,
+  attemptCount: 0,
+  nextAttemptAtDevice: null,
+  lastErrorCode: null,
   createdAtDevice: 1,
   updatedAtDevice: 1,
   ...overrides,
@@ -108,6 +112,120 @@ describe('applyMediaEvent', () => {
       ok: true,
       media: { state: 'local_save_failed', localPath: 'tmp/a.jpg' },
     });
+  });
+});
+
+describe('applyMediaEvent: trạng thái hàng đợi tải lên (Q-28)', () => {
+  const queued = base({
+    state: 'queued',
+    localPath: 'evidence/m1.jpg',
+    sizeBytes: 9,
+    sha256Client: SHA,
+  });
+
+  it('ghi số lần thử, giờ thử lại và mã lỗi; null xóa giờ thử lại và mã lỗi', () => {
+    const started = applyMediaEvent(queued, dev('UPLOAD_STARTED'), 10);
+    expect(started.ok).toBe(true);
+    if (!started.ok) return;
+    const failed = applyMediaEvent(started.media, dev('UPLOAD_FAILED'), 11, {
+      attemptCount: 1,
+      lastErrorCode: 'NETWORK',
+      nextAttemptAtDevice: 5000,
+    });
+    expect(failed).toMatchObject({
+      ok: true,
+      media: {
+        state: 'upload_failed',
+        attemptCount: 1,
+        lastErrorCode: 'NETWORK',
+        nextAttemptAtDevice: 5000,
+      },
+    });
+    if (!failed.ok) return;
+    const retried = applyMediaEvent(failed.media, dev('RETRY_UPLOAD'), 12, {
+      nextAttemptAtDevice: null,
+    });
+    expect(retried).toMatchObject({
+      ok: true,
+      media: {
+        state: 'queued',
+        attemptCount: 1,
+        lastErrorCode: 'NETWORK',
+        nextAttemptAtDevice: null,
+      },
+    });
+  });
+
+  it('client không tự tới uploaded/verified: sự kiện máy chủ cần origin server', () => {
+    const uploading = base({ ...queued, state: 'uploading' });
+    expect(applyMediaEvent(uploading, { type: 'SERVER_RECEIVED', origin: 'device' }, 20)).toEqual({
+      ok: false,
+      error: 'ORIGIN_NOT_ALLOWED',
+    });
+    expect(
+      applyMediaEvent(uploading, { type: 'SERVER_RECEIVED', origin: 'server' }, 20),
+    ).toMatchObject({ ok: true, media: { state: 'uploaded' } });
+  });
+});
+
+describe('assertMediaDeletable (Q-26j + Q-28)', () => {
+  const run = (
+    media: Partial<ReturnMedia>,
+    extra: { confirmed?: boolean; dispute?: boolean } = {},
+  ) =>
+    assertMediaDeletable({
+      returnConfirmed: extra.confirmed ?? false,
+      inDispute: extra.dispute ?? false,
+      media: base(media),
+    });
+
+  it('xóa được ảnh chưa từng đưa cho máy chủ', () => {
+    for (const state of [
+      'recording',
+      'saving_local',
+      'local_save_failed',
+      'unrecoverable',
+    ] as const) {
+      expect(() => run({ state })).not.toThrow();
+    }
+    expect(() => run({ state: 'queued' })).not.toThrow();
+    // hỏng ở bước kiểm tra cục bộ trước khi khai báo: máy chủ chưa biết
+    expect(() => run({ state: 'needs_attention', lastErrorCode: 'FILE_MISSING' })).not.toThrow();
+  });
+
+  it('KHÔNG xóa khi máy chủ có thể đã nhận: đang/đã tải, tải lỗi, đã có lần thử, lỗi do máy chủ', () => {
+    for (const state of [
+      'uploading',
+      'uploaded',
+      'verified',
+      'hash_mismatch',
+      'upload_failed',
+    ] as const) {
+      expect(() => run({ state })).toThrow(
+        expect.objectContaining({ code: 'RETURN_PHOTO_IN_USE' }),
+      );
+    }
+    expect(() => run({ state: 'queued', attemptCount: 2 })).toThrow(
+      expect.objectContaining({ code: 'RETURN_PHOTO_IN_USE' }),
+    );
+    expect(() => run({ state: 'queued', lastErrorCode: 'NETWORK' })).toThrow(
+      expect.objectContaining({ code: 'RETURN_PHOTO_IN_USE' }),
+    );
+    expect(() => run({ state: 'needs_attention', lastErrorCode: 'PERMISSION_DENIED' })).toThrow(
+      expect.objectContaining({ code: 'RETURN_PHOTO_IN_USE' }),
+    );
+    expect(() => run({ state: 'needs_attention' })).toThrow(
+      expect.objectContaining({ code: 'RETURN_PHOTO_IN_USE' }),
+    );
+  });
+
+  it('hồ sơ đã xác nhận hoặc ảnh trong tranh chấp thì không xóa dù chưa tải', () => {
+    expect(() => run({ state: 'queued' }, { confirmed: true })).toThrow(
+      expect.objectContaining({ code: 'RETURN_ALREADY_CONFIRMED' }),
+    );
+    expect(() => run({ state: 'queued' }, { dispute: true })).toThrow(
+      expect.objectContaining({ code: 'RETURN_PHOTO_IN_USE' }),
+    );
   });
 });
 

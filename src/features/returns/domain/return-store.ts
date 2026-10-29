@@ -1,5 +1,5 @@
 import type { OrderId, ReturnCaseId, ShopId } from '@/core/ids';
-import type { FileEvent } from '@/features/evidence';
+import type { FileEvent, FileState } from '@/features/evidence';
 
 import type {
   DeleteMediaResult,
@@ -179,6 +179,16 @@ export interface ReturnStore {
   listReturnsPendingRemote(shopId: ShopId, limit: number, uid: string): Promise<ReturnCase[]>;
   /** Ghi nhận bản neo đã có trên máy chủ (idempotent: đánh dấu lại không đổi gì). */
   markReturnPublished(shopId: ShopId, id: ReturnCaseId, atDevice: number): Promise<void>;
+  /**
+   * Media sẵn sàng cho hàng đợi tải lên (Q-28): đang ở một trong `states`, do CHÍNH `uid` tạo, và hồ sơ
+   * đã đăng bản neo lên máy chủ (chưa đăng thì chưa khai báo được, Rules). Cũ nhất trước. Hồ sơ khác
+   * shop không bao giờ xuất hiện.
+   */
+  listMediaForUpload(
+    shopId: ShopId,
+    states: readonly FileState[],
+    uid: string,
+  ): Promise<readonly ReturnMedia[]>;
   /** Ảnh/video của hồ sơ, cũ nhất trước. */
   listMedia(shopId: ShopId, returnId: ReturnCaseId): Promise<readonly ReturnMedia[]>;
 }

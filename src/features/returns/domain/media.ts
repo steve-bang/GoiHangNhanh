@@ -1,13 +1,19 @@
 import { AppError } from '@/core/errors/app-error';
 import type { ReturnCaseId, ShopId } from '@/core/ids';
-import { FILE_STATES, transition, type FileEvent, type FileState } from '@/features/evidence';
+import {
+  FILE_STATES,
+  mayHaveReachedServer,
+  transition,
+  type FileEvent,
+  type FileState,
+} from '@/features/evidence';
 
 /**
  * Ảnh/video của MỘT hồ sơ hàng hoàn (R2). Tách khỏi `evidence_files` vì bảng đó bắt buộc đơn + kiện +
  * phiên đóng gói, còn hồ sơ hoàn có thể chưa liên kết đơn (Q-26). Dùng CHUNG máy trạng thái tệp
  * (`transition`): `state` là trạng thái TỆP, tách khỏi trạng thái hồ sơ (bất biến 3). Bản ghi được tạo
- * TRƯỚC khi chụp (bất biến 2). R2a chỉ có ảnh; hàng đợi tải lên chưa phục vụ bảng này nên tệp dừng ở
- * `queued` ("đã lưu trên máy"), chưa bao giờ tới `uploaded`/`verified` (chỉ sự kiện `origin: 'server'`).
+ * TRƯỚC khi chụp (bất biến 2). Hàng đợi tải lên (`features/upload`, Q-28) đưa tệp từ `queued` đi tiếp;
+ * `uploaded`/`verified` chỉ tới bằng sự kiện `origin: 'server'` (client không tự quyết).
  */
 export const LOCATION_STATUSES = ['ok', 'denied', 'unavailable', 'timeout', 'off'] as const;
 export type LocationStatus = (typeof LOCATION_STATUSES)[number];
@@ -39,6 +45,12 @@ export interface ReturnMedia {
   readonly sha256Client: string | null;
   /** `null` = chưa ghi vị trí (ảnh cũ, hoặc app bị kill trước khi ghi). */
   readonly location: MediaLocation | null;
+  /** Số lần đã thử tải lên (hàng đợi; bền qua lần mở lại app). */
+  readonly attemptCount: number;
+  /** Thời điểm THIẾT BỊ sớm nhất được thử tải lại; `null` = không chờ. */
+  readonly nextAttemptAtDevice: number | null;
+  /** Mã lỗi gần nhất của lần tải lên (mã nghiệp vụ, không chứa đường dẫn/PII). */
+  readonly lastErrorCode: string | null;
   readonly createdAtDevice: number;
   readonly updatedAtDevice: number;
   readonly createdBy?: string;
@@ -56,6 +68,11 @@ export interface ReturnMediaPatch {
   readonly localPath?: string;
   readonly sizeBytes?: number;
   readonly sha256Client?: string;
+  readonly attemptCount?: number;
+  /** `null` xóa thời điểm chờ. */
+  readonly nextAttemptAtDevice?: number | null;
+  /** `null` xóa mã lỗi. */
+  readonly lastErrorCode?: string | null;
 }
 
 export type MediaEventError =
@@ -101,6 +118,12 @@ export function applyMediaEvent(
     localPath: patch.localPath ?? media.localPath,
     sizeBytes: patch.sizeBytes ?? media.sizeBytes,
     sha256Client: patch.sha256Client ?? media.sha256Client,
+    attemptCount: patch.attemptCount ?? media.attemptCount,
+    nextAttemptAtDevice:
+      patch.nextAttemptAtDevice === undefined
+        ? media.nextAttemptAtDevice
+        : patch.nextAttemptAtDevice,
+    lastErrorCode: patch.lastErrorCode === undefined ? media.lastErrorCode : patch.lastErrorCode,
     updatedAtDevice: atDevice,
   };
   if (
@@ -181,30 +204,73 @@ export function describeLocation(media: Pick<ReturnMedia, 'location'>): Location
   return { kind: 'none', reason: location.status };
 }
 
-/** Trạng thái tệp mà máy chủ đã nhận hoặc có thể đã nhận một phần: không xóa ảnh ở các trạng thái này. */
-const SERVER_HELD_STATES: readonly FileState[] = [
-  FILE_STATES.UPLOADING,
-  FILE_STATES.UPLOADED,
-  FILE_STATES.VERIFIED,
-  FILE_STATES.HASH_MISMATCH,
-];
-
 /**
  * NGOẠI LỆ CÓ CHỦ ĐÍCH so với bất biến 4 (Q-26j): xóa ảnh hàng hoàn chụp nhầm. Chỉ khi (1) hồ sơ chưa
- * `confirmed`, (2) ảnh chưa nằm trong bất kỳ hồ sơ tranh chấp nào (bất biến 9), (3) ảnh chưa (hoặc
- * không thể đang) tải lên máy chủ. Không áp dụng cho video đóng gói hay bằng chứng khác. Thuần, dùng chung
- * cho hai kho; ném `AppError`: `RETURN_ALREADY_CONFIRMED` / `RETURN_PHOTO_IN_USE`.
+ * `confirmed`, (2) ảnh chưa nằm trong bất kỳ hồ sơ tranh chấp nào (bất biến 9), (3) ảnh CHƯA TỪNG được
+ * đưa cho máy chủ (`mayHaveReachedServer`, Q-28): đang/đã tải, tải lỗi, cần xử lý do máy chủ, hoặc đã có
+ * lần thử tải (`attemptCount > 0`) đều KHÔNG xóa được, vì máy chủ có thể đã nhận một phần hoặc đã nhận đủ
+ * mà app mất phản hồi. Không áp dụng cho video đóng gói hay bằng chứng khác. Thuần, dùng chung cho hai
+ * kho; ném `AppError`: `RETURN_ALREADY_CONFIRMED` / `RETURN_PHOTO_IN_USE`.
  */
 export function assertMediaDeletable(input: {
   readonly returnConfirmed: boolean;
-  readonly media: Pick<ReturnMedia, 'state'>;
+  readonly media: Pick<ReturnMedia, 'state' | 'attemptCount' | 'lastErrorCode'>;
   readonly inDispute: boolean;
 }): void {
   if (input.returnConfirmed) throw new AppError('RETURN_ALREADY_CONFIRMED');
   if (input.inDispute) throw new AppError('RETURN_PHOTO_IN_USE', { reason: 'dispute' });
-  if (SERVER_HELD_STATES.includes(input.media.state)) {
+  if (mayHaveReachedServer(input.media)) {
     throw new AppError('RETURN_PHOTO_IN_USE', { reason: 'uploaded' });
   }
+}
+
+/** Tiến trình đồng bộ của các media đã lưu bền (không tính ảnh đang ghi/lưu lỗi). */
+export interface MediaSyncSummary {
+  /** Máy chủ đã tính lại mã băm và khớp. */
+  readonly verified: number;
+  /** Máy chủ đã nhận đủ, CHƯA xác minh mã băm. */
+  readonly uploaded: number;
+  readonly uploading: number;
+  /** Mới lưu trên máy, chưa từng thử tải. */
+  readonly onDevice: number;
+  /** Tải chưa được (lỗi tạm hoặc đang chờ thử lại); hàng đợi sẽ tự thử lại khi app mở. */
+  readonly retrying: number;
+  /** Cần người dùng xử lý (máy chủ từ chối, tệp đổi/mất) hoặc mã băm máy chủ không khớp. */
+  readonly attention: number;
+}
+
+/**
+ * Đếm media đã lưu bền theo tiến trình đồng bộ, để UI nói ĐÚNG điều đã xảy ra (CLAUDE.md #3, #11):
+ * chỉ `verified` mới được gọi là máy chủ đã xác minh; `uploaded` là đã nhận nhưng chưa xác minh.
+ */
+export function summarizeMediaSync(media: readonly Pick<ReturnMedia, 'state'>[]): MediaSyncSummary {
+  const out = { verified: 0, uploaded: 0, uploading: 0, onDevice: 0, retrying: 0, attention: 0 };
+  for (const m of media) {
+    switch (m.state) {
+      case FILE_STATES.VERIFIED:
+        out.verified += 1;
+        break;
+      case FILE_STATES.UPLOADED:
+        out.uploaded += 1;
+        break;
+      case FILE_STATES.UPLOADING:
+        out.uploading += 1;
+        break;
+      case FILE_STATES.QUEUED:
+        out.onDevice += 1;
+        break;
+      case FILE_STATES.UPLOAD_FAILED:
+        out.retrying += 1;
+        break;
+      case FILE_STATES.NEEDS_ATTENTION:
+      case FILE_STATES.HASH_MISMATCH:
+        out.attention += 1;
+        break;
+      default:
+        break; // chưa lưu bền hoặc mất hẳn: không tính vào tiến trình đồng bộ
+    }
+  }
+  return out;
 }
 
 /** `ok: true` trả bản ghi vừa bị xóa (để bên gọi biết đường dẫn tệp). */

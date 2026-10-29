@@ -9,6 +9,8 @@ import {
   createMemoryEvidenceFileStore,
 } from '@/features/orders';
 
+import { ReturnStoreProvider, createMemoryReturnStore, type ReturnStore } from '@/features/returns';
+
 import type { UploadGateway } from '../domain/ports';
 import { UploadRunner } from './UploadRunner';
 
@@ -74,14 +76,17 @@ const element = (
   files: ReturnType<typeof createMemoryEvidenceFileStore>,
   shopId: string | null,
   props: { docs: RemoteDocuments | null; gateway?: UploadGateway },
+  returns: ReturnStore = createMemoryReturnStore(),
 ) => (
   <CurrentShopProvider shopId={shopId}>
     <EvidenceFileStoreProvider store={files}>
-      <UploadRunner
-        docs={props.docs}
-        hasher={hasher}
-        {...(props.gateway ? { gateway: props.gateway } : {})}
-      />
+      <ReturnStoreProvider store={returns}>
+        <UploadRunner
+          docs={props.docs}
+          hasher={hasher}
+          {...(props.gateway ? { gateway: props.gateway } : {})}
+        />
+      </ReturnStoreProvider>
     </EvidenceFileStoreProvider>
   </CurrentShopProvider>
 );
@@ -90,9 +95,83 @@ const mount = async (
   files: ReturnType<typeof createMemoryEvidenceFileStore>,
   shopId: string | null,
   props: { docs: RemoteDocuments | null; gateway?: UploadGateway },
-) => render(element(files, shopId, props));
+  returns?: ReturnStore,
+) => render(element(files, shopId, props, returns));
+
+/** Kho hàng hoàn có một ảnh `queued` của uid 'uid-1' trong hồ sơ ĐÃ (hoặc CHƯA) đăng bản neo. */
+async function returnStoreWithPhoto(shopId: string, anchorPublished: boolean) {
+  const store = createMemoryReturnStore({ creatorUid: () => 'uid-1' });
+  const made = await store.createReturn({
+    id: 'ret-1' as never,
+    shopId: shopId as never,
+    atDevice: 1,
+    eventId: 'e-1',
+    observedCode: null,
+    link: null,
+    lines: [],
+  });
+  const d = (type: string) => ({ type, origin: 'device' }) as never;
+  await store.createMedia({
+    id: 'ph-1',
+    shopId: shopId as never,
+    returnId: made.returnCase.id,
+    kind: 'photo',
+    atDevice: 2,
+  });
+  await store.applyMediaEvent(shopId as never, 'ph-1', d('STOP_RECORDING'), 3, {
+    localPath: 'tmp/p.jpg',
+  });
+  await store.applyMediaEvent(shopId as never, 'ph-1', d('LOCAL_FILE_READABLE'), 4, {
+    localPath: 'evidence/ph-1.jpg',
+    sizeBytes: 7,
+    sha256Client: 'ab'.repeat(32),
+  });
+  if (anchorPublished) await store.markReturnPublished(shopId as never, made.returnCase.id, 5);
+  return store;
+}
 
 describe('UploadRunner', () => {
+  it('tải cả media hàng hoàn qua CÙNG hàng đợi, chỉ khi hồ sơ đã đăng neo và do chính uid tạo', async () => {
+    const files = createMemoryEvidenceFileStore();
+    const returns = await returnStoreWithPhoto(REAL_SHOP, true);
+    const t = fakeGateway();
+    await mount(
+      files,
+      REAL_SHOP,
+      { docs: { currentUid: () => 'uid-1' } as RemoteDocuments, gateway: t.gateway },
+      returns,
+    );
+    await flush();
+    expect(t.uploads).toEqual(['ph-1']);
+    expect((await returns.listMedia(REAL_SHOP as never, 'ret-1' as never))[0]?.state).toBe(
+      'uploaded',
+    );
+  });
+
+  it('media hàng hoàn của hồ sơ chưa đăng neo, hoặc khi chưa đăng nhập, không bị tải', async () => {
+    const files = createMemoryEvidenceFileStore();
+    const notPublished = await returnStoreWithPhoto(REAL_SHOP, false);
+    const t1 = fakeGateway();
+    await mount(
+      files,
+      REAL_SHOP,
+      { docs: { currentUid: () => 'uid-1' } as RemoteDocuments, gateway: t1.gateway },
+      notPublished,
+    );
+    await flush();
+    expect(t1.uploads).toEqual([]);
+    const signedOut = await returnStoreWithPhoto(REAL_SHOP, true);
+    const t2 = fakeGateway();
+    await mount(
+      files,
+      REAL_SHOP,
+      { docs: { currentUid: () => null } as RemoteDocuments, gateway: t2.gateway },
+      signedOut,
+    );
+    await flush();
+    expect(t2.uploads).toEqual([]);
+  });
+
   it('có cổng và shop thật: tải tệp đang chờ ngay khi gắn', async () => {
     const files = await storeWithQueuedFile(REAL_SHOP);
     const t = fakeGateway();
@@ -142,12 +221,13 @@ describe('UploadRunner', () => {
       fetchServerStates: async () => new Map(),
     };
     const props = { docs, gateway };
-    const view = await mount(files, REAL_SHOP, props);
+    const returns = createMemoryReturnStore();
+    const view = await mount(files, REAL_SHOP, props, returns);
     await flush();
     expect(uploads).toEqual(['ev-1']); // lượt đầu đang tải dở
     for (const offline of [true, false, true, false]) {
       mockOffline = offline;
-      await view.rerender(element(files, REAL_SHOP, props));
+      await view.rerender(element(files, REAL_SHOP, props, returns));
       await flush();
     }
     release();
@@ -161,11 +241,12 @@ describe('UploadRunner', () => {
     const files = await storeWithQueuedFile(REAL_SHOP);
     const t = fakeGateway();
     const props = { docs, gateway: t.gateway };
-    const view = await mount(files, REAL_SHOP, props);
+    const returns = createMemoryReturnStore();
+    const view = await mount(files, REAL_SHOP, props, returns);
     await flush();
     expect(t.uploads).toEqual([]);
     mockOffline = false;
-    await view.rerender(element(files, REAL_SHOP, props));
+    await view.rerender(element(files, REAL_SHOP, props, returns));
     await flush();
     expect(t.uploads).toEqual(['ev-1']);
   });

@@ -287,6 +287,9 @@ export function createMemoryReturnStore(
         sizeBytes: null,
         sha256Client: null,
         location: null,
+        attemptCount: 0,
+        nextAttemptAtDevice: null,
+        lastErrorCode: null,
         createdAtDevice: input.atDevice,
         updatedAtDevice: input.atDevice,
         ...(u ? { createdBy: u } : {}),
@@ -339,6 +342,19 @@ export function createMemoryReturnStore(
     async markReturnPublished(shopId, id, atDevice) {
       rowOf(shopId, id);
       if (!published.has(id)) published.set(id, atDevice);
+    },
+    async listMediaForUpload(shopId, states, uid) {
+      if (!uid) return [];
+      return [...media.values()]
+        .filter(
+          (m) =>
+            m.shopId === shopId &&
+            m.createdBy === uid &&
+            states.includes(m.state) &&
+            published.has(m.returnId),
+        )
+        .sort((a, b) => a.createdAtDevice - b.createdAtDevice)
+        .map(copy);
     },
     async listMedia(shopId, returnId) {
       return [...media.values()]

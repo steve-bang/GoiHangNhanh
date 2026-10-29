@@ -11,9 +11,12 @@ import type { UploadRequest } from './ports';
 const request: UploadRequest = {
   evidenceId: 'e1' as EvidenceId,
   shopId: 's1' as ShopId,
-  orderId: 'o1' as OrderId,
-  sessionId: 'ss1' as SessionId,
-  packageId: 'p1' as PackageId,
+  owner: {
+    kind: 'packing',
+    orderId: 'o1' as OrderId,
+    sessionId: 'ss1' as SessionId,
+    packageId: 'p1' as PackageId,
+  },
   kind: 'video',
   createdAtDevice: 1000,
   durationMs: 5000,

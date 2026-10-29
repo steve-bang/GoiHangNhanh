@@ -9,9 +9,20 @@ import {
   describeLocation,
   evidenceLimits,
   isMediaSavedLocally,
+  summarizeMediaSync,
   type ReturnDetails,
 } from '../domain';
 import { useReturnMedia } from './use-return-photos';
+
+/** Thứ tự các nhóm đồng bộ trong tóm tắt ảnh: từ chắc chắn nhất đến cần xử lý. */
+const SYNC_KEYS = [
+  'verified',
+  'uploaded',
+  'uploading',
+  'onDevice',
+  'retrying',
+  'attention',
+] as const;
 
 /** Một khối thông tin có tiêu đề (dùng chung cho màn xác nhận D06 và màn xem/hoàn tất D07). */
 function Section({
@@ -54,6 +65,10 @@ export function ReturnSummaryCards({
   const { media } = useReturnMedia(returnCase.id);
   const savedPhotos = media === null ? [] : media.filter(isMediaSavedLocally);
   const photoCount = media === null ? null : savedPhotos.length;
+  const sync = summarizeMediaSync(savedPhotos);
+  const syncParts = SYNC_KEYS.filter((key) => sync[key] > 0).map((key) =>
+    t(`returns:review.sync.${key}`, { count: sync[key] }),
+  );
   const withLocation = savedPhotos.filter((m) => describeLocation(m).kind === 'has').length;
   const limits = evidenceLimits(details, photoCount);
   const kindOf = (lineId: string | null) =>
@@ -93,6 +108,11 @@ export function ReturnSummaryCards({
         {photoCount !== null && photoCount > 0 ? (
           <Text variant="caption" color="textMuted" testID="return-summary-photos">
             {t('returns:review.photosOnDevice', { count: photoCount })}
+          </Text>
+        ) : null}
+        {photoCount !== null && photoCount > 0 && syncParts.length > 0 ? (
+          <Text variant="caption" color="textMuted" testID="return-summary-photos-sync">
+            {syncParts.join('; ')}
           </Text>
         ) : null}
         {photoCount !== null && photoCount > 0 ? (

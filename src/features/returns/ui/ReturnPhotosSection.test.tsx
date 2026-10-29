@@ -81,6 +81,28 @@ async function takePhoto() {
   await fireEvent.press(screen.getByTestId('return-photo-shutter'));
 }
 
+const dev = (type: string) => ({ type, origin: 'device' }) as never;
+const srv = (type: string) => ({ type, origin: 'server' }) as never;
+
+/** Tạo ảnh rồi đưa tới `queued`, sau đó áp các sự kiện tải lên theo thứ tự. */
+async function seedPhoto(
+  store: ReturnStore,
+  returnId: ReturnCaseId,
+  id: string,
+  events: { event: ReturnType<typeof dev>; patch?: Record<string, unknown> }[],
+) {
+  await store.createMedia({ id, shopId: SHOP, returnId, kind: 'photo', atDevice: 5 });
+  await store.applyMediaEvent(SHOP, id, dev('STOP_RECORDING'), 6, { localPath: 'tmp.jpg' });
+  await store.applyMediaEvent(SHOP, id, dev('LOCAL_FILE_READABLE'), 7, {
+    localPath: `evidence/${id}.jpg`,
+    sizeBytes: 10,
+    sha256Client: SHA,
+  });
+  for (const [i, step] of events.entries()) {
+    await store.applyMediaEvent(SHOP, id, step.event, 8 + i, step.patch);
+  }
+}
+
 describe('UI-D03 Ảnh kiện hàng', () => {
   it('chụp ảnh: lưu bền, hiện "Đã lưu trên máy" và KHÔNG hiện trạng thái tải lên', async () => {
     const store = createMemoryReturnStore();
@@ -238,7 +260,7 @@ describe('UI-D03 Ảnh kiện hàng', () => {
       await fireEvent.press(await screen.findByTestId('return-photo-delete-m1'));
       await fireEvent.press(await screen.findByTestId('return-photo-delete-confirm'));
       expect(await screen.findByTestId('return-photo-delete-error')).toHaveTextContent(
-        /đang được giữ trong hồ sơ tranh chấp/,
+        /đang được giữ trong tranh chấp/,
       );
       expect(mockDelete).not.toHaveBeenCalled();
       expect(await store.listMedia(SHOP, id)).toHaveLength(1);
@@ -444,7 +466,7 @@ describe('UI-D06 hạn chế ảnh ngoài khi đã/chưa chụp', () => {
     expect(await screen.findByText('Chưa có ảnh bên ngoài kiện.')).toBeOnTheScreen();
   });
 
-  it('đã có ảnh lưu trên máy: bỏ hạn chế ảnh, ghi rõ mới lưu trên máy này', async () => {
+  it('đã có ảnh lưu trên máy: bỏ hạn chế ảnh, ghi rõ ảnh mới lưu trên máy, chưa tải lên', async () => {
     const store = createMemoryReturnStore();
     const id = await seedChecking(store);
     await store.createMedia({ id: 'm1', shopId: SHOP, returnId: id, kind: 'photo', atDevice: 5 });
@@ -457,8 +479,9 @@ describe('UI-D06 hạn chế ảnh ngoài khi đã/chưa chụp', () => {
       sha256Client: SHA,
     });
     await openD06(store, id);
-    expect(await screen.findByTestId('return-summary-photos')).toHaveTextContent(
-      /mới lưu trên máy này/,
+    expect(await screen.findByTestId('return-summary-photos')).toHaveTextContent(/Có 1 ảnh kiện/);
+    expect(await screen.findByTestId('return-summary-photos-sync')).toHaveTextContent(
+      /1 mới lưu trên máy, chưa tải lên/,
     );
     expect(screen.queryByText('Chưa có ảnh bên ngoài kiện.')).toBeNull();
   });
@@ -500,5 +523,63 @@ describe('UI-D06 hạn chế ảnh ngoài khi đã/chưa chụp', () => {
     expect(line).toHaveTextContent(/Có vị trí máy cho 1\/2 ảnh/);
     expect(line).toHaveTextContent(/không chứng minh nơi chụp/);
     expect(screen.queryByText(/10\.77|106\.7/)).toBeNull();
+  });
+
+  it('D06: tóm tắt nói đúng từng nhóm, không gọi "đã sao lưu" khi máy chủ chưa xác minh', async () => {
+    const store = createMemoryReturnStore();
+    const id = await seedChecking(store);
+    await seedPhoto(store, id, 'a', [
+      { event: dev('UPLOAD_STARTED') },
+      { event: srv('SERVER_RECEIVED') },
+    ]);
+    await seedPhoto(store, id, 'b', []);
+    await seedPhoto(store, id, 'c', [
+      { event: dev('UPLOAD_STARTED') },
+      { event: dev('UPLOAD_FAILED'), patch: { attemptCount: 1, lastErrorCode: 'NETWORK' } },
+    ]);
+    await openD06(store, id);
+    const line = await screen.findByTestId('return-summary-photos-sync');
+    expect(line).toHaveTextContent(/1 đã tải lên, máy chủ chưa xác minh/);
+    expect(line).toHaveTextContent(/1 mới lưu trên máy, chưa tải lên/);
+    expect(line).toHaveTextContent(/1 chưa tải được, app sẽ thử lại/);
+    expect(line).not.toHaveTextContent(/đã được máy chủ xác minh/);
+    expect(screen.getByTestId('return-summary-photos')).toHaveTextContent(/Có 3 ảnh kiện/);
+  });
+});
+
+describe('nhãn đồng bộ theo trạng thái tệp THẬT (Q-28)', () => {
+  it('D03: mỗi ảnh hiện đúng nhãn theo trạng thái; chỉ "Đã xác minh" khi máy chủ xác minh', async () => {
+    const store = createMemoryReturnStore();
+    const id = await seedReturn(store);
+    await seedPhoto(store, id, 'p-up', [{ event: dev('UPLOAD_STARTED') }]);
+    await seedPhoto(store, id, 'p-done', [
+      { event: dev('UPLOAD_STARTED') },
+      { event: srv('SERVER_RECEIVED') },
+    ]);
+    await seedPhoto(store, id, 'p-ver', [
+      { event: dev('UPLOAD_STARTED') },
+      { event: srv('SERVER_RECEIVED') },
+      { event: srv('SERVER_VERIFIED') },
+    ]);
+    await seedPhoto(store, id, 'p-err', [
+      { event: dev('UPLOAD_STARTED') },
+      { event: dev('NEEDS_ATTENTION'), patch: { lastErrorCode: 'PERMISSION_DENIED' } },
+    ]);
+    await openD03(store, id);
+    expect(await screen.findByTestId('return-photo-status-p-up')).toHaveTextContent(/Đang tải lên/);
+    expect(screen.getByTestId('return-photo-status-p-done')).toHaveTextContent(/Đã tải lên$/);
+    expect(screen.getByTestId('return-photo-status-p-ver')).toHaveTextContent(/Đã xác minh/);
+    expect(screen.getByTestId('return-photo-status-p-err')).toHaveTextContent(/Lỗi/);
+  });
+
+  it('D03: ảnh đã bắt đầu tải thì không có nút Xóa ảnh (máy chủ có thể đã nhận)', async () => {
+    const store = createMemoryReturnStore();
+    const id = await seedReturn(store);
+    await seedPhoto(store, id, 'p-fresh', []);
+    await seedPhoto(store, id, 'p-up', [{ event: dev('UPLOAD_STARTED') }]);
+    await openD03(store, id);
+    await screen.findByTestId('return-photo-status-p-up');
+    expect(screen.getByTestId('return-photo-delete-p-fresh')).toBeOnTheScreen();
+    expect(screen.queryByTestId('return-photo-delete-p-up')).toBeNull();
   });
 });

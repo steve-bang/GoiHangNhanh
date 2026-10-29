@@ -2,9 +2,11 @@ import { useEffect, useRef } from 'react';
 
 import type { RemoteDocuments } from '@/api/contract';
 import { useCurrentShopId, useEvidenceFileStore, LOCAL_SHOP_ID } from '@/features/orders';
+import { useReturnStore } from '@/features/returns';
 import { getAppVersion, subscribeAppActive, useIsOffline } from '@/platform';
 
 import { createUploadQueue, type UploadQueue } from '../domain/upload-queue';
+import { evidenceFileSource, returnMediaSource } from '../domain/upload-sources';
 import type { LocalFileHasher, UploadGateway } from '../domain/ports';
 import { createDeviceUploadGateway, deviceHasher } from './device-gateway';
 
@@ -31,6 +33,7 @@ export function UploadRunner({
   hasher?: LocalFileHasher;
 }) {
   const files = useEvidenceFileStore();
+  const returns = useReturnStore();
   const shopId = useCurrentShopId();
   const offline = useIsOffline();
   const offlineRef = useRef(offline);
@@ -45,7 +48,12 @@ export function UploadRunner({
       gateway ?? (docs ? createDeviceUploadGateway(docs, getAppVersion() ?? undefined) : null);
     if (!effectiveGateway || shopId === LOCAL_SHOP_ID) return undefined;
     const queue = createUploadQueue({
-      files,
+      // Tệp đóng gói + media hàng hoàn dùng CHUNG một hàng đợi (Q-28). Media hàng hoàn chỉ tải khi hồ sơ
+      // đã đăng bản neo và do chính tài khoản đang đăng nhập tạo.
+      sources: [
+        evidenceFileSource(files),
+        returnMediaSource(returns, () => docs?.currentUid() ?? null),
+      ],
       gateway: effectiveGateway,
       hasher: hasher ?? deviceHasher,
       now: Date.now,
@@ -63,7 +71,7 @@ export function UploadRunner({
       unsubscribe();
       queueRef.current = null;
     };
-  }, [docs, gateway, hasher, files, shopId]);
+  }, [docs, gateway, hasher, files, returns, shopId]);
 
   // Có mạng lại: tải ngay thay vì đợi chu kỳ kế tiếp (lượt đang chạy thì bỏ qua, `busy`).
   useEffect(() => {

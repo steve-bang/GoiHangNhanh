@@ -1,6 +1,6 @@
 import { AppError } from '@/core/errors/app-error';
 import type { OrderId, ReturnCaseId, ShopId } from '@/core/ids';
-import type { FileEvent, FileEventType } from '@/features/evidence';
+import type { FileEvent, FileEventType, FileState } from '@/features/evidence';
 
 import type { NewReceivedLine, NewReturnInput, ReturnStore } from '../domain/return-store';
 
@@ -747,6 +747,42 @@ export function runReturnStoreContract(
           ]);
         });
 
+        it('ảnh đã từng bắt đầu tải (attemptCount > 0, lỗi do máy chủ) thì không xóa; hỏng cục bộ trước khi khai báo thì vẫn xóa', async () => {
+          const store = await create();
+          const { returnCase } = await store.createReturn(makeNewReturn());
+          for (const id of ['m1', 'm2', 'm3']) {
+            await store.createMedia(newMedia(returnCase.id, id));
+            await toQueued(store, id);
+          }
+          // m1: một lần tải lỗi tạm rồi về hàng đợi (máy chủ có thể đã nhận một phần).
+          await store.applyMediaEvent(SHOP, 'm1', dev('UPLOAD_STARTED'), 6000);
+          await store.applyMediaEvent(SHOP, 'm1', dev('UPLOAD_FAILED'), 6100, {
+            attemptCount: 1,
+            lastErrorCode: 'NETWORK',
+            nextAttemptAtDevice: 7000,
+          });
+          expect(await code(store.deleteMedia(SHOP, 'm1', 9, nid()))).toBe('RETURN_PHOTO_IN_USE');
+          await store.applyMediaEvent(SHOP, 'm1', dev('RETRY_UPLOAD'), 7100, {
+            nextAttemptAtDevice: null,
+          });
+          expect(await code(store.checkMediaDeletable(SHOP, 'm1'))).toBe('RETURN_PHOTO_IN_USE');
+          // m2: cần xử lý vì máy chủ từ chối.
+          await store.applyMediaEvent(SHOP, 'm2', dev('UPLOAD_STARTED'), 6000);
+          await store.applyMediaEvent(SHOP, 'm2', dev('NEEDS_ATTENTION'), 6100, {
+            lastErrorCode: 'PERMISSION_DENIED',
+          });
+          expect(await code(store.deleteMedia(SHOP, 'm2', 9, nid()))).toBe('RETURN_PHOTO_IN_USE');
+          // m3: tệp mất trước khi khai báo (kiểm tra cục bộ): máy chủ chưa biết.
+          await store.applyMediaEvent(SHOP, 'm3', dev('NEEDS_ATTENTION'), 6100, {
+            lastErrorCode: 'FILE_MISSING',
+          });
+          expect((await store.deleteMedia(SHOP, 'm3', 9, nid())).ok).toBe(true);
+          expect((await store.listMedia(SHOP, returnCase.id)).map((m) => m.id)).toEqual([
+            'm1',
+            'm2',
+          ]);
+        });
+
         it('không thấy ảnh hoặc ảnh của shop khác: MEDIA_NOT_FOUND, không xóa gì', async () => {
           const store = await create();
           const { returnCase } = await store.createReturn(makeNewReturn());
@@ -848,6 +884,30 @@ export function runReturnStoreContract(
         expect(await store.listReturnsPendingRemote(SHOP, 10, 'u-1')).toEqual([]);
         const after = await store.getReturn(SHOP, made.returnCase.id);
         expect(after).toEqual(before);
+      });
+
+      it('listMediaForUpload: chỉ media của CHÍNH uid, trong hồ sơ ĐÃ đăng neo, đúng trạng thái và shop', async () => {
+        const store = await withUid('u-1');
+        const posted = await store.createReturn(makeNewReturn({ atDevice: 100 }));
+        const notPosted = await store.createReturn(makeNewReturn({ atDevice: 200 }));
+        await addMedia(store, posted.returnCase.id, 'm-ok', 'queued');
+        await addMedia(store, posted.returnCase.id, 'm-saving', 'saving_local');
+        await addMedia(store, notPosted.returnCase.id, 'm-no-anchor', 'queued');
+        const queued: FileState[] = ['queued'];
+        // Chưa đăng neo: chưa có gì để tải.
+        expect(await store.listMediaForUpload(SHOP, queued, 'u-1')).toEqual([]);
+        await store.markReturnPublished(SHOP, posted.returnCase.id, 300);
+        expect((await store.listMediaForUpload(SHOP, queued, 'u-1')).map((m) => m.id)).toEqual([
+          'm-ok',
+        ]);
+        // sai người, sai shop, trạng thái khác, uid rỗng
+        expect(await store.listMediaForUpload(SHOP, queued, 'u-2')).toEqual([]);
+        expect(await store.listMediaForUpload(SHOP, queued, '')).toEqual([]);
+        expect(await store.listMediaForUpload(OTHER, queued, 'u-1')).toEqual([]);
+        expect(await store.listMediaForUpload(SHOP, [], 'u-1')).toEqual([]);
+        expect(
+          (await store.listMediaForUpload(SHOP, ['saving_local'], 'u-1')).map((m) => m.id),
+        ).toEqual(['m-saving']);
       });
 
       it('giới hạn số lượng một lượt, cũ nhất trước', async () => {

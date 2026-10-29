@@ -6,7 +6,7 @@ import type { TFunction } from 'i18next';
 import type { ErrorCode } from '@/core/errors/codes';
 import type { ReturnCaseId } from '@/core/ids';
 import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
-import { toDisplayStatus } from '@/features/evidence';
+import { mayHaveReachedServer, toDisplayStatus } from '@/features/evidence';
 import { formatDeviceDateTime } from '@/features/orders';
 import {
   CameraPhoto,
@@ -199,7 +199,8 @@ export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhoto
                 key={item.id}
                 item={item}
                 busy={busy}
-                {...(locked || busy || deleting
+                // Ảnh đã từng được đưa cho máy chủ thì không xóa được (Q-28): ẩn nút thay vì để bấm rồi lỗi.
+                {...(locked || busy || deleting || mayHaveReachedServer(item)
                   ? {}
                   : {
                       onDelete: () => {

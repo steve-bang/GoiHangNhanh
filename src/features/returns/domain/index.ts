@@ -24,6 +24,7 @@ export {
   describeLocation,
   isMediaSavedLocally,
   LOCATION_STATUSES,
+  summarizeMediaSync,
   MAX_RETURN_PHOTOS,
 } from './media';
 export { capturePhoto } from './photo-controller';
@@ -41,6 +42,7 @@ export type {
   LocationStatus,
   MediaEventError,
   MediaEventResult,
+  MediaSyncSummary,
   MediaLocation,
   NewReturnMedia,
   ReturnMedia,

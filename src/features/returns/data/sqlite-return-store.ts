@@ -116,9 +116,12 @@ interface MediaRow {
   accuracy_m: number | null;
   location_at_device: number | null;
   location_status: string | null;
+  attempt_count: number;
+  next_attempt_at_device: number | null;
+  last_error_code: string | null;
 }
 const MEDIA_COLUMNS =
-  'id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client, created_at_device, updated_at_device, created_by, lat, lng, accuracy_m, location_at_device, location_status';
+  'id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client, created_at_device, updated_at_device, created_by, lat, lng, accuracy_m, location_at_device, location_status, attempt_count, next_attempt_at_device, last_error_code';
 const toMedia = (r: MediaRow): ReturnMedia => ({
   id: r.id,
   shopId: r.shop_id as ShopId,
@@ -138,6 +141,9 @@ const toMedia = (r: MediaRow): ReturnMedia => ({
           accuracyM: r.accuracy_m,
           atDevice: r.location_at_device,
         },
+  attemptCount: r.attempt_count,
+  nextAttemptAtDevice: r.next_attempt_at_device,
+  lastErrorCode: r.last_error_code,
   createdAtDevice: r.created_at_device,
   updatedAtDevice: r.updated_at_device,
   ...(r.created_by ? { createdBy: r.created_by } : {}),
@@ -631,8 +637,19 @@ export function createSqliteReturnStore(
         if (!result.ok) return result;
         const m = result.media;
         await db.runAsync(
-          'UPDATE return_media SET state = ?, local_path = ?, size_bytes = ?, sha256_client = ?, updated_at_device = ? WHERE id = ? AND shop_id = ?',
-          [m.state, m.localPath, m.sizeBytes, m.sha256Client, m.updatedAtDevice, id, shopId],
+          'UPDATE return_media SET state = ?, local_path = ?, size_bytes = ?, sha256_client = ?, attempt_count = ?, next_attempt_at_device = ?, last_error_code = ?, updated_at_device = ? WHERE id = ? AND shop_id = ?',
+          [
+            m.state,
+            m.localPath,
+            m.sizeBytes,
+            m.sha256Client,
+            m.attemptCount,
+            m.nextAttemptAtDevice,
+            m.lastErrorCode,
+            m.updatedAtDevice,
+            id,
+            shopId,
+          ],
         );
         return result;
       }),
@@ -720,6 +737,23 @@ export function createSqliteReturnStore(
           'UPDATE return_cases SET remote_synced_at_device = COALESCE(remote_synced_at_device, ?) WHERE id = ? AND shop_id = ?',
           [atDevice, id, shopId],
         );
+      }),
+
+    listMediaForUpload: (shopId, states, uid) =>
+      guarded(async () => {
+        if (!uid || states.length === 0) return [];
+        const marks = states.map(() => '?').join(', ');
+        // Chỉ media do CHÍNH uid tạo và thuộc hồ sơ đã đăng bản neo (chưa đăng thì chưa khai báo được).
+        const rows = await db.getAllAsync<MediaRow>(
+          `SELECT ${MEDIA_COLUMNS} FROM return_media
+           WHERE shop_id = ? AND created_by = ? AND state IN (${marks})
+             AND return_id IN (
+               SELECT id FROM return_cases WHERE shop_id = ? AND remote_synced_at_device IS NOT NULL
+             )
+           ORDER BY created_at_device, rowid`,
+          [shopId, uid, ...states, shopId],
+        );
+        return rows.map(toMedia);
       }),
 
     listMedia: (shopId, returnId) =>

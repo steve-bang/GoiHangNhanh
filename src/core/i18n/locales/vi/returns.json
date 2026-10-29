@@ -17,7 +17,7 @@
     "noVideo": "Chưa có video mở kiện",
     "discrepancies": "{{count}} sai lệch",
     "resumeHint": "Chạm để tiếp tục",
-    "localOnly": "Hồ sơ hàng hoàn hiện chỉ lưu trên máy này, chưa đồng bộ lên máy chủ.",
+    "localOnly": "Nội dung hồ sơ hàng hoàn (tình trạng, kiểm kê) chỉ lưu trên máy này, chưa đồng bộ lên máy chủ.",
     "limited": "Hạn chế bằng chứng"
   },
   "stage": {
@@ -167,14 +167,22 @@
     },
     "limitsNote": "Bằng chứng của hồ sơ này còn hạn chế. Hồ sơ vẫn được lưu để xử lý.",
     "discrepancyWarn": "Hồ sơ có sai lệch. Bạn vẫn xác nhận kiểm kê và xử lý tiếp sau.",
-    "localOnly": "Hồ sơ lưu trên máy này, chưa đồng bộ lên máy chủ.",
+    "localOnly": "Nội dung hồ sơ (tình trạng, kiểm kê) chỉ lưu trên máy này, chưa đồng bộ lên máy chủ.",
     "finalNoteLabel": "Ghi chú cuối (không bắt buộc)",
     "confirm": "Xác nhận hồ sơ",
     "saveLater": "Lưu tạm, về danh sách",
     "editItems": "Sửa kiểm kê",
     "videoReason": "Lý do: {{reason}}",
     "limitedBadge": "Hạn chế bằng chứng",
-    "photosOnDevice": "Có {{count}} ảnh kiện, mới lưu trên máy này.",
+    "photosOnDevice": "Có {{count}} ảnh kiện.",
+    "sync": {
+      "verified": "{{count}} đã được máy chủ xác minh",
+      "uploaded": "{{count}} đã tải lên, máy chủ chưa xác minh",
+      "uploading": "{{count}} đang tải lên",
+      "onDevice": "{{count}} mới lưu trên máy, chưa tải lên",
+      "retrying": "{{count}} chưa tải được, app sẽ thử lại",
+      "attention": "{{count}} cần xử lý"
+    },
     "photosLocation": "Có vị trí máy cho {{withLocation}}/{{count}} ảnh. Đây là số đọc của máy, không chứng minh nơi chụp."
   },
   "done": {
@@ -206,7 +214,7 @@
   "photos": {
     "title": "Ảnh kiện hàng",
     "count": "{{count}}/{{max}} ảnh",
-    "hint": "Không bắt buộc. Ảnh chỉ lưu trên máy này, chưa tải lên máy chủ.",
+    "hint": "Không bắt buộc. Ảnh lưu trên máy trước. App tải lên máy chủ khi đang mở và có mạng; xem trạng thái từng ảnh bên dưới.",
     "damageHint": "Nên chụp ảnh chỗ bị hư hỏng khi có thể.",
     "empty": "Chưa chụp ảnh nào. Hồ sơ sẽ ghi là chưa có ảnh bên ngoài.",
     "capture": "Chụp ảnh kiện",

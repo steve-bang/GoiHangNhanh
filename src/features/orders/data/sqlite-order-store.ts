@@ -591,7 +591,8 @@ export function createSqliteOrderStore(
       guarded('LOCAL_SAVE_UNAVAILABLE', () => sessionsOfOrder(shopId, orderId)),
     countUnsynced: (shopId) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
-        // Gồm cả ảnh hàng hoàn (`return_media`, R2a): chưa có đường tải lên nên luôn là dữ liệu chỉ có trên máy.
+        // Gồm cả media hàng hoàn (`return_media`): còn tính là chưa đồng bộ tới khi máy chủ nhận
+        // (`uploaded`/`verified`); đang tải, tải lỗi, cần xử lý, lệch mã băm đều vẫn tính.
         const row = await db.getFirstAsync<{ n: number }>(
           `SELECT (SELECT COUNT(*) FROM evidence_files WHERE shop_id = ? AND state IN (${UNSYNCED_SQL}))
                 + (SELECT COUNT(*) FROM return_media WHERE shop_id = ? AND state IN (${UNSYNCED_SQL})) AS n`,

@@ -1,4 +1,5 @@
-import type { EvidenceId, OrderId, PackageId, SessionId, ShopId } from '@/core/ids';
+import type { EvidenceId, OrderId, PackageId, ReturnCaseId, SessionId, ShopId } from '@/core/ids';
+import type { FileEvent, FileState } from '@/features/evidence';
 
 /** Kết quả tính mã băm tệp cục bộ. Không ném lỗi: tệp mất/không đọc được là kết quả bình thường. */
 export type HashResult =
@@ -10,12 +11,24 @@ export interface LocalFileHasher {
   sha256(localPath: string): Promise<HashResult>;
 }
 
+/**
+ * Chủ sở hữu của tệp bằng chứng (Q-28): bằng chứng ĐÓNG GÓI gắn phiên + kiện + đơn (ID tạo trước khi
+ * quay, bất biến 2); bằng chứng HÀNG HOÀN gắn hồ sơ hàng hoàn (hồ sơ có thể chưa liên kết đơn). Cùng
+ * hàng đợi, cùng đường dẫn Storage `shops/{shopId}/evidence/{evidenceId}/original`.
+ */
+export type UploadOwner =
+  | {
+      readonly kind: 'packing';
+      readonly orderId: OrderId;
+      readonly sessionId: SessionId;
+      readonly packageId: PackageId;
+    }
+  | { readonly kind: 'return'; readonly returnId: ReturnCaseId };
+
 export interface UploadRequest {
   readonly evidenceId: EvidenceId;
   readonly shopId: ShopId;
-  readonly orderId: OrderId;
-  readonly sessionId: SessionId;
-  readonly packageId: PackageId;
+  readonly owner: UploadOwner;
   /** Cần để suy ra loại tệp khi khai báo bằng chứng. */
   readonly kind: 'video' | 'photo';
   /** Giờ THIẾT BỊ lúc tạo tệp. */
@@ -50,4 +63,51 @@ export interface UploadGateway {
     shopId: ShopId,
     ids: readonly EvidenceId[],
   ): Promise<ReadonlyMap<EvidenceId, ServerFileState>>;
+}
+
+/**
+ * Một tệp chờ tải, độc lập với nơi lưu (tệp đóng gói ở `evidence_files`, media hàng hoàn ở
+ * `return_media`). Hàng đợi chỉ biết hình dạng này; nguồn dịch từ bản ghi của kho.
+ */
+export interface UploadItem {
+  readonly id: EvidenceId;
+  readonly shopId: ShopId;
+  readonly owner: UploadOwner;
+  readonly kind: 'video' | 'photo';
+  readonly state: FileState;
+  readonly localPath: string | null;
+  readonly sizeBytes: number | null;
+  readonly durationMs: number | null;
+  readonly sha256Client: string | null;
+  readonly attemptCount: number;
+  readonly nextAttemptAtDevice: number | null;
+  readonly lastErrorCode: string | null;
+  readonly createdAtDevice: number;
+}
+
+/** Phần chi tiết hàng đợi được phép ghi cùng một sự kiện tệp. */
+export interface UploadItemPatch {
+  readonly attemptCount?: number;
+  /** `null` xóa thời điểm chờ. */
+  readonly nextAttemptAtDevice?: number | null;
+  /** `null` xóa mã lỗi. */
+  readonly lastErrorCode?: string | null;
+}
+
+export type UploadItemResult =
+  { readonly ok: true; readonly item: UploadItem } | { readonly ok: false; readonly error: string };
+
+/**
+ * Cổng tới MỘT kho tệp mà hàng đợi tải lên phục vụ. Mọi đổi trạng thái đi qua máy trạng thái tệp
+ * (`transition()`), nên client không tự tới `uploaded`/`verified` (chỉ sự kiện `origin: 'server'`).
+ */
+export interface UploadSource {
+  listByStates(shopId: ShopId, states: readonly FileState[]): Promise<readonly UploadItem[]>;
+  applyEvent(
+    shopId: ShopId,
+    id: EvidenceId,
+    event: FileEvent,
+    atDevice: number,
+    patch?: UploadItemPatch,
+  ): Promise<UploadItemResult>;
 }

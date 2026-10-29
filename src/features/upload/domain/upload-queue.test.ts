@@ -5,6 +5,7 @@ import { createMemoryEvidenceFileStore } from '@/features/orders';
 import { MAX_UPLOAD_ATTEMPTS, retryDelayMs } from './backoff';
 import type { HashResult, ServerFileState, UploadGateway, UploadOutcome } from './ports';
 import { createUploadQueue, mayBeKnownToServer } from './upload-queue';
+import { evidenceFileSource } from './upload-sources';
 
 const SHOP = 'shop-1' as ShopId;
 const HASH = 'ab'.repeat(32);
@@ -53,7 +54,7 @@ function setup(options: { online?: boolean; hash?: HashResult } = {}) {
   };
   let hashResult: HashResult = options.hash ?? { ok: true, sha256: HASH };
   const queue = createUploadQueue({
-    files,
+    sources: [evidenceFileSource(files)],
     gateway,
     hasher: { sha256: async () => hashResult },
     now: () => clock,
@@ -294,7 +295,7 @@ describe('đối soát chỉ hỏi máy chủ về tệp máy chủ có thể đ
       3000,
     );
     const queue = createUploadQueue({
-      files,
+      sources: [evidenceFileSource(files)],
       gateway: {
         upload: async () => ({ kind: 'received' }),
         fetchServerStates: async (_shop, ids) => {

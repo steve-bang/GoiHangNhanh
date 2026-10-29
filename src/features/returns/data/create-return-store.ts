@@ -50,6 +50,8 @@ export function createLocalReturnStore(
     listReturnsPendingRemote: async (shop, limit, uid) =>
       (await get()).listReturnsPendingRemote(shop, limit, uid),
     markReturnPublished: async (shop, id, at) => (await get()).markReturnPublished(shop, id, at),
+    listMediaForUpload: async (shop, states, uid) =>
+      (await get()).listMediaForUpload(shop, states, uid),
     listMedia: async (shop, returnId) => (await get()).listMedia(shop, returnId),
   };
 }

@@ -279,6 +279,13 @@ export const MIGRATIONS: readonly string[] = [
   `
   ALTER TABLE return_cases ADD COLUMN remote_synced_at_device INTEGER;
   `,
+  // v13 (R2b, Q-28): trạng thái hàng đợi tải lên của media hàng hoàn, cùng ý nghĩa với `evidence_files`
+  // (số lần thử, giờ thử lại sớm nhất, mã lỗi gần nhất). Chỉ ADD COLUMN; ảnh có trước giữ mặc định.
+  `
+  ALTER TABLE return_media ADD COLUMN attempt_count INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE return_media ADD COLUMN next_attempt_at_device INTEGER;
+  ALTER TABLE return_media ADD COLUMN last_error_code TEXT;
+  `,
 ];
 
 /**
