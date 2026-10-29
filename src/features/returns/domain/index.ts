@@ -17,3 +17,11 @@ export {
   statusAfterLines,
   statusAfterVideoStep,
 } from './return-rules';
+export { applyMediaEvent } from './media';
+export type {
+  MediaEventError,
+  MediaEventResult,
+  NewReturnMedia,
+  ReturnMedia,
+  ReturnMediaPatch,
+} from './media';

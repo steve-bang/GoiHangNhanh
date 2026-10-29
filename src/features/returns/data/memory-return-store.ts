@@ -9,6 +9,7 @@ import {
   statusAfterLines,
   statusAfterVideoStep,
 } from '../domain/return-rules';
+import { applyMediaEvent, type ReturnMedia } from '../domain/media';
 import type {
   NewDiscrepancy,
   NewReceivedLine,
@@ -46,6 +47,7 @@ export function createMemoryReturnStore(
   const uid = (): string | null => options.creatorUid?.() ?? null;
   const rows = new Map<ReturnCaseId, Row>();
   const lastSeq = new Map<ShopId, number>();
+  const media = new Map<string, ReturnMedia>();
 
   const rowOf = (shopId: ShopId, id: ReturnCaseId): Row => {
     const row = rows.get(id);
@@ -238,6 +240,47 @@ export function createMemoryReturnStore(
       touch(row, { sourceOrderId: input.orderId }, input.atDevice);
       event(row, input.eventId, 'linked', input.atDevice);
       return details(row);
+    },
+    async createMedia(input) {
+      const row = rowOf(input.shopId, input.returnId);
+      const existing = media.get(input.id);
+      if (existing) {
+        if (existing.returnId !== input.returnId || existing.shopId !== input.shopId) {
+          throw new AppError('RETURN_SAVE_FAILED', { reason: 'media_conflict' });
+        }
+        return copy(existing);
+      }
+      if (row.returnCase.status === 'confirmed') throw new AppError('RETURN_ALREADY_CONFIRMED');
+      const u = uid();
+      const created: ReturnMedia = {
+        id: input.id,
+        shopId: input.shopId,
+        returnId: input.returnId,
+        kind: input.kind,
+        state: 'recording',
+        localPath: null,
+        sizeBytes: null,
+        sha256Client: null,
+        createdAtDevice: input.atDevice,
+        updatedAtDevice: input.atDevice,
+        ...(u ? { createdBy: u } : {}),
+      };
+      media.set(input.id, created);
+      return copy(created);
+    },
+    async applyMediaEvent(shopId, id, event, atDevice, patch) {
+      const current = media.get(id);
+      if (!current || current.shopId !== shopId) return { ok: false, error: 'MEDIA_NOT_FOUND' };
+      const result = applyMediaEvent(current, event, atDevice, patch);
+      if (!result.ok) return result;
+      media.set(id, result.media);
+      return { ok: true, media: copy(result.media) };
+    },
+    async listMedia(shopId, returnId) {
+      return [...media.values()]
+        .filter((m) => m.shopId === shopId && m.returnId === returnId)
+        .sort((a, b) => a.createdAtDevice - b.createdAtDevice)
+        .map(copy);
     },
   };
 }

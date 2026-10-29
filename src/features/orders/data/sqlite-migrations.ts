@@ -247,6 +247,24 @@ export const MIGRATIONS: readonly string[] = [
   );
   CREATE INDEX idx_dispute_events_dispute ON dispute_events (dispute_id, at_device);
   `,
+  // v10 (R2a hàng hoàn): ảnh của hồ sơ hàng hoàn. Bảng riêng vì `evidence_files` bắt buộc đơn + kiện +
+  // phiên đóng gói. Dùng chung vòng đời trạng thái tệp; chỉ thêm, không xóa (bản gốc bất biến).
+  `
+  CREATE TABLE return_media (
+    id TEXT PRIMARY KEY NOT NULL,
+    return_id TEXT NOT NULL REFERENCES return_cases (id),
+    shop_id TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('photo')),
+    state TEXT NOT NULL,
+    local_path TEXT,
+    size_bytes INTEGER,
+    sha256_client TEXT,
+    created_at_device INTEGER NOT NULL,
+    updated_at_device INTEGER NOT NULL,
+    created_by TEXT
+  );
+  CREATE INDEX idx_return_media_return ON return_media (return_id, created_at_device);
+  `,
 ];
 
 /**

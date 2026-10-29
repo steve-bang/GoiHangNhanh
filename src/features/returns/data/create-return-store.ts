@@ -40,5 +40,9 @@ export function createLocalReturnStore(
     saveLines: async (shop, id, input) => (await get()).saveLines(shop, id, input),
     confirmReturn: async (shop, id, input) => (await get()).confirmReturn(shop, id, input),
     linkSourceOrder: async (shop, id, input) => (await get()).linkSourceOrder(shop, id, input),
+    createMedia: async (input) => (await get()).createMedia(input),
+    applyMediaEvent: async (shop, id, event, at, patch) =>
+      (await get()).applyMediaEvent(shop, id, event, at, patch),
+    listMedia: async (shop, returnId) => (await get()).listMedia(shop, returnId),
   };
 }

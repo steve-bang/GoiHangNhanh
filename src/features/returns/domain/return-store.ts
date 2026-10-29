@@ -1,4 +1,7 @@
 import type { OrderId, ReturnCaseId, ShopId } from '@/core/ids';
+import type { FileEvent } from '@/features/evidence';
+
+import type { MediaEventResult, NewReturnMedia, ReturnMedia, ReturnMediaPatch } from './media';
 
 import type {
   Discrepancy,
@@ -125,4 +128,19 @@ export interface ReturnStore {
       expectedLines: readonly NewReceivedLine[];
     },
   ): Promise<ReturnDetails>;
+  /**
+   * Tạo bản ghi ảnh ở `recording` TRƯỚC khi chụp (bất biến 2). Hồ sơ phải tồn tại cùng shop; đã xác nhận
+   * thì ném `RETURN_ALREADY_CONFIRMED`. Cùng `id` đã có thì trả bản cũ (thử lại an toàn).
+   */
+  createMedia(input: NewReturnMedia): Promise<ReturnMedia>;
+  /** Áp sự kiện tệp qua máy trạng thái; lỗi nghiệp vụ trả `ok: false`, lỗi lưu ném `RETURN_SAVE_FAILED`. */
+  applyMediaEvent(
+    shopId: ShopId,
+    id: string,
+    event: FileEvent,
+    atDevice: number,
+    patch?: ReturnMediaPatch,
+  ): Promise<MediaEventResult>;
+  /** Ảnh/video của hồ sơ, cũ nhất trước. Chỉ thêm, không xóa (bản gốc bất biến). */
+  listMedia(shopId: ShopId, returnId: ReturnCaseId): Promise<readonly ReturnMedia[]>;
 }

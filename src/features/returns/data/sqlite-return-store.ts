@@ -15,6 +15,7 @@ import {
   statusAfterLines,
   statusAfterVideoStep,
 } from '../domain/return-rules';
+import { applyMediaEvent, type ReturnMedia } from '../domain/media';
 import type { NewReceivedLine, ReturnStore } from '../domain/return-store';
 import type {
   Discrepancy,
@@ -90,6 +91,35 @@ interface EventRow {
   at_device: number;
   by_uid: string | null;
 }
+
+interface MediaRow {
+  id: string;
+  return_id: string;
+  shop_id: string;
+  kind: string;
+  state: string;
+  local_path: string | null;
+  size_bytes: number | null;
+  sha256_client: string | null;
+  created_at_device: number;
+  updated_at_device: number;
+  created_by: string | null;
+}
+const MEDIA_COLUMNS =
+  'id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client, created_at_device, updated_at_device, created_by';
+const toMedia = (r: MediaRow): ReturnMedia => ({
+  id: r.id,
+  shopId: r.shop_id as ShopId,
+  returnId: r.return_id as ReturnCaseId,
+  kind: 'photo',
+  state: r.state as ReturnMedia['state'],
+  localPath: r.local_path,
+  sizeBytes: r.size_bytes,
+  sha256Client: r.sha256_client,
+  createdAtDevice: r.created_at_device,
+  updatedAtDevice: r.updated_at_device,
+  ...(r.created_by ? { createdBy: r.created_by } : {}),
+});
 
 const CASE_COLUMNS =
   'id, shop_id, seq, code, status, source_order_id, observed_code, exterior_json, opened_before_json, opening_video_json, final_note, confirmed_at_device, created_at_device, updated_at_device, created_by';
@@ -523,6 +553,58 @@ export function createSqliteReturnStore(
           await insertEvent(shopId, id, input.eventId, 'linked', input.atDevice);
         });
         return mustLoad(shopId, id);
+      }),
+
+    createMedia: (input) =>
+      guarded(async () => {
+        const current = await requireCase(input.shopId, input.returnId);
+        const existing = await db.getFirstAsync<MediaRow>(
+          `SELECT ${MEDIA_COLUMNS} FROM return_media WHERE id = ?`,
+          [input.id],
+        );
+        if (existing) {
+          if (existing.return_id !== input.returnId || existing.shop_id !== input.shopId) {
+            throw new AppError('RETURN_SAVE_FAILED', { reason: 'media_conflict' });
+          }
+          return toMedia(existing);
+        }
+        if (current.status === 'confirmed') throw new AppError('RETURN_ALREADY_CONFIRMED');
+        await db.runAsync(
+          `INSERT INTO return_media (${MEDIA_COLUMNS}) VALUES (?, ?, ?, 'photo', 'recording', NULL, NULL, NULL, ?, ?, ?)`,
+          [input.id, input.returnId, input.shopId, input.atDevice, input.atDevice, uid()],
+        );
+        const created = await db.getFirstAsync<MediaRow>(
+          `SELECT ${MEDIA_COLUMNS} FROM return_media WHERE id = ?`,
+          [input.id],
+        );
+        if (!created) throw new AppError('RETURN_SAVE_FAILED', { reason: 'media_missing' });
+        return toMedia(created);
+      }),
+
+    applyMediaEvent: (shopId, id, event, atDevice, patch) =>
+      guarded(async () => {
+        const row = await db.getFirstAsync<MediaRow>(
+          `SELECT ${MEDIA_COLUMNS} FROM return_media WHERE id = ? AND shop_id = ?`,
+          [id, shopId],
+        );
+        if (!row) return { ok: false as const, error: 'MEDIA_NOT_FOUND' as const };
+        const result = applyMediaEvent(toMedia(row), event, atDevice, patch);
+        if (!result.ok) return result;
+        const m = result.media;
+        await db.runAsync(
+          'UPDATE return_media SET state = ?, local_path = ?, size_bytes = ?, sha256_client = ?, updated_at_device = ? WHERE id = ? AND shop_id = ?',
+          [m.state, m.localPath, m.sizeBytes, m.sha256Client, m.updatedAtDevice, id, shopId],
+        );
+        return result;
+      }),
+
+    listMedia: (shopId, returnId) =>
+      guarded(async () => {
+        const rows = await db.getAllAsync<MediaRow>(
+          `SELECT ${MEDIA_COLUMNS} FROM return_media WHERE return_id = ? AND shop_id = ? ORDER BY created_at_device, rowid`,
+          [returnId, shopId],
+        );
+        return rows.map(toMedia);
       }),
   };
 }
