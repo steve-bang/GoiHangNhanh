@@ -26,6 +26,29 @@ describe('kho SQLite hàng hoàn: schema và người tạo', () => {
     expect(orders).toHaveLength(1);
   });
 
+  it('migration v10 thêm bảng ảnh trên DB đã ở v9, giữ hồ sơ và tranh chấp cũ', async () => {
+    const db = createNodeSqliteDatabase();
+    for (const sql of MIGRATIONS.slice(0, 9)) await db.execAsync(sql);
+    await db.execAsync('PRAGMA user_version = 9');
+    await db.runAsync(
+      `INSERT INTO orders (id, shop_id, order_code, order_code_key, source, data_origin, created_at_device)
+       VALUES ('o1', 's', 'C1', 'C1', 'shopee', 'entered_by_user', 1)`,
+    );
+    const store = createSqliteReturnStore(db);
+    const made = await store.createReturn(makeNewReturn({ shopId: 's' as never }));
+    // DB đang ở v9 (chưa có bảng ảnh): kho phải tự nâng lên v10 mà không mất dữ liệu cũ.
+    const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+    expect(version?.user_version).toBe(MIGRATIONS.length);
+    const orders = await db.getAllAsync<{ id: string }>('SELECT id FROM orders');
+    expect(orders).toHaveLength(1);
+    expect(await store.getReturn('s' as never, made.returnCase.id)).not.toBeNull();
+    expect(await store.listMedia('s' as never, made.returnCase.id)).toEqual([]);
+    const table = await db.getFirstAsync<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'return_media'",
+    );
+    expect(table?.name).toBe('return_media');
+  });
+
   it('gắn uid người tạo khi biết ai đăng nhập (kho đọc uid mỗi lần lưu)', async () => {
     let uid: string | null = 'user-a';
     const store = createSqliteReturnStore(createNodeSqliteDatabase(), { creatorUid: () => uid });

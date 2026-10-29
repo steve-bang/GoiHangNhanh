@@ -1,5 +1,6 @@
 import { AppError } from '@/core/errors/app-error';
 import type { OrderId, ReturnCaseId, ShopId } from '@/core/ids';
+import type { FileEvent, FileEventType } from '@/features/evidence';
 
 import type { NewReceivedLine, NewReturnInput, ReturnStore } from '../domain/return-store';
 
@@ -380,6 +381,206 @@ export function runReturnStoreContract(name: string, create: () => Promise<Retur
       const store = await create();
       const made = await store.createReturn(makeNewReturn());
       expect(made.returnCase.createdBy).toBeUndefined();
+    });
+
+    describe('ảnh hàng hoàn (media)', () => {
+      const dev = (type: FileEventType): FileEvent => ({ type, origin: 'device' });
+      const server = (type: FileEventType): FileEvent => ({ type, origin: 'server' });
+      const SHA = 'a'.repeat(64);
+      const newMedia = (returnId: ReturnCaseId, id = nid(), shopId: ShopId = SHOP) => ({
+        id,
+        shopId,
+        returnId,
+        kind: 'photo' as const,
+        atDevice: 5000,
+      });
+      /** Đưa ảnh tới `queued` hợp lệ (đủ đường dẫn, kích thước, mã băm). */
+      const toQueued = async (store: ReturnStore, mediaId: string) => {
+        await store.applyMediaEvent(SHOP, mediaId, dev('STOP_RECORDING'), 5100, {
+          localPath: 'tmp/x.jpg',
+        });
+        await store.applyMediaEvent(SHOP, mediaId, dev('LOCAL_FILE_MOVED'), 5200, {
+          localPath: `evidence/${mediaId}.jpg`,
+        });
+        return store.applyMediaEvent(SHOP, mediaId, dev('LOCAL_FILE_READABLE'), 5300, {
+          localPath: `evidence/${mediaId}.jpg`,
+          sizeBytes: 1234,
+          sha256Client: SHA,
+        });
+      };
+
+      it('tạo bản ghi TRƯỚC khi chụp: state recording, chưa có tệp; liệt kê theo hồ sơ', async () => {
+        const store = await create();
+        const { returnCase } = await store.createReturn(makeNewReturn());
+        const other = await store.createReturn(makeNewReturn());
+        const media = await store.createMedia(newMedia(returnCase.id, 'm1'));
+        expect(media).toMatchObject({
+          id: 'm1',
+          returnId: returnCase.id,
+          state: 'recording',
+          localPath: null,
+          sizeBytes: null,
+          sha256Client: null,
+          kind: 'photo',
+        });
+        expect(await store.listMedia(SHOP, returnCase.id)).toHaveLength(1);
+        expect(await store.listMedia(SHOP, other.returnCase.id)).toHaveLength(0);
+      });
+
+      it('đi hết vòng đời thiết bị tới queued khi đủ đường dẫn, kích thước và mã băm', async () => {
+        const store = await create();
+        const { returnCase } = await store.createReturn(makeNewReturn());
+        await store.createMedia(newMedia(returnCase.id, 'm1'));
+        const queued = await toQueued(store, 'm1');
+        expect(queued.ok).toBe(true);
+        const [listed] = await store.listMedia(SHOP, returnCase.id);
+        expect(listed).toMatchObject({
+          state: 'queued',
+          localPath: 'evidence/m1.jpg',
+          sizeBytes: 1234,
+          sha256Client: SHA,
+        });
+      });
+
+      it('vào queued thiếu đường dẫn, kích thước > 0 hoặc mã băm thì bị từ chối (MISSING_FILE_DETAILS)', async () => {
+        const store = await create();
+        const { returnCase } = await store.createReturn(makeNewReturn());
+        for (const patch of [
+          { sizeBytes: 10, sha256Client: SHA },
+          { localPath: 'evidence/a.jpg', sha256Client: SHA },
+          { localPath: 'evidence/a.jpg', sizeBytes: 0, sha256Client: SHA },
+          { localPath: 'evidence/a.jpg', sizeBytes: 10 },
+        ]) {
+          const id = nid();
+          await store.createMedia(newMedia(returnCase.id, id));
+          await store.applyMediaEvent(SHOP, id, dev('STOP_RECORDING'), 1);
+          const result = await store.applyMediaEvent(
+            SHOP,
+            id,
+            dev('LOCAL_FILE_READABLE'),
+            2,
+            patch,
+          );
+          expect(result).toEqual({ ok: false, error: 'MISSING_FILE_DETAILS' });
+          const [listed] = (await store.listMedia(SHOP, returnCase.id)).filter((m) => m.id === id);
+          expect(listed?.state).toBe('saving_local');
+        }
+      });
+
+      it('mã băm và kích thước không đổi được sau khi đóng tệp (IMMUTABLE_FIELD)', async () => {
+        const store = await create();
+        const { returnCase } = await store.createReturn(makeNewReturn());
+        await store.createMedia(newMedia(returnCase.id, 'm1'));
+        await toQueued(store, 'm1');
+        const hashChange = await store.applyMediaEvent(SHOP, 'm1', dev('UPLOAD_STARTED'), 6000, {
+          sha256Client: 'b'.repeat(64),
+        });
+        expect(hashChange).toEqual({ ok: false, error: 'IMMUTABLE_FIELD' });
+        const sizeChange = await store.applyMediaEvent(SHOP, 'm1', dev('UPLOAD_STARTED'), 6000, {
+          sizeBytes: 1,
+        });
+        expect(sizeChange).toEqual({ ok: false, error: 'IMMUTABLE_FIELD' });
+        const [listed] = await store.listMedia(SHOP, returnCase.id);
+        expect(listed).toMatchObject({ sha256Client: SHA, sizeBytes: 1234, state: 'queued' });
+      });
+
+      it('createMedia lặp cùng id trả bản cũ; cùng id khác hồ sơ hoặc khác shop thì lỗi', async () => {
+        const store = await create();
+        const a = await store.createReturn(makeNewReturn());
+        const b = await store.createReturn(makeNewReturn());
+        const foreign = await store.createReturn(makeNewReturn({ shopId: OTHER }));
+        await store.createMedia(newMedia(a.returnCase.id, 'm1'));
+        await toQueued(store, 'm1');
+        const again = await store.createMedia(newMedia(a.returnCase.id, 'm1'));
+        expect(again.state).toBe('queued');
+        expect(await store.listMedia(SHOP, a.returnCase.id)).toHaveLength(1);
+        expect(await code(store.createMedia(newMedia(b.returnCase.id, 'm1')))).toBe(
+          'RETURN_SAVE_FAILED',
+        );
+        expect(await code(store.createMedia(newMedia(foreign.returnCase.id, 'm1', OTHER)))).toBe(
+          'RETURN_SAVE_FAILED',
+        );
+      });
+
+      it('hồ sơ đã xác nhận không nhận ảnh mới (RETURN_ALREADY_CONFIRMED)', async () => {
+        const store = await create();
+        const { returnCase } = await store.createReturn(makeNewReturn());
+        await store.saveExterior(SHOP, returnCase.id, exterior());
+        await store.saveOpeningVideoMissing(SHOP, returnCase.id, {
+          reason: 'recorder_unavailable',
+          atDevice: 3000,
+          eventId: nid(),
+        });
+        await store.saveLines(SHOP, returnCase.id, {
+          lines: [manualLine('Áo', 1)],
+          discrepancies: [],
+          atDevice: 4000,
+          eventId: nid(),
+        });
+        await store.confirmReturn(SHOP, returnCase.id, {
+          finalNote: '',
+          atDevice: 5000,
+          eventId: nid(),
+        });
+        expect(await code(store.createMedia(newMedia(returnCase.id)))).toBe(
+          'RETURN_ALREADY_CONFIRMED',
+        );
+      });
+
+      it('cô lập shop: không tạo ảnh cho hồ sơ shop khác, không đọc/sửa ảnh của shop khác', async () => {
+        const store = await create();
+        const { returnCase } = await store.createReturn(makeNewReturn());
+        await store.createMedia(newMedia(returnCase.id, 'm1'));
+        expect(await code(store.createMedia(newMedia(returnCase.id, 'm2', OTHER)))).toBe(
+          'RETURN_SAVE_FAILED',
+        );
+        expect(await store.listMedia(OTHER, returnCase.id)).toEqual([]);
+        expect(await store.applyMediaEvent(OTHER, 'm1', dev('STOP_RECORDING'), 1)).toEqual({
+          ok: false,
+          error: 'MEDIA_NOT_FOUND',
+        });
+        expect((await store.listMedia(SHOP, returnCase.id))[0]?.state).toBe('recording');
+      });
+
+      it('client không tự tới uploaded/verified/hash_mismatch (ORIGIN_NOT_ALLOWED)', async () => {
+        const store = await create();
+        const { returnCase } = await store.createReturn(makeNewReturn());
+        await store.createMedia(newMedia(returnCase.id, 'm1'));
+        await toQueued(store, 'm1');
+        for (const type of [
+          'SERVER_RECEIVED',
+          'SERVER_VERIFIED',
+          'SERVER_HASH_MISMATCH',
+        ] as const) {
+          // Sự kiện của máy chủ mang origin 'device' (client giả danh) phải bị từ chối.
+          const result = await store.applyMediaEvent(SHOP, 'm1', dev(type), 7000);
+          expect(result).toEqual({ ok: false, error: 'ORIGIN_NOT_ALLOWED' });
+        }
+        expect((await store.listMedia(SHOP, returnCase.id))[0]?.state).toBe('queued');
+        // Kể cả sự kiện máy chủ cũng chỉ hợp lệ qua máy trạng thái (không nhảy từ recording).
+        await store.createMedia(newMedia(returnCase.id, 'm2'));
+        expect(await store.applyMediaEvent(SHOP, 'm2', server('SERVER_RECEIVED'), 7000)).toEqual({
+          ok: false,
+          error: 'ILLEGAL_TRANSITION',
+        });
+      });
+
+      it('lỗi ghi: LOCAL_WRITE_FAILED giữ đường dẫn đã biết', async () => {
+        const store = await create();
+        const { returnCase } = await store.createReturn(makeNewReturn());
+        await store.createMedia(newMedia(returnCase.id, 'm1'));
+        await store.applyMediaEvent(SHOP, 'm1', dev('STOP_RECORDING'), 1, {
+          localPath: 'tmp/x.jpg',
+        });
+        const failed = await store.applyMediaEvent(SHOP, 'm1', dev('LOCAL_WRITE_FAILED'), 2, {
+          localPath: 'tmp/x.jpg',
+        });
+        expect(failed.ok).toBe(true);
+        expect((await store.listMedia(SHOP, returnCase.id))[0]).toMatchObject({
+          state: 'local_save_failed',
+          localPath: 'tmp/x.jpg',
+        });
+      });
     });
   });
 }
