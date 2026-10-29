@@ -1,4 +1,5 @@
 import type { EvidenceId, ReturnCaseId, ShopId } from '@/core/ids';
+import { mayHaveReachedServer } from '@/features/evidence';
 import { createMemoryEvidenceFileStore } from '@/features/orders';
 import { createMemoryReturnStore, type ReturnStore } from '@/features/returns';
 
@@ -271,5 +272,48 @@ describe('hàng đợi tải lên với nguồn media hàng hoàn (Q-28)', () =>
     expect(declared[0]).not.toHaveProperty('durationMs');
     const media = (await returns.listMedia(SHOP, returnId)).find((m) => m.id === 'vd-1');
     expect(media?.state).toBe('uploaded');
+  });
+
+  it('ảnh đang uploading rồi app bị tắt: sau đối soát về hàng đợi vẫn bị coi là có thể đã tới máy chủ (không được xóa)', async () => {
+    const t = setup();
+    const returnId = await returnWithPhoto(t.returns, 'ph-1');
+    await t.returns.applyMediaEvent(SHOP, 'ph-1', d('UPLOAD_STARTED'), 6);
+    // Máy chủ chưa có; lượt chạy đưa về queued rồi tải lại. Chặn tải lại để xem trạng thái trung gian.
+    t.outcomes.push({ kind: 'retryable', code: 'NETWORK' });
+    await t.queue.runOnce(SHOP);
+    const after = await t.media('ph-1', returnId);
+    expect(after && mayHaveReachedServer(after)).toBe(true);
+    expect(after?.attemptCount).toBeGreaterThan(0);
+    await expect(t.returns.checkMediaDeletable(SHOP, 'ph-1')).rejects.toMatchObject({
+      code: 'RETURN_PHOTO_IN_USE',
+    });
+  });
+
+  it('reconcile để lại dấu UPLOAD_INTERRUPTED + attemptCount khi tải lại bị hoãn (không còn queued "sạch")', async () => {
+    const t = setup();
+    const returnId = await returnWithPhoto(t.returns, 'ph-1');
+    await t.returns.applyMediaEvent(SHOP, 'ph-1', d('UPLOAD_STARTED'), 6);
+    let calls = 0;
+    const queue = createUploadQueue({
+      sources: [returnMediaSource(t.returns, () => 'uid-1')],
+      gateway: {
+        upload: async () => ({ kind: 'received' }),
+        fetchServerStates: async () => new Map(),
+      },
+      hasher: { sha256: async () => ({ ok: true, sha256: HASH }) },
+      now: () => 10_000,
+      isOnline: () => {
+        calls += 1;
+        return calls < 2; // rớt mạng ngay sau reconcile, trước khi tải
+      },
+    });
+    await queue.runOnce(SHOP);
+    const m = await t.media('ph-1', returnId);
+    expect(m).toMatchObject({
+      state: 'queued',
+      attemptCount: 1,
+      lastErrorCode: 'UPLOAD_INTERRUPTED',
+    });
+    expect(m && mayHaveReachedServer(m)).toBe(true);
   });
 });

@@ -128,8 +128,14 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
       if (state) {
         summary.verified += await followServer(entry, state);
       } else if (entry.item.state === S.UPLOADING) {
-        // Máy chủ chưa có và không còn tiến trình tải nào: về hàng đợi thử lại.
-        await apply(entry, device('UPLOAD_FAILED'), { nextAttemptAtDevice: now() });
+        // Máy chủ chưa có và không còn tiến trình tải nào: về hàng đợi thử lại. GHI DẤU lần thử bị gián
+        // đoạn (tăng số lần thử + mã lỗi, không ghi PII) để sau khi về `queued` vẫn biết tệp đã từng
+        // được đưa cho máy chủ (`mayHaveReachedServer`, Q-26j/Q-28: ảnh không được xóa).
+        await apply(entry, device('UPLOAD_FAILED'), {
+          attemptCount: entry.item.attemptCount + 1,
+          lastErrorCode: 'UPLOAD_INTERRUPTED',
+          nextAttemptAtDevice: now(),
+        });
       }
     }
   }

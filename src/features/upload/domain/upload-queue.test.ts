@@ -221,6 +221,23 @@ describe('hàng đợi tải lên', () => {
     expect(await t.state('a')).toBe('uploaded');
   });
 
+  it('đóng gói: tệp uploading bị gián đoạn rồi chưa kịp tải lại vẫn mang dấu đã thử (UPLOAD_INTERRUPTED)', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    await t.files.applyEvent(
+      SHOP,
+      'a' as EvidenceId,
+      { type: 'UPLOAD_STARTED', origin: 'device' },
+      5,
+    );
+    t.outcomes.push({ kind: 'retryable', code: 'NETWORK' });
+    await t.queue.runOnce(SHOP);
+    // Lượt trên tải lại và lỗi tạm: dấu lần thử không bị mất về 0.
+    const file = await t.files.get(SHOP, 'a' as EvidenceId);
+    expect(file?.attemptCount).toBeGreaterThanOrEqual(1);
+    expect(file?.lastErrorCode).toBe('NETWORK');
+  });
+
   it('không hỏi được máy chủ thì vẫn tải (tải lên idempotent theo id)', async () => {
     const t = setup();
     await queuedFile(t.files, 'a');
