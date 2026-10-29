@@ -76,7 +76,7 @@ add('D06','UI-D06','Xác nhận kết quả kiểm tra','Hàng hoàn', scr(`
 
 add('D07','UI-D07','Hoàn tất tiếp nhận','Hàng hoàn', scr(`
   ${appbar('Đã tiếp nhận',{back:false})}
-  <div class="pad c"><div class="ill" style="background:var(--okb)">${ic('check',{c:'var(--ok)'})}</div><div class="h1 mt16">Đã ghi nhận hàng hoàn</div></div>
+  <div class="pad c"><div class="ill ok">${ic('check')}</div><div class="h1 mt16">Đã ghi nhận hàng hoàn</div></div>
   <div class="pad mt24"><div class="card"><div class="b">Bằng chứng</div>
     <div class="row g12 mt12">${thumb({open:true})}<div class="fl"><div class="b">Video mở kiện</div><div class="cp">01:12</div></div>${ev('wait')}</div>
     <div class="row g12 mt12"><div class="th" style="background:var(--jade-l)">${ic('cam',{c:'var(--jade)',s:28}).replace('<svg','<svg style="margin:14px"')}</div><div class="fl"><div class="b">Ảnh kiện bên ngoài</div><div class="cp">1 ảnh</div></div>${ev('ver')}</div></div></div>

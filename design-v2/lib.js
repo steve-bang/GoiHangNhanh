@@ -1,7 +1,9 @@
 // Thư viện thành phần giao diện Đơn Chứng v2. Token lấy từ src/core/theme/primitives.ts.
 const css = `
-:root{--jade:#157852;--jade-d:#14382A;--jade-l:#E6F0E9;--bg:#FAF8F2;--card:#fff;--mut:#F3F6F5;--line:#D9D6CC;--line2:#E8E5DC;
---tx:#1B1B1B;--tx2:#5A5F5C;--tx3:#566B7C;--ok:#1E7A3C;--okb:#E3F1E7;--wn:#B45309;--wnb:#FDF3E7;--er:#B3261E;--erb:#FCEBEA;--in:#1F5EA8;--inb:#E8F0FA;--teal:#EAF5F4;--cam:#16201A;--scan:#35E0A1}
+:root{--jade:#D93B20;--jade-d:#B02E17;--jade-l:#FFF1EC;--brand:#EE4D2D;--bg:#FFFAF7;--card:#fff;--mut:#FFF5F0;--line:#E6D9D2;--line2:#F0E4DE;
+--tx:#292524;--tx2:#746D68;--tx3:#746D68;--ok:#15803D;--okb:#DCFCE7;--wn:#B45309;--wnb:#FDF3E7;--er:#B91C1C;--erb:#FEE2E2;--in:#0369A1;--inb:#E0F2FE;--teal:#DCFCE7;--cam:#16201A;--scan:#FF6A45}
+/* Màn đã khách duyệt (Splash, đăng nhập, thiết lập) giữ bảng màu xanh ngọc cũ */
+.legacy{--jade:#157852;--jade-d:#14382A;--jade-l:#E6F0E9;--brand:#157852;--bg:#FAF8F2;--mut:#F3F6F5;--line:#D9D6CC;--line2:#E8E5DC;--tx:#1B1B1B;--tx2:#5A5F5C;--tx3:#566B7C;--ok:#1E7A3C;--okb:#E3F1E7;--er:#B3261E;--erb:#FCEBEA;--in:#1F5EA8;--inb:#E8F0FA;--teal:#EAF5F4;--scan:#35E0A1}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Inter,-apple-system,Roboto,sans-serif;background:#fff;color:var(--tx);-webkit-font-smoothing:antialiased}
 .phone{width:390px;height:844px;background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column;font-size:15px;line-height:1.4}
@@ -27,9 +29,9 @@ body{font-family:Inter,-apple-system,Roboto,sans-serif;background:#fff;color:var
 .tb div{width:64px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--tx2);font-weight:500}
 .tb .on{color:var(--jade);font-weight:700}
 .tb svg{width:24px;height:24px}
-.fab{position:absolute;left:50%;top:-26px;transform:translateX(-50%);width:62px!important;height:62px;border-radius:50%;background:var(--jade);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(21,120,82,.4);border:4px solid var(--bg)}
+.fab{position:absolute;left:50%;top:-26px;transform:translateX(-50%);width:62px!important;height:62px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(238,77,45,.35);border:4px solid var(--bg)}
 .fab svg{stroke:#fff;width:28px;height:28px}
-.btn{min-height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:16px;border:1.5px solid var(--jade);color:var(--jade);background:transparent;padding:0 16px;width:100%}
+.btn{min-height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:16px;border:1.5px solid var(--line);color:var(--jade-d);background:transparent;padding:0 16px;width:100%}.legacy .btn{border-color:var(--jade);color:var(--jade)}.legacy .btn.p{color:#fff}
 .btn svg{width:20px;height:20px}
 .btn.p{background:var(--jade);color:#fff}.btn.p svg{stroke:#fff}
 .btn.d{border-color:var(--er);color:var(--er)}.btn.dp{background:var(--er);border-color:var(--er);color:#fff}
@@ -48,7 +50,7 @@ body{font-family:Inter,-apple-system,Roboto,sans-serif;background:#fff;color:var
 .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 9px;border-radius:99px;white-space:nowrap}
 .chip svg{width:13px;height:13px}
 .ck-ok{background:var(--okb);color:var(--ok)}.ck-wn{background:var(--wnb);color:var(--wn)}.ck-er{background:var(--erb);color:var(--er)}
-.ck-in{background:var(--inb);color:var(--in)}.ck-dv{background:var(--mut);color:var(--tx2);border:1px solid var(--line)}.ck-vf{background:var(--teal);color:var(--jade)}
+.ck-in{background:var(--inb);color:var(--in)}.ck-dv{background:var(--mut);color:var(--tx2);border:1px solid var(--line)}.ck-vf{background:var(--okb);color:var(--ok)}.ck-br{background:var(--jade-l);color:var(--jade-d)}
 .ck-ok svg,.ck-vf svg{stroke:currentColor}
 .fc{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:99px;border:1.5px solid var(--line);background:#fff;font-size:14px;font-weight:500;white-space:nowrap}
 .fc.on{background:var(--jade-l);border-color:var(--jade);color:var(--jade-d);font-weight:700}
@@ -70,7 +72,7 @@ body{font-family:Inter,-apple-system,Roboto,sans-serif;background:#fff;color:var
 .th svg.sc2{width:100%;height:100%}
 .th .pl{position:absolute;right:4px;bottom:4px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
 .th .pl svg{width:9px;height:9px;fill:#fff;stroke:none}
-.prog{height:6px;border-radius:3px;background:#E4E8E5;overflow:hidden}.prog i{display:block;height:100%;background:var(--jade);border-radius:3px}
+.prog{height:6px;border-radius:3px;background:#E4E8E5;overflow:hidden}.prog i{display:block;height:100%;background:var(--in);border-radius:3px}.legacy .prog i{background:var(--jade)}
 .prog.wn i{background:var(--wn)}
 .scrim{position:absolute;inset:0;background:rgba(10,16,12,.5);z-index:6}
 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:24px 24px 0 0;padding:10px 16px 34px;z-index:7;display:flex;flex-direction:column;gap:12px}
@@ -79,7 +81,7 @@ body{font-family:Inter,-apple-system,Roboto,sans-serif;background:#fff;color:var
 .snack{position:absolute;left:16px;right:16px;bottom:100px;background:#1B1B1B;color:#fff;border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;z-index:8;font-size:14px}
 .ill{width:120px;height:120px;border-radius:60px;background:var(--jade-l);display:flex;align-items:center;justify-content:center;margin:0 auto}
 .ill svg{width:56px;height:56px;stroke:var(--jade)}
-.ill.wn{background:var(--wnb)}.ill.wn svg{stroke:var(--wn)}.ill.er{background:var(--erb)}.ill.er svg{stroke:var(--er)}.ill.in{background:var(--inb)}.ill.in svg{stroke:var(--in)}
+.ill.wn{background:var(--wnb)}.ill.wn svg{stroke:var(--wn)}.ill.er{background:var(--erb)}.ill.er svg{stroke:var(--er)}.ill.in{background:var(--inb)}.ill.ok{background:var(--okb)}.ill.ok svg{stroke:var(--ok)}.ill.ne{background:var(--mut)}.ill.ne svg{stroke:var(--tx2)}.ill.in svg{stroke:var(--in)}
 .foot{padding:12px 16px 34px;background:linear-gradient(to top,var(--bg) 70%,rgba(250,248,242,0));display:flex;flex-direction:column;gap:8px;flex:none}
 .cam{position:absolute;inset:0}
 .pill{background:rgba(0,0,0,.55);color:#fff;border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px}

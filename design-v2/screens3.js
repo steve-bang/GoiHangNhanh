@@ -91,7 +91,7 @@ add('G04','UI-G04','Xem trước và xuất','Tranh chấp', scr(`
 add('G05','UI-G05','Chi tiết và đóng hồ sơ','Tranh chấp', scr(`
   ${appbar('TC-0612-01')}
   <div class="pad col g12">
-    <div class="row g8">${chip('wn','Đang mở')}${chip('vf','Đang giữ bằng chứng','lock')}</div>
+    <div class="row g8">${chip('wn','Đang mở')}${chip('br','Đang giữ bằng chứng','lock')}</div>
     <div class="card"><div class="kv"><span>Lý do</span><span>Thiếu hàng</span></div><div class="kv"><span>Đơn</span><span>250611AB3K7Q</span></div><div class="kv"><span>Tạo</span><span>12/06 09:02</span></div></div>
     <div class="card"><div class="b">Lịch sử</div><div class="tl mt12"><div class="e"><div class="b">Thêm 2 bằng chứng</div><div class="cp">Lan Anh · 09:05</div></div><div class="e g"><div class="b">Tạo hồ sơ</div><div class="cp">Lan Anh · 09:02</div></div></div></div>
   </div>
@@ -107,7 +107,7 @@ add('H01','UI-H01','Gói dịch vụ (đang ẩn)','Gói dịch vụ', scr(`
 add('H02','UI-H02','So sánh gói','Gói dịch vụ', scr(`
   ${appbar('So sánh gói')}
   <div class="pad col g12">
-    ${[['Cơ bản','Lưu 30 ngày','5 GB · 1 thành viên',0],['Cửa hàng','Lưu 90 ngày','50 GB · 3 thành viên',1],['Doanh nghiệp','Lưu 365 ngày','500 GB · không giới hạn',0]].map(p=>`<div class="card" style="${p[3]?'border:2px solid var(--jade)':''}"><div class="row sp"><div class="h2">${p[0]}</div>${p[3]?chip('vf','Phổ biến'):''}</div><div class="cp mt4">${p[1]} · ${p[2]}</div><div class="cp mt8">Giá và chu kỳ: <b>đang cập nhật</b></div></div>`).join('')}
+    ${[['Cơ bản','Lưu 30 ngày','5 GB · 1 thành viên',0],['Cửa hàng','Lưu 90 ngày','50 GB · 3 thành viên',1],['Doanh nghiệp','Lưu 365 ngày','500 GB · không giới hạn',0]].map(p=>`<div class="card" style="${p[3]?'border:2px solid var(--jade)':''}"><div class="row sp"><div class="h2">${p[0]}</div>${p[3]?chip('br','Phổ biến'):''}</div><div class="cp mt4">${p[1]} · ${p[2]}</div><div class="cp mt8">Giá và chu kỳ: <b>đang cập nhật</b></div></div>`).join('')}
     ${banner('in','Khi hết hạn gói, bằng chứng không bị xóa ngầm. Bạn được báo trước.')}
   </div>`));
 
@@ -146,7 +146,7 @@ add('I02b','UI-J12','Chuyển cửa hàng bị chặn','Cá nhân', scr(`
 add('I03','UI-I03','Thành viên và quyền','Cá nhân', scr(`
   ${appbar('Thành viên')}
   <div class="lst mt8">
-    <div class="it"><div class="src s-kh" style="border-radius:18px;width:44px;height:44px;color:var(--jade-d);background:var(--jade-l)">LA</div><div class="fl"><div class="b">Lan Anh (bạn)</div><div class="cp">lananh@minhanh.vn</div></div>${chip('vf','Chủ shop')}</div>
+    <div class="it"><div class="src s-kh" style="border-radius:18px;width:44px;height:44px;color:var(--jade-d);background:var(--jade-l)">LA</div><div class="fl"><div class="b">Lan Anh (bạn)</div><div class="cp">lananh@minhanh.vn</div></div>${chip('br','Chủ shop')}</div>
     <div class="it"><div class="src s-kh" style="border-radius:22px;width:44px;height:44px">TH</div><div class="fl"><div class="b">Thu Hà</div><div class="cp">Nhân viên đóng gói</div></div>${chip('dv','Nhân viên')}</div>
     <div class="it"><div class="src s-kh" style="border-radius:22px;width:44px;height:44px">${ic('mail',{s:20})}</div><div class="fl"><div class="b">minh@email.com</div><div class="cp">Đã mời 2 ngày trước</div></div>${chip('wn','Chờ chấp nhận')}</div>
   </div>

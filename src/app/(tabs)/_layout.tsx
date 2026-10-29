@@ -28,7 +28,7 @@ export default function TabsLayout() {
         backBehavior="history"
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: tokens.color.brand.primary,
+          tabBarActiveTintColor: tokens.color.action.primary,
           tabBarInactiveTintColor: tokens.color.text.secondary,
           tabBarStyle: {
             backgroundColor: tokens.color.surface.raised,
@@ -68,7 +68,7 @@ export default function TabsLayout() {
                     variant="caption"
                     maxFontSizeMultiplier={TAB_LABEL_MAX_FONT_SCALE}
                     style={{
-                      color: focused ? tokens.color.action.link : tokens.color.text.secondary,
+                      color: focused ? tokens.color.action.primary : tokens.color.text.secondary,
                     }}
                   >
                     {t(tab.labelKey)}
@@ -78,7 +78,7 @@ export default function TabsLayout() {
                   <Icon
                     name={tab.icon}
                     size={size}
-                    color={focused ? tokens.color.brand.primary : tokens.color.text.secondary}
+                    color={focused ? tokens.color.action.primary : tokens.color.text.secondary}
                   />
                 ),
               }}

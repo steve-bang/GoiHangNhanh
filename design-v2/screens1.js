@@ -120,7 +120,7 @@ add('B05','UI-B05','Chế độ xử lý liên tục','Đóng gói', scr(`
   <div class="pad"><div class="bn in">${ic('info')}<div>Quét lần lượt từng đơn. Không tự chuyển đơn khi đang quay.</div></div></div>
   ${sec('Phiên hôm nay')}
   <div class="lst">
-    <div class="it" style="border:2px solid var(--jade)">${src('SP')}<div class="fl"><div class="b">250611AB3K7Q</div><div class="cp">Đang chờ quay</div></div>${chip('vf','Tiếp theo')}</div>
+    <div class="it" style="border:2px solid var(--jade)">${src('SP')}<div class="fl"><div class="b">250611AB3K7Q</div><div class="cp">Đang chờ quay</div></div>${chip('br','Tiếp theo')}</div>
     ${orderRow('TT','2506117781204','Đã quay · 00:51','saved')}${orderRow('SP','250611ZP90LA','Đã quay · 01:04','up')}
   </div>
   ${grow}${foot(btn('Quay đơn này','p','video'),btn('Quét đơn tiếp','s','scan'))}`));
@@ -176,7 +176,7 @@ add('C04','UI-C04','Kết thúc và xác nhận','Quay & lưu', scr(`
 
 add('C05','UI-C05','Đang lưu và đồng bộ','Quay & lưu', scr(`
   ${appbar('Đã lưu video',{back:false})}
-  <div class="pad c" style="padding-top:8px"><div class="ill">${ic('check',{})}</div><div class="h1 mt16">Video đã lưu trên máy</div><div class="bd mt4" style="color:var(--tx2)">Bạn có thể quay đơn tiếp theo ngay.</div></div>
+  <div class="pad c" style="padding-top:8px"><div class="ill ne">${ic('disk')}</div><div class="h1 mt16">Video đã lưu trên máy</div><div class="bd mt4" style="color:var(--tx2)">Bạn có thể quay đơn tiếp theo ngay.</div></div>
   <div class="pad mt24"><div class="card col g12">
     <div class="row g12">${thumb()}<div class="fl"><div class="b">250611AB3K7Q · Kiện 1</div><div class="cp">00:58 · 84 MB</div></div></div>
     <div class="row sp"><span class="cp">Trên máy</span>${ev('saved')}</div>
@@ -188,7 +188,7 @@ add('C05','UI-C05','Đang lưu và đồng bộ','Quay & lưu', scr(`
 
 add('C06','UI-C06','Hoàn tất đóng gói','Quay & lưu', scr(`
   ${appbar('Hoàn tất',{back:false})}
-  <div class="pad c" style="padding-top:8px"><div class="ill" style="background:var(--okb)">${ic('check',{c:'var(--ok)'})}</div><div class="h1 mt16">Đã xong đơn 250611AB3K7Q</div></div>
+  <div class="pad c" style="padding-top:8px"><div class="ill ok">${ic('check')}</div><div class="h1 mt16">Đã xong đơn 250611AB3K7Q</div></div>
   <div class="pad mt24"><div class="card">
     <div class="kv"><span>Số video</span><span>1</span></div>
     <div class="kv"><span>Trạng thái</span><span>${ev('wait')}</span></div>

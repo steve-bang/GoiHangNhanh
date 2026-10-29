@@ -114,7 +114,7 @@ export function FilterChips<K extends string>({
 }
 
 /** Chiều cao nhìn thấy của chip cỡ gọn; vùng chạm được bù bằng hitSlop. */
-const COMPACT_CHIP_HEIGHT = 34;
+const COMPACT_CHIP_HEIGHT = 40;
 
 const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },

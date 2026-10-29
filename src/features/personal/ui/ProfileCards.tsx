@@ -133,6 +133,7 @@ export function EvidenceOverviewCard() {
             label={t('personal:evidenceOverview.onDevice')}
             value={t('personal:evidenceOverview.noData')}
             icon="device-saved"
+            tone="neutral"
             testID="metric-on-device"
           />
           <MetricTile
@@ -173,7 +174,7 @@ export function ProfileNoName() {
         title={t('personal:profile.noNameTitle')}
         message={t('personal:profile.noNameMessage')}
         actionLabel={t('personal:profile.noNameAction')}
-        actionVariant="primary"
+        compact
         onAction={() => navigation.push(ROUTES.editProfile)}
       />
     </View>

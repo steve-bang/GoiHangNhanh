@@ -109,6 +109,9 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
 
   const clearAll = () => setFilters(EMPTY_FILTERS);
 
+  // Danh sách rỗng chưa lọc đã có nút tạo đơn trong khối trạng thái rỗng: không lặp thêm ở đầu trang.
+  const showCreate = !(list.status === 'ready' && list.total === 0 && !filtered);
+
   const emptyComponent = (() => {
     if (list.status === 'loading') {
       return (
@@ -186,13 +189,15 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
             scanTestID="orders-scan"
           />
         </View>
-        <Button
-          size="compact"
-          testID="orders-create"
-          icon="add"
-          label={t('screens:orders.createAction')}
-          onPress={() => navigation.push(ROUTES.quickOrder)}
-        />
+        {showCreate ? (
+          <Button
+            size="compact"
+            testID="orders-create"
+            icon="add"
+            label={t('screens:orders.createAction')}
+            onPress={() => navigation.push(ROUTES.quickOrder)}
+          />
+        ) : null}
       </View>
       <FilterChips
         size="compact"

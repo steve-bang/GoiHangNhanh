@@ -13,7 +13,7 @@ import {
   type DeviceCondition,
   useScannerPermission,
 } from '@/platform';
-import { Button, Card, Screen, Text, useTheme } from '@/shared/ui';
+import { Button, Card, Icon, Screen, Text, useTheme } from '@/shared/ui';
 
 import { ACTIVE_RECORDING_POLICY, RECORDER_ENABLED, runPrecheck } from '../domain';
 import { PackNotRecorded } from './PackNotRecorded';
@@ -163,13 +163,16 @@ export function PackPrecheckScreen() {
       <View style={{ gap: tokens.space.sm }}>
         {result.issues.map((issue) => (
           <Card key={issue.id} tone="warning" testID={`precheck-issue-${issue.id}`}>
-            <Text accessibilityRole="alert">
-              {issue.code === 'INSUFFICIENT_STORAGE'
-                ? t('screens:precheck.storageMinutes', {
-                    minutes: ACTIVE_RECORDING_POLICY.maxRecordMinutes,
-                  })
-                : t(`errors:${issue.code}`)}
-            </Text>
+            <View style={{ flexDirection: 'row', gap: tokens.space.md, alignItems: 'flex-start' }}>
+              <Icon name="alert" size={tokens.icon.lg} color={tokens.status.interrupted.fg} />
+              <Text accessibilityRole="alert" style={{ flex: 1, flexShrink: 1 }}>
+                {issue.code === 'INSUFFICIENT_STORAGE'
+                  ? t('screens:precheck.storageMinutes', {
+                      minutes: ACTIVE_RECORDING_POLICY.maxRecordMinutes,
+                    })
+                  : t(`errors:${issue.code}`)}
+              </Text>
+            </View>
           </Card>
         ))}
       </View>

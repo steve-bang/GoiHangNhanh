@@ -45,7 +45,7 @@ export function StatTile({ value, label, icon, tone, onPress, testID }: StatTile
             {value}
           </Text>
         </View>
-        <Text variant="caption" color="textMuted">
+        <Text variant="caption" color="text">
           {label}
         </Text>
       </View>

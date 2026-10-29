@@ -258,6 +258,11 @@ function DetailReady({
         </View>
       </Card>
 
+      <EvidenceSummaryCard
+        summary={evidence}
+        counts={items.length > 0 ? countEvidence(items) : null}
+      />
+
       <Card compact>
         <View style={{ gap: tokens.space.sm }}>
           <Text variant="formButton" color="ink" accessibilityRole="header">
@@ -304,11 +309,6 @@ function DetailReady({
           })}
         </View>
       </Card>
-
-      <EvidenceSummaryCard
-        summary={evidence}
-        counts={items.length > 0 ? countEvidence(items) : null}
-      />
 
       <Card compact>
         <View style={{ gap: tokens.space.sm }}>

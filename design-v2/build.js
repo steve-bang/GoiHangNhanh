@@ -1,6 +1,8 @@
 const fs=require('fs'),path=require('path');const {chromium}=require('playwright');
 const L=require('./lib');let S=[...require('./screens4'),...require('./screens1'),...require('./screens2'),...require('./screens3')];
 S.forEach(x=>{if(x.group==='Thiết lập')x.group='Vào app & thiết lập';});
+const LEGACY=new Set(['A01','A02','A03a','A03b','A03c','A03d','A04','A06','A07','A08','A08b','A09']);
+S.forEach(x=>{if(LEGACY.has(x.id))x.html=x.html.replace('class="phone"','class="phone legacy"');});
 const ORDER=['Vào app & thiết lập','Đóng gói','Quay & lưu','Hàng hoàn','Đơn hàng','Đơn hàng (bổ sung)','Đồng bộ & lưu trữ','Tranh chấp','Gói dịch vụ','Cá nhân','Cá nhân (màn con)','Ngoại lệ'];
 S.sort((a,b)=>ORDER.indexOf(a.group)-ORDER.indexOf(b.group));
 const out=path.join(__dirname,'png');fs.mkdirSync(out,{recursive:true});
