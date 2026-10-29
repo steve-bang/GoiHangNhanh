@@ -2,7 +2,13 @@ import { isAppError } from '@/core/errors/app-error';
 import type { ReturnCaseId, ShopId } from '@/core/ids';
 import type { FileEvent, FileEventType } from '@/features/evidence';
 
-import { isMediaSavedLocally, MAX_RETURN_PHOTOS, type ReturnMedia } from './media';
+import {
+  isMediaSavedLocally,
+  MAX_RETURN_PHOTOS,
+  type LocationStatus,
+  type MediaLocation,
+  type ReturnMedia,
+} from './media';
 import type { ReturnStore } from './return-store';
 
 /** Kết quả chụp do camera trả về: tệp nằm ở thư mục TẠM của hệ điều hành. */
@@ -18,8 +24,27 @@ export type HashOutcome =
   | { readonly ok: true; readonly sha256: string; readonly sizeBytes: number }
   | { readonly ok: false; readonly reason: 'FILE_MISSING' | 'FILE_UNREADABLE' };
 
+/** Kết quả đọc vị trí thiết bị (best-effort, không bao giờ chặn việc lưu ảnh). */
+export type LocateOutcome =
+  | {
+      readonly ok: true;
+      readonly lat: number;
+      readonly lng: number;
+      readonly accuracyM: number | null;
+      readonly atDevice: number;
+    }
+  | { readonly ok: false; readonly status: Exclude<LocationStatus, 'ok'> };
+
 export interface PhotoPorts {
-  readonly store: Pick<ReturnStore, 'createMedia' | 'applyMediaEvent' | 'listMedia'>;
+  readonly store: Pick<
+    ReturnStore,
+    'createMedia' | 'applyMediaEvent' | 'listMedia' | 'setMediaLocation'
+  >;
+  /**
+   * Đọc vị trí thiết bị (có giới hạn thời gian ngắn ở adapter). Bỏ qua = không ghi vị trí. Được gọi
+   * song song với việc chụp/lưu, KHÔNG làm chậm hay làm hỏng việc lưu ảnh; có thể ném lỗi (coi là `unavailable`).
+   */
+  locate?(): Promise<LocateOutcome>;
   /** Chụp một ảnh; có thể ném lỗi hoặc trả `ok: false` nếu camera không chụp được. */
   capture(): Promise<CaptureOutcome>;
   /** Chuyển tệp tạm vào thư mục bền (không sao chép); `uri` là đường dẫn tương đối để lưu. */
@@ -42,6 +67,30 @@ export type PhotoOutcome =
   | { readonly kind: 'saved'; readonly media: ReturnMedia }
   | { readonly kind: 'failed'; readonly mediaId: string | null; readonly reason: PhotoFailure };
 
+/** Chạy `locate` và luôn trả một `MediaLocation` (lỗi -> `unavailable`), không bao giờ ném lỗi. */
+function startLocate(locate: NonNullable<PhotoPorts['locate']>): Promise<MediaLocation> {
+  const none = (status: Exclude<LocationStatus, 'ok'>): MediaLocation => ({
+    status,
+    lat: null,
+    lng: null,
+    accuracyM: null,
+    atDevice: null,
+  });
+  return locate().then(
+    (result): MediaLocation =>
+      result.ok
+        ? {
+            status: 'ok',
+            lat: result.lat,
+            lng: result.lng,
+            accuracyM: result.accuracyM,
+            atDevice: result.atDevice,
+          }
+        : none(result.status),
+    () => none('unavailable'),
+  );
+}
+
 const device = (type: FileEventType): FileEvent => ({ type, origin: 'device' });
 
 /**
@@ -58,7 +107,7 @@ export async function capturePhoto(
   ports: PhotoPorts,
   target: { readonly shopId: ShopId; readonly returnId: ReturnCaseId },
 ): Promise<PhotoOutcome> {
-  const { store, capture, persist, hash, now, newId } = ports;
+  const { store, capture, persist, hash, now, newId, locate } = ports;
   const { shopId, returnId } = target;
   let mediaId: string | null = null;
   /** Đường dẫn tốt nhất đã biết (tạm rồi bền): mọi lỗi về sau phải giữ nó. */
@@ -96,6 +145,9 @@ export async function capturePhoto(
     }
     mediaId = id;
 
+    // Vị trí đọc song song, bắt đầu ngay trước khi chụp để gần đúng lúc chụp nhất; chỉ nhận kết quả
+    // SAU KHI ảnh đã lưu xong (best-effort, không chặn việc lưu).
+    const locating = locate ? startLocate(locate) : null;
     let captured: CaptureOutcome;
     try {
       captured = await capture();
@@ -143,7 +195,10 @@ export async function capturePhoto(
       await markFailed();
       return fail('SAVE_FAILED');
     }
-    return { kind: 'saved', media: queued.media };
+    const located = locating
+      ? await store.setMediaLocation(shopId, id, await locating).catch(() => null)
+      : null;
+    return { kind: 'saved', media: located?.ok ? located.media : queued.media };
   } catch {
     await markFailed();
     return fail('SAVE_FAILED');

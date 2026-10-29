@@ -9,7 +9,7 @@ import {
   statusAfterLines,
   statusAfterVideoStep,
 } from '../domain/return-rules';
-import { applyMediaEvent, type ReturnMedia } from '../domain/media';
+import { applyMediaEvent, applyMediaLocation, type ReturnMedia } from '../domain/media';
 import type {
   NewDiscrepancy,
   NewReceivedLine,
@@ -261,6 +261,7 @@ export function createMemoryReturnStore(
         localPath: null,
         sizeBytes: null,
         sha256Client: null,
+        location: null,
         createdAtDevice: input.atDevice,
         updatedAtDevice: input.atDevice,
         ...(u ? { createdBy: u } : {}),
@@ -272,6 +273,14 @@ export function createMemoryReturnStore(
       const current = media.get(id);
       if (!current || current.shopId !== shopId) return { ok: false, error: 'MEDIA_NOT_FOUND' };
       const result = applyMediaEvent(current, event, atDevice, patch);
+      if (!result.ok) return result;
+      media.set(id, result.media);
+      return { ok: true, media: copy(result.media) };
+    },
+    async setMediaLocation(shopId, id, location) {
+      const current = media.get(id);
+      if (!current || current.shopId !== shopId) return { ok: false, error: 'MEDIA_NOT_FOUND' };
+      const result = applyMediaLocation(current, location);
       if (!result.ok) return result;
       media.set(id, result.media);
       return { ok: true, media: copy(result.media) };

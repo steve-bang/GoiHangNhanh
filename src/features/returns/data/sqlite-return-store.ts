@@ -15,7 +15,12 @@ import {
   statusAfterLines,
   statusAfterVideoStep,
 } from '../domain/return-rules';
-import { applyMediaEvent, type ReturnMedia } from '../domain/media';
+import {
+  applyMediaEvent,
+  applyMediaLocation,
+  type LocationStatus,
+  type ReturnMedia,
+} from '../domain/media';
 import type { NewReceivedLine, ReturnStore } from '../domain/return-store';
 import type {
   Discrepancy,
@@ -104,9 +109,14 @@ interface MediaRow {
   created_at_device: number;
   updated_at_device: number;
   created_by: string | null;
+  lat: number | null;
+  lng: number | null;
+  accuracy_m: number | null;
+  location_at_device: number | null;
+  location_status: string | null;
 }
 const MEDIA_COLUMNS =
-  'id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client, created_at_device, updated_at_device, created_by';
+  'id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client, created_at_device, updated_at_device, created_by, lat, lng, accuracy_m, location_at_device, location_status';
 const toMedia = (r: MediaRow): ReturnMedia => ({
   id: r.id,
   shopId: r.shop_id as ShopId,
@@ -116,6 +126,16 @@ const toMedia = (r: MediaRow): ReturnMedia => ({
   localPath: r.local_path,
   sizeBytes: r.size_bytes,
   sha256Client: r.sha256_client,
+  location:
+    r.location_status === null
+      ? null
+      : {
+          status: r.location_status as LocationStatus,
+          lat: r.lat,
+          lng: r.lng,
+          accuracyM: r.accuracy_m,
+          atDevice: r.location_at_device,
+        },
   createdAtDevice: r.created_at_device,
   updatedAtDevice: r.updated_at_device,
   ...(r.created_by ? { createdBy: r.created_by } : {}),
@@ -570,7 +590,8 @@ export function createSqliteReturnStore(
         }
         if (current.status === 'confirmed') throw new AppError('RETURN_ALREADY_CONFIRMED');
         await db.runAsync(
-          `INSERT INTO return_media (${MEDIA_COLUMNS}) VALUES (?, ?, ?, 'photo', 'recording', NULL, NULL, NULL, ?, ?, ?)`,
+          `INSERT INTO return_media (id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client, created_at_device, updated_at_device, created_by)
+           VALUES (?, ?, ?, 'photo', 'recording', NULL, NULL, NULL, ?, ?, ?)`,
           [input.id, input.returnId, input.shopId, input.atDevice, input.atDevice, uid()],
         );
         const created = await db.getFirstAsync<MediaRow>(
@@ -594,6 +615,32 @@ export function createSqliteReturnStore(
         await db.runAsync(
           'UPDATE return_media SET state = ?, local_path = ?, size_bytes = ?, sha256_client = ?, updated_at_device = ? WHERE id = ? AND shop_id = ?',
           [m.state, m.localPath, m.sizeBytes, m.sha256Client, m.updatedAtDevice, id, shopId],
+        );
+        return result;
+      }),
+
+    setMediaLocation: (shopId, id, location) =>
+      guarded(async () => {
+        const row = await db.getFirstAsync<MediaRow>(
+          `SELECT ${MEDIA_COLUMNS} FROM return_media WHERE id = ? AND shop_id = ?`,
+          [id, shopId],
+        );
+        if (!row) return { ok: false as const, error: 'MEDIA_NOT_FOUND' as const };
+        const result = applyMediaLocation(toMedia(row), location);
+        if (!result.ok) return result;
+        const l = result.media.location;
+        // `location_status IS NULL`: ghi một lần ở cả tầng SQL, không ghi đè dù có hai lời gọi chen nhau.
+        await db.runAsync(
+          'UPDATE return_media SET lat = ?, lng = ?, accuracy_m = ?, location_at_device = ?, location_status = ? WHERE id = ? AND shop_id = ? AND location_status IS NULL',
+          [
+            l?.lat ?? null,
+            l?.lng ?? null,
+            l?.accuracyM ?? null,
+            l?.atDevice ?? null,
+            l?.status ?? null,
+            id,
+            shopId,
+          ],
         );
         return result;
       }),

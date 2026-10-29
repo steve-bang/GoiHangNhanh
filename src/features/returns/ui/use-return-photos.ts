@@ -3,7 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import type { ReturnCaseId } from '@/core/ids';
 import { logger } from '@/core/logging/logger';
 import { useCurrentShopId } from '@/features/orders';
-import { hashFile, newReturnRecordId, persistRecording, type CameraPhotoHandle } from '@/platform';
+import {
+  getDeviceLocation,
+  hashFile,
+  newReturnRecordId,
+  persistRecording,
+  type CameraPhotoHandle,
+} from '@/platform';
 
 import { useReturnStore } from '../data';
 import { capturePhoto, type PhotoOutcome, type ReturnMedia } from '../domain';
@@ -63,6 +69,7 @@ export function useCaptureReturnPhoto(returnId: ReturnCaseId) {
               const shot = await handle.capture();
               return shot.ok ? shot : { ok: false, reason: 'CAPTURE_FAILED' };
             },
+            locate: () => getDeviceLocation(),
             persist: persistRecording,
             hash: hashFile,
             now: () => Date.now(),

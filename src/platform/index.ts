@@ -50,3 +50,10 @@ export { CameraRecorder } from './camera-recorder';
 export type { CameraRecorderHandle, RecorderResult } from './camera-recorder';
 export { readDeviceCondition, UNKNOWN_DEVICE_CONDITION } from './device-condition';
 export type { DeviceCondition, ThermalLevel } from '@/core/device';
+export {
+  getDeviceLocation,
+  getLocationPermission,
+  LOCATION_TIMEOUT_MS,
+  requestLocationPermission,
+} from './location';
+export type { DeviceLocationOutcome, LocationPermissionStatus } from './location';

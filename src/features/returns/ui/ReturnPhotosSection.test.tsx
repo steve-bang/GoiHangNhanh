@@ -3,6 +3,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import type { ReturnCaseId } from '@/core/ids';
 import { createMemoryOrderStore, LOCAL_SHOP_ID } from '@/features/orders';
 import { mockPhoto, resetMockPhoto } from '@/test-utils/mock-camera-photo';
+import { mockLocation, resetMockLocation } from '@/test-utils/mock-location';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
@@ -38,6 +39,7 @@ const SHA = 'f'.repeat(64);
 beforeEach(() => {
   resetMockNavigation();
   resetMockPhoto();
+  resetMockLocation();
   mockPersist.mockReset();
   mockHash.mockReset();
   mockPersist.mockImplementation((_temp: string, id: string, ext: string) => ({
@@ -99,6 +101,55 @@ describe('UI-D03 Ảnh kiện hàng', () => {
       `1/${MAX_RETURN_PHOTOS} ảnh`,
     );
     expect(screen.queryByText(/Đang tải lên|Đã tải lên|Chờ tải lên/)).toBeNull();
+  });
+
+  describe('vị trí (Q-26k)', () => {
+    it('mở camera thì xin quyền vị trí; ghi chú nói rõ đây là số đọc của máy', async () => {
+      const store = createMemoryReturnStore();
+      const id = await seedReturn(store);
+      await openD03(store, id);
+      expect(screen.getByTestId('return-photos-location-note')).toHaveTextContent(
+        /không chứng minh nơi chụp/,
+      );
+      await fireEvent.press(screen.getByTestId('return-photo-capture'));
+      await screen.findByTestId('return-photo-camera');
+      await waitFor(() => expect(mockLocation.requestCalls).toBe(1));
+    });
+
+    it('có vị trí: hiện "Có vị trí (±N m)", KHÔNG hiện tọa độ và không nói "xác thực"', async () => {
+      const store = createMemoryReturnStore();
+      const id = await seedReturn(store);
+      await openD03(store, id);
+      await takePhoto();
+      const [media] = await waitFor(async () => {
+        const list = await store.listMedia(SHOP, id);
+        expect(list[0]?.location?.status).toBe('ok');
+        return list;
+      });
+      const line = await screen.findByTestId(`return-photo-location-${media?.id}`);
+      expect(line).toHaveTextContent('Có vị trí (±12 m)');
+      expect(screen.queryByText(/10\.77|106\.7/)).toBeNull();
+      expect(screen.queryByText(/xác thực/i)).toBeNull();
+    });
+
+    it.each([
+      ['denied', /Không có vị trí: chưa cho phép vị trí/],
+      ['off', /Không có vị trí: vị trí của máy đang tắt/],
+      ['timeout', /Không có vị trí: chưa có tín hiệu kịp lúc/],
+      ['unavailable', /Không có vị trí: máy không đọc được/],
+    ] as const)('vị trí %s: vẫn chụp và lưu được, ghi rõ lý do', async (status, text) => {
+      mockLocation.nextResult = { ok: false, status };
+      const store = createMemoryReturnStore();
+      const id = await seedReturn(store);
+      await openD03(store, id);
+      await takePhoto();
+      expect(await screen.findByTestId('return-photo-saved')).toBeOnTheScreen();
+      const [media] = await store.listMedia(SHOP, id);
+      expect(media?.state).toBe('queued');
+      expect(await screen.findByTestId(`return-photo-location-${media?.id}`)).toHaveTextContent(
+        text,
+      );
+    });
   });
 
   it('không có nút xóa ảnh', async () => {

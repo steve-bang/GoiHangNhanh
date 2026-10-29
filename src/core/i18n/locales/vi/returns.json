@@ -174,7 +174,8 @@
     "editItems": "Sửa kiểm kê",
     "videoReason": "Lý do: {{reason}}",
     "limitedBadge": "Hạn chế bằng chứng",
-    "photosOnDevice": "Có {{count}} ảnh kiện, mới lưu trên máy này."
+    "photosOnDevice": "Có {{count}} ảnh kiện, mới lưu trên máy này.",
+    "photosLocation": "Có vị trí máy cho {{withLocation}}/{{count}} ảnh. Đây là số đọc của máy, không chứng minh nơi chụp."
   },
   "done": {
     "title": "Đã xác nhận hồ sơ",
@@ -222,6 +223,19 @@
     "permissionAsk": "Cần quyền camera để chụp ảnh kiện hàng.",
     "permissionBlocked": "Camera đang bị tắt. Hãy bật trong Cài đặt để chụp ảnh.",
     "allowCamera": "Cho phép camera",
-    "openSettings": "Mở Cài đặt"
+    "openSettings": "Mở Cài đặt",
+    "locationNote": "Máy ghi thêm vị trí nếu có. Đây là số đọc của máy lúc chụp, không chứng minh nơi chụp thật.",
+    "location": {
+      "has": "Có vị trí (±{{meters}} m)",
+      "hasNoAccuracy": "Có vị trí",
+      "none": "Không có vị trí: {{reason}}",
+      "reasons": {
+        "denied": "chưa cho phép vị trí",
+        "off": "vị trí của máy đang tắt",
+        "timeout": "chưa có tín hiệu kịp lúc",
+        "unavailable": "máy không đọc được",
+        "unknown": "chưa ghi được"
+      }
+    }
   }
 }

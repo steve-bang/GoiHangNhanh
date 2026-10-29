@@ -581,6 +581,84 @@ export function runReturnStoreContract(name: string, create: () => Promise<Retur
           localPath: 'tmp/x.jpg',
         });
       });
+
+      describe('vị trí của ảnh (Q-26k)', () => {
+        const FIX = {
+          status: 'ok' as const,
+          lat: 10.77,
+          lng: 106.7,
+          accuracyM: 9.5,
+          atDevice: 7777,
+        };
+
+        it('ảnh mới tạo chưa có vị trí; ghi một lần sau khi đóng tệp rồi đọc lại đúng', async () => {
+          const store = await create();
+          const { returnCase } = await store.createReturn(makeNewReturn());
+          const created = await store.createMedia(newMedia(returnCase.id, 'm1'));
+          expect(created.location).toBeNull();
+          await toQueued(store, 'm1');
+          const set = await store.setMediaLocation(SHOP, 'm1', FIX);
+          expect(set).toMatchObject({ ok: true, media: { state: 'queued', location: FIX } });
+          expect((await store.listMedia(SHOP, returnCase.id))[0]?.location).toEqual(FIX);
+        });
+
+        it('trạng thái lỗi lưu lý do và không có tọa độ', async () => {
+          const store = await create();
+          const { returnCase } = await store.createReturn(makeNewReturn());
+          await store.createMedia(newMedia(returnCase.id, 'm1'));
+          await toQueued(store, 'm1');
+          await store.setMediaLocation(SHOP, 'm1', {
+            status: 'denied',
+            lat: 1,
+            lng: 2,
+            accuracyM: 3,
+            atDevice: 4,
+          });
+          expect((await store.listMedia(SHOP, returnCase.id))[0]?.location).toEqual({
+            status: 'denied',
+            lat: null,
+            lng: null,
+            accuracyM: null,
+            atDevice: null,
+          });
+        });
+
+        it('không ghi đè vị trí đã có; không ghi khi tệp chưa đóng; sai tọa độ bị từ chối', async () => {
+          const store = await create();
+          const { returnCase } = await store.createReturn(makeNewReturn());
+          await store.createMedia(newMedia(returnCase.id, 'm1'));
+          expect(await store.setMediaLocation(SHOP, 'm1', FIX)).toEqual({
+            ok: false,
+            error: 'ILLEGAL_TRANSITION',
+          });
+          await toQueued(store, 'm1');
+          expect(await store.setMediaLocation(SHOP, 'm1', { ...FIX, lat: 200 })).toEqual({
+            ok: false,
+            error: 'INVALID_LOCATION',
+          });
+          expect((await store.setMediaLocation(SHOP, 'm1', FIX)).ok).toBe(true);
+          expect(await store.setMediaLocation(SHOP, 'm1', { ...FIX, lat: 11 })).toEqual({
+            ok: false,
+            error: 'IMMUTABLE_FIELD',
+          });
+          expect((await store.listMedia(SHOP, returnCase.id))[0]?.location).toEqual(FIX);
+        });
+
+        it('ảnh không tồn tại hoặc của shop khác: MEDIA_NOT_FOUND', async () => {
+          const store = await create();
+          const { returnCase } = await store.createReturn(makeNewReturn());
+          await store.createMedia(newMedia(returnCase.id, 'm1'));
+          await toQueued(store, 'm1');
+          expect(await store.setMediaLocation(OTHER, 'm1', FIX)).toEqual({
+            ok: false,
+            error: 'MEDIA_NOT_FOUND',
+          });
+          expect(await store.setMediaLocation(SHOP, 'nope', FIX)).toEqual({
+            ok: false,
+            error: 'MEDIA_NOT_FOUND',
+          });
+        });
+      });
     });
   });
 }

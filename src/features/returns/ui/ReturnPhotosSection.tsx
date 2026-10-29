@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Image, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import type { ErrorCode } from '@/core/errors/codes';
 import type { ReturnCaseId } from '@/core/ids';
@@ -11,6 +12,7 @@ import {
   CameraPhoto,
   getMinTouchTarget,
   openAppSettings,
+  requestLocationPermission,
   resolveRecordingUri,
   usePhotoPermission,
   type CameraPhotoHandle,
@@ -26,6 +28,7 @@ import {
 } from '@/shared/ui';
 
 import {
+  describeLocation,
   isMediaSavedLocally,
   MAX_RETURN_PHOTOS,
   type PhotoFailure,
@@ -89,6 +92,12 @@ export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhoto
     else setWantsCamera(true);
   };
 
+  // Camera vừa mở: xin quyền vị trí "khi đang dùng app" (một lần, không chặn chụp). Từ chối vẫn chụp được;
+  // ảnh ghi "Không có vị trí" kèm lý do.
+  useEffect(() => {
+    if (open) void requestLocationPermission();
+  }, [open]);
+
   const close = () => {
     setOpen(false);
     setWantsCamera(false);
@@ -131,6 +140,9 @@ export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhoto
       </View>
       <Text variant="caption" color="textMuted">
         {t('returns:photos.hint')}
+      </Text>
+      <Text variant="caption" color="textMuted" testID="return-photos-location-note">
+        {t('returns:photos.locationNote')}
       </Text>
       {emphasize && !full && !locked ? (
         <Text
@@ -357,6 +369,11 @@ function PhotoRow({ item, busy }: { item: ReturnMedia; busy: boolean }) {
             {t(busy ? 'returns:photos.saving' : 'returns:photos.unfinished')}
           </Text>
         )}
+        {hasFile ? (
+          <Text variant="caption" color="textMuted" testID={`return-photo-location-${item.id}`}>
+            {locationText(t, item)}
+          </Text>
+        ) : null}
         {display.kind === 'label' && display.label === 'error' ? (
           <Text variant="caption" color="textMuted">
             {t('returns:photos.failedItem')}
@@ -365,6 +382,19 @@ function PhotoRow({ item, busy }: { item: ReturnMedia; busy: boolean }) {
       </View>
     </View>
   );
+}
+
+/** Dòng vị trí của một ảnh: KHÔNG hiện tọa độ thô, không nói "đã xác thực". */
+function locationText(t: TFunction, item: ReturnMedia): string {
+  const view = describeLocation(item);
+  if (view.kind === 'has') {
+    return view.accuracyM === null
+      ? t('returns:photos.location.hasNoAccuracy')
+      : t('returns:photos.location.has', { meters: view.accuracyM });
+  }
+  return t('returns:photos.location.none', {
+    reason: t(`returns:photos.location.reasons.${view.reason}`),
+  });
 }
 
 const styles = StyleSheet.create({

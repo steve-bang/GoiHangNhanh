@@ -1,7 +1,13 @@
 import type { ReturnCaseId, ShopId } from '@/core/ids';
 import type { FileEvent, FileEventType } from '@/features/evidence';
 
-import { applyMediaEvent, type ReturnMedia } from './media';
+import {
+  applyMediaEvent,
+  applyMediaLocation,
+  describeLocation,
+  type MediaLocation,
+  type ReturnMedia,
+} from './media';
 
 const dev = (type: FileEventType): FileEvent => ({ type, origin: 'device' });
 const SHA = 'c'.repeat(64);
@@ -15,6 +21,7 @@ const base = (overrides: Partial<ReturnMedia> = {}): ReturnMedia => ({
   localPath: null,
   sizeBytes: null,
   sha256Client: null,
+  location: null,
   createdAtDevice: 1,
   updatedAtDevice: 1,
   ...overrides,
@@ -101,5 +108,74 @@ describe('applyMediaEvent', () => {
       ok: true,
       media: { state: 'local_save_failed', localPath: 'tmp/a.jpg' },
     });
+  });
+});
+
+describe('applyMediaLocation / describeLocation (Q-26k)', () => {
+  const queued = (overrides: Partial<ReturnMedia> = {}) =>
+    base({
+      state: 'queued',
+      localPath: 'evidence/m1.jpg',
+      sizeBytes: 9,
+      sha256Client: SHA,
+      ...overrides,
+    });
+  const ok: MediaLocation = { status: 'ok', lat: 10.77, lng: 106.7, accuracyM: 12.4, atDevice: 99 };
+
+  it('ghi vị trí một lần sau khi tệp đã đóng; không đổi trạng thái tệp', () => {
+    const result = applyMediaLocation(queued(), ok);
+    expect(result).toMatchObject({ ok: true, media: { state: 'queued', location: ok } });
+  });
+
+  it('chưa đóng tệp (recording/saving_local/lưu lỗi) thì từ chối', () => {
+    for (const state of ['recording', 'saving_local', 'local_save_failed'] as const) {
+      expect(applyMediaLocation(base({ state }), ok)).toEqual({
+        ok: false,
+        error: 'ILLEGAL_TRANSITION',
+      });
+    }
+  });
+
+  it('đã có vị trí thì không ghi đè (bất biến như mã băm)', () => {
+    const first = applyMediaLocation(queued(), ok);
+    expect(first.ok && applyMediaLocation(first.media, { ...ok, lat: 1 })).toEqual({
+      ok: false,
+      error: 'IMMUTABLE_FIELD',
+    });
+  });
+
+  it('trạng thái lỗi bỏ tọa độ; ok mà thiếu hoặc sai tọa độ thì từ chối', () => {
+    const denied = applyMediaLocation(queued(), { ...ok, status: 'denied' });
+    expect(denied).toMatchObject({
+      ok: true,
+      media: {
+        location: { status: 'denied', lat: null, lng: null, accuracyM: null, atDevice: null },
+      },
+    });
+    for (const bad of [
+      { ...ok, lat: null },
+      { ...ok, lat: 91 },
+      { ...ok, lng: -181 },
+      { ...ok, lng: Number.NaN },
+      { ...ok, accuracyM: -1 },
+      { ...ok, atDevice: null },
+    ]) {
+      expect(applyMediaLocation(queued(), bad)).toEqual({ ok: false, error: 'INVALID_LOCATION' });
+    }
+  });
+
+  it('describeLocation: có vị trí (làm tròn sai số), không có kèm lý do, chưa ghi = unknown; không lộ tọa độ', () => {
+    expect(describeLocation({ location: ok })).toEqual({ kind: 'has', accuracyM: 12 });
+    expect(describeLocation({ location: { ...ok, accuracyM: null } })).toEqual({
+      kind: 'has',
+      accuracyM: null,
+    });
+    expect(
+      describeLocation({
+        location: { status: 'timeout', lat: null, lng: null, accuracyM: null, atDevice: null },
+      }),
+    ).toEqual({ kind: 'none', reason: 'timeout' });
+    expect(describeLocation({ location: null })).toEqual({ kind: 'none', reason: 'unknown' });
+    expect(JSON.stringify(describeLocation({ location: ok }))).not.toContain('10.77');
   });
 });

@@ -17,12 +17,22 @@ export {
   statusAfterLines,
   statusAfterVideoStep,
 } from './return-rules';
-export { applyMediaEvent, isMediaSavedLocally, MAX_RETURN_PHOTOS } from './media';
+export {
+  applyMediaEvent,
+  applyMediaLocation,
+  describeLocation,
+  isMediaSavedLocally,
+  LOCATION_STATUSES,
+  MAX_RETURN_PHOTOS,
+} from './media';
 export { capturePhoto } from './photo-controller';
-export type { PhotoFailure, PhotoOutcome, PhotoPorts } from './photo-controller';
+export type { LocateOutcome, PhotoFailure, PhotoOutcome, PhotoPorts } from './photo-controller';
 export type {
+  LocationDisplay,
+  LocationStatus,
   MediaEventError,
   MediaEventResult,
+  MediaLocation,
   NewReturnMedia,
   ReturnMedia,
   ReturnMediaPatch,

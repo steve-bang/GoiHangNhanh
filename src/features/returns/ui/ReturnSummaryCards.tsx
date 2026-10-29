@@ -4,7 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { toCodeKey } from '@/features/orders';
 import { Card, Icon, Text, useTheme } from '@/shared/ui';
 
-import { compareLine, evidenceLimits, isMediaSavedLocally, type ReturnDetails } from '../domain';
+import {
+  compareLine,
+  describeLocation,
+  evidenceLimits,
+  isMediaSavedLocally,
+  type ReturnDetails,
+} from '../domain';
 import { useReturnMedia } from './use-return-photos';
 
 /** Một khối thông tin có tiêu đề (dùng chung cho màn xác nhận D06 và màn xem/hoàn tất D07). */
@@ -46,7 +52,9 @@ export function ReturnSummaryCards({
   const { tokens } = useTheme();
   const { returnCase, lines, discrepancies } = details;
   const { media } = useReturnMedia(returnCase.id);
-  const photoCount = media === null ? null : media.filter(isMediaSavedLocally).length;
+  const savedPhotos = media === null ? [] : media.filter(isMediaSavedLocally);
+  const photoCount = media === null ? null : savedPhotos.length;
+  const withLocation = savedPhotos.filter((m) => describeLocation(m).kind === 'has').length;
   const limits = evidenceLimits(details, photoCount);
   const kindOf = (lineId: string | null) =>
     discrepancies.filter((d) => d.lineId === lineId).map((d) => t(`returns:items.kinds.${d.kind}`));
@@ -85,6 +93,11 @@ export function ReturnSummaryCards({
         {photoCount !== null && photoCount > 0 ? (
           <Text variant="caption" color="textMuted" testID="return-summary-photos">
             {t('returns:review.photosOnDevice', { count: photoCount })}
+          </Text>
+        ) : null}
+        {photoCount !== null && photoCount > 0 ? (
+          <Text variant="caption" color="textMuted" testID="return-summary-photos-location">
+            {t('returns:review.photosLocation', { withLocation, count: photoCount })}
           </Text>
         ) : null}
       </Section>

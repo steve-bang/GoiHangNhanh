@@ -8,6 +8,23 @@ import { FILE_STATES, transition, type FileEvent, type FileState } from '@/featu
  * TRƯỚC khi chụp (bất biến 2). R2a chỉ có ảnh; hàng đợi tải lên chưa phục vụ bảng này nên tệp dừng ở
  * `queued` ("đã lưu trên máy"), chưa bao giờ tới `uploaded`/`verified` (chỉ sự kiện `origin: 'server'`).
  */
+export const LOCATION_STATUSES = ['ok', 'denied', 'unavailable', 'timeout', 'off'] as const;
+export type LocationStatus = (typeof LOCATION_STATUSES)[number];
+
+/**
+ * Vị trí thiết bị lúc chụp (Q-26k), ghi MỘT lần sau khi tệp đã đóng, bất biến như mã băm. Là số đọc của
+ * máy, KHÔNG chứng minh nơi chụp thật (CLAUDE.md #11). `status !== 'ok'` thì không có tọa độ và
+ * `status` là lý do không lấy được.
+ */
+export interface MediaLocation {
+  readonly status: LocationStatus;
+  readonly lat: number | null;
+  readonly lng: number | null;
+  readonly accuracyM: number | null;
+  /** Giờ THIẾT BỊ (ms) lúc nhận vị trí. */
+  readonly atDevice: number | null;
+}
+
 export interface ReturnMedia {
   readonly id: string;
   readonly shopId: ShopId;
@@ -19,6 +36,8 @@ export interface ReturnMedia {
   readonly sizeBytes: number | null;
   /** SHA-256 do thiết bị tính; chỉ chứng minh tệp không đổi kể từ lúc tính (CLAUDE.md #11). */
   readonly sha256Client: string | null;
+  /** `null` = chưa ghi vị trí (ảnh cũ, hoặc app bị kill trước khi ghi). */
+  readonly location: MediaLocation | null;
   readonly createdAtDevice: number;
   readonly updatedAtDevice: number;
   readonly createdBy?: string;
@@ -43,7 +62,8 @@ export type MediaEventError =
   | 'ORIGIN_NOT_ALLOWED'
   | 'MISSING_FILE_DETAILS'
   | 'IMMUTABLE_FIELD'
-  | 'MEDIA_NOT_FOUND';
+  | 'MEDIA_NOT_FOUND'
+  | 'INVALID_LOCATION';
 
 export type MediaEventResult =
   | { readonly ok: true; readonly media: ReturnMedia }
@@ -105,4 +125,57 @@ export function isMediaSavedLocally(media: Pick<ReturnMedia, 'state'>): boolean 
     media.state !== FILE_STATES.LOCAL_SAVE_FAILED &&
     media.state !== FILE_STATES.UNRECOVERABLE
   );
+}
+
+/**
+ * Ghi vị trí MỘT lần (thuần, không I/O). Chỉ khi tệp đã đóng và lưu bền (như mã băm); đã có vị trí thì
+ * `IMMUTABLE_FIELD` (không ghi đè). `ok` bắt buộc có tọa độ hợp lệ; trạng thái khác thì bỏ tọa độ.
+ */
+export function applyMediaLocation(media: ReturnMedia, location: MediaLocation): MediaEventResult {
+  if (!isMediaSavedLocally(media)) return { ok: false, error: 'ILLEGAL_TRANSITION' };
+  if (media.location !== null) return { ok: false, error: 'IMMUTABLE_FIELD' };
+  if (location.status !== 'ok') {
+    return {
+      ok: true,
+      media: {
+        ...media,
+        location: {
+          status: location.status,
+          lat: null,
+          lng: null,
+          accuracyM: null,
+          atDevice: null,
+        },
+      },
+    };
+  }
+  const { lat, lng, accuracyM } = location;
+  const valid =
+    lat !== null &&
+    lng !== null &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lng) <= 180 &&
+    (accuracyM === null || (Number.isFinite(accuracyM) && accuracyM >= 0)) &&
+    location.atDevice !== null;
+  if (!valid) return { ok: false, error: 'INVALID_LOCATION' };
+  return { ok: true, media: { ...media, location: { ...location } } };
+}
+
+/** Cách nói về vị trí của ảnh trên UI. KHÔNG trả tọa độ thô; không bao giờ nói "đã xác thực". */
+export type LocationDisplay =
+  | { readonly kind: 'has'; readonly accuracyM: number | null }
+  | { readonly kind: 'none'; readonly reason: Exclude<LocationStatus, 'ok'> | 'unknown' };
+
+export function describeLocation(media: Pick<ReturnMedia, 'location'>): LocationDisplay {
+  const location = media.location;
+  if (location === null) return { kind: 'none', reason: 'unknown' };
+  if (location.status === 'ok') {
+    return {
+      kind: 'has',
+      accuracyM: location.accuracyM === null ? null : Math.round(location.accuracyM),
+    };
+  }
+  return { kind: 'none', reason: location.status };
 }

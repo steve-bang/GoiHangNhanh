@@ -265,6 +265,15 @@ export const MIGRATIONS: readonly string[] = [
   );
   CREATE INDEX idx_return_media_return ON return_media (return_id, created_at_device);
   `,
+  // v11 (Q-26k): vị trí thiết bị lúc chụp ảnh hàng hoàn. Chỉ ADD COLUMN nullable (ảnh cũ = NULL = chưa
+  // ghi vị trí). Ghi một lần sau khi đóng tệp; là số đọc của máy, không chứng minh nơi chụp thật.
+  `
+  ALTER TABLE return_media ADD COLUMN lat REAL;
+  ALTER TABLE return_media ADD COLUMN lng REAL;
+  ALTER TABLE return_media ADD COLUMN accuracy_m REAL;
+  ALTER TABLE return_media ADD COLUMN location_at_device INTEGER;
+  ALTER TABLE return_media ADD COLUMN location_status TEXT CHECK (location_status IS NULL OR location_status IN ('ok', 'denied', 'unavailable', 'timeout', 'off'));
+  `,
 ];
 
 /**

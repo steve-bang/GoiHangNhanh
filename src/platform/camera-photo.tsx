@@ -29,8 +29,9 @@ export type PhotoPermission = ScannerPermission;
 export const usePhotoPermission = useScannerPermission;
 
 /**
- * Camera CHỤP ẢNH trên `expo-camera` (`mode="picture"`, `takePictureAsync`). Không dùng micro. Bỏ EXIF
- * (không mang vị trí GPS vào tệp). Tệp trả về nằm ở thư mục TẠM của hệ điều hành nên bên gọi phải chuyển
+ * Camera CHỤP ẢNH trên `expo-camera` (`mode="picture"`, `takePictureAsync`). Không dùng micro. `exif: false`: tùy chọn này chỉ quyết định ảnh trả về có kèm EXIF hay không, KHÔNG nhồi GPS vào tệp;
+ * vị trí thiết bị lưu ở bản ghi ảnh (`platform/location.ts`, Q-26k) là nguồn chính. Hướng ảnh do expo-camera xử lý
+ * (chưa kiểm chứng trên thiết bị). Tệp trả về nằm ở thư mục TẠM của hệ điều hành nên bên gọi phải chuyển
  * vào thư mục bền ngay (`persistRecording`). Chưa kiểm chứng trên thiết bị (độ ổn định, xoay ảnh, bộ nhớ thấp).
  */
 export function CameraPhoto({ handleRef, onReady, onError, style, testID }: CameraPhotoProps) {

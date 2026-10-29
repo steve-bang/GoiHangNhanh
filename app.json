@@ -38,6 +38,20 @@
         }
       ],
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Đơn Chứng dùng vị trí của máy để ghi nơi chụp ảnh kiện hàng hoàn. Nếu không cho phép, bạn vẫn chụp được ảnh.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "locationFullAccuracyPermission": false,
+          "motionUsagePermission": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false,
+          "isAndroidMotionActivityEnabled": false,
+          "isIosBackgroundLocationEnabled": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#F7FAF8",

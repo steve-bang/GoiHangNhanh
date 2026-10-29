@@ -49,6 +49,43 @@ describe('kho SQLite hàng hoàn: schema và người tạo', () => {
     expect(table?.name).toBe('return_media');
   });
 
+  it('migration v11 thêm cột vị trí vào ảnh đã có ở DB v10: ảnh cũ giữ nguyên, vị trí = chưa ghi', async () => {
+    const db = createNodeSqliteDatabase();
+    for (const sql of MIGRATIONS.slice(0, 10)) await db.execAsync(sql);
+    await db.execAsync('PRAGMA user_version = 10');
+    await db.runAsync(
+      `INSERT INTO return_cases (id, shop_id, seq, code, status, created_at_device, updated_at_device)
+       VALUES ('r1', 's', 1, 'HH-00001', 'receiving', 1, 1)`,
+    );
+    // Ảnh có từ TRƯỚC khi nâng cấp (cột của v10).
+    await db.runAsync(
+      `INSERT INTO return_media (id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client, created_at_device, updated_at_device)
+       VALUES ('old', 'r1', 's', 'photo', 'queued', 'evidence/old.jpg', 5, ?, 1, 1)`,
+      ['a'.repeat(64)],
+    );
+    const store = createSqliteReturnStore(db);
+    await store.listReturns('s' as never, 1); // lần dùng đầu nâng DB lên phiên bản mới nhất
+    const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+    expect(version?.user_version).toBe(MIGRATIONS.length);
+    const columns = (await db.getAllAsync<{ name: string }>('PRAGMA table_info(return_media)')).map(
+      (c) => c.name,
+    );
+    expect(columns).toEqual(
+      expect.arrayContaining(['lat', 'lng', 'accuracy_m', 'location_at_device', 'location_status']),
+    );
+    const [old] = await store.listMedia('s' as never, 'r1' as never);
+    expect(old).toMatchObject({ id: 'old', state: 'queued', location: null });
+    expect(
+      await store.setMediaLocation('s' as never, 'old', {
+        status: 'timeout',
+        lat: null,
+        lng: null,
+        accuracyM: null,
+        atDevice: null,
+      }),
+    ).toMatchObject({ ok: true });
+  });
+
   it('gắn uid người tạo khi biết ai đăng nhập (kho đọc uid mỗi lần lưu)', async () => {
     let uid: string | null = 'user-a';
     const store = createSqliteReturnStore(createNodeSqliteDatabase(), { creatorUid: () => uid });

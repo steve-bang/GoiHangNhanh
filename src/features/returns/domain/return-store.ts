@@ -1,7 +1,13 @@
 import type { OrderId, ReturnCaseId, ShopId } from '@/core/ids';
 import type { FileEvent } from '@/features/evidence';
 
-import type { MediaEventResult, NewReturnMedia, ReturnMedia, ReturnMediaPatch } from './media';
+import type {
+  MediaEventResult,
+  MediaLocation,
+  NewReturnMedia,
+  ReturnMedia,
+  ReturnMediaPatch,
+} from './media';
 
 import type {
   Discrepancy,
@@ -141,6 +147,11 @@ export interface ReturnStore {
     atDevice: number,
     patch?: ReturnMediaPatch,
   ): Promise<MediaEventResult>;
-  /** Ảnh/video của hồ sơ, cũ nhất trước. Chỉ thêm, không xóa (bản gốc bất biến). */
+  /**
+   * Ghi vị trí thiết bị của ảnh (Q-26k) MỘT lần, sau khi tệp đã đóng. Đã có vị trí thì `ok: false`
+   * (`IMMUTABLE_FIELD`), không ghi đè. Không đổi trạng thái tệp.
+   */
+  setMediaLocation(shopId: ShopId, id: string, location: MediaLocation): Promise<MediaEventResult>;
+  /** Ảnh/video của hồ sơ, cũ nhất trước. */
   listMedia(shopId: ShopId, returnId: ReturnCaseId): Promise<readonly ReturnMedia[]>;
 }

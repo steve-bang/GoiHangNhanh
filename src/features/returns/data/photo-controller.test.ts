@@ -143,6 +143,7 @@ describe('capturePhoto', () => {
     const broken: PhotoPorts['store'] = {
       createMedia: store.createMedia,
       listMedia: store.listMedia,
+      setMediaLocation: store.setMediaLocation,
       applyMediaEvent: async () => {
         throw new AppError('RETURN_SAVE_FAILED');
       },
@@ -219,5 +220,78 @@ describe('capturePhoto', () => {
       reason: 'ALREADY_CONFIRMED',
     });
     expect(calls).toEqual([]);
+  });
+
+  describe('vị trí (Q-26k)', () => {
+    const FIX = { ok: true as const, lat: 10.77, lng: 106.7, accuracyM: 8.2, atDevice: 12_345 };
+
+    it('có vị trí: lưu cùng ảnh, ảnh vẫn tới queued', async () => {
+      const { store, ports, returnId } = await setup({ locate: async () => FIX });
+      const outcome = await capturePhoto(ports, { shopId: SHOP, returnId });
+      expect(outcome.kind).toBe('saved');
+      const [media] = await listOf(store, returnId);
+      expect(media).toMatchObject({
+        state: 'queued',
+        location: { status: 'ok', lat: 10.77, lng: 106.7, accuracyM: 8.2, atDevice: 12_345 },
+      });
+      expect(outcome.kind === 'saved' && outcome.media.location?.status).toBe('ok');
+    });
+
+    it.each(['denied', 'off', 'timeout', 'unavailable'] as const)(
+      'vị trí %s: vẫn chụp và lưu ảnh, ghi lý do, không có tọa độ',
+      async (status) => {
+        const { store, ports, returnId } = await setup({
+          locate: async () => ({ ok: false, status }),
+        });
+        expect((await capturePhoto(ports, { shopId: SHOP, returnId })).kind).toBe('saved');
+        expect((await listOf(store, returnId))[0]).toMatchObject({
+          state: 'queued',
+          location: { status, lat: null, lng: null, accuracyM: null, atDevice: null },
+        });
+      },
+    );
+
+    it('đọc vị trí ném lỗi: ảnh vẫn lưu, ghi unavailable', async () => {
+      const { store, ports, returnId } = await setup({
+        locate: async () => {
+          throw new Error('gps_crash');
+        },
+      });
+      expect((await capturePhoto(ports, { shopId: SHOP, returnId })).kind).toBe('saved');
+      expect((await listOf(store, returnId))[0]?.location?.status).toBe('unavailable');
+    });
+
+    it('không có cổng vị trí: ảnh lưu, chưa ghi vị trí (null)', async () => {
+      const { store, ports, returnId } = await setup();
+      expect((await capturePhoto(ports, { shopId: SHOP, returnId })).kind).toBe('saved');
+      expect((await listOf(store, returnId))[0]?.location).toBeNull();
+    });
+
+    it('ghi vị trí lỗi (kho): ảnh vẫn là saved (queued), không ném lỗi', async () => {
+      const { store, ports, returnId } = await setup({});
+      const failing: PhotoPorts['store'] = {
+        createMedia: store.createMedia,
+        listMedia: store.listMedia,
+        applyMediaEvent: store.applyMediaEvent,
+        setMediaLocation: async () => {
+          throw new AppError('RETURN_SAVE_FAILED');
+        },
+      };
+      const outcome = await capturePhoto(
+        { ...ports, store: failing, locate: async () => FIX },
+        { shopId: SHOP, returnId },
+      );
+      expect(outcome.kind).toBe('saved');
+      expect((await listOf(store, returnId))[0]).toMatchObject({ state: 'queued', location: null });
+    });
+
+    it('chụp lỗi: không ghi vị trí', async () => {
+      const { store, ports, returnId } = await setup({
+        locate: async () => FIX,
+        capture: async () => ({ ok: false, reason: 'CAPTURE_FAILED' }),
+      });
+      await capturePhoto(ports, { shopId: SHOP, returnId });
+      expect((await listOf(store, returnId))[0]?.location).toBeNull();
+    });
   });
 });
