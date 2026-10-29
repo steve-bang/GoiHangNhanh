@@ -3,7 +3,7 @@ import type { OrderDetails } from '@/features/orders';
 
 import { blankReceivedLine, buildNewReturn, expectedLinesFromOrder } from './build-return';
 import { compareLine, isLineComplete, suggestDiscrepancyKinds } from './compare';
-import { evidenceLimits } from './evidence-limits';
+import { evidenceLimits, hasOpeningEvidenceLimit } from './evidence-limits';
 import { hasDamageSign, isExteriorChosen, toggleExteriorSign } from './exterior';
 import { formatReturnCode } from './return-rules';
 import { matchesFilter, stageOf } from './return-stage';
@@ -154,6 +154,24 @@ describe('hạn chế bằng chứng', () => {
 
   it('đã liên kết đơn gốc thì bỏ "chưa liên kết"', () => {
     expect(evidenceLimits(details({ sourceOrderId: 'o1' as OrderId }))).not.toContain('not_linked');
+  });
+});
+
+describe('hạn chế bằng chứng khi mở kiện', () => {
+  it('chỉ có khi thiếu video mở kiện hoặc kiện đã mở trước khi quay', () => {
+    expect(hasOpeningEvidenceLimit(baseCase)).toBe(false);
+    expect(
+      hasOpeningEvidenceLimit({
+        openingVideo: { kind: 'missing', reason: 'device_problem', atDevice: 1 },
+        openedBefore: null,
+      }),
+    ).toBe(true);
+    expect(
+      hasOpeningEvidenceLimit({
+        openingVideo: null,
+        openedBefore: { reason: 'x', markedAtDevice: 1 },
+      }),
+    ).toBe(true);
   });
 });
 

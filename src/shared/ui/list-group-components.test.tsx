@@ -2,7 +2,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import { StyleSheet, Text as RNText, View } from 'react-native';
 import { createRef } from 'react';
 
-import { colors, layout, semantic } from '@/core/theme';
+import { appColors, colors, layout, semantic } from '@/core/theme';
 import { renderWithProviders } from '@/test-utils/render';
 
 import { Avatar } from './Avatar';
@@ -160,7 +160,7 @@ describe('ConfirmDialog detail và confirmOutlined', () => {
       />,
     );
     expect(flat(screen.getByRole('button', { name: 'Xóa' }))).toMatchObject({
-      backgroundColor: colors.danger,
+      backgroundColor: appColors.danger,
     });
     expect(screen.queryByText('Dòng phụ')).toBeNull();
   });
@@ -182,11 +182,11 @@ describe('ConfirmDialog detail và confirmOutlined', () => {
     );
     expect(screen.getByText('Dòng phụ')).toBeOnTheScreen();
     expect(flat(screen.getByRole('button', { name: 'Xóa' }))).toMatchObject({
-      backgroundColor: colors.surface,
-      borderColor: colors.danger,
+      backgroundColor: appColors.surface,
+      borderColor: appColors.danger,
     });
     expect(flat(screen.getByRole('button', { name: 'Giữ' }))).toMatchObject({
-      backgroundColor: colors.brand,
+      backgroundColor: appColors.brand,
     });
   });
 });

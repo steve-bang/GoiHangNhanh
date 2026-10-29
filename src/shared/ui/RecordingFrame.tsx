@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +11,7 @@ import { fontWeight, layout } from '@/core/theme';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Icon } from './Icon';
 import { Text } from './Text';
-import { useTheme } from './theme';
+import { AppThemeScope, useTheme } from './theme';
 
 interface RecordingFrameProps {
   /** Mã đơn/hồ sơ hiển thị cố định trên màn quay (chỉ để nhìn; liên kết thật dùng ID phiên). */
@@ -66,7 +67,7 @@ interface RecordingFrameProps {
  * màn bằng nút X, nút Back hoặc cử chỉ đều đi qua hộp thoại cảnh báo; KHÔNG có nút thư viện ảnh
  * (O-02 chưa chốt) và không nút chụp ảnh (không có đặc tả), không bộ lọc/làm đẹp/chỉnh sửa.
  */
-export function RecordingFrame({
+function RecordingFrameBody({
   primaryCode,
   secondaryLabel,
   clockLabel,
@@ -362,3 +363,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+/**
+ * Luôn trong phạm vi giao diện app: thành phần này (cùng nút bên trong) có thể hiện ngoài `Screen` (màn
+ * camera, hộp thoại gốc) nên tự bọc `AppThemeScope` để `Button`/`Text` nhận bảng màu của app.
+ */
+export function RecordingFrame(props: ComponentProps<typeof RecordingFrameBody>) {
+  return (
+    <AppThemeScope>
+      <RecordingFrameBody {...props} />
+    </AppThemeScope>
+  );
+}

@@ -22,6 +22,7 @@ import {
 } from '@/shared/ui';
 
 import {
+  hasOpeningEvidenceLimit,
   matchesFilter,
   stageOf,
   type ReturnFilter,
@@ -223,7 +224,9 @@ function ReturnRow({
   const linkLine = returnCase.sourceOrderId
     ? t('returns:list.linkedOrder', { code: orderCode ?? '…' })
     : t('returns:list.unlinked');
-  const showNoVideo = returnCase.status === 'checking' || returnCase.status === 'confirmed';
+  const showLimited =
+    (returnCase.status === 'checking' || returnCase.status === 'confirmed') &&
+    hasOpeningEvidenceLimit(returnCase);
   return (
     <Card
       testID={`return-row-${returnCase.id}`}
@@ -248,10 +251,10 @@ function ReturnRow({
             {t('returns:list.discrepancies', { count: item.discrepancyCount })}
           </Text>
         ) : null}
-        {showNoVideo && returnCase.openingVideo !== null ? (
-          <Text variant="caption" color="textMuted">
-            {t('returns:list.noVideo')}
-          </Text>
+        {showLimited ? (
+          <View style={{ alignSelf: 'flex-start' }} testID={`return-limited-${returnCase.id}`}>
+            <StatusBadge label={t('returns:list.limited')} tone="warning" icon="alert" />
+          </View>
         ) : null}
       </View>
     </Card>

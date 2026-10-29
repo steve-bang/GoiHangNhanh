@@ -85,6 +85,13 @@ export function ReturnSummaryCards({
         <Text variant="formBody">
           {returnCase.openingVideo ? t('returns:review.videoMissing') : '…'}
         </Text>
+        {returnCase.openingVideo ? (
+          <Text variant="caption" color="textMuted" testID="return-video-reason">
+            {t('returns:review.videoReason', {
+              reason: t(`returns:record.skipReasons.${returnCase.openingVideo.reason}`),
+            })}
+          </Text>
+        ) : null}
       </Section>
 
       <Section title={t('returns:review.items')} testID="return-summary-items">

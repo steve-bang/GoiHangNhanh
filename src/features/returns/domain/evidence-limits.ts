@@ -7,6 +7,17 @@ import type { ReturnDetails } from './types';
 export type EvidenceLimit =
   'no_opening_video' | 'opened_before_recording' | 'no_exterior_photo' | 'not_linked';
 
+/**
+ * Hồ sơ có HẠN CHẾ về bằng chứng liên quan tới quá trình mở kiện (thiếu video mở kiện, hoặc kiện đã mở
+ * trước khi quay). Dùng cho nhãn "Hạn chế bằng chứng" ở danh sách và màn xem; mọi nơi sau này dùng hồ sơ
+ * này (tạo tranh chấp, xuất hồ sơ) phải mang nhãn đó theo, không được ẩn (docs/05 B07, B08).
+ */
+export function hasOpeningEvidenceLimit(
+  returnCase: Pick<ReturnDetails['returnCase'], 'openingVideo' | 'openedBefore'>,
+): boolean {
+  return returnCase.openingVideo !== null || returnCase.openedBefore !== null;
+}
+
 export function evidenceLimits(details: ReturnDetails): EvidenceLimit[] {
   const { returnCase } = details;
   const limits: EvidenceLimit[] = [];

@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/core/navigation';
 import { formatDeviceDateTime } from '@/features/orders';
 import { useAppNavigation, useRouteParams } from '@/platform';
-import { Button, Card, Icon, Screen, Text, useTheme } from '@/shared/ui';
+import { Button, Card, Icon, Screen, StatusBadge, Text, useTheme } from '@/shared/ui';
 
-import type { ReturnDetails } from '../domain';
+import { hasOpeningEvidenceLimit, type ReturnDetails } from '../domain';
 import { ReturnLoadState } from './ReturnLoadState';
 import { ReturnSummaryCards } from './ReturnSummaryCards';
 import { resumeRoute } from './return-routes';
@@ -73,6 +73,11 @@ function DoneBody({ details }: { details: ReturnDetails }) {
           <Text variant="formBody" color="inkMuted">
             {t('returns:done.message')}
           </Text>
+          {hasOpeningEvidenceLimit(returnCase) ? (
+            <View style={{ alignSelf: 'flex-start' }} testID="return-done-limited">
+              <StatusBadge label={t('returns:review.limitedBadge')} tone="warning" icon="alert" />
+            </View>
+          ) : null}
           <Text variant="caption" color="textMuted">
             {`${returnCase.code} · ${
               returnCase.confirmedAtDevice !== null

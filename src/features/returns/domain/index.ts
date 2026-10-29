@@ -3,7 +3,7 @@ export * from './return-store';
 export { EXTERIOR_SIGNS, hasDamageSign, isExteriorChosen, toggleExteriorSign } from './exterior';
 export { compareLine, isLineComplete, suggestDiscrepancyKinds } from './compare';
 export type { LineComparison } from './compare';
-export { evidenceLimits } from './evidence-limits';
+export { evidenceLimits, hasOpeningEvidenceLimit } from './evidence-limits';
 export type { EvidenceLimit } from './evidence-limits';
 export { matchesFilter, stageOf } from './return-stage';
 export type { ReturnFilter, ReturnStage } from './return-stage';

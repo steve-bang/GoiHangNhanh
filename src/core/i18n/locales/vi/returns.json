@@ -17,7 +17,8 @@
     "noVideo": "Chưa có video mở kiện",
     "discrepancies": "{{count}} sai lệch",
     "resumeHint": "Chạm để tiếp tục",
-    "localOnly": "Hồ sơ hàng hoàn hiện chỉ lưu trên máy này, chưa đồng bộ lên máy chủ."
+    "localOnly": "Hồ sơ hàng hoàn hiện chỉ lưu trên máy này, chưa đồng bộ lên máy chủ.",
+    "limited": "Hạn chế bằng chứng"
   },
   "stage": {
     "receiving": "Đang tiếp nhận",
@@ -73,8 +74,8 @@
     "notChosen": "Bạn chưa xác nhận tình trạng bên ngoài. Hãy chọn ít nhất một mục.",
     "noteLabel": "Ghi chú (không bắt buộc)",
     "notePlaceholder": "Ví dụ: móp góc phải, băng keo bị cắt",
-    "damageHint": "Có dấu hiệu hư hỏng. Hãy ghi rõ vị trí ở ô ghi chú.",
-    "photoNotice": "Bản này chưa chụp được ảnh kiện. Hồ sơ sẽ ghi rõ là chưa có ảnh bên ngoài.",
+    "damageHint": "Có dấu hiệu hư hỏng. Nên chụp ảnh vị trí đó khi có thể; hiện hãy ghi rõ vị trí ở ô ghi chú.",
+    "photoNotice": "Ảnh kiện bên ngoài là tùy chọn. Bản này chưa chụp được ảnh, hồ sơ sẽ ghi rõ là chưa có ảnh bên ngoài.",
     "openedBeforeLabel": "Kiện đã được mở trước khi tôi bắt đầu quay",
     "openedBeforeReasonLabel": "Lý do (bắt buộc)",
     "openedBeforePlaceholder": "Ví dụ: kiện đã bị mở khi nhận về",
@@ -86,7 +87,17 @@
   "record": {
     "notice": "Bản này chưa ghi được video mở kiện. Hồ sơ sẽ ghi rõ là chưa có video.",
     "leave": "Tiếp tục sang bước kiểm tra hàng. Hồ sơ ghi nhận chưa có video mở kiện.",
-    "unlinked": "Chưa liên kết đơn gốc"
+    "unlinked": "Chưa liên kết đơn gốc",
+    "skipTitle": "Tiếp tục không có video mở kiện?",
+    "skipMessage": "Video mở kiện là bằng chứng quan trọng nhất của hồ sơ này. Bỏ qua thì hồ sơ vẫn xác nhận được nhưng sẽ mang nhãn hạn chế bằng chứng.",
+    "skipReasonLabel": "Vì sao chưa có video?",
+    "skipReasons": {
+      "recorder_unavailable": "Bản này chưa quay được video",
+      "opened_before_recording": "Kiện đã được mở trước khi quay",
+      "device_problem": "Máy hoặc camera gặp sự cố",
+      "user_skipped": "Tôi chọn bỏ qua việc quay"
+    },
+    "skipConfirm": "Tiếp tục không có video"
   },
   "items": {
     "intro": "Nhập hàng thực nhận. Dữ liệu đơn gốc được giữ nguyên, không bị ghi đè.",
@@ -161,7 +172,9 @@
     "finalNoteLabel": "Ghi chú cuối (không bắt buộc)",
     "confirm": "Xác nhận hồ sơ",
     "saveLater": "Lưu tạm, về danh sách",
-    "editItems": "Sửa kiểm kê"
+    "editItems": "Sửa kiểm kê",
+    "videoReason": "Lý do: {{reason}}",
+    "limitedBadge": "Hạn chế bằng chứng"
   },
   "done": {
     "title": "Đã xác nhận hồ sơ",

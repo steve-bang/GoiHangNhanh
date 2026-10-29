@@ -178,6 +178,20 @@ describe('UI-D01 Danh sách hàng hoàn (dữ liệu thật)', () => {
     expect(screen.queryByTestId(`return-row-${linked.returnCase.id}`)).toBeNull();
   });
 
+  it('hồ sơ đã tới bước kiểm tra mà thiếu video mang nhãn "Hạn chế bằng chứng"; hồ sơ mới tạo thì chưa', async () => {
+    const store = createMemoryReturnStore();
+    const fresh = await seedReturn(store, { atDevice: 1_000 });
+    const checking = await seedReturn(store, { stage: 'checking', atDevice: 2_000 });
+    const confirmed = await seedReturn(store, { stage: 'confirmed', atDevice: 3_000 });
+    await open(store);
+    await screen.findByTestId(`return-row-${fresh.returnCase.id}`);
+    expect(screen.queryByTestId(`return-limited-${fresh.returnCase.id}`)).toBeNull();
+    expect(screen.getByTestId(`return-limited-${checking.returnCase.id}`)).toHaveTextContent(
+      /Hạn chế bằng chứng/,
+    );
+    expect(screen.getByTestId(`return-limited-${confirmed.returnCase.id}`)).toBeOnTheScreen();
+  });
+
   it('lỗi đọc: báo lỗi có Thử lại, không hiện danh sách rỗng giả', async () => {
     const base = createMemoryReturnStore();
     let fail = true;
@@ -511,12 +525,34 @@ describe('UI-D04 Quay video mở kiện (chưa nối camera ở R1)', () => {
     expect(screen.getByText(/chưa ghi được video mở kiện/)).toBeOnTheScreen();
   });
 
-  it('Dừng quay: ghi nhận "chưa có video mở kiện" (không tạo video giả) rồi sang kiểm hàng', async () => {
+  it('Dừng quay chưa có video: HỎI lý do trước, chưa lưu gì và chưa chuyển bước; đóng bảng thì ở lại màn', async () => {
     const store = createMemoryReturnStore();
     const made = await seedReturn(store, { stage: 'opening' });
     await open(store, made.returnCase.id);
     await screen.findByText('Xem trước');
     await fireEvent.press(screen.getByRole('button', { name: 'Dừng quay' }));
+    expect(await screen.findByText('Tiếp tục không có video mở kiện?')).toBeOnTheScreen();
+    expect(screen.getByText(/bằng chứng quan trọng nhất/)).toBeOnTheScreen();
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    expect((await store.getReturn(SHOP, made.returnCase.id))?.returnCase.openingVideo).toBeNull();
+    const closers = screen.getAllByRole('button', { name: 'Đóng' });
+    await fireEvent.press(closers[closers.length - 1] as never);
+    await waitFor(() => expect(screen.queryByTestId('return-skip-sheet')).toBeNull());
+    expect((await store.getReturn(SHOP, made.returnCase.id))?.returnCase.status).toBe('opening');
+  });
+
+  it('chọn lý do rồi "Tiếp tục không có video": ghi nhận đúng lý do (không tạo video giả) và sang kiểm hàng', async () => {
+    const store = createMemoryReturnStore();
+    const made = await seedReturn(store, { stage: 'opening' });
+    await open(store, made.returnCase.id);
+    await screen.findByText('Xem trước');
+    await fireEvent.press(screen.getByRole('button', { name: 'Dừng quay' }));
+    await screen.findByTestId('return-skip-sheet');
+    // Mặc định là lý do đúng với bản này; người dùng đổi được sang lý do khác.
+    expect(screen.getByTestId('return-skip-reason-recorder_unavailable')).toBeSelected();
+    await fireEvent.press(screen.getByTestId('return-skip-reason-device_problem'));
+    expect(screen.getByTestId('return-skip-reason-device_problem')).toBeSelected();
+    await fireEvent.press(screen.getByTestId('return-skip-confirm'));
     await waitFor(() =>
       expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.returnItems, {
         returnId: made.returnCase.id,
@@ -526,11 +562,11 @@ describe('UI-D04 Quay video mở kiện (chưa nối camera ở R1)', () => {
     expect(saved?.returnCase.status).toBe('checking');
     expect(saved?.returnCase.openingVideo).toMatchObject({
       kind: 'missing',
-      reason: 'recorder_unavailable',
+      reason: 'device_problem',
     });
   });
 
-  it('kiện đã mở trước: lý do thiếu video là "opened_before_recording"', async () => {
+  it('kiện đã mở trước: chỉ còn lý do đúng sự thật "đã mở trước khi quay", không cho chọn lý do mâu thuẫn', async () => {
     const store = createMemoryReturnStore();
     const made = await seedReturn(store);
     await store.saveExterior(SHOP, made.returnCase.id, {
@@ -542,13 +578,30 @@ describe('UI-D04 Quay video mở kiện (chưa nối camera ở R1)', () => {
     await open(store, made.returnCase.id);
     await screen.findByText('Xem trước');
     await fireEvent.press(screen.getByRole('button', { name: 'Dừng quay' }));
+    await screen.findByTestId('return-skip-sheet');
+    expect(screen.queryByTestId('return-skip-reason-user_skipped')).toBeNull();
+    expect(screen.queryByTestId('return-skip-reason-recorder_unavailable')).toBeNull();
+    expect(screen.getByTestId('return-skip-reason-opened_before_recording')).toBeSelected();
+    await fireEvent.press(screen.getByTestId('return-skip-confirm'));
     await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
     expect((await store.getReturn(SHOP, made.returnCase.id))?.returnCase.openingVideo?.reason).toBe(
       'opened_before_recording',
     );
   });
 
-  it('mở lại sau khi đã ghi nhận: không ghi thêm lịch sử', async () => {
+  it('rời màn rồi "Kết thúc phiên" cũng phải qua bước hỏi lý do (không bỏ qua video âm thầm)', async () => {
+    const store = createMemoryReturnStore();
+    const made = await seedReturn(store, { stage: 'opening' });
+    await open(store, made.returnCase.id);
+    await screen.findByText('Xem trước');
+    await fireEvent.press(screen.getByRole('button', { name: 'Rời màn quay' }));
+    expect(screen.getByText(/sang bước kiểm tra hàng/)).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Kết thúc phiên' }));
+    expect(await screen.findByTestId('return-skip-sheet')).toBeOnTheScreen();
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+  });
+
+  it('mở lại sau khi đã ghi nhận: không hỏi lại và không ghi thêm lịch sử', async () => {
     const store = createMemoryReturnStore();
     const made = await seedReturn(store, { stage: 'checking' });
     const before = made.events.length;
@@ -556,6 +609,7 @@ describe('UI-D04 Quay video mở kiện (chưa nối camera ở R1)', () => {
     await screen.findByText('Xem trước');
     await fireEvent.press(screen.getByRole('button', { name: 'Dừng quay' }));
     await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+    expect(screen.queryByTestId('return-skip-sheet')).toBeNull();
     expect((await store.getReturn(SHOP, made.returnCase.id))?.events).toHaveLength(before);
   });
 
@@ -878,6 +932,18 @@ describe('UI-D07 Hoàn tất tiếp nhận / xem hồ sơ', () => {
     expect(screen.getByText('Xác nhận hồ sơ')).toBeOnTheScreen();
     expect(screen.getByTestId('return-summary-limits')).toBeOnTheScreen();
     expect(screen.queryByText(/đã sao lưu|an toàn trên máy chủ/i)).toBeNull();
+  });
+
+  it('hồ sơ xác nhận khi thiếu video vẫn mang nhãn "Hạn chế bằng chứng" và nêu lý do thiếu video', async () => {
+    const store = createMemoryReturnStore();
+    const made = await seedReturn(store, { stage: 'confirmed' });
+    await open(store, made.returnCase.id);
+    expect(await screen.findByTestId('return-done-limited')).toHaveTextContent(
+      /Hạn chế bằng chứng/,
+    );
+    expect(screen.getByTestId('return-video-reason')).toHaveTextContent(
+      /Lý do: Bản này chưa quay được video/,
+    );
   });
 
   it('hồ sơ chưa liên kết có "Liên kết đơn gốc" mở UI-D02 chế độ liên kết bằng ID hồ sơ', async () => {

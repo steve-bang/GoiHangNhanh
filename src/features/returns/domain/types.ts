@@ -28,7 +28,7 @@ export interface OpenedBefore {
 
 /** Vì sao hồ sơ chưa có video mở kiện. Không bao giờ tạo video thay thế (bất biến 6). */
 export type MissingVideoReason =
-  'recorder_unavailable' | 'opened_before_recording' | 'user_skipped';
+  'recorder_unavailable' | 'opened_before_recording' | 'device_problem' | 'user_skipped';
 
 /**
  * Trạng thái video mở kiện của hồ sơ. R1 chỉ có `missing` (ghi video thật chưa bật và chưa kiểm
