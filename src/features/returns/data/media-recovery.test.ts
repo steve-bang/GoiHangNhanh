@@ -93,7 +93,7 @@ describe('recoverInterruptedMedia: khôi phục sau khi app bị kill', () => {
     await makeMedia(t.store, returnId, 'v1', 'video', 'recording');
     await makeMedia(t.store, returnId, 'p1', 'photo', 'recording');
     const result = await recoverInterruptedMedia(t.ports, STARTED);
-    expect(result).toEqual({ interrupted: 2, lost: 2, rescued: 0 });
+    expect(result).toEqual({ interrupted: 2, lost: 2, rescued: 0, storeFailed: false });
     expect((await stateOf(t.store, SHOP, returnId, 'v1'))?.state).toBe('unrecoverable');
     expect((await stateOf(t.store, SHOP, returnId, 'p1'))?.state).toBe('unrecoverable');
     expect((await t.store.getReturn(SHOP, returnId))?.returnCase.openingVideo).toBeNull();
@@ -107,7 +107,7 @@ describe('recoverInterruptedMedia: khôi phục sau khi app bị kill', () => {
     t.files.add('evidence/p1.jpg');
     t.durable.set('p1', 'evidence/p1.jpg');
     const result = await recoverInterruptedMedia(t.ports, STARTED);
-    expect(result).toEqual({ interrupted: 1, lost: 0, rescued: 1 });
+    expect(result).toEqual({ interrupted: 1, lost: 0, rescued: 1, storeFailed: false });
     expect(await stateOf(t.store, SHOP, returnId, 'p1')).toMatchObject({
       state: 'queued',
       localPath: 'evidence/p1.jpg',
@@ -155,7 +155,7 @@ describe('recoverInterruptedMedia: khôi phục sau khi app bị kill', () => {
     });
     t.files.add('evidence/v1.mov');
     const result = await recoverInterruptedMedia(t.ports, STARTED);
-    expect(result).toEqual({ interrupted: 0, lost: 0, rescued: 1 });
+    expect(result).toEqual({ interrupted: 0, lost: 0, rescued: 1, storeFailed: false });
     expect((await t.store.getReturn(SHOP, returnId))?.returnCase.openingVideo).toMatchObject({
       kind: 'recorded',
       interrupted: false,
@@ -167,7 +167,7 @@ describe('recoverInterruptedMedia: khôi phục sau khi app bị kill', () => {
     const returnId = await makeCase(t.store);
     await makeMedia(t.store, returnId, 'v1', 'video', 'saving_local');
     const result = await recoverInterruptedMedia(t.ports, STARTED);
-    expect(result).toEqual({ interrupted: 1, lost: 1, rescued: 0 });
+    expect(result).toEqual({ interrupted: 1, lost: 1, rescued: 0, storeFailed: false });
     expect((await stateOf(t.store, SHOP, returnId, 'v1'))?.state).toBe('unrecoverable');
     expect((await t.store.getReturn(SHOP, returnId))?.returnCase.openingVideo).toBeNull();
   });
@@ -200,6 +200,7 @@ describe('recoverInterruptedMedia: khôi phục sau khi app bị kill', () => {
       interrupted: 0,
       lost: 0,
       rescued: 0,
+      storeFailed: false,
     });
     expect((await stateOf(t.store, SHOP, returnId, 'now-rec'))?.state).toBe('recording');
     expect((await stateOf(t.store, SHOP, returnId, 'now-save'))?.state).toBe('saving_local');
@@ -232,7 +233,7 @@ describe('recoverInterruptedMedia: khôi phục sau khi app bị kill', () => {
     await t.store.createMedia({ id: 'p1', shopId: SHOP, returnId, kind: 'photo', atDevice: 100 });
     await t.store.applyMediaEvent(SHOP, 'p1', dev('LOCAL_WRITE_FAILED'), 101);
     const result = await recoverInterruptedMedia(t.ports, STARTED);
-    expect(result).toEqual({ interrupted: 0, lost: 0, rescued: 0 });
+    expect(result).toEqual({ interrupted: 0, lost: 0, rescued: 0, storeFailed: false });
     expect((await stateOf(t.store, SHOP, returnId, 'p1'))?.state).toBe('local_save_failed');
   });
 
@@ -245,6 +246,7 @@ describe('recoverInterruptedMedia: khôi phục sau khi app bị kill', () => {
       interrupted: 0,
       lost: 0,
       rescued: 0,
+      storeFailed: true, // báo để UI thử lại có giới hạn
     });
   });
 });

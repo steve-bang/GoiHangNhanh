@@ -49,6 +49,36 @@ async function seed(store: ReturnType<typeof createMemoryReturnStore>) {
 }
 
 describe('ReturnMediaRecovery', () => {
+  it('kho lỗi lúc đọc: hẹn thử lại có giới hạn rồi khôi phục được ở lần sau', async () => {
+    const store = createMemoryReturnStore();
+    const id = await seed(store);
+    mockExisting.add('evidence/p-save.jpg');
+    const real = store.listUnfinishedMedia.bind(store);
+    let calls = 0;
+    store.listUnfinishedMedia = async () => {
+      calls += 1;
+      if (calls === 1) throw new Error('db');
+      return real();
+    };
+    // Rút ngắn hẹn giờ thử lại (15 giây) để không chờ thật.
+    const realSetTimeout = global.setTimeout;
+    const spy = jest
+      .spyOn(global, 'setTimeout')
+      .mockImplementation(((fn: () => void, ms?: number) =>
+        realSetTimeout(fn, ms === 15_000 ? 5 : ms)) as unknown as typeof setTimeout);
+    try {
+      await renderWithProviders(<ReturnMediaRecovery />, { returnStore: store });
+      await waitFor(async () =>
+        expect((await store.listMedia(SHOP, id)).find((m) => m.id === 'p-save')?.state).toBe(
+          'queued',
+        ),
+      );
+      expect(calls).toBe(2); // lần 1 lỗi kho, lần 2 (sau hẹn giờ) khôi phục được
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('khôi phục ảnh dở dang khi mở app: cứu ảnh còn tệp, đánh dấu ảnh không còn tệp, báo một thông báo ngắn', async () => {
     const store = createMemoryReturnStore();
     const id = await seed(store);

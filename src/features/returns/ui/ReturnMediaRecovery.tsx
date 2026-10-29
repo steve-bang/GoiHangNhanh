@@ -43,6 +43,14 @@ export function ReturnMediaRecovery() {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
+    /** Chưa đọc được kho: gỡ đánh dấu, hẹn thử lại giãn cách tăng dần; hết lượt thì chờ lần mở app sau. */
+    const retryLater = (attempt: number): void => {
+      recovered.delete(store);
+      if (!cancelled && attempt < MAX_ATTEMPTS) {
+        timer = setTimeout(() => void run(attempt + 1), RETRY_DELAY_MS * attempt);
+      }
+    };
+
     const run = async (attempt: number): Promise<void> => {
       if (cancelled || recovered.has(store)) return;
       recovered.add(store);
@@ -62,12 +70,9 @@ export function ReturnMediaRecovery() {
         if (result.interrupted > 0 && !cancelled) {
           toast.show(t('returns:recovery.notice'), { tone: 'info', durationMs: 0 });
         }
+        if (result.storeFailed) retryLater(attempt);
       } catch {
-        // Chưa đọc được kho: gỡ đánh dấu và hẹn thử lại bằng đồng hồ riêng; hết lượt thì chờ lần mở app sau.
-        recovered.delete(store);
-        if (!cancelled && attempt < MAX_ATTEMPTS) {
-          timer = setTimeout(() => void run(attempt + 1), RETRY_DELAY_MS * attempt);
-        }
+        retryLater(attempt); // phòng thủ: hàm khôi phục không ném lỗi, nhưng cổng nền tảng có thể
       }
     };
 

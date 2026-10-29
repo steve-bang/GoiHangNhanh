@@ -38,6 +38,8 @@ export interface MediaRecoveryResult {
   readonly lost: number;
   /** Số media cứu được (đã vào hàng đợi). */
   readonly rescued: number;
+  /** `true` nếu kho cục bộ lỗi giữa chừng nên có thể còn media chưa xử lý: bên gọi nên thử lại sau. */
+  readonly storeFailed: boolean;
 }
 
 const device = (type: FileEventType): FileEvent => ({ type, origin: 'device' });
@@ -112,7 +114,7 @@ async function completeLocalSave(
  * - `local_save_failed` còn đường dẫn: thử lại cùng quy trình.
  * Video cứu được từ `saving_local` mà hồ sơ chưa có kết luận về video thì ghi vào hồ sơ là GIÁN ĐOẠN
  * (A05: không tự nhận là đầy đủ); video cứu từ `local_save_failed` (camera đã dừng bình thường) ghi là đầy
- * đủ. Ảnh không ảnh hưởng hồ sơ. Không bao giờ xóa tệp. Không ném lỗi.
+ * đủ. Ảnh không ảnh hưởng hồ sơ. Không bao giờ xóa tệp. Không ném lỗi (lỗi kho báo qua `storeFailed`).
  */
 export async function recoverInterruptedMedia(
   ports: MediaRecoveryPorts,
@@ -122,6 +124,7 @@ export async function recoverInterruptedMedia(
   let interrupted = 0;
   let lost = 0;
   let rescued = 0;
+  let storeFailed = false;
   try {
     for (const listed of await store.listUnfinishedMedia()) {
       if (listed.createdAtDevice >= startedBefore) continue;
@@ -166,9 +169,10 @@ export async function recoverInterruptedMedia(
       }
     }
   } catch {
-    // lỗi kho cục bộ: dừng, lần mở app sau chạy lại
+    // lỗi kho cục bộ: dừng; bên gọi thử lại có giới hạn, hết lượt thì lần mở app sau chạy lại
+    storeFailed = true;
   }
-  return { interrupted, lost, rescued };
+  return { interrupted, lost, rescued, storeFailed };
 }
 
 async function recordRescuedVideo(
