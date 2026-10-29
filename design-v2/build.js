@@ -1,5 +1,8 @@
 const fs=require('fs'),path=require('path');const {chromium}=require('playwright');
-const L=require('./lib');const S=[...require('./screens1'),...require('./screens2'),...require('./screens3')];
+const L=require('./lib');let S=[...require('./screens4'),...require('./screens1'),...require('./screens2'),...require('./screens3')];
+S.forEach(x=>{if(x.group==='Thiết lập')x.group='Vào app & thiết lập';});
+const ORDER=['Vào app & thiết lập','Đóng gói','Quay & lưu','Hàng hoàn','Đơn hàng','Đơn hàng (bổ sung)','Đồng bộ & lưu trữ','Tranh chấp','Gói dịch vụ','Cá nhân','Cá nhân (màn con)','Ngoại lệ'];
+S.sort((a,b)=>ORDER.indexOf(a.group)-ORDER.indexOf(b.group));
 const out=path.join(__dirname,'png');fs.mkdirSync(out,{recursive:true});
 (async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
 for(const s of S){await p.setContent(`<html><head><meta charset=utf-8><style>${L.css}</style></head><body>${s.html}</body></html>`);await p.waitForTimeout(30);
