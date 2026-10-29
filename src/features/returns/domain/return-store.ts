@@ -201,6 +201,12 @@ export interface ReturnStore {
     states: readonly FileState[],
     uid: string,
   ): Promise<readonly ReturnMedia[]>;
+  /**
+   * Media còn DỞ DANG (`recording`, `saving_local`, `local_save_failed`) của MỌI shop trên máy này, cũ
+   * nhất trước. Chỉ để khôi phục sau khi app bị đóng giữa chừng (thao tác ở thiết bị, như
+   * `EvidenceFileStore.listShopsWithStates`); không dùng để hiển thị.
+   */
+  listUnfinishedMedia(): Promise<readonly ReturnMedia[]>;
   /** Ảnh/video của hồ sơ, cũ nhất trước. */
   listMedia(shopId: ShopId, returnId: ReturnCaseId): Promise<readonly ReturnMedia[]>;
 }

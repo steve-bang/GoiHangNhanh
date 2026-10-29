@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { isAppError } from '@/core/errors/app-error';
@@ -7,11 +6,13 @@ import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
 import { logger } from '@/core/logging/logger';
 import { ROUTES } from '@/core/navigation';
 import { useAppNavigation, useRouteParams } from '@/platform';
-import { getMinTouchTarget } from '@/platform';
-import { BottomSheet, Button, Icon, RecordingFrame, Text, useTheme, useToast } from '@/shared/ui';
+import { RECORDER_ENABLED } from '@/core/config/recorder';
+import { RecordingFrame, useToast } from '@/shared/ui';
 
 import type { MissingVideoReason, ReturnDetails } from '../domain';
 import { ReturnLoadState } from './ReturnLoadState';
+import { ReturnRecordLive } from './ReturnRecordLive';
+import { SkipReasonSheet } from './ReturnSkipSheet';
 import { resumeRoute } from './return-routes';
 import { useReturnCase } from './use-return-case';
 import { useReturnOps } from './use-return-ops';
@@ -22,10 +23,10 @@ const PLACEHOLDER_CLOCK = '00:00';
  * UI-D04 Quay video mở kiện (đặc tả B04 + B05). Dùng chung khung với màn quay đóng gói để giảm học,
  * nhưng hướng dẫn khác: quay từ TRƯỚC khi mở niêm phong. Không có thanh tab, rời màn phải qua cảnh báo.
  *
- * R1: luồng ghi video mở kiện CHƯA nối camera (ghi video đóng gói còn sau cờ và chưa kiểm chứng trên
- * thiết bị; ADR-020), nên màn này LUÔN là xem trước (`recording={false}`, kể cả khi bật cờ ghi video
- * của đóng gói: không bao giờ hiện "Đang quay" khi không có tệp; bất biến 3, 11). Dừng/kết thúc phiên
- * ghi nhận hồ sơ "chưa có video mở kiện" (kèm lý do) rồi sang kiểm hàng: không tạo video giả (bất biến 6).
+ * Cờ `RECORDER_ENABLED` BẬT (ADR-020, R2b/Q-28): quay thật qua `ReturnRecordLive` (chưa kiểm chứng trên
+ * thiết bị). Cờ TẮT (mặc định): màn này LUÔN là xem trước (`recording={false}`): không bao giờ hiện
+ * "Đang quay" khi không có tệp (bất biến 3, 11). Dừng/kết thúc phiên ghi nhận hồ sơ "chưa có video mở
+ * kiện" (kèm lý do) rồi sang kiểm hàng: không tạo video giả (bất biến 6).
  */
 export function ReturnRecordScreen() {
   const params = useRouteParams();
@@ -33,7 +34,11 @@ export function ReturnRecordScreen() {
   if (state.kind !== 'ready') {
     return <ReturnLoadState uiCode="UI-D04" state={state} onRetry={reload} />;
   }
-  return <RecordBody details={state.details} />;
+  return RECORDER_ENABLED ? (
+    <ReturnRecordLive details={state.details} />
+  ) : (
+    <RecordBody details={state.details} />
+  );
 }
 
 const REASONS: readonly MissingVideoReason[] = [
@@ -44,7 +49,6 @@ const REASONS: readonly MissingVideoReason[] = [
 
 function RecordBody({ details }: { details: ReturnDetails }) {
   const { t } = useTranslation();
-  const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const ops = useReturnOps();
   const toast = useToast();
@@ -110,63 +114,15 @@ function RecordBody({ details }: { details: ReturnDetails }) {
         onStop={request}
         onEndSession={request}
       />
-      <BottomSheet
+      <SkipReasonSheet
         visible={asking}
         onClose={() => setAsking(false)}
-        title={t('returns:record.skipTitle')}
-      >
-        <View testID="return-skip-sheet" style={{ gap: tokens.space.md }}>
-          <Text variant="formBody">{t('returns:record.skipMessage')}</Text>
-          <Text variant="formButton" accessibilityRole="header">
-            {t('returns:record.skipReasonLabel')}
-          </Text>
-          <View accessibilityRole="radiogroup" style={{ gap: tokens.space.xs }}>
-            {options.map((option) => {
-              const selected = option === reason;
-              return (
-                <Pressable
-                  key={option}
-                  testID={`return-skip-reason-${option}`}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected, checked: selected }}
-                  onPress={() => setReason(option)}
-                  style={{
-                    minHeight: getMinTouchTarget(),
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: tokens.space.md,
-                    paddingHorizontal: tokens.space.md,
-                    borderRadius: tokens.radius.md,
-                    borderWidth: selected ? tokens.borderWidth.emphasis : tokens.borderWidth.thin,
-                    borderColor: selected
-                      ? tokens.color.brand.primary
-                      : tokens.color.border.default,
-                    backgroundColor: selected
-                      ? tokens.color.brand.soft
-                      : tokens.color.surface.raised,
-                  }}
-                >
-                  <Icon
-                    name={selected ? 'check-circle' : 'forward'}
-                    size={tokens.icon.lg}
-                    color={selected ? tokens.color.brand.primary : tokens.color.text.tertiary}
-                  />
-                  <Text variant="formBody" style={{ flex: 1, flexShrink: 1 }}>
-                    {t(`returns:record.skipReasons.${option}`)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          <Button
-            testID="return-skip-confirm"
-            label={t('returns:record.skipConfirm')}
-            loading={busy}
-            disabled={busy}
-            onPress={() => void goNext(reason)}
-          />
-        </View>
-      </BottomSheet>
+        options={options}
+        reason={reason}
+        onSelect={setReason}
+        busy={busy}
+        onConfirm={() => void goNext(reason)}
+      />
     </>
   );
 }

@@ -96,7 +96,29 @@
       "device_problem": "Máy hoặc camera gặp sự cố",
       "user_skipped": "Tôi chọn bỏ qua việc quay"
     },
-    "skipConfirm": "Tiếp tục không có video"
+    "skipConfirm": "Tiếp tục không có video",
+    "live": {
+      "saveFailed": "Chưa lưu được video mở kiện. Bạn ghi nhận lý do rồi tiếp tục kiểm hàng.",
+      "storageFull": "Máy đã đầy bộ nhớ nên chưa lưu được video. Hãy giải phóng dung lượng.",
+      "recorderFailed": "Camera dừng đột ngột. Video chưa được lưu.",
+      "startFailed": "Chưa bắt đầu quay được. Bạn có thể ghi nhận lý do rồi tiếp tục.",
+      "insufficientStorage": "Máy cần đủ chỗ cho {{minutes}} phút quay. Hãy giải phóng dung lượng rồi thử lại.",
+      "notReady": "Hồ sơ chưa sẵn sàng quay mở kiện. Hãy quay lại bước trước.",
+      "attempted": "Lần quay trước chưa lưu được. Kiện có thể đã mở, hãy ghi nhận lý do chưa có video.",
+      "reconciling": "Đang ghi video đã lưu vào hồ sơ…",
+      "reconcileFailed": "Video đã lưu trên máy nhưng chưa ghi được vào hồ sơ. Bạn thử lại nhé.",
+      "retry": "Thử lại",
+      "done": "Bước video mở kiện đã xong.",
+      "continue": "Tiếp tục kiểm hàng",
+      "noteReason": "Ghi nhận lý do chưa có video",
+      "backToList": "Về danh sách hàng hoàn",
+      "leavePreparing": "Chưa bắt đầu ghi video. Thoát sẽ quay về danh sách hàng hoàn.",
+      "leaveSaving": "Video đang được lưu trên máy. Bạn có thể về danh sách, việc lưu vẫn tiếp tục.",
+      "loading": "Đang kiểm tra hồ sơ…"
+    }
+  },
+  "recovery": {
+    "notice": "Lần chụp hoặc quay hàng hoàn trước bị gián đoạn. Hãy mở hồ sơ để kiểm tra."
   },
   "items": {
     "intro": "Nhập hàng thực nhận. Dữ liệu đơn gốc được giữ nguyên, không bị ghi đè.",

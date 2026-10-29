@@ -255,7 +255,8 @@ async function seedReturnWithPhoto(
   returns: ReturnStore,
   returnId: string,
   mediaId: string,
-  state: 'queued' | 'local_save_failed',
+  state: 'queued' | 'local_save_failed' | 'verified',
+  kind: 'photo' | 'video' = 'photo',
 ) {
   if (!(await returns.getReturn(SHOP, returnId as ReturnCaseId))) {
     await returns.createReturn({
@@ -272,16 +273,28 @@ async function seedReturnWithPhoto(
     id: mediaId,
     shopId: SHOP,
     returnId: returnId as ReturnCaseId,
-    kind: 'photo',
+    kind,
     atDevice: 150,
   });
   const apply = (
     type: 'STOP_RECORDING' | 'LOCAL_FILE_READABLE' | 'LOCAL_WRITE_FAILED',
     patch?: object,
   ) => returns.applyMediaEvent(SHOP, mediaId, { type, origin: 'device' }, 151, patch);
+  const applyUpload = (
+    type: 'UPLOAD_STARTED' | 'SERVER_RECEIVED' | 'SERVER_VERIFIED',
+    origin: 'device' | 'server',
+  ) => returns.applyMediaEvent(SHOP, mediaId, { type, origin }, 152);
   await apply('STOP_RECORDING', { localPath: 'tmp.jpg' });
-  if (state === 'queued') await apply('LOCAL_FILE_READABLE', PHOTO_READY);
-  else await apply('LOCAL_WRITE_FAILED');
+  if (state === 'local_save_failed') {
+    await apply('LOCAL_WRITE_FAILED');
+    return;
+  }
+  await apply('LOCAL_FILE_READABLE', PHOTO_READY);
+  if (state === 'verified') {
+    await applyUpload('UPLOAD_STARTED', 'device');
+    await applyUpload('SERVER_RECEIVED', 'server');
+    await applyUpload('SERVER_VERIFIED', 'server');
+  }
 }
 
 const returnSubject = (returnId: string, orderId: string | null = null) => ({
@@ -388,6 +401,32 @@ describe('UI-G03 Chọn bằng chứng', () => {
       (await store.getDispute(SHOP, dispute.dispute.id))?.evidence.map((e) => e.evidenceId),
     ).toEqual(['photo-own']);
     expect(await store.listHeldEvidenceIds(SHOP)).toEqual(['photo-own']);
+  });
+
+  it('hồ sơ hoàn: video mở kiện liệt kê như ảnh, nhãn theo trạng thái THẬT; chỉ video chưa lên máy chủ mới có cảnh báo', async () => {
+    const returns = createMemoryReturnStore();
+    await seedReturnWithPhoto(returns, 'r-own', 'video-local', 'queued', 'video');
+    await seedReturnWithPhoto(returns, 'r-own', 'video-done', 'verified', 'video');
+    await seedReturnWithPhoto(returns, 'r-own', 'video-failed', 'local_save_failed', 'video');
+    const store = createMemoryDisputeStore();
+    const dispute = await store.createDispute(newDispute({ subject: returnSubject('r-own') }));
+    mockNavigation.params = { disputeId: dispute.dispute.id };
+    await renderWithProviders(<DisputeSelectEvidenceScreen />, {
+      disputeStore: store,
+      returnStore: returns,
+    });
+    const local = await screen.findByTestId('dispute-file-video-local');
+    expect(within(local).getByText(/Video · Hàng hoàn/)).toBeOnTheScreen();
+    expect(within(local).getByText('Đã lưu trên máy')).toBeOnTheScreen();
+    expect(screen.getByTestId('dispute-file-caution-video-local')).toBeOnTheScreen();
+    const done = screen.getByTestId('dispute-file-video-done');
+    expect(within(done).getByText('Đã xác minh')).toBeOnTheScreen();
+    expect(screen.queryByTestId('dispute-file-caution-video-done')).toBeNull();
+    expect(screen.queryByTestId('dispute-file-video-failed')).toBeNull();
+    await fireEvent.press(screen.getByTestId('dispute-file-check-video-local'));
+    await fireEvent.press(screen.getByTestId('dispute-add-evidence'));
+    await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+    expect(await store.listHeldEvidenceIds(SHOP)).toEqual(['video-local']);
   });
 
   it('hồ sơ hoàn có đơn gốc: ảnh hàng hoàn nằm chung danh sách với tệp đóng gói', async () => {

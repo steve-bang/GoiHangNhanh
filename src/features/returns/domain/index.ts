@@ -57,3 +57,18 @@ export type {
   ReturnSyncDeps,
   ReturnSyncSummary,
 } from './return-sync';
+export { startOpeningVideo, findUnrecordedVideo } from './video-controller';
+export type {
+  ActiveVideo,
+  VideoFailure,
+  VideoHashOutcome,
+  VideoOutcome,
+  VideoPersistOutcome,
+  VideoPorts,
+  VideoRecordResult,
+  VideoRecorder,
+  VideoRecordingHandle,
+  VideoStartFailure,
+} from './video-controller';
+export { recoverInterruptedMedia } from './media-recovery';
+export type { MediaRecoveryPorts, MediaRecoveryResult } from './media-recovery';

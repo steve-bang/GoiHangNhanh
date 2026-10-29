@@ -186,6 +186,14 @@ export function useReturnOps() {
           atDevice: now(),
           eventId: newReturnRecordId(),
         }),
+      /** Ghi vào hồ sơ video ĐÃ quay và lưu bền trên máy (R2b); `interrupted`: chỉ cứu được phần đã ghi. */
+      recordOpeningVideo: (id: ReturnCaseId, mediaId: string, interrupted = false) =>
+        store.saveOpeningVideoRecorded(shopId, id, {
+          mediaId,
+          interrupted,
+          atDevice: now(),
+          eventId: newReturnRecordId(),
+        }),
       saveLines: (id: ReturnCaseId, lines: readonly EditableLine[]) => {
         const next = toNewLines(lines);
         return store.saveLines(shopId, id, {

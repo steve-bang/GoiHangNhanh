@@ -817,6 +817,16 @@ export function createSqliteReturnStore(
         return rows.map(toMedia);
       }),
 
+    listUnfinishedMedia: () =>
+      guarded(async () => {
+        const rows = await db.getAllAsync<MediaRow>(
+          `SELECT ${MEDIA_COLUMNS} FROM return_media
+           WHERE state IN ('recording', 'saving_local', 'local_save_failed')
+           ORDER BY created_at_device, rowid`,
+        );
+        return rows.map(toMedia);
+      }),
+
     listMedia: (shopId, returnId) =>
       guarded(async () => {
         const rows = await db.getAllAsync<MediaRow>(

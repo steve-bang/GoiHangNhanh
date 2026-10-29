@@ -391,6 +391,13 @@ export function createMemoryReturnStore(
         .sort((a, b) => a.createdAtDevice - b.createdAtDevice)
         .map(copy);
     },
+    async listUnfinishedMedia() {
+      const unfinished = ['recording', 'saving_local', 'local_save_failed'];
+      return [...media.values()]
+        .filter((m) => unfinished.includes(m.state))
+        .sort((a, b) => a.createdAtDevice - b.createdAtDevice)
+        .map(copy);
+    },
     async listMedia(shopId, returnId) {
       return [...media.values()]
         .filter((m) => m.shopId === shopId && m.returnId === returnId)
