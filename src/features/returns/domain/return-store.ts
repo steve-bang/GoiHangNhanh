@@ -174,8 +174,8 @@ export interface ReturnStore {
   checkMediaDeletable(shopId: ShopId, id: string): Promise<DeleteMediaResult>;
   /**
    * Xóa dòng ảnh VÀ ghi một sự kiện lịch sử `photo_deleted` (chỉ giờ + uid; không đường dẫn/mã băm)
-   * trong MỘT giao dịch, sau khi kiểm lại điều kiện như `checkMediaDeletable`. Bên gọi xóa TỆP trước
-   * (xem `deletePhoto`); chỉ dùng cho ảnh hàng hoàn, không cho bằng chứng khác (ngoại lệ bất biến 4).
+   * trong MỘT giao dịch, sau khi kiểm lại điều kiện như `checkMediaDeletable`. Bên gọi xóa TỆP SAU khi
+   * dòng đã xóa (xem `deletePhoto`); chỉ dùng cho ảnh hàng hoàn, không cho bằng chứng khác (ngoại lệ bất biến 4).
    */
   deleteMedia(
     shopId: ShopId,

@@ -8,7 +8,8 @@ const SHOP = 'shop-a' as ShopId;
 const SHA = 'd'.repeat(64);
 
 async function setup(options: { held?: boolean } = {}, overrides: Partial<PhotoDeletePorts> = {}) {
-  const store = createMemoryReturnStore({ isHeldByDispute: async () => options.held ?? false });
+  const hold = { held: options.held ?? false };
+  const store = createMemoryReturnStore({ isHeldByDispute: async () => hold.held });
   const { returnCase } = await store.createReturn({
     id: 'ret-1' as ReturnCaseId,
     shopId: SHOP,
@@ -47,11 +48,11 @@ async function setup(options: { held?: boolean } = {}, overrides: Partial<PhotoD
     newId: () => 'ev-del',
     ...overrides,
   };
-  return { store, ports, calls, returnId: returnCase.id };
+  return { store, ports, calls, hold, returnId: returnCase.id };
 }
 
 describe('deletePhoto (ngoại lệ bất biến 4, Q-26j)', () => {
-  it('kiểm điều kiện, xóa tệp rồi mới xóa dòng + ghi sự kiện', async () => {
+  it('xóa dòng + ghi sự kiện (kiểm lại điều kiện trong giao dịch) rồi MỚI xóa tệp', async () => {
     const { store, ports, calls, returnId } = await setup();
     const order: string[] = [];
     const outcome = await deletePhoto(
@@ -62,10 +63,6 @@ describe('deletePhoto (ngoại lệ bất biến 4, Q-26j)', () => {
           return ports.removeFile(path);
         },
         store: {
-          checkMediaDeletable: async (...a) => {
-            order.push('check');
-            return store.checkMediaDeletable(...a);
-          },
           deleteMedia: async (...a) => {
             order.push('row');
             return store.deleteMedia(...a);
@@ -75,7 +72,7 @@ describe('deletePhoto (ngoại lệ bất biến 4, Q-26j)', () => {
       { shopId: SHOP, mediaId: 'photo-1' },
     );
     expect(outcome).toEqual({ kind: 'deleted', mediaId: 'photo-1' });
-    expect(order).toEqual(['check', 'file', 'row']);
+    expect(order).toEqual(['row', 'file']);
     expect(calls).toEqual(['remove:evidence/photo-1.jpg']);
     expect(await store.listMedia(SHOP, returnId)).toEqual([]);
     expect((await store.getReturn(SHOP, returnId))?.events.at(-1)).toMatchObject({
@@ -142,7 +139,7 @@ describe('deletePhoto (ngoại lệ bất biến 4, Q-26j)', () => {
     expect(calls).toEqual([]);
   });
 
-  it('xóa tệp lỗi (trả lỗi hoặc ném): KHÔNG xóa dòng, KHÔNG ghi sự kiện', async () => {
+  it('xóa tệp lỗi (trả lỗi hoặc ném) SAU khi dòng đã xóa: vẫn deleted, dữ liệu nhất quán, không ném', async () => {
     for (const removeFile of [
       (): RemoveFileOutcome => ({ ok: false }),
       (): RemoveFileOutcome => {
@@ -151,21 +148,63 @@ describe('deletePhoto (ngoại lệ bất biến 4, Q-26j)', () => {
     ]) {
       const { store, ports, returnId } = await setup({}, { removeFile });
       expect(await deletePhoto(ports, { shopId: SHOP, mediaId: 'photo-1' })).toEqual({
-        kind: 'failed',
-        reason: 'FILE_DELETE_FAILED',
+        kind: 'deleted',
+        mediaId: 'photo-1',
       });
-      expect(await store.listMedia(SHOP, returnId)).toHaveLength(1);
+      expect(await store.listMedia(SHOP, returnId)).toEqual([]);
       expect((await store.getReturn(SHOP, returnId))?.events.map((e) => e.kind)).toEqual([
         'created',
+        'photo_deleted',
       ]);
     }
   });
 
-  it('xóa dòng lỗi sau khi tệp đã xóa: báo RECORD_DELETE_FAILED; thử lại thành công (xóa tệp lặp lại vẫn ok)', async () => {
-    const { store, ports, returnId } = await setup();
+  it('điều kiện đổi sang uploading giữa lúc bắt đầu và giao dịch: từ chối, dòng VÀ tệp còn nguyên', async () => {
+    const { store, ports, calls, returnId } = await setup();
+    const racing: PhotoDeletePorts['store'] = {
+      deleteMedia: async (...a) => {
+        await store.applyMediaEvent(
+          SHOP,
+          'photo-1',
+          { type: 'UPLOAD_STARTED', origin: 'device' },
+          6,
+        );
+        await store.applyMediaEvent(
+          SHOP,
+          'photo-1',
+          { type: 'SERVER_RECEIVED', origin: 'server' },
+          7,
+        );
+        return store.deleteMedia(...a);
+      },
+    };
+    expect(
+      await deletePhoto({ ...ports, store: racing }, { shopId: SHOP, mediaId: 'photo-1' }),
+    ).toEqual({ kind: 'failed', reason: 'IN_USE' });
+    expect(calls).toEqual([]);
+    expect(await store.listMedia(SHOP, returnId)).toHaveLength(1);
+    expect((await store.getReturn(SHOP, returnId))?.events.map((e) => e.kind)).toEqual(['created']);
+  });
+
+  it('ảnh vừa được thêm vào tranh chấp giữa chừng: từ chối, dòng VÀ tệp còn nguyên', async () => {
+    const { store, ports, calls, hold, returnId } = await setup();
+    const racing: PhotoDeletePorts['store'] = {
+      deleteMedia: async (...a) => {
+        hold.held = true;
+        return store.deleteMedia(...a);
+      },
+    };
+    expect(
+      await deletePhoto({ ...ports, store: racing }, { shopId: SHOP, mediaId: 'photo-1' }),
+    ).toEqual({ kind: 'failed', reason: 'IN_USE' });
+    expect(calls).toEqual([]);
+    expect(await store.listMedia(SHOP, returnId)).toHaveLength(1);
+  });
+
+  it('xóa dòng lỗi: báo RECORD_DELETE_FAILED, tệp còn nguyên; thử lại thành công', async () => {
+    const { store, ports, calls, returnId } = await setup();
     let fail = true;
     const flaky: PhotoDeletePorts['store'] = {
-      checkMediaDeletable: store.checkMediaDeletable,
       deleteMedia: async (...a) => {
         if (fail) throw new AppError('RETURN_SAVE_FAILED');
         return store.deleteMedia(...a);
@@ -178,6 +217,7 @@ describe('deletePhoto (ngoại lệ bất biến 4, Q-26j)', () => {
       reason: 'RECORD_DELETE_FAILED',
     });
     expect(await store.listMedia(SHOP, returnId)).toHaveLength(1);
+    expect(calls).toEqual([]);
     fail = false;
     expect(
       await deletePhoto({ ...ports, store: flaky }, { shopId: SHOP, mediaId: 'photo-1' }),
@@ -188,13 +228,12 @@ describe('deletePhoto (ngoại lệ bất biến 4, Q-26j)', () => {
     expect(await store.listMedia(SHOP, returnId)).toEqual([]);
   });
 
-  it('kho lỗi khi kiểm: không ném, không xóa tệp; ảnh không tồn tại: NOT_FOUND', async () => {
+  it('kho lỗi khi xóa dòng: không ném, không xóa tệp; ảnh không tồn tại: NOT_FOUND', async () => {
     const { ports, calls } = await setup();
     const broken: PhotoDeletePorts['store'] = {
-      checkMediaDeletable: async () => {
+      deleteMedia: async () => {
         throw new AppError('RETURN_SAVE_FAILED');
       },
-      deleteMedia: ports.store.deleteMedia,
     };
     expect(
       await deletePhoto({ ...ports, store: broken }, { shopId: SHOP, mediaId: 'photo-1' }),

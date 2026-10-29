@@ -235,7 +235,7 @@ describe('UI-D03 Ảnh kiện hàng', () => {
       );
     });
 
-    it('xóa tệp lỗi: báo lỗi, KHÔNG mất ảnh, KHÔNG ghi lịch sử', async () => {
+    it('xóa tệp lỗi sau khi dòng đã xóa: coi như xong (chỉ còn tệp mồ côi), không báo lỗi', async () => {
       mockDelete.mockReturnValue({ ok: false });
       const store = createMemoryReturnStore();
       const id = await seedReturn(store);
@@ -243,11 +243,9 @@ describe('UI-D03 Ảnh kiện hàng', () => {
       await openD03(store, id);
       await fireEvent.press(await screen.findByTestId('return-photo-delete-m1'));
       await fireEvent.press(await screen.findByTestId('return-photo-delete-confirm'));
-      expect(await screen.findByTestId('return-photo-delete-error')).toHaveTextContent(
-        /Chưa xóa được ảnh trên máy/,
-      );
-      expect(await store.listMedia(SHOP, id)).toHaveLength(1);
-      expect((await store.getReturn(SHOP, id))?.events.map((e) => e.kind)).not.toContain(
+      await waitFor(async () => expect(await store.listMedia(SHOP, id)).toEqual([]));
+      expect(screen.queryByTestId('return-photo-delete-error')).toBeNull();
+      expect((await store.getReturn(SHOP, id))?.events.map((e) => e.kind)).toContain(
         'photo_deleted',
       );
     });
