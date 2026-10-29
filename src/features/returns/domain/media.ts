@@ -90,3 +90,19 @@ export function applyMediaEvent(
   }
   return { ok: true, media: next };
 }
+
+/** Số ảnh tối đa cho một hồ sơ hàng hoàn (R2a): đủ các góc cần thiết, tránh đầy bộ nhớ vì ảnh thừa. */
+export const MAX_RETURN_PHOTOS = 5;
+
+/**
+ * Ảnh đã nằm bền trên máy (tệp đóng, có mã băm): từ `queued` trở đi. Ảnh còn `recording`/`saving_local`,
+ * hoặc lưu lỗi/không khôi phục được thì KHÔNG tính là "đã có ảnh" và không chiếm chỗ trong giới hạn.
+ */
+export function isMediaSavedLocally(media: Pick<ReturnMedia, 'state'>): boolean {
+  return (
+    media.state !== FILE_STATES.RECORDING &&
+    media.state !== FILE_STATES.SAVING_LOCAL &&
+    media.state !== FILE_STATES.LOCAL_SAVE_FAILED &&
+    media.state !== FILE_STATES.UNRECOVERABLE
+  );
+}

@@ -1,0 +1,375 @@
+import { useEffect, useRef, useState } from 'react';
+import { Image, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+
+import type { ErrorCode } from '@/core/errors/codes';
+import type { ReturnCaseId } from '@/core/ids';
+import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
+import { toDisplayStatus } from '@/features/evidence';
+import { formatDeviceDateTime } from '@/features/orders';
+import {
+  CameraPhoto,
+  getMinTouchTarget,
+  openAppSettings,
+  resolveRecordingUri,
+  usePhotoPermission,
+  type CameraPhotoHandle,
+} from '@/platform';
+import {
+  AppThemeScope,
+  Button,
+  Card,
+  EvidenceStatusBadge,
+  Icon,
+  Text,
+  useTheme,
+} from '@/shared/ui';
+
+import {
+  isMediaSavedLocally,
+  MAX_RETURN_PHOTOS,
+  type PhotoFailure,
+  type ReturnMedia,
+} from '../domain';
+import { useCaptureReturnPhoto, useReturnMedia } from './use-return-photos';
+
+const FAILURE_CODE: Record<Exclude<PhotoFailure, 'LIMIT_REACHED'>, ErrorCode> = {
+  ALREADY_CONFIRMED: 'RETURN_ALREADY_CONFIRMED',
+  CAPTURE_FAILED: 'RETURN_PHOTO_FAILED',
+  STORAGE_FULL: 'RETURN_PHOTO_STORAGE_FULL',
+  FILE_UNREADABLE: 'RETURN_PHOTO_FAILED',
+  SAVE_FAILED: 'RETURN_PHOTO_FAILED',
+};
+
+interface ReturnPhotosSectionProps {
+  returnId: ReturnCaseId;
+  /** Có dấu hiệu hư hỏng: nút chụp nổi bật hơn (vẫn là tùy chọn). */
+  emphasize: boolean;
+  /** Hồ sơ đã xác nhận: không chụp thêm. */
+  locked: boolean;
+}
+
+/**
+ * Ảnh kiện hàng ở D03 (R2a). TÙY CHỌN, tối đa `MAX_RETURN_PHOTOS`, không có nút xóa (bản gốc bất biến).
+ * Ảnh chỉ "Đã lưu trên máy": chưa có đường tải lên nên không hiện trạng thái tải. Giờ hiển thị là giờ
+ * máy; mã băm chỉ chứng minh tệp không đổi, không chứng minh thời điểm chụp.
+ */
+export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhotosSectionProps) {
+  const { t } = useTranslation();
+  const { tokens } = useTheme();
+  const { media, reload } = useReturnMedia(returnId);
+  const capture = useCaptureReturnPhoto(returnId);
+  const permission = usePhotoPermission();
+  const handleRef = useRef<CameraPhotoHandle | null>(null);
+  const [open, setOpen] = useState(false);
+  const [wantsCamera, setWantsCamera] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<ErrorCode | null>(null);
+  const [lastSaved, setLastSaved] = useState(false);
+
+  const saved = (media ?? []).filter(isMediaSavedLocally);
+  const full = saved.length >= MAX_RETURN_PHOTOS;
+  const granted = permission.status === 'granted';
+
+  // Người dùng đã bấm "Chụp ảnh" và quyền vừa được cấp: mở camera.
+  useEffect(() => {
+    if (wantsCamera && granted) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mở camera ngay khi quyền được cấp
+      setOpen(true);
+      setWantsCamera(false);
+    }
+  }, [wantsCamera, granted]);
+
+  const start = () => {
+    setFailure(null);
+    setLastSaved(false);
+    setReady(false);
+    if (granted) setOpen(true);
+    else setWantsCamera(true);
+  };
+
+  const close = () => {
+    setOpen(false);
+    setWantsCamera(false);
+    void reload();
+  };
+
+  const shoot = async () => {
+    if (busy || !ready) return;
+    setBusy(true);
+    setFailure(null);
+    setLastSaved(false);
+    const outcome = await capture(handleRef);
+    setBusy(false);
+    await reload();
+    if (outcome.kind === 'saved') {
+      setLastSaved(true);
+      return;
+    }
+    const reason = outcome.reason;
+    if (reason === 'LIMIT_REACHED') {
+      close();
+      return;
+    }
+    setFailure(FAILURE_CODE[reason]);
+  };
+
+  const touch = getMinTouchTarget();
+  const prompting = wantsCamera && !granted;
+  const permissionBlocked = permission.status === 'blocked';
+
+  return (
+    <View style={{ gap: tokens.space.xs }} testID="return-photos">
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm }}>
+        <Text variant="formButton" accessibilityRole="header" style={{ flex: 1 }}>
+          {t('returns:photos.title')}
+        </Text>
+        <Text variant="caption" color="textMuted" testID="return-photos-count">
+          {t('returns:photos.count', { count: saved.length, max: MAX_RETURN_PHOTOS })}
+        </Text>
+      </View>
+      <Text variant="caption" color="textMuted">
+        {t('returns:photos.hint')}
+      </Text>
+      {emphasize && !full && !locked ? (
+        <Text
+          variant="caption"
+          bold
+          style={{ color: tokens.status.interrupted.fg }}
+          testID="return-photos-damage-hint"
+        >
+          {t('returns:photos.damageHint')}
+        </Text>
+      ) : null}
+
+      {media === null ? null : media.length === 0 ? (
+        <Text variant="formBody" color="inkMuted" testID="return-photos-empty">
+          {t('returns:photos.empty')}
+        </Text>
+      ) : (
+        <Card compact flush>
+          <View>
+            {media.map((item) => (
+              <PhotoRow key={item.id} item={item} busy={busy} />
+            ))}
+          </View>
+        </Card>
+      )}
+
+      {locked ? null : full ? (
+        <Text variant="caption" color="textMuted" testID="return-photos-full">
+          {t('returns:photos.full', { max: MAX_RETURN_PHOTOS })}
+        </Text>
+      ) : (
+        <Button
+          testID="return-photo-capture"
+          label={t(saved.length === 0 ? 'returns:photos.capture' : 'returns:photos.captureMore')}
+          variant={emphasize ? 'primary' : 'secondary'}
+          size="compact"
+          icon="camera"
+          onPress={start}
+        />
+      )}
+
+      {prompting ? (
+        <Card compact tone="warning" testID="return-photo-permission">
+          <View style={{ gap: tokens.space.sm }}>
+            <Text variant="formBody">
+              {t(
+                permissionBlocked
+                  ? 'returns:photos.permissionBlocked'
+                  : 'returns:photos.permissionAsk',
+              )}
+            </Text>
+            <Button
+              testID={permissionBlocked ? 'return-photo-open-settings' : 'return-photo-allow'}
+              label={t(
+                permissionBlocked ? 'returns:photos.openSettings' : 'returns:photos.allowCamera',
+              )}
+              size="compact"
+              variant="secondary"
+              onPress={() =>
+                permissionBlocked ? void openAppSettings() : void permission.request()
+              }
+            />
+          </View>
+        </Card>
+      ) : null}
+
+      <Modal visible={open} animationType="slide" onRequestClose={close} statusBarTranslucent>
+        <AppThemeScope>
+          <View
+            testID="return-photo-camera"
+            style={[styles.root, { backgroundColor: tokens.color.camera.background }]}
+          >
+            <CameraPhoto
+              handleRef={handleRef}
+              onReady={() => setReady(true)}
+              onError={() => {
+                setReady(false);
+                setFailure('RETURN_CAMERA_UNAVAILABLE');
+              }}
+            />
+            <View
+              style={[
+                styles.overlay,
+                { padding: tokens.space.md, paddingBottom: tokens.space.lg, gap: tokens.space.sm },
+              ]}
+              pointerEvents="box-none"
+            >
+              <Pressable
+                testID="return-photo-close"
+                accessibilityRole="button"
+                accessibilityLabel={t('returns:photos.closeCamera')}
+                onPress={close}
+                style={{ minWidth: touch, minHeight: touch, justifyContent: 'center' }}
+              >
+                <Icon name="close" size={tokens.icon.xl} color={tokens.color.camera.onCamera} />
+              </Pressable>
+              <View style={styles.spacer} pointerEvents="none" />
+              {failure ? (
+                <View
+                  accessibilityRole="alert"
+                  testID="return-photo-error"
+                  style={{
+                    backgroundColor: tokens.color.camera.control,
+                    borderRadius: tokens.radius.md,
+                    padding: tokens.space.sm,
+                  }}
+                >
+                  <Text variant="overlay" style={{ color: tokens.color.camera.onCamera }}>
+                    {errorText(resolveErrorMessage(t, failure))}
+                  </Text>
+                </View>
+              ) : lastSaved ? (
+                <View
+                  testID="return-photo-saved"
+                  style={{
+                    backgroundColor: tokens.color.camera.control,
+                    borderRadius: tokens.radius.md,
+                    padding: tokens.space.sm,
+                  }}
+                >
+                  <Text variant="overlay" style={{ color: tokens.color.camera.onCamera }}>
+                    {t('returns:photos.savedOnDevice', {
+                      count: saved.length,
+                      max: MAX_RETURN_PHOTOS,
+                    })}
+                  </Text>
+                </View>
+              ) : (
+                <Text
+                  variant="overlay"
+                  style={{ color: tokens.color.camera.onCamera, textAlign: 'center' }}
+                >
+                  {t('returns:photos.guidance')}
+                </Text>
+              )}
+              <View style={styles.shutterRow}>
+                <Pressable
+                  testID="return-photo-shutter"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('returns:photos.shutter')}
+                  accessibilityState={{ disabled: busy || !ready, busy }}
+                  disabled={busy || !ready}
+                  onPress={() => void shoot()}
+                  style={{
+                    width: tokens.component.record.stopOuter,
+                    height: tokens.component.record.stopOuter,
+                    borderRadius: tokens.radius.full,
+                    borderWidth: tokens.component.record.stopRing,
+                    borderColor: tokens.color.camera.onCamera,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: busy || !ready ? tokens.opacity.disabled : 1,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: tokens.component.record.stopInner,
+                      height: tokens.component.record.stopInner,
+                      borderRadius: tokens.radius.full,
+                      backgroundColor: tokens.color.camera.onCamera,
+                    }}
+                  />
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </AppThemeScope>
+      </Modal>
+    </View>
+  );
+}
+
+function PhotoRow({ item, busy }: { item: ReturnMedia; busy: boolean }) {
+  const { t } = useTranslation();
+  const { tokens } = useTheme();
+  const side = tokens.component.tile.xl;
+  const display = toDisplayStatus(item.state);
+  const hasFile = isMediaSavedLocally(item) && item.localPath !== null;
+  return (
+    <View
+      testID={`return-photo-${item.id}`}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: tokens.space.sm,
+        padding: tokens.space.sm,
+      }}
+    >
+      <View
+        style={{
+          width: side,
+          height: side,
+          borderRadius: tokens.radius.sm,
+          overflow: 'hidden',
+          backgroundColor: tokens.color.surface.muted,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {hasFile ? (
+          <Image
+            testID={`return-photo-thumb-${item.id}`}
+            source={{ uri: resolveRecordingUri(item.localPath ?? '') }}
+            style={{ width: side, height: side }}
+            accessibilityIgnoresInvertColors
+            accessibilityLabel={t('returns:photos.thumbLabel')}
+          />
+        ) : (
+          <Icon name="camera" size={tokens.icon.lg} color={tokens.color.text.secondary} />
+        )}
+      </View>
+      <View style={{ flex: 1, gap: tokens.space.xxs }}>
+        <Text variant="caption" color="textMuted">
+          {t('returns:photos.takenAt', { time: formatDeviceDateTime(item.createdAtDevice) })}
+        </Text>
+        {display.kind === 'label' ? (
+          <EvidenceStatusBadge
+            compact
+            status={display.label}
+            testID={`return-photo-status-${item.id}`}
+          />
+        ) : (
+          <Text variant="caption" testID={`return-photo-status-${item.id}`}>
+            {t(busy ? 'returns:photos.saving' : 'returns:photos.unfinished')}
+          </Text>
+        )}
+        {display.kind === 'label' && display.label === 'error' ? (
+          <Text variant="caption" color="textMuted">
+            {t('returns:photos.failedItem')}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  overlay: StyleSheet.absoluteFill,
+  spacer: { flex: 1 },
+  shutterRow: { alignItems: 'center' },
+});

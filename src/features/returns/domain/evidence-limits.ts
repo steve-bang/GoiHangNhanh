@@ -18,13 +18,17 @@ export function hasOpeningEvidenceLimit(
   return returnCase.openingVideo !== null || returnCase.openedBefore !== null;
 }
 
-export function evidenceLimits(details: ReturnDetails): EvidenceLimit[] {
+/**
+ * `photoCount`: số ảnh kiện đã lưu bền trên máy; `null` = chưa biết (đang nạp) thì KHÔNG nêu hạn chế ảnh
+ * (không nói "chưa có ảnh" khi chưa kiểm tra). Ảnh là tùy chọn: chỉ nêu khi hồ sơ đã ghi tình trạng bên
+ * ngoài mà chưa có ảnh nào.
+ */
+export function evidenceLimits(details: ReturnDetails, photoCount: number | null): EvidenceLimit[] {
   const { returnCase } = details;
   const limits: EvidenceLimit[] = [];
   if (returnCase.openingVideo !== null) limits.push('no_opening_video');
   if (returnCase.openedBefore !== null) limits.push('opened_before_recording');
-  // R1 chưa chụp ảnh kiện ngoài (chưa có luồng chụp trên thiết bị): luôn nói rõ.
-  if (returnCase.exterior !== null) limits.push('no_exterior_photo');
+  if (returnCase.exterior !== null && photoCount === 0) limits.push('no_exterior_photo');
   if (returnCase.sourceOrderId === null) limits.push('not_linked');
   return limits;
 }

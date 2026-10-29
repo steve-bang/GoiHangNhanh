@@ -8,7 +8,7 @@ import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
 import { logger } from '@/core/logging/logger';
 import { ROUTES } from '@/core/navigation';
 import { useAppNavigation, useRouteParams } from '@/platform';
-import { Button, Card, Checkbox, Icon, Screen, Text, TextField, useTheme } from '@/shared/ui';
+import { Button, Card, Checkbox, Screen, Text, TextField, useTheme } from '@/shared/ui';
 
 import {
   EXTERIOR_SIGNS,
@@ -19,6 +19,7 @@ import {
   type ReturnDetails,
 } from '../domain';
 import { ReturnLoadState } from './ReturnLoadState';
+import { ReturnPhotosSection } from './ReturnPhotosSection';
 import { resumeRoute } from './return-routes';
 import { useReturnCase } from './use-return-case';
 import { useReturnOps } from './use-return-ops';
@@ -30,8 +31,8 @@ const MAX_REASON = 200;
  * UI-D03 Tình trạng kiện bên ngoài (đặc tả B03 + ngoại lệ B04). Chọn NHIỀU dấu hiệu quan sát được;
  * KHÔNG mặc định "nguyên vẹn" (chưa chọn gì thì chưa xác nhận được); "Chưa xác định" là giá trị hợp lệ;
  * lưu như quan sát của nhân viên, không diễn giải thành nguyên nhân. Kiện đã mở trước khi quay: ghi lý
- * do, hồ sơ đánh dấu thiếu bằng chứng quá trình mở. Bản này CHƯA chụp được ảnh kiện nên nói rõ, không
- * giả vờ có ảnh (bất biến 6). Hồ sơ đã xác nhận mở màn này thì chuyển sang màn xem.
+ * do, hồ sơ đánh dấu thiếu bằng chứng quá trình mở. Ảnh kiện là TÙY CHỌN (R2a): chụp trong màn này, chỉ lưu trên máy; chưa chụp thì hồ sơ nói rõ
+ * là chưa có ảnh, không giả vờ có ảnh (bất biến 6). Hồ sơ đã xác nhận mở màn này thì chuyển sang màn xem.
  */
 export function ReturnExteriorScreen() {
   const params = useRouteParams();
@@ -185,15 +186,11 @@ function ExteriorForm({ details }: { details: ReturnDetails }) {
           ) : null}
         </View>
       </Card>
-      <View
-        testID="return-photo-notice"
-        style={{ flexDirection: 'row', gap: tokens.space.sm, alignItems: 'flex-start' }}
-      >
-        <Icon name="info" size={tokens.icon.md} color={tokens.color.feedback.info.fg} />
-        <Text variant="caption" color="textMuted" style={{ flex: 1, flexShrink: 1 }}>
-          {t('returns:exterior.photoNotice')}
-        </Text>
-      </View>
+      <ReturnPhotosSection
+        returnId={returnCase.id}
+        emphasize={hasDamageSign(signs)}
+        locked={confirmed}
+      />
       {failure ? (
         <Text
           variant="formBody"

@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { toCodeKey } from '@/features/orders';
 import { Card, Icon, Text, useTheme } from '@/shared/ui';
 
-import { compareLine, evidenceLimits, type ReturnDetails } from '../domain';
+import { compareLine, evidenceLimits, isMediaSavedLocally, type ReturnDetails } from '../domain';
+import { useReturnMedia } from './use-return-photos';
 
 /** Một khối thông tin có tiêu đề (dùng chung cho màn xác nhận D06 và màn xem/hoàn tất D07). */
 function Section({
@@ -44,7 +45,9 @@ export function ReturnSummaryCards({
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const { returnCase, lines, discrepancies } = details;
-  const limits = evidenceLimits(details);
+  const { media } = useReturnMedia(returnCase.id);
+  const photoCount = media === null ? null : media.filter(isMediaSavedLocally).length;
+  const limits = evidenceLimits(details, photoCount);
   const kindOf = (lineId: string | null) =>
     discrepancies.filter((d) => d.lineId === lineId).map((d) => t(`returns:items.kinds.${d.kind}`));
 
@@ -77,6 +80,11 @@ export function ReturnSummaryCards({
         {returnCase.openedBefore ? (
           <Text variant="caption" color="textMuted">
             {`${t('returns:exterior.openedBeforeLabel')}: ${returnCase.openedBefore.reason}`}
+          </Text>
+        ) : null}
+        {photoCount !== null && photoCount > 0 ? (
+          <Text variant="caption" color="textMuted" testID="return-summary-photos">
+            {t('returns:review.photosOnDevice', { count: photoCount })}
           </Text>
         ) : null}
       </Section>

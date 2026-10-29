@@ -74,8 +74,7 @@
     "notChosen": "Bạn chưa xác nhận tình trạng bên ngoài. Hãy chọn ít nhất một mục.",
     "noteLabel": "Ghi chú (không bắt buộc)",
     "notePlaceholder": "Ví dụ: móp góc phải, băng keo bị cắt",
-    "damageHint": "Có dấu hiệu hư hỏng. Nên chụp ảnh vị trí đó khi có thể; hiện hãy ghi rõ vị trí ở ô ghi chú.",
-    "photoNotice": "Ảnh kiện bên ngoài là tùy chọn. Bản này chưa chụp được ảnh, hồ sơ sẽ ghi rõ là chưa có ảnh bên ngoài.",
+    "damageHint": "Có dấu hiệu hư hỏng. Nên chụp ảnh vị trí đó và ghi rõ vị trí ở ô ghi chú.",
     "openedBeforeLabel": "Kiện đã được mở trước khi tôi bắt đầu quay",
     "openedBeforeReasonLabel": "Lý do (bắt buộc)",
     "openedBeforePlaceholder": "Ví dụ: kiện đã bị mở khi nhận về",
@@ -174,7 +173,8 @@
     "saveLater": "Lưu tạm, về danh sách",
     "editItems": "Sửa kiểm kê",
     "videoReason": "Lý do: {{reason}}",
-    "limitedBadge": "Hạn chế bằng chứng"
+    "limitedBadge": "Hạn chế bằng chứng",
+    "photosOnDevice": "Có {{count}} ảnh kiện, mới lưu trên máy này."
   },
   "done": {
     "title": "Đã xác nhận hồ sơ",
@@ -200,5 +200,28 @@
     "missing": "Không mở được hồ sơ này",
     "missingHint": "Hồ sơ không có trong cửa hàng hiện tại. Hãy quay lại danh sách.",
     "backToList": "Về danh sách hàng hoàn"
+  },
+  "photos": {
+    "title": "Ảnh kiện hàng",
+    "count": "{{count}}/{{max}} ảnh",
+    "hint": "Không bắt buộc. Ảnh chỉ lưu trên máy này, chưa tải lên máy chủ.",
+    "damageHint": "Nên chụp ảnh chỗ bị hư hỏng khi có thể.",
+    "empty": "Chưa chụp ảnh nào. Hồ sơ sẽ ghi là chưa có ảnh bên ngoài.",
+    "capture": "Chụp ảnh kiện",
+    "captureMore": "Chụp thêm ảnh",
+    "full": "Đã đủ {{max}} ảnh. Ảnh đã chụp không xóa được.",
+    "takenAt": "Giờ máy: {{time}}",
+    "saving": "Đang lưu ảnh…",
+    "unfinished": "Chưa lưu xong ảnh này.",
+    "failedItem": "Ảnh này chưa lưu được.",
+    "thumbLabel": "Ảnh kiện hàng",
+    "guidance": "Đưa kiện hàng vào khung rồi bấm chụp.",
+    "shutter": "Chụp",
+    "closeCamera": "Đóng camera",
+    "savedOnDevice": "Đã lưu ảnh trên máy ({{count}}/{{max}}).",
+    "permissionAsk": "Cần quyền camera để chụp ảnh kiện hàng.",
+    "permissionBlocked": "Camera đang bị tắt. Hãy bật trong Cài đặt để chụp ảnh.",
+    "allowCamera": "Cho phép camera",
+    "openSettings": "Mở Cài đặt"
   }
 }

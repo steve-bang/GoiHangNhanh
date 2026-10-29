@@ -17,7 +17,9 @@ export {
   statusAfterLines,
   statusAfterVideoStep,
 } from './return-rules';
-export { applyMediaEvent } from './media';
+export { applyMediaEvent, isMediaSavedLocally, MAX_RETURN_PHOTOS } from './media';
+export { capturePhoto } from './photo-controller';
+export type { PhotoFailure, PhotoOutcome, PhotoPorts } from './photo-controller';
 export type {
   MediaEventError,
   MediaEventResult,

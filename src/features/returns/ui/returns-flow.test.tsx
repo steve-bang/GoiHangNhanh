@@ -477,13 +477,14 @@ describe('UI-D03 Tình trạng kiện bên ngoài', () => {
     expect(saved?.events.map((e) => e.kind)).toContain('opened_before_marked');
   });
 
-  it('nói rõ chưa chụp được ảnh kiện trong bản này (không giả vờ có ảnh)', async () => {
+  it('chưa chụp ảnh nào: nói rõ hồ sơ sẽ ghi chưa có ảnh bên ngoài (không giả vờ có ảnh)', async () => {
     const store = createMemoryReturnStore();
     const made = await seedReturn(store);
     await open(store, made.returnCase.id);
-    expect(await screen.findByTestId('return-photo-notice')).toHaveTextContent(
-      /chưa chụp được ảnh/,
+    expect(await screen.findByTestId('return-photos-empty')).toHaveTextContent(
+      /chưa có ảnh bên ngoài/,
     );
+    expect(screen.getByTestId('return-photo-capture')).toBeOnTheScreen();
   });
 
   it('mở lại hồ sơ đã nhập: điền sẵn dấu hiệu và ghi chú', async () => {

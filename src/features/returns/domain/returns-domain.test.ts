@@ -133,7 +133,7 @@ describe('so sánh hàng thực nhận với dự kiến (B06)', () => {
 
 describe('hạn chế bằng chứng', () => {
   it('hồ sơ vừa tạo chưa có hạn chế nào được ghi', () => {
-    expect(evidenceLimits(details({}))).toEqual(['not_linked']);
+    expect(evidenceLimits(details({}), 0)).toEqual(['not_linked']);
   });
 
   it('thiếu video, kiện mở trước, chưa có ảnh ngoài, chưa liên kết: nói rõ từng điều, không bao giờ "đầy đủ"', () => {
@@ -143,6 +143,7 @@ describe('hạn chế bằng chứng', () => {
         openedBefore: { reason: 'x', markedAtDevice: 1 },
         openingVideo: { kind: 'missing', reason: 'user_skipped', atDevice: 1 },
       }),
+      0,
     );
     expect(limits).toEqual([
       'no_opening_video',
@@ -153,7 +154,20 @@ describe('hạn chế bằng chứng', () => {
   });
 
   it('đã liên kết đơn gốc thì bỏ "chưa liên kết"', () => {
-    expect(evidenceLimits(details({ sourceOrderId: 'o1' as OrderId }))).not.toContain('not_linked');
+    expect(evidenceLimits(details({ sourceOrderId: 'o1' as OrderId }), 0)).not.toContain(
+      'not_linked',
+    );
+  });
+
+  it('hạn chế ảnh ngoài chỉ khi đã ghi tình trạng bên ngoài mà chưa có ảnh; có ảnh hoặc chưa biết thì không nêu', () => {
+    const withExterior = details({
+      exterior: { signs: ['dented'], note: '', recordedAtDevice: 1 },
+    });
+    expect(evidenceLimits(withExterior, 0)).toContain('no_exterior_photo');
+    expect(evidenceLimits(withExterior, 1)).not.toContain('no_exterior_photo');
+    expect(evidenceLimits(withExterior, null)).not.toContain('no_exterior_photo');
+    // Chưa ghi tình trạng bên ngoài thì không có gì để nói về ảnh.
+    expect(evidenceLimits(details({}), 0)).not.toContain('no_exterior_photo');
   });
 });
 
