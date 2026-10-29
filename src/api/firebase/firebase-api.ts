@@ -1,6 +1,7 @@
 import { AppError } from '@/core/errors/app-error';
 
 import type {
+  AccountSignInMethod,
   ApiClient,
   AuthApi,
   CreatedShop,
@@ -13,6 +14,14 @@ import type {
 import { guard } from './error-map';
 import type { FirebaseServices } from './client';
 import { createFirebaseOps, type FirebaseOps } from './ops';
+
+/** Nhà cung cấp Auth -> cách đăng nhập. Nhà cung cấp lạ/không có thì `null` (không đoán, O-15). */
+function signInMethodOf(providerIds: readonly string[]): AccountSignInMethod | null {
+  if (providerIds.includes('password')) return 'password';
+  if (providerIds.includes('apple.com')) return 'apple';
+  if (providerIds.includes('google.com')) return 'google';
+  return null;
+}
 
 const unavailable = () => Promise.reject(new AppError('AUTH_SERVICE_UNAVAILABLE'));
 
@@ -36,11 +45,21 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
     signInWithPassword: (input) =>
       guard(async () => {
         const user = await ops.signIn(input.email.trim(), input.password);
-        const shopId = await ops.readShopId(user.uid);
+        let shopId: string | null;
+        try {
+          shopId = await ops.readShopId(user.uid);
+        } catch (error) {
+          // Auth đã đăng nhập nhưng chưa biết shop: UI sẽ báo lỗi, nên không để lại phiên "nửa đăng nhập"
+          // (lần mở sau Splash sẽ khôi phục thành đã đăng nhập dù người dùng thấy lỗi). Thoát cho sạch rồi
+          // báo lỗi gốc; thoát lỗi thì bỏ qua (người dùng đăng nhập lại là xong).
+          await ops.signOut().catch(() => undefined);
+          throw error;
+        }
         return {
           uid: user.uid,
           email: user.email ?? input.email.trim(),
           emailVerified: user.emailVerified,
+          displayName: user.displayName,
           hasShop: shopId !== null,
           shopId,
         };
@@ -78,10 +97,14 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
       guard(async () => {
         const user = await ops.restoreUser();
         if (!user) return null;
+        // Tài khoản email/mật khẩu luôn có email. Thiếu thì không bịa chuỗi rỗng làm email thật: coi là
+        // chưa xác định được danh tính (các nhà cung cấp khác có thể không có email: xem O-15).
+        if (!user.email) throw new AppError('AUTH_SERVICE_UNAVAILABLE');
         return {
           uid: user.uid,
-          email: user.email ?? '',
+          email: user.email,
           displayName: user.displayName,
+          signInMethod: signInMethodOf(user.providerIds),
           shopId: await ops.readShopIdForRestore(user.uid),
         };
       }),

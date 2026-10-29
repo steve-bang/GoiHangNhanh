@@ -16,6 +16,8 @@ export interface FirebaseUser {
   readonly email: string | null;
   readonly displayName: string | null;
   readonly emailVerified: boolean;
+  /** `providerId` của `user.providerData` (ví dụ `password`, `apple.com`, `google.com`). */
+  readonly providerIds: readonly string[];
 }
 
 /**
@@ -41,6 +43,15 @@ export interface FirebaseOps {
   ): Promise<CreatedShop>;
 }
 
+const providerIdsOf = (user: { providerData?: readonly { providerId: string }[] }): string[] =>
+  (user.providerData ?? []).map((info) => info.providerId);
+
+/** Rules từ chối (đã bị thu hồi, không phải thành viên, `members/{uid}` chưa có). Mạng/lỗi khác thì KHÔNG. */
+export function isPermissionDenied(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code;
+  return code === 'firestore/permission-denied' || code === 'permission-denied';
+}
+
 export function createFirebaseOps({ auth, db, functions }: FirebaseServices): FirebaseOps {
   const shopIdOf = (data: { shopId?: unknown } | undefined): string | null =>
     typeof data?.shopId === 'string' ? data.shopId : null;
@@ -53,6 +64,7 @@ export function createFirebaseOps({ auth, db, functions }: FirebaseServices): Fi
         email: user.email,
         emailVerified: user.emailVerified,
         displayName: user.displayName,
+        providerIds: providerIdsOf(user),
       };
     },
     async signIn(email, password) {
@@ -62,6 +74,7 @@ export function createFirebaseOps({ auth, db, functions }: FirebaseServices): Fi
         email: user.email,
         emailVerified: user.emailVerified,
         displayName: user.displayName,
+        providerIds: providerIdsOf(user),
       };
     },
     restoreUser() {
@@ -77,6 +90,7 @@ export function createFirebaseOps({ auth, db, functions }: FirebaseServices): Fi
                     email: user.email,
                     emailVerified: user.emailVerified,
                     displayName: user.displayName,
+                    providerIds: providerIdsOf(user),
                   }
                 : null,
             );
@@ -104,11 +118,19 @@ export function createFirebaseOps({ auth, db, functions }: FirebaseServices): Fi
       return signOut(auth);
     },
     async readShopDetails(shopId, uid) {
-      // Chỉ thành viên đang hoạt động đọc được (Rules); không đọc được thì coi như không có.
-      const [shopSnap, memberSnap] = await Promise.all([
-        getDoc(doc(db, 'shops', shopId)),
-        getDoc(doc(db, 'shops', shopId, 'members', uid)),
-      ]);
+      // Chỉ thành viên đang hoạt động đọc được (Rules). Rules từ chối (`permission-denied`) thì coi như
+      // không có shop (`null`); lỗi khác (mạng...) vẫn ném để bên gọi không nhầm là "chưa có shop".
+      let shopSnap;
+      let memberSnap;
+      try {
+        [shopSnap, memberSnap] = await Promise.all([
+          getDoc(doc(db, 'shops', shopId)),
+          getDoc(doc(db, 'shops', shopId, 'members', uid)),
+        ]);
+      } catch (error) {
+        if (isPermissionDenied(error)) return null;
+        throw error;
+      }
       if (!shopSnap.exists() || !memberSnap.exists()) return null;
       const member = memberSnap.data() as { roles?: unknown; status?: unknown } | undefined;
       if (member?.status !== 'active') return null;

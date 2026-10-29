@@ -7,8 +7,13 @@ export interface AuthAccount {
   readonly emailVerified: boolean;
 }
 
+/** Cách tài khoản đăng nhập, suy ra từ nhà cung cấp của Auth (Apple/Google chưa nối: O-15). */
+export type AccountSignInMethod = 'password' | 'apple' | 'google';
+
 /** Tài khoản sau khi đăng nhập: cho biết đã có shop chưa để biết đi Tổng quan hay tạo shop. */
 export interface SignedInAccount extends AuthAccount {
+  /** Họ tên đã khai báo của tài khoản (nguồn: Auth); `null` = chưa khai báo (không bịa từ email). */
+  readonly displayName: string | null;
   readonly hasShop: boolean;
   /** ID shop đang dùng của tài khoản (nguồn: máy chủ); `null` = chưa có shop. `hasShop` = `shopId !== null`. */
   readonly shopId: string | null;

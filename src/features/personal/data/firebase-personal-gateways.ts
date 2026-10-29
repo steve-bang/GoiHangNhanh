@@ -26,12 +26,13 @@ export function createFirebasePersonalGateways(api: ApiClient): PersonalGateways
       getSessionIdentity: () => api.session.identity(),
       async getProfile(): Promise<UserProfile> {
         const identity = await identityOrThrow();
+        // Không bịa phương thức đăng nhập: không xác định được thì báo chưa kết nối (màn hồ sơ cho thử lại).
+        if (!identity.signInMethod) throw new AppError('AUTH_SERVICE_UNAVAILABLE');
         return {
           uid: identity.uid,
           email: identity.email,
           displayName: identity.displayName,
-          // Mới có đăng nhập bằng mật khẩu (Apple/Google chưa nối, O-15).
-          signInMethod: 'password',
+          signInMethod: identity.signInMethod,
         };
       },
       async getShopSummary(): Promise<ShopSummary | null> {

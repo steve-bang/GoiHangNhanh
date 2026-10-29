@@ -147,6 +147,7 @@ export class FakeAccountGateway implements AccountGateway {
       uid: profile.uid,
       email: profile.email,
       displayName: profile.displayName,
+      signInMethod: profile.signInMethod,
       shopId: shop?.id ?? null,
     };
   }

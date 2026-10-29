@@ -7,6 +7,7 @@ import type { SessionApi } from './session';
 import type { ShopApi } from './shop';
 
 export type {
+  AccountSignInMethod,
   AuthAccount,
   AuthApi,
   ResetPasswordInput,

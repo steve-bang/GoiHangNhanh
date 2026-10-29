@@ -21,6 +21,8 @@ export interface SessionIdentity {
   readonly uid: string;
   readonly email: string;
   readonly displayName: string | null;
+  /** Cách đăng nhập theo nhà cung cấp của Auth; `null` = không xác định được (không đoán). */
+  readonly signInMethod: SignInMethod | null;
   readonly shopId: string | null;
 }
 

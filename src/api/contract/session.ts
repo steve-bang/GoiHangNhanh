@@ -1,3 +1,5 @@
+import type { AccountSignInMethod } from './auth';
+
 /**
  * Trạng thái phiên khi mở app (UI-A01): chưa đăng nhập; đã đăng nhập nhưng chưa có shop; đã đăng
  * nhập và có shop. Chỉ phản ánh điều cổng đã xác nhận, không suy đoán.
@@ -23,5 +25,7 @@ export interface SessionIdentity {
   readonly uid: string;
   readonly email: string;
   readonly displayName: string | null;
+  /** Cách đăng nhập theo nhà cung cấp của Auth; `null` = không xác định được (không đoán). */
+  readonly signInMethod: AccountSignInMethod | null;
   readonly shopId: string | null;
 }

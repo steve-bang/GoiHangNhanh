@@ -109,9 +109,9 @@ export function SignInScreen() {
       // Đã rời màn (Back/đi chỗ khác) trong lúc chờ: không điều hướng thay người dùng.
       if (!isActive()) return;
       // Ghi phiên toàn app (chỉ tầng logic, không đổi giao diện). `shopId` do máy chủ trả (từ
-      // `userShops/{uid}`); null = chưa có shop. Họ tên lấy từ hồ sơ khi cần.
+      // `userShops/{uid}`); null = chưa có shop. Họ tên lấy từ Auth, giống phiên khôi phục sau khi mở lại app.
       session.beginSession(
-        { uid: account.uid, email: account.email, displayName: null },
+        { uid: account.uid, email: account.email, displayName: account.displayName },
         account.shopId,
       );
       if (account.hasShop) {

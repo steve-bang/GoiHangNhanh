@@ -193,6 +193,7 @@ export class FakeAuthApi implements AuthApi {
       uid: account.uid,
       email,
       emailVerified: false,
+      displayName: null,
       hasShop: account.hasShop,
       shopId: account.hasShop ? `fake-shop-of-${account.uid}` : null,
     };
@@ -353,6 +354,7 @@ export class FakeSessionApi implements SessionApi {
       uid: 'fake-session-user',
       email: FAKE_DEMO_EMAIL,
       displayName: null,
+      signInMethod: 'password',
       shopId: this.state === 'signed_in' ? 'fake-session-shop' : null,
     };
   }

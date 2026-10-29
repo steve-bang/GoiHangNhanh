@@ -42,6 +42,7 @@ describe('cổng cá nhân chế độ Firebase (PR1)', () => {
           uid: 'u1',
           email: 'a@x.vn',
           displayName: null,
+          signInMethod: 'password' as const,
           shopId: created.id,
         }),
       },
@@ -50,6 +51,7 @@ describe('cổng cá nhân chế độ Firebase (PR1)', () => {
       uid: 'u1',
       email: 'a@x.vn',
       displayName: null,
+      signInMethod: 'password',
       shopId: created.id,
     });
     expect(await account.getProfile()).toMatchObject({ uid: 'u1', signInMethod: 'password' });
@@ -76,6 +78,28 @@ describe('cổng cá nhân chế độ Firebase (PR1)', () => {
     );
     expect(await account.getSessionIdentity()).toBeNull();
     expect(await codeOf(account.getProfile())).toBe('AUTH_SERVICE_UNAVAILABLE');
+  });
+
+  it('hồ sơ lấy phương thức đăng nhập từ danh tính; không xác định được thì báo chưa kết nối (không bịa)', async () => {
+    const withMethod = (signInMethod: 'password' | 'apple' | 'google' | null) =>
+      createFirebasePersonalGateways({
+        ...createFakeApi(),
+        session: {
+          ...createFakeApi().session,
+          identity: async () => ({
+            uid: 'u1',
+            email: 'a@x.vn',
+            displayName: 'Chị Lan',
+            signInMethod,
+            shopId: null,
+          }),
+        },
+      });
+    expect(await withMethod('google').account.getProfile()).toMatchObject({
+      signInMethod: 'google',
+      displayName: 'Chị Lan',
+    });
+    expect(await codeOf(withMethod(null).account.getProfile())).toBe('AUTH_SERVICE_UNAVAILABLE');
   });
 
   it('chưa có shop: getShopSummary là null; shop không đọc được cũng là null', async () => {

@@ -121,6 +121,48 @@ describe('QA-11 cô lập theo shop', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Đọc thông tin shop và vai trò (app: FirebaseOps.readShopDetails đọc shops/{id} + members/{uid})
+// ---------------------------------------------------------------------------
+describe('đọc thông tin shop và vai trò của chính mình', () => {
+  const readBoth = (db: ReturnType<typeof as>, shop: string, uid: string) => ({
+    shop: getDoc(doc(db, `shops/${shop}`)),
+    member: getDoc(doc(db, `shops/${shop}/members/${uid}`)),
+  });
+
+  it('thành viên đang hoạt động đọc được cả shops/{id} và members/{uid} của mình', async () => {
+    for (const uid of [USERS.ownerA, USERS.managerA, USERS.packerA]) {
+      const { shop, member } = readBoth(as(uid), SHOP_A, uid);
+      await assertSucceeds(shop);
+      await assertSucceeds(member);
+    }
+  });
+
+  it('người ngoài (không có tài liệu thành viên) bị từ chối cả hai, cả với shop mình đoán ID', async () => {
+    const { shop, member } = readBoth(as(USERS.stranger), SHOP_A, USERS.stranger);
+    await assertFails(shop);
+    await assertFails(member);
+  });
+
+  it('thành viên không còn hoạt động (đã thu hồi) bị từ chối cả hai', async () => {
+    const { shop, member } = readBoth(as(USERS.revokedA), SHOP_A, USERS.revokedA);
+    await assertFails(shop);
+    await assertFails(member);
+  });
+
+  it('thành viên shop A không đọc được shop B hoặc tài liệu thành viên ở shop B', async () => {
+    const { shop, member } = readBoth(as(USERS.ownerA), SHOP_B, USERS.ownerA);
+    await assertFails(shop);
+    await assertFails(member);
+  });
+
+  it('chưa đăng nhập bị từ chối cả hai', async () => {
+    const db = anon();
+    await assertFails(getDoc(doc(db, `shops/${SHOP_A}`)));
+    await assertFails(getDoc(doc(db, `shops/${SHOP_A}/members/${USERS.ownerA}`)));
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Thành viên và vai trò
 // ---------------------------------------------------------------------------
 describe('thành viên và vai trò', () => {
