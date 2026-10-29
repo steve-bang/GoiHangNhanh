@@ -45,9 +45,9 @@ Quy tắc viết test: xác định (không đọc đồng hồ/ngẫu nhiên th
 
 **Chạy:** `npm run test:rules` = `firebase emulators:exec --config firebase/firebase.json --project demo-doncung --only firestore,storage "jest --selectProjects rules --runInBand"`. Yêu cầu Java (đã dùng 21); lần đầu Emulator tải tệp `.jar` (cần mạng). Project id giả `demo-*` nên không đụng dịch vụ thật.
 
-**Cấu trúc:** `firebase/tests/rules/helpers.ts` (tạo môi trường, dữ liệu nền cho hai shop A/B với đủ vai trò — chủ, quản lý, đóng gói, hàng hoàn, chỉ xem, đã thu hồi, shop khác, người lạ), `firestore.rules.test.ts`, `storage.rules.test.ts`.
+**Cấu trúc:** `firebase/tests/rules/helpers.ts` (tạo môi trường, dữ liệu nền cho hai shop A/B với đủ vai trò — chủ, quản lý, đóng gói, hàng hoàn, chỉ xem, đã thu hồi, shop khác, người lạ), `firestore.rules.test.ts`, `storage.rules.test.ts`, `evidence-declare.rules.test.ts` và `order-sync.rules.test.ts` (hình dạng tài liệu mà app ghi phải qua Rules thật), `return-evidence.rules.test.ts` + `return-sync.rules.test.ts` (bản neo và bằng chứng hàng hoàn, Q-28).
 
-**Đã có (49 test):**
+**Đã có (các nhóm chính; tổng số test xem kết quả `npm run test:rules`):**
 
 | Nhóm | Ví dụ |
 |---|---|
@@ -57,6 +57,7 @@ Quy tắc viết test: xác định (không đọc đồng hồ/ngẫu nhiên th
 | Đơn | Chỉ tạo `dataSource: user_entered`; từ chối thời gian tạo do client đặt, `createdBy` giả, `rev` sai, nguồn bán lạ, trường thừa; cập nhật cần `rev+1` (xung đột bị từ chối); trường bất biến; không xóa; dòng sản phẩm số lượng nguyên ≥ 1, các variant là dòng riêng |
 | Phiên | Liên kết kiện–đơn phải khớp (kể cả tạo cùng batch ngoại tuyến); sau khi tạo `orderId`/`packageId`/`orderSnapshot`/`startedAtServer` bất biến; không xóa |
 | Bằng chứng | Chỉ tạo `queued`; từ chối `uploaded`/`verified`/`hash_mismatch`/`recording`; từ chối map `server` giả mạo; từ chối liên kết sai phiên/đơn/kiện; chỉ `original_video`/`photo` quay trong app (nhập thư viện chờ O-02, bản dẫn xuất chỉ máy chủ); mã băm đúng độ dài; client chỉ cập nhật trạng thái phía thiết bị; bản gốc bất biến (mã băm, kích thước, liên kết), không xóa |
+| Hàng hoàn (Q-28) | Bản neo `returns`: chỉ tạo một lần đúng tập khóa (không đơn gốc/trạng thái/vị trí), `createdBy`/giờ máy chủ ép, không sửa/xóa; chéo shop và đoán ID bị từ chối. Bằng chứng hàng hoàn: bản neo phải có sẵn (cùng shop), hồ sơ chưa liên kết đơn vẫn hợp lệ, ảnh chỉ `image/*` và video chỉ `video/*`, kích thước số nguyên dương, client không đặt được `uploaded`/`verified`/`server.*`, không ghi đè/xóa; Function `createUploadSession` và `verifyEvidence` chạy cho bằng chứng hàng hoàn (cùng đường dẫn Storage) |
 | Audit | Chủ shop/quản lý đọc được, người thường không; **không ai** tạo/sửa/xóa từ client |
 | Storage | Mọi truy cập client (thành viên đúng shop, chủ shop, người lạ, ẩn danh) bị từ chối ở cả hai shop: tải lên, đọc, lấy URL, xóa, ghi đè |
 
