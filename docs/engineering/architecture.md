@@ -100,7 +100,8 @@ Feature dự kiến: `shop`, `orders`, `packing`, `returns`, `evidence`, `upload
 | Lượt vận chuyển | `…/orders/{orderId}/shipments/{id}` | *(chưa có Rules)* | Đi/hoàn, mã vận đơn |
 | Phiên ghi nhận | `shops/{shopId}/sessions/{sessionId}` | Có (hạn chế) | `orderId`, `packageId` bất biến; `orderSnapshot` bất biến; chỉ đổi `status`, `interruptions`, `note` |
 | Bằng chứng (Media Asset) | `shops/{shopId}/evidence/{evidenceId}` | Có (hạn chế) | Xem 4.3; bản dẫn xuất chỉ Function tạo |
-| Hồ sơ hàng hoàn | `shops/{shopId}/returnCases/{id}` | *(chưa có Rules)* | `linkedOrderId` nullable; liên kết qua `linkEvents` (ai/lúc nào/căn cứ) |
+| Hồ sơ hàng hoàn — bản neo (R2b, Q-28) | `shops/{shopId}/returns/{returnId}` | Có (tạo một lần, bất biến) | Chỉ định danh: `code` (nhãn, không phải ID), `createdBy`, `createdAt`; KHÔNG chứa đơn gốc/tình trạng/dòng/sai lệch/vị trí. Hồ sơ chưa liên kết đơn vẫn đăng được |
+| Hồ sơ hàng hoàn — nội dung | `shops/{shopId}/returnCases/{id}` | *(chưa có Rules)* | `linkedOrderId` nullable; liên kết qua `linkEvents` (ai/lúc nào/căn cứ). Đồng bộ nội dung là Q-26c, chưa làm |
 | Sai lệch | `…/returnCases/{id}/discrepancies/{id}` | *(chưa có Rules)* | Dữ liệu thực nhận là bản ghi riêng, không ghi đè dữ liệu dự kiến |
 | Vụ tranh chấp | `shops/{shopId}/disputes/{id}` | *(chưa có Rules)* | Tham chiếu bằng ID; đặt cờ giữ trên bằng chứng (Function) |
 | Bộ bằng chứng xuất | `shops/{shopId}/exports/{id}` | Không (Function) | Manifest + tệp trong Storage |
@@ -113,7 +114,9 @@ Feature dự kiến: `shop`, `orders`, `packing`, `returns`, `evidence`, `upload
 ```
 evidence/{evidenceId}
   # Vùng client khai báo, bất biến sau khi tạo (trừ trạng thái phía thiết bị)
-  shopId, sessionId, orderId, packageId      # liên kết bằng ID; Rules kiểm tra khớp phiên
+  shopId, sessionId, orderId, packageId      # liên kết bằng ID; Rules kiểm tra khớp phiên (bằng chứng ĐÓNG GÓI)
+  # Hoặc, bằng chứng HÀNG HOÀN (R2b, Q-28): shopId, ownerKind: 'return', returnId   (KHÔNG có phiên/đơn/kiện;
+  # Rules kiểm tra shops/{shopId}/returns/{returnId} đã tồn tại; ảnh image/*, video video/*)
   kind: 'original_video' | 'photo'           # 'derived' chỉ Function tạo
   origin: 'in_app_capture'                   # nhập thư viện (O-02) chưa được phép
   sha256Client, sizeBytes, durationMs, mimeType
@@ -134,7 +137,7 @@ evidence/{evidenceId}
 ### 4.4 Storage (client bị từ chối hoàn toàn — ADR-006, chờ duyệt)
 
 ```
-shops/{shopId}/evidence/{evidenceId}/original            bản gốc, tạo đúng một lần
+shops/{shopId}/evidence/{evidenceId}/original            bản gốc, tạo đúng một lần (cả đóng gói lẫn hàng hoàn: đường dẫn chỉ cần shopId + evidenceId)
 shops/{shopId}/evidence/{evidenceId}/derived/{derivId}   xem trước/nén; liên kết bản gốc
 shops/{shopId}/exports/{exportId}/…                      bộ hồ sơ xuất
 ```

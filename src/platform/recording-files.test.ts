@@ -1,4 +1,5 @@
 import {
+  deleteRecording,
   findPersistedRecording,
   getAvailableDiskBytes,
   persistRecording,
@@ -12,6 +13,7 @@ const mockDirs = new Set<string>();
 let mockMoveError: (Error & { code?: string }) | null = null;
 let mockDocument = 'file:///docs';
 let mockWriteError: Error | null = null;
+let mockDeleteMode: 'ok' | 'throw' | 'noop' = 'ok';
 const mockProbeLog: string[] = [];
 let mockDisk: number | (() => number) = 1_000_000;
 
@@ -39,6 +41,8 @@ jest.mock('expo-file-system', () => {
       if (mockWriteError) throw mockWriteError;
     }
     delete() {
+      if (mockDeleteMode === 'throw') throw new Error('locked');
+      if (mockDeleteMode === 'noop') return;
       mockFiles.delete(this.uri);
       mockProbeLog.push(`delete:${this.uri}`);
     }
@@ -84,6 +88,7 @@ beforeEach(() => {
   mockDirs.clear();
   mockMoveError = null;
   mockWriteError = null;
+  mockDeleteMode = 'ok';
   mockProbeLog.length = 0;
   mockDocument = 'file:///docs';
   mockDisk = 1_000_000;
@@ -225,5 +230,46 @@ describe('probeEvidenceDirWritable', () => {
     expect(probeEvidenceDirWritable()).toBe(false);
     expect(mockProbeLog.map((l) => l.split(':')[0])).toEqual(['create', 'delete']);
     expect(mockFiles.size).toBe(0);
+  });
+});
+
+describe('deleteRecording (chỉ cho ngoại lệ xóa ảnh hàng hoàn, Q-26j)', () => {
+  it('xóa tệp bền theo đường dẫn tương đối; chỉ đúng tệp đó', () => {
+    mockFiles.set('file:///docs/evidence/a.jpg', 5);
+    mockFiles.set('file:///docs/evidence/b.jpg', 5);
+    expect(deleteRecording('evidence/a.jpg')).toEqual({ ok: true, deleted: true });
+    expect(mockFiles.has('file:///docs/evidence/a.jpg')).toBe(false);
+    expect(mockFiles.has('file:///docs/evidence/b.jpg')).toBe(true);
+  });
+
+  it('tệp không còn: ok (xóa lặp lại an toàn)', () => {
+    expect(deleteRecording('evidence/gone.jpg')).toEqual({ ok: true, deleted: false });
+  });
+
+  it('dữ liệu cũ lưu đường dẫn tuyệt đối với container đã đổi: tìm lại theo thư mục tài liệu hiện tại', () => {
+    mockFiles.set('file:///docs/evidence/a.jpg', 5);
+    expect(deleteRecording('file:///old-container/evidence/a.jpg')).toEqual({
+      ok: true,
+      deleted: true,
+    });
+    expect(mockFiles.size).toBe(0);
+  });
+
+  it('tệp ngoài thư mục evidence (tệp tạm camera) và đường dẫn có ".." thì KHÔNG đụng tới', () => {
+    mockFiles.set('file:///cache/Camera/x.jpg', 5);
+    mockFiles.set('file:///docs/other.txt', 5);
+    expect(deleteRecording('file:///cache/Camera/x.jpg')).toEqual({ ok: true, deleted: false });
+    expect(deleteRecording('evidence/../other.txt')).toEqual({ ok: false });
+    expect(mockFiles.has('file:///cache/Camera/x.jpg')).toBe(true);
+    expect(mockFiles.has('file:///docs/other.txt')).toBe(true);
+  });
+
+  it('xóa lỗi (ném lỗi hoặc tệp còn nguyên): ok false, không ném', () => {
+    mockFiles.set('file:///docs/evidence/a.jpg', 5);
+    mockDeleteMode = 'throw';
+    expect(deleteRecording('evidence/a.jpg')).toEqual({ ok: false });
+    mockDeleteMode = 'noop';
+    expect(deleteRecording('evidence/a.jpg')).toEqual({ ok: false });
+    expect(mockFiles.has('file:///docs/evidence/a.jpg')).toBe(true);
   });
 });

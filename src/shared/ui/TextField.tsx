@@ -96,7 +96,7 @@ export function TextField({
     borderColor: error
       ? tokens.color.feedback.danger.fg
       : focused
-        ? tokens.color.action.primary
+        ? tokens.color.brand.primary
         : compact
           ? tokens.color.border.field
           : tokens.color.border.default,

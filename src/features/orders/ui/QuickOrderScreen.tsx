@@ -294,7 +294,7 @@ export function QuickOrderScreen() {
       onPress={() => (dirty ? setLeaveOpen(true) : navigation.back())}
       style={{ minHeight: touch, minWidth: touch, alignItems: 'center', justifyContent: 'center' }}
     >
-      <Text variant="formButton" style={{ color: tokens.color.action.primary }}>
+      <Text variant="formButton" style={{ color: tokens.color.action.link }}>
         {t('screens:quickOrder.cancel')}
       </Text>
     </Pressable>
@@ -534,8 +534,8 @@ export function QuickOrderScreen() {
         }}
         style={[styles.addLine, { minHeight: touch, gap: tokens.space.sm }]}
       >
-        <Icon name="add" size={18} color={tokens.color.action.primary} />
-        <Text variant="formButton" style={{ color: tokens.color.action.primary }}>
+        <Icon name="add" size={18} color={tokens.color.brand.primary} />
+        <Text variant="formButton" style={{ color: tokens.color.action.link }}>
           {t('screens:quickOrder.addLine')}
         </Text>
       </Pressable>
@@ -556,8 +556,8 @@ export function QuickOrderScreen() {
           onPress={() => setShowTracking(true)}
           style={[styles.addLine, { minHeight: touch, gap: tokens.space.sm }]}
         >
-          <Icon name="add" size={18} color={tokens.color.action.primary} />
-          <Text variant="formButton" style={{ color: tokens.color.action.primary }}>
+          <Icon name="add" size={18} color={tokens.color.brand.primary} />
+          <Text variant="formButton" style={{ color: tokens.color.action.link }}>
             {t('screens:quickOrder.addTracking')}
           </Text>
         </Pressable>

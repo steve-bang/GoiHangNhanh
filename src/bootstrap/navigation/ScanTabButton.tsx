@@ -29,7 +29,7 @@ export function ScanTabButton({ onPress, testID, label }: Props) {
         style={({ pressed }) => [
           styles.button,
           {
-            backgroundColor: tokens.color.action.primary,
+            backgroundColor: tokens.color.brand.primary,
             borderColor: tokens.color.surface.raised,
             minWidth: Math.max(SCAN_BUTTON_SIZE, getMinTouchTarget()),
             opacity: pressed ? layout.opacity.pressed : 1,

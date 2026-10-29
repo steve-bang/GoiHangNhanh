@@ -5,6 +5,7 @@ import { createMemoryEvidenceFileStore } from '@/features/orders';
 import { MAX_UPLOAD_ATTEMPTS, retryDelayMs } from './backoff';
 import type { HashResult, ServerFileState, UploadGateway, UploadOutcome } from './ports';
 import { createUploadQueue, mayBeKnownToServer } from './upload-queue';
+import { evidenceFileSource } from './upload-sources';
 
 const SHOP = 'shop-1' as ShopId;
 const HASH = 'ab'.repeat(32);
@@ -53,7 +54,7 @@ function setup(options: { online?: boolean; hash?: HashResult } = {}) {
   };
   let hashResult: HashResult = options.hash ?? { ok: true, sha256: HASH };
   const queue = createUploadQueue({
-    files,
+    sources: [evidenceFileSource(files)],
     gateway,
     hasher: { sha256: async () => hashResult },
     now: () => clock,
@@ -220,6 +221,23 @@ describe('hàng đợi tải lên', () => {
     expect(await t.state('a')).toBe('uploaded');
   });
 
+  it('đóng gói: tệp uploading bị gián đoạn rồi chưa kịp tải lại vẫn mang dấu đã thử (UPLOAD_INTERRUPTED)', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    await t.files.applyEvent(
+      SHOP,
+      'a' as EvidenceId,
+      { type: 'UPLOAD_STARTED', origin: 'device' },
+      5,
+    );
+    t.outcomes.push({ kind: 'retryable', code: 'NETWORK' });
+    await t.queue.runOnce(SHOP);
+    // Lượt trên tải lại và lỗi tạm: dấu lần thử không bị mất về 0.
+    const file = await t.files.get(SHOP, 'a' as EvidenceId);
+    expect(file?.attemptCount).toBeGreaterThanOrEqual(1);
+    expect(file?.lastErrorCode).toBe('NETWORK');
+  });
+
   it('không hỏi được máy chủ thì vẫn tải (tải lên idempotent theo id)', async () => {
     const t = setup();
     await queuedFile(t.files, 'a');
@@ -294,7 +312,7 @@ describe('đối soát chỉ hỏi máy chủ về tệp máy chủ có thể đ
       3000,
     );
     const queue = createUploadQueue({
-      files,
+      sources: [evidenceFileSource(files)],
       gateway: {
         upload: async () => ({ kind: 'received' }),
         fetchServerStates: async (_shop, ids) => {

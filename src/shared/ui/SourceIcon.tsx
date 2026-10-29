@@ -5,6 +5,7 @@ import type { OrderSource } from '@/core/orders/order-source';
 import { palette } from '@/core/theme';
 
 import { Icon, type IconName } from './Icon';
+import { useTheme } from './theme';
 
 /** Kích thước mặc định (khớp ô nguồn bán ở màn Tạo hồ sơ shop). */
 const DEFAULT_SIZE = 36;
@@ -40,6 +41,7 @@ interface SourceIconProps {
  * trong ô vuông bo góc nền trắng, viền mảnh để logo nền trắng và logo nền trong suốt trông đồng bộ.
  */
 export function SourceIcon({ source, size = DEFAULT_SIZE }: SourceIconProps) {
+  const { scope, tokens } = useTheme();
   const radius = Math.round(size * 0.28);
   const logo = LOGOS[source];
   const hidden = {
@@ -57,6 +59,7 @@ export function SourceIcon({ source, size = DEFAULT_SIZE }: SourceIconProps) {
           styles.box,
           styles.logoBox,
           { width: size, height: size, borderRadius: radius, padding },
+          scope === 'app' ? { borderColor: tokens.color.border.default } : null,
         ]}
       >
         <Image
@@ -70,13 +73,15 @@ export function SourceIcon({ source, size = DEFAULT_SIZE }: SourceIconProps) {
   }
 
   const tile = FALLBACK_TILES[source] ?? OTHER_TILE;
+  // Trong app, ô "Khác" dùng trung tính ấm thay xanh xám lạnh; màn thiết lập đã duyệt giữ màu cũ.
+  const tint = scope === 'app' && source === 'other' ? tokens.color.text.secondary : tile.tint;
   return (
     <View
       testID={`source-icon-${source}`}
       {...hidden}
       style={[
         styles.box,
-        { width: size, height: size, borderRadius: radius, backgroundColor: tile.tint },
+        { width: size, height: size, borderRadius: radius, backgroundColor: tint },
       ]}
     >
       <Icon name={tile.icon} size={Math.round(size * 0.55)} color={palette.neutral[0]} />

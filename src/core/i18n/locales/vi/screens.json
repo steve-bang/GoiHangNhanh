@@ -2,15 +2,12 @@
   "home": {
     "greeting": "Chào mừng trở lại!",
     "notifications": "Xem thông báo",
-    "bannerTitle": "Ghi hình đóng gói đầy đủ, lưu giữ rõ ràng",
-    "bannerHint": "Ghi hình – Lưu trữ – Theo dõi trạng thái",
     "packOrder": "Đóng gói đơn",
     "packOrderHint": "Ghi hình đóng gói và niêm phong",
     "receiveReturn": "Nhận hàng hoàn",
     "receiveReturnHint": "Ghi hình mở kiện và kiểm tra hàng",
     "returnsList": "Danh sách hàng hoàn",
     "quick": {
-      "scan": "Quét mã đơn",
       "quickOrder": "Tạo đơn nhanh",
       "orders": "Danh sách đơn",
       "evidence": "Bằng chứng"
@@ -23,8 +20,7 @@
       "error": "Lỗi – cần xử lý"
     },
     "tipTitle": "Ghi hình đủ các bước",
-    "tipHint": "Quay từ lúc lấy hàng đến khi dán niêm phong xong.",
-    "tipAction": "Xem hướng dẫn"
+    "tipHint": "Quay từ lúc lấy hàng đến khi dán niêm phong xong."
   },
   "scan": {
     "hint": "Đưa mã QR / mã vạch vào khung hình để quét tự động",
@@ -192,21 +188,6 @@
     "summaryQueued": "Phiên đóng gói đã hoàn tất. Video đã lưu trên thiết bị, đang chờ đồng bộ.",
     "summaryUploaded": "Phiên đóng gói đã hoàn tất. Máy chủ đã nhận video.",
     "summaryPartial": "Phiên chưa trọn vẹn: có video chưa lưu xong. Video còn lại đã lưu trên máy."
-  },
-  "returns": {
-    "search": "Tìm theo mã đơn, mã vận đơn hoặc mã hoàn",
-    "filterAll": "Tất cả",
-    "filter": {
-      "receiving": "Đang tiếp nhận",
-      "checking": "Đang kiểm tra",
-      "checked": "Đã kiểm tra",
-      "discrepancy": "Có sai lệch",
-      "unsynced": "Chưa đồng bộ"
-    },
-    "unlinked": "Chưa liên kết đơn gốc",
-    "receive": "Tiếp nhận hàng hoàn",
-    "emptyTitle": "Chưa có hồ sơ hàng hoàn nào",
-    "emptyMessage": "Khi nhận kiện hoàn, hãy tiếp nhận để ghi lại tình trạng kiện trước khi mở."
   },
   "orders": {
     "search": "Tìm mã đơn, mã vận đơn…",

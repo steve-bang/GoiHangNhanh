@@ -88,6 +88,55 @@ describe('hashStream', () => {
 describe('verifyEvidenceObject', () => {
   const bytes = Buffer.from('video-goc-0123456789');
 
+  it('bằng chứng hàng hoàn (Q-28, không có phiên/đơn/kiện): cùng đường dẫn, băm lại phía máy chủ, verified + kiểm toán', async () => {
+    counter += 1;
+    const shopId = `shop-ev-${Date.now()}-${counter}`;
+    const evidenceId = `ev-ret-${counter}`;
+    await db.doc(`shops/${shopId}/evidence/${evidenceId}`).set({
+      shopId,
+      ownerKind: 'return',
+      returnId: 'ret-1',
+      kind: 'photo',
+      origin: 'in_app_capture',
+      clientFileState: 'uploading',
+      sha256Client: sha(bytes),
+      sizeBytes: bytes.length,
+      mimeType: 'image/jpeg',
+    });
+    const path = `shops/${shopId}/evidence/${evidenceId}/original`;
+    expect(await verifyEvidenceObject(db, readerOf(bytes), path)).toEqual({ outcome: 'verified' });
+    expect((await evidenceOf(shopId, evidenceId))?.server).toMatchObject({
+      state: 'verified',
+      sha256Server: sha(bytes),
+    });
+    expect(await auditOf(shopId)).toEqual([
+      expect.objectContaining({ type: 'evidence.verified', evidenceId }),
+    ]);
+  });
+
+  it('bằng chứng hàng hoàn có nội dung khác khai báo: hash_mismatch, không bao giờ verified', async () => {
+    counter += 1;
+    const shopId = `shop-ev-${Date.now()}-${counter}`;
+    const evidenceId = `ev-ret-${counter}`;
+    await db.doc(`shops/${shopId}/evidence/${evidenceId}`).set({
+      shopId,
+      ownerKind: 'return',
+      returnId: 'ret-1',
+      kind: 'original_video',
+      origin: 'in_app_capture',
+      clientFileState: 'uploading',
+      sha256Client: sha(Buffer.from('khac')),
+      sizeBytes: bytes.length,
+      mimeType: 'video/mp4',
+    });
+    const path = `shops/${shopId}/evidence/${evidenceId}/original`;
+    expect(await verifyEvidenceObject(db, readerOf(bytes), path)).toMatchObject({
+      outcome: 'hash_mismatch',
+      reason: 'sha256_differs',
+    });
+    expect((await evidenceOf(shopId, evidenceId))?.server.state).toBe('hash_mismatch');
+  });
+
   it('khớp mã băm và kích thước: server.state = verified, có mã băm máy chủ và một sự kiện kiểm toán', async () => {
     const { shopId, evidenceId, path } = await declare(bytes);
     expect(await verifyEvidenceObject(db, readerOf(bytes), path)).toEqual({ outcome: 'verified' });

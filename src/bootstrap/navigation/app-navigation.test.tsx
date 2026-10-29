@@ -452,9 +452,14 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
   });
 
   describe('tab Đơn hàng: danh sách thật và chi tiết (router thật, kho bộ nhớ)', () => {
+    /** Danh sách rỗng chỉ có nút trong khối trạng thái rỗng; có đơn rồi thì có nút ở đầu trang. */
+    const createButton = () =>
+      screen.queryByRole('button', { name: 'Tạo đơn' }) ??
+      screen.getByRole('button', { name: 'Tạo đơn hàng' });
+
     /** Tạo một đơn bằng UI (Tạo đơn -> Tiếp tục -> Tạo đơn hàng -> chi tiết), rồi lùi về danh sách. */
     async function createOrderFromList(code: string, product?: string) {
-      await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn' }));
+      await fireEvent.press(createButton());
       expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
       await fireEvent.changeText(screen.getByTestId('quick-order-code'), code);
       if (product) await fireEvent.changeText(screen.getByTestId('line-name-0'), product);
@@ -542,7 +547,7 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
 
     it('Hủy form đã nhập dở: hỏi Bỏ thay đổi?, xác nhận thì về danh sách và không có đơn nào được lưu', async () => {
       await openOrdersTab();
-      await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn' }));
+      await fireEvent.press(createButton());
       await fireEvent.changeText(screen.getByTestId('quick-order-code'), 'DH-HUY');
       await fireEvent.press(screen.getByTestId('quick-cancel'));
       expect(screen.getByText('Bỏ thay đổi?')).toBeOnTheScreen();

@@ -77,6 +77,30 @@ export function persistRecording(
   }
 }
 
+export type DeleteRecordingResult =
+  { readonly ok: true; readonly deleted: boolean } | { readonly ok: false };
+
+/**
+ * Xóa MỘT tệp bền trong thư mục `evidence/` của app (chỉ dùng cho NGOẠI LỆ xóa ảnh hàng hoàn chụp nhầm,
+ * Q-26j; không dùng cho video đóng gói hay bằng chứng khác). An toàn: không ném lỗi; tệp không còn thì
+ * `ok` (xóa lặp lại được); đường dẫn có `..` hoặc nằm ngoài `evidence/` (ví dụ tệp tạm của camera, do hệ
+ * điều hành dọn) thì KHÔNG đụng tới và coi là `ok, deleted: false`. Xóa xong mà tệp còn thì `ok: false`.
+ * Chưa kiểm chứng trên thiết bị (quyền ghi, tệp bị khóa).
+ */
+export function deleteRecording(stored: string): DeleteRecordingResult {
+  try {
+    if (stored.split(/[\\/]/).includes('..')) return { ok: false };
+    const uri = resolveRecordingUri(stored);
+    if (!uri.includes(EVIDENCE_MARKER)) return { ok: true, deleted: false };
+    const file = new File(uri);
+    if (!file.exists) return { ok: true, deleted: false };
+    file.delete();
+    return file.exists ? { ok: false } : { ok: true, deleted: true };
+  } catch {
+    return { ok: false };
+  }
+}
+
 /** Tệp bằng chứng còn tồn tại không (dùng khi khôi phục sau khi app bị kill). */
 export function recordingExists(stored: string): boolean {
   try {

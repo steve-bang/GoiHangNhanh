@@ -8,7 +8,16 @@ import { radiusScale, space } from './primitives';
 export const typography = {
   screenTitle: { fontSize: 24, lineHeight: 32, fontWeight: '700' },
   sectionTitle: { fontSize: 17, lineHeight: 24, fontWeight: '600' },
+  /** Tiêu đề thẻ/dòng danh sách (mã đơn, tên hồ sơ): đậm hơn nội dung, nhỏ hơn tiêu đề mục. */
+  cardTitle: { fontSize: 16, lineHeight: 22, fontWeight: '600' },
   body: { fontSize: 15, lineHeight: 22, fontWeight: '400' },
+  /** Số liệu (đếm đơn, dung lượng, đồng hồ): chữ số cùng bề rộng để cột số không nhảy khi đổi giá trị. */
+  numeric: {
+    fontSize: 24,
+    lineHeight: 32,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'] as 'tabular-nums'[],
+  },
   /** Chú thích: không dùng cho thông tin quan trọng. */
   caption: { fontSize: 12, lineHeight: 16, fontWeight: '400' },
   /**

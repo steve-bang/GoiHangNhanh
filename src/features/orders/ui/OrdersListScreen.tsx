@@ -109,6 +109,9 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
 
   const clearAll = () => setFilters(EMPTY_FILTERS);
 
+  // Danh sách rỗng chưa lọc đã có nút tạo đơn trong khối trạng thái rỗng: không lặp thêm ở đầu trang.
+  const showCreate = !(list.status === 'ready' && list.total === 0 && !filtered);
+
   const emptyComponent = (() => {
     if (list.status === 'loading') {
       return (
@@ -186,13 +189,15 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
             scanTestID="orders-scan"
           />
         </View>
-        <Button
-          size="compact"
-          testID="orders-create"
-          icon="add"
-          label={t('screens:orders.createAction')}
-          onPress={() => navigation.push(ROUTES.quickOrder)}
-        />
+        {showCreate ? (
+          <Button
+            size="compact"
+            testID="orders-create"
+            icon="add"
+            label={t('screens:orders.createAction')}
+            onPress={() => navigation.push(ROUTES.quickOrder)}
+          />
+        ) : null}
       </View>
       <FilterChips
         size="compact"
@@ -223,7 +228,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
             styles.filterButton,
             {
               minHeight: FILTER_BUTTON_HEIGHT,
-              borderColor: advanced > 0 ? tokens.color.action.primary : tokens.color.border.field,
+              borderColor: advanced > 0 ? tokens.color.brand.primary : tokens.color.border.field,
               backgroundColor: advanced > 0 ? tokens.color.brand.soft : tokens.color.surface.raised,
               borderRadius: tokens.radius.lg,
               paddingHorizontal: tokens.space.md,
@@ -233,11 +238,11 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
           <Icon
             name="filter"
             size={16}
-            color={advanced > 0 ? tokens.color.action.primary : tokens.color.text.strong}
+            color={advanced > 0 ? tokens.color.brand.primary : tokens.color.text.strong}
           />
           <Text
             variant="formButton"
-            style={{ color: advanced > 0 ? tokens.color.action.primary : tokens.color.text.strong }}
+            style={{ color: advanced > 0 ? tokens.color.action.link : tokens.color.text.strong }}
           >
             {t(
               advanced > 0 ? 'screens:orders.filters.openWithCount' : 'screens:orders.filters.open',
@@ -283,7 +288,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
         ListFooterComponent={
           list.loadingMore ? (
             <View testID="orders-loading-more" style={styles.footer}>
-              <ActivityIndicator color={tokens.color.action.primary} />
+              <ActivityIndicator color={tokens.color.brand.primary} />
               <Text variant="formBody" color="inkMuted">
                 {t('screens:orders.loadingMore')}
               </Text>

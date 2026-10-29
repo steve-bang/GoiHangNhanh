@@ -53,6 +53,8 @@ src/core/theme/
 
 ## 4. Giá trị cuối cùng
 
+> **Cập nhật v3 (Bright Orange):** bảng 4.1 và 4.3 dưới đây mô tả bảng màu **cũ (jade)** vẫn là nguồn của `colors.ts` đóng băng (Splash, đăng nhập, thiết lập đã khách xác nhận). Màn **trong app** dùng bảng màu mới ở mục [4.8](#48-bright-orange-v3); các hàng ghi `jade`/`neutral` ở 4.3 chỉ còn đúng cho bảng cũ.
+
 ### 4.1. Primitives — màu (từ `colors.ts` hiện tại)
 
 Đặt tên theo họ màu + độ đậm, không theo vai trò.
@@ -94,6 +96,7 @@ Các khóa chỉ màn ngoài phạm vi dùng (`splash*`, `welcome*`, `onboarding
 | `radius` | `8 · 12 · 16 · full` | `full = 9999` thay các hình tròn viết `kích thước/2` (5, 22, 28, 34, 42) — kết quả hiển thị giống hệt |
 | `borderWidth` | `none 0 · thin 1 · strong 1.5 · emphasis 2 · ring 4` | `emphasis` = viền chọn/focus/lỗi (trước đây viết `2`). Cạnh mảnh nhất vẫn là `StyleSheet.hairlineWidth` của hệ điều hành |
 | `opacity` | `pressed 0.85 · busy 0.8 · disabled 0.45` | Đúng giá trị `Button`/`Card`. `QuantityStepper` trước đây dùng `0.4` cho trạng thái vô hiệu: hợp nhất về `0.45` (chênh 0.05) |
+| `icon` | `sm 16 · md 20 · lg 24 · xl 32` | (v2) Cỡ biểu tượng; `semantic.icon` / `layout.icon` / `tokens.icon` |
 | `elevation.floating` | `{ elevation 6, color neutral đen, opacity 0.18, radius 8, offset (0, 3) }` | Chuyển nguyên từ `ScanTabButton` |
 
 `spacing` t-shirt cũ (`xs 4, sm 8, md 12, lg 16, xl 24`) được giữ. Thêm `xxs = 2` và `tight = 6`.
@@ -110,9 +113,13 @@ Các khóa chỉ màn ngoài phạm vi dùng (`splash*`, `welcome*`, `onboarding
 | `surface.screen` | `neutral.50` | Nền màn hình |
 | `surface.raised` | `neutral.0` | Thẻ, ô nhập, nền màn form |
 | `surface.muted` | `neutral.100` | Khối gợi ý, ô chưa chọn |
+| `surface.elevated` | `neutral.0` | (v2) Bottom sheet, hộp thoại. Trùng `raised` hôm nay, tách tên để chế độ tối đặt sáng hơn |
+| `text.tertiary` / `text.disabled` | `neutral.500` / `neutral.400` | (v2) Gợi ý trong ô nhập, ghi chú phụ / chữ điều khiển vô hiệu hóa |
 | `border.default` | `neutral.300` | Viền thẻ, đường chia |
 | `border.field` | `mint.200` | Viền ô nhập nhóm form |
+| `border.subtle` / `border.strong` | `neutral.200` / `neutral.400` | (v2) Đường kẻ phân nhóm nhẹ / ranh giới điều khiển cần thấy rõ (≥ 3:1) |
 | `action.primary` | `jade.700` | Nút chính, liên kết, tab đang chọn |
+| `action.primaryPressed` / `action.disabled` | `jade.800` / `neutral.200` | (v2) Trạng thái nhấn nút chính / nền điều khiển vô hiệu hóa. Chưa gắn vào `Button` vì `Button` dùng chung với màn đã khách xác nhận (mục 1); component mới nên dùng |
 | `action.destructive` | `red.700` | Hành động phá hủy (đỏ chỉ cho lỗi/phá hủy/nguy cơ mất dữ liệu) |
 | `feedback.{success,warning,danger}.{fg,bg}` | `green.700/100`, `amber.700/50`, `red.700/50` | Thông báo, ô nhắc |
 | `feedback.info.bg` | `teal.50` | Ô nhắc thông tin (chưa có `info.fg` — TD-2) |
@@ -138,9 +145,48 @@ Mỗi nhãn có bộ `fg / bg / border` **riêng**, dù một số hôm nay trù
 
 `camera.recordingIndicator` (đỏ `red.700`) là màu chấm *Đang ghi hình* — **ngoại lệ đã được chủ sản phẩm chấp nhận (TK-2, [D-18](README.md#đã-chốt))** của quy tắc "đỏ chỉ cho lỗi/phá hủy"; chỉ dùng cho chấm này, luôn kèm chữ và đồng hồ. **Chưa tạo token trạng thái** cho: *Đang lưu trên thiết bị*, *Bằng chứng chưa đầy đủ / ghi bị gián đoạn*. UI của ba trạng thái này chưa tồn tại hoặc chưa chốt màu (audit 3.4, TK-2). Khi dựng UI sẽ thêm khóa `status.recording`, `status.savingOnDevice`, `status.incomplete` cùng lúc, **không** gộp vào nhãn nào ở trên.
 
+#### Trạng thái vận hành (v2)
+
+Ngoài 6 nhãn bằng chứng, `semantic.status` có thêm bộ riêng (không thuộc `EVIDENCE_STATUS_PRESENTATION`, không đổi docs/09 mục 3):
+
+| Token | Màu | Dùng cho | Ghi chú |
+|---|---|---|---|
+| `status.recording` | `red.700 / red.50` | Đang ghi hình | Ngoại lệ D-18, luôn kèm chữ + đồng hồ |
+| `status.interrupted` | `amber.700 / amber.50` | Phiên quay bị gián đoạn | Cam: nguy cơ thiếu hình, không phải đỏ |
+| `status.retrying` | `blue.700 / blue.50` | Đang thử tải lại sau lỗi tạm | Thông tin, không phải lỗi |
+| `status.offline` | `amber.700 / amber.50` | Không có mạng | Dữ liệu vẫn trên máy; `OfflineBanner` đã dùng |
+| `status.syncPending` / `status.synced` | `amber` / `green` | Hàng đợi đồng bộ còn việc / đã đối soát xong | `synced` chỉ dùng khi máy chủ đã xác nhận |
+
+Test (`theme.test.ts`) khóa: đủ tương phản 4.5:1 và chỉ `error` + `recording` được dùng sắc đỏ.
+
+### 4.8. Bright Orange (v3)
+
+Bảng màu thương hiệu của màn trong app (khách duyệt 2026-10-29). Primitive mới: `orange`, `stone`, `leaf`, `ember`, `sky`. Họ `jade`/`neutral`/`slate`/`mint` giữ lại **chỉ** cho `colors.ts` đóng băng.
+
+| Token ngữ nghĩa | Giá trị | Ghi chú tương phản |
+|---|---|---|
+| `brand.primary` | `#EE4D2D` | Biểu tượng, nút Quét, tab đang chọn, viền chọn, thanh tiến độ. Trên trắng 3.66:1 (đồ họa ≥ 3:1 đạt). **Không** làm nền chữ trắng cỡ thường |
+| `brand.hover` / `brand.pressed` | `#FF6A45` / `#D93B20` | `hover` dùng cho khung quét trên nền camera tối (6:1) |
+| `action.primary` | `#D93B20` | **Nền nút chính, thẻ hành động chính.** Chữ trắng trên nó 4.57:1 (AA). Là sắc cam sáng nhất còn đạt AA với chữ trắng |
+| `action.primaryPressed` | `#B02E17` | Trạng thái nhấn, trắng trên nó 6.46:1 |
+| `action.link` / `brand.onSoft` | `#B02E17` | Chữ cam trên nền màn, trắng và `brand.soft`/`softStrong` (≥ 4.5:1 cả ba) |
+| `brand.soft` / `brand.softStrong` | `#FFF1EC` / `#FCE5DE` | Chỉ nhấn vùng nhỏ (chip chọn, ô icon). Không tô cả thẻ/màn |
+| `brand.deep` | `#7C2D12` | Nền thương hiệu đậm (hero), chữ trắng 9.4:1 |
+| `surface.screen` / `raised` / `muted` | `#FFFAF7` / `#FFFFFF` / `#FFF5F0` | Nền màn / thẻ / khối nhấn nhẹ (`surface.secondary`) |
+| `text.primary` / `secondary` | `#292524` / `#746D68` | `secondary` tối hơn gợi ý ban đầu `#78716C` một chút để đạt 4.5:1 trên `#FFF5F0` (4.74:1; `#78716C` chỉ 4.47:1) |
+| `border.default` / `field` / `strong` | `#F0E4DE` / `#D8CBC3` / `#9A938D` | `default` là đường viền thẻ tinh tế (trang trí); `strong` ≥ 3:1 cho ranh giới điều khiển |
+| `feedback.success` | `#15803D` trên `#DCFCE7` | 4.57:1 |
+| `feedback.warning` | `#B45309` trên `#FDF3E7` | 4.58:1 |
+| `feedback.danger` / `action.destructive` | `#B91C1C` trên `#FEE2E2` | 5.30:1. Gần sắc với cam thương hiệu (tương phản giữa hai màu 1.42:1) nên lỗi LUÔN kèm biểu tượng cảnh báo + chữ và nền hồng nhạt |
+| `feedback.info` | `#0369A1` trên `#F0F9FF` | 5.57:1 |
+
+**Quy tắc phân vai màu:** cam chỉ cho hành động chính, biểu tượng quan trọng và điều hướng đang chọn. Trạng thái nghiệp vụ không dùng cam: đã tải/đã xác minh = xanh lá; **đang tải = xanh dương** (trước đây xanh thương hiệu); chờ tải/ngoại tuyến/gián đoạn = vàng cam `amber`; lỗi = đỏ. Test `theme.test.ts` (nhóm "Bright Orange (v3)") khóa giá trị, tương phản và việc màu thương hiệu không bị dùng cho `status`.
+
+**Cơ chế phạm vi:** `Button`/`Text`/`Icon` dùng chung với màn đóng băng đọc bảng phẳng `colors`. `Screen` bọc nội dung trong `AppThemeScope` nên `useTheme().colors` trả `appColors` (suy từ token ở trên); ngoài `Screen` vẫn là bảng cũ. Nhờ vậy Splash/đăng nhập/thiết lập không đổi một điểm ảnh (`colors.golden.json` và `frozen-style-equivalence.test.tsx` giữ nguyên). Trong app, nút phụ `secondary` có viền trung tính + chữ cam để mỗi màn chỉ một nút cam đặc.
+
 ### 4.5. Typography
 
-Giữ nguyên 9 variant (`screenTitle, sectionTitle, body, caption, formTitle, formLabel, formBody, formButton, formButtonSmall, overlay`) với đúng giá trị hiện tại. Thêm tên cho trọng số dùng bằng chữ: `weight.regular '400'`, `weight.bold '700'` (thay `fontWeight: '700'` ở `Text`, `'400'` ở `RecordingFrame`). Không thêm font family/letter spacing.
+Giữ nguyên 9 variant (`screenTitle, sectionTitle, body, caption, formTitle, formLabel, formBody, formButton, formButtonSmall, overlay`) với đúng giá trị hiện tại. **v2 thêm 2 variant:** `cardTitle` (16/22, 600; tiêu đề thẻ/dòng danh sách) và `numeric` (24/32, 700, `tabular-nums`; số liệu như số đơn ở Trang chủ). Thêm tên cho trọng số dùng bằng chữ: `weight.regular '400'`, `weight.bold '700'` (thay `fontWeight: '700'` ở `Text`, `'400'` ở `RecordingFrame`). Không thêm font family/letter spacing.
 
 Quy tắc: không dùng `fontSize` số trong UI; số liệu (số lượng, đồng hồ) dùng variant sẵn có; nếu cần số cùng độ rộng, thêm `fontVariant: ['tabular-nums']` vào **variant**, không lẻ tẻ từng màn (chưa cần, ghi TD-4).
 
@@ -212,7 +258,8 @@ Danh sách tệp ngoài phạm vi nằm ở **một nguồn** (`scripts/design-t
 | `colorRole` trong `EVIDENCE_STATUS_PRESENTATION` | khóa `status.*` riêng | Màu không còn dùng chung `success` |
 | Literal `0.85/0.8/0.45`, `1.5`, `4`, `56`, `50`, `84/68/88`, `62/18` | token mục 4.2, 4.6 | Cùng giá trị |
 | Spacing `10`, `5` | `8`, `4` | Chênh ≤2dp |
-| `'#000'` (đổ bóng) | `elevation.floating` | Cùng giá trị |
+| `'#000'` (đổ bóng) | `icon` | `sm 16 · md 20 · lg 24 · xl 32` | (v2) Cỡ biểu tượng; `semantic.icon` / `layout.icon` / `tokens.icon` |
+| `elevation.floating` | Cùng giá trị |
 | Hình tròn `borderRadius: n/2` | `radius.full` | Hiển thị giống hệt |
 | Opacity `0.4` (Stepper vô hiệu) | `opacity.disabled` 0.45 | Chênh 0.05 |
 | Spacing `14` (nút sao chép) | `space.md` 12 | Chênh 2dp |

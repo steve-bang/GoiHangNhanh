@@ -28,3 +28,10 @@ jest.mock('expo-crypto', () => {
 // Mặc định trong test không mở SQLite thật: kho bộ nhớ (null = dùng kho bộ nhớ). Kho SQLite được test
 // riêng bằng SQLite của Node (src/features/orders/data/sqlite-order-store.test.ts).
 jest.mock('@/platform/local-db', () => ({ openLocalDatabase: async () => null }));
+
+// Vị trí thiết bị (expo-location là mô-đun native): mặc định có vị trí. Điều khiển qua `mockLocation`
+// trong `src/test-utils/mock-location.ts`; test của chính adapter dùng `jest.unmock`.
+jest.mock(
+  '@/platform/location',
+  () => jest.requireActual('@/test-utils/mock-location').locationMock,
+);

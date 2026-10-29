@@ -203,6 +203,69 @@ describe('createUploadSessionForUser', () => {
     expect(await audit(served.shopId)).toEqual([]);
   });
 
+  it('bằng chứng hàng hoàn (Q-28): cùng đường dẫn Storage, URL tạo-một-lần, kiểm toán ghi chủ sở hữu', async () => {
+    const { shopId, uid, evidenceId } = await seed({
+      evidence: {
+        ownerKind: 'return',
+        returnId: 'ret-1',
+        kind: 'photo',
+        mimeType: 'image/jpeg',
+      },
+    });
+    await db.doc(`shops/${shopId}/returns/ret-1`).set({ shopId, code: 'RH-00001' });
+    const { signer, signed } = fakeSigner();
+    const result = await createUploadSessionForUser(db, signer, uid, { shopId, evidenceId });
+    const path = `shops/${shopId}/evidence/${evidenceId}/original`;
+    expect(result).toMatchObject({
+      status: 'ready',
+      storagePath: path,
+      headers: { 'Content-Type': 'image/jpeg', ...CREATE_ONLY_HEADERS },
+    });
+    expect(signed).toHaveLength(1);
+    expect(signed[0]?.extensionHeaders).toEqual(CREATE_ONLY_HEADERS);
+    expect(await audit(shopId)).toEqual([
+      expect.objectContaining({
+        type: 'evidence.upload_session_created',
+        ownerKind: 'return',
+        returnId: 'ret-1',
+        evidenceId,
+      }),
+    ]);
+  });
+
+  it('bằng chứng hàng hoàn chưa có hồ sơ neo (hoặc hồ sơ ở shop khác): failed-precondition, không ký', async () => {
+    const orphan = await seed({
+      evidence: { ownerKind: 'return', returnId: 'ret-chua-dang', mimeType: 'image/jpeg' },
+    });
+    const otherShop = await seed({
+      evidence: { ownerKind: 'return', returnId: 'ret-b', mimeType: 'image/jpeg' },
+    });
+    // Hồ sơ cùng ID nhưng nằm ở shop KHÁC: không được tính.
+    await db.doc(`shops/shop-khac/returns/ret-b`).set({ shopId: 'shop-khac' });
+    const badId = await seed({
+      evidence: { ownerKind: 'return', returnId: '../x', mimeType: 'image/jpeg' },
+    });
+    for (const s of [orphan, otherShop, badId]) {
+      const { signer, signed } = fakeSigner();
+      await expect(createUploadSessionForUser(db, signer, s.uid, s)).rejects.toMatchObject({
+        code: 'failed-precondition',
+      });
+      expect(signed).toEqual([]);
+    }
+  });
+
+  it('bằng chứng hàng hoàn đã có đối tượng: không cấp URL (bản gốc tạo một lần)', async () => {
+    const s = await seed({
+      evidence: { ownerKind: 'return', returnId: 'ret-1', mimeType: 'image/jpeg' },
+    });
+    await db.doc(`shops/${s.shopId}/returns/ret-1`).set({ shopId: s.shopId });
+    const { signer, signed } = fakeSigner(true);
+    expect(await createUploadSessionForUser(db, signer, s.uid, s)).toMatchObject({
+      status: 'already_received',
+    });
+    expect(signed).toEqual([]);
+  });
+
   it('loại tệp không nằm trong danh sách cho phép: failed-precondition, không ký', async () => {
     for (const mimeType of ['application/zip', null, 5]) {
       const s = await seed({ evidence: { mimeType } });

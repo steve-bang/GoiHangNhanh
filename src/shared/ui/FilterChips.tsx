@@ -65,7 +65,7 @@ export function FilterChips<K extends string>({
           : {
               borderRadius: tokens.radius.lg,
               borderWidth: selected ? tokens.borderWidth.emphasis : tokens.borderWidth.thin,
-              borderColor: selected ? tokens.color.action.primary : tokens.color.border.default,
+              borderColor: selected ? tokens.color.brand.primary : tokens.color.border.default,
               backgroundColor: selected ? tokens.color.brand.soft : tokens.color.surface.raised,
             };
         const textColor = solid
@@ -73,7 +73,7 @@ export function FilterChips<K extends string>({
             ? tokens.color.text.onAction
             : tokens.color.text.strong
           : selected
-            ? tokens.color.action.primary
+            ? tokens.color.brand.onSoft
             : tokens.color.text.primary;
         return (
           <Pressable
@@ -114,7 +114,7 @@ export function FilterChips<K extends string>({
 }
 
 /** Chiều cao nhìn thấy của chip cỡ gọn; vùng chạm được bù bằng hitSlop. */
-const COMPACT_CHIP_HEIGHT = 34;
+const COMPACT_CHIP_HEIGHT = 40;
 
 const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },

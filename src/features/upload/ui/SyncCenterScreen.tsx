@@ -53,13 +53,15 @@ export function SyncCenterScreen() {
       testID="screen-UI-F01"
     >
       <Text color="textMuted">{t('screens:sync.note')}</Text>
-      <FilterChips options={options} selectedKey={filter} onSelect={setFilter} />
+      <FilterChips options={options} selectedKey={filter} onSelect={setFilter} size="compact" />
       <View style={{ gap: tokens.space.md }}>
         {visible.map((job) => (
           <Card key={job.id}>
             <View style={{ gap: tokens.space.sm }}>
-              <Text variant="sectionTitle">{job.recordLabel}</Text>
-              <Text color="textMuted">{job.sizeLabel}</Text>
+              <Text variant="cardTitle">{job.recordLabel}</Text>
+              <Text variant="formBody" color="textMuted">
+                {job.sizeLabel}
+              </Text>
               <EvidenceStatusBadge
                 status={job.status}
                 {...(job.progressPercent !== undefined

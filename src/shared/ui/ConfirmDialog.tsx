@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { Modal, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from './Button';
@@ -5,7 +6,7 @@ import type { IconName } from './Icon';
 import { IconTile } from './IconTile';
 import type { IconTone } from './tone';
 import { Text } from './Text';
-import { useTheme } from './theme';
+import { AppThemeScope, useTheme } from './theme';
 
 interface ConfirmDialogBaseProps {
   visible: boolean;
@@ -56,7 +57,7 @@ type ConfirmDialogProps = ConfirmDialogBaseProps &
   );
 
 /** Hộp thoại xác nhận, chỉ dùng cho hành động quan trọng (xóa, đóng hồ sơ, rời phiên quay). */
-export function ConfirmDialog({
+function ConfirmDialogBody({
   visible,
   title,
   message,
@@ -196,3 +197,15 @@ const styles = StyleSheet.create({
   actionsRow: { flexDirection: 'row', alignItems: 'stretch' },
   flexOne: { flex: 1 },
 });
+
+/**
+ * Luôn trong phạm vi giao diện app: thành phần này (cùng nút bên trong) có thể hiện ngoài `Screen` (màn
+ * camera, hộp thoại gốc) nên tự bọc `AppThemeScope` để `Button`/`Text` nhận bảng màu của app.
+ */
+export function ConfirmDialog(props: ComponentProps<typeof ConfirmDialogBody>) {
+  return (
+    <AppThemeScope>
+      <ConfirmDialogBody {...props} />
+    </AppThemeScope>
+  );
+}

@@ -19,9 +19,9 @@
     "banner": "Đang ngoại tuyến. Bằng chứng sẽ được đồng bộ khi có mạng."
   },
   "placeholder": {
-    "title": "Màn hình đang được dựng khung",
-    "message": "Bố cục và đường vào màn hình này đã có; nội dung sẽ được bổ sung ở bản sau.",
-    "action": "Quay lại màn hình trước"
+    "title": "Tính năng sắp có",
+    "message": "Màn này đang được hoàn thiện. Dữ liệu và bằng chứng của bạn không bị ảnh hưởng.",
+    "action": "Quay lại"
   },
   "sources": {
     "shopee": "Shopee",

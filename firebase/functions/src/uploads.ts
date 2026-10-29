@@ -86,7 +86,10 @@ export function parseUploadSessionInput(data: unknown): UploadSessionInput {
  *   Kiểm tra này chỉ là lớp đầu; lớp chắc là header `x-goog-if-generation-match: 0` trong chữ ký URL
  *   (URL còn hạn 15 phút và các lần xin song song không vượt được kiểm tra lúc xin). Lớp thứ ba nằm
  *   ở `verifyEvidenceObject` (so generation khi finalize).
- * - Mỗi lần cấp có một sự kiện kiểm toán; URL không được ghi vào kiểm toán hay log.
+ * - Chủ sở hữu (Q-28): bằng chứng đóng gói (không có `ownerKind`) hoặc hàng hoàn (`ownerKind: 'return'`).
+ *   Đường dẫn, băm và tạo-một-lần GIỐNG NHAU cho cả hai (chỉ cần shopId + evidenceId); với hàng hoàn
+ *   còn kiểm hồ sơ `returns/{returnId}` đã đăng cùng shop (Rules đã kiểm lúc khai báo, đây là lớp thứ hai).
+ * - Mỗi lần cấp có một sự kiện kiểm toán (kèm chủ sở hữu); URL không được ghi vào kiểm toán hay log.
  */
 export async function createUploadSessionForUser(
   db: Firestore,
@@ -113,6 +116,17 @@ export async function createUploadSessionForUser(
   if (data.server?.state || (await signer.objectExists(storagePath))) {
     return { status: 'already_received', storagePath };
   }
+  const ownerKind = data.ownerKind === 'return' ? 'return' : 'packing';
+  const returnId = ownerKind === 'return' ? (data.returnId as unknown) : undefined;
+  if (ownerKind === 'return') {
+    const anchor =
+      typeof returnId === 'string' && ID_PATTERN.test(returnId)
+        ? await db.doc(`shops/${shopId}/returns/${returnId}`).get()
+        : null;
+    if (!anchor?.exists) {
+      throw new UploadError('failed-precondition', 'Chưa có hồ sơ hàng hoàn của bằng chứng này.');
+    }
+  }
   const contentType = data.mimeType;
   if (typeof contentType !== 'string' || !ALLOWED_CONTENT_TYPES.includes(contentType)) {
     throw new UploadError('failed-precondition', 'Loại tệp không được nhận.');
@@ -129,6 +143,8 @@ export async function createUploadSessionForUser(
     actorUid: uid,
     at: FieldValue.serverTimestamp(),
     evidenceId,
+    ownerKind,
+    ...(typeof returnId === 'string' ? { returnId } : {}),
   });
   return {
     status: 'ready',

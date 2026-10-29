@@ -96,7 +96,7 @@ export function SearchField({
           onPress={onScan}
           style={[styles.clear, { minWidth: touch, minHeight: touch }]}
         >
-          <Icon name="scan" color={tokens.color.action.primary} />
+          <Icon name="scan" color={tokens.color.brand.primary} />
         </Pressable>
       ) : null}
     </View>

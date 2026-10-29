@@ -29,6 +29,20 @@ export const ERROR_CODES = {
   SOURCE_ORDER_AMBIGUOUS: 'SOURCE_ORDER_AMBIGUOUS',
   RETURN_CODE_DUPLICATE: 'RETURN_CODE_DUPLICATE',
   RETURN_ORDER_CONFLICT: 'RETURN_ORDER_CONFLICT',
+  // Đề xuất (chờ BA, R1 hàng hoàn): lưu hồ sơ hàng hoàn cục bộ; hồ sơ đã xác nhận không sửa được
+  RETURN_SAVE_FAILED: 'RETURN_SAVE_FAILED',
+  RETURN_ALREADY_CONFIRMED: 'RETURN_ALREADY_CONFIRMED',
+  // Đề xuất (chờ BA, R2a hàng hoàn): chụp/lưu ảnh kiện lỗi, máy hết dung lượng, camera không mở được
+  RETURN_PHOTO_FAILED: 'RETURN_PHOTO_FAILED',
+  RETURN_PHOTO_STORAGE_FULL: 'RETURN_PHOTO_STORAGE_FULL',
+  RETURN_CAMERA_UNAVAILABLE: 'RETURN_CAMERA_UNAVAILABLE',
+  // Đề xuất (chờ BA, Q-26j): xóa ảnh chụp nhầm bị từ chối (ảnh đang nằm trong hồ sơ tranh chấp hoặc đã lên
+  // máy chủ) hoặc không xóa được tệp trên máy
+  RETURN_PHOTO_IN_USE: 'RETURN_PHOTO_IN_USE',
+  RETURN_PHOTO_DELETE_FAILED: 'RETURN_PHOTO_DELETE_FAILED',
+  // Đề xuất (chờ BA, Q-27): lưu hồ sơ tranh chấp cục bộ; hồ sơ đã đóng không sửa được
+  DISPUTE_SAVE_FAILED: 'DISPUTE_SAVE_FAILED',
+  DISPUTE_CLOSED: 'DISPUTE_CLOSED',
   // Đề xuất (chờ BA, Q-04/Q-17): lưu đơn/dòng/kiện cục bộ và quy tắc phiên (docs/04 A03)
   ORDER_SAVE_FAILED: 'ORDER_SAVE_FAILED',
   ORDER_HAS_SESSION: 'ORDER_HAS_SESSION',

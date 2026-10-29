@@ -8,9 +8,12 @@ import { createFirebaseUploadPorts, toPortError } from './firebase-ports';
 const request: UploadRequest & { mimeType: string } = {
   evidenceId: 'e1' as EvidenceId,
   shopId: 's1' as ShopId,
-  orderId: 'o1' as OrderId,
-  sessionId: 'ss1' as SessionId,
-  packageId: 'p1' as PackageId,
+  owner: {
+    kind: 'packing',
+    orderId: 'o1' as OrderId,
+    sessionId: 'ss1' as SessionId,
+    packageId: 'p1' as PackageId,
+  },
   kind: 'video',
   createdAtDevice: 5000,
   durationMs: 60000,

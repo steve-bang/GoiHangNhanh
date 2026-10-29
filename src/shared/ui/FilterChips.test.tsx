@@ -1,7 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 import { Pressable, StyleSheet } from 'react-native';
 
-import { colors } from '@/core/theme';
+import { appColors as colors } from '@/core/theme';
 import { renderWithProviders } from '@/test-utils/render';
 
 import { FilterChips } from './FilterChips';

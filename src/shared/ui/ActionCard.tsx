@@ -47,7 +47,7 @@ export function ActionCard({
         <Icon
           name={icon}
           size={32}
-          color={primary ? tokens.color.text.onAction : tokens.color.action.primary}
+          color={primary ? tokens.color.text.onAction : tokens.color.brand.primary}
         />
         <View style={styles.text}>
           <Text variant="sectionTitle" style={{ color: fg }}>

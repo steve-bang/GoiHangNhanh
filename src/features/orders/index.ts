@@ -11,10 +11,24 @@ export {
   createMemoryEvidenceFileStore,
   createMemoryOrderStore,
   createSqliteEvidenceFileStore,
+  ORDER_DB_MIGRATIONS,
+  migrateOrderDatabase,
+  runSerializedOnDb,
   useCurrentShopId,
+  useCurrentUid,
   useOrderStore,
 } from './data';
-export { LOCAL_SHOP_ID } from './domain';
+export {
+  LOCAL_SHOP_ID,
+  classifyLookup,
+  formatDeviceDateTime,
+  normalizeCode,
+  stampCreator,
+  toCodeKey,
+  validateCode,
+  validateQuantity,
+} from './domain';
+export type { CreatorUidProvider, LookupMatch, LookupResult, MatchReason } from './domain';
 export type {
   Order,
   OrderDetails,

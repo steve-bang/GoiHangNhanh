@@ -47,7 +47,17 @@ const FEATURE_API_PATTERNS = [
 
 module.exports = [
   {
-    ignores: ['node_modules/', '.expo/', 'dist/', 'coverage/', 'android/', 'ios/', 'docs/', 'web/'],
+    ignores: [
+      'node_modules/',
+      '.expo/',
+      'dist/',
+      'coverage/',
+      'android/',
+      'ios/',
+      'docs/',
+      'web/',
+      'design-v2/',
+    ],
   },
   ...expoConfig,
   prettierConfig,

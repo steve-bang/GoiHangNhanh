@@ -117,6 +117,8 @@ npx firebase deploy --config firebase/firebase.json --project ghn-test-67b39 \
 - `predeploy` tự chạy `npm run build` trong `firebase/functions`.
 - Lần đầu CLI có thể hỏi bật các API (Cloud Functions, Cloud Build, Artifact Registry, Cloud Run, Eventarc): trả lời `y`; nếu dừng giữa chừng, đợi vài phút rồi chạy lại. Nếu hỏi chính sách xóa ảnh build, đặt một số ngày ngắn để tránh phí lưu trữ.
 
+**Lưu ý khi deploy (R2b, Q-28):** Rules mới thêm `shops/{shopId}/returns/{returnId}` và hình dạng bằng chứng hàng hoàn (`ownerKind: 'return'`); `createUploadSession` ghi thêm `ownerKind`/`returnId` vào kiểm toán và kiểm hồ sơ neo tồn tại. Chưa deploy; deploy Rules và Functions CÙNG LÚC (app bản mới đăng bản neo trước khi khai báo bằng chứng, nên Rules cũ sẽ từ chối).
+
 **Kiểm tra sau deploy:**
 
 1. Terminal liệt kê `createShop` và `updateShop` ở `asia-southeast1`.

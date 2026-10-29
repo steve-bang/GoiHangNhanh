@@ -26,7 +26,7 @@ export function QuickAction({ label, icon, onPress, testID }: QuickActionProps) 
       style={[styles.item, { minHeight: getMinTouchTarget() }]}
     >
       <View style={[styles.disc, { backgroundColor: tokens.color.brand.soft }]}>
-        <Icon name={icon} size={26} color={tokens.color.action.primary} />
+        <Icon name={icon} size={26} color={tokens.color.brand.primary} />
       </View>
       <Text variant="caption" style={styles.label} maxFontSizeMultiplier={1.3}>
         {label}

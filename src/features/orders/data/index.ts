@@ -11,3 +11,6 @@ export { OrderSyncRunner } from './OrderSyncRunner';
 export { createRemoteOrderWriter, RemoteNotSignedInError } from './remote-order-writer';
 export { createLocalEvidenceFileStore } from './create-evidence-file-store';
 export { EvidenceFileStoreProvider, useEvidenceFileStore } from './EvidenceFileStoreProvider';
+export { MIGRATIONS as ORDER_DB_MIGRATIONS } from './sqlite-migrations';
+export { runSerialized as runSerializedOnDb } from './db-queue';
+export { migrateLocalDatabase as migrateOrderDatabase } from './sqlite-order-store';

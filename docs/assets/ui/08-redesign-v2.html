@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đơn Chứng – Thiết kế v2</title>
+<style>
+:root{
+  /* Token lấy từ src/core/theme/primitives.ts, không thêm màu mới */
+  --action:#157852; --action-ink:#14382A; --action-bg:#E6F0E9; --on-action:#fff;
+  --screen:#FAF8F2; --raised:#fff; --muted:#F3F6F5; --border:#D9D6CC;
+  --text:#1B1B1B; --text2:#5A5F5C; --text3:#566B7C;
+  --ok:#1E7A3C; --ok-bg:#E3F1E7; --warn:#B45309; --warn-bg:#FDF3E7;
+  --err:#B3261E; --err-bg:#FCEBEA; --info:#1F5EA8; --info-bg:#E8F0FA; --teal-bg:#EAF5F4;
+  --cam:#16201A; --scan:#35E0A1;
+  --r8:8px; --r12:12px; --r16:16px;
+  --sheet:#E9E7E0;
+}
+@media (prefers-color-scheme:dark){
+  :root{--screen:#101713;--raised:#18211C;--muted:#1F2A24;--border:#33403A;--text:#EEF2EF;--text2:#A9B4AE;--text3:#8FA2B0;
+    --action:#4DBF93;--action-ink:#D7F2E5;--action-bg:#1B3A2D;--on-action:#0B1A13;
+    --ok:#6CD08A;--ok-bg:#1A3524;--warn:#F0A25A;--warn-bg:#3A2A14;--err:#FF8A80;--err-bg:#3D1C1A;--info:#8DB9EE;--info-bg:#172A42;--teal-bg:#17302D;--sheet:#0A0F0C}
+}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--sheet);color:var(--text);padding:24px 16px 64px}
+h1{font-size:26px} .lead{color:var(--text2);max-width:760px;margin:8px 0 24px;line-height:1.55}
+h2{font-size:18px;margin:36px 0 4px} .sub{color:var(--text2);font-size:14px;margin-bottom:16px;max-width:760px;line-height:1.5}
+.row{display:flex;gap:24px;overflow-x:auto;padding:8px 4px 20px;align-items:flex-start}
+.cell{flex:0 0 auto;width:300px}
+.cap{font-size:12px;color:var(--text2);margin-top:8px;line-height:1.45}
+.cap b{color:var(--text)}
+.phone{width:300px;height:620px;background:var(--screen);border-radius:32px;border:6px solid #222;overflow:hidden;position:relative;display:flex;flex-direction:column;font-size:13px}
+.status{height:26px;flex:none;display:flex;justify-content:space-between;padding:8px 18px 0;font-size:11px;font-weight:600}
+.body{flex:1;overflow:hidden;padding:8px 14px;display:flex;flex-direction:column;gap:10px}
+.title{font-size:20px;font-weight:700} .h{font-size:15px;font-weight:700}
+.muted{color:var(--text2)} .small{font-size:11px}
+.card{background:var(--raised);border:1px solid var(--border);border-radius:var(--r12);padding:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px;border-radius:var(--r12);font-weight:700;font-size:14px;border:1.5px solid var(--action);color:var(--action);background:transparent}
+.btn.p{background:var(--action);color:var(--on-action)}
+.btn.d{border-color:var(--err);color:var(--err)}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px;border:1px solid transparent;white-space:nowrap}
+.c-ok{background:var(--ok-bg);color:var(--ok)} .c-warn{background:var(--warn-bg);color:var(--warn)}
+.c-err{background:var(--err-bg);color:var(--err)} .c-info{background:var(--info-bg);color:var(--info)}
+.c-dev{background:var(--muted);color:var(--text2);border-color:var(--border)} .c-ver{background:var(--teal-bg);color:var(--action)}
+.tabs{flex:none;height:62px;background:var(--raised);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;font-size:10px;color:var(--text2);position:relative}
+.tabs div{display:flex;flex-direction:column;align-items:center;gap:2px;width:52px}
+.tabs .on{color:var(--action);font-weight:700}
+.tabs i{font-style:normal;font-size:17px}
+.scanbtn{position:absolute;left:50%;top:-22px;transform:translateX(-50%);width:56px;height:56px;border-radius:50%;background:var(--action);color:var(--on-action);display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 3px 8px rgba(0,0,0,.25);border:4px solid var(--screen)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;gap:10px;align-items:center;background:var(--raised);border:1px solid var(--border);border-radius:var(--r12);padding:10px}
+.thumb{width:44px;height:44px;border-radius:var(--r8);background:var(--cam);flex:none;position:relative}
+.thumb:after{content:"▶";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;opacity:.8}
+.grow{flex:1;min-width:0} .code{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src{width:22px;height:22px;border-radius:6px;background:var(--action-bg);color:var(--action-ink);font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.banner{display:flex;gap:8px;align-items:flex-start;border-radius:var(--r12);padding:10px;font-size:12px;line-height:1.4}
+.field{border:1.5px solid var(--border);background:var(--raised);border-radius:var(--r8);padding:10px;min-height:44px}
+.field label{display:block;font-size:11px;color:var(--text2)}
+.cam{flex:1;background:linear-gradient(160deg,#243229,#0f1712);position:relative;color:#fff}
+.cam .ov{position:absolute;left:10px;right:10px;top:8px;display:flex;justify-content:space-between;font-size:11px}
+.pill{background:rgba(0,0,0,.55);padding:4px 8px;border-radius:99px;font-weight:600}
+.frame{position:absolute;left:50%;top:44%;width:190px;height:130px;transform:translate(-50%,-50%)}
+.frame b{position:absolute;width:26px;height:26px;border:3px solid var(--scan)}
+.tl{left:0;top:0;border-right:0!important;border-bottom:0!important;border-radius:8px 0 0 0}.tr{right:0;top:0;border-left:0!important;border-bottom:0!important;border-radius:0 8px 0 0}
+.bl{left:0;bottom:0;border-right:0!important;border-top:0!important;border-radius:0 0 0 8px}.br{right:0;bottom:0;border-left:0!important;border-top:0!important;border-radius:0 0 8px 0}
+.rec{width:68px;height:68px;border-radius:50%;border:4px solid #fff;display:flex;align-items:center;justify-content:center;margin:0 auto}
+.rec span{width:26px;height:26px;border-radius:6px;background:#E5484D;display:block}
+.prog{height:6px;border-radius:3px;background:var(--muted);overflow:hidden}.prog i{display:block;height:100%;background:var(--action)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.sheetx{background:var(--raised);border-radius:20px 20px 0 0;padding:14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
+.notes{max-width:900px;line-height:1.6;font-size:14px}
+.notes li{margin:4px 0 4px 18px}
+table{border-collapse:collapse;font-size:13px;margin:8px 0;max-width:900px;width:100%}
+td,th{border:1px solid var(--border);padding:6px 8px;text-align:left;vertical-align:top;background:var(--raised)}
+th{background:var(--muted)}
+.sw{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:4px;border:1px solid var(--border)}
+</style>
+</head>
+<body>
+<h1>Đơn Chứng – Thiết kế giao diện v2</h1>
+<p class="lead">Đề xuất làm mới các màn trong app (sau đăng nhập), dùng đúng bảng màu và token hiện có (ngọc lục bảo + nền kem), không thêm màu. <b>Splash, Chào mừng, đăng ký/đăng nhập, quên mật khẩu, tạo shop giữ nguyên</b> vì khách đã xác nhận. Mục tiêu: giảm số lần chạm cho vòng "quét → quay → lưu", và nói thật về trạng thái lưu trữ.</p>
+
+<h2>1. Luồng chính: quét → tạo đơn → quay → lưu</h2>
+<p class="sub">Một màn một hành động chính, nút chính luôn ở nửa dưới. Mã đơn + kiện luôn hiện khi quay.</p>
+<div class="row">
+
+<!-- Trang chủ -->
+<div class="cell"><div class="phone">
+ <div class="status"><span>9:41</span><span>●●● 5G</span></div>
+ <div class="body">
+  <div style="display:flex;justify-content:space-between;align-items:center"><div><div class="small muted">Cửa hàng</div><div class="h">Shop Hoa Nắng ▾</div></div><span class="src">HN</span></div>
+  <div class="banner c-warn"><span>⚠</span><div><b>2 video chờ tải lên.</b> Vẫn lưu trên máy. <u>Xem</u></div></div>
+  <div class="btn p" style="min-height:64px;font-size:16px">▣ Đóng gói đơn</div>
+  <div class="btn" style="min-height:52px">↩ Nhận hàng hoàn</div>
+  <div class="h" style="margin-top:4px">Cần xử lý</div>
+  <div class="item"><span class="chip c-err">Lỗi</span><div class="grow"><div class="code">SPX0412…889</div><div class="small muted">Tải lên lỗi · thử lại</div></div>›</div>
+  <div class="item"><span class="chip c-warn">Dở dang</span><div class="grow"><div class="code">TT-77120</div><div class="small muted">Phiên quay bị gián đoạn</div></div>›</div>
+  <div class="h">Đơn gần đây</div>
+  <div class="item"><span class="src">SP</span><div class="grow"><div class="code">2410A8F3K</div><div class="small muted">10:12 · 1 video</div></div><span class="chip c-ver">✓ Đã xác minh</span></div>
+ </div>
+ <div class="tabs"><div class="on"><i>⌂</i>Trang chủ</div><div><i>☰</i>Đơn hàng</div><div style="visibility:hidden"></div><div><i>🔔</i>Thông báo</div><div><i>☺</i>Cá nhân</div><div class="scanbtn">▣</div></div>
+</div><div class="cap"><b>Trang chủ.</b> Hai việc lớn lên đầu; "Cần xử lý" thay biểu đồ. Dải đồng bộ chỉ hiện khi có việc. Không số doanh thu.</div></div>
+
+<!-- Quét -->
+<div class="cell"><div class="phone">
+ <div class="cam"><div class="ov"><span class="pill">✕ Đóng</span><span class="pill">🔦 Đèn</span></div>
+  <div class="frame"><b class="tl"></b><b class="tr"></b><b class="bl"></b><b class="br"></b></div>
+  <div style="position:absolute;left:0;right:0;top:63%;text-align:center;font-size:12px">Đưa mã đơn hoặc mã vận đơn vào khung</div>
+ </div>
+ <div class="sheetx">
+  <div class="field"><label>Hoặc nhập mã</label><span class="muted">VD: 2410A8F3K</span></div>
+  <div class="seg"><span class="chip c-dev">🕘 Mã vừa quét</span><span class="chip c-dev">🔍 Tìm đơn đã lưu</span></div>
+ </div>
+</div><div class="cap"><b>Quét.</b> Quét xong tự tra cứu, không nút "Tìm". Mã lạ → "Chưa có hồ sơ đơn này" + Tạo nhanh. Nhiều kết quả → bắt chọn, không tự chọn.</div></div>
+
+<!-- Kết quả tra cứu -->
+<div class="cell"><div class="phone">
+ <div class="cam" style="opacity:.55"></div>
+ <div class="sheetx" style="position:absolute;bottom:0;left:0;right:0;gap:8px">
+  <div class="h">Có 2 đơn trùng mã 2410A8F3K</div>
+  <div class="small muted">Chọn đúng đơn. Ứng dụng không tự chọn hộ.</div>
+  <div class="item"><span class="src">SP</span><div class="grow"><div class="code">2410A8F3K</div><div class="small muted">Shopee · 28/10 · 2 sản phẩm</div></div>○</div>
+  <div class="item" style="border-color:var(--action);border-width:2px"><span class="src">TT</span><div class="grow"><div class="code">2410A8F3K</div><div class="small muted">TikTok Shop · 29/10 · Chưa khai báo SP</div></div>●</div>
+  <div class="btn p">Dùng đơn này</div>
+  <div class="btn" style="min-height:40px">Đây là đơn mới</div>
+ </div>
+</div><div class="cap"><b>Mã trùng (UI-J02).</b> Bottom sheet, chọn bằng radio, nút chính chỉ sáng khi đã chọn.</div></div>
+
+<!-- Tạo nhanh -->
+<div class="cell"><div class="phone">
+ <div class="status"><span>9:41</span><span></span></div>
+ <div class="body">
+  <div class="prog"><i style="width:50%"></i></div>
+  <div class="title">Tạo đơn nhanh</div>
+  <div class="field"><label>Mã đơn</label><b>2410A8F3K</b> <span class="chip c-info">đã quét</span></div>
+  <div><div class="small muted" style="margin-bottom:4px">Nguồn bán</div><div class="seg"><span class="chip c-ver" style="padding:8px 12px;border-color:var(--action)">Shopee</span><span class="chip c-dev" style="padding:8px 12px">TikTok</span><span class="chip c-dev" style="padding:8px 12px">Lazada</span><span class="chip c-dev" style="padding:8px 12px">Khác</span></div></div>
+  <div class="field"><label>Sản phẩm (tùy chọn)</label><span class="muted">Áo thun · Đen · M</span></div>
+  <div class="field" style="display:flex;justify-content:space-between;align-items:center"><span>Số lượng</span><span><b>−</b> &nbsp;1&nbsp; <b>＋</b></span></div>
+  <div class="banner c-info"><span>ℹ</span>Bỏ trống sản phẩm vẫn quay được. Thông tin do bạn nhập.</div>
+  <div style="flex:1"></div>
+  <div class="btn p">Tiếp tục</div>
+ </div>
+</div><div class="cap"><b>Tạo nhanh.</b> Chip nguồn bán thay dropdown; nhớ lựa chọn gần nhất. Không chặn quay khi thiếu SP (bất biến 10).</div></div>
+
+<!-- Quay -->
+<div class="cell"><div class="phone">
+ <div class="cam"><div class="ov"><span class="pill">2410A8F3K · Kiện 1/1</span><span class="pill" style="background:#E5484D">● 00:42</span></div>
+  <div style="position:absolute;left:10px;right:10px;bottom:104px"><div class="pill" style="display:block;text-align:center;font-weight:500;font-size:10.5px">Quay từ lúc chưa đóng đến khi dán xong niêm phong</div></div>
+  <div style="position:absolute;left:0;right:0;bottom:14px"><div class="rec"><span></span></div><div style="text-align:center;font-size:11px;margin-top:4px">Chạm để dừng</div></div>
+ </div>
+</div><div class="cap"><b>Quay.</b> Không đổi đơn khi đang quay. Màn giữ sáng. Gián đoạn (cuộc gọi, hết bộ nhớ) hiện banner và ghi nhận phiên không liền mạch, không giả vờ liên tục.</div></div>
+
+<!-- Hoàn tất -->
+<div class="cell"><div class="phone">
+ <div class="status"><span>9:41</span><span></span></div>
+ <div class="body">
+  <div class="card" style="text-align:center;padding:18px"><div style="font-size:34px;color:var(--ok)">✓</div><div class="h">Đã lưu video trên máy</div><div class="small muted">Chưa tải lên. Sẽ tự tải khi có mạng.</div></div>
+  <div class="item"><div class="thumb"></div><div class="grow"><div class="code">2410A8F3K · Kiện 1</div><div class="small muted">00:58 · 84 MB</div></div></div>
+  <div class="list">
+   <div style="display:flex;justify-content:space-between"><span class="small">Trạng thái tệp</span><span class="chip c-warn">Chờ tải lên</span></div>
+   <div class="prog"><i style="width:0"></i></div>
+   <div class="small muted">Chỉ hiện "Đã lưu trên máy chủ" sau khi máy chủ xác nhận.</div>
+  </div>
+  <div style="flex:1"></div>
+  <div class="btn p">Đóng gói đơn tiếp theo</div>
+  <div class="btn" style="min-height:42px">Xem bằng chứng</div>
+ </div>
+</div><div class="cap"><b>Lưu và hoàn tất (gộp UI-C04–C06).</b> Nói đúng: "trên máy" ≠ "trên máy chủ". Làm tiếp ngay, không chờ tải.</div></div>
+</div>
+
+<h2>2. Danh sách, chi tiết và đồng bộ</h2>
+<div class="row">
+
+<div class="cell"><div class="phone">
+ <div class="status"><span>9:41</span><span></span></div>
+ <div class="body">
+  <div class="title">Đơn hàng</div>
+  <div class="field">🔍 &nbsp;<span class="muted">Mã đơn hoặc mã vận đơn</span></div>
+  <div class="seg"><span class="chip c-ver" style="border-color:var(--action)">Tất cả</span><span class="chip c-dev">Chưa có video</span><span class="chip c-dev">Chưa tải xong</span><span class="chip c-dev">Lỗi</span></div>
+  <div class="small muted">Hôm nay</div>
+  <div class="item"><span class="src">SP</span><div class="grow"><div class="code">2410A8F3K</div><div class="small muted">10:12 · 1 video</div></div><span class="chip c-ver">✓ Đã xác minh</span></div>
+  <div class="item"><span class="src">TT</span><div class="grow"><div class="code">TT-77120</div><div class="small muted">09:40 · 1 video</div></div><span class="chip c-info">↑ Đang tải</span></div>
+  <div class="item"><span class="src">LZ</span><div class="grow"><div class="code">LZ8831…20</div><div class="small muted">09:05 · 1 video</div></div><span class="chip c-dev">Trên máy</span></div>
+  <div class="item"><span class="src">SP</span><div class="grow"><div class="code">2410B771Q</div><div class="small muted">08:50 · chưa có video</div></div><span class="chip c-warn">Thiếu video</span></div>
+ </div>
+ <div class="tabs"><div><i>⌂</i>Trang chủ</div><div class="on"><i>☰</i>Đơn hàng</div><div style="visibility:hidden"></div><div><i>🔔</i>Thông báo</div><div><i>☺</i>Cá nhân</div><div class="scanbtn">▣</div></div>
+</div><div class="cap"><b>Danh sách.</b> Thẻ chỉ 3 thông tin: mã, nguồn + giờ, trạng thái. Trạng thái luôn có icon + chữ, không chỉ màu. Nhóm theo ngày, phân trang vô hạn.</div></div>
+
+<div class="cell"><div class="phone">
+ <div class="status"><span>9:41</span><span></span></div>
+ <div class="body">
+  <div class="small muted">‹ Đơn hàng</div>
+  <div style="display:flex;justify-content:space-between;align-items:center"><div class="title">2410A8F3K</div><span class="src">SP</span></div>
+  <div class="small muted">Shopee · tạo 10:05 bởi bạn · thông tin do người dùng nhập</div>
+  <div class="card"><div class="h">Bằng chứng đóng gói</div>
+   <div class="item" style="margin-top:8px"><div class="thumb"></div><div class="grow"><div class="code">Kiện 1 · 00:58</div><div class="small muted">10:12 · gián đoạn 1 lần</div></div></div>
+   <div style="display:flex;gap:6px;margin-top:8px"><span class="chip c-ver">✓ Mã băm khớp</span><span class="chip c-warn">⚠ Gián đoạn</span></div></div>
+  <div class="card"><div class="h">Sản phẩm khai báo</div><div class="small muted" style="margin-top:4px">Áo thun · Đen · M × 1</div></div>
+  <div class="card"><div class="h">Hàng hoàn · Tranh chấp</div><div class="small muted" style="margin-top:4px">Chưa có</div></div>
+  <div style="flex:1"></div>
+  <div class="btn p">Xem bằng chứng</div>
+  <div class="btn" style="min-height:42px">Quay bổ sung</div>
+ </div>
+</div><div class="cap"><b>Chi tiết đơn.</b> Hiển thị đơn → kiện → phiên → bằng chứng (không "một đơn = một video"). "Quay bổ sung" tạo phiên mới, không ghi đè.</div></div>
+
+<div class="cell"><div class="phone">
+ <div class="status"><span>9:41</span><span></span></div>
+ <div class="body">
+  <div class="title">Đồng bộ</div>
+  <div class="card"><div style="display:flex;justify-content:space-between"><b>Đang tải 1 / chờ 2</b><span class="small muted">210 MB</span></div><div class="prog" style="margin:8px 0"><i style="width:38%"></i></div><div class="small muted">Chỉ tải khi app đang mở.</div></div>
+  <div class="seg"><span class="chip c-ver" style="border-color:var(--action)">Cần xử lý 1</span><span class="chip c-dev">Đang tải</span><span class="chip c-dev">Chờ</span><span class="chip c-dev">Xong</span></div>
+  <div class="card" style="border-color:var(--err)"><div style="display:flex;justify-content:space-between"><b>SPX0412…889</b><span class="chip c-err">Lỗi tải</span></div>
+   <div class="small muted" style="margin:6px 0">Video vẫn lưu trên máy. Mạng không ổn định.</div><div class="btn" style="min-height:40px">Thử tải lại</div></div>
+  <div class="item"><span class="chip c-info">↑ 38%</span><div class="grow"><div class="code">TT-77120</div><div class="small muted">84 MB</div></div></div>
+  <div class="item"><span class="chip c-warn">Chờ mạng</span><div class="grow"><div class="code">LZ8831…20</div></div></div>
+  <div style="flex:1"></div>
+  <div class="small muted" style="text-align:center">Không có nút "Xóa tất cả".</div>
+ </div>
+</div><div class="cap"><b>Trung tâm đồng bộ (UI-F01).</b> Lỗi lên đầu, mỗi lỗi nêu dữ liệu còn ở đâu + một nút Thử lại. Dữ liệu thật, bỏ bản minh họa.</div></div>
+
+<div class="cell"><div class="phone">
+ <div class="status"><span>9:41</span><span></span></div>
+ <div class="body">
+  <div class="title">Cá nhân</div>
+  <div class="card" style="display:flex;gap:10px;align-items:center"><span class="src" style="width:44px;height:44px;border-radius:50%;font-size:14px">LA</span><div class="grow"><b>Lan Anh</b><div class="small muted">lan@email.com</div></div></div>
+  <div class="card"><div class="small muted">Cửa hàng đang dùng</div><b>Shop Hoa Nắng</b> <span class="chip c-ok">Đang hoạt động</span></div>
+  <div class="list">
+   <div class="item">Cửa hàng<span style="margin-left:auto">›</span></div>
+   <div class="item">Thông báo<span style="margin-left:auto">›</span></div>
+   <div class="item">Dung lượng &amp; thời hạn lưu<span style="margin-left:auto">›</span></div>
+   <div class="item">Quyền riêng tư &amp; dữ liệu<span style="margin-left:auto">›</span></div>
+   <div class="item">Trợ giúp<span style="margin-left:auto">›</span></div>
+  </div>
+  <div style="flex:1"></div>
+  <div class="btn d" style="min-height:42px">Đăng xuất</div>
+ </div>
+ <div class="tabs"><div><i>⌂</i>Trang chủ</div><div><i>☰</i>Đơn hàng</div><div style="visibility:hidden"></div><div><i>🔔</i>Thông báo</div><div class="on"><i>☺</i>Cá nhân</div><div class="scanbtn">▣</div></div>
+</div><div class="cap"><b>Cá nhân.</b> Gói dịch vụ vẫn ẩn (Q-21ag). Đăng xuất: nếu còn tệp chưa tải thì cảnh báo trước.</div></div>
+</div>
+
+<h2>3. Trạng thái ngoại lệ</h2>
+<div class="row">
+<div class="cell"><div class="phone">
+ <div class="status"><span>9:41</span><span></span></div>
+ <div class="body">
+  <div class="banner c-warn"><span>⚡</span>Đang ngoại tuyến. Bằng chứng sẽ tự đồng bộ khi có mạng.</div>
+  <div class="title">Đơn hàng</div>
+  <div class="item"><span class="src">SP</span><div class="grow"><div class="code">2410A8F3K</div><div class="small muted">Chỉ hiển thị dữ liệu trên máy</div></div><span class="chip c-dev">Trên máy</span></div>
+  <div style="flex:1"></div>
+ </div>
+</div><div class="cap"><b>Ngoại tuyến.</b> Banner nhỏ, vẫn quét/quay được.</div></div>
+
+<div class="cell"><div class="phone">
+ <div class="status"><span>9:41</span><span></span></div>
+ <div class="body" style="justify-content:center;text-align:center;align-items:center">
+  <div style="font-size:40px">▣</div><div class="h">Chưa có đơn nào</div>
+  <div class="muted" style="max-width:220px">Quét mã đơn đầu tiên để bắt đầu lưu bằng chứng.</div>
+  <div class="btn p" style="width:200px">Quét mã đơn</div>
+ </div>
+</div><div class="cap"><b>Rỗng lần đầu.</b> Một câu giá trị + một nút. Rỗng do lọc: "Không có đơn khớp" + nút Xóa bộ lọc.</div></div>
+
+<div class="cell"><div class="phone">
+ <div class="cam" style="background:#0f1712;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;padding:20px;text-align:center">
+  <div style="font-size:34px">📷</div><div style="font-weight:700">Cần quyền dùng camera</div>
+  <div style="font-size:12px;opacity:.8">Để quét mã và quay video đóng gói. Bạn có thể bật trong Cài đặt.</div>
+  <div class="btn p" style="width:200px">Mở Cài đặt</div>
+ </div>
+</div><div class="cap"><b>Từ chối quyền (UI-J03).</b> Chỉ xin quyền khi bắt đầu tác vụ; không hỏi lặp.</div></div>
+
+<div class="cell"><div class="phone">
+ <div class="status"><span>9:41</span><span></span></div>
+ <div class="body" style="justify-content:flex-end">
+  <div class="sheetx" style="margin:0 -14px -8px">
+   <div class="h">Đăng xuất?</div>
+   <div class="banner c-warn"><span>⚠</span>Còn 2 video chưa tải lên. Đăng xuất có thể làm chúng không tải được.</div>
+   <div class="btn p">Ở lại và tải lên</div>
+   <div class="btn d" style="min-height:42px">Vẫn đăng xuất</div>
+  </div>
+ </div>
+</div><div class="cap"><b>Rủi ro mất dữ liệu (UI-J15).</b> Nêu hậu quả, nút an toàn là nút chính.</div></div>
+</div>
+
+<h2>4. Nguyên tắc thiết kế v2</h2>
+<ul class="notes">
+ <li><b>Một màn một hành động chính</b>, nút chính ở nửa dưới, vùng chạm ≥ 44/48, nút quay/dừng lớn nhất.</li>
+ <li><b>Trạng thái luôn icon + chữ</b>, dùng đúng 6 trạng thái bằng chứng của docs/09 mục 3, không gộp.</li>
+ <li><b>Ngôn ngữ trung thực</b>: "Đã lưu trên máy" khác "Đã lưu trên máy chủ"; "Mã băm khớp" chứ không "chứng minh pháp lý"; không hứa tải nền khi app bị dừng.</li>
+ <li><b>Giảm gõ</b>: quét trước, chip nguồn bán, nhớ lựa chọn gần nhất, số lượng bằng ±.</li>
+ <li><b>Không tự liên kết</b>: mã trùng/không khớp luôn bắt người dùng chọn.</li>
+</ul>
+
+<h2>5. Token dùng</h2>
+<table>
+ <tr><th>Vai trò</th><th>Giá trị</th><th>Dùng cho</th></tr>
+ <tr><td><span class="sw" style="background:#157852"></span>action.primary</td><td>jade 700 #157852</td><td>Nút chính, tab chọn, nút Quét</td></tr>
+ <tr><td><span class="sw" style="background:#FAF8F2"></span>surface.screen</td><td>neutral 50 #FAF8F2</td><td>Nền màn</td></tr>
+ <tr><td><span class="sw" style="background:#1E7A3C"></span>success · <span class="sw" style="background:#B45309"></span>warning · <span class="sw" style="background:#B3261E"></span>danger · <span class="sw" style="background:#1F5EA8"></span>info</td><td>green/amber/red/blue 700 + nền 50/100</td><td>Chip trạng thái, banner (đỏ chỉ cho lỗi/phá hủy/nguy cơ mất dữ liệu)</td></tr>
+ <tr><td>Spacing / radius</td><td>4·8·12·16·24 / 8·12·16</td><td>Lưới 4pt, thẻ bo 12, sheet bo 20</td></tr>
+</table>
+
+<h2>6. Câu hỏi còn mở</h2>
+<ul class="notes">
+ <li>Gộp UI-C04/C05/C06 thành một màn "Đã lưu" có được duyệt không (hiện là 3 màn)?</li>
+ <li>Có thu tiếng khi quay không (O-09)? Thiết kế chưa có nút micro.</li>
+ <li>Có dùng chữ nhóm form 13–14 cho cả thẻ danh sách không (Q-17l chờ BA)?</li>
+ <li>Kiểm chứng đề xuất này bằng test nhanh với 5 người bán thật trước khi làm mã.</li>
+</ul>
+</body>
+</html>
