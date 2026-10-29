@@ -2,6 +2,7 @@ import type { OrderId, ReturnCaseId, ShopId } from '@/core/ids';
 import type { FileEvent } from '@/features/evidence';
 
 import type {
+  DeleteMediaResult,
   MediaEventResult,
   MediaLocation,
   NewReturnMedia,
@@ -152,6 +153,23 @@ export interface ReturnStore {
    * (`IMMUTABLE_FIELD`), không ghi đè. Không đổi trạng thái tệp.
    */
   setMediaLocation(shopId: ShopId, id: string, location: MediaLocation): Promise<MediaEventResult>;
+  /**
+   * Kiểm điều kiện xóa ảnh (Q-26j) KHÔNG đổi dữ liệu: hồ sơ chưa xác nhận, ảnh chưa trong tranh chấp
+   * nào, chưa tải lên máy chủ. Ném `RETURN_ALREADY_CONFIRMED` / `RETURN_PHOTO_IN_USE`; không thấy ảnh
+   * (hoặc của shop khác) thì `ok: false`.
+   */
+  checkMediaDeletable(shopId: ShopId, id: string): Promise<DeleteMediaResult>;
+  /**
+   * Xóa dòng ảnh VÀ ghi một sự kiện lịch sử `photo_deleted` (chỉ giờ + uid; không đường dẫn/mã băm)
+   * trong MỘT giao dịch, sau khi kiểm lại điều kiện như `checkMediaDeletable`. Bên gọi xóa TỆP trước
+   * (xem `deletePhoto`); chỉ dùng cho ảnh hàng hoàn, không cho bằng chứng khác (ngoại lệ bất biến 4).
+   */
+  deleteMedia(
+    shopId: ShopId,
+    id: string,
+    atDevice: number,
+    eventId: string,
+  ): Promise<DeleteMediaResult>;
   /** Ảnh/video của hồ sơ, cũ nhất trước. */
   listMedia(shopId: ShopId, returnId: ReturnCaseId): Promise<readonly ReturnMedia[]>;
 }

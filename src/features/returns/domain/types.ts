@@ -107,7 +107,9 @@ export type ReturnEventKind =
   | 'opening_video_missing'
   | 'linked'
   | 'lines_saved'
-  | 'confirmed';
+  | 'confirmed'
+  /** Xóa ảnh chụp nhầm (Q-26j): chỉ thời điểm + uid, KHÔNG ghi nội dung, đường dẫn hay mã băm. */
+  | 'photo_deleted';
 
 /** Lịch sử chỉ thêm (bất biến 7): không sửa, không xóa. */
 export interface ReturnEvent {

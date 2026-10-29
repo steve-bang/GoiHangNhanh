@@ -1,3 +1,4 @@
+import { AppError } from '@/core/errors/app-error';
 import type { ReturnCaseId, ShopId } from '@/core/ids';
 import { FILE_STATES, transition, type FileEvent, type FileState } from '@/features/evidence';
 
@@ -179,3 +180,34 @@ export function describeLocation(media: Pick<ReturnMedia, 'location'>): Location
   }
   return { kind: 'none', reason: location.status };
 }
+
+/** Trạng thái tệp mà máy chủ đã nhận hoặc có thể đã nhận một phần: không xóa ảnh ở các trạng thái này. */
+const SERVER_HELD_STATES: readonly FileState[] = [
+  FILE_STATES.UPLOADING,
+  FILE_STATES.UPLOADED,
+  FILE_STATES.VERIFIED,
+  FILE_STATES.HASH_MISMATCH,
+];
+
+/**
+ * NGOẠI LỆ CÓ CHỦ ĐÍCH so với bất biến 4 (Q-26j): xóa ảnh hàng hoàn chụp nhầm. Chỉ khi (1) hồ sơ chưa
+ * `confirmed`, (2) ảnh chưa nằm trong bất kỳ hồ sơ tranh chấp nào (bất biến 9), (3) ảnh chưa (hoặc
+ * không thể đang) tải lên máy chủ. Không áp dụng cho video đóng gói hay bằng chứng khác. Thuần, dùng chung
+ * cho hai kho; ném `AppError`: `RETURN_ALREADY_CONFIRMED` / `RETURN_PHOTO_IN_USE`.
+ */
+export function assertMediaDeletable(input: {
+  readonly returnConfirmed: boolean;
+  readonly media: Pick<ReturnMedia, 'state'>;
+  readonly inDispute: boolean;
+}): void {
+  if (input.returnConfirmed) throw new AppError('RETURN_ALREADY_CONFIRMED');
+  if (input.inDispute) throw new AppError('RETURN_PHOTO_IN_USE', { reason: 'dispute' });
+  if (SERVER_HELD_STATES.includes(input.media.state)) {
+    throw new AppError('RETURN_PHOTO_IN_USE', { reason: 'uploaded' });
+  }
+}
+
+/** `ok: true` trả bản ghi vừa bị xóa (để bên gọi biết đường dẫn tệp). */
+export type DeleteMediaResult =
+  | { readonly ok: true; readonly media: ReturnMedia }
+  | { readonly ok: false; readonly error: 'MEDIA_NOT_FOUND' };

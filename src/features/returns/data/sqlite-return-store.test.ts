@@ -86,6 +86,63 @@ describe('kho SQLite hàng hoàn: schema và người tạo', () => {
     ).toMatchObject({ ok: true });
   });
 
+  it('không xóa ảnh đã nằm trong hồ sơ tranh chấp (kể cả hồ sơ đã đóng); ghi giữ không bị mất', async () => {
+    const db = createNodeSqliteDatabase();
+    const store = createSqliteReturnStore(db);
+    const made = await store.createReturn(makeNewReturn({ shopId: 's' as never }));
+    const returnId = made.returnCase.id;
+    for (const id of ['held', 'free']) {
+      await store.createMedia({
+        id,
+        shopId: 's' as never,
+        returnId,
+        kind: 'photo',
+        atDevice: 1,
+      });
+    }
+    await db.runAsync(
+      `INSERT INTO disputes (id, shop_id, seq, code, status, subject_kind, return_id, subject_label, issue_type, created_at_device, updated_at_device)
+       VALUES ('d1', 's', 1, 'TC-00001', 'closed', 'return', ?, 'HH', 'other', 1, 1)`,
+      [returnId],
+    );
+    await db.runAsync(
+      "INSERT INTO dispute_evidence (dispute_id, shop_id, evidence_id, added_at_device) VALUES ('d1', 's', 'held', 1)",
+    );
+    await expect(store.checkMediaDeletable('s' as never, 'held')).rejects.toMatchObject({
+      code: 'RETURN_PHOTO_IN_USE',
+    });
+    await expect(store.deleteMedia('s' as never, 'held', 5, 'ev-x')).rejects.toMatchObject({
+      code: 'RETURN_PHOTO_IN_USE',
+    });
+    // bị từ chối thì KHÔNG ghi sự kiện, KHÔNG mất dòng ảnh
+    const events = await db.getAllAsync<{ kind: string }>(
+      "SELECT kind FROM return_events WHERE kind = 'photo_deleted'",
+    );
+    expect(events).toEqual([]);
+    expect(await store.listMedia('s' as never, returnId)).toHaveLength(2);
+    // ảnh khác của cùng hồ sơ vẫn xóa được
+    expect((await store.deleteMedia('s' as never, 'free', 6, 'ev-y')).ok).toBe(true);
+    expect((await store.listMedia('s' as never, returnId)).map((m) => m.id)).toEqual(['held']);
+  });
+
+  it('xóa ảnh là một giao dịch: lỗi khi ghi sự kiện (ID sự kiện trùng) thì ảnh KHÔNG bị xóa', async () => {
+    const db = createNodeSqliteDatabase();
+    const store = createSqliteReturnStore(db);
+    const made = await store.createReturn(makeNewReturn({ shopId: 's' as never }));
+    await store.createMedia({
+      id: 'm1',
+      shopId: 's' as never,
+      returnId: made.returnCase.id,
+      kind: 'photo',
+      atDevice: 1,
+    });
+    const duplicateEventId = made.events[0]?.id ?? '';
+    await expect(store.deleteMedia('s' as never, 'm1', 5, duplicateEventId)).rejects.toMatchObject({
+      code: 'RETURN_SAVE_FAILED',
+    });
+    expect(await store.listMedia('s' as never, made.returnCase.id)).toHaveLength(1);
+  });
+
   it('gắn uid người tạo khi biết ai đăng nhập (kho đọc uid mỗi lần lưu)', async () => {
     let uid: string | null = 'user-a';
     const store = createSqliteReturnStore(createNodeSqliteDatabase(), { creatorUid: () => uid });

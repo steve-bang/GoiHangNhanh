@@ -18,6 +18,8 @@ import {
 import {
   applyMediaEvent,
   applyMediaLocation,
+  assertMediaDeletable,
+  type DeleteMediaResult,
   type LocationStatus,
   type ReturnMedia,
 } from '../domain/media';
@@ -314,6 +316,22 @@ export function createSqliteReturnStore(
     const found = await load(shopId, id);
     if (!found) throw new AppError('RETURN_SAVE_FAILED', { reason: 'not_found' });
     return found;
+  };
+
+  /** Điều kiện xóa ảnh (Q-26j): đọc trạng thái hồ sơ và tra `dispute_evidence` (cùng CSDL, mọi hồ sơ tranh chấp kể cả đã đóng). */
+  const assertDeletable = async (shopId: ShopId, row: MediaRow): Promise<ReturnMedia> => {
+    const media = toMedia(row);
+    const owner = await requireCase(shopId, media.returnId);
+    const held = await db.getFirstAsync<{ n: number }>(
+      'SELECT 1 AS n FROM dispute_evidence WHERE shop_id = ? AND evidence_id = ? LIMIT 1',
+      [shopId, media.id],
+    );
+    assertMediaDeletable({
+      returnConfirmed: owner.status === 'confirmed',
+      media,
+      inDispute: held !== null && held !== undefined,
+    });
+    return media;
   };
 
   const insertEvent = (
@@ -642,6 +660,38 @@ export function createSqliteReturnStore(
             shopId,
           ],
         );
+        return result;
+      }),
+
+    checkMediaDeletable: (shopId, id) =>
+      guarded(async () => {
+        const row = await db.getFirstAsync<MediaRow>(
+          `SELECT ${MEDIA_COLUMNS} FROM return_media WHERE id = ? AND shop_id = ?`,
+          [id, shopId],
+        );
+        if (!row) return { ok: false as const, error: 'MEDIA_NOT_FOUND' as const };
+        return { ok: true as const, media: await assertDeletable(shopId, row) };
+      }),
+
+    deleteMedia: (shopId, id, atDevice, eventId) =>
+      guarded(async () => {
+        let result: DeleteMediaResult = { ok: false, error: 'MEDIA_NOT_FOUND' };
+        // Kiểm lại ngay trong giao dịch xóa (không tin lần kiểm trước khi xóa tệp).
+        await db.withTransactionAsync(async () => {
+          const row = await db.getFirstAsync<MediaRow>(
+            `SELECT ${MEDIA_COLUMNS} FROM return_media WHERE id = ? AND shop_id = ?`,
+            [id, shopId],
+          );
+          if (!row) return;
+          const media = await assertDeletable(shopId, row);
+          await db.runAsync('DELETE FROM return_media WHERE id = ? AND shop_id = ?', [id, shopId]);
+          await db.runAsync(
+            'UPDATE return_cases SET updated_at_device = ? WHERE id = ? AND shop_id = ?',
+            [atDevice, media.returnId, shopId],
+          );
+          await insertEvent(shopId, media.returnId, eventId, 'photo_deleted', atDevice);
+          result = { ok: true, media };
+        });
         return result;
       }),
 

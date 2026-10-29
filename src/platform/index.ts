@@ -34,6 +34,7 @@ export { monotonicNow } from './monotonic-clock';
 export { hashFile, HASH_CHUNK_BYTES } from './file-hasher';
 export type { HashFileResult } from './file-hasher';
 export {
+  deleteRecording,
   findPersistedRecording,
   getAvailableDiskBytes,
   persistRecording,
@@ -41,7 +42,7 @@ export {
   recordingExists,
   resolveRecordingUri,
 } from './recording-files';
-export type { PersistResult } from './recording-files';
+export type { DeleteRecordingResult, PersistResult } from './recording-files';
 export { classifyUploadStatus, uploadFileResumable } from './resumable-upload';
 export type { UploadFileResult, UploadSessionRequest } from './resumable-upload';
 export { CameraPhoto, usePhotoPermission } from './camera-photo';

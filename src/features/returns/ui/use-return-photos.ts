@@ -4,6 +4,7 @@ import type { ReturnCaseId } from '@/core/ids';
 import { logger } from '@/core/logging/logger';
 import { useCurrentShopId } from '@/features/orders';
 import {
+  deleteRecording,
   getDeviceLocation,
   hashFile,
   newReturnRecordId,
@@ -12,7 +13,13 @@ import {
 } from '@/platform';
 
 import { useReturnStore } from '../data';
-import { capturePhoto, type PhotoOutcome, type ReturnMedia } from '../domain';
+import {
+  capturePhoto,
+  deletePhoto,
+  type PhotoDeleteOutcome,
+  type PhotoOutcome,
+  type ReturnMedia,
+} from '../domain';
 
 /**
  * Ảnh của MỘT hồ sơ hàng hoàn (cũ nhất trước). `media === null` là đang nạp (chưa biết có ảnh hay chưa:
@@ -83,5 +90,33 @@ export function useCaptureReturnPhoto(returnId: ReturnCaseId) {
         return outcome;
       },
     [store, shopId, returnId],
+  );
+}
+
+/**
+ * Xóa MỘT ảnh chụp nhầm (Q-26j); không bao giờ ném lỗi. Sự kiện lịch sử dùng ID sinh mới. Bên gọi phải
+ * hỏi xác nhận trước (ConfirmDialog) và nạp lại danh sách sau.
+ */
+export function useDeleteReturnPhoto() {
+  const store = useReturnStore();
+  const shopId = useCurrentShopId();
+  return useMemo(
+    () =>
+      async (mediaId: string): Promise<PhotoDeleteOutcome> => {
+        const outcome = await deletePhoto(
+          {
+            store,
+            removeFile: deleteRecording,
+            now: () => Date.now(),
+            newId: newReturnRecordId,
+          },
+          { shopId, mediaId },
+        );
+        if (outcome.kind === 'failed') {
+          logger.warn('returns.photo_delete_failed', { reason: outcome.reason });
+        }
+        return outcome;
+      },
+    [store, shopId],
   );
 }

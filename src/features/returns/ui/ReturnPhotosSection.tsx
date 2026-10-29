@@ -21,20 +21,23 @@ import {
   AppThemeScope,
   Button,
   Card,
+  ConfirmDialog,
   EvidenceStatusBadge,
   Icon,
   Text,
   useTheme,
+  useToast,
 } from '@/shared/ui';
 
 import {
   describeLocation,
   isMediaSavedLocally,
   MAX_RETURN_PHOTOS,
+  type PhotoDeleteFailure,
   type PhotoFailure,
   type ReturnMedia,
 } from '../domain';
-import { useCaptureReturnPhoto, useReturnMedia } from './use-return-photos';
+import { useCaptureReturnPhoto, useDeleteReturnPhoto, useReturnMedia } from './use-return-photos';
 
 const FAILURE_CODE: Record<Exclude<PhotoFailure, 'LIMIT_REACHED'>, ErrorCode> = {
   ALREADY_CONFIRMED: 'RETURN_ALREADY_CONFIRMED',
@@ -42,6 +45,13 @@ const FAILURE_CODE: Record<Exclude<PhotoFailure, 'LIMIT_REACHED'>, ErrorCode> = 
   STORAGE_FULL: 'RETURN_PHOTO_STORAGE_FULL',
   FILE_UNREADABLE: 'RETURN_PHOTO_FAILED',
   SAVE_FAILED: 'RETURN_PHOTO_FAILED',
+};
+
+const DELETE_FAILURE_CODE: Record<Exclude<PhotoDeleteFailure, 'NOT_FOUND'>, ErrorCode> = {
+  ALREADY_CONFIRMED: 'RETURN_ALREADY_CONFIRMED',
+  IN_USE: 'RETURN_PHOTO_IN_USE',
+  FILE_DELETE_FAILED: 'RETURN_PHOTO_DELETE_FAILED',
+  RECORD_DELETE_FAILED: 'RETURN_PHOTO_DELETE_FAILED',
 };
 
 interface ReturnPhotosSectionProps {
@@ -53,7 +63,8 @@ interface ReturnPhotosSectionProps {
 }
 
 /**
- * Ảnh kiện hàng ở D03 (R2a). TÙY CHỌN, tối đa `MAX_RETURN_PHOTOS`, không có nút xóa (bản gốc bất biến).
+ * Ảnh kiện hàng ở D03 (R2a). TÙY CHỌN, tối đa `MAX_RETURN_PHOTOS`. Có nút Xóa cho ảnh chụp nhầm khi hồ sơ chưa xác nhận (NGOẠI LỆ
+ * của bất biến 4, Q-26j): có hộp thoại xác nhận; ảnh đang trong hồ sơ tranh chấp thì bị từ chối.
  * Ảnh chỉ "Đã lưu trên máy": chưa có đường tải lên nên không hiện trạng thái tải. Giờ hiển thị là giờ
  * máy; mã băm chỉ chứng minh tệp không đổi, không chứng minh thời điểm chụp.
  */
@@ -62,6 +73,8 @@ export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhoto
   const { tokens } = useTheme();
   const { media, reload } = useReturnMedia(returnId);
   const capture = useCaptureReturnPhoto(returnId);
+  const removePhoto = useDeleteReturnPhoto();
+  const toast = useToast();
   const permission = usePhotoPermission();
   const handleRef = useRef<CameraPhotoHandle | null>(null);
   const [open, setOpen] = useState(false);
@@ -70,6 +83,9 @@ export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhoto
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<ErrorCode | null>(null);
   const [lastSaved, setLastSaved] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<ReturnMedia | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteFailure, setDeleteFailure] = useState<ErrorCode | null>(null);
 
   const saved = (media ?? []).filter(isMediaSavedLocally);
   const full = saved.length >= MAX_RETURN_PHOTOS;
@@ -124,6 +140,22 @@ export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhoto
     setFailure(FAILURE_CODE[reason]);
   };
 
+  const confirmDelete = async () => {
+    const target = pendingDelete;
+    if (!target || deleting) return;
+    setDeleting(true);
+    const outcome = await removePhoto(target.id);
+    setDeleting(false);
+    setPendingDelete(null);
+    await reload();
+    if (outcome.kind === 'deleted') {
+      setDeleteFailure(null);
+      toast.show(t('returns:photos.deleteDone'), { tone: 'success' });
+    } else if (outcome.reason !== 'NOT_FOUND') {
+      setDeleteFailure(DELETE_FAILURE_CODE[outcome.reason]);
+    }
+  };
+
   const touch = getMinTouchTarget();
   const prompting = wantsCamera && !granted;
   const permissionBlocked = permission.status === 'blocked';
@@ -163,11 +195,31 @@ export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhoto
         <Card compact flush>
           <View>
             {media.map((item) => (
-              <PhotoRow key={item.id} item={item} busy={busy} />
+              <PhotoRow
+                key={item.id}
+                item={item}
+                busy={busy}
+                {...(locked || busy || deleting
+                  ? {}
+                  : {
+                      onDelete: () => {
+                        setDeleteFailure(null);
+                        setPendingDelete(item);
+                      },
+                    })}
+              />
             ))}
           </View>
         </Card>
       )}
+
+      {deleteFailure ? (
+        <Card compact tone="warning" testID="return-photo-delete-error">
+          <Text variant="formBody" accessibilityRole="alert">
+            {errorText(resolveErrorMessage(t, deleteFailure))}
+          </Text>
+        </Card>
+      ) : null}
 
       {locked ? null : full ? (
         <Text variant="caption" color="textMuted" testID="return-photos-full">
@@ -208,6 +260,19 @@ export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhoto
           </View>
         </Card>
       ) : null}
+
+      <ConfirmDialog
+        visible={pendingDelete !== null}
+        title={t('returns:photos.deleteTitle')}
+        message={t('returns:photos.deleteMessage')}
+        cancelLabel={t('returns:photos.deleteCancel')}
+        confirmLabel={t('returns:photos.deleteConfirm')}
+        destructive
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => void confirmDelete()}
+        messageTestID="return-photo-delete-message"
+        confirmTestID="return-photo-delete-confirm"
+      />
 
       <Modal visible={open} animationType="slide" onRequestClose={close} statusBarTranslucent>
         <AppThemeScope>
@@ -315,7 +380,15 @@ export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhoto
   );
 }
 
-function PhotoRow({ item, busy }: { item: ReturnMedia; busy: boolean }) {
+function PhotoRow({
+  item,
+  busy,
+  onDelete,
+}: {
+  item: ReturnMedia;
+  busy: boolean;
+  onDelete?: () => void;
+}) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const side = tokens.component.tile.xl;
@@ -378,6 +451,18 @@ function PhotoRow({ item, busy }: { item: ReturnMedia; busy: boolean }) {
           <Text variant="caption" color="textMuted">
             {t('returns:photos.failedItem')}
           </Text>
+        ) : null}
+        {onDelete ? (
+          <View style={{ alignSelf: 'flex-start' }}>
+            <Button
+              testID={`return-photo-delete-${item.id}`}
+              label={t('returns:photos.delete')}
+              variant="destructive"
+              outlined
+              size="slim"
+              onPress={onDelete}
+            />
+          </View>
         ) : null}
       </View>
     </View>

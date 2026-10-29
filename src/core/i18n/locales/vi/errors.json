@@ -11,6 +11,8 @@
   "RETURN_ALREADY_CONFIRMED": "Hồ sơ đã xác nhận nên không sửa được nữa. Bạn vẫn liên kết được đơn gốc.",
   "RETURN_PHOTO_FAILED": "Chưa lưu được ảnh này. Bạn thử chụp lại nhé.",
   "RETURN_PHOTO_STORAGE_FULL": "Máy hết dung lượng nên chưa lưu được ảnh. Hãy giải phóng bộ nhớ rồi chụp lại.",
+  "RETURN_PHOTO_IN_USE": "Chưa xóa được ảnh này vì đang được giữ trong hồ sơ tranh chấp hoặc đã lên máy chủ.",
+  "RETURN_PHOTO_DELETE_FAILED": "Chưa xóa được ảnh trên máy. Bạn thử lại nhé.",
   "RETURN_CAMERA_UNAVAILABLE": "Chưa mở được camera. Hãy đóng ứng dụng khác đang dùng camera rồi thử lại.",
   "DISPUTE_SAVE_FAILED": "Chưa lưu được hồ sơ tranh chấp trên máy. Bạn thử lại nhé.",
   "DISPUTE_CLOSED": "Hồ sơ này đã đóng nên không thêm hay sửa được nữa.",

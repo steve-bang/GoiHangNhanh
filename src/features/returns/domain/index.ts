@@ -20,14 +20,23 @@ export {
 export {
   applyMediaEvent,
   applyMediaLocation,
+  assertMediaDeletable,
   describeLocation,
   isMediaSavedLocally,
   LOCATION_STATUSES,
   MAX_RETURN_PHOTOS,
 } from './media';
 export { capturePhoto } from './photo-controller';
+export { deletePhoto } from './photo-delete';
+export type {
+  PhotoDeleteFailure,
+  PhotoDeleteOutcome,
+  PhotoDeletePorts,
+  RemoveFileOutcome,
+} from './photo-delete';
 export type { LocateOutcome, PhotoFailure, PhotoOutcome, PhotoPorts } from './photo-controller';
 export type {
+  DeleteMediaResult,
   LocationDisplay,
   LocationStatus,
   MediaEventError,

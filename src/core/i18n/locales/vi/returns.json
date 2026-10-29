@@ -191,7 +191,8 @@
       "opening_video_missing": "Ghi nhận chưa có video mở kiện",
       "linked": "Liên kết đơn gốc",
       "lines_saved": "Lưu kiểm kê",
-      "confirmed": "Xác nhận hồ sơ"
+      "confirmed": "Xác nhận hồ sơ",
+      "photo_deleted": "Xóa một ảnh chụp nhầm"
     },
     "backToList": "Về danh sách hàng hoàn",
     "another": "Nhận hàng hoàn khác"
@@ -210,7 +211,7 @@
     "empty": "Chưa chụp ảnh nào. Hồ sơ sẽ ghi là chưa có ảnh bên ngoài.",
     "capture": "Chụp ảnh kiện",
     "captureMore": "Chụp thêm ảnh",
-    "full": "Đã đủ {{max}} ảnh. Ảnh đã chụp không xóa được.",
+    "full": "Đã đủ {{max}} ảnh. Muốn chụp thêm, hãy xóa bớt ảnh chụp nhầm.",
     "takenAt": "Giờ máy: {{time}}",
     "saving": "Đang lưu ảnh…",
     "unfinished": "Chưa lưu xong ảnh này.",
@@ -224,6 +225,13 @@
     "permissionBlocked": "Camera đang bị tắt. Hãy bật trong Cài đặt để chụp ảnh.",
     "allowCamera": "Cho phép camera",
     "openSettings": "Mở Cài đặt",
+    "delete": "Xóa ảnh",
+    "deleteLabel": "Xóa ảnh chụp lúc {{time}}",
+    "deleteTitle": "Xóa ảnh này?",
+    "deleteMessage": "Ảnh sẽ bị xóa khỏi máy này và không khôi phục được. Hồ sơ chỉ ghi lại là đã xóa một ảnh.",
+    "deleteConfirm": "Xóa ảnh",
+    "deleteCancel": "Giữ ảnh",
+    "deleteDone": "Đã xóa ảnh.",
     "locationNote": "Máy ghi thêm vị trí nếu có. Đây là số đọc của máy lúc chụp, không chứng minh nơi chụp thật.",
     "location": {
       "has": "Có vị trí (±{{meters}} m)",

@@ -36,6 +36,10 @@ export const ERROR_CODES = {
   RETURN_PHOTO_FAILED: 'RETURN_PHOTO_FAILED',
   RETURN_PHOTO_STORAGE_FULL: 'RETURN_PHOTO_STORAGE_FULL',
   RETURN_CAMERA_UNAVAILABLE: 'RETURN_CAMERA_UNAVAILABLE',
+  // Đề xuất (chờ BA, Q-26j): xóa ảnh chụp nhầm bị từ chối (ảnh đang nằm trong hồ sơ tranh chấp hoặc đã lên
+  // máy chủ) hoặc không xóa được tệp trên máy
+  RETURN_PHOTO_IN_USE: 'RETURN_PHOTO_IN_USE',
+  RETURN_PHOTO_DELETE_FAILED: 'RETURN_PHOTO_DELETE_FAILED',
   // Đề xuất (chờ BA, Q-27): lưu hồ sơ tranh chấp cục bộ; hồ sơ đã đóng không sửa được
   DISPUTE_SAVE_FAILED: 'DISPUTE_SAVE_FAILED',
   DISPUTE_CLOSED: 'DISPUTE_CLOSED',

@@ -22,9 +22,11 @@ jest.mock(
 );
 const mockPersist = jest.fn();
 const mockHash = jest.fn();
+const mockDelete = jest.fn();
 jest.mock('@/platform/recording-files', () => ({
   persistRecording: (...args: unknown[]) => mockPersist(...args),
   resolveRecordingUri: (stored: string) => `file:///docs/${stored}`,
+  deleteRecording: (...args: unknown[]) => mockDelete(...args),
   recordingExists: () => true,
   getAvailableDiskBytes: () => null,
 }));
@@ -42,6 +44,8 @@ beforeEach(() => {
   resetMockLocation();
   mockPersist.mockReset();
   mockHash.mockReset();
+  mockDelete.mockReset();
+  mockDelete.mockReturnValue({ ok: true, deleted: true });
   mockPersist.mockImplementation((_temp: string, id: string, ext: string) => ({
     ok: true,
     uri: `evidence/${id}.${ext}`,
@@ -152,13 +156,130 @@ describe('UI-D03 Ảnh kiện hàng', () => {
     });
   });
 
-  it('không có nút xóa ảnh', async () => {
-    const store = createMemoryReturnStore();
-    const id = await seedReturn(store);
-    await openD03(store, id);
-    await takePhoto();
-    await screen.findByTestId('return-photo-saved');
-    expect(screen.queryByRole('button', { name: /xóa/i })).toBeNull();
+  describe('xóa ảnh chụp nhầm (Q-26j)', () => {
+    const seedPhoto = async (store: ReturnStore, id: ReturnCaseId, mediaId: string) => {
+      await store.createMedia({
+        id: mediaId,
+        shopId: SHOP,
+        returnId: id,
+        kind: 'photo',
+        atDevice: 1,
+      });
+      await store.applyMediaEvent(SHOP, mediaId, { type: 'STOP_RECORDING', origin: 'device' }, 2, {
+        localPath: 'tmp.jpg',
+      });
+      await store.applyMediaEvent(
+        SHOP,
+        mediaId,
+        { type: 'LOCAL_FILE_READABLE', origin: 'device' },
+        3,
+        {
+          localPath: `evidence/${mediaId}.jpg`,
+          sizeBytes: 10,
+          sha256Client: SHA,
+        },
+      );
+    };
+
+    it('bấm Xóa ảnh: hộp thoại nói rõ xóa khỏi máy, không khôi phục; Giữ ảnh thì không đổi gì', async () => {
+      const store = createMemoryReturnStore();
+      const id = await seedReturn(store);
+      await seedPhoto(store, id, 'm1');
+      await openD03(store, id);
+      await fireEvent.press(await screen.findByTestId('return-photo-delete-m1'));
+      expect(await screen.findByTestId('return-photo-delete-message')).toHaveTextContent(
+        /xóa khỏi máy này và không khôi phục được/,
+      );
+      await fireEvent.press(screen.getByText('Giữ ảnh'));
+      expect(mockDelete).not.toHaveBeenCalled();
+      expect(await store.listMedia(SHOP, id)).toHaveLength(1);
+    });
+
+    it('xác nhận: xóa tệp + dòng ảnh, ghi lịch sử photo_deleted, đếm lại và cho chụp lại', async () => {
+      const store = createMemoryReturnStore();
+      const id = await seedReturn(store);
+      await seedPhoto(store, id, 'm1');
+      await openD03(store, id);
+      await fireEvent.press(await screen.findByTestId('return-photo-delete-m1'));
+      await fireEvent.press(await screen.findByTestId('return-photo-delete-confirm'));
+      await waitFor(async () => expect(await store.listMedia(SHOP, id)).toEqual([]));
+      expect(mockDelete).toHaveBeenCalledWith('evidence/m1.jpg');
+      expect((await store.getReturn(SHOP, id))?.events.map((e) => e.kind)).toContain(
+        'photo_deleted',
+      );
+      expect(await screen.findByTestId('return-photos-empty')).toBeOnTheScreen();
+      expect(screen.getByTestId('return-photos-count')).toHaveTextContent(
+        `0/${MAX_RETURN_PHOTOS} ảnh`,
+      );
+    });
+
+    it('xóa tệp lỗi: báo lỗi, KHÔNG mất ảnh, KHÔNG ghi lịch sử', async () => {
+      mockDelete.mockReturnValue({ ok: false });
+      const store = createMemoryReturnStore();
+      const id = await seedReturn(store);
+      await seedPhoto(store, id, 'm1');
+      await openD03(store, id);
+      await fireEvent.press(await screen.findByTestId('return-photo-delete-m1'));
+      await fireEvent.press(await screen.findByTestId('return-photo-delete-confirm'));
+      expect(await screen.findByTestId('return-photo-delete-error')).toHaveTextContent(
+        /Chưa xóa được ảnh trên máy/,
+      );
+      expect(await store.listMedia(SHOP, id)).toHaveLength(1);
+      expect((await store.getReturn(SHOP, id))?.events.map((e) => e.kind)).not.toContain(
+        'photo_deleted',
+      );
+    });
+
+    it('ảnh đang trong hồ sơ tranh chấp: từ chối, báo ảnh đang được giữ, không xóa tệp', async () => {
+      const store = createMemoryReturnStore({ isHeldByDispute: async () => true });
+      const id = await seedReturn(store);
+      await seedPhoto(store, id, 'm1');
+      await openD03(store, id);
+      await fireEvent.press(await screen.findByTestId('return-photo-delete-m1'));
+      await fireEvent.press(await screen.findByTestId('return-photo-delete-confirm'));
+      expect(await screen.findByTestId('return-photo-delete-error')).toHaveTextContent(
+        /đang được giữ trong hồ sơ tranh chấp/,
+      );
+      expect(mockDelete).not.toHaveBeenCalled();
+      expect(await store.listMedia(SHOP, id)).toHaveLength(1);
+    });
+
+    it('hồ sơ đã xác nhận: không có nút xóa', async () => {
+      const store = createMemoryReturnStore();
+      const id = await seedReturn(store);
+      await seedPhoto(store, id, 'm1');
+      await store.saveExterior(SHOP, id, {
+        exterior: { signs: ['dented'], note: '', recordedAtDevice: 2_000 },
+        openedBefore: null,
+        eventId: 'ev-2',
+        openedEventId: 'ev-3',
+      });
+      await store.saveOpeningVideoMissing(SHOP, id, {
+        reason: 'recorder_unavailable',
+        atDevice: 3_000,
+        eventId: 'ev-4',
+      });
+      await store.saveLines(SHOP, id, {
+        lines: [
+          {
+            id: 'l1',
+            name: 'Áo',
+            variant: null,
+            receivedQuantity: 1,
+            condition: 'normal',
+            note: '',
+            expected: null,
+          },
+        ],
+        discrepancies: [],
+        atDevice: 4_000,
+        eventId: 'ev-5',
+      });
+      await store.confirmReturn(SHOP, id, { finalNote: '', atDevice: 5_000, eventId: 'ev-6' });
+      await openD03(store, id);
+      await screen.findByTestId('return-photo-m1');
+      expect(screen.queryByTestId('return-photo-delete-m1')).toBeNull();
+    });
   });
 
   it('chưa cấp quyền camera: hỏi quyền, không mở camera, không chụp', async () => {
@@ -226,7 +347,7 @@ describe('UI-D03 Ảnh kiện hàng', () => {
     );
   });
 
-  it('đủ giới hạn ảnh: không còn nút chụp, nói rõ không xóa được', async () => {
+  it('đủ giới hạn ảnh: không còn nút chụp; xóa bớt một ảnh thì chụp lại được', async () => {
     const store = createMemoryReturnStore();
     const id = await seedReturn(store);
     for (let i = 0; i < MAX_RETURN_PHOTOS; i += 1) {
@@ -256,6 +377,9 @@ describe('UI-D03 Ảnh kiện hàng', () => {
     await openD03(store, id);
     expect(await screen.findByTestId('return-photos-full')).toBeOnTheScreen();
     expect(screen.queryByTestId('return-photo-capture')).toBeNull();
+    await fireEvent.press(screen.getByTestId('return-photo-delete-m-0'));
+    await fireEvent.press(await screen.findByTestId('return-photo-delete-confirm'));
+    expect(await screen.findByTestId('return-photo-capture')).toBeOnTheScreen();
   });
 
   it('có dấu hiệu hư hỏng: nhắc nên chụp ảnh (vẫn tùy chọn, không chặn Tiếp tục)', async () => {
@@ -337,5 +461,44 @@ describe('UI-D06 hạn chế ảnh ngoài khi đã/chưa chụp', () => {
       /mới lưu trên máy này/,
     );
     expect(screen.queryByText('Chưa có ảnh bên ngoài kiện.')).toBeNull();
+  });
+
+  it('tóm tắt vị trí: đếm ảnh có vị trí, nói rõ là số đọc của máy và không hiện tọa độ', async () => {
+    const store = createMemoryReturnStore();
+    const id = await seedChecking(store);
+    for (const [mediaId, located] of [
+      ['m1', true],
+      ['m2', false],
+    ] as const) {
+      await store.createMedia({
+        id: mediaId,
+        shopId: SHOP,
+        returnId: id,
+        kind: 'photo',
+        atDevice: 5,
+      });
+      await store.applyMediaEvent(SHOP, mediaId, { type: 'STOP_RECORDING', origin: 'device' }, 6, {
+        localPath: 'tmp.jpg',
+      });
+      await store.applyMediaEvent(
+        SHOP,
+        mediaId,
+        { type: 'LOCAL_FILE_READABLE', origin: 'device' },
+        7,
+        { localPath: `evidence/${mediaId}.jpg`, sizeBytes: 10, sha256Client: SHA },
+      );
+      await store.setMediaLocation(
+        SHOP,
+        mediaId,
+        located
+          ? { status: 'ok', lat: 10.77, lng: 106.7, accuracyM: 5, atDevice: 8 }
+          : { status: 'denied', lat: null, lng: null, accuracyM: null, atDevice: null },
+      );
+    }
+    await openD06(store, id);
+    const line = await screen.findByTestId('return-summary-photos-location');
+    expect(line).toHaveTextContent(/Có vị trí máy cho 1\/2 ảnh/);
+    expect(line).toHaveTextContent(/không chứng minh nơi chụp/);
+    expect(screen.queryByText(/10\.77|106\.7/)).toBeNull();
   });
 });

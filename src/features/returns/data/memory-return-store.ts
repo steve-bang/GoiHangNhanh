@@ -9,7 +9,13 @@ import {
   statusAfterLines,
   statusAfterVideoStep,
 } from '../domain/return-rules';
-import { applyMediaEvent, applyMediaLocation, type ReturnMedia } from '../domain/media';
+import {
+  applyMediaEvent,
+  applyMediaLocation,
+  assertMediaDeletable,
+  type DeleteMediaResult,
+  type ReturnMedia,
+} from '../domain/media';
 import type {
   NewDiscrepancy,
   NewReceivedLine,
@@ -42,13 +48,30 @@ interface Row {
  * thật. Cùng hợp đồng với kho SQLite (return-store.contract.ts).
  */
 export function createMemoryReturnStore(
-  options: { creatorUid?: CreatorUidProvider } = {},
+  options: {
+    creatorUid?: CreatorUidProvider;
+    /**
+     * Ảnh đã nằm trong hồ sơ tranh chấp nào chưa (kho SQLite tự tra bảng `dispute_evidence`; kho bộ nhớ
+     * không biết kho tranh chấp nên nhận qua đây). Không truyền = chưa có tranh chấp nào.
+     */
+    isHeldByDispute?: (shopId: ShopId, mediaId: string) => boolean | Promise<boolean>;
+  } = {},
 ): ReturnStore {
   const uid = (): string | null => options.creatorUid?.() ?? null;
   const rows = new Map<ReturnCaseId, Row>();
   const lastSeq = new Map<ShopId, number>();
   const media = new Map<string, ReturnMedia>();
 
+  const checkMediaDeletable = async (shopId: ShopId, id: string): Promise<DeleteMediaResult> => {
+    const current = media.get(id);
+    if (!current || current.shopId !== shopId) return { ok: false, error: 'MEDIA_NOT_FOUND' };
+    assertMediaDeletable({
+      returnConfirmed: rowOf(shopId, current.returnId).returnCase.status === 'confirmed',
+      media: current,
+      inDispute: (await options.isHeldByDispute?.(shopId, id)) ?? false,
+    });
+    return { ok: true, media: copy(current) };
+  };
   const rowOf = (shopId: ShopId, id: ReturnCaseId): Row => {
     const row = rows.get(id);
     if (!row || row.returnCase.shopId !== shopId) {
@@ -284,6 +307,16 @@ export function createMemoryReturnStore(
       if (!result.ok) return result;
       media.set(id, result.media);
       return { ok: true, media: copy(result.media) };
+    },
+    checkMediaDeletable,
+    async deleteMedia(shopId, id, atDevice, eventId) {
+      const checked = await checkMediaDeletable(shopId, id);
+      if (!checked.ok) return checked;
+      const row = rowOf(shopId, checked.media.returnId);
+      media.delete(id);
+      touch(row, {}, atDevice);
+      event(row, eventId, 'photo_deleted', atDevice);
+      return checked;
     },
     async listMedia(shopId, returnId) {
       return [...media.values()]

@@ -659,6 +659,115 @@ export function runReturnStoreContract(name: string, create: () => Promise<Retur
           });
         });
       });
+
+      describe('xóa ảnh chụp nhầm (Q-26j)', () => {
+        const confirmReturn = async (store: ReturnStore, id: ReturnCaseId) => {
+          await store.saveExterior(SHOP, id, exterior());
+          await store.saveOpeningVideoMissing(SHOP, id, {
+            reason: 'recorder_unavailable',
+            atDevice: 3000,
+            eventId: nid(),
+          });
+          await store.saveLines(SHOP, id, {
+            lines: [manualLine('Áo', 1)],
+            discrepancies: [],
+            atDevice: 4000,
+            eventId: nid(),
+          });
+          await store.confirmReturn(SHOP, id, { finalNote: '', atDevice: 5000, eventId: nid() });
+        };
+
+        it('xóa ảnh chưa xác nhận: mất dòng ảnh, thêm ĐÚNG MỘT sự kiện photo_deleted (không đường dẫn/mã băm)', async () => {
+          const store = await create();
+          const { returnCase } = await store.createReturn(makeNewReturn());
+          await store.createMedia(newMedia(returnCase.id, 'm1'));
+          await store.createMedia(newMedia(returnCase.id, 'm2'));
+          await toQueued(store, 'm1');
+          const before = (await store.getReturn(SHOP, returnCase.id))?.events.length ?? 0;
+          const deleted = await store.deleteMedia(SHOP, 'm1', 9000, 'ev-del');
+          expect(deleted).toMatchObject({
+            ok: true,
+            media: { id: 'm1', localPath: 'evidence/m1.jpg' },
+          });
+          expect((await store.listMedia(SHOP, returnCase.id)).map((m) => m.id)).toEqual(['m2']);
+          const details = await store.getReturn(SHOP, returnCase.id);
+          expect(details?.events).toHaveLength(before + 1);
+          const event = details?.events.at(-1);
+          expect(event).toMatchObject({ id: 'ev-del', kind: 'photo_deleted', atDevice: 9000 });
+          expect(JSON.stringify(event)).not.toMatch(/evidence|jpg|aaaa|m1/);
+          expect(details?.returnCase.updatedAtDevice).toBe(9000);
+        });
+
+        it('xóa được cả ảnh lưu lỗi/đang dở (chưa lên máy chủ)', async () => {
+          const store = await create();
+          const { returnCase } = await store.createReturn(makeNewReturn());
+          await store.createMedia(newMedia(returnCase.id, 'm1'));
+          await store.applyMediaEvent(SHOP, 'm1', dev('STOP_RECORDING'), 1, {
+            localPath: 'tmp/x.jpg',
+          });
+          await store.applyMediaEvent(SHOP, 'm1', dev('LOCAL_WRITE_FAILED'), 2);
+          expect((await store.deleteMedia(SHOP, 'm1', 3, nid())).ok).toBe(true);
+          expect(await store.listMedia(SHOP, returnCase.id)).toEqual([]);
+        });
+
+        it('hồ sơ đã xác nhận: từ chối RETURN_ALREADY_CONFIRMED, ảnh và lịch sử giữ nguyên', async () => {
+          const store = await create();
+          const { returnCase } = await store.createReturn(makeNewReturn());
+          await store.createMedia(newMedia(returnCase.id, 'm1'));
+          await toQueued(store, 'm1');
+          await confirmReturn(store, returnCase.id);
+          const events = (await store.getReturn(SHOP, returnCase.id))?.events.length;
+          expect(await code(store.checkMediaDeletable(SHOP, 'm1'))).toBe(
+            'RETURN_ALREADY_CONFIRMED',
+          );
+          expect(await code(store.deleteMedia(SHOP, 'm1', 9, nid()))).toBe(
+            'RETURN_ALREADY_CONFIRMED',
+          );
+          expect(await store.listMedia(SHOP, returnCase.id)).toHaveLength(1);
+          expect((await store.getReturn(SHOP, returnCase.id))?.events).toHaveLength(events ?? -1);
+        });
+
+        it('ảnh đã (hoặc đang) lên máy chủ: từ chối RETURN_PHOTO_IN_USE ở mọi trạng thái đó', async () => {
+          const store = await create();
+          const { returnCase } = await store.createReturn(makeNewReturn());
+          await store.createMedia(newMedia(returnCase.id, 'm1'));
+          await toQueued(store, 'm1');
+          await store.applyMediaEvent(SHOP, 'm1', dev('UPLOAD_STARTED'), 6000);
+          expect(await code(store.deleteMedia(SHOP, 'm1', 9, nid()))).toBe('RETURN_PHOTO_IN_USE');
+          await store.applyMediaEvent(SHOP, 'm1', server('SERVER_RECEIVED'), 6100);
+          expect(await code(store.deleteMedia(SHOP, 'm1', 9, nid()))).toBe('RETURN_PHOTO_IN_USE');
+          await store.applyMediaEvent(SHOP, 'm1', server('SERVER_VERIFIED'), 6200);
+          expect(await code(store.checkMediaDeletable(SHOP, 'm1'))).toBe('RETURN_PHOTO_IN_USE');
+          expect(await store.listMedia(SHOP, returnCase.id)).toHaveLength(1);
+          expect((await store.getReturn(SHOP, returnCase.id))?.events.map((e) => e.kind)).toEqual([
+            'created',
+          ]);
+        });
+
+        it('không thấy ảnh hoặc ảnh của shop khác: MEDIA_NOT_FOUND, không xóa gì', async () => {
+          const store = await create();
+          const { returnCase } = await store.createReturn(makeNewReturn());
+          await store.createMedia(newMedia(returnCase.id, 'm1'));
+          const notFound = { ok: false, error: 'MEDIA_NOT_FOUND' };
+          expect(await store.deleteMedia(OTHER, 'm1', 9, nid())).toEqual(notFound);
+          expect(await store.deleteMedia(SHOP, 'nope', 9, nid())).toEqual(notFound);
+          expect(await store.checkMediaDeletable(OTHER, 'm1')).toEqual(notFound);
+          expect(await store.listMedia(SHOP, returnCase.id)).toHaveLength(1);
+        });
+
+        it('checkMediaDeletable không đổi dữ liệu; xóa lặp lại sau khi đã xóa trả MEDIA_NOT_FOUND', async () => {
+          const store = await create();
+          const { returnCase } = await store.createReturn(makeNewReturn());
+          await store.createMedia(newMedia(returnCase.id, 'm1'));
+          expect((await store.checkMediaDeletable(SHOP, 'm1')).ok).toBe(true);
+          expect(await store.listMedia(SHOP, returnCase.id)).toHaveLength(1);
+          expect((await store.deleteMedia(SHOP, 'm1', 9, nid())).ok).toBe(true);
+          expect(await store.deleteMedia(SHOP, 'm1', 10, nid())).toEqual({
+            ok: false,
+            error: 'MEDIA_NOT_FOUND',
+          });
+        });
+      });
     });
   });
 }
