@@ -1,6 +1,7 @@
 import type { OrderId, ReturnCaseId, ShopId } from '@/core/ids';
 
 import { createMemoryReturnStore } from './memory-return-store';
+import { recoverInterruptedMedia } from '../domain/media-recovery';
 import { hasOpeningEvidenceLimit } from '../domain/evidence-limits';
 import type { ReturnStore } from '../domain/return-store';
 import {
@@ -251,6 +252,42 @@ describe('startOpeningVideo: quay video mở kiện', () => {
       localPath: 'file:///cache/Camera/v.mov',
     });
     expect((await t.store.getReturn(SHOP, returnId))?.returnCase.openingVideo).toBeNull();
+  });
+
+  it('ghi STOP_RECORDING không được: vẫn giữ đường dẫn TẠM ở lưu lỗi để khôi phục tìm lại được', async () => {
+    const t = setup();
+    const returnId = await makeCase(t.store);
+    const real = t.store.applyMediaEvent.bind(t.store);
+    const store: ReturnStore = {
+      ...t.store,
+      applyMediaEvent: async (shop, id, event, at, patch) =>
+        event.type === 'STOP_RECORDING'
+          ? { ok: false, error: 'INVALID_TRANSITION' as never }
+          : real(shop, id, event, at, patch),
+    };
+    const active = await startOpeningVideo({ ...t.ports, store }, { shopId: SHOP, returnId });
+    if ('kind' in active) throw new Error(active.reason);
+    expect(await active.result).toMatchObject({ kind: 'failed', reason: 'SAVE_FAILED' });
+    const [media] = await mediaOf(t.store, returnId);
+    expect(media).toMatchObject({
+      state: 'local_save_failed',
+      localPath: 'file:///cache/Camera/v.mov',
+    });
+    // Khôi phục sau kill thấy tệp tạm còn (không bị coi là "không đường dẫn" -> unrecoverable).
+    const result = await recoverInterruptedMedia(
+      {
+        store: t.store,
+        persist: (_tmp, id, ext) => ({ ok: true, uri: `evidence/${id}.${ext}`, sizeBytes: 9 }),
+        hash: async () => ({ ok: true, sha256: 'cd'.repeat(32), sizeBytes: 9 }),
+        exists: () => true,
+        findPersisted: () => null,
+        now: () => 99_999,
+        newId: () => 'rec-1',
+      },
+      1_000_000,
+    );
+    expect(result).toMatchObject({ lost: 0, rescued: 1 });
+    expect((await mediaOf(t.store, returnId))[0]?.state).toBe('queued');
   });
 
   it('băm lỗi: giữ đường dẫn BỀN đã chuyển, FILE_UNREADABLE, hồ sơ không ghi video', async () => {

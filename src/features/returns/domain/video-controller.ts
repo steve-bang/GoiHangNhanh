@@ -189,7 +189,11 @@ async function finish(
     const stopped = await store.applyMediaEvent(shopId, mediaId, device('STOP_RECORDING'), now(), {
       localPath: recorded.tempUri,
     });
-    if (!stopped.ok) return fail('SAVE_FAILED');
+    if (!stopped.ok) {
+      // Giữ đường dẫn tạm (không xóa tệp) để khôi phục sau kill tìm lại được, như photo-controller.
+      await markFailed(ports, shopId, mediaId, recorded.tempUri);
+      return fail('SAVE_FAILED');
+    }
 
     const saved = persist(recorded.tempUri, mediaId, extensionOf(recorded.tempUri));
     if (!saved.ok) {
