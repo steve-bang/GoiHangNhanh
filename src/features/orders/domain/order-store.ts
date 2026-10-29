@@ -69,7 +69,7 @@ export interface OrderStore {
   /**
    * Số tệp bằng chứng trên máy này của shop mà máy chủ CHƯA xác nhận (định nghĩa trung thực): tệp
    * cục bộ có trạng thái chưa tới `uploaded`/`verified` (docs/06; `file-state.ts`). Kho SQLite đếm từ bảng
-   * `evidence_files` (ADR-020 R-7); kho bộ nhớ (web/test) không có tệp nên trả 0. Phiên `created` không phải bằng chứng.
+   * `evidence_files` (ADR-020 R-7) CỘNG ảnh hàng hoàn `return_media` (R2a, Q-26); kho bộ nhớ (web/test) không có tệp nên trả 0. Phiên `created` không phải bằng chứng.
    */
   countUnsynced(shopId: ShopId): Promise<number>;
   /**

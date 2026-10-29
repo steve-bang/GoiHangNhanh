@@ -591,16 +591,19 @@ export function createSqliteOrderStore(
       guarded('LOCAL_SAVE_UNAVAILABLE', () => sessionsOfOrder(shopId, orderId)),
     countUnsynced: (shopId) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        // Gồm cả ảnh hàng hoàn (`return_media`, R2a): chưa có đường tải lên nên luôn là dữ liệu chỉ có trên máy.
         const row = await db.getFirstAsync<{ n: number }>(
-          `SELECT COUNT(*) AS n FROM evidence_files WHERE shop_id = ? AND state IN (${UNSYNCED_SQL})`,
-          [shopId],
+          `SELECT (SELECT COUNT(*) FROM evidence_files WHERE shop_id = ? AND state IN (${UNSYNCED_SQL}))
+                + (SELECT COUNT(*) FROM return_media WHERE shop_id = ? AND state IN (${UNSYNCED_SQL})) AS n`,
+          [shopId, shopId],
         );
         return row?.n ?? 0;
       }),
     countUnsyncedOnDevice: () =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
         const row = await db.getFirstAsync<{ n: number }>(
-          `SELECT COUNT(*) AS n FROM evidence_files WHERE state IN (${UNSYNCED_SQL})`,
+          `SELECT (SELECT COUNT(*) FROM evidence_files WHERE state IN (${UNSYNCED_SQL}))
+                + (SELECT COUNT(*) FROM return_media WHERE state IN (${UNSYNCED_SQL})) AS n`,
         );
         return row?.n ?? 0;
       }),
