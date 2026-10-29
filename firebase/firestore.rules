@@ -4,7 +4,8 @@ rules_version = '2';
 //
 // Nguyên tắc (xem docs/engineering/architecture.md mục 6 và CLAUDE.md):
 // 1. Mặc định TỪ CHỐI. Mỗi collection chỉ được mở khi có rule + test trong
-//    firebase/tests/rules. Chưa có rule cho: returnCases, discrepancies, disputes, exports,
+//    firebase/tests/rules. Chưa có rule cho: nội dung hồ sơ hàng hoàn (chỉ có bản neo `returns`),
+//    discrepancies, disputes, exports,
 //    plans... (thêm cùng tính năng tương ứng).
 // 2. Cô lập theo shop (bất biến #8): mọi collection nằm dưới shops/{shopId}; quyền suy ra từ
 //    shops/{shopId}/members/{uid}. Thu hồi quyền có hiệu lực ngay (không dùng custom claims;
@@ -214,39 +215,102 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // ---------- Hồ sơ hàng hoàn: bản "neo" (Q-28) ----------
+      // Chỉ định danh để gắn bằng chứng hàng hoàn (ảnh/video mở kiện). KHÔNG chứa đơn gốc, tình trạng,
+      // dòng hay sai lệch: đồng bộ nội dung hồ sơ là Q-26c. Hồ sơ chưa liên kết đơn gốc vẫn hợp lệ.
+      // `code` (RH-00001) chỉ là nhãn hiển thị, KHÔNG phải ID (bất biến 1). Tạo một lần, bất biến,
+      // không xóa. Vai trò: khung tạm `canManageOrders` (chờ O-07; "nhân viên hàng hoàn" chưa có).
+
+      match /returns/{returnId} {
+        allow read: if isActiveMember(shopId);
+
+        allow create: if canManageOrders(shopId)
+          && request.resource.data.keys().hasOnly([
+            'shopId', 'code', 'dataSource', 'createdAtDevice', 'createdAt', 'createdBy', 'appVersion'
+          ])
+          && request.resource.data.keys().hasAll([
+            'shopId', 'code', 'dataSource', 'createdAtDevice', 'createdAt', 'createdBy'
+          ])
+          && request.resource.data.shopId == shopId
+          && request.resource.data.code is string
+          && request.resource.data.code.size() > 0
+          && request.resource.data.code.size() <= 32
+          && request.resource.data.dataSource == 'user_entered'
+          && request.resource.data.createdAtDevice is timestamp
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.createdBy == request.auth.uid;
+
+        allow update, delete: if false;
+      }
+
       // ---------- Bằng chứng (Media Asset) ----------
       // Client khai báo; máy chủ sở hữu map `server` (trạng thái nhận, mã băm tính lại, thời gian).
+      // Hai hình dạng cùng collection (Q-28): bằng chứng ĐÓNG GÓI (gắn phiên + đơn + kiện, không có
+      // `ownerKind`) và bằng chứng HÀNG HOÀN (`ownerKind: 'return'` + `returnId`, không có phiên/đơn/kiện).
+      // Tệp luôn ở shops/{shopId}/evidence/{evidenceId}/original, nên createUploadSession/verifyEvidence
+      // dùng chung.
 
       match /evidence/{evidenceId} {
         allow read: if isActiveMember(shopId);
 
         allow create: if canManageOrders(shopId)
-          && request.resource.data.keys().hasOnly([
-            'shopId', 'sessionId', 'orderId', 'packageId', 'kind', 'origin', 'clientFileState',
-            'sha256Client', 'sizeBytes', 'durationMs', 'mimeType', 'capturedAtDevice',
-            'createdAtServer', 'createdBy', 'appVersion'
-          ])
-          && request.resource.data.keys().hasAll([
-            'shopId', 'sessionId', 'orderId', 'packageId', 'kind', 'origin', 'clientFileState',
-            'sha256Client', 'sizeBytes', 'mimeType', 'capturedAtDevice', 'createdAtServer',
-            'createdBy'
-          ])
           && request.resource.data.shopId == shopId
-          && request.resource.data.kind in ['original_video', 'photo'] // bản dẫn xuất: chỉ máy chủ
           && request.resource.data.origin == 'in_app_capture' // nhập thư viện: chờ O-02
           && request.resource.data.clientFileState == 'queued' // chỉ tạo khi tệp đã đóng và đọc được
           && request.resource.data.sha256Client is string
           && request.resource.data.sha256Client.size() == 64
           && request.resource.data.sizeBytes is int
           && request.resource.data.sizeBytes > 0
+          && request.resource.data.mimeType in ['video/mp4', 'video/quicktime', 'image/jpeg', 'image/png']
           && request.resource.data.capturedAtDevice is timestamp
           && request.resource.data.createdAtServer == request.time
           && request.resource.data.createdBy == request.auth.uid
-          // Phiên phải tồn tại và khớp đơn/kiện (phát hiện liên kết không hợp lệ).
-          && get(/databases/$(database)/documents/shops/$(shopId)/sessions/$(request.resource.data.sessionId)).data.orderId
-             == request.resource.data.orderId
-          && get(/databases/$(database)/documents/shops/$(shopId)/sessions/$(request.resource.data.sessionId)).data.packageId
-             == request.resource.data.packageId;
+          && (
+            // --- Bằng chứng đóng gói ---
+            (
+              request.resource.data.keys().hasOnly([
+                'shopId', 'sessionId', 'orderId', 'packageId', 'kind', 'origin', 'clientFileState',
+                'sha256Client', 'sizeBytes', 'durationMs', 'mimeType', 'capturedAtDevice',
+                'createdAtServer', 'createdBy', 'appVersion'
+              ])
+              && request.resource.data.keys().hasAll([
+                'shopId', 'sessionId', 'orderId', 'packageId', 'kind', 'origin', 'clientFileState',
+                'sha256Client', 'sizeBytes', 'mimeType', 'capturedAtDevice', 'createdAtServer',
+                'createdBy'
+              ])
+              && request.resource.data.kind in ['original_video', 'photo'] // bản dẫn xuất: chỉ máy chủ
+              // Phiên phải tồn tại và khớp đơn/kiện (phát hiện liên kết không hợp lệ).
+              && get(/databases/$(database)/documents/shops/$(shopId)/sessions/$(request.resource.data.sessionId)).data.orderId
+                 == request.resource.data.orderId
+              && get(/databases/$(database)/documents/shops/$(shopId)/sessions/$(request.resource.data.sessionId)).data.packageId
+                 == request.resource.data.packageId
+            )
+            ||
+            // --- Bằng chứng hàng hoàn (Q-28): hồ sơ phải có sẵn; hồ sơ chưa liên kết đơn vẫn hợp lệ ---
+            (
+              request.resource.data.keys().hasOnly([
+                'shopId', 'ownerKind', 'returnId', 'kind', 'origin', 'clientFileState',
+                'sha256Client', 'sizeBytes', 'durationMs', 'mimeType', 'capturedAtDevice',
+                'createdAtServer', 'createdBy', 'appVersion'
+              ])
+              && request.resource.data.keys().hasAll([
+                'shopId', 'ownerKind', 'returnId', 'kind', 'origin', 'clientFileState',
+                'sha256Client', 'sizeBytes', 'mimeType', 'capturedAtDevice', 'createdAtServer',
+                'createdBy'
+              ])
+              && request.resource.data.ownerKind == 'return'
+              && request.resource.data.returnId is string
+              && exists(/databases/$(database)/documents/shops/$(shopId)/returns/$(request.resource.data.returnId))
+              && (
+                (request.resource.data.kind == 'photo'
+                  && request.resource.data.mimeType in ['image/jpeg', 'image/png'])
+                || (request.resource.data.kind == 'original_video'
+                  && request.resource.data.mimeType in ['video/mp4', 'video/quicktime'])
+              )
+              && (!('durationMs' in request.resource.data)
+                  || (request.resource.data.durationMs is int && request.resource.data.durationMs >= 0))
+            )
+          );
 
         // Client chỉ cập nhật trạng thái phía thiết bị. KHÔNG được đặt uploaded/verified/
         // hash_mismatch và không đụng `server`, `sha256Client`, liên kết.
