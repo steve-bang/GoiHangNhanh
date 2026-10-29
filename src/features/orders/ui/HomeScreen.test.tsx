@@ -40,10 +40,10 @@ describe('UI-B01 Trang chủ (mẫu thiết kế, D-16)', () => {
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.returns);
   });
 
-  it('có 4 lối tắt: Quét mã đơn, Tạo đơn nhanh, Danh sách đơn, Bằng chứng', async () => {
+  it('có 3 lối tắt: Tạo đơn nhanh, Danh sách đơn, Bằng chứng (Quét đã có ở nút giữa và thẻ chính)', async () => {
     await renderWithProviders(<HomeScreen />);
+    expect(screen.queryByTestId('home-quick-scan')).toBeNull();
     const cases: [string, unknown][] = [
-      ['home-quick-scan', ROUTES.scan],
       ['home-quick-order', ROUTES.quickOrder],
       ['home-quick-orders', ROUTES.orders],
       ['home-quick-evidence', ROUTES.sync],
@@ -68,10 +68,9 @@ describe('UI-B01 Trang chủ (mẫu thiết kế, D-16)', () => {
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.sync);
   });
 
-  it('banner và thẻ hướng dẫn mở Trợ giúp; ghi rõ dữ liệu minh họa', async () => {
+  it('hàng hướng dẫn mở Trợ giúp; ghi rõ dữ liệu minh họa; không còn banner trang trí', async () => {
     await renderWithProviders(<HomeScreen />);
-    await fireEvent.press(screen.getByTestId('home-banner'));
-    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.help);
+    expect(screen.queryByTestId('home-banner')).toBeNull();
     await fireEvent.press(screen.getByTestId('home-tip-guide'));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.help);
     expect(screen.getByText(/Dữ liệu minh họa/)).toBeOnTheScreen();

@@ -5,7 +5,7 @@
  * `colors` đang chạy (không có màu mới): đổi giá trị ở đây là đổi giao diện.
  */
 export const palette = {
-  jade: { 950: '#14382A', 700: '#157852', 100: '#E6F0E9' },
+  jade: { 950: '#14382A', 800: '#0F5F41', 700: '#157852', 100: '#E6F0E9' },
   green: { 700: '#1E7A3C', 100: '#E3F1E7' },
   amber: { 700: '#B45309', 50: '#FDF3E7' },
   red: { 700: '#B3261E', 50: '#FCEBEA' },
@@ -15,7 +15,13 @@ export const palette = {
     0: '#FFFFFF',
     50: '#FAF8F2',
     100: '#F3F6F5',
+    /** Đường kẻ phân nhóm rất nhẹ (trong thẻ/danh sách); không dùng làm ranh giới ô nhập. */
+    200: '#E8E5DC',
     300: '#D9D6CC',
+    /** Ranh giới điều khiển (>= 3:1 trên nền trắng, WCAG 1.4.11) và chữ/biểu tượng vô hiệu hóa. */
+    400: '#8E9491',
+    /** Chữ cấp ba: gợi ý trong ô nhập, ghi chú phụ (>= 4.5:1 trên nền màn và nền thẻ). */
+    500: '#6B706D',
     600: '#5A5F5C',
     900: '#1B1B1B',
   },
@@ -33,6 +39,9 @@ export const palette = {
 
 /** Khoảng cách (dp). Gộp 10->8 và 5->4 khi chuyển đổi (chênh <= 2dp, ghi ở báo cáo migration). */
 export const space = { 0: 0, 2: 2, 4: 4, 6: 6, 8: 8, 12: 12, 16: 16, 24: 24 } as const;
+
+/** Cỡ biểu tượng (dp). Cỡ ngoài thang chỉ dùng cho hình minh họa. */
+export const iconSizeScale = { sm: 16, md: 20, lg: 24, xl: 32 } as const;
 
 export const radiusScale = { 8: 8, 12: 12, 16: 16, full: 9999 } as const;
 

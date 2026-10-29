@@ -8,7 +8,6 @@ import {
   ILLUSTRATIVE_TODAY_STATS,
 } from '@/shared/fixtures/illustrative-data';
 import {
-  Button,
   Card,
   Icon,
   type IconName,
@@ -20,12 +19,11 @@ import {
 } from '@/shared/ui';
 import { layout } from '@/core/theme';
 
-import { GradientPanel, ParcelIllustration } from './HomeBanner';
-
 /**
- * UI-B01 Trang chủ (đặc tả A01; mockup docs/assets/ui/02-home-and-scan.png, D-16). Thứ tự theo mẫu:
- * đầu trang (tên shop, lời chào, chuông), banner, hai nút lớn *Đóng gói đơn* / *Nhận hàng hoàn*,
- * 4 lối tắt, thống kê hôm nay, thẻ hướng dẫn. Chữ đã sửa so với mẫu (docs/09 mục 5.5): không hứa quá
+ * UI-B01 Trang chủ (đặc tả A01; mockup docs/assets/ui/02-home-and-scan.png, D-16; làm gọn theo
+ * design system v2). Thứ tự: đầu trang (tên shop, lời chào, chuông), MỘT hành động chính *Đóng gói
+ * đơn* và một hành động phụ *Nhận hàng hoàn*, 3 lối tắt, thống kê hôm nay, một hàng trợ giúp. Không
+ * còn banner/thẻ gradient trang trí; lối tắt Quét bỏ vì trùng nút Quét giữa thanh tab. Chữ đã sửa so với mẫu (docs/09 mục 5.5): không hứa quá
  * mức, nhãn thống kê dùng nhãn trạng thái chuẩn. KHÔNG biểu đồ doanh thu. Hàng hoàn và Đồng bộ
  * không còn là tab: vào từ đây. "Đơn gần đây"/"Việc cần xử lý" của docs/09 chưa có trên mẫu (Q-16).
  */
@@ -82,37 +80,11 @@ export function HomeScreen() {
       illustrative
       testID="screen-UI-B01"
     >
-      <Pressable
-        testID="home-banner"
-        accessibilityRole="button"
-        accessibilityLabel={`${t('screens:home.bannerTitle')}. ${t('screens:home.bannerHint')}`}
-        onPress={() => navigation.push(ROUTES.help)}
-      >
-        <GradientPanel
-          from={tokens.color.action.primary}
-          to={tokens.color.brand.deep}
-          radius={tokens.radius.lg}
-        >
-          <View style={[styles.banner, { padding: tokens.space.lg, gap: tokens.space.md }]}>
-            <ParcelIllustration />
-            <View style={styles.bannerText}>
-              <Text bold style={{ color: tokens.color.text.onAction }}>
-                {t('screens:home.bannerTitle')}
-              </Text>
-              <Text variant="caption" style={{ color: tokens.color.text.onAction }}>
-                {t('screens:home.bannerHint')}
-              </Text>
-            </View>
-            <Icon name="forward" size={22} color={tokens.color.text.onAction} />
-          </View>
-        </GradientPanel>
-      </Pressable>
-
-      <View style={[styles.cardRow, { gap: tokens.space.md }]}>
+      <View style={{ gap: tokens.space.md }}>
         <HomeActionCard
           testID="home-pack-order"
           icon="package"
-          tone="success"
+          emphasis="primary"
           title={t('screens:home.packOrder')}
           description={t('screens:home.packOrderHint')}
           onPress={() => navigation.push(ROUTES.scan)}
@@ -120,31 +92,24 @@ export function HomeScreen() {
         <HomeActionCard
           testID="home-receive-return"
           icon="returns"
-          tone="brand"
+          emphasis="secondary"
           title={t('screens:home.receiveReturn')}
           description={t('screens:home.receiveReturnHint')}
           onPress={() => navigation.push(ROUTES.returnFindOrder)}
         />
+        <Pressable
+          testID="home-returns-list"
+          accessibilityRole="button"
+          onPress={() => navigation.push(ROUTES.returns)}
+          style={{ minHeight: touch, justifyContent: 'center', alignSelf: 'flex-end' }}
+        >
+          <Text variant="caption" bold style={{ color: tokens.color.action.primary }}>
+            {t('screens:home.returnsList')}
+          </Text>
+        </Pressable>
       </View>
 
-      <Pressable
-        testID="home-returns-list"
-        accessibilityRole="button"
-        onPress={() => navigation.push(ROUTES.returns)}
-        style={{ minHeight: touch, justifyContent: 'center', alignSelf: 'flex-end' }}
-      >
-        <Text variant="caption" bold style={{ color: tokens.color.action.primary }}>
-          {t('screens:home.returnsList')}
-        </Text>
-      </Pressable>
-
       <View style={styles.quickRow}>
-        <QuickAction
-          testID="home-quick-scan"
-          icon="scan"
-          label={t('screens:home.quick.scan')}
-          onPress={() => navigation.push(ROUTES.scan)}
-        />
         <QuickAction
           testID="home-quick-order"
           icon="add-circle"
@@ -209,97 +174,101 @@ export function HomeScreen() {
         </View>
       </View>
 
-      <GradientPanel
-        from={tokens.color.brand.deep}
-        to={tokens.color.action.primary}
-        radius={tokens.radius.lg}
+      <Card
+        testID="home-tip-guide"
+        flush
+        onPress={() => navigation.push(ROUTES.help)}
+        accessibilityLabel={`${t('screens:home.tipTitle')}. ${t('screens:home.tipHint')}`}
       >
-        <View style={[styles.tip, { padding: tokens.space.lg, gap: tokens.space.sm }]}>
-          <Text bold style={{ color: tokens.color.text.onAction }}>
-            {t('screens:home.tipTitle')}
-          </Text>
-          <Text variant="caption" style={{ color: tokens.color.text.onAction }}>
-            {t('screens:home.tipHint')}
-          </Text>
-          <View style={styles.tipAction}>
-            <Button
-              testID="home-tip-guide"
-              variant="secondary"
-              label={t('screens:home.tipAction')}
-              onPress={() => navigation.push(ROUTES.help)}
-            />
+        <View style={[styles.helpRow, { padding: tokens.space.lg, gap: tokens.space.md }]}>
+          <Icon name="help" size={tokens.icon.lg} color={tokens.color.action.primary} />
+          <View style={styles.flex}>
+            <Text variant="cardTitle">{t('screens:home.tipTitle')}</Text>
+            <Text variant="caption" color="textMuted">
+              {t('screens:home.tipHint')}
+            </Text>
           </View>
+          <Icon name="forward" size={tokens.icon.md} color={tokens.color.text.tertiary} />
         </View>
-      </GradientPanel>
+      </Card>
     </Screen>
   );
 }
 
-/** Thẻ lớn nửa chiều ngang (hai tác vụ chính, đặt cạnh nhau như mẫu): ô biểu tượng, tên, mô tả. */
+/**
+ * Hành động trên Trang chủ. `primary` (Đóng gói đơn) là việc làm cả ngày: nền xanh đặc, chữ trắng,
+ * duy nhất một thẻ. `secondary` (Nhận hàng hoàn): thẻ trắng viền mảnh, cùng bố cục để quét mắt nhanh.
+ */
 function HomeActionCard({
   icon,
-  tone,
+  emphasis,
   title,
   description,
   onPress,
   testID,
 }: {
   icon: IconName;
-  tone: 'success' | 'brand';
+  emphasis: 'primary' | 'secondary';
   title: string;
   description: string;
   onPress: () => void;
   testID: string;
 }) {
   const { tokens } = useTheme();
+  const primary = emphasis === 'primary';
+  const fg = primary ? tokens.color.text.onAction : tokens.color.text.primary;
+  const fgMuted = primary ? tokens.color.text.onBrandMuted : tokens.color.text.secondary;
   return (
     <Card
       testID={testID}
       onPress={onPress}
       accessibilityLabel={`${title}. ${description}`}
-      style={styles.flex}
+      style={{
+        backgroundColor: primary ? tokens.color.action.primary : tokens.color.surface.raised,
+        borderColor: primary ? tokens.color.action.primary : tokens.color.border.default,
+        minHeight: layout.component.actionCard.minHeight,
+        justifyContent: 'center',
+      }}
     >
-      <View style={{ gap: tokens.space.sm }}>
+      <View style={[styles.actionRow, { gap: tokens.space.lg }]}>
         <View
           style={[
             styles.cardIcon,
             {
               borderRadius: tokens.radius.md,
-              backgroundColor:
-                tone === 'success' ? tokens.color.action.primary : tokens.color.text.strong,
+              backgroundColor: primary ? tokens.color.brand.deep : tokens.color.brand.soft,
             },
           ]}
         >
-          <Icon name={icon} size={26} color={tokens.color.text.onAction} />
+          <Icon
+            name={icon}
+            size={tokens.icon.xl}
+            color={primary ? tokens.color.text.onAction : tokens.color.action.primary}
+          />
         </View>
-        <Text
-          bold
-          style={{
-            color: tone === 'success' ? tokens.color.action.primary : tokens.color.text.strong,
-          }}
-        >
-          {title}
-        </Text>
-        <Text variant="caption" color="textMuted">
-          {description}
-        </Text>
-        <View style={styles.cardForward}>
-          <Icon name="forward" size={20} color={tokens.color.text.secondary} />
+        <View style={styles.flex}>
+          <Text variant="sectionTitle" style={{ color: fg }}>
+            {title}
+          </Text>
+          <Text variant="caption" style={{ color: fgMuted }}>
+            {description}
+          </Text>
         </View>
+        <Icon name="forward" size={tokens.icon.lg} color={fg} />
       </View>
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  cardRow: { flexDirection: 'row', alignItems: 'stretch' },
+  actionRow: { flexDirection: 'row', alignItems: 'center' },
+  helpRow: { flexDirection: 'row', alignItems: 'center' },
   cardIcon: {
     width: layout.component.tile.lg,
     height: layout.component.tile.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardForward: { alignSelf: 'flex-end' },
   header: { flexDirection: 'row', alignItems: 'center', gap: layout.space.md },
   avatar: {
     width: layout.component.tile.md,
@@ -309,12 +278,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerText: { flex: 1 },
-  banner: { flexDirection: 'row', alignItems: 'center' },
-  bannerText: { flex: 1, gap: layout.space.xs },
   quickRow: { flexDirection: 'row', gap: layout.space.sm },
   sectionRow: { flexDirection: 'row', alignItems: 'center' },
   flex: { flex: 1 },
   statRow: { flexDirection: 'row' },
-  tip: { alignItems: 'flex-start' },
-  tipAction: { alignSelf: 'stretch' },
 });

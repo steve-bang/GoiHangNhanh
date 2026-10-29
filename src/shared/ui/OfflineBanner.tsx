@@ -25,18 +25,14 @@ export function OfflineBanner({ visible }: OfflineBannerProps) {
       style={[
         styles.row,
         {
-          backgroundColor: tokens.color.feedback.warning.bg,
+          backgroundColor: tokens.status.offline.bg,
           paddingHorizontal: tokens.space.lg,
           paddingVertical: tokens.space.sm,
         },
       ]}
     >
-      <Icon name="wifi-off" size={18} color={tokens.color.feedback.warning.fg} />
-      <Text
-        variant="caption"
-        bold
-        style={{ color: tokens.color.feedback.warning.fg, flexShrink: 1 }}
-      >
+      <Icon name="wifi-off" size={18} color={tokens.status.offline.fg} />
+      <Text variant="caption" bold style={{ color: tokens.status.offline.fg, flexShrink: 1 }}>
         {t('common:offline.banner')}
       </Text>
     </View>

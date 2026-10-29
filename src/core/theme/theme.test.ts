@@ -243,3 +243,59 @@ describe('typography', () => {
     expect(MIN_TOUCH_TARGET).toEqual({ ios: 44, android: 48 });
   });
 });
+
+describe('token mở rộng của đợt nâng cấp design system v2', () => {
+  const { color, status } = semantic;
+
+  it.each([
+    ['text.tertiary/screen', color.text.tertiary, color.surface.screen],
+    ['text.tertiary/raised', color.text.tertiary, color.surface.raised],
+    ['text.tertiary/muted', color.text.tertiary, color.surface.muted],
+    ['text.onAction/primaryPressed', color.text.onAction, color.action.primaryPressed],
+  ] as const)('chữ %s đạt 4.5:1', (_name, fg, bg) => {
+    expect(contrast(fg, bg)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('ranh giới điều khiển border.strong đạt 3:1 trên nền thẻ; border.subtle chỉ để phân nhóm', () => {
+    expect(contrast(color.border.strong, color.surface.raised)).toBeGreaterThanOrEqual(3);
+    expect(contrast(color.border.subtle, color.surface.raised)).toBeLessThan(3);
+  });
+
+  it('nhấn nút chính đậm hơn trạng thái thường; thứ bậc chữ secondary > tertiary > disabled', () => {
+    expect(luminance(color.action.primaryPressed)).toBeLessThan(luminance(color.action.primary));
+    const onRaised = (fg: string) => contrast(fg, color.surface.raised);
+    expect(onRaised(color.text.secondary)).toBeGreaterThan(onRaised(color.text.tertiary));
+    expect(onRaised(color.text.tertiary)).toBeGreaterThan(onRaised(color.text.disabled));
+  });
+
+  it('trạng thái vận hành có bộ token riêng, đủ tương phản trên nền của chính nó', () => {
+    const keys = [
+      'recording',
+      'interrupted',
+      'retrying',
+      'offline',
+      'syncPending',
+      'synced',
+    ] as const;
+    for (const key of keys) {
+      expect(status[key]).toBeDefined();
+      expect(contrast(status[key].fg, status[key].bg)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('chỉ lỗi và đang ghi hình (ngoại lệ D-18) dùng sắc đỏ; mất mạng/gián đoạn không dùng đỏ', () => {
+    const red = color.feedback.danger.fg;
+    const reds = Object.entries(status)
+      .filter(([, v]) => v.fg === red)
+      .map(([k]) => k)
+      .sort();
+    expect(reds).toEqual(['error', 'recording']);
+  });
+
+  it('thang cỡ biểu tượng tăng dần và số liệu dùng chữ số cùng bề rộng', () => {
+    const sizes = Object.values(semantic.icon);
+    expect([...sizes].sort((a, b) => a - b)).toEqual(sizes);
+    expect(typography.numeric.fontVariant).toContain('tabular-nums');
+    expect(typography.cardTitle.fontSize).toBeGreaterThan(typography.body.fontSize);
+  });
+});

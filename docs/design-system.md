@@ -70,7 +70,13 @@ const styles = StyleSheet.create({
 | Bo góc / hình tròn | `radius.sm/md/lg` / `radius.full` |
 | Độ dày viền | `borderWidth.thin 1 · strong 1.5 · emphasis 2 (chọn/focus/lỗi) · ring 4` |
 | Nhấn / vô hiệu / đang xử lý | `opacity.pressed 0.85 · disabled 0.45 · busy 0.8` |
-| Cỡ chữ | `<Text variant="...">` (không dùng `fontSize`); trọng số `fontWeight.bold` |
+| Cỡ chữ | `<Text variant="...">` (không dùng `fontSize`); trọng số `fontWeight.bold`. Tiêu đề thẻ/dòng danh sách: `cardTitle`; số liệu: `numeric` (chữ số cùng bề rộng) |
+| Chữ gợi ý/ghi chú cấp ba · chữ vô hiệu hóa | `color.text.tertiary` · `color.text.disabled` |
+| Ranh giới điều khiển (hộp kiểm, nút chọn) · đường kẻ phân nhóm | `color.border.strong` (≥ 3:1) · `color.border.subtle` |
+| Nút đang nhấn · nền vô hiệu hóa (component mới) | `color.action.primaryPressed` · `color.action.disabled` |
+| Lớp nổi (sheet, hộp thoại) | `color.surface.elevated` |
+| Trạng thái quay/đồng bộ: đang ghi, gián đoạn, đang thử lại, mất mạng, chờ/xong đồng bộ | `status.recording / interrupted / retrying / offline / syncPending / synced` (luôn kèm chữ + biểu tượng riêng) |
+| Cỡ biểu tượng | `tokens.icon.sm/md/lg/xl` (16/20/24/32) |
 | Vùng chạm tối thiểu | `getMinTouchTarget()` từ `@/platform` (44 iOS / 48 Android) — không nhân bản |
 | Kích thước thành phần | `tokens.component.*` / `layout.component.*` (nút, ô nhập, tile, nút dừng quay, khung ngắm…) |
 
@@ -116,3 +122,12 @@ Hợp lệ: màu thương hiệu bên thứ ba, màu hình minh họa, giới h�
 | `npm run lint` | Gồm rule `design-tokens/no-raw-design-values` |
 | `npm run check:tokens` | Cấu trúc token, nguồn hex duy nhất, kiến trúc tầng, baseline ngoại lệ, lỗi khi sửa tệp ngoài phạm vi (trừ allowlist `scripts/design-token-frozen-allow.json`) |
 | `npm run check` | Toàn bộ (lint, typecheck, format, check:tokens, test) |
+
+
+## 6. Quyết định thiết kế v2 (đợt nâng cấp)
+
+- **Một hành động chính mỗi màn.** Trang chủ: *Đóng gói đơn* là thẻ xanh đặc duy nhất; *Nhận hàng hoàn* là thẻ trắng viền mảnh. Bỏ banner và thẻ hướng dẫn nền gradient (trang trí, trùng hành động); lối tắt *Quét mã đơn* bỏ vì trùng nút Quét giữa thanh tab và thẻ *Đóng gói đơn*.
+- **Không gradient, glow, bóng nặng.** Phân cấp bằng cỡ chữ, độ đậm, khoảng cách và một màu thương hiệu.
+- **Danh sách:** tiêu đề dòng dùng `cardTitle`; dòng phụ `formBody` màu phụ; dòng ngày/giai đoạn là chú thích. Chip lọc dùng `size="compact"` ở danh sách có nhiều chip để không chiếm 3 hàng (vẫn xuống dòng khi chữ lớn, không cuộn ngang).
+- **Số liệu** dùng `numeric` (không phải `screenTitle`), để không bị đọc thành tiêu đề.
+- **Chưa làm:** chế độ tối (token đã tách `surface.elevated`, `text.*`, `status.*` để làm sau, câu hỏi mở O-17); `Button` chưa dùng `primaryPressed` vì dùng chung với màn đã khách xác nhận.

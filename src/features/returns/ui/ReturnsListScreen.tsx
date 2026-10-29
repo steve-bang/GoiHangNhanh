@@ -75,16 +75,19 @@ export function ReturnsListScreen() {
         onChangeText={setQuery}
         placeholder={t('screens:returns.search')}
       />
-      <FilterChips options={options} selectedKey={filter} onSelect={setFilter} />
+      <FilterChips options={options} selectedKey={filter} onSelect={setFilter} size="compact" />
       <View style={{ gap: tokens.space.md }}>
         {visible.map((item) => (
           <Card key={item.id}>
             <View style={{ gap: tokens.space.xs }}>
-              <Text variant="sectionTitle">{item.code}</Text>
-              <Text color="textMuted">
+              <Text variant="cardTitle">{item.code}</Text>
+              <Text variant="formBody" color="textMuted">
                 {item.originalOrderCode ?? t('screens:returns.unlinked')}
               </Text>
-              <Text>{`${t(`screens:returns.filter.${item.stage}`)} · ${item.dateLabel}`}</Text>
+              <Text
+                variant="caption"
+                color="textMuted"
+              >{`${t(`screens:returns.filter.${item.stage}`)} · ${item.dateLabel}`}</Text>
               <EvidenceStatusBadge status={item.status} />
             </View>
           </Card>

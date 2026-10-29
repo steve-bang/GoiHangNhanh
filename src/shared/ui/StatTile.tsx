@@ -40,7 +40,7 @@ export function StatTile({ value, label, icon, tone, onPress, testID }: StatTile
       <View style={{ gap: tokens.space.xs }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs }}>
           <Icon name={icon} size={20} color={palette.fg} />
-          <Text variant="screenTitle" style={{ color: palette.fg }}>
+          <Text variant="numeric" style={{ color: palette.fg }}>
             {value}
           </Text>
         </View>
