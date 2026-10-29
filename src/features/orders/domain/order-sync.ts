@@ -54,6 +54,9 @@ const BATCH = 25;
  * ở lại máy cho đến khi chính họ đăng nhập (Q-23g).
  */
 export function createOrderSync(deps: OrderSyncDeps): OrderSync {
+  // Phiên đổi giữa lượt (đăng xuất, đổi tài khoản): `uid` đọc một lần ở đầu lượt, nên MỖI mục đọc lại
+  // `currentUid()` và dừng lượt nếu khác. Lệnh ghi đang bay lúc đăng xuất vẫn có thể bị Rules từ chối
+  // (tính vào `failed`, vô hại, idempotent); các mục còn lại không bị ghi bằng danh tính cũ.
   // Lưu ý: nếu một lệnh ghi treo giữa chừng (mất mạng, batch.commit chưa trả), `running` của lượt đó
   // giữ nguyên cho đến khi lệnh settle; lượt mới trong lúc đó trả `skipped: 'busy'`. Đây là hành vi
   // chấp nhận được, không phải lỗi: `OrderSyncRunner` tạo bộ đồng bộ mới khi trạng thái mạng đổi.
@@ -70,7 +73,7 @@ export function createOrderSync(deps: OrderSyncDeps): OrderSync {
       running = true;
       try {
         for (const details of await store.listOrdersPendingRemote(shopId, BATCH, uid)) {
-          if (!isOnline()) break;
+          if (!isOnline() || currentUid() !== uid) break; // mất mạng hoặc phiên đã đổi (đăng xuất/đổi tài khoản)
           try {
             await remote.publishOrder(details);
             // Chỉ đánh dấu đúng các kiện vừa đăng (từ bản `details` đã đọc), không phải kiện thêm giữa chừng.
@@ -88,7 +91,7 @@ export function createOrderSync(deps: OrderSyncDeps): OrderSync {
         }
         const pendingSessions = await store.listSessionsPendingRemote(shopId, BATCH, uid);
         for (const { session, status, packagePending } of pendingSessions) {
-          if (!isOnline()) break;
+          if (!isOnline() || currentUid() !== uid) break; // mất mạng hoặc phiên đã đổi (đăng xuất/đổi tài khoản)
           if (!isRemoteSessionStatus(status)) continue; // trạng thái lạ: không đăng, không đoán
           try {
             // Kiện thêm sau khi đơn đã đăng: đảm bảo kiện của phiên có trên máy chủ trước (Rules).
