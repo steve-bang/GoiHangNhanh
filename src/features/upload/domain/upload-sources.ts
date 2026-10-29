@@ -44,10 +44,11 @@ const fromReturnMedia = (m: ReturnMedia): UploadItem => ({
   id: m.id as EvidenceId,
   shopId: m.shopId,
   owner: { kind: 'return', returnId: m.returnId as ReturnCaseId },
-  kind: 'photo',
+  kind: m.kind,
   state: m.state,
   localPath: m.localPath,
   sizeBytes: m.sizeBytes,
+  // `ReturnMedia` chưa lưu thời lượng: khai báo không có `durationMs` (Rules cho phép bỏ trống).
   durationMs: null,
   sha256Client: m.sha256Client,
   attemptCount: m.attemptCount,

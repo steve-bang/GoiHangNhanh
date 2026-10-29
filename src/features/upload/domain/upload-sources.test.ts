@@ -11,6 +11,8 @@ import type {
   UploadRequest,
   UploadSource,
 } from './ports';
+import { createUploadGateway } from './create-upload-gateway';
+import { evidenceWrite } from './evidence-document';
 import { createUploadQueue } from './upload-queue';
 import { evidenceFileSource, returnMediaSource } from './upload-sources';
 
@@ -18,7 +20,13 @@ const SHOP = 'shop-1' as ShopId;
 const HASH = 'ab'.repeat(32);
 const d = (type: string) => ({ type, origin: 'device' }) as never;
 
-async function returnWithPhoto(store: ReturnStore, id: string, published = true) {
+async function returnWithPhoto(
+  store: ReturnStore,
+  id: string,
+  published = true,
+  kind: 'photo' | 'video' = 'photo',
+) {
+  const ext = kind === 'video' ? 'mp4' : 'jpg';
   const made = await store.createReturn({
     id: `ret-${id}` as ReturnCaseId,
     shopId: SHOP,
@@ -32,12 +40,12 @@ async function returnWithPhoto(store: ReturnStore, id: string, published = true)
     id,
     shopId: SHOP,
     returnId: made.returnCase.id,
-    kind: 'photo',
+    kind,
     atDevice: 2,
   });
-  await store.applyMediaEvent(SHOP, id, d('STOP_RECORDING'), 3, { localPath: 'tmp/x.jpg' });
+  await store.applyMediaEvent(SHOP, id, d('STOP_RECORDING'), 3, { localPath: `tmp/x.${ext}` });
   await store.applyMediaEvent(SHOP, id, d('LOCAL_FILE_READABLE'), 4, {
-    localPath: `evidence/${id}.jpg`,
+    localPath: `evidence/${id}.${ext}`,
     sizeBytes: 50,
     sha256Client: HASH,
   });
@@ -219,5 +227,49 @@ describe('hàng đợi tải lên với nguồn media hàng hoàn (Q-28)', () =>
     t.setHash({ ok: true, sha256: 'ff'.repeat(32) });
     await t.queue.runOnce(SHOP);
     expect((await t.returns.checkMediaDeletable(SHOP, 'ph-3')).ok).toBe(true);
+  });
+
+  it('video hàng hoàn: giữ kind video, đi hết cổng thật (mime video, khai báo original_video) và tới uploaded', async () => {
+    const returns = createMemoryReturnStore({ creatorUid: () => 'uid-1' });
+    const returnId = await returnWithPhoto(returns, 'vd-1', true, 'video');
+    const declared: Array<ReturnType<typeof evidenceWrite>['data']> = [];
+    const sent: string[] = [];
+    const gateway = createUploadGateway({
+      declarer: {
+        declare: async (r) => {
+          const doc = evidenceWrite(
+            r,
+            'uid-1',
+            { serverTimestamp: () => 'ts', timestamp: (ms) => ms },
+            undefined,
+          );
+          declared.push(doc.data);
+        },
+      },
+      sessions: {
+        create: async () => ({ status: 'ready', url: 'u', method: 'POST', headers: {} }),
+      },
+      bytes: { send: async (_s, path) => void sent.push(path) },
+      serverStates: { read: async () => new Map() },
+    });
+    const queue = createUploadQueue({
+      sources: [returnMediaSource(returns, () => 'uid-1')],
+      gateway,
+      hasher: { sha256: async () => ({ ok: true, sha256: HASH }) },
+      now: () => 10_000,
+      isOnline: () => true,
+    });
+    const summary = await queue.runOnce(SHOP);
+    expect(summary).toMatchObject({ received: 1, failed: 0, needsAttention: 0 });
+    expect(sent).toEqual(['evidence/vd-1.mp4']);
+    expect(declared[0]).toMatchObject({
+      ownerKind: 'return',
+      returnId,
+      kind: 'original_video',
+      mimeType: 'video/mp4',
+    });
+    expect(declared[0]).not.toHaveProperty('durationMs');
+    const media = (await returns.listMedia(SHOP, returnId)).find((m) => m.id === 'vd-1');
+    expect(media?.state).toBe('uploaded');
   });
 });
