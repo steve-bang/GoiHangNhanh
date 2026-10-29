@@ -215,6 +215,61 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
     expect(JSON.stringify(user)).not.toContain(FAKE_DEMO_PASSWORD);
   });
 
+  it('thành công: phiên nhận đúng shopId do cổng trả (không phải null); chưa có shop thì shopId null', async () => {
+    function ShopProbe() {
+      const { state } = useSession();
+      return <Text testID="probe-shop">{String(state.shopId)}</Text>;
+    }
+    const fake = createFakeApi();
+    await renderWithProviders(
+      <>
+        <ShopProbe />
+        <SignInScreen />
+      </>,
+      { gateways: fake },
+    );
+    await fill(FAKE_DEMO_EMAIL, FAKE_DEMO_PASSWORD);
+    await fireEvent.press(submit());
+    const signedIn = await fake.auth.signInWithPassword({
+      email: FAKE_DEMO_EMAIL,
+      password: FAKE_DEMO_PASSWORD,
+    });
+    expect(signedIn.shopId).not.toBeNull();
+    expect(screen.getByTestId('probe-shop')).toHaveTextContent(String(signedIn.shopId));
+
+    await fill(FAKE_NO_SHOP_EMAIL, FAKE_DEMO_PASSWORD);
+    await fireEvent.press(submit());
+    expect(screen.getByTestId('probe-shop')).toHaveTextContent('null');
+  });
+
+  it('thành công: phiên mang họ tên do cổng trả (giống hồ sơ sau khi khởi động lại)', async () => {
+    function NameProbe() {
+      const { state } = useSession();
+      return <Text testID="probe-name">{String(state.user?.displayName)}</Text>;
+    }
+    const { gateways, resolve } = pendingGateways();
+    await renderWithProviders(
+      <>
+        <NameProbe />
+        <SignInScreen />
+      </>,
+      { gateways },
+    );
+    await fill(FAKE_DEMO_EMAIL, FAKE_DEMO_PASSWORD);
+    await fireEvent.press(submit());
+    await act(async () => {
+      resolve({
+        uid: 'u',
+        email: FAKE_DEMO_EMAIL,
+        emailVerified: false,
+        displayName: 'Chị Lan',
+        hasShop: true,
+        shopId: 'shop-1',
+      });
+    });
+    expect(screen.getByTestId('probe-name')).toHaveTextContent('Chị Lan');
+  });
+
   it('thành công nhưng chưa có shop: sang /create-shop', async () => {
     await renderWithProviders(<SignInScreen />, { gateways: createFakeApi() });
     await fill(FAKE_NO_SHOP_EMAIL, FAKE_DEMO_PASSWORD);
@@ -232,7 +287,14 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
     // người dùng bấm Back / đi chỗ khác trong lúc cổng còn chờ
     mockNavigation.screenActive = false;
     await act(async () => {
-      resolve({ uid: 'u', email: FAKE_DEMO_EMAIL, emailVerified: false, hasShop: true });
+      resolve({
+        uid: 'u',
+        email: FAKE_DEMO_EMAIL,
+        emailVerified: false,
+        displayName: null,
+        hasShop: true,
+        shopId: 'shop-1',
+      });
     });
     expect(mockNavigation.reset).not.toHaveBeenCalled();
     expect(mockNavigation.push).not.toHaveBeenCalled();
@@ -257,7 +319,14 @@ describe('UI-A03 Đăng nhập: gửi và kết quả', () => {
     expect(signInWithPassword).toHaveBeenCalledTimes(1);
     expect(submit().props.accessibilityState).toMatchObject({ disabled: true, busy: true });
     await act(async () => {
-      resolve({ uid: 'u', email: FAKE_DEMO_EMAIL, emailVerified: false, hasShop: true });
+      resolve({
+        uid: 'u',
+        email: FAKE_DEMO_EMAIL,
+        emailVerified: false,
+        displayName: null,
+        hasShop: true,
+        shopId: 'shop-1',
+      });
     });
     expect(mockNavigation.reset).toHaveBeenCalledTimes(1);
   });

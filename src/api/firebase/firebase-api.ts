@@ -1,10 +1,12 @@
 import { AppError } from '@/core/errors/app-error';
 
 import type {
+  AccountSignInMethod,
   ApiClient,
   AuthApi,
   CreatedShop,
   SessionApi,
+  SessionIdentity,
   SessionState,
   ShopApi,
 } from '../contract';
@@ -12,6 +14,14 @@ import type {
 import { guard } from './error-map';
 import type { FirebaseServices } from './client';
 import { createFirebaseOps, type FirebaseOps } from './ops';
+
+/** Nhà cung cấp Auth -> cách đăng nhập. Nhà cung cấp lạ/không có thì `null` (không đoán, O-15). */
+function signInMethodOf(providerIds: readonly string[]): AccountSignInMethod | null {
+  if (providerIds.includes('password')) return 'password';
+  if (providerIds.includes('apple.com')) return 'apple';
+  if (providerIds.includes('google.com')) return 'google';
+  return null;
+}
 
 const unavailable = () => Promise.reject(new AppError('AUTH_SERVICE_UNAVAILABLE'));
 
@@ -35,11 +45,23 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
     signInWithPassword: (input) =>
       guard(async () => {
         const user = await ops.signIn(input.email.trim(), input.password);
+        let shopId: string | null;
+        try {
+          shopId = await ops.readShopId(user.uid);
+        } catch (error) {
+          // Auth đã đăng nhập nhưng chưa biết shop: UI sẽ báo lỗi, nên không để lại phiên "nửa đăng nhập"
+          // (lần mở sau Splash sẽ khôi phục thành đã đăng nhập dù người dùng thấy lỗi). Thoát cho sạch rồi
+          // báo lỗi gốc; thoát lỗi thì bỏ qua (người dùng đăng nhập lại là xong).
+          await ops.signOut().catch(() => undefined);
+          throw error;
+        }
         return {
           uid: user.uid,
           email: user.email ?? input.email.trim(),
           emailVerified: user.emailVerified,
-          hasShop: (await ops.readShopId(user.uid)) !== null,
+          displayName: user.displayName,
+          hasShop: shopId !== null,
+          shopId,
         };
       }),
     // Đăng nhập Apple/Google chưa làm (O-15); khôi phục mật khẩu chờ O-22 (hướng B): không giả vờ thành công.
@@ -47,11 +69,17 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
     requestPasswordRecovery: unavailable,
     verifyRecoveryCode: unavailable,
     resetPassword: unavailable,
+    signOut: () => guard(() => ops.signOut()),
   };
 
   const shop: ShopApi = {
     createShop: (input) => guard(() => ops.callShop('createShop', input)),
     updateShop: (input) => guard(() => ops.callShop('updateShop', input)),
+    getShop: (shopId) =>
+      guard(async () => {
+        const user = await ops.restoreUser();
+        return user ? ops.readShopDetails(shopId, user.uid) : null;
+      }),
   };
 
   const session: SessionApi = {
@@ -62,6 +90,23 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
         return (await ops.readShopIdForRestore(user.uid)) !== null
           ? 'signed_in'
           : 'signed_in_no_shop';
+      }),
+    // Không bịa ID: `readShopIdForRestore` thử bộ nhớ đệm rồi máy chủ; lỗi (offline, chưa có đệm) thì
+    // ném lên để bên gọi giữ trạng thái "chưa biết" thay vì coi là không có shop.
+    identity: (): Promise<SessionIdentity | null> =>
+      guard(async () => {
+        const user = await ops.restoreUser();
+        if (!user) return null;
+        // Tài khoản email/mật khẩu luôn có email. Thiếu thì không bịa chuỗi rỗng làm email thật: coi là
+        // chưa xác định được danh tính (các nhà cung cấp khác có thể không có email: xem O-15).
+        if (!user.email) throw new AppError('AUTH_SERVICE_UNAVAILABLE');
+        return {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          signInMethod: signInMethodOf(user.providerIds),
+          shopId: await ops.readShopIdForRestore(user.uid),
+        };
       }),
   };
 

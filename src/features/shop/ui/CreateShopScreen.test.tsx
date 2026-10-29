@@ -1,13 +1,20 @@
 import { act, fireEvent, screen, within } from '@testing-library/react-native';
-import { useState } from 'react';
-import { Pressable, useWindowDimensions } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, Text, useWindowDimensions } from 'react-native';
 
 import { resources } from '@/core/i18n/resources';
 import { ROUTES } from '@/core/navigation';
+import { useSession } from '@/features/personal';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
-import { createFakeApi, createUnavailableApi } from '@/api/testing';
+import {
+  createFakeApi,
+  createUnavailableApi,
+  FAKE_DEMO_PASSWORD,
+  FAKE_NO_SHOP_EMAIL,
+} from '@/api/testing';
+import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import type { CreatedShop, Gateways } from '../domain/types';
 import { CreateShopScreen } from './CreateShopScreen';
 
@@ -36,6 +43,88 @@ const submit = () => screen.getByTestId('create-shop-submit');
 const skip = () => screen.getByTestId('create-shop-skip');
 const isDisabled = (node: ReturnType<typeof submit>) =>
   Boolean((node.props.accessibilityState as { disabled?: boolean }).disabled);
+
+describe('UI-A04 Tạo hồ sơ shop: ghi shop vào phiên toàn app', () => {
+  function SessionProbe() {
+    const { state } = useSession();
+    return (
+      <Text testID="probe">{`${state.status}|${state.user?.uid ?? '-'}|${state.shopId ?? '-'}`}</Text>
+    );
+  }
+
+  it('đã có phiên (đăng nhập, chưa shop): tạo shop xong thì phiên có shopId, giữ nguyên uid', async () => {
+    const fake = createFakeApi();
+    const account = await fake.auth.signInWithPassword({
+      email: FAKE_NO_SHOP_EMAIL,
+      password: FAKE_DEMO_PASSWORD,
+    });
+    function Seed() {
+      const { beginSession, state } = useSession();
+      const { dispatch } = useOnboardingFlow();
+      useEffect(() => {
+        dispatch({ type: 'account_created', account });
+        beginSession({ uid: account.uid, email: account.email, displayName: null }, null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
+      return <Text testID="seeded">{state.status}</Text>;
+    }
+    await renderWithProviders(
+      <>
+        <Seed />
+        <SessionProbe />
+        <CreateShopScreen />
+      </>,
+      { gateways: fake },
+    );
+    expect(screen.getByTestId('probe')).toHaveTextContent(`signed_in|${account.uid}|-`);
+    await fireEvent.changeText(nameInput(), 'Shop Thật');
+    await fireEvent.press(submit());
+    expect(screen.getByTestId('probe')).toHaveTextContent(`signed_in|${account.uid}|fake-shop-1`);
+  });
+
+  it('vừa đăng ký (chưa có phiên): tạo shop xong thì mở phiên với uid của tài khoản và shopId mới', async () => {
+    const fake = createFakeApi();
+    const account = await fake.auth.signUpWithEmail({
+      email: 'moi@example.com',
+      password: 'Mat-khau-9x',
+    });
+    function Seed() {
+      const { dispatch } = useOnboardingFlow();
+      useEffect(() => {
+        dispatch({ type: 'account_created', account });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
+      return null;
+    }
+    await renderWithProviders(
+      <>
+        <Seed />
+        <SessionProbe />
+        <CreateShopScreen />
+      </>,
+      { gateways: fake },
+    );
+    expect(screen.getByTestId('probe')).toHaveTextContent('signed_out|-|-');
+    await fireEvent.changeText(nameInput(), 'Shop Mới');
+    await fireEvent.press(submit());
+    expect(screen.getByTestId('probe')).toHaveTextContent(`signed_in|${account.uid}|fake-shop-1`);
+  });
+
+  it('máy chủ từ chối tạo shop: phiên không đổi', async () => {
+    const fake = createFakeApi();
+    await renderWithProviders(
+      <>
+        <SessionProbe />
+        <CreateShopScreen />
+      </>,
+      { gateways: fake },
+    );
+    fake.shop.failNext('SHOP_SAVE_FAILED');
+    await fireEvent.changeText(nameInput(), 'Shop');
+    await fireEvent.press(submit());
+    expect(screen.getByTestId('probe')).toHaveTextContent('signed_out|-|-');
+  });
+});
 
 describe('UI-A04 Tạo hồ sơ shop: giao diện', () => {
   it('hiện tiêu đề, dòng phụ, ô tên có bộ đếm, bốn nguồn bán, nút Tiếp tục và liên kết bỏ qua', async () => {
@@ -202,7 +291,7 @@ describe('UI-A04 Tạo hồ sơ shop: xử lý và lỗi', () => {
     const fake = createFakeApi();
     const gateways: Gateways = {
       auth: fake.auth,
-      shop: { createShop, updateShop: jest.fn() },
+      shop: { createShop, updateShop: jest.fn(), getShop: fake.shop.getShop.bind(fake.shop) },
       session: fake.session,
     };
     await renderWithProviders(<CreateShopScreen />, { gateways });
@@ -409,7 +498,11 @@ describe('UI-A04 Tạo hồ sơ shop: quay lại sau khi đã tạo shop', () =>
     const gateways: Gateways = {
       session: createFakeApi().session,
       auth: fake.auth,
-      shop: { createShop, updateShop: fake.shop.updateShop.bind(fake.shop) },
+      shop: {
+        createShop,
+        updateShop: fake.shop.updateShop.bind(fake.shop),
+        getShop: fake.shop.getShop.bind(fake.shop),
+      },
     };
     await renderWithProviders(<BackHarness />, { gateways });
     await fireEvent.changeText(nameInput(), 'Shop');

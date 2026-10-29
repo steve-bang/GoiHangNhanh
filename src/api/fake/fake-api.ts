@@ -11,8 +11,10 @@ import type {
   ApiClient,
   ResetPasswordInput,
   SessionApi,
+  SessionIdentity,
   SessionState,
   ShopApi,
+  ShopDetails,
   SignedInAccount,
   SignInWithPasswordInput,
   SignUpWithEmailInput,
@@ -94,6 +96,7 @@ export class FakeAuthApi implements AuthApi {
   readonly recoveryRequests: string[] = [];
   readonly verifyCalls: VerifyRecoveryCodeInput[] = [];
   readonly resetCalls: ResetPasswordInput[] = [];
+  signOutCalls = 0;
   private readonly latencyMs: number;
   private readonly now: () => number;
   private readonly codeTtlMs: number;
@@ -186,7 +189,20 @@ export class FakeAuthApi implements AuthApi {
       throw new AppError('AUTH_INVALID_CREDENTIALS');
     }
     this.failedSignIns.delete(key);
-    return { uid: account.uid, email, emailVerified: false, hasShop: account.hasShop };
+    return {
+      uid: account.uid,
+      email,
+      emailVerified: false,
+      displayName: null,
+      hasShop: account.hasShop,
+      shopId: account.hasShop ? `fake-shop-of-${account.uid}` : null,
+    };
+  }
+
+  async signOut(): Promise<void> {
+    this.signOutCalls += 1;
+    await delay(this.latencyMs);
+    this.consumeFailure();
   }
 
   async requestPasswordRecovery(email: string): Promise<{ retryAfterSeconds?: number }> {
@@ -256,6 +272,7 @@ export class FakeShopApi implements ShopApi {
   private readonly latencyMs: number;
   private nextFailure: ErrorCode | null = null;
   private counter = 0;
+  private readonly shops = new Map<string, CreatedShop>();
 
   constructor(options: FakeBackendOptions = {}) {
     this.latencyMs = options.latencyMs ?? 0;
@@ -278,22 +295,33 @@ export class FakeShopApi implements ShopApi {
     await delay(this.latencyMs);
     this.consumeFailure();
     this.counter += 1;
-    return {
+    const shop: CreatedShop = {
       id: `fake-shop-${this.counter}`,
       name: input.name,
       sellingSources: normalizeSources(input.sellingSources),
     };
+    this.shops.set(shop.id, shop);
+    return shop;
+  }
+
+  async getShop(shopId: string): Promise<ShopDetails | null> {
+    await delay(this.latencyMs);
+    this.consumeFailure();
+    const shop = this.shops.get(shopId);
+    return shop ? { id: shop.id, name: shop.name, role: 'owner', canEdit: true } : null;
   }
 
   async updateShop(input: UpdateShopInput): Promise<CreatedShop> {
     this.updateCalls.push(input);
     await delay(this.latencyMs);
     this.consumeFailure();
-    return {
+    const shop: CreatedShop = {
       id: input.shopId,
       name: input.name,
       sellingSources: normalizeSources(input.sellingSources),
     };
+    this.shops.set(shop.id, shop);
+    return shop;
   }
 }
 
@@ -315,6 +343,20 @@ export class FakeSessionApi implements SessionApi {
     await delay(this.latencyMs);
     if (this.fails) throw new AppError('AUTH_SERVICE_UNAVAILABLE');
     return this.state;
+  }
+
+  /** Bản giả: danh tính cố định theo `sessionState` (cổng cá nhân giả là nguồn danh tính ở dev/test). */
+  async identity(): Promise<SessionIdentity | null> {
+    await delay(this.latencyMs);
+    if (this.fails) throw new AppError('AUTH_SERVICE_UNAVAILABLE');
+    if (this.state === 'signed_out') return null;
+    return {
+      uid: 'fake-session-user',
+      email: FAKE_DEMO_EMAIL,
+      displayName: null,
+      signInMethod: 'password',
+      shopId: this.state === 'signed_in' ? 'fake-session-shop' : null,
+    };
   }
 }
 

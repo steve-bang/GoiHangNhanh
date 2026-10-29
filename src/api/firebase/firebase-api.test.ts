@@ -10,10 +10,19 @@ import type { FirebaseOps, FirebaseUser } from './ops';
 // Mô phỏng SDK trong bộ nhớ ở mức FirebaseOps, để kiểm tra phần GHÉP (ánh xạ lỗi, hasShop, restore)
 // của firebase-api. Chạy với Firebase thật: xem firebase/tests/functions (Function) và bước kiểm
 // chứng trên dự án dev; bộ hợp đồng này sẽ chạy trên emulator khi có dev build.
-function fakeOps(): FirebaseOps & { signedOut(): void } {
+function fakeOps(): FirebaseOps & {
+  signedOut(): void;
+  failSignOut(error: unknown): void;
+  failReadShopId(error: unknown): void;
+  patchCurrent(patch: Partial<FirebaseUser>): void;
+  readonly signOutCalls: () => number;
+} {
   const accounts = new Map<string, { uid: string; password: string }>();
   const shops = new Map<string, string>();
   let current: FirebaseUser | null = null;
+  let signOutError: unknown = null;
+  let readShopIdError: unknown = null;
+  let signOutCalls = 0;
   const sdkError = (code: string) => Object.assign(new Error(code), { code });
   return {
     async createUser(email, password) {
@@ -21,23 +30,46 @@ function fakeOps(): FirebaseOps & { signedOut(): void } {
       if (accounts.has(key)) throw sdkError('auth/email-already-in-use');
       const uid = `u-${accounts.size + 1}`;
       accounts.set(key, { uid, password });
-      current = { uid, email, emailVerified: false };
+      current = {
+        uid,
+        email,
+        emailVerified: false,
+        displayName: null,
+        providerIds: ['password'],
+      };
       return current;
     },
     async signIn(email, password) {
       const account = accounts.get(email.toLowerCase());
       if (!account || account.password !== password) throw sdkError('auth/invalid-credential');
-      current = { uid: account.uid, email, emailVerified: false };
+      current = {
+        uid: account.uid,
+        email,
+        emailVerified: false,
+        displayName: 'Chị Lan',
+        providerIds: ['password'],
+      };
       return current;
     },
     async restoreUser() {
       return current;
     },
     async readShopId(uid) {
+      if (readShopIdError) throw readShopIdError;
       return shops.get(uid) ?? null;
     },
     async readShopIdForRestore(uid) {
       return shops.get(uid) ?? null;
+    },
+    async signOut() {
+      signOutCalls += 1;
+      if (signOutError) throw signOutError;
+      current = null;
+    },
+    async readShopDetails(shopId, uid) {
+      return shops.get(uid) === shopId
+        ? { id: shopId, name: 'Shop thật', role: 'owner', canEdit: true }
+        : null;
     },
     async callShop(name, input) {
       if (!current) throw sdkError('functions/unauthenticated');
@@ -52,6 +84,16 @@ function fakeOps(): FirebaseOps & { signedOut(): void } {
     signedOut() {
       current = null;
     },
+    failSignOut(error) {
+      signOutError = error;
+    },
+    failReadShopId(error) {
+      readShopIdError = error;
+    },
+    patchCurrent(patch) {
+      if (current) current = { ...current, ...patch };
+    },
+    signOutCalls: () => signOutCalls,
   };
 }
 
@@ -86,6 +128,102 @@ describe('api/firebase', () => {
     await expect(api.session.restore()).resolves.toBe('signed_in');
     ops.signedOut();
     await expect(api.session.restore()).resolves.toBe('signed_out');
+  });
+
+  it('identity: chưa đăng nhập là null; chưa có shop thì shopId null; có shop thì shopId thật', async () => {
+    const api = makeApi(fakeOps());
+    await expect(api.session.identity()).resolves.toBeNull();
+    await api.auth.signUpWithEmail({ email: 'c@example.com', password: 'Mat-khau-1' });
+    await expect(api.session.identity()).resolves.toEqual({
+      uid: 'u-1',
+      email: 'c@example.com',
+      displayName: null,
+      signInMethod: 'password',
+      shopId: null,
+    });
+    const shop = await api.shop.createShop({ name: 'S', sellingSources: [] });
+    await expect(api.session.identity()).resolves.toMatchObject({ uid: 'u-1', shopId: shop.id });
+  });
+
+  it('đăng nhập trả shopId từ userShops (null khi chưa có shop)', async () => {
+    const api = makeApi();
+    await api.auth.signUpWithEmail({ email: 'd@example.com', password: 'Mat-khau-1' });
+    await expect(
+      api.auth.signInWithPassword({ email: 'd@example.com', password: 'Mat-khau-1' }),
+    ).resolves.toMatchObject({ hasShop: false, shopId: null });
+    const shop = await api.shop.createShop({ name: 'S', sellingSources: [] });
+    await expect(
+      api.auth.signInWithPassword({ email: 'd@example.com', password: 'Mat-khau-1' }),
+    ).resolves.toMatchObject({ hasShop: true, shopId: shop.id });
+  });
+
+  it('signOut thật: sau đó identity là null; lỗi SDK là AppError và phiên còn nguyên', async () => {
+    const ops = fakeOps();
+    const api = makeApi(ops);
+    await api.auth.signUpWithEmail({ email: 'e@example.com', password: 'Mat-khau-1' });
+    ops.failSignOut({ code: 'auth/network-request-failed' });
+    await expect(api.auth.signOut()).rejects.toMatchObject({ code: 'AUTH_NETWORK_ERROR' });
+    await expect(api.session.identity()).resolves.not.toBeNull();
+    ops.failSignOut(null);
+    await expect(api.auth.signOut()).resolves.toBeUndefined();
+    await expect(api.session.identity()).resolves.toBeNull();
+  });
+
+  it('đăng nhập trả họ tên từ Auth để hồ sơ giống lúc khôi phục', async () => {
+    const api = makeApi();
+    await api.auth.signUpWithEmail({ email: 'g@example.com', password: 'Mat-khau-1' });
+    await expect(
+      api.auth.signInWithPassword({ email: 'g@example.com', password: 'Mat-khau-1' }),
+    ).resolves.toMatchObject({ displayName: 'Chị Lan' });
+  });
+
+  it('đăng nhập xong mà đọc userShops lỗi: thoát Auth (không để nửa đăng nhập) và báo lỗi gốc', async () => {
+    const ops = fakeOps();
+    const api = makeApi(ops);
+    await api.auth.signUpWithEmail({ email: 'h@example.com', password: 'Mat-khau-1' });
+    ops.failReadShopId({ code: 'firestore/unavailable' });
+    await expect(
+      api.auth.signInWithPassword({ email: 'h@example.com', password: 'Mat-khau-1' }),
+    ).rejects.toMatchObject({ code: 'AUTH_NETWORK_ERROR' });
+    expect(ops.signOutCalls()).toBe(1);
+    await expect(api.session.identity()).resolves.toBeNull();
+  });
+
+  it('đăng nhập xong, đọc userShops lỗi và thoát cũng lỗi: vẫn báo lỗi đọc shop', async () => {
+    const ops = fakeOps();
+    const api = makeApi(ops);
+    await api.auth.signUpWithEmail({ email: 'i@example.com', password: 'Mat-khau-1' });
+    ops.failReadShopId({ code: 'firestore/unavailable' });
+    ops.failSignOut({ code: 'auth/network-request-failed' });
+    await expect(
+      api.auth.signInWithPassword({ email: 'i@example.com', password: 'Mat-khau-1' }),
+    ).rejects.toMatchObject({ code: 'AUTH_NETWORK_ERROR' });
+    expect(ops.signOutCalls()).toBe(1);
+  });
+
+  it('identity: phương thức đăng nhập lấy từ nhà cung cấp Auth, lạ thì null; thiếu email thì lỗi (không bịa)', async () => {
+    const ops = fakeOps();
+    const api = makeApi(ops);
+    await api.auth.signUpWithEmail({ email: 'j@example.com', password: 'Mat-khau-1' });
+    ops.patchCurrent({ providerIds: ['google.com'] });
+    await expect(api.session.identity()).resolves.toMatchObject({ signInMethod: 'google' });
+    ops.patchCurrent({ providerIds: ['apple.com'] });
+    await expect(api.session.identity()).resolves.toMatchObject({ signInMethod: 'apple' });
+    ops.patchCurrent({ providerIds: ['phone'] });
+    await expect(api.session.identity()).resolves.toMatchObject({ signInMethod: null });
+    ops.patchCurrent({ email: null });
+    await expect(api.session.identity()).rejects.toMatchObject({
+      code: 'AUTH_SERVICE_UNAVAILABLE',
+    });
+  });
+
+  it('getShop: thành viên đọc được; shop lạ hoặc chưa đăng nhập là null', async () => {
+    const api = makeApi(fakeOps());
+    await expect(api.shop.getShop('shop-1')).resolves.toBeNull();
+    await api.auth.signUpWithEmail({ email: 'f@example.com', password: 'Mat-khau-1' });
+    const shop = await api.shop.createShop({ name: 'S', sellingSources: [] });
+    await expect(api.shop.getShop(shop.id)).resolves.toMatchObject({ id: shop.id, canEdit: true });
+    await expect(api.shop.getShop('shop-khac')).resolves.toBeNull();
   });
 
   it('lỗi SDK trong khi khôi phục phiên là AppError (Splash coi như chưa đăng nhập)', async () => {

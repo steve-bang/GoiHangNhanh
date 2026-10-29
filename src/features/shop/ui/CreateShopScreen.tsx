@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ROUTES } from '@/core/navigation';
 import type { OrderSource } from '@/core/orders/order-source';
+import { useSession } from '@/features/personal';
 import { getInputResetStyle, getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Text, useTheme } from '@/shared/ui';
 
@@ -128,6 +129,7 @@ export function CreateShopScreen() {
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
   const { state, dispatch, gateways } = useOnboardingFlow();
+  const session = useSession();
 
   const [nameTouched, setNameTouched] = useState(false);
   const { busy, busyRef, formError, setFormError, run } = useGatewayTask();
@@ -164,11 +166,31 @@ export function CreateShopScreen() {
     // Chỉ dùng shop do CHÍNH tài khoản hiện tại tạo; shop của tài khoản khác không bao giờ được cập nhật.
     const ownerUid = state.account?.uid ?? null;
     const existing = state.shop !== null && state.shopOwnerUid === ownerUid ? state.shop : null;
+    // Máy chủ đã xác nhận shop: ghi vào phiên toàn app để đồng bộ/tải lên biết `shopId` thật. Ghi cả khi
+    // người dùng đã rời màn (shop đã tồn tại thật). Chưa có phiên (vừa đăng ký, hoặc mở lại app khi
+    // chưa có shop) thì lấy danh tính từ tài khoản của luồng hoặc từ cổng phiên; không biết thì bỏ qua,
+    // không bịa (tab sẽ nạp lại danh tính khi vào).
+    const recordShopInSession = async (shopId: string) => {
+      if (session.state.status === 'signed_in' && session.state.user?.uid === ownerUid) {
+        session.changeShop(shopId);
+        return;
+      }
+      const identity = state.account
+        ? { uid: state.account.uid, email: state.account.email }
+        : await gateways.session.identity().catch(() => null);
+      if (identity) {
+        session.beginSession(
+          { uid: identity.uid, email: identity.email, displayName: null },
+          shopId,
+        );
+      }
+    };
     void run(async (isActive) => {
       if (existing === null) {
         const shop = await gateways.shop.createShop({ name, sellingSources });
         // Máy chủ đã tạo shop: luôn ghi nhận ID để không bao giờ tạo shop thứ hai trong luồng này.
         dispatch({ type: 'shop_created', shop, ownerUid });
+        await recordShopInSession(shop.id);
       } else if (
         existing.name !== name ||
         existing.sellingSources.join() !== sellingSources.join()
@@ -176,6 +198,7 @@ export function CreateShopScreen() {
         // Đã có shop (quay lại từ bước sau) và người dùng đã sửa: cập nhật, không tạo mới.
         const shop = await gateways.shop.updateShop({ shopId: existing.id, name, sellingSources });
         dispatch({ type: 'shop_created', shop, ownerUid });
+        await recordShopInSession(shop.id);
       }
       if (!isActive()) return;
       navigation.push(ROUTES.setupDone);

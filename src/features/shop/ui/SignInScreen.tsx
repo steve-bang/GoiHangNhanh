@@ -108,9 +108,12 @@ export function SignInScreen() {
       const account = await gateways.auth.signInWithPassword({ email: normalized, password });
       // Đã rời màn (Back/đi chỗ khác) trong lúc chờ: không điều hướng thay người dùng.
       if (!isActive()) return;
-      // Ghi phiên toàn app (chỉ tầng logic, không đổi giao diện). `shopId` chưa biết: cổng đăng nhập
-      // chưa trả ID shop (chờ Firebase thật, decisions.md Q-17/Q-20); họ tên lấy từ hồ sơ khi cần.
-      session.beginSession({ uid: account.uid, email: account.email, displayName: null }, null);
+      // Ghi phiên toàn app (chỉ tầng logic, không đổi giao diện). `shopId` do máy chủ trả (từ
+      // `userShops/{uid}`); null = chưa có shop. Họ tên lấy từ Auth, giống phiên khôi phục sau khi mở lại app.
+      session.beginSession(
+        { uid: account.uid, email: account.email, displayName: account.displayName },
+        account.shopId,
+      );
       if (account.hasShop) {
         // Rời luồng thiết lập: xóa dữ liệu của tài khoản trước (nếu có) khỏi bộ nhớ luồng.
         dispatch({ type: 'reset' });

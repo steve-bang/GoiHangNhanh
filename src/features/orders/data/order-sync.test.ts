@@ -230,6 +230,26 @@ describe('đồng bộ đơn một chiều', () => {
     expect(t.calls).toEqual([]);
   });
 
+  it('đăng xuất giữa lượt: dừng ngay, các đơn còn lại không bị ghi bằng danh tính cũ và vẫn còn chờ đăng', async () => {
+    const t = await setup();
+    await t.addOrder('S1', 1000);
+    await t.addOrder('S2', 2000);
+    let first = true;
+    t.hooks.duringPublishOrder = async () => {
+      if (!first) return;
+      first = false;
+      t.setUid(null); // đăng xuất khi đơn đầu đang gửi
+    };
+    const summary = await t.sync.runOnce(LOCAL_SHOP_ID);
+    expect(t.calls).toHaveLength(1);
+    expect(summary.ordersPublished).toBe(1);
+    // Đơn còn lại vẫn chờ đăng: chính chủ đăng nhập lại thì được đăng.
+    expect(await t.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 5, 'u1')).toHaveLength(1);
+    t.setUid('u1');
+    await t.sync.runOnce(LOCAL_SHOP_ID);
+    expect(t.calls).toHaveLength(2);
+  });
+
   it('ngoại tuyến thì bỏ qua; lượt chồng nhau thì busy', async () => {
     const t = await setup({ online: false });
     await t.addOrder('F', 1000);

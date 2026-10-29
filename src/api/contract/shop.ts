@@ -28,4 +28,17 @@ export interface CreatedShop {
 export interface ShopApi {
   createShop(input: CreateShopInput): Promise<CreatedShop>;
   updateShop(input: UpdateShopInput): Promise<CreatedShop>;
+  /**
+   * Đọc thông tin shop mà tài khoản hiện tại là thành viên (Rules cho thành viên đọc). `null` = không
+   * có shop này hoặc không phải thành viên đang hoạt động (không phân biệt hai trường hợp).
+   */
+  getShop(shopId: string): Promise<ShopDetails | null>;
+}
+
+export interface ShopDetails {
+  readonly id: string;
+  readonly name: string;
+  readonly role: 'owner' | 'member';
+  /** Được sửa thông tin shop (chủ hoặc quản lý). Chốt thật là Security Rules/Function. */
+  readonly canEdit: boolean;
 }

@@ -16,6 +16,16 @@ export interface UserProfile {
   readonly signInMethod: SignInMethod;
 }
 
+/** Danh tính phiên khôi phục từ máy: đủ để `SessionProvider.beginSession`. */
+export interface SessionIdentity {
+  readonly uid: string;
+  readonly email: string;
+  readonly displayName: string | null;
+  /** Cách đăng nhập theo nhà cung cấp của Auth; `null` = không xác định được (không đoán). */
+  readonly signInMethod: SignInMethod | null;
+  readonly shopId: string | null;
+}
+
 /**
  * Vai trò của người dùng trong shop. Mô hình vai trò/thành viên CHƯA chốt (O-03, O-07, Q-20f): chỉ
  * phân biệt chủ shop và người còn lại để hiện nhãn; quyền sửa do cổng trả ở `canEdit`, không suy ra từ vai trò.
@@ -56,6 +66,12 @@ export interface ChangePasswordInput {
  * (decisions.md Q-20e, bất biến #9). Thêm khi đã chốt.
  */
 export interface AccountGateway {
+  /**
+   * Danh tính của phiên đã lưu trên máy để nạp vào `SessionProvider` khi mở app (SessionHydrator). KHÔNG
+   * chờ mạng khi đã biết shop từ bộ nhớ đệm. `null` = chưa đăng nhập; `shopId` null = chưa biết/chưa có
+   * shop (không bịa ID). Lỗi thì ném; bên gọi không suy đoán phiên.
+   */
+  getSessionIdentity(): Promise<SessionIdentity | null>;
   getProfile(): Promise<UserProfile>;
   /** Shop đang dùng của tài khoản; `null` khi chưa có shop (không bịa tên shop). */
   getShopSummary(): Promise<ShopSummary | null>;
