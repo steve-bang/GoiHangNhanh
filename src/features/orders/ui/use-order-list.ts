@@ -106,10 +106,16 @@ export function useOrderList(
       setLoadingMore(false);
       if (mode === 'pull') setRefreshing(true);
       try {
-        const [page, total] = await Promise.all([
+        // Đếm chỉ khi bộ lọc đổi/kéo làm mới/thử lại. Quay lại màn (focus) cùng bộ lọc thì không đếm:
+        // hết trang -> tổng chính là số thẻ vừa nạp (chính xác); còn trang -> tạm giữ tổng cũ.
+        const reuseTotal =
+          mode === 'focus' && shown?.filtersKey === key ? (shown.total ?? undefined) : undefined;
+        const [page, counted] = await Promise.all([
           store.listOrders(shopId, query, { limit }),
-          store.countOrders(shopId, query),
+          reuseTotal === undefined ? store.countOrders(shopId, query) : Promise.resolve(null),
         ]);
+        const total =
+          counted ?? (page.nextCursor === null ? page.items.length : (reuseTotal ?? null));
         const states = await loadEvidenceStates(
           evidenceFiles,
           shopId,
