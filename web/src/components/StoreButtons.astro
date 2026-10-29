@@ -1,0 +1,34 @@
+---
+import { site } from '../config/site';
+
+const items = [site.stores.appStore, site.stores.googlePlay];
+---
+
+<ul class="store-buttons">
+  {
+    items.map((s) => (
+      <li>
+        {s.url ? (
+          <a class="btn" href={s.url} rel="noopener">
+            Tải trên {s.label}
+          </a>
+        ) : (
+          <button class="btn" type="button" disabled aria-disabled="true">
+            {s.label}: sắp có
+          </button>
+        )}
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .store-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-12);
+    list-style: none;
+    margin: 0 0 var(--space-16);
+    padding: 0;
+  }
+</style>

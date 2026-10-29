@@ -1,0 +1,149 @@
+---
+import '../styles/global.css';
+import { site } from '../config/site';
+import { absoluteUrl, serializeLd, type JsonLd } from '../lib/jsonld';
+
+interface Props {
+  /** Tiêu đề đầy đủ (~50-60 ký tự), duy nhất mỗi trang. */
+  title: string;
+  /** Mô tả (~120-160 ký tự), duy nhất mỗi trang. */
+  description: string;
+  /** Đường dẫn của trang, bắt đầu và kết thúc bằng "/". Dùng cho canonical. */
+  path: string;
+  /** Ảnh chia sẻ 1200x630, đường dẫn trong public/. */
+  ogImage?: string;
+  /** Ép noindex (trang nháp, 404). Khi site.indexable=false thì mọi trang đều noindex. */
+  noindex?: boolean;
+  /** Không in canonical (trang 404). */
+  noCanonical?: boolean;
+  jsonLd?: JsonLd[];
+}
+
+const {
+  title,
+  description,
+  path,
+  ogImage = site.ogImage,
+  noindex = false,
+  noCanonical = false,
+  jsonLd = [],
+} = Astro.props;
+
+const canonical = absoluteUrl(path);
+const image = absoluteUrl(ogImage);
+const robots = !site.indexable || noindex ? 'noindex, nofollow' : 'index, follow';
+---
+
+<!doctype html>
+<html lang={site.lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="robots" content={robots} />
+    {!noCanonical && <link rel="canonical" href={canonical} />}
+    <meta name="theme-color" content="#157852" />
+
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="64x64" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:locale" content={site.locale} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {!noCanonical && <meta property="og:url" content={canonical} />}
+    <meta property="og:image" content={image} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={image} />
+
+    {jsonLd.map((d) => <script type="application/ld+json" set:html={serializeLd(d)} />)}
+  </head>
+  <body>
+    <a class="skip-link" href="#noi-dung">Bỏ qua, tới nội dung chính</a>
+    <header class="site-header">
+      <div class="container site-header__inner">
+        <a class="brand" href="/" aria-label={`${site.name}, về trang chủ`}>
+          <img src="/favicon.png" alt="" width="32" height="32" />
+          <span>{site.name}</span>
+        </a>
+        <nav aria-label="Chính">
+          <ul>
+            <li><a href="/#van-de">Vấn đề</a></li>
+            <li><a href="/#cach-dung">Cách dùng</a></li>
+            <li><a href="/#cau-hoi">Câu hỏi</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <main id="noi-dung">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="container">
+        <p>
+          <strong>{site.name}</strong> là tên làm việc. Ứng dụng đang phát triển, chưa phát hành.
+        </p>
+        <p>
+          Chúng tôi không hứa kết quả khiếu nại và không phải dịch vụ pháp lý. Trang này chưa có
+          chính sách quyền riêng tư và điều khoản; sẽ bổ sung trước khi phát hành.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  .site-header {
+    background: var(--surface-raised);
+    border-bottom: var(--border-thin) solid var(--border-default);
+  }
+  .site-header__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8) var(--space-16);
+    padding-block: var(--space-8);
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+    min-height: var(--size-touch);
+    font-weight: 700;
+    color: var(--brand-dark);
+    text-decoration: none;
+  }
+  .site-header ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .site-header nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-touch);
+    padding-inline: var(--space-12);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .site-footer {
+    background: var(--brand-dark);
+    color: var(--text-on-action);
+    padding-block: var(--space-32);
+    font-size: var(--text-sm);
+  }
+  .site-footer p {
+    max-width: var(--measure);
+    margin-bottom: var(--space-8);
+  }
+</style>

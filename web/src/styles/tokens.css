@@ -1,0 +1,80 @@
+/*
+ * Design token cho web, chép từ docs/design-token-spec.md (mục 4). KHÔNG thêm màu mới ở đây.
+ * Nếu cần màu chưa có, hỏi designer/BA rồi cập nhật docs/design-token-spec.md trước.
+ * Phần cỡ chữ web (rem) là thang riêng của web vì spec chỉ có thang cho app di động.
+ */
+:root {
+  /* Primitives màu (mục 4.1) */
+  --jade-950: #14382a;
+  --jade-700: #157852;
+  --jade-100: #e6f0e9;
+  --green-700: #1e7a3c;
+  --green-100: #e3f1e7;
+  --amber-700: #b45309;
+  --amber-50: #fdf3e7;
+  --red-700: #b3261e;
+  --red-50: #fcebea;
+  --teal-50: #eaf5f4;
+  --neutral-0: #ffffff;
+  --neutral-50: #faf8f2;
+  --neutral-100: #f3f6f5;
+  --neutral-300: #d9d6cc;
+  --neutral-600: #5a5f5c;
+  --neutral-900: #1b1b1b;
+  --mint-200: #d3e3de;
+
+  /* Semantic (mục 4.3) */
+  --text-primary: var(--neutral-900);
+  --text-secondary: var(--neutral-600);
+  --text-on-action: var(--neutral-0);
+  --surface-screen: var(--neutral-50);
+  --surface-raised: var(--neutral-0);
+  --surface-muted: var(--neutral-100);
+  --border-default: var(--neutral-300);
+  --border-field: var(--mint-200);
+  --action-primary: var(--jade-700);
+  --brand-dark: var(--jade-950);
+  --brand-soft: var(--jade-100);
+  --feedback-warning-fg: var(--amber-700);
+  --feedback-warning-bg: var(--amber-50);
+  --feedback-info-bg: var(--teal-50);
+
+  /* Khoảng cách (mục 4.2): 0 2 4 6 8 12 16 24, mở rộng 32/48/64 cho bố cục trang */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-48: 48px;
+  --space-64: 64px;
+
+  /* Bo góc (mục 4.2) */
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-full: 9999px;
+
+  /* Viền (mục 4.2) */
+  --border-thin: 1px;
+  --border-strong: 1.5px;
+  --border-emphasis: 2px;
+
+  /* Kích thước chạm: tối thiểu 44px (iOS) / 48px (Android); web lấy 48px */
+  --size-touch: 48px;
+
+  /* Chữ (web) */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.125rem;
+  --leading-tight: 1.25;
+  --leading-body: 1.6;
+  --measure: 65ch;
+  --page-max: 72rem;
+}
