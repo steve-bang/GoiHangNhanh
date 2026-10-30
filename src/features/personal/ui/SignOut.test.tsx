@@ -85,7 +85,11 @@ describe('Đăng xuất an toàn (PER-21)', () => {
     expect(
       screen.getAllByTestId('icon-log-out-outline', { includeHiddenElements: true }),
     ).toHaveLength(2);
-    expect(screen.getByText('Video và dữ liệu trên máy này vẫn được giữ lại.')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'Video và dữ liệu trên máy này vẫn được giữ lại. Dữ liệu chưa tải lên chỉ còn trên máy này.',
+      ),
+    ).toBeOnTheScreen();
     // "Ở lại ứng dụng" là nút chính (xanh đặc); "Đăng xuất" là nút phụ viền và chữ đỏ.
     const stay = StyleSheet.flatten(
       screen.getByRole('button', { name: 'Ở lại ứng dụng' }).props.style as never,

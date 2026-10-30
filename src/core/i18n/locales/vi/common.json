@@ -39,7 +39,7 @@
   },
   "syncBar": {
     "title": "Bằng chứng cần theo dõi",
-    "hint": "Tải nền có thể tạm dừng khi hệ điều hành giới hạn. Mở ứng dụng để tiếp tục.",
+    "hint": "Ứng dụng chỉ tải lên khi đang mở. Đóng ứng dụng thì việc tải tạm dừng, mở lại sẽ tiếp tục.",
     "action": "Mở trung tâm đồng bộ"
   },
   "recording": {

@@ -6,7 +6,12 @@ import { useAppNavigation, useRouteParams } from '@/platform';
 import { Button, EmptyState, Screen, Text, useTheme } from '@/shared/ui';
 
 import { findHelpArticle, nextHelpArticle } from '../domain/help-content';
-import { helpArticleSteps, helpArticleTitle, helpCategoryTitle } from './help-text';
+import {
+  helpArticleSteps,
+  helpArticleSummary,
+  helpArticleTitle,
+  helpCategoryTitle,
+} from './help-text';
 
 /**
  * Chi tiết bài hướng dẫn (UI-I06 route con; board 07 khung 16): tiêu đề, đoạn mô tả, "Các bước thực hiện"
@@ -64,7 +69,7 @@ export function HelpArticleScreen() {
           {helpArticleTitle(t, article.id)}
         </Text>
         <Text color="textMuted" testID="help-article-summary">
-          {t(`personal:help.articles.${article.id}.summary`)}
+          {helpArticleSummary(t, article.id)}
         </Text>
       </View>
       {steps.length > 0 ? (

@@ -1,4 +1,5 @@
 import { isPlaceholderLink, LEGAL_LINKS } from './legal-links';
+import { PUBLIC_LINKS } from './public-links';
 import { getSupportEmail, SUPPORT_EMAIL } from './support-contact';
 
 describe('địa chỉ hỗ trợ (Q-21ae)', () => {
@@ -23,6 +24,18 @@ describe('liên kết pháp lý giữ chỗ', () => {
   it('URL hiện tại là giữ chỗ nên bị coi là chưa mở được', () => {
     expect(isPlaceholderLink(LEGAL_LINKS.terms)).toBe(true);
     expect(isPlaceholderLink(LEGAL_LINKS.privacy)).toBe(true);
+    expect(isPlaceholderLink(LEGAL_LINKS.accountDeletion)).toBe(true);
+  });
+
+  it('legal-links và support-contact chỉ là lớp tương thích: cùng giá trị public-links (V1-18)', () => {
+    expect(LEGAL_LINKS).toEqual({
+      terms: PUBLIC_LINKS.terms,
+      privacy: PUBLIC_LINKS.privacy,
+      accountDeletion: PUBLIC_LINKS.accountDeletionRequest,
+    });
+    expect(SUPPORT_EMAIL).toBe(PUBLIC_LINKS.supportEmail);
+    expect(LEGAL_LINKS.terms).toBe('https://don-chung.invalid/dieu-khoan/');
+    expect(LEGAL_LINKS.privacy).toBe('https://don-chung.invalid/chinh-sach-quyen-rieng-tu/');
   });
 
   it.each([

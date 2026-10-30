@@ -64,7 +64,7 @@
     "action": "Đăng xuất",
     "dialogTitle": "Xác nhận đăng xuất",
     "dialogMessage": "Bạn có chắc muốn đăng xuất khỏi ứng dụng?",
-    "dataNote": "Video và dữ liệu trên máy này vẫn được giữ lại.",
+    "dataNote": "Video và dữ liệu trên máy này vẫn được giữ lại. Dữ liệu chưa tải lên chỉ còn trên máy này.",
     "confirm": "Đăng xuất",
     "cancel": "Ở lại ứng dụng",
     "success": "Bạn đã đăng xuất thành công.",
@@ -207,13 +207,10 @@
     "openSync": "Xem trung tâm đồng bộ"
   },
   "retentionDetail": {
-    "planEyebrow": "Thời hạn lưu theo gói dịch vụ",
-    "planName": "Chưa có thông tin",
-    "noInfo": "Chưa có thông tin",
-    "videoPack": "Video đóng gói",
-    "photoDelivery": "Ảnh giao hàng",
-    "photoReturn": "Ảnh hoàn hàng",
-    "note": "Theo chính sách dự kiến, bằng chứng đang tranh chấp được giữ lại và hạ cấp gói không xóa bằng chứng ngay. Cách xử lý khi hết thời hạn lưu chưa được công bố."
+    "planEyebrow": "Thời hạn lưu bằng chứng",
+    "planName": "Chưa áp dụng",
+    "note": "Hiện ứng dụng chưa tự động xóa bằng chứng đã tải lên và chưa áp dụng thời hạn lưu. Nếu có thay đổi, bạn sẽ được báo trước trong ứng dụng.",
+    "deviceNote": "Tệp trên máy này sẽ mất nếu bạn gỡ ứng dụng."
   },
   "notificationSettings": {
     "pushTitle": "Thông báo đẩy",
@@ -257,7 +254,7 @@
     }
   },
   "help": {
-    "searchPlaceholder": "Tìm hướng dẫn, ví dụ: video chưa đồng bộ",
+    "searchPlaceholder": "Tìm hướng dẫn, ví dụ: tải lên",
     "categories": "Danh mục",
     "featured": "Bài viết đề xuất",
     "more": "Cần thêm trợ giúp?",
@@ -298,19 +295,29 @@
         "step": {
           "1": "Mở tab Đơn hàng.",
           "2": "Gõ mã đơn hoặc mã vận đơn vào ô tìm, hoặc bấm Bộ lọc để lọc theo thời gian và nguồn bán.",
-          "3": "Bấm vào một đơn để xem chi tiết. Màn chi tiết hiện chỉ để xem, chưa sửa được đơn."
+          "3": "Bấm vào một đơn để xem chi tiết. Đơn chưa quay thì sửa được. Đơn đã quay thì bản này chưa cho sửa sản phẩm."
         },
-        "keywords": "tìm kiếm danh sách đơn hàng lọc chi tiết đơn"
+        "keywords": "tìm kiếm danh sách đơn hàng lọc chi tiết đơn sửa đơn sửa sản phẩm"
       },
       "recordPack": {
-        "title": "Quay đóng gói: bản này chưa ghi video",
-        "summary": "Bạn có thể mở màn quay, nhưng camera mới chỉ xem trước. Ứng dụng chưa ghi và chưa lưu video nào.",
+        "title": "Quay video đóng gói",
+        "summary": "Mỗi lần quay là một phiên gắn với đơn và kiện bạn chọn trước khi quay. Video lưu trên máy trước, rồi tải lên khi ứng dụng đang mở.",
         "step": {
           "1": "Chọn hoặc tạo đơn rồi bấm Quay ngay.",
-          "2": "Màn quay mở camera ở chế độ xem trước và có dòng báo chưa ghi video.",
-          "3": "Kết thúc phiên để quay về đơn. Đơn của bạn vẫn hiện Chưa có video đóng gói."
+          "2": "Quay từ trước khi đóng gói đến khi niêm phong xong. Giữ ứng dụng mở trong lúc quay.",
+          "3": "Bấm Dừng quay rồi xác nhận. Video hiện Đã lưu trên máy: đây chưa phải bản trên máy chủ."
         },
         "keywords": "quay video đóng gói camera ghi hình bắt đầu quay"
+      },
+      "wifiOnly": {
+        "title": "Chỉ tải khi có Wi‑Fi",
+        "summary": "Mặc định ứng dụng tải cả bằng 4G/5G. Bật Chỉ tải khi có Wi‑Fi để ảnh và video không tải qua mạng di động. Thông tin đơn vẫn được gửi.",
+        "step": {
+          "1": "Mở Trung tâm đồng bộ, hoặc vào tab Cá nhân rồi chọn Dữ liệu bằng chứng.",
+          "2": "Bật công tắc Chỉ tải khi có Wi‑Fi. Tệp chưa tải vẫn nằm trên máy và hiện Đang chờ Wi‑Fi.",
+          "3": "Phát Wi‑Fi từ một điện thoại khác vẫn được coi là Wi‑Fi, nên vẫn tốn dữ liệu di động của máy phát. Hãy cân nhắc khi dùng cách này."
+        },
+        "keywords": "wifi wi-fi 4g 5g dữ liệu di động tiết kiệm dung lượng mạng điểm phát hotspot chia sẻ mạng"
       },
       "scanFail": {
         "title": "Không quét được mã",
@@ -334,7 +341,7 @@
       },
       "unsynced": {
         "title": "Video chưa đồng bộ",
-        "summary": "Bản này chưa ghi video nên chưa có video nào để đồng bộ. Khi có video, nhãn trạng thái cho biết video đang ở đâu.",
+        "summary": "Nhãn trạng thái cho biết video đang ở đâu. Video chỉ có bản trên máy chủ khi nhãn là Đã tải lên hoặc Đã xác minh.",
         "step": {
           "1": "Đã lưu trên máy: video nằm trong điện thoại, chưa có bản trên máy chủ.",
           "2": "Chờ tải lên và Đang tải lên: chưa phải bản sao lưu cho tới khi máy chủ xác nhận.",
@@ -353,14 +360,61 @@
         "keywords": "quản lý bán hàng sku giá tồn kho khách hàng"
       },
       "whereData": {
-        "title": "Đơn của tôi được lưu ở đâu?",
-        "summary": "Ở bản này, đơn lưu trên chính điện thoại của bạn và chưa đồng bộ lên máy chủ. Gỡ ứng dụng sẽ xóa đơn trên máy đó.",
-        "keywords": "dữ liệu lưu trữ điện thoại máy chủ gỡ ứng dụng"
+        "title": "Dữ liệu của tôi được lưu ở đâu?",
+        "summary": "Đơn, hồ sơ hàng hoàn, tranh chấp, video và ảnh được lưu trên chính điện thoại này. Máy chủ chỉ giữ tệp đã tải lên và thông tin cơ bản của đơn đã quay. Bản này dùng một tài khoản trên một máy: máy khác không thấy dữ liệu này.",
+        "keywords": "dữ liệu lưu trữ điện thoại máy chủ một máy nhiều máy đăng nhập máy khác"
+      },
+      "uploadWhenOpen": {
+        "title": "Khi nào video và ảnh được tải lên?",
+        "summary": "Ứng dụng chỉ tải lên khi đang mở. Tắt ứng dụng thì việc tải dừng lại, mở lại thì tải tiếp. Khi máy chủ chưa xác nhận, tệp chỉ có trên máy này.",
+        "keywords": "tải lên khi nào đóng ứng dụng tắt app tải tiếp đồng bộ chậm chạy ngầm"
+      },
+      "changeDevice": {
+        "title": "Đổi máy, cài lại hoặc gỡ ứng dụng thì sao?",
+        "summary": "Tệp trên máy này sẽ mất nếu bạn gỡ ứng dụng. Tệp chưa tải lên không chuyển được sang máy khác, và bản sao lưu của điện thoại không chứa chúng. Đăng nhập trên máy mới sẽ không thấy đơn và video của máy cũ. Hãy chờ tải lên xong trước khi đổi máy.",
+        "keywords": "đổi máy điện thoại mới cài lại gỡ ứng dụng xóa app mất dữ liệu chuyển máy sao lưu"
       },
       "recordingLimits": {
         "title": "Đang quay mà ứng dụng bị tắt thì sao?",
         "summary": "Hãy giữ ứng dụng mở trong lúc quay. Nếu ứng dụng chuyển sang nền, việc quay dừng lại và chỉ giữ phần đã quay, ứng dụng không tự quay tiếp. Nếu ứng dụng bị tắt giữa chừng, đoạn đang quay có thể mất.",
         "keywords": "quay video bị tắt mất video chuyển nền cuộc gọi màn hình tắt gián đoạn"
+      },
+      "hashMeaning": {
+        "title": "Mã băm là gì?",
+        "summary": "Mã băm là dãy ký tự tính từ nội dung tệp. Máy chủ tính lại sau khi nhận tệp; khớp thì tệp hiện Đã xác minh, nghĩa là tệp không đổi kể từ lúc tính. Mã băm không cho biết video quay lúc nào hay có chân thực không.",
+        "keywords": "mã băm hash sha256 xác minh kiểm tra tệp chân thực"
+      },
+      "retention": {
+        "title": "Bằng chứng được lưu bao lâu?",
+        "summary": "Hiện ứng dụng chưa tự động xóa bằng chứng đã tải lên và chưa áp dụng thời hạn lưu. Nếu có thay đổi, bạn sẽ được báo trước trong ứng dụng. Tệp trên máy này sẽ mất nếu bạn gỡ ứng dụng.",
+        "keywords": "thời hạn lưu bao lâu tự động xóa hết hạn gói dịch vụ"
+      },
+      "deleteAccount": {
+        "title": "Xóa tài khoản thì dữ liệu ra sao?",
+        "summary": "Vào Cá nhân, Quyền riêng tư và bảo mật, rồi Xóa tài khoản. Tài khoản bị xóa ngay. Dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại theo quy định của pháp luật hoặc vì tranh chấp đang mở. Dữ liệu trên máy này cũng bị xóa, kể cả tệp chưa tải lên.",
+        "keywords": "xóa tài khoản hủy tài khoản dữ liệu 30 ngày"
+      }
+    },
+    "articlesPreview": {
+      "recordPack": {
+        "title": "Quay đóng gói: bản này chưa ghi video",
+        "summary": "Bạn có thể mở màn quay, nhưng camera mới chỉ xem trước. Ứng dụng chưa ghi và chưa lưu video nào.",
+        "step": {
+          "1": "Chọn hoặc tạo đơn rồi bấm Quay ngay.",
+          "2": "Màn quay mở camera ở chế độ xem trước và có dòng báo chưa ghi video.",
+          "3": "Kết thúc phiên để quay về đơn. Đơn của bạn vẫn hiện Chưa có video đóng gói."
+        },
+        "keywords": "quay video đóng gói camera ghi hình bắt đầu quay"
+      },
+      "unsynced": {
+        "title": "Video chưa đồng bộ",
+        "summary": "Bản này chưa ghi video nên chưa có video nào để đồng bộ. Khi có video, nhãn trạng thái cho biết video đang ở đâu.",
+        "step": {
+          "1": "Đã lưu trên máy: video nằm trong điện thoại, chưa có bản trên máy chủ.",
+          "2": "Chờ tải lên và Đang tải lên: chưa phải bản sao lưu cho tới khi máy chủ xác nhận.",
+          "3": "Đã tải lên: máy chủ đã nhận đủ tệp. Đã xác minh: máy chủ tính lại mã băm và thấy khớp, nghĩa là tệp không đổi kể từ lúc tính. Mã băm không cho biết video quay lúc nào hay có chân thực không."
+        },
+        "keywords": "đồng bộ tải lên trạng thái video chưa lên máy chủ sao lưu"
       }
     },
     "contact": {

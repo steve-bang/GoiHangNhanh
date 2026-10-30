@@ -338,6 +338,7 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
 - **Test:** test chuỗi (không có "tuyệt đối", "đảm bảo thắng", "sao lưu an toàn" trước khi xác minh) mở rộng test có sẵn; test tooling khớp URL app/web; ảnh.
 - **Ảnh:** Trợ giúp (danh mục + 2 bài mới), Thời hạn lưu, Điều khoản và chính sách (liên kết còn khóa khi giữ chỗ).
 - **Rủi ro:** câu chữ cần khách/BA duyệt (checklist C-1). **Phụ thuộc:** V1-03 (feature-flags/legal), V1-11 (i18n màn quay).
+- *Đã làm (2026-10-30): xem [plans/v1-18-content-help-legal.md](plans/v1-18-content-help-legal.md) và decisions.md Q-29 / V1-18. Thêm so với dòng trên: bài Trợ giúp theo cờ ghi video (`recordPack`, `unsynced`), nút web/hỗ trợ ở điều kiện "dữ liệu tài khoản khác" khi có kênh thật, sửa tràn chữ ở 320x568 (ô tìm, nhãn thanh tab). Test tooling là `scripts/public-links.test.cjs`.*
 
 #### V1-19 web-legal-pages
 - **Mục tiêu:** có URL công khai cho store: Chính sách quyền riêng tư, Điều khoản, Hỗ trợ, Yêu cầu xóa tài khoản (Google Play yêu cầu kênh web).

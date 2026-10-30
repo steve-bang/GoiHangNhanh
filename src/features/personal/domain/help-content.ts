@@ -2,8 +2,9 @@ import { foldForSearch } from './shop-list';
 
 /**
  * Cấu trúc nội dung Trợ giúp (UI-I06; board 07 khung 15-16). TypeScript thuần: chỉ có ID và thứ tự; câu chữ
- * nằm ở `personal.json` mục `help` (khóa `help.articles.<id>.{title,summary,step.N,keywords}`), để chữ qua
- * i18n và test cụm cấm quét được. Bài viết viết theo tính năng ĐANG có; thêm bài khi tính năng có thật.
+ * nằm ở `personal.json` mục `help` (khóa `help.articles.<id>.{title,summary,step.N,keywords}`; bản khi bộ
+ * ghi video còn tắt ở `help.articlesPreview.<id>`), để chữ qua i18n và test cụm cấm quét được. Bài viết
+ * viết theo tính năng ĐANG có; thêm bài khi tính năng có thật.
  *
  * Board còn một danh mục "Cập nhật sản phẩm" nhưng chưa có nhật ký thay đổi thật nên KHÔNG khai báo
  * (danh mục không có bài không được hiện, không trang trắng).
@@ -18,20 +19,38 @@ export interface HelpArticleDef {
   readonly stepCount: number;
   /** Có trong "Bài viết đề xuất" ở Trung tâm trợ giúp. */
   readonly featured: boolean;
+  /**
+   * Bài có bản riêng khi bộ ghi video còn TẮT (`RECORDER_ENABLED = false`, ADR-020): chữ ở
+   * `help.articlesPreview.<id>` nói thẳng "bản này chưa ghi video"; khi bật cờ dùng `help.articles.<id>`.
+   * Hai bản cùng số bước (decisions.md Q-29 / V1-18).
+   */
+  readonly previewVariant?: true;
 }
 
 /** Thứ tự khai báo = thứ tự hiển thị trong danh mục. */
 export const HELP_ARTICLES: readonly HelpArticleDef[] = [
   { id: 'createOrder', category: 'guide', stepCount: 3, featured: false },
   { id: 'findOrder', category: 'guide', stepCount: 3, featured: false },
-  { id: 'recordPack', category: 'guide', stepCount: 3, featured: true },
+  { id: 'recordPack', category: 'guide', stepCount: 3, featured: true, previewVariant: true },
+  { id: 'wifiOnly', category: 'guide', stepCount: 3, featured: false },
   { id: 'scanFail', category: 'troubleshooting', stepCount: 3, featured: false },
   { id: 'cameraOff', category: 'troubleshooting', stepCount: 3, featured: false },
-  { id: 'unsynced', category: 'troubleshooting', stepCount: 3, featured: true },
+  {
+    id: 'unsynced',
+    category: 'troubleshooting',
+    stepCount: 3,
+    featured: true,
+    previewVariant: true,
+  },
   { id: 'codes', category: 'faq', stepCount: 0, featured: false },
   { id: 'scope', category: 'faq', stepCount: 0, featured: false },
   { id: 'whereData', category: 'faq', stepCount: 0, featured: false },
+  { id: 'uploadWhenOpen', category: 'faq', stepCount: 0, featured: true },
+  { id: 'changeDevice', category: 'faq', stepCount: 0, featured: false },
   { id: 'recordingLimits', category: 'faq', stepCount: 0, featured: false },
+  { id: 'hashMeaning', category: 'faq', stepCount: 0, featured: false },
+  { id: 'retention', category: 'faq', stepCount: 0, featured: false },
+  { id: 'deleteAccount', category: 'faq', stepCount: 0, featured: false },
 ];
 
 export function findHelpArticle(id: string | undefined): HelpArticleDef | null {

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
@@ -54,9 +54,16 @@ export function DeleteConditionList({
   conditions,
   hide = [],
   pending = false,
+  actions = {},
 }: {
   conditions: readonly DeleteCondition[] | null;
   hide?: readonly DeleteConditionId[];
+  /**
+   * Nút việc làm ngay dưới một điều kiện đang "Cần xử lý" (ví dụ `foreign`: mở trang web xóa tài khoản,
+   * liên hệ hỗ trợ). Chỉ hiện khi điều kiện đó ở `attention`; đặt NGOÀI vùng `accessible` của hàng để trình
+   * đọc màn hình chạm được từng nút.
+   */
+  actions?: Partial<Record<DeleteConditionId, ReactNode>>;
   /**
    * Màn "Đang hoàn tất xóa tài khoản": người dùng không vào được hồ sơ (không còn cửa hàng), nên câu của mục
    * chặn nói dữ liệu được giữ lại thay vì bảo "đóng hồ sơ" (review PR #61).
@@ -72,6 +79,7 @@ export function DeleteConditionList({
           id={id}
           condition={conditions?.find((c) => c.id === id) ?? null}
           pending={pending}
+          actions={actions[id]}
         />
       ))}
     </ListGroup>
@@ -83,10 +91,12 @@ function ConditionRow({
   id,
   condition,
   pending,
+  actions,
 }: {
   id: DeleteConditionId;
   condition: DeleteCondition | null;
   pending: boolean;
+  actions?: ReactNode;
 }) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
@@ -114,30 +124,34 @@ function ConditionRow({
       : status === 'attention'
         ? tokens.color.feedback.warning.fg
         : tokens.color.text.secondary;
+  const showActions =
+    actions !== undefined && actions !== null && condition?.status === 'attention' && !pendingCopy;
   return (
-    <View
-      testID={`delete-condition-${id}`}
-      accessible
-      accessibilityLabel={[title, word, detail].filter(Boolean).join('. ')}
-      style={{
-        flexDirection: 'row',
-        gap: tokens.space.md,
-        padding: tokens.space.lg,
-        alignItems: 'flex-start',
-      }}
-    >
-      <Icon name={STATUS_ICON[status]} size={22} color={color} />
-      <View style={{ flex: 1, flexShrink: 1, gap: tokens.space.xs }}>
-        <Text>{title}</Text>
-        <Text variant="caption" bold style={{ color }} testID={`delete-condition-${id}-status`}>
-          {word}
-        </Text>
-        {detail ? (
-          <Text variant="caption" color="textMuted">
-            {detail}
+    <View style={{ padding: tokens.space.lg, gap: tokens.space.md }}>
+      <View
+        testID={`delete-condition-${id}`}
+        accessible
+        accessibilityLabel={[title, word, detail].filter(Boolean).join('. ')}
+        style={{ flexDirection: 'row', gap: tokens.space.md, alignItems: 'flex-start' }}
+      >
+        <Icon name={STATUS_ICON[status]} size={22} color={color} />
+        <View style={{ flex: 1, flexShrink: 1, gap: tokens.space.xs }}>
+          <Text>{title}</Text>
+          <Text variant="caption" bold style={{ color }} testID={`delete-condition-${id}-status`}>
+            {word}
           </Text>
-        ) : null}
+          {detail ? (
+            <Text variant="caption" color="textMuted">
+              {detail}
+            </Text>
+          ) : null}
+        </View>
       </View>
+      {showActions ? (
+        <View style={{ gap: tokens.space.sm }} testID={`delete-condition-${id}-actions`}>
+          {actions}
+        </View>
+      ) : null}
     </View>
   );
 }
