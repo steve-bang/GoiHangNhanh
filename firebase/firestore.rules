@@ -35,9 +35,23 @@ service cloud.firestore {
       return /databases/$(database)/documents/shops/$(shopId)/members/$(request.auth.uid);
     }
 
+    function shopPath(shopId) {
+      return /databases/$(database)/documents/shops/$(shopId);
+    }
+
+    // Shop đã yêu cầu xóa (V1-14, `status: 'deleting'` do Function deleteAccount đặt) bị khóa với MỌI
+    // client: không đọc, không ghi, kể cả khi còn sót tài liệu thành viên. Shop không có tài liệu gốc thì
+    // không bị coi là đang xóa (purge xóa tài liệu gốc SAU CÙNG, sau mọi collection con).
+    function shopNotDeleting(shopId) {
+      return !exists(shopPath(shopId))
+        || get(shopPath(shopId)).data.get('status', 'active') != 'deleting';
+    }
+
     // get() trên tài liệu không tồn tại làm biểu thức lỗi -> từ chối. Đó là hành vi mong muốn.
     function isActiveMember(shopId) {
-      return signedIn() && get(memberPath(shopId)).data.status == 'active';
+      return signedIn()
+        && get(memberPath(shopId)).data.status == 'active'
+        && shopNotDeleting(shopId);
     }
 
     function hasAnyRole(shopId, allowed) {
@@ -128,7 +142,7 @@ service cloud.firestore {
     match /shops/{shopId} {
       allow get: if isActiveMember(shopId);
       allow list: if false;
-      allow write: if false; // tạo shop, đổi gói: Cloud Function
+      allow write: if false; // tạo shop, đổi gói, đánh dấu xóa (V1-14): Cloud Function
 
       match /members/{uid} {
         allow read: if isActiveMember(shopId);
@@ -395,6 +409,14 @@ service cloud.firestore {
         allow read: if canReadAudit(shopId);
         allow write: if false;
       }
+    }
+
+    // ---------- Nhật ký xóa tài khoản (V1-14) ----------
+    // Chỉ Function deleteAccount/purgeDeletedShops và script hỗ trợ (Admin SDK) ghi. Client, kể cả chính
+    // chủ tài khoản, không đọc/ghi được (bất biến 7; kế hoạch v1 R-1).
+
+    match /accountDeletions/{uid} {
+      allow read, write: if false;
     }
 
     // Mọi đường dẫn khác: từ chối.

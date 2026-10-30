@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { logger } from 'firebase-functions';
@@ -7,8 +8,17 @@ import {
   onDocumentWrittenWithAuthContext,
 } from 'firebase-functions/v2/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { onObjectFinalized } from 'firebase-functions/v2/storage';
 
+import {
+  assertRecentAuth,
+  deleteAccountForUser,
+  purgeDeletedShops as purgeDeletedShopsNow,
+  retryPendingAuthDeletions,
+  type AuthUserDeleter,
+  type StoragePrefixDeleter,
+} from './account';
 import { AUDITED_ENTITIES, entityLocation, recordAuditForWrite, type AuditedEntity } from './audit';
 import { handleEvidenceFinalized } from './evidence';
 import { toHttpsError } from './http-errors';
@@ -206,3 +216,76 @@ export const createUploadSession = onCall({ region: REGION }, async (request) =>
     return toHttpsError(error);
   }
 });
+
+const authDeleter = (): AuthUserDeleter => ({
+  deleteUser: async (uid) => {
+    await getAuth().deleteUser(uid);
+  },
+});
+
+/**
+ * Xóa tài khoản của CHÍNH người gọi (account.ts; V1-14). uid chỉ lấy từ token, không nhận uid từ client,
+ * nên không ai xóa thay người khác được. Yêu cầu vừa xác thực lại (`auth_time` <= 5 phút): client gọi
+ * `reauthenticateWithCredential` rồi lấy token mới trước khi gọi (V1-15).
+ */
+export const deleteAccount = onCall({ region: REGION }, async (request) => {
+  const uid = requireUid(request.auth);
+  try {
+    const nowMs = Date.now();
+    assertRecentAuth(request.auth?.token.auth_time, nowMs);
+    const result = await deleteAccountForUser(getFirestore(), authDeleter(), uid, {
+      nowMs,
+      channel: 'app',
+    });
+    logger.info('deleteAccount done', { status: result.status, shops: result.closedShopCount });
+    return result;
+  } catch (error) {
+    return toHttpsError(error);
+  }
+});
+
+const storagePrefixDeleter = (): StoragePrefixDeleter => {
+  const bucket = getStorage().bucket();
+  return {
+    listNames: async (prefix, max) =>
+      (await bucket.getFiles({ prefix, maxResults: max, autoPaginate: false }))[0].map(
+        (file) => file.name,
+      ),
+    deleteObject: async (name) => {
+      await bucket.file(name).delete({ ignoreNotFound: true });
+    },
+  };
+};
+
+/** Thời gian chạy tối đa của lịch purge (giây) và ngân sách dừng sớm để không bị cắt giữa chừng. */
+const PURGE_TIMEOUT_SECONDS = 540;
+const PURGE_BUDGET_MS = 480_000;
+
+/**
+ * Hằng ngày 03:00 giờ Việt Nam: (1) gọi lại bước xóa Auth cho bản ghi kẹt `requested` quá 1 giờ;
+ * (2) xóa hẳn shop đã yêu cầu xóa quá 30 ngày, trừ shop có `legalHold` (account.ts). Không tự thử lại: lần chạy sau tiếp tục phần còn lại (idempotent). Log chỉ số lượng.
+ */
+export const purgeDeletedShops = onSchedule(
+  {
+    schedule: 'every day 03:00',
+    timeZone: 'Asia/Ho_Chi_Minh',
+    region: REGION,
+    timeoutSeconds: PURGE_TIMEOUT_SECONDS,
+    memory: '512MiB',
+    retryCount: 0,
+  },
+  async () => {
+    const nowMs = Date.now();
+    const deadlineMs = nowMs + PURGE_BUDGET_MS;
+    // Trước: hoàn tất các lần xóa Auth bị lỗi sau khi bước 1 đã commit (bản ghi kẹt `requested` > 1 giờ).
+    const authRetry = await retryPendingAuthDeletions(getFirestore(), authDeleter(), {
+      nowMs,
+      deadlineMs,
+    });
+    const summary = await purgeDeletedShopsNow(getFirestore(), storagePrefixDeleter(), {
+      nowMs,
+      deadlineMs,
+    });
+    logger.info('purgeDeletedShops done', { ...summary, authRetry });
+  },
+);

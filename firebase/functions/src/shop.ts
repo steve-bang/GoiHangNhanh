@@ -1,5 +1,6 @@
 import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 
+import { accountDeletionPath, AccountError } from './account';
 import { isValidId } from './ids';
 
 /**
@@ -77,8 +78,14 @@ export async function createShopForUser(
   input: ShopInput,
 ): Promise<ShopResult> {
   const indexRef = db.doc(`userShops/${uid}`);
+  const deletionRef = db.doc(accountDeletionPath(uid));
   return db.runTransaction(async (tx) => {
-    const index = await tx.get(indexRef);
+    const [index, deletion] = await Promise.all([tx.get(indexRef), tx.get(deletionRef)]);
+    // Tài khoản đã yêu cầu xóa (V1-14): ID token cũ còn hạn tới 1 giờ sau khi xóa Auth, không được dùng nó
+    // để tạo shop mới (shop mồ côi, không ai purge).
+    if (deletion.exists) {
+      throw new AccountError('permission-denied', 'Tài khoản đã bị xóa.', 'account_deleted');
+    }
     const existingId = index.data()?.shopId as string | undefined;
     if (existingId) {
       const existing = await tx.get(db.doc(`shops/${existingId}`));

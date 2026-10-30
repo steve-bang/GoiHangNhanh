@@ -92,7 +92,7 @@ Feature dự kiến: `shop`, `orders`, `packing`, `returns`, `evidence`, `upload
 
 | Đối tượng (docs/02) | Đường dẫn | Client ghi? | Ghi chú |
 |---|---|---|---|
-| Shop | `shops/{shopId}` | Không (Function) | Gói dịch vụ/hạn mức: trường trong shop hoặc `plan` (chờ O-06) |
+| Shop | `shops/{shopId}` | Không (Function) | Gói dịch vụ/hạn mức: trường trong shop hoặc `plan` (chờ O-06). Xóa tài khoản (V1-14): `status: 'deleting'`, `deletionRequestedAt`, `purgeAfter`, `deletionRecordId`; `legalHold` chỉ Admin đặt. Shop `deleting` bị Rules khóa với mọi client |
 | Thành viên | `shops/{shopId}/members/{uid}` | Không (Function) | `roles[]`, `status` (`active`/`revoked`). Nguồn quyền cho Rules |
 | Đơn hàng | `shops/{shopId}/orders/{orderId}` | Có (Rules) | `orderCode`, `source`, `trackingCode?`, `status`, `dataSource`, `rev`… |
 | Dòng sản phẩm | `…/orders/{orderId}/lines/{lineId}` | Có | `name`, `variant?`, `quantity`; mỗi variant một dòng, không gộp |
@@ -106,6 +106,8 @@ Feature dự kiến: `shop`, `orders`, `packing`, `returns`, `evidence`, `upload
 | Vụ tranh chấp | `shops/{shopId}/disputes/{id}` | *(chưa có Rules)* | Tham chiếu bằng ID; đặt cờ giữ trên bằng chứng (Function) |
 | Bộ bằng chứng xuất | `shops/{shopId}/exports/{id}` | Không (Function) | Manifest + tệp trong Storage |
 | Sự kiện kiểm toán | `shops/{shopId}/auditEvents/{id}` | **Không bao giờ** | Chỉ Function/trigger ghi; đọc: chủ shop, quản lý, người xử lý tranh chấp |
+| Yêu cầu xác minh lại (V1-04) | `shops/{shopId}/evidenceReverify/{evidenceId}` | **Không** (đọc cũng không) | Chỉ `createUploadSession` ghi; trigger `reverifyEvidence` đọc |
+| Nhật ký xóa tài khoản (V1-14) | `accountDeletions/{uid}` (cấp gốc, id = uid) | **Không** (đọc cũng không) | `uid`, `shopIds`, `leftShopIds`, `requestedAt`, `purgeAfter`, `status` (`requested` → `pending_purge`/`completed` → `purged`), `reason`, `channel`, `counts`, `purgedShopIds`, `lastSkipReason`; không email/tên/mã đơn. Bản ghi duy nhất còn lại sau purge (R-1) |
 
 "Chưa có Rules" nghĩa là **bị từ chối mặc định** cho tới khi tính năng tương ứng được làm cùng Rules + test; không mở trước.
 
@@ -232,6 +234,7 @@ Không có Function nào được viết trong khung này; bảng dưới là h�
 | Ghi nhật ký kiểm toán | Function/trigger (Firestore `onDocumentWritten`, callable) | Ghi `auditEvents` (ai, làm gì, đối tượng, kết quả, giá trị trước/sau cho trường quan trọng). **Đã viết (V1-04, chưa deploy):** `functions/src/audit.ts` cho `orders`, `lines`, `packages`, `sessions`, `evidence`, `returns`; id sự kiện cố định theo (đường dẫn, `updateTime`); chỉ giá trị trường không nhạy cảm (decisions.md Q-29 / V1-04) | Client không được tự ghi/sửa | #7 |
 | URL đọc có thời hạn | Function (callable) | Kiểm tra quyền → signed URL ngắn hạn + audit "đã xem" | URL không hết hạn vi phạm bảo mật | #8 |
 | Thời gian máy chủ | Firestore `serverTimestamp()` / `request.time` | Rules ép bằng nhau | Giờ thiết bị có thể sai/bị đổi | docs/06 |
+| **Xóa tài khoản** (V1-14, đã viết, chưa deploy) | Callable `deleteAccount` + lịch `purgeDeletedShops` (hằng ngày) + script hỗ trợ `admin/delete-account-cli.ts` (`functions/src/account.ts`) | `deleteAccount`: `auth_time` ≤ 5 phút; một transaction khóa shop chủ sở hữu (`deleting`, `purgeAfter` = +30 ngày, giữ hạn cũ khi gọi lại), gỡ thành viên, xóa `userShops`, ghi `accountDeletions/{uid}`; rồi xóa người dùng Auth. Shop còn thành viên khác đang hoạt động: từ chối (`shop_has_members`). Purge: shop `deleting` quá hạn và không `legalHold` → Storage `shops/{id}/` theo trang → `recursiveDelete` mọi collection con (gồm `auditEvents`, `evidenceReverify`) → tài liệu shop SAU CÙNG (bị ngắt thì lần sau tìm lại); idempotent, dừng sớm trước giới hạn 540 giây. Trigger kiểm toán bỏ qua sự kiện xóa nên không hồi sinh dữ liệu. Xóa Auth lỗi sau bước 1: bản ghi `requested`, lịch hằng ngày gọi lại sau 1 giờ; `purged` chỉ khi đã có `authDeletedAt` | Xóa người khác/xóa bằng chứng bị giữ; client không có quyền xóa | #7, #8, #9 |
 | Dọn theo hạn lưu | Function (lịch) | Tính hạn từ chính sách; **bỏ qua bằng chứng có `retention.hold`**; xóa có audit; xử lý bản sao lưu theo chính sách | Không để client xóa/giữ | #9 |
 | Cờ giữ do tranh chấp | Trigger trên `disputes` | Đặt/gỡ `retention.hold.disputeIds` | Giữ phải nhất quán, không dựa vào client | #9 |
 | Xuất bộ hồ sơ | Function (callable/task) | Gom tệp + manifest (liệt kê tệp thiếu/lỗi, trạng thái) | Cần đọc Storage và ghi audit; chờ O-08 | #7 |
@@ -364,6 +367,7 @@ Ngày kiểm tra: **2026-10-26**. "Cập nhật" = thời điểm xuất bản g
 - **Ghi Firestore**: tài liệu bằng chứng tạo một lần, cập nhật chỉ khi cần cho thiết bị khác thấy; tiến độ tải (phần trăm) không ghi lên Firestore.
 - **Storage/băng thông video**: nén là *bản dẫn xuất*, không thay bản gốc (bất biến #4); lưu bản gốc là chi phí chính → gắn với hạn mức theo gói (O-06). Đo chi phí/ngày từ giai đoạn beta (docs/08 điều kiện phát hành "Vận hành").
 - **Functions**: băm theo luồng tốn CPU/thời gian theo kích thước tệp (S5). Tệp vượt trần theo loại (ảnh 25 MB, video 2 GB; V1-04) không được băm.
+- **Xóa tài khoản (V1-14):** Rules thêm một `get()` tài liệu shop vào mỗi yêu cầu client (kiểm `status != 'deleting'`; cùng tài liệu trong một yêu cầu chỉ tính một lần). Purge một shop: mỗi tài liệu = 1 lần xóa Firestore + 1 lần gọi trigger kiểm toán (thoát ngay, không ghi), mỗi đối tượng Storage = 1 lần xóa (thao tác lớp A/B miễn phí hoặc rất rẻ); một lần duy nhất cho mỗi tài khoản. Hàm lịch chạy mỗi ngày một truy vấn `shops where purgeAfter <= now` (chỉ mục một trường tự động). Bucket có Object Versioning: chi phí lưu phiên bản cũ đến khi quy tắc vòng đời xóa.
 - **Trigger kiểm toán (V1-04):** mỗi lần client/máy chủ ghi một tài liệu được theo dõi = 1 lần gọi Function + 1 lần ghi `auditEvents` (+ không đọc thêm). Ước tính một đơn một kiện một video quay xong và tải lên: tạo đơn (1) + dòng (n) + kiện (1) + phiên tạo (1) + đổi trạng thái phiên (1) + khai báo bằng chứng (1) + `uploaded` (1) + `verified` (1) ≈ **7 + n** sự kiện, cộng 2 sự kiện sẵn có của `createUploadSession`/`verifyEvidence`. Với 1 000 đơn/ngày, 2 dòng/đơn: ~9 000 lần gọi + ~11 000 lần ghi/ngày (~270 000 lần gọi, ~330 000 lần ghi/tháng); theo bảng giá công khai hiện hành ở mức vài USD/tháng, chủ yếu dưới hạn mức miễn phí của Functions. Số này phải đo lại ở beta; không đọc lại tài liệu trong trigger.
 
 ## 14. Hệ quả cần ghi vào docs nghiệp vụ
