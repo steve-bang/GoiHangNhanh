@@ -1,21 +1,23 @@
 import { AppError } from '@/core/errors/app-error';
-import type { OrderSource } from '@/core/orders/order-source';
+import { fromRemoteSources, toRemoteSources } from '@/core/orders/remote-source';
 
 import type {
   AccountSignInMethod,
   ApiClient,
   AuthApi,
   CreatedShop,
+  CreateShopInput,
   SessionApi,
   SessionIdentity,
   SessionState,
   ShopApi,
   ShopDetails,
+  UpdateShopInput,
 } from '../contract';
 
 import { guard, NO_CURRENT_USER, type ErrorOverrides } from './error-map';
 import type { FirebaseServices } from './client';
-import { createFirebaseOps, type FirebaseOps } from './ops';
+import { createFirebaseOps, type FirebaseOps, type RemoteShopResult } from './ops';
 
 /** Nhà cung cấp Auth -> cách đăng nhập. Nhà cung cấp lạ/không có thì `null` (không đoán, O-15). */
 function signInMethodOf(providerIds: readonly string[]): AccountSignInMethod | null {
@@ -23,6 +25,23 @@ function signInMethodOf(providerIds: readonly string[]): AccountSignInMethod | n
   if (providerIds.includes('apple.com')) return 'apple';
   if (providerIds.includes('google.com')) return 'google';
   return null;
+}
+
+/**
+ * Ranh giới nguồn bán của callable shop (Q-29 / fix-other-source): app `other` -> máy chủ
+ * `other_unknown` khi gửi, ngược lại khi nhận. Function luôn trả giá trị hợp lệ; giá trị lạ (nếu có) bị
+ * bỏ khỏi KẾT QUẢ hiển thị, không ghi lại lên máy chủ từ đây.
+ */
+function toShopRequest(input: CreateShopInput | UpdateShopInput) {
+  return { ...input, sellingSources: toRemoteSources(input.sellingSources) };
+}
+
+function fromShopResult(result: RemoteShopResult): CreatedShop {
+  return {
+    id: result.id,
+    name: result.name,
+    sellingSources: fromRemoteSources(result.sellingSources),
+  };
 }
 
 const unavailable = () => Promise.reject(new AppError('AUTH_SERVICE_UNAVAILABLE'));
@@ -142,8 +161,10 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
   };
 
   const shop: ShopApi = {
-    createShop: (input) => guard(() => ops.callShop('createShop', input)),
-    updateShop: (input) => guard(() => ops.callShop('updateShop', input)),
+    createShop: (input) =>
+      guard(async () => fromShopResult(await ops.callShop('createShop', toShopRequest(input)))),
+    updateShop: (input) =>
+      guard(async () => fromShopResult(await ops.callShop('updateShop', toShopRequest(input)))),
     getShop: (shopId) =>
       guard(async () => {
         const user = await ops.restoreUser();
@@ -168,13 +189,9 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
         if (!details.canEdit) throw new AppError('SHOP_PERMISSION_DENIED');
         const stored = await ops.readShopSellingSources(shopId);
         if (stored === null) throw new AppError('SHOP_SAVE_FAILED');
-        // Gửi lại NGUYÊN giá trị máy chủ đã lưu (giá trị của Function, có thể khác tên ở app); Function
-        // tự kiểm tra lại. Không lọc/đổi ở đây để không làm mất nguồn bán.
-        const saved = await ops.callShop('updateShop', {
-          shopId,
-          name,
-          sellingSources: stored as readonly OrderSource[],
-        });
+        // Gửi lại NGUYÊN giá trị máy chủ đã lưu (đã là từ vựng máy chủ, ví dụ `other_unknown`): KHÔNG đi
+        // qua ánh xạ app -> máy chủ, không lọc, để không làm mất hay đổi nguồn bán. Function tự kiểm lại.
+        const saved = await ops.callShop('updateShop', { shopId, name, sellingSources: stored });
         return { ...details, name: saved.name };
       }, RENAME_SHOP_ERRORS),
   };

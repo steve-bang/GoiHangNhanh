@@ -44,6 +44,15 @@ describe('orderWrites', () => {
       trackingCodeNormalized: expect.any(String),
     });
   });
+
+  it('nguồn "Khác" ghi theo từ vựng máy chủ other_unknown; nguồn sàn giữ nguyên', () => {
+    expect(orderWrites(makeOrder('K', { source: 'other' }), 'u', values)[0]?.data).toMatchObject({
+      source: 'other_unknown',
+    });
+    expect(orderWrites(makeOrder('S', { source: 'shopee' }), 'u', values)[0]?.data).toMatchObject({
+      source: 'shopee',
+    });
+  });
 });
 
 describe('sessionWrite', () => {
@@ -65,6 +74,23 @@ describe('sessionWrite', () => {
       startedAtServer: 'SERVER_TS',
       appVersion: '1.0.0',
       orderSnapshot: { orderCode: 'S', lines: [{ name: 'Áo', variant: 'Đen', quantity: 1 }] },
+    });
+  });
+});
+
+describe('sessionWrite nguồn bán', () => {
+  it('ảnh chụp đơn của phiên cũng dùng từ vựng máy chủ cho "Khác"', () => {
+    const details = makeOrder('K', { source: 'other' });
+    const pkg = details.packages[0];
+    if (!pkg) throw new Error('fixture');
+    const built = buildPackingSession(details, pkg.id, {
+      sessionId: 'sess-2' as SessionId,
+      nowDevice: 1,
+    });
+    if (!built.ok) throw new Error('fixture');
+    expect(built.session.snapshot.source).toBe('other');
+    expect(sessionWrite(built.session, 'u', values).data).toMatchObject({
+      orderSnapshot: { source: 'other_unknown' },
     });
   });
 });

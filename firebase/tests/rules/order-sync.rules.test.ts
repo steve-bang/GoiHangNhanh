@@ -5,6 +5,9 @@ import {
 } from '@firebase/rules-unit-testing';
 import { doc, serverTimestamp, setDoc, Timestamp, updateDoc, writeBatch } from 'firebase/firestore';
 
+import { ORDER_SOURCES } from '@/core/orders/order-source';
+import { toRemoteSource } from '@/core/orders/remote-source';
+
 import { makeOrderFixture } from './order-sync.fixture';
 import { createTestEnv, SHOP_A, SHOP_B, seed, USERS } from './helpers';
 import {
@@ -42,6 +45,31 @@ describe('đăng đơn và phiên đúng hình dạng Rules yêu cầu', () => {
       batch.set(doc(db, w.path), w.data);
     }
     await assertSucceeds(batch.commit());
+  });
+
+  // Mọi nguồn bán của app phải đăng được qua ánh xạ thật: thêm nguồn mới mà quên Rules thì test này báo.
+  it.each(ORDER_SOURCES)(
+    'đơn nguồn %s đăng được qua ánh xạ thật, phiên đăng tiếp được',
+    async (source) => {
+      const { details, session } = makeOrderFixture(SHOP_A, `sync-order-src-${source}`, source);
+      expect(details.order.source).toBe(source);
+      const db = as(USERS.packerA);
+      const batch = writeBatch(db);
+      const writes = orderWrites(details, USERS.packerA, values);
+      expect(writes[0]?.data.source).toBe(toRemoteSource(source));
+      for (const w of writes) batch.set(doc(db, w.path), w.data);
+      await assertSucceeds(batch.commit());
+      const write = sessionWrite(session, USERS.packerA, values);
+      await assertSucceeds(setDoc(doc(db, write.path), write.data));
+    },
+  );
+
+  it('giá trị `other` của app gửi thẳng (bỏ qua ánh xạ) vẫn bị Rules từ chối', async () => {
+    const { details } = makeOrderFixture(SHOP_A, 'sync-order-raw', 'other');
+    const db = as(USERS.packerA);
+    const [orderDoc] = orderWrites(details, USERS.packerA, values);
+    if (!orderDoc) throw new Error('fixture');
+    await assertFails(setDoc(doc(db, orderDoc.path), { ...orderDoc.data, source: 'other' }));
   });
 
   it('createdBy khác uid đang đăng nhập bị từ chối (đơn, kiện, phiên): không đăng thay người khác', async () => {
