@@ -46,7 +46,7 @@ Ma trận tối thiểu: 1 iPhone đời cũ ở sàn D-2 + 1 iPhone mới; 1 An
 - [ ] **G-4. Quay:** máy tự khóa trong 10 phút quay (keep-awake); cuộc gọi đến; chuyển app; kéo thông báo; hết bộ nhớ; kill app khi đang quay (phiên `interrupted`/tệp `unrecoverable`, không tự nhận đầy đủ) và khi đang lưu; nhiều video liên tiếp; nhiệt độ/pin sau 30 phút.
 - [ ] **G-5. Băm:** đo MB/giây băm tệp 100 MB và 1 GB (iOS + Android), thời gian giao diện bị đứng; quyết R-5.
 - [ ] **G-6. Xem lại:** phát video 10 phút từ UI-E04, tua, xoay máy; ảnh hàng hoàn; tệp đã bị xóa khỏi máy.
-- [ ] **G-7. Sao lưu:** iOS Cài đặt > iCloud > Sao lưu: dung lượng của app không tăng theo video; Android `adb shell bmgr` không sao lưu dữ liệu app.
+- [ ] **G-7. Sao lưu:** iOS Cài đặt > iCloud > Sao lưu: dung lượng của app không tăng theo video; Android `adb shell bmgr` không sao lưu dữ liệu app. iOS cần bản build có module cục bộ `modules/backup-exclusion` (V1-12; Expo Go không có): log không có `backup_exclusion.not_applied`. **Nếu build EAS iOS hỏng vì module này:** xóa thư mục `modules/backup-exclusion` (JS tự thành no-op, không cần sửa mã khác), build lại, và ghi rủi ro "video và CSDL có thể vào iCloud Backup trên iOS" vào chính sách quyền riêng tư (C-2) và `docs/06` trước khi phát hành.
 - [ ] **G-8. Xóa tài khoản:** điều kiện chặn (đang quay, tranh chấp mở), cảnh báo tệp chưa tải, sai mật khẩu, mất mạng (không xóa gì), thành công (về Chào mừng, dữ liệu cục bộ mất, đăng nhập lại báo sai thông tin, Firestore shop ở `deleting`).
 - [ ] **G-9. Crashlytics:** gây lỗi thử ở bản staging, thấy báo cáo trong Console, **không** chứa mã đơn/mã vận đơn/email; tắt công tắc thì không gửi.
 - [ ] **G-10. Truy cập chéo shop** (QA-11) bằng hai tài khoản thật trên dự án dev.
