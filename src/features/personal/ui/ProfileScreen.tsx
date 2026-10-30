@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
 import { getAppVersion, useAppNavigation, useIsOffline } from '@/platform';
-import { ConfirmDialog, ListGroup, ListItem, Screen, Text, useTheme } from '@/shared/ui';
+import { ListGroup, ListItem, Screen, Text, useTheme } from '@/shared/ui';
 
 import { planMenuItem, visibleMenuItems } from './account-menu';
 import { MenuRow } from './MenuRow';
@@ -27,6 +27,7 @@ import {
 } from './ProfileSkeletons';
 import { ProfileSummaryCard } from './ProfileSummaryCard';
 import { useSession } from './SessionProvider';
+import { SignOutDialogs } from './SignOutDialogs';
 import { useSignOut } from './use-sign-out';
 import { RegionError } from './RegionParts';
 import { useRegion } from './use-region';
@@ -210,42 +211,7 @@ export function ProfileScreen() {
       </View>
 
       {/* PER-21, board 07 khung 4a/4b/4c: ba hộp thoại giữa màn có icon. UI-J15 (còn tệp chưa đồng bộ) chưa có mã/route nên là hộp thoại tại chỗ (Q-20b). */}
-      <ConfirmDialog
-        visible={signOut.step === 'confirm'}
-        destructive
-        confirmOutlined
-        icon="sign-out"
-        title={t('personal:signOut.dialogTitle')}
-        message={t('personal:signOut.dialogMessage')}
-        detail={t('personal:signOut.dataNote')}
-        confirmLabel={t('personal:signOut.confirm')}
-        cancelLabel={t('personal:signOut.cancel')}
-        onCancel={signOut.dismiss}
-        onConfirm={() => void signOut.confirm()}
-      />
-      <ConfirmDialog
-        visible={signOut.step === 'blocked_recording'}
-        hideConfirm
-        icon="camera"
-        title={t('personal:signOut.recordingTitle')}
-        message={t('personal:signOut.recordingMessage')}
-        messageTestID="sign-out-recording"
-        cancelLabel={t('personal:signOut.cancel')}
-        onCancel={signOut.dismiss}
-      />
-      <ConfirmDialog
-        visible={signOut.step === 'unsynced'}
-        icon="alert-triangle"
-        iconTone="warning"
-        title={t('personal:signOut.unsyncedTitle')}
-        message={t('personal:signOut.unsyncedMessage', { count: signOut.unsyncedCount })}
-        messageTestID="sign-out-unsynced"
-        confirmLabel={t('personal:signOut.openSync')}
-        confirmTestID="sign-out-open-sync"
-        cancelLabel={t('personal:signOut.cancel')}
-        onConfirm={signOut.openSyncCenter}
-        onCancel={signOut.dismiss}
-      />
+      <SignOutDialogs signOut={signOut} />
     </Screen>
   );
 }

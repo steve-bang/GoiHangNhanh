@@ -1,3 +1,4 @@
+import React from 'react';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
@@ -8,8 +9,10 @@ import { renderWithProviders } from '@/test-utils/render';
 
 import { createFakePersonalGateways } from '../data/fake-personal-gateways';
 import type { SessionIdentity } from '../domain/types';
+import { useCurrentShopId } from '@/features/orders';
+
 import { SessionGate } from './SessionGate';
-import { SessionHydrator } from './SessionHydrator';
+import { HYDRATE_TIMEOUT_MS, SessionHydrator } from './SessionHydrator';
 import { useSession } from './SessionProvider';
 
 jest.mock(
@@ -28,24 +31,42 @@ const WITH_SHOP: SessionIdentity = {
 };
 
 function SignOutProbe() {
-  const { signOut } = useSession();
-  return <Text testID="probe-out" onPress={() => void signOut()} />;
+  const { signOut, changeShop } = useSession();
+  return (
+    <>
+      <Text testID="probe-out" onPress={() => void signOut()} />
+      <Text testID="probe-shop-b" onPress={() => changeShop('shop-b')} />
+    </>
+  );
 }
+
+function ShopProbe({ testID }: { testID: string }) {
+  return <Text testID={testID}>{useCurrentShopId()}</Text>;
+}
+
+const mockSignOutGateway = jest.fn(async () => undefined);
+beforeEach(() => mockSignOutGateway.mockClear());
 
 async function setup(
   identity: jest.Mock,
-  { strict = true, latch = false }: { strict?: boolean; latch?: boolean } = {},
+  {
+    strict = true,
+    latch = false,
+    extra = null,
+  }: { strict?: boolean; latch?: boolean; extra?: React.ReactNode } = {},
 ) {
   const gateways = createFakePersonalGateways({ latencyMs: 0 });
   gateways.account.getSessionIdentity = identity as never;
-  gateways.account.signOut = async () => undefined;
+  gateways.account.signOut = mockSignOutGateway;
   await renderWithProviders(
     <>
       <SessionHydrator />
       <SignOutProbe />
       <SessionGate latch={latch}>
         <Text testID="business-screen">màn nghiệp vụ</Text>
+        <ShopProbe testID="gate-shop" />
       </SessionGate>
+      {extra}
     </>,
     { personalGateways: gateways, requireKnownShop: strict },
   );
@@ -120,6 +141,93 @@ describe('SessionGate (V1-06): chế độ chặt (bản Firebase)', () => {
     await setup(jest.fn().mockResolvedValue(null), { latch: true });
     await act(async () => undefined);
     expect(screen.queryByTestId('business-screen')).toBeNull();
+    expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.welcome);
+  });
+});
+
+describe('SessionGate: màn quay (latch) giữ shop và giữ các cổng khác (review PR #49)', () => {
+  it('màn quay giữ shopId chụp lúc mở khi phiên chuyển shop; màn thường đọc shop mới', async () => {
+    await setup(jest.fn().mockResolvedValue(WITH_SHOP), {
+      extra: (
+        <SessionGate latch>
+          <ShopProbe testID="record-shop" />
+        </SessionGate>
+      ),
+    });
+    expect(await screen.findByTestId('record-shop')).toHaveTextContent('shop-a');
+    await act(async () => screen.getByTestId('probe-shop-b').props.onPress());
+    expect(screen.getByTestId('record-shop')).toHaveTextContent('shop-a');
+    expect(screen.getByTestId('gate-shop')).toHaveTextContent('shop-b');
+  });
+
+  it('đang có màn quay mở: đăng xuất KHÔNG làm cổng khác reset (gỡ màn quay); đóng màn quay thì mới về Chào mừng', async () => {
+    function Recording() {
+      const [open, setOpen] = React.useState(true);
+      return (
+        <>
+          <Text testID="close-recording" onPress={() => setOpen(false)} />
+          {open ? (
+            <SessionGate latch>
+              <Text testID="recording-screen">đang quay</Text>
+            </SessionGate>
+          ) : null}
+        </>
+      );
+    }
+    await setup(jest.fn().mockResolvedValue(WITH_SHOP), { extra: <Recording /> });
+    await screen.findByTestId('recording-screen');
+    await act(async () => screen.getByTestId('probe-out').props.onPress());
+    expect(screen.getByTestId('recording-screen')).toBeOnTheScreen();
+    // Cổng thường (màn bên dưới, ví dụ nhóm tab) giữ nội dung, không điều hướng.
+    expect(screen.getByTestId('business-screen')).toBeOnTheScreen();
+    expect(mockNavigation.reset).not.toHaveBeenCalled();
+
+    await act(async () => screen.getByTestId('close-recording').props.onPress());
+    expect(screen.queryByTestId('business-screen')).toBeNull();
+    expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.welcome);
+  });
+});
+
+describe('SessionGate: thoát khỏi trạng thái kẹt (review PR #49)', () => {
+  it('đang nạp quá HYDRATE_TIMEOUT_MS -> "Chưa kết nối được cửa hàng" có Thử lại', async () => {
+    jest.useFakeTimers();
+    try {
+      const identity = jest
+        .fn()
+        .mockImplementationOnce(() => new Promise<SessionIdentity | null>(() => undefined))
+        .mockResolvedValue(WITH_SHOP);
+      await setup(identity);
+      expect(screen.getByText('Đang nạp thông tin cửa hàng…')).toBeOnTheScreen();
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(HYDRATE_TIMEOUT_MS - 1);
+      });
+      expect(screen.queryByText('Chưa kết nối được cửa hàng.')).toBeNull();
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(1);
+      });
+      expect(screen.getByText('Chưa kết nối được cửa hàng.')).toBeOnTheScreen();
+      // Lần treo không chặn Thử lại.
+      await act(async () => {
+        await fireEvent.press(screen.getByRole('button', { name: 'Thử lại' }));
+      });
+      expect(identity).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId('business-screen')).toBeOnTheScreen();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('"Chưa kết nối được cửa hàng" có Đăng xuất theo luồng an toàn: xác nhận rồi mới đăng xuất, về Chào mừng', async () => {
+    await setup(jest.fn().mockRejectedValue(new AppError('AUTH_NETWORK_ERROR')));
+    await act(async () => undefined);
+    await fireEvent.press(screen.getByTestId('session-gate-sign-out'));
+    expect(screen.getByText('Xác nhận đăng xuất')).toBeOnTheScreen();
+    expect(mockSignOutGateway).not.toHaveBeenCalled();
+    await act(async () => {
+      const buttons = screen.getAllByRole('button', { name: 'Đăng xuất' });
+      await fireEvent.press(buttons[buttons.length - 1]!);
+    });
+    expect(mockSignOutGateway).toHaveBeenCalledTimes(1);
     expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.welcome);
   });
 });

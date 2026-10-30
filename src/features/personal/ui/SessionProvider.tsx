@@ -55,6 +55,13 @@ export interface SessionContextValue {
   registerHydrationRetry(retry: () => void): () => void;
   /** Người dùng bấm Thử lại (màn "Chưa kết nối được cửa hàng"): thử nạp danh tính ngay. */
   retryHydration(): void;
+  /**
+   * Có màn `latch` (màn quay) đang mở (V1-06, bất biến 2). Khi `true`, mọi cổng phiên khác KHÔNG điều
+   * hướng (`reset` sẽ gỡ màn quay khỏi ngăn xếp) và giữ nội dung đang hiện; xét lại khi màn quay đóng.
+   */
+  readonly gatesHeld: boolean;
+  /** Chỉ `SessionGate` có `latch` gọi khi đã mở. Trả hàm nhả. */
+  holdSessionGates(): () => void;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -76,6 +83,7 @@ export function SessionProvider({
   const [strict] = useState(() => requireKnownShop ?? requiresKnownShop());
   const [hydration, setHydration] = useState<SessionHydration>('pending');
   const hydrationRetry = useRef<(() => void) | null>(null);
+  const [holds, setHolds] = useState(0);
   const listeners = useRef(new Set<() => void>());
   const inFlight = useRef<Promise<void> | null>(null);
   const lastEpoch = useRef(state.epoch);
@@ -104,6 +112,16 @@ export function SessionProvider({
   const retryHydration = useCallback(() => {
     hydrationRetry.current?.();
   }, []);
+  const holdSessionGates = useCallback(() => {
+    setHolds((n) => n + 1);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      setHolds((n) => n - 1);
+    };
+  }, []);
+  const gatesHeld = holds > 0;
   const changeShop = useCallback((shopId: string | null) => {
     dispatch({ type: 'shop_changed', shopId });
   }, []);
@@ -148,6 +166,8 @@ export function SessionProvider({
       reportHydration,
       registerHydrationRetry,
       retryHydration,
+      gatesHeld,
+      holdSessionGates,
     }),
     [
       state,
@@ -162,6 +182,8 @@ export function SessionProvider({
       reportHydration,
       registerHydrationRetry,
       retryHydration,
+      gatesHeld,
+      holdSessionGates,
     ],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

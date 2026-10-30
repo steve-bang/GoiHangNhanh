@@ -9,6 +9,13 @@ import { useSession } from './SessionProvider';
 export const HYDRATE_MIN_RETRY_INTERVAL_MS = 10_000;
 
 /**
+ * Lần nạp danh tính chưa trả lời sau khoảng này thì báo "lỗi" để cổng phiên chuyển từ "Đang nạp" sang
+ * "Chưa kết nối được cửa hàng" (có Thử lại, Đăng xuất) thay vì quay mãi (V1-06). Kết quả đến muộn vẫn
+ * được dùng nếu là danh tính (nạp phiên); lỗi đến muộn của lần đã quá hạn bị bỏ.
+ */
+export const HYDRATE_TIMEOUT_MS = 15_000;
+
+/**
  * Nạp danh tính vào `SessionProvider` khi mở app (gắn ở gốc `AppProviders`, V1-06, để cả liên kết sâu
  * tới màn ngoài nhóm tab cũng được nạp) mà phiên trong bộ nhớ còn trống
  * (phiên được khôi phục lúc mở app: `SessionGateway.restore` của Splash chỉ trả trạng thái, không
@@ -42,6 +49,8 @@ export function SessionHydrator() {
     if (signedIn) done.current = true;
   }, [signedIn]);
   const inFlight = useRef(false);
+  const generation = useRef(0);
+  const timeoutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAttemptAt = useRef<number | null>(null);
   const mounted = useRef(true);
 
@@ -58,11 +67,23 @@ export function SessionHydrator() {
     }
     lastAttemptAt.current = now;
     inFlight.current = true;
+    const gen = (generation.current += 1);
+    const isCurrent = () => generation.current === gen;
     // Người dùng bấm Thử lại: hiện "đang nạp" thay cho thông báo lỗi cũ trong lúc chờ.
     if (force) latest.current.report('pending');
+    if (timeoutTimer.current) clearTimeout(timeoutTimer.current);
+    const timer = setTimeout(() => {
+      if (!isCurrent() || done.current || !mounted.current) return;
+      // Quá hạn: coi như lỗi, cho phép thử lại (lần cũ thành "cũ", không chặn lần mới).
+      generation.current += 1;
+      inFlight.current = false;
+      latest.current.report('failed');
+    }, HYDRATE_TIMEOUT_MS);
+    timeoutTimer.current = timer;
     void latest.current.account.getSessionIdentity().then(
       (identity) => {
-        inFlight.current = false;
+        clearTimeout(timer);
+        if (isCurrent()) inFlight.current = false;
         // Đăng nhập giữa chừng (hoặc đã rời): bỏ kết quả, không thay phiên đang hợp lệ.
         if (done.current || !mounted.current) return;
         done.current = true;
@@ -76,6 +97,9 @@ export function SessionHydrator() {
         );
       },
       () => {
+        clearTimeout(timer);
+        // Lỗi của lần đã quá hạn (đã báo "lỗi", có thể đang có lần mới): bỏ.
+        if (!isCurrent()) return;
         // Lỗi tạm thời: giữ nguyên chưa nạp, lần kích hoạt sau (foreground / có mạng / Thử lại) thử lại.
         inFlight.current = false;
         if (done.current || !mounted.current) return;
@@ -93,6 +117,7 @@ export function SessionHydrator() {
       mounted.current = false;
       unsubscribe();
       unregister();
+      if (timeoutTimer.current) clearTimeout(timeoutTimer.current);
     };
   }, [attempt, registerRetry]);
 

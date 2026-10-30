@@ -1,10 +1,11 @@
 import { join } from 'node:path';
 
+import { router } from 'expo-router';
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import { AppError } from '@/core/errors/app-error';
 import { ROUTES } from '@/core/navigation';
-import type { createFakePersonalGateways } from '@/features/personal';
+import type { createFakePersonalGateways, SessionContextValue } from '@/features/personal';
 
 // Router thật nhưng camera giả (có quyền): không có expo-camera native trong Jest.
 jest.mock(
@@ -33,6 +34,19 @@ jest.mock('@/features/personal/data/personal-gateways', () => {
         gateways.account.getSessionIdentity = () => mockIdentity();
       }
       return gateways;
+    },
+  };
+});
+
+// Lộ phiên của app cho test (đổi phiên giữa chừng như khi đăng xuất/chuyển shop).
+const mockSessionRef: { current: SessionContextValue | null } = { current: null };
+jest.mock('@/features/personal/ui/SessionShopProvider', () => {
+  const actual = jest.requireActual('@/features/personal/ui/SessionShopProvider');
+  const { useSession } = jest.requireActual('@/features/personal/ui/SessionProvider');
+  return {
+    SessionShopProvider: (props: { children: unknown }) => {
+      mockSessionRef.current = useSession();
+      return actual.SessionShopProvider(props);
     },
   };
 });
@@ -85,5 +99,44 @@ describe('cổng phiên trên router thật (chế độ chặt)', () => {
       await fireEvent.press(screen.getByRole('button', { name: 'Thử lại' }));
     });
     expect(await screen.findByTestId('screen-UI-B01')).toBeOnTheScreen();
+  });
+
+  it.each([
+    ['đăng xuất', () => void mockSessionRef.current?.signOut()],
+    ['chuyển cửa hàng', () => mockSessionRef.current?.changeShop('shop-b')],
+    ['mất cửa hàng', () => mockSessionRef.current?.changeShop(null)],
+  ])(
+    'ngăn xếp (tabs) -> record-pack: %s giữa chừng KHÔNG gỡ màn quay (bất biến 2); rời màn quay thì cổng mới xét lại',
+    async (_label, change) => {
+      mockIdentity.mockResolvedValue(WITH_SHOP);
+      await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
+      expect(await screen.findByTestId('screen-UI-B01')).toBeOnTheScreen();
+      await act(async () => {
+        router.push(ROUTES.packRecord.path);
+      });
+      expect(await screen.findByTestId('screen-UI-C03')).toBeOnTheScreen();
+
+      await act(async () => change());
+      expect(screen.getByTestId('screen-UI-C03')).toBeOnTheScreen();
+      expect(screen.queryByTestId('screen-UI-A02')).toBeNull();
+      expect(screen.queryByTestId('screen-UI-A04')).toBeNull();
+    },
+  );
+
+  it('rời màn quay sau khi đã đăng xuất giữa chừng -> cổng nhóm tab mới đưa về Chào mừng', async () => {
+    mockIdentity.mockResolvedValue(WITH_SHOP);
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.home.path });
+    await screen.findByTestId('screen-UI-B01');
+    await act(async () => {
+      router.push(ROUTES.packRecord.path);
+    });
+    await screen.findByTestId('screen-UI-C03');
+    await act(async () => {
+      await mockSessionRef.current?.signOut();
+    });
+    await act(async () => {
+      router.back();
+    });
+    expect(await screen.findByTestId('screen-UI-A02')).toBeOnTheScreen();
   });
 });
