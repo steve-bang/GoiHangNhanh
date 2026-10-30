@@ -746,3 +746,23 @@ Tài liệu: [docs/store/listing.md](../store/listing.md), [privacy-declarations
 - Báo lỗi bật sẵn (R-8) có thể vướng 5.1.1(ii) "must secure user consent": đưa vào rà pháp lý C-2 (review-notes mục 6).
 - Trang chính sách còn `operatorName`/`operatorAddress`/`supportEmail` = `null`: Google yêu cầu trang xóa tài khoản nêu tên nhà phát triển như trên trang store; điền ở D-4.
 - Không đọc được trang trợ giúp Google Play và trang công bố dữ liệu Firebase trong môi trường soạn (tên miền bị chặn): các số liệu Google và ánh xạ SDK Firebase ghi "chưa đọc trực tiếp", kiểm ở release-checklist S-8.
+
+#### Q-29 / V1-06 — session-guard
+
+Agent tự chốt theo ủy quyền (2026-10-30; chưa có xác nhận trực tiếp của người dùng). Kế hoạch: [plans/v1-06-session-guard.md](plans/v1-06-session-guard.md); cách gắn: [layout.md mục 2.4a](layout.md#24a-cổng-phiên-route-guard-v1-06).
+
+| # | Chốt | Lý do |
+|---|---|---|
+| a | Chỉ chặn ở **chế độ chặt** = `resolveBackendMode` khác `fake` (bản Firebase và "chưa kết nối"); cổng giả giữ hành vi cũ | Kế hoạch V1-06: dev/test/bản web không đổi; một quy tắc chọn backend duy nhất |
+| b | Chặn bằng **cổng ở route** (`withSessionGate`, nhóm tab + từng route nghiệp vụ ngoài tab), không thêm `_layout.tsx` mới cho `returns/`, `disputes/`, `sync/` | Thêm layout lồng đổi cấu trúc Stack (chuyển cảnh, Back); bọc từng route không đổi điều hướng |
+| c | Phân biệt "đang nạp" / "nạp lỗi" / "đã xác nhận chưa đăng nhập" bằng `hydration` riêng trong `SessionProvider`, không suy từ `status` | Phiên luôn bắt đầu `signed_out`; suy từ `status` sẽ đá người dùng đã đăng nhập về Chào mừng mỗi lần mở app |
+| d | `SessionHydrator` chuyển lên gốc (`AppProviders`) | Liên kết sâu tới màn ngoài nhóm tab (`/quick-order`…) trước đây không bao giờ được nạp phiên. Hệ quả: hydrator chạy cả khi đang ở Chào mừng (thêm một lần đọc đệm `userShops`); kết quả đến muộn chỉ ghi phiên, không điều hướng khỏi Chào mừng |
+| e | Offline lần đầu chưa có đệm `userShops`: **không vào màn nghiệp vụ, không tạo đơn/phiên/hồ sơ hoàn**; hiện "Chưa kết nối được cửa hàng." + Thử lại (gọi lại ngay, bỏ giãn cách 10 giây, không chạy chồng). Không có lối đăng xuất ở màn này | Bất biến 8 + bản ghi `LOCAL_SHOP_ID` không bao giờ được đăng; đánh đổi đã nêu ở kế hoạch V1-06. Đăng xuất cần kiểm tra dữ liệu trên máy (PER-21), để ở tab Cá nhân |
+| f | Đã đăng nhập, chưa có cửa hàng -> `reset` Tạo cửa hàng; chưa đăng nhập -> `reset` Chào mừng (giống `resolveLaunchRoute` của Splash) | Không đổi màn đã khách xác nhận; dùng đúng đích Splash đang dùng |
+| g | **Màn quay `latch`**: `record-pack`, `record-return` chỉ chặn trước khi mở; đã mở thì giữ dù phiên đổi | Bất biến 2: phiên/kiện được tạo dưới shop đã biết TRƯỚC khi quay; guard không bao giờ cắt ngang màn quay (đăng xuất/chuyển shop vốn đã chặn khi đang quay) |
+| h | Lớp thứ hai ở chỗ ghi: `useWritableShopId()` trả `null` khi chặt và chưa biết shop; Tạo đơn nhanh, bắt đầu quay (`useStartPacking`, trước `saveSession`), tạo hồ sơ hoàn không ghi. Báo bằng mã **đã có** `ORDER_SAVE_FAILED` / `RETURN_SAVE_FAILED` ("chưa lưu được", đúng vì không có gì được ghi). `useCurrentShopId()` (đọc) giữ nguyên | Phòng khi một route mới quên bọc cổng; không thêm mã vào `codes.ts` khi chưa có BA |
+| i | **Dữ liệu cũ ở `LOCAL_SHOP_ID`: giữ nguyên, không gán lại, không xóa, không migration** (đóng Q-20p cho v1). Ở bản Firebase chúng không hiện (mọi truy vấn theo shop thật) và không bao giờ được đăng | Phương án gán lại vào shop thật khi đã biết (có lịch sử, chỉ bản ghi do chính uid tạo) bị loại: bản ghi tạo trước PR1 có `created_by` rỗng nên không chứng minh được chủ, và `local-shop` cũng là ID shop của cổng giả trên máy dev; gán nhầm vi phạm bất biến 5 và 8. Hôm nay chỉ máy dev có dữ liệu này (chưa phát hành) |
+
+**Rủi ro đã biết (không sửa ở PR này):** (1) Splash khi `restore()` lỗi/quá 3 giây vẫn về Chào mừng như cũ, kể cả khi tài khoản Auth còn trên máy; người dùng đăng nhập lại khi có mạng. (2) Tệp bằng chứng chưa đồng bộ dưới `local-shop` trên máy dev làm `countUnsyncedOnDevice` (toàn thiết bị) > 0 nên chặn đăng xuất mãi: chỉ máy dev; cách gỡ là cài lại app dev. (3) Nếu `identity()` lỗi vĩnh viễn không do mạng (ví dụ tài khoản Auth không có email), người dùng kẹt ở "Chưa kết nối được cửa hàng"; không xảy ra với email/mật khẩu.
+
+**Đề xuất cho BA (chưa thêm vào `codes.ts`):** mã `SHOP_NOT_READY` cho lớp phòng thủ thứ hai (thay `ORDER_SAVE_FAILED`/`RETURN_SAVE_FAILED`); câu chữ màn cổng: "Đang nạp thông tin cửa hàng…", "Chưa kết nối được cửa hàng.", "Bạn kiểm tra mạng rồi thử lại nhé. Dữ liệu trên máy vẫn được giữ."

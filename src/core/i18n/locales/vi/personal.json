@@ -74,6 +74,12 @@
     "unsyncedMessage": "Còn {{count}} tệp bằng chứng trên máy chưa được máy chủ xác nhận. Hãy đồng bộ xong rồi đăng xuất.",
     "openSync": "Xem trung tâm đồng bộ"
   },
+  "sessionGate": {
+    "title": "Đơn Chứng",
+    "loading": "Đang nạp thông tin cửa hàng…",
+    "unreachableTitle": "Chưa kết nối được cửa hàng.",
+    "unreachableHint": "Bạn kiểm tra mạng rồi thử lại nhé. Dữ liệu trên máy vẫn được giữ."
+  },
   "editProfile": {
     "save": "Lưu",
     "saved": "Đã lưu họ tên.",

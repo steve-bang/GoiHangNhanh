@@ -1,1 +1,4 @@
-export { QuickOrderScreen as default } from '@/features/orders';
+import { QuickOrderScreen } from '@/features/orders';
+import { withSessionGate } from '@/features/personal';
+
+export default withSessionGate(QuickOrderScreen);

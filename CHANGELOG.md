@@ -16,6 +16,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 ### Security
 
 - Bản production luôn dùng Firebase thật: build dừng nếu mang cờ cổng giả hoặc Firebase Emulator, app bỏ qua các cờ đó lúc chạy; mã app không còn `.dev`; Android không đưa dữ liệu vào sao lưu tự động và bỏ các quyền không dùng (micro, hiển thị trên ứng dụng khác, bộ nhớ ngoài). Chưa chạy build EAS thật (V1-01, #43).
+- Bản Firebase không mở màn nghiệp vụ khi chưa đăng nhập hoặc chưa có cửa hàng (kể cả mở bằng liên kết sâu) và không tạo đơn, phiên quay, hồ sơ hàng hoàn khi chưa nạp được cửa hàng thật; offline lần đầu hiện "Chưa kết nối được cửa hàng" kèm Thử lại; màn đang quay không bị cắt ngang. Chưa kiểm chứng trên thiết bị (V1-06).
 
 ### Đã có trước khi mở nhật ký (đến commit `42f6a3c`, gom từ PR #13–#39)
 

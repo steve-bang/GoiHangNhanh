@@ -31,7 +31,7 @@ import {
 } from '@/shared/ui';
 import { layout } from '@/core/theme';
 
-import { useCurrentShopId, useOrderStore } from '../data';
+import { useCurrentShopId, useOrderStore, useWritableShopId } from '../data';
 import {
   buildOrder,
   classifyMatches,
@@ -98,6 +98,7 @@ export function QuickOrderScreen() {
   const params = useRouteParams();
   const store = useOrderStore();
   const shopId = useCurrentShopId();
+  const writableShopId = useWritableShopId();
   const touch = getMinTouchTarget();
 
   const [initialCode] = useState(() => params.code ?? '');
@@ -118,11 +119,12 @@ export function QuickOrderScreen() {
   const savingRef = useRef(false);
   const match = useOrderLookup();
 
-  // Shop MỚI NHẤT của phiên, đọc lúc bấm Tạo (không dùng giá trị lúc mở form).
-  const shopIdRef = useRef(shopId);
+  // Shop MỚI NHẤT của phiên, đọc lúc bấm Tạo (không dùng giá trị lúc mở form). `null` = bản Firebase
+  // chưa biết shop thật: không lưu (V1-06; cổng phiên đã chặn màn, đây là lớp phòng thủ thứ hai).
+  const shopIdRef = useRef(writableShopId);
   useEffect(() => {
-    shopIdRef.current = shopId;
-  }, [shopId]);
+    shopIdRef.current = writableShopId;
+  }, [writableShopId]);
   // ID sinh MỘT lần cho cả lần tạo này (thử lại dùng lại đúng các ID này).
   // Bộ ID của lần tạo này; chỉ đọc/ghi trong handler (không trong render). Xoay bộ mới khi nội dung
   // đổi sau một lần lưu đã xong (xem `createOrder`) để không ghi đè đơn đã lưu.
@@ -222,6 +224,10 @@ export function QuickOrderScreen() {
     setSaveError(null);
     try {
       const shop = shopIdRef.current; // shop tại thời điểm bấm
+      if (!shop) {
+        setSaveError('ORDER_SAVE_FAILED');
+        return;
+      }
       let built = buildOrder(draft, { shopId: shop, ids: makeIds(), nowDevice: Date.now() });
       if (!built.ok) {
         setFieldError(built.error);

@@ -506,3 +506,36 @@ describe('UI-B04 Tạo đơn nhanh (ORD-05) và Xác nhận (ORD-06)', () => {
     });
   });
 });
+
+describe('UI-B04 ở bản Firebase khi phiên chưa biết cửa hàng (V1-06, lớp phòng thủ thứ hai)', () => {
+  it('bấm Tạo đơn hàng: KHÔNG ghi đơn dưới shop tạm, báo chưa tạo được, không điều hướng', async () => {
+    const store = createMemoryOrderStore();
+    const save = jest.spyOn(store, 'saveNewOrder');
+    // Chế độ chặt, không có phiên (cổng phiên lẽ ra đã chặn màn; ở đây render thẳng để thử lớp thứ hai).
+    await renderWithProviders(<QuickOrderScreen />, { orderStore: store, requireKnownShop: true });
+    await typeCode('DH-V106');
+    await fireEvent.press(screen.getByTestId('quick-continue'));
+    await fireEvent.press(screen.getByTestId('quick-create'));
+    expect(await screen.findByTestId('save-error')).toBeOnTheScreen();
+    expect(save).not.toHaveBeenCalled();
+    expect(await store.countOrders(LOCAL_SHOP_ID, {})).toBe(0);
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+  });
+
+  it('cùng chế độ chặt nhưng phiên đã biết shop: lưu bình thường dưới shop đó', async () => {
+    const store = createMemoryOrderStore();
+    const shop = 'shop-real' as ShopId;
+    await renderWithProviders(
+      <CurrentShopProvider shopId={shop} strict>
+        <QuickOrderScreen />
+      </CurrentShopProvider>,
+      { orderStore: store, requireKnownShop: true },
+    );
+    await typeCode('DH-V106');
+    await fireEvent.press(screen.getByTestId('quick-continue'));
+    await fireEvent.press(screen.getByTestId('quick-create'));
+    await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+    expect(await store.countOrders(shop, {})).toBe(1);
+    expect(await store.countOrders(LOCAL_SHOP_ID, {})).toBe(0);
+  });
+});
