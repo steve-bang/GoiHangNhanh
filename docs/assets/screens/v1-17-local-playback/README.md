@@ -8,7 +8,7 @@ Chụp bằng `node scripts/screens/capture.cjs --source <nhánh nháp> --port 5
 
 Web dùng kho bộ nhớ rỗng và không có hệ tệp của app, nên để có dữ liệu:
 
-1. `src/features/orders/data/shots-seed.ts` (tạm): đơn mẫu `DH-10239` (ID `order-shots`, Kiện 1, phiên "Đã kết thúc") và bốn tệp mẫu: video `queued` (có tệp), ảnh `verified` (có tệp), video `queued` nhưng tệp đã mất, video `saving_local`. Kho đơn/kho tệp bộ nhớ được bọc để trả các bản ghi này cho shop hiện tại.
+1. `src/features/orders/data/shots-seed.ts` (tạm): đơn mẫu `DH-10239` (ID `order-shots`, Kiện 1, phiên "Đã kết thúc") và bốn tệp mẫu: video `queued` (có tệp), ảnh `verified` (có tệp), video `queued` nhưng tệp đã mất, video `verified` nhưng tệp đã mất, video `saving_local`. Kho đơn/kho tệp bộ nhớ được bọc để trả các bản ghi này cho shop hiện tại.
 2. `src/platform/recording-files.ts` (tạm): đường dẫn `evidence/demo*` coi là còn trên máy và trỏ tới `/shots/...`.
 3. `public/shots/demo.webm`, `demo.jpg` (tạm): hình mẫu sinh bằng `ffmpeg testsrc2` (không phải video thật; webm vì Chromium của Playwright không có H.264).
 
@@ -20,7 +20,7 @@ Số liệu (182,4 MB, 2:34, mã băm) là dữ liệu mẫu, không phải đo 
 
 ![UI-E03 có lối vào](01-UI-E03-entry-390x844.png)
 
-### UI-E04 video còn trên máy: trình phát + nhãn "Đã lưu trên máy" (thông tin tệp nằm dưới, cuộn xuống; bố cục giống ảnh 04)
+### UI-E04 video còn trên máy: trình phát + nhãn "Đã lưu trên máy" và câu theo loại tệp ("Video đã lưu trên máy này…"; ảnh: "Ảnh đã lưu…", có trong test) (thông tin tệp nằm dưới, cuộn xuống; bố cục giống ảnh 04)
 
 ![UI-E04 video](02-UI-E04-video-390x844.png)
 
@@ -28,9 +28,13 @@ Số liệu (182,4 MB, 2:34, mã băm) là dữ liệu mẫu, không phải đo 
 
 ![UI-E04 ảnh](03-UI-E04-photo-verified-390x844.png)
 
-### UI-E04 tệp không còn trên máy: nói thẳng, không hứa xem từ máy chủ; thông tin tệp, liên kết đơn/kiện/phiên, mã băm rút gọn và câu giới hạn của mã băm
+### UI-E04 tệp không còn trên máy, máy chủ chưa có bản (`queued`): nói bằng chứng đã mất, ẩn nhãn trạng thái (không "Đã lưu trên máy"), giữ thông tin tệp, liên kết đơn/kiện/phiên, mã băm rút gọn và câu giới hạn của mã băm (sửa sau review PR #54)
 
-![UI-E04 tệp mất](04-UI-E04-missing-390x844.png)
+![UI-E04 tệp mất, chưa lên máy chủ](04-UI-E04-missing-lost-390x844.png)
+
+### UI-E04 tệp không còn trên máy nhưng máy chủ đã xác minh: giữ nhãn và câu của máy chủ, nói app chưa xem được từ máy chủ
+
+![UI-E04 tệp mất, máy chủ đã xác minh](04b-UI-E04-missing-server-verified-390x844.png)
 
 ### UI-E04 tệp đang lưu: không mở tệp chưa đóng
 
