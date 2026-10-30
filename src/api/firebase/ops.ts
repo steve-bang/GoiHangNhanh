@@ -1,10 +1,14 @@
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
   setLanguageCode,
   signInWithEmailAndPassword,
   signOut,
+  updatePassword,
+  updateProfile,
 } from '@react-native-firebase/auth';
 import { doc, getDoc, getDocFromCache } from '@react-native-firebase/firestore';
 import { httpsCallable } from '@react-native-firebase/functions';
@@ -12,6 +16,7 @@ import { httpsCallable } from '@react-native-firebase/functions';
 import type { CreatedShop, CreateShopInput, ShopDetails, UpdateShopInput } from '../contract';
 
 import type { FirebaseServices } from './client';
+import { NO_CURRENT_USER } from './error-map';
 
 export interface FirebaseUser {
   readonly uid: string;
@@ -44,6 +49,15 @@ export interface FirebaseOps {
   sendPasswordReset(email: string): Promise<void>;
   /** Thông tin shop + vai trò của `uid` trong shop; `null` nếu không có shop hoặc không phải thành viên đang hoạt động. */
   readShopDetails(shopId: string, uid: string): Promise<ShopDetails | null>;
+  /**
+   * Đổi mật khẩu người dùng đang đăng nhập: xác thực lại bằng email + mật khẩu hiện tại TRƯỚC, rồi
+   * `updatePassword`. Xác thực lại lỗi thì không đổi gì. Không còn người dùng: lỗi `NO_CURRENT_USER`.
+   */
+  changePassword(currentPassword: string, newPassword: string): Promise<void>;
+  /** Auth `updateProfile({ displayName })` của người dùng đang đăng nhập. */
+  updateDisplayName(displayName: string): Promise<void>;
+  /** Nguồn bán đang lưu của shop (Rules: thành viên đọc được); `null` khi không đọc ra được mảng. */
+  readShopSellingSources(shopId: string): Promise<readonly string[] | null>;
   callShop(
     name: 'createShop' | 'updateShop',
     input: CreateShopInput | UpdateShopInput,
@@ -159,6 +173,28 @@ export function createFirebaseOps({ auth, db, functions }: FirebaseServices): Fi
         role: isOwner ? 'owner' : 'member',
         canEdit: isOwner || roles.includes('manager'),
       };
+    },
+    async changePassword(currentPassword, newPassword) {
+      const user = auth.currentUser;
+      if (!user?.email) throw Object.assign(new Error(NO_CURRENT_USER), { code: NO_CURRENT_USER });
+      await reauthenticateWithCredential(
+        user,
+        EmailAuthProvider.credential(user.email, currentPassword),
+      );
+      await updatePassword(user, newPassword);
+    },
+    async updateDisplayName(displayName) {
+      const user = auth.currentUser;
+      if (!user) throw Object.assign(new Error(NO_CURRENT_USER), { code: NO_CURRENT_USER });
+      await updateProfile(user, { displayName });
+    },
+    async readShopSellingSources(shopId) {
+      const snapshot = await getDoc(doc(db, 'shops', shopId));
+      if (!snapshot.exists()) return null;
+      const sources = (snapshot.data() as { sellingSources?: unknown } | undefined)?.sellingSources;
+      return Array.isArray(sources) && sources.every((value) => typeof value === 'string')
+        ? sources
+        : null;
     },
     async callShop(name, input) {
       const call = httpsCallable<CreateShopInput | UpdateShopInput, CreatedShop>(functions, name);

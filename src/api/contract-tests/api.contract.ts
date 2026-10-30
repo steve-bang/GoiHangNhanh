@@ -115,6 +115,46 @@ export function describeApiContract(name: string, makeApi: () => ApiClient): voi
       expect(out === 'ok' || out instanceof AppError).toBe(true);
     });
 
+    it('đổi mật khẩu: sai mật khẩu hiện tại bị từ chối; đúng thì đăng nhập bằng mật khẩu mới (V1-05)', async () => {
+      const api = makeApi();
+      const email = newEmail();
+      await api.auth.signUpWithEmail({ email, password: PASSWORD });
+      await expect(
+        api.auth.changePassword({
+          currentPassword: 'sai-mat-khau-9',
+          newPassword: 'Mat-khau-moi-2',
+        }),
+      ).rejects.toMatchObject({ code: 'AUTH_WRONG_CURRENT_PASSWORD' });
+      await api.auth.changePassword({ currentPassword: PASSWORD, newPassword: 'Mat-khau-moi-2' });
+      await expect(
+        api.auth.signInWithPassword({ email, password: PASSWORD }),
+      ).rejects.toMatchObject({ code: 'AUTH_INVALID_CREDENTIALS' });
+      await expect(
+        api.auth.signInWithPassword({ email, password: 'Mat-khau-moi-2' }),
+      ).resolves.toMatchObject({ email: expect.any(String) });
+    });
+
+    it('đổi họ tên: trả đúng tên đã gửi (V1-05)', async () => {
+      const api = makeApi();
+      await api.auth.signUpWithEmail({ email: newEmail(), password: PASSWORD });
+      await expect(api.auth.updateDisplayName('Chị Lan')).resolves.toEqual({
+        displayName: 'Chị Lan',
+      });
+    });
+
+    it('danh sách shop có shop vừa tạo; đổi tên giữ id (V1-05)', async () => {
+      const api = makeApi();
+      await api.auth.signUpWithEmail({ email: newEmail(), password: PASSWORD });
+      const created = await api.shop.createShop({ name: 'Shop A', sellingSources: ['shopee'] });
+      const shops = await api.shop.listMyShops();
+      expect(shops.map((shop) => shop.id)).toContain(created.id);
+      const renamed = await api.shop.renameShop(created.id, 'Shop B');
+      expect(renamed).toMatchObject({ id: created.id, name: 'Shop B' });
+      expect((await api.shop.listMyShops()).find((shop) => shop.id === created.id)?.name).toBe(
+        'Shop B',
+      );
+    });
+
     // Chưa kiểm được ở bản giả (cổng shop giả không biết tài khoản hiện tại); bản Firebase phải
     // thêm ca thật: gọi createShop hai lần cùng một tài khoản trả CÙNG shop, không tạo shop thứ hai.
     it.todo('createShop idempotent theo tài khoản (decisions.md Q-13b)');

@@ -1,4 +1,5 @@
 import { AppError } from '@/core/errors/app-error';
+import type { OrderSource } from '@/core/orders/order-source';
 
 import type {
   AccountSignInMethod,
@@ -9,9 +10,10 @@ import type {
   SessionIdentity,
   SessionState,
   ShopApi,
+  ShopDetails,
 } from '../contract';
 
-import { guard } from './error-map';
+import { guard, NO_CURRENT_USER, type ErrorOverrides } from './error-map';
 import type { FirebaseServices } from './client';
 import { createFirebaseOps, type FirebaseOps } from './ops';
 
@@ -43,6 +45,25 @@ export const NEUTRAL_PASSWORD_RESET_ERRORS: readonly string[] = [
 const isAccountStateError = (error: unknown): boolean => {
   const code = (error as { code?: unknown } | null)?.code;
   return typeof code === 'string' && NEUTRAL_PASSWORD_RESET_ERRORS.includes(code);
+};
+
+/**
+ * Đổi mật khẩu: lỗi của bước xác thực lại mang nghĩa "mật khẩu hiện tại sai", không phải "sai thông
+ * tin đăng nhập" như ở màn Đăng nhập (V1-05). Người dùng khác/không còn tài khoản: phiên hết hạn.
+ */
+export const CHANGE_PASSWORD_ERRORS: ErrorOverrides = {
+  'auth/wrong-password': 'AUTH_WRONG_CURRENT_PASSWORD',
+  'auth/invalid-credential': 'AUTH_WRONG_CURRENT_PASSWORD',
+  'auth/user-mismatch': 'AUTH_SESSION_EXPIRED',
+  'auth/user-not-found': 'AUTH_SESSION_EXPIRED',
+  'auth/password-does-not-meet-requirements': 'AUTH_WEAK_PASSWORD',
+};
+
+/** Đổi tên shop qua Function `updateShop`: từ chối quyền và dữ liệu bị từ chối có mã riêng của màn Sửa tên. */
+export const RENAME_SHOP_ERRORS: ErrorOverrides = {
+  'functions/permission-denied': 'SHOP_PERMISSION_DENIED',
+  'functions/invalid-argument': 'SHOP_SAVE_FAILED',
+  'functions/not-found': 'SHOP_SAVE_FAILED',
 };
 
 /**
@@ -101,6 +122,23 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
     verifyRecoveryCode: unavailable,
     resetPassword: unavailable,
     signOut: () => guard(() => ops.signOut()),
+    changePassword: (input) =>
+      guard(
+        () => ops.changePassword(input.currentPassword, input.newPassword),
+        CHANGE_PASSWORD_ERRORS,
+      ),
+    updateDisplayName: (displayName) =>
+      guard(async () => {
+        await ops.updateDisplayName(displayName);
+        return { displayName };
+      }),
+  };
+
+  /** Người dùng đang đăng nhập hoặc lỗi phiên hết hạn (không coi "chưa đăng nhập" là "không có shop"). */
+  const requireUser = async () => {
+    const user = await ops.restoreUser();
+    if (!user) throw Object.assign(new Error(NO_CURRENT_USER), { code: NO_CURRENT_USER });
+    return user;
   };
 
   const shop: ShopApi = {
@@ -111,6 +149,34 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
         const user = await ops.restoreUser();
         return user ? ops.readShopDetails(shopId, user.uid) : null;
       }),
+    // Máy chủ chỉ cho một shop mỗi tài khoản (`createShop` idempotent theo `userShops/{uid}`).
+    listMyShops: () =>
+      guard(async (): Promise<readonly ShopDetails[]> => {
+        const user = await requireUser();
+        const shopId = await ops.readShopId(user.uid);
+        if (shopId === null) return [];
+        const details = await ops.readShopDetails(shopId, user.uid);
+        return details ? [details] : [];
+      }),
+    // Function `updateShop` ghi đè cả tên và nguồn bán: đọc nguồn bán đang lưu để giữ nguyên. Không đọc
+    // được thì dừng (không gửi mảng rỗng xóa nguồn bán). Quyền thật do Function kiểm `members/{uid}`.
+    renameShop: (shopId, name) =>
+      guard(async (): Promise<ShopDetails> => {
+        const user = await requireUser();
+        const details = await ops.readShopDetails(shopId, user.uid);
+        if (!details) throw new AppError('SHOP_SAVE_FAILED');
+        if (!details.canEdit) throw new AppError('SHOP_PERMISSION_DENIED');
+        const stored = await ops.readShopSellingSources(shopId);
+        if (stored === null) throw new AppError('SHOP_SAVE_FAILED');
+        // Gửi lại NGUYÊN giá trị máy chủ đã lưu (giá trị của Function, có thể khác tên ở app); Function
+        // tự kiểm tra lại. Không lọc/đổi ở đây để không làm mất nguồn bán.
+        const saved = await ops.callShop('updateShop', {
+          shopId,
+          name,
+          sellingSources: stored as readonly OrderSource[],
+        });
+        return { ...details, name: saved.name };
+      }, RENAME_SHOP_ERRORS),
   };
 
   const session: SessionApi = {
