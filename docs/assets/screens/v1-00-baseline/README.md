@@ -25,3 +25,13 @@ Một cỡ 390x844, `deviceScaleFactor` 2 (ảnh 780x1688), chờ 3,5 giây sau 
 | `08-welcome-signed-out-390x844.png` | `/welcome` | Chào mừng (chưa đăng nhập) |
 
 Không chụp: 320x568/360x800, chữ lớn, trạng thái có dữ liệu (cần thay đổi tạm), màn quay (web không có camera).
+
+## Thư viện ảnh
+
+| Trang chủ | Đơn hàng | Cá nhân | Trung tâm đồng bộ |
+| --- | --- | --- | --- |
+| ![Trang chủ](01-home-390x844.png) | ![Đơn hàng](02-orders-390x844.png) | ![Cá nhân](03-account-390x844.png) | ![Trung tâm đồng bộ](04-sync-390x844.png) |
+
+| Hàng hoàn | Tranh chấp | Thông báo | Chào mừng (chưa đăng nhập) |
+| --- | --- | --- | --- |
+| ![Hàng hoàn](05-returns-390x844.png) | ![Tranh chấp](06-disputes-390x844.png) | ![Thông báo](07-notifications-390x844.png) | ![Chào mừng](08-welcome-signed-out-390x844.png) |
