@@ -155,6 +155,20 @@ describe('UI-E04 Chi tiết bằng chứng (xem lại trên máy)', () => {
     },
   );
 
+  it('tệp hash_mismatch không còn trên máy: câu riêng (máy chủ có bản không khớp), ẩn nhãn', async () => {
+    const { store, d, file } = await seed();
+    await open(store, [file('hash_mismatch')], { orderId: d.order.id, evidenceId: 'ev-1' });
+    expect(await screen.findByText('Video không còn trên máy này.')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Bản trên máy chủ không khớp với tệp gốc, và tệp gốc trên máy đã mất.'),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText(/chưa được tải lên máy chủ/)).toBeNull();
+    expect(screen.queryByText(/chưa hỗ trợ xem lại tệp từ máy chủ/)).toBeNull();
+    expect(screen.queryByTestId('evidence-detail-status')).toBeNull();
+    expect(screen.queryByText(/Đã lưu trên máy|Đã xác minh|Lỗi – cần xử lý/)).toBeNull();
+    expect(screen.queryByTestId('evidence-video-player')).toBeNull();
+  });
+
   it.each<[FileState, string]>([
     ['verified', 'Đã xác minh'],
     ['uploaded', 'Đã tải lên'],

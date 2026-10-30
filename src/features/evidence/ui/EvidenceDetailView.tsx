@@ -7,6 +7,7 @@ import { Card, EmptyState, EvidenceStatusBadge, Text, useTheme } from '@/shared/
 
 import {
   formatDuration,
+  FILE_STATES,
   formatFileSize,
   isServerConfirmed,
   localPlaybackOf,
@@ -88,7 +89,13 @@ export function EvidenceDetailView({
 
   return (
     <>
-      <EvidenceMedia file={file} playback={playback} serverHas={serverHas} />
+      <EvidenceMedia
+        file={file}
+        playback={playback}
+        missingReason={
+          serverHas ? 'server' : state === FILE_STATES.HASH_MISMATCH ? 'mismatch' : 'lost'
+        }
+      />
       {lost ? null : (
         <Card compact testID="evidence-detail-status">
           <View style={{ gap: tokens.space.xs }}>
@@ -167,12 +174,15 @@ export function EvidenceDetailView({
 function EvidenceMedia({
   file,
   playback,
-  serverHas,
+  missingReason,
 }: {
   file: EvidenceDetailViewProps['file'];
   playback: LocalPlayback;
-  /** Máy chủ đã xác nhận có bản: chỉ khi đó câu "tệp mất" mới nói tới máy chủ. */
-  serverHas: boolean;
+  /**
+   * Câu khi tệp không còn trên máy: `server` = máy chủ đã xác nhận có bản; `mismatch` = máy chủ có bản
+   * nhưng không khớp mã băm; `lost` = máy chủ chưa có bản.
+   */
+  missingReason: 'server' | 'mismatch' | 'lost';
 }) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
@@ -191,7 +201,7 @@ function EvidenceMedia({
           title={t(`evidence:detail.media.${variant}Title.${noun}`)}
           message={
             variant === 'missing'
-              ? t(`evidence:detail.media.missingMessage.${serverHas ? 'server' : 'lost'}`)
+              ? t(`evidence:detail.media.missingMessage.${missingReason}`)
               : t(`evidence:detail.media.${variant}Message`)
           }
         />
