@@ -74,6 +74,9 @@ function globalErrorUtils(): ErrorUtilsLike | undefined {
 }
 
 const UNCAUGHT_NAME = 'uncaught_js';
+
+/** Đã cài handler lọc (bản build cho phép báo lỗi): từ đó lỗi render bị lọc tại chỗ (`scrubErrorInPlace`). */
+let filteringActive = false;
 const LOGGED_NAME = 'LoggedError';
 
 /** Tạo adapter (test truyền SDK giả và `ErrorUtils` giả). */
@@ -103,6 +106,7 @@ export function createCrashReporter(
   };
 
   if (errorUtils && previous) {
+    filteringActive = true;
     errorUtils.setGlobalHandler((error, isFatal) => {
       const safe = toCrashError(sanitizeErrorForCrash(error));
       // Lỗi fatal: bản release dừng app, Crashlytics bắt sập native (thông điệp đã lọc); không ghi
@@ -150,8 +154,55 @@ export function createCrashReporter(
 
 let shared: CrashReporter | undefined;
 
-/** Adapter dùng chung cả app (tạo lần đầu khi gọi). */
+/**
+ * Adapter dùng chung cả app (tạo lần đầu khi gọi). Gọi SỚM NHẤT có thể (`src/bootstrap/crash-reporting-early.ts`,
+ * import đầu tiên của layout gốc) để handler lọc có trước mọi lỗi lúc nạp module/render đầu; công tắc đọc
+ * sau, tới lúc đó `enabled = false` nên chưa ghi gì từ JS.
+ */
 export function getCrashReporter(): CrashReporter {
   shared ??= createCrashReporter();
   return shared;
+}
+
+/**
+ * Lọc TẠI CHỖ một lỗi render (gọi trong `getDerivedStateFromError` của boundary gốc): React sau đó gọi
+ * `onCaughtError` của React Native với CHÍNH đối tượng này (báo không fatal ra nhật ký native, kèm
+ * componentStack), nên thông điệp gốc phải bị thay trước. Chỉ làm khi handler lọc đã cài (bản build cho
+ * phép báo lỗi); dev giữ nguyên thông điệp để đọc được trên LogBox.
+ */
+export function scrubErrorInPlace(error: unknown): void {
+  if (!filteringActive || !(error instanceof Error)) return;
+  const safe = sanitizeErrorForCrash(error);
+  try {
+    error.name = safe.name;
+    error.message = safe.message;
+    error.stack = safe.stack;
+  } catch {
+    // Đối tượng lỗi không ghi được: handler toàn cục vẫn lọc bản gửi đi.
+  }
+}
+
+/**
+ * Chuyển một lỗi render đã bị boundary gốc bắt cho handler lỗi JS toàn cục như lỗi FATAL. Có handler lọc
+ * thì đi qua bộ lọc rồi tới handler mặc định của React Native (bản release: dừng app, Crashlytics bắt sập
+ * native với thông điệp đã lọc); không có (dev, cổng giả) thì như React Native tự xử lý (LogBox ở dev).
+ */
+export function reportFatalRenderError(
+  error: unknown,
+  errorUtils: ErrorUtilsLike | undefined = globalErrorUtils(),
+): void {
+  if (errorUtils) {
+    errorUtils.getGlobalHandler()(error, true);
+    return;
+  }
+  // Không có ErrorUtils (không phải môi trường React Native): ném lại ngoài vòng render để không nuốt lỗi.
+  setTimeout(() => {
+    throw error;
+  }, 0);
+}
+
+/** Chỉ cho test: xóa trạng thái dùng chung. */
+export function resetCrashReporterForTests(): void {
+  shared = undefined;
+  filteringActive = false;
 }

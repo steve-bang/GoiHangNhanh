@@ -1,18 +1,13 @@
 import { useEffect } from 'react';
 
-import { readBackendEnv, resolveBackendMode, type BackendEnv } from '@/api/create-api';
 import { setLogSink } from '@/core/logging/logger';
 import { useDeviceSettings } from '@/features/orders';
 import { CRASH_REPORTS_ENABLED } from '@/features/personal';
 import { getCrashReporter, type CrashReporter } from '@/platform';
 
-/**
- * Báo lỗi chỉ ở bản build thật dùng Firebase: không ở dev (`__DEV__`), test hay cổng giả (dữ liệu giả,
- * bản xem trước). Bản thiếu mô-đun native/tệp cấu hình thì adapter tự là no-op.
- */
-export function crashReportingAllowed(env: BackendEnv = readBackendEnv()): boolean {
-  return !env.isDev && !env.isTest && resolveBackendMode(env) === 'firebase';
-}
+import { crashReportingAllowed } from './crash-reporting-policy';
+
+export { crashReportingAllowed };
 
 /**
  * Nối công tắc "Gửi báo lỗi ứng dụng" (`device_settings`, V1-16) với Crashlytics và logger. Đọc cài đặt

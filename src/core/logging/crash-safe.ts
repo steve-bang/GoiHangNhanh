@@ -84,34 +84,63 @@ export interface CrashSafeError {
 }
 
 const MAX_STACK_FRAMES = 30;
-/** Dòng khung kiểu V8/Hermes (`at fn (file:1:2)`) hoặc JSC (`fn@file:1:2`). */
-const FRAME_PATTERN = /^\s*at\s|^[^\s@]*@/;
-/** Đường dẫn/URL bất kỳ -> tên tệp cuối (`/var/.../main.jsbundle:1:2` -> `main.jsbundle:1:2`). */
-const PATH_PATTERN = /(?:[a-z][a-z0-9+.-]*:\/\/)?(?:[^\s()@/]*\/)+([^\s()/]*)/gi;
-const QUERY_PATTERN = /\?[^\s():]*/g;
-/** Chuỗi có dấu nháy trong dòng khung (một số engine in giá trị) bị bỏ. */
-const QUOTED_PATTERN = /(["'`]).*?\1/g;
-const FRAME_ALLOWED = /^[\w\s$.<>@():[\]/-]*$/;
+/** Khung kiểu V8/Hermes: `at fn (vị trí)` hoặc `at vị trí`. */
+const V8_FRAME = /^\s*at\s+(?:(\S.*?)\s+\((.+)\)|(\S+))\s*$/;
+/** Khung kiểu JSC: `fn@vị trí` (fn có thể rỗng). */
+const JSC_FRAME = /^\s*([^\s@]*)@(\S+)\s*$/;
+/** Vị trí đặc biệt không có tệp. */
+const SPECIAL_LOCATIONS: ReadonlySet<string> = new Set(['native', '<anonymous>', '[native code]']);
+/** `đường/dẫn/tệp(?truy vấn):dòng:cột` (Hermes có thể thêm tiền tố `address at `). */
+const LOCATION = /^(?:address at\s+)?(.+?)(?:\?[^:]*)?:(\d{1,9}):(\d{1,9})$/;
+/** Tên tệp được giữ: chỉ tệp mã/bundle (mã đơn, email không bao giờ có đuôi này). */
+const FILE_NAME = /^[A-Za-z0-9_.-]{1,80}\.(?:jsbundle|bundle|hbc|js|cjs|mjs|jsx|ts|tsx)$/;
+/** Tên hàm: định danh JS (có thể có `.` và `<anonymous>`), không chuỗi số dài (mã đơn, số điện thoại). */
+const FUNCTION_NAME = /^[A-Za-z_$<][\w$.<>]{0,79}$/;
+const DIGIT_RUN = /\d{4,}/;
+const UNKNOWN_FUNCTION = '<unknown>';
+const UNKNOWN_FILE = '<file>';
 
 function safeErrorName(error: unknown): string {
   const name = error instanceof Error ? error.name : undefined;
   return typeof name === 'string' && ERROR_NAME_PATTERN.test(name) ? name : 'Error';
 }
 
-/** Khung stack đã lọc; `undefined` khi không có khung nào dùng được. */
+function safeFunctionName(raw: string | undefined): string | undefined {
+  if (raw === undefined || raw.length === 0) return undefined;
+  const name = raw.replace(/^new\s+/, '').replace(/^async\s+/, '');
+  return FUNCTION_NAME.test(name) && !DIGIT_RUN.test(name) ? name : UNKNOWN_FUNCTION;
+}
+
+/** Vị trí đã lọc (`main.jsbundle:1:234`, `native`), `undefined` nếu không phải vị trí (dòng không phải khung). */
+function safeLocation(raw: string): string | undefined {
+  const location = raw.trim();
+  if (SPECIAL_LOCATIONS.has(location)) return location;
+  const match = LOCATION.exec(location);
+  if (!match) return undefined;
+  const [, path = '', line, column] = match;
+  const base = path.split(/[\\/]/).pop() ?? '';
+  return `${FILE_NAME.test(base) ? base : UNKNOWN_FILE}:${line}:${column}`;
+}
+
+/**
+ * Khung stack đã lọc; `undefined` khi không có khung nào dùng được. Một dòng chỉ là khung khi KẾT THÚC
+ * bằng vị trí (`:dòng:cột`, `native`, `<anonymous>`): dòng thông điệp (kể cả dòng 2+ của thông điệp nhiều
+ * dòng, dạng `at …` hay `x@y`) bị bỏ. Trong khung, tên hàm và tên tệp vẫn qua bộ lọc (định danh JS, tệp
+ * mã/bundle, chỉ tên cuối); không khớp thì thay bằng `<unknown>`/`<file>`. Mọi khung xuất ra dạng V8.
+ */
 export function sanitizeStack(stack: unknown): string | undefined {
   if (typeof stack !== 'string') return undefined;
   const frames: string[] = [];
   for (const raw of stack.split('\n')) {
     if (frames.length >= MAX_STACK_FRAMES) break;
-    if (!FRAME_PATTERN.test(raw)) continue;
-    const line = raw
-      .replace(QUOTED_PATTERN, '')
-      .replace(QUERY_PATTERN, '')
-      .replace(PATH_PATTERN, '$1')
-      .trim();
-    if (line.length === 0 || line.length > 200 || !FRAME_ALLOWED.test(line)) continue;
-    frames.push(line.startsWith('at ') || line.includes('@') ? `    ${line}` : `    at ${line}`);
+    const v8 = V8_FRAME.exec(raw);
+    const jsc = v8 ? null : JSC_FRAME.exec(raw);
+    const rawLocation = v8 ? (v8[2] ?? v8[3]) : jsc?.[2];
+    if (rawLocation === undefined) continue;
+    const location = safeLocation(rawLocation);
+    if (location === undefined) continue;
+    const fn = safeFunctionName(v8 ? v8[1] : jsc?.[1]);
+    frames.push(fn === undefined ? `    at ${location}` : `    at ${fn} (${location})`);
   }
   return frames.length > 0 ? frames.join('\n') : undefined;
 }

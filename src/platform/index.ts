@@ -59,7 +59,7 @@ export { CameraPhoto, usePhotoPermission } from './camera-photo';
 export type { CameraPhotoHandle, PhotoPermission, PhotoResult } from './camera-photo';
 export { CameraRecorder } from './camera-recorder';
 export { LocalVideoPlayer } from './video-player';
-export { getCrashReporter } from './crash-reporter';
+export { getCrashReporter, reportFatalRenderError, scrubErrorInPlace } from './crash-reporter';
 export type { CrashReporter } from './crash-reporter';
 export type { CameraRecorderHandle, RecorderResult } from './camera-recorder';
 export { readDeviceCondition, UNKNOWN_DEVICE_CONDITION } from './device-condition';

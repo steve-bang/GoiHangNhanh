@@ -1,3 +1,6 @@
+// V1-16: cài handler lỗi JS đã lọc trước mọi module khác của app (bản build cho phép báo lỗi).
+import '@/bootstrap/crash-reporting-early';
+
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 

@@ -13,3 +13,13 @@ const NOOP_REPORTER: CrashReporter = {
 export function getCrashReporter(): CrashReporter {
   return NOOP_REPORTER;
 }
+
+/** Web: không lọc tại chỗ (không có Crashlytics). */
+export function scrubErrorInPlace(): void {}
+
+/** Web: ném lại ngoài vòng render để trình duyệt (và công cụ chụp ảnh) thấy lỗi. */
+export function reportFatalRenderError(error: unknown): void {
+  setTimeout(() => {
+    throw error;
+  }, 0);
+}

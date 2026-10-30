@@ -125,11 +125,58 @@ describe('sanitizeErrorForCrash', () => {
     ].join('\n');
     const safe = sanitizeErrorForCrash(error);
     expectNoPii(safe);
-    expect(safe.stack).toContain('at saveOrder (address at main.jsbundle:1:23456)');
+    expect(safe.stack).toContain('at saveOrder (main.jsbundle:1:23456)');
     expect(safe.stack).toContain('at anonymous (index.android.bundle:1:999)');
     expect(safe.stack).toContain('at index.bundle:12:3');
-    expect(safe.stack).toContain('persist@main.jsbundle:5:6');
+    expect(safe.stack).toContain('at persist (main.jsbundle:5:6)');
     expect(safe.stack.split('\n')[0]).toBe('Error: Error');
+  });
+
+  it('thông điệp nhiều dòng (review PR #62): dòng 2+ dạng email, `x@y`, `at …` không thành khung', () => {
+    const error = new Error(
+      [
+        'Không gửi được tới',
+        PII_SAMPLES[0],
+        'DH-240915-0001@x',
+        'at DH-240915-0001',
+        `at ${PII_SAMPLES[3]}`,
+        `${PII_SAMPLES[2]}@${PII_SAMPLES[4]}`,
+      ].join('\n'),
+    );
+    const safe = sanitizeErrorForCrash(error);
+    expectNoPii(safe);
+    expect(safe.stack).not.toMatch(/DH-|uid-|SPX/);
+    expect(safe.stack.split('\n')[0]).toBe('Error: Error');
+    // Khung thật của Jest vẫn còn (dòng kết thúc bằng vị trí).
+    expect(safe.stack).toMatch(/\n {4}at \S.*:\d+:\d+\)?$/m);
+  });
+
+  it('khung có vị trí nhưng tên hàm/tệp giống dữ liệu: thay bằng <unknown>/<file>', () => {
+    const stack = [
+      'Error: x',
+      '    at DH-240915-0001 (/a/b/main.jsbundle:1:2)',
+      '    at nguyenvana@example.com (main.jsbundle:1:2)',
+      '    at SPX0123456789VN (main.jsbundle:3:4)',
+      '    at save (/data/evidence/0000-aaaa/original.mp4:1:2)',
+      '    at fn (native)',
+      '    at <anonymous>',
+      'persist@/private/var/mobile/Containers/main.jsbundle:5:6',
+      '@main.jsbundle:7:8',
+      '    at new Order (main.jsbundle:9:10)',
+    ].join('\n');
+    const out = sanitizeStack(stack) ?? '';
+    expectNoPii(out);
+    expect(out.split('\n')).toEqual([
+      '    at <unknown> (main.jsbundle:1:2)',
+      '    at <unknown> (main.jsbundle:1:2)',
+      '    at <unknown> (main.jsbundle:3:4)',
+      '    at save (<file>:1:2)',
+      '    at fn (native)',
+      '    at <anonymous>',
+      '    at persist (main.jsbundle:5:6)',
+      '    at main.jsbundle:7:8',
+      '    at Order (main.jsbundle:9:10)',
+    ]);
   });
 
   it('sanitizeStack giới hạn 30 khung và bỏ khi không có khung', () => {

@@ -191,7 +191,14 @@ Rules là lớp bảo vệ thật (cô lập theo shop, bất biến #8): **khô
 
 ### 4.4 Cloud Functions
 
-`firebase/functions/` chưa có mã **[Chưa có]**. Khi thêm: tạo `package.json` riêng, thêm khối `"functions"` vào `firebase/firebase.json`, thêm Functions vào Emulator của `test:rules`/CI, rồi `npx firebase deploy --only functions --project <env>`. Callable `createShop` là chức năng đầu tiên dự kiến (decisions Q-14).
+`firebase/functions/` **đã có mã** (`package.json` riêng; khối `"functions"` đã có trong `firebase/firebase.json`): `createShop`, `updateShop`, `createUploadSession`, `verifyEvidence`, trigger kiểm toán và xác minh lại (V1-04), `deleteAccount`, `purgeDeletedShops` (V1-14). Logic được test trong `npm run test:rules` (Emulator). Deploy (chi tiết và thứ tự: `docs/engineering/firebase-setup.md` mục 5):
+
+```bash
+npm --prefix firebase/functions ci
+npx firebase deploy --config firebase/firebase.json --project <env> --only functions
+```
+
+**Luôn dùng `--config firebase/firebase.json`** (hoặc chạy trong thư mục `firebase/`): `firebase.json` ở gốc repo là cấu hình của React Native Firebase cho Crashlytics (V1-16, khóa `react-native`), không phải cấu hình Firebase CLI; chạy `firebase deploy` ở gốc mà không có `--config` sẽ không thấy Rules/Functions.
 
 ### 4.5 Tệp cấu hình Firebase cho app
 

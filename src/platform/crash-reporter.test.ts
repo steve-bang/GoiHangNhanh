@@ -1,7 +1,14 @@
 import { AppError } from '@/core/errors/app-error';
 import { expectNoPii, PII_SAMPLES } from '@/test-utils/pii-samples';
 
-import { createCrashReporter, type ErrorUtilsLike } from './crash-reporter';
+import {
+  createCrashReporter,
+  resetCrashReporterForTests,
+  scrubErrorInPlace,
+  type ErrorUtilsLike,
+} from './crash-reporter';
+
+afterEach(() => resetCrashReporterForTests());
 
 function fakeSdk() {
   const instance = { tag: 'crashlytics' };
@@ -171,5 +178,18 @@ describe('createCrashReporter (V1-16)', () => {
     errors.current()(new Error('x'), false);
     await reporter.setEnabled(false);
     for (const fn of NEVER_CALLED) expect(sdk[fn]).not.toHaveBeenCalled();
+  });
+
+  it('scrubErrorInPlace: chưa cài handler lọc thì giữ nguyên; đã cài thì thay thông điệp/stack tại chỗ', () => {
+    const before = new Error(PII_SAMPLES[0]);
+    scrubErrorInPlace(before);
+    expect(before.message).toBe(PII_SAMPLES[0]);
+
+    setup();
+    const error = new Error(`${PII_SAMPLES[1]}\n${PII_SAMPLES[0]}`);
+    scrubErrorInPlace(error);
+    expect(error.message).toBe('Error');
+    expectNoPii({ message: error.message, stack: error.stack });
+    expect(() => scrubErrorInPlace('chuỗi')).not.toThrow();
   });
 });

@@ -22,7 +22,7 @@ Biết app lỗi ở đâu trên máy người dùng thật mà **không gửi P
    - **Bật lại:** lỗi JS ghi ngay; thu thập sập native **chắc chắn từ lần mở app sau** (iOS SDK ghi rõ giá trị áp dụng ở lần chạy sau). Ghi ở mô tả công tắc.
 8. **UI-I05:** thêm một nhóm có công tắc "Gửi báo lỗi ứng dụng" (component `Switch` sẵn có, token), giữa nhóm bảo mật và nhóm Xóa tài khoản; không đổi màn khác. Ghi lỗi -> toast, giữ giá trị cũ (như `WifiOnlySwitch`).
 9. **iOS privacy manifest** `ios.privacyManifests` trong `app.json`: 4 loại API cần lý do (E174.1, C617.1, CA92.1, 35F9.1), `NSPrivacyTracking: false`, kiểu dữ liệu thu thập khớp `docs/store/privacy-declarations.md` mục 3.1 (kèm 4 kiểu của Crashlytics, không gắn danh tính).
-10. **ErrorBoundary:** repo chưa có, không thêm (ngoài phạm vi UI).
+10. **ErrorBoundary (sửa sau review PR #62):** `RootErrorBoundary` gốc không vẽ UI (có lỗi thì `null`), lọc lỗi tại chỗ rồi chuyển fatal cho handler đã lọc; handler lọc cài ngay khi nạp `_layout`.
 
 ## Tệp đổi
 
@@ -54,3 +54,5 @@ UI-I05 với công tắc bật và tắt (bản web, cổng giả).
 Vòng 1: (1) Bản nháp chỉ dựa vào `redact` của logger: `redact` không che `uid`, `shopId`, đường dẫn và giữ chuỗi tự do -> đổi sang danh sách cho phép khóa + kiểu giá trị, bỏ hẳn giá trị lạ. (2) Bản nháp để handler mặc định của RNFirebase: nó gửi nguyên `error.message` (có thể chứa mã đơn) và cả thông điệp sập native -> tự cài handler, đưa lỗi đã lọc cho cả Crashlytics lẫn handler RN. (3) `crashlytics_auto_collection_enabled: true` sẽ gửi sập ở lần mở đầu trước khi đọc công tắc; đặt `false`, bật bằng mã sau khi đọc (lần sau SDK nhớ giá trị đã đặt). (4) Tắt công tắc phải xóa báo cáo chưa gửi, không chỉ ngừng ghi. (5) Bất biến 3/4/11: không đụng trạng thái tệp/bằng chứng; câu chữ không hứa "ẩn danh tuyệt đối", chỉ nói không gửi email/mã đơn/video. (6) Kích thước ước tính ~450 dòng mã ngoài test/tài liệu.
 
 Tự review: đã chấp nhận.
+
+Sau review PR #62 (điều phối chọn A cho mục 1): (1) lỗi render RN 0.88 đi thẳng `ExceptionsManager.handleException`, không qua handler toàn cục -> thêm `RootErrorBoundary` (không vẽ UI, lọc lỗi tại chỗ, chuyển fatal cho handler đã lọc) và cài handler lọc ngay khi nạp `_layout` (`crash-reporting-early.ts`); (2) `sanitizeStack` chỉ nhận dòng kết thúc bằng vị trí, tên hàm/tệp vẫn qua bộ lọc (dòng 2+ của thông điệp nhiều dòng từng lọt qua); (3) ghi rõ handler Promise của RNFirebase gửi `message` gốc nhưng bất hoạt trên Hermes, kiểm ở G-9; (4) `DEPLOYMENT.md` 4.4 dùng `--config firebase/firebase.json`.
