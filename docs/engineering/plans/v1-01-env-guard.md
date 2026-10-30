@@ -20,7 +20,7 @@ Bản production không bao giờ chạy cổng giả, không mang bundle id `.d
 | `src/api/create-api.test.ts`, `create-remote-documents.test.ts` | Ca production + cờ giả/emulator |
 | `jest.config.js`, `eslint.config.js` | Project `tooling` nhận `scripts/**/*.test.cjs`; globals Jest cho tệp test đó |
 | `DEPLOYMENT.md` mục 5–6, `docs/engineering/firebase-setup.md` mục 1, `firebase/config/README.md` | Mô tả profile, chốt chặn, cách kiểm |
-| `docs/engineering/decisions.md` Q-29 | Ghi các quyết định nhỏ tự chốt (Q-29a) |
+| `docs/engineering/decisions.md` Q-29 | Ghi các quyết định nhỏ tự chốt (mục `Q-29 / V1-01 — env-guard`) |
 | `CHANGELOG.md` | Một dòng nhóm Security |
 
 ## Thiết kế
@@ -31,6 +31,7 @@ Bản production không bao giờ chạy cổng giả, không mang bundle id `.d
 - `EXPO_PUBLIC_APP_ENV` là `prod`/`production` mà `APP_ENV` không phải prod -> lỗi (gói JS tưởng là production nhưng bundle id `.dev`, Firebase dev).
 - Khi prod, lỗi nếu: `EXPO_PUBLIC_APP_ENV` không phải `prod`/`production` (thiếu thì mất lớp phòng thủ lúc chạy); `EXPO_PUBLIC_USE_FAKE_BACKEND` khác rỗng (mọi giá trị, chặt hơn lúc chạy chỉ nhận `1`); `EXPO_PUBLIC_BACKEND` khác rỗng và khác `firebase`; `EXPO_PUBLIC_FAKE_SESSION` khác rỗng; `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` khác rỗng.
 - Khi prod và đang chạy trên máy build EAS (`EAS_BUILD=true`): thiếu tệp cấu hình Firebase của nền tảng đang build (`EAS_BUILD_PLATFORM`; không rõ thì đòi cả hai) -> lỗi. Ngoài EAS (máy dev chạy `expo config`, `prod:ios`) không đòi tệp để còn kiểm cấu hình được.
+- Khi prod (sau review PR #43): không lấy tệp Firebase ở gốc repo; chỉ biến môi trường hoặc `firebase/config/prod/`. Tệp tìm thấy phải có `BUNDLE_ID` (plist) / `package_name` (json) đúng mã app production, lệch hoặc không đọc được -> lỗi (mọi máy, không chỉ EAS).
 - Không chặn `EXPO_PUBLIC_RECORDER_ENABLED` ở prod: V1-21 sẽ bật; `eas.json` production hôm nay không đặt.
 
 **Chạy (lớp hai).** `EXPO_PUBLIC_APP_ENV` là `prod`/`production` -> `resolveBackendMode` luôn `firebase` (bỏ qua `EXPO_PUBLIC_USE_FAKE_BACKEND`, `EXPO_PUBLIC_BACKEND=fake`, `__DEV__`, kể cả `isTest`), không dùng emulator host. Thiếu cấu hình vẫn rơi về "chưa kết nối" như cũ (không giả thành công). Cổng cá nhân và cổng tài liệu máy chủ dùng chung `resolveBackendMode` nên tự theo.

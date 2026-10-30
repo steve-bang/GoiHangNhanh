@@ -682,7 +682,9 @@ Mã lỗi/thông báo mới phát sinh từ PR2/PR4/PR5 (mất mạng, tệp tha
 
 Nguồn: [v1-release-plan.md](v1-release-plan.md) (2026-10-30). Các lựa chọn Q-24a–h, O-09, O-15 (v1), D-14 (cách làm tạm cho v1), xóa tài khoản, gói/thanh toán v1, crash reporting và quy trình build được **agent điều phối chốt thay người dùng** theo ủy quyền mà điều phối báo lại; **chưa có xác nhận trực tiếp của người dùng** và không phải D-xx. Bảng đầy đủ: kế hoạch mục 1.2. Câu hỏi R-1…R-8 (kế hoạch mục 7.3) **đã được điều phối chốt** ở kế hoạch mục 7.5; kèm chốt sau review PR #40: purge xóa cả shop gồm `auditEvents` theo yêu cầu xóa của chủ (sau 30 ngày, trừ khi có `legalHold`/tranh chấp), chỉ giữ `accountDeletions` (uid, thời điểm, `shopIds`, lý do kỹ thuật; không email/tên). **Q-24g:** A (một máy một tài khoản) + lọc theo `created_by` như Q-23g. Checklist con người: [release-checklist.md](release-checklist.md).
 
-#### Q-29a — V1-01 env-guard: điểm nhỏ do dev tự chốt (2026-10-30)
+#### Q-29 / V1-01 — env-guard
+
+Điểm nhỏ do dev tự chốt (2026-10-30).
 
 Theo quy trình tự động của điều phối; không đổi hành vi nghiệp vụ. Kế hoạch: [plans/v1-01-env-guard.md](plans/v1-01-env-guard.md).
 
@@ -696,5 +698,6 @@ Theo quy trình tự động của điều phối; không đổi hành vi nghi�
 | a6 | Không chặn `EXPO_PUBLIC_RECORDER_ENABLED` ở production; `eas.json` production chưa đặt | V1-21 sẽ bật sau cổng thiết bị; chặn bằng mã sẽ phải gỡ lại |
 | a7 | Thêm `android.blockedPermissions`: `RECORD_AUDIO`, `SYSTEM_ALERT_WINDOW`, `READ/WRITE_EXTERNAL_STORAGE` | Thu thập tối thiểu; O-09 không thu tiếng; mẫu RN và `expo-file-system` tự thêm các quyền này dù app không dùng (prebuild 2026-10-30). Chưa kiểm manifest sau khi Gradle gộp (cần Android SDK) |
 | a8 | `ios.config.usesNonExemptEncryption: false` | App chỉ dùng HTTPS của hệ điều hành và SHA-256 để băm; không mã hóa riêng. Thêm mã hóa riêng thì phải xem lại |
+| a9 | Bản production không lấy tệp Firebase ở gốc repo (nơi đặt tệp dev): chỉ đường dẫn qua biến môi trường (EAS file secret) hoặc `firebase/config/prod/` (`npm run prod:*`); tệp tìm thấy phải có `BUNDLE_ID`/`package_name` đúng mã app production, lệch hoặc không đọc được thì build dừng | Review PR #43: tránh đóng gói nhầm tệp của dự án dev vào bản production. Giữ `firebase/config/prod/` vì là thư mục riêng của prod và vẫn bị đối chiếu mã app |
 
 **Mã lỗi/chuỗi mới chờ BA (bổ sung khi làm từng PR V1-xx, không thêm vào `codes.ts` khi chưa duyệt):** `UPLOAD_WAITING_NETWORK`, `UPLOAD_INTERRUPTED`, `UPLOAD_EXCEPTION` (V1-02), `ACCOUNT_DELETE_SHOP_HAS_MEMBERS` (V1-14); câu "Đang chờ Wi‑Fi" (V1-09), câu thời hạn lưu v1 (V1-18), câu giới hạn khi quay (V1-11), màn Kiểm tra hộp thư (V1-03), luồng Xóa tài khoản (V1-15).
