@@ -25,6 +25,8 @@ import { isRetryable, useGatewayTask } from './onboarding/useGatewayTask';
  * TRUNG TÍNH: "Nếu email này đã đăng ký..."; email luôn được che. Nằm TRÊN màn Quên mật khẩu trong
  * ngăn xếp (Back/Đổi email về đó, giữ email). Vào thẳng khi chưa gửi thì về Quên mật khẩu.
  * Không hứa thư chắc chắn tới; mật khẩu mới đặt trên trang của Firebase, không phải trong app.
+ * Màu chữ theo vai trò của `Text` (`ink`/`inkMuted`/`brand`) để cùng bảng màu với các màn trước/sau
+ * trong luồng (khung ngoài `Screen`); khoảng cách theo token, không viết số thiết kế.
  */
 export function RecoveryEmailSentScreen() {
   const { t } = useTranslation();
@@ -88,9 +90,6 @@ export function RecoveryEmailSentScreen() {
 
   if (!allowed || !requestedEmail) return null;
 
-  const muted = { color: tokens.color.text.secondary };
-  const link = { color: tokens.color.action.link };
-
   return (
     <OnboardingScaffold
       testID="screen-UI-A07-sent"
@@ -105,25 +104,22 @@ export function RecoveryEmailSentScreen() {
         </View>
       ) : null}
       <View style={{ marginTop: gaps.illustrationToTitle }}>
-        <Text
-          accessibilityRole="header"
-          bold
-          style={[title, styles.center, { color: tokens.color.text.primary }]}
-        >
+        <Text accessibilityRole="header" bold color="ink" style={[title, styles.center]}>
           {t('screens:recoverySent.title')}
         </Text>
         <Text
           testID="recovery-sent-description"
-          style={[styles.center, muted, { marginTop: gaps.titleToDescription }]}
+          color="inkMuted"
+          style={[styles.center, { marginTop: gaps.titleToDescription }]}
         >
           {t('screens:recoverySent.description', { email: maskEmail(requestedEmail) })}
         </Text>
-        <Text style={[styles.center, muted, { marginTop: tokens.space.sm }]}>
+        <Text color="inkMuted" style={[styles.center, { marginTop: tokens.space.sm }]}>
           {t('screens:recoverySent.nextStep')}
         </Text>
       </View>
       <View style={[styles.linkRow, { minHeight: touch }]}>
-        <Text style={muted}>{t('screens:recoverySent.notYours')}</Text>
+        <Text color="inkMuted">{t('screens:recoverySent.notYours')}</Text>
         <Pressable
           testID="recovery-sent-change-email"
           accessibilityRole="link"
@@ -132,7 +128,7 @@ export function RecoveryEmailSentScreen() {
           hitSlop={tokens.space.sm}
           style={[styles.pressable, { minHeight: touch }]}
         >
-          <Text bold style={link}>
+          <Text bold color="brand">
             {t('screens:recoverySent.changeEmail')}
           </Text>
         </Pressable>
@@ -163,7 +159,7 @@ export function RecoveryEmailSentScreen() {
       </View>
       <View style={[styles.linkRow, { minHeight: touch, marginTop: tokens.space.sm }]}>
         {seconds > 0 ? (
-          <Text testID="recovery-sent-countdown" variant="caption" style={muted}>
+          <Text testID="recovery-sent-countdown" variant="caption" color="inkMuted">
             {t('screens:recoverySent.resendIn', { time: formatCountdown(seconds) })}
           </Text>
         ) : (
@@ -177,7 +173,7 @@ export function RecoveryEmailSentScreen() {
             hitSlop={tokens.space.sm}
             style={[styles.pressable, { minHeight: touch }]}
           >
-            <Text bold style={link}>
+            <Text bold color="brand">
               {t('screens:recoverySent.resend')}
             </Text>
           </Pressable>
