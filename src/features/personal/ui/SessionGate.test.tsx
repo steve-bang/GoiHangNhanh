@@ -224,8 +224,9 @@ describe('SessionGate: thoát khỏi trạng thái kẹt (review PR #49)', () =>
     expect(screen.getByText('Xác nhận đăng xuất')).toBeOnTheScreen();
     expect(mockSignOutGateway).not.toHaveBeenCalled();
     await act(async () => {
-      const buttons = screen.getAllByRole('button', { name: 'Đăng xuất' });
-      await fireEvent.press(buttons[buttons.length - 1]!);
+      const confirm = screen.getAllByRole('button', { name: 'Đăng xuất' }).at(-1);
+      if (!confirm) throw new Error('thiếu nút xác nhận Đăng xuất');
+      await fireEvent.press(confirm);
     });
     expect(mockSignOutGateway).toHaveBeenCalledTimes(1);
     expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.welcome);
