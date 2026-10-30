@@ -150,6 +150,24 @@ describe('D06/D07: video mở kiện đã quay', () => {
     expect(screen.queryByTestId('return-video-uploader-note')).toBeNull();
   });
 
+  it('V1-07: video của mình trong hồ sơ CHƯA gửi do người khác tạo: "Chờ tải lên" + chờ người tạo hồ sơ', async () => {
+    let creator = 'u-2';
+    const store = createMemoryReturnStore({ creatorUid: () => creator });
+    const original = store.createReturn.bind(store);
+    store.createReturn = async (input) => {
+      creator = 'u-2';
+      const made = await original(input);
+      creator = 'u-1';
+      return made;
+    };
+    const id = await seedWithVideo(store);
+    await openD06(store, id, 'u-1');
+    expect(await screen.findByTestId('return-video-status')).toHaveTextContent(/Chờ tải lên/);
+    expect(screen.getByTestId('return-video-uploader-note')).toHaveTextContent(
+      'Tệp chỉ tải lên được sau khi người tạo hồ sơ này đăng nhập lại trên máy.',
+    );
+  });
+
   it('video bị gián đoạn: nói rõ chưa phải video đầy đủ và vẫn nêu hạn chế bằng chứng', async () => {
     const store = createMemoryReturnStore();
     const id = await seedWithVideo(store, { interrupted: true });

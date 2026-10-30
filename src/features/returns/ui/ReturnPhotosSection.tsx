@@ -6,12 +6,7 @@ import type { TFunction } from 'i18next';
 import type { ErrorCode } from '@/core/errors/codes';
 import type { ReturnCaseId } from '@/core/ids';
 import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
-import {
-  foreignUploadNote,
-  mayHaveReachedServer,
-  toDisplayStatus,
-  uploaderRelation,
-} from '@/features/evidence';
+import { foreignUploadNote, mayHaveReachedServer, toDisplayStatus } from '@/features/evidence';
 import { formatDeviceDateTime, useCurrentUid } from '@/features/orders';
 import {
   CameraPhoto,
@@ -38,8 +33,10 @@ import {
   describeLocation,
   isMediaSavedLocally,
   MAX_RETURN_PHOTOS,
+  returnMediaUploader,
   type PhotoDeleteFailure,
   type PhotoFailure,
+  type ReturnCase,
   type ReturnMedia,
 } from '../domain';
 import { useCaptureReturnPhoto, useDeleteReturnPhoto, useReturnMedia } from './use-return-photos';
@@ -60,6 +57,8 @@ const DELETE_FAILURE_CODE: Record<Exclude<PhotoDeleteFailure, 'NOT_FOUND'>, Erro
 
 interface ReturnPhotosSectionProps {
   returnId: ReturnCaseId;
+  /** Người tạo hồ sơ + bản neo đã đăng chưa: quyết định ảnh có tải được dưới tài khoản này không (V1-07). */
+  returnCase: Pick<ReturnCase, 'createdBy' | 'anchorPublishedAtDevice'>;
   /** Có dấu hiệu hư hỏng: nút chụp nổi bật hơn (vẫn là tùy chọn). */
   emphasize: boolean;
   /** Hồ sơ đã xác nhận: không chụp thêm. */
@@ -73,7 +72,12 @@ interface ReturnPhotosSectionProps {
  * minh, hoặc Lỗi); chỉ video/ảnh nào máy chủ xác nhận mới được nói đã tải lên/xác minh. Giờ hiển thị là giờ
  * máy; mã băm chỉ chứng minh tệp không đổi, không chứng minh thời điểm chụp.
  */
-export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhotosSectionProps) {
+export function ReturnPhotosSection({
+  returnId,
+  returnCase,
+  emphasize,
+  locked,
+}: ReturnPhotosSectionProps) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const { photos: media, reload } = useReturnMedia(returnId);
@@ -203,6 +207,7 @@ export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhoto
               <PhotoRow
                 key={item.id}
                 item={item}
+                returnCase={returnCase}
                 busy={busy}
                 // Ảnh đã từng được đưa cho máy chủ thì không xóa được (Q-28): ẩn nút thay vì để bấm rồi lỗi.
                 {...(locked || busy || deleting || mayHaveReachedServer(item)
@@ -388,18 +393,21 @@ export function ReturnPhotosSection({ returnId, emphasize, locked }: ReturnPhoto
 
 function PhotoRow({
   item,
+  returnCase,
   busy,
   onDelete,
 }: {
   item: ReturnMedia;
+  returnCase: ReturnPhotosSectionProps['returnCase'];
   busy: boolean;
   onDelete?: () => void;
 }) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const side = tokens.component.tile.xl;
-  // Ảnh do tài khoản khác chụp trên máy này: máy này không tải hộ, nói rõ lý do (V1-07, Q-24g).
-  const uploader = uploaderRelation(item.createdBy, useCurrentUid());
+  // Ảnh do tài khoản khác chụp, hoặc nằm trong hồ sơ chưa gửi của người khác: máy này chưa tải được dưới
+  // tài khoản này, nói rõ lý do (V1-07, Q-24g).
+  const uploader = returnMediaUploader(item, returnCase, useCurrentUid());
   const display = toDisplayStatus(item.state, { uploader });
   const note = foreignUploadNote(item.state, uploader);
   const hasFile = isMediaSavedLocally(item) && item.localPath !== null;

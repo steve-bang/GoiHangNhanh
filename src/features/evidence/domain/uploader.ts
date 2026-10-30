@@ -6,8 +6,10 @@ import { FILE_STATES, type FileState } from './file-state';
  * - `current`: cùng tài khoản, hoặc CHƯA biết ai đang đăng nhập (không kết luận; hàng đợi cũng không chạy).
  * - `other`: tài khoản khác đã tạo trên máy này; chỉ tài khoản đó đăng nhập lại mới tải lên được.
  * - `unknown`: không rõ người tạo (tạo khi chưa biết tài khoản); không tài khoản nào tải lên được.
+ * - `case_owner`: tệp của tài khoản hiện tại nhưng nằm trong hồ sơ CHƯA gửi lên máy chủ do tài khoản khác
+ *   tạo (hàng hoàn, V1-07): chỉ tải được sau khi người tạo hồ sơ đăng nhập lại trên máy và gửi hồ sơ.
  */
-export type UploaderRelation = 'current' | 'other' | 'unknown';
+export type UploaderRelation = 'current' | 'other' | 'unknown' | 'case_owner';
 
 export function uploaderRelation(
   createdBy: string | null | undefined,

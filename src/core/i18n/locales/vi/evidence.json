@@ -17,7 +17,8 @@
   },
   "uploaderNote": {
     "other": "Tệp do tài khoản khác tạo trên máy này. Chỉ tài khoản đó đăng nhập lại mới tải lên được.",
-    "unknown": "Không rõ tài khoản nào tạo tệp này nên không tải lên được. Tệp vẫn được giữ trên máy."
+    "unknown": "Không rõ tài khoản nào tạo tệp này nên không tải lên được. Tệp vẫn được giữ trên máy.",
+    "case_owner": "Tệp chỉ tải lên được sau khi người tạo hồ sơ này đăng nhập lại trên máy."
   },
   "capture": {
     "recording": "Đang ghi hình",

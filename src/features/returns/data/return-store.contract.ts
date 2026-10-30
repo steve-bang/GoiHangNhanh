@@ -1074,7 +1074,14 @@ export function runReturnStoreContract(
         await store.markReturnPublished(SHOP, made.returnCase.id, 900);
         expect(await store.listReturnsPendingRemote(SHOP, 10, 'u-1')).toEqual([]);
         const after = await store.getReturn(SHOP, made.returnCase.id);
-        expect(after).toEqual(before);
+        // Chỉ thêm mốc đã đăng (lần đầu, V1-07); nội dung hồ sơ và lịch sử không đổi.
+        expect(before?.returnCase.anchorPublishedAtDevice).toBeUndefined();
+        expect(after).toEqual(
+          before && {
+            ...before,
+            returnCase: { ...before.returnCase, anchorPublishedAtDevice: 500 },
+          },
+        );
       });
 
       it('listMediaForUpload: chỉ media của CHÍNH uid, trong hồ sơ ĐÃ đăng neo, đúng trạng thái và shop', async () => {

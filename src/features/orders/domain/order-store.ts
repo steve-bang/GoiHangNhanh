@@ -92,8 +92,9 @@ export interface OrderStore {
   countUnsyncedOnDevice(): Promise<number>;
   /**
    * Tách số tệp chưa đồng bộ (cùng định nghĩa `countUnsynced`, gồm media hàng hoàn) theo người tạo
-   * (Q-24g, V1-07): `own` = do `uid` tạo (đóng gói: theo `packing_sessions.created_by`; hàng hoàn: theo
-   * `return_media.created_by`); `foreign` = tài khoản khác hoặc không rõ, máy này sẽ không tải hộ.
+   * (Q-24g, V1-07): `own` = do `uid` tạo VÀ tải được dưới `uid` (đóng gói: theo
+   * `packing_sessions.created_by`; hàng hoàn: `return_media.created_by` và hồ sơ đã đăng bản neo hoặc do
+   * chính `uid` tạo); `foreign` = còn lại (tài khoản khác, không rõ, hoặc chờ người tạo hồ sơ đăng bản neo).
    * `scope` = một shop hoặc `'device'` (mọi shop, chỉ để bảo vệ dữ liệu khi đăng xuất). Kho bộ nhớ trả 0.
    */
   countUnsyncedByOwner(scope: ShopId | 'device', uid: string): Promise<UnsyncedByOwner>;

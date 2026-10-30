@@ -188,6 +188,7 @@ function ExteriorForm({ details }: { details: ReturnDetails }) {
       </Card>
       <ReturnPhotosSection
         returnId={returnCase.id}
+        returnCase={returnCase}
         emphasize={hasDamageSign(signs)}
         locked={confirmed}
       />

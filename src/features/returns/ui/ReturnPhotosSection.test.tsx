@@ -130,9 +130,10 @@ describe('UI-D03 Ảnh kiện hàng', () => {
   });
 
   it('V1-07: ảnh do tài khoản khác chụp trên máy này: "Chờ tải lên" + lý do; ảnh của mình như cũ', async () => {
-    let creator = 'u-2';
+    let creator = 'u-1';
     const store = createMemoryReturnStore({ creatorUid: () => creator });
     const id = await seedReturn(store);
+    creator = 'u-2';
     await seedPhoto(store, id, 'ph-theirs', []);
     creator = 'u-1';
     await seedPhoto(store, id, 'ph-mine', []);
@@ -151,6 +152,46 @@ describe('UI-D03 Ảnh kiện hàng', () => {
     );
     expect(screen.getByTestId('return-photo-status-ph-mine')).toHaveTextContent(/Đã lưu trên máy/);
     expect(screen.queryByTestId('return-photo-uploader-ph-mine')).toBeNull();
+  });
+
+  it('V1-07: ảnh của mình trong hồ sơ CHƯA gửi do người khác tạo: "Chờ tải lên" + chờ người tạo hồ sơ; vẫn chụp được', async () => {
+    let creator = 'u-2';
+    const store = createMemoryReturnStore({ creatorUid: () => creator });
+    const id = await seedReturn(store);
+    creator = 'u-1';
+    await seedPhoto(store, id, 'ph-b', []);
+    mockNavigation.params = { returnId: id };
+    await renderWithProviders(
+      <CurrentShopProvider shopId={SHOP} uid="u-1">
+        <ReturnExteriorScreen />
+      </CurrentShopProvider>,
+      { returnStore: store },
+    );
+    expect(await screen.findByTestId('return-photo-status-ph-b')).toHaveTextContent(/Chờ tải lên/);
+    expect(screen.getByTestId('return-photo-uploader-ph-b')).toHaveTextContent(
+      'Tệp chỉ tải lên được sau khi người tạo hồ sơ này đăng nhập lại trên máy.',
+    );
+    expect(screen.getByTestId('return-photo-capture')).toBeOnTheScreen();
+  });
+
+  it('V1-07: hồ sơ của người khác ĐÃ gửi bản neo: ảnh của mình tải được, nhãn như cũ', async () => {
+    let creator = 'u-2';
+    const store = createMemoryReturnStore({ creatorUid: () => creator });
+    const id = await seedReturn(store);
+    await store.markReturnPublished(SHOP, id, 9);
+    creator = 'u-1';
+    await seedPhoto(store, id, 'ph-b', []);
+    mockNavigation.params = { returnId: id };
+    await renderWithProviders(
+      <CurrentShopProvider shopId={SHOP} uid="u-1">
+        <ReturnExteriorScreen />
+      </CurrentShopProvider>,
+      { returnStore: store },
+    );
+    expect(await screen.findByTestId('return-photo-status-ph-b')).toHaveTextContent(
+      /Đã lưu trên máy/,
+    );
+    expect(screen.queryByTestId('return-photo-uploader-ph-b')).toBeNull();
   });
 
   describe('vị trí (Q-26k)', () => {

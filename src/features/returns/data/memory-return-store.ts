@@ -83,7 +83,13 @@ export function createMemoryReturnStore(
     }
     return row;
   };
-  const details = (row: Row): ReturnDetails => copy(row);
+  /** Bản sao hồ sơ kèm mốc đã đăng bản neo (như cột `remote_synced_at_device` của SQLite). */
+  const caseOf = (row: Row): ReturnCase => {
+    const at = published.get(row.returnCase.id);
+    const base = copy(row.returnCase);
+    return at === undefined ? base : { ...base, anchorPublishedAtDevice: at };
+  };
+  const details = (row: Row): ReturnDetails => ({ ...copy(row), returnCase: caseOf(row) });
   const toLine = (
     returnId: ReturnCaseId,
     line: NewReceivedLine,
@@ -138,7 +144,7 @@ export function createMemoryReturnStore(
     };
   };
   const summarize = (row: Row): ReturnSummary => ({
-    returnCase: copy(row.returnCase),
+    returnCase: caseOf(row),
     discrepancyCount: row.discrepancies.length,
   });
   const newestFirst = (a: ReturnSummary, b: ReturnSummary) =>

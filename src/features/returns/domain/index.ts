@@ -72,3 +72,4 @@ export type {
 } from './video-controller';
 export { recoverInterruptedMedia } from './media-recovery';
 export type { MediaRecoveryPorts, MediaRecoveryResult } from './media-recovery';
+export { returnMediaUploader } from './media-uploader';

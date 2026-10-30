@@ -152,3 +152,33 @@ describe('countUnsyncedByOwner (V1-07): tách tệp chưa đồng bộ theo ngư
     expect(await orders.countUnsyncedByOwner('device', '')).toEqual({ own: 0, foreign: 4 });
   });
 });
+
+describe('countUnsyncedByOwner (V1-07, review PR #55): ảnh trong hồ sơ CHƯA đăng do người khác tạo', () => {
+  it('A tạo hồ sơ chưa đăng, B chụp ảnh: ảnh là foreign của B (B đăng xuất được) cho tới khi bản neo được đăng', async () => {
+    const db = createNodeSqliteDatabase();
+    let uid: string | null = 'uid-a';
+    const orders = createSqliteOrderStore(db, { creatorUid: () => uid });
+    const returns = createSqliteReturnStore(db, { creatorUid: () => uid });
+    const shop = 'shop-a' as ShopId;
+    const made = await returns.createReturn(newReturn(shop as never));
+    uid = 'uid-b';
+    await returns.createMedia({
+      id: 'ph-b',
+      shopId: shop,
+      returnId: made.returnCase.id,
+      kind: 'photo',
+      atDevice: 2,
+    });
+    expect(await orders.countUnsyncedByOwner('device', 'uid-b')).toEqual({ own: 0, foreign: 1 });
+    expect(await orders.countUnsyncedByOwner(shop, 'uid-b')).toEqual({ own: 0, foreign: 1 });
+    // Với A cũng là foreign (ảnh không phải của A).
+    expect(await orders.countUnsyncedByOwner('device', 'uid-a')).toEqual({ own: 0, foreign: 1 });
+    // A đăng nhập lại và gửi bản neo: ảnh thành việc của B (B tải được), lại chặn B đăng xuất.
+    await returns.markReturnPublished(shop, made.returnCase.id, 9);
+    expect(await orders.countUnsyncedByOwner('device', 'uid-b')).toEqual({ own: 1, foreign: 0 });
+    expect((await returns.getReturn(shop, made.returnCase.id))?.returnCase).toMatchObject({
+      createdBy: 'uid-a',
+      anchorPublishedAtDevice: 9,
+    });
+  });
+});

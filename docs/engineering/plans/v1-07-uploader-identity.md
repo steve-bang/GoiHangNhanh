@@ -58,3 +58,8 @@ Có đổi giao diện (câu lý do). Chụp bản web cổng giả với dữ l
 Vòng 1: (1) Ban đầu định lọc trong nguồn bằng `getSession` từng tệp: đổi sang truy vấn JOIN ở kho (ít lần đọc, cùng mẫu với `listMediaForUpload`). (2) Đăng xuất: nếu vẫn đếm tệp của tài khoản khác, U không bao giờ đăng xuất được -> chỉ đếm tệp của mình khi biết uid; không biết uid thì giữ đếm toàn máy (bảo thủ). (3) Xóa tài khoản giữ đếm toàn máy (bảo thủ, chờ V1-15) để không làm lỏng điều kiện xóa. (4) Hiển thị `uploading` của tệp tài khoản khác thành "Chờ tải lên" (máy này không tải nó) — chỉ là nhãn, không đổi trạng thái tệp (bất biến 3). Bất biến 2 (liên kết phiên–kiện không đổi), 5 (không gán lại tệp cho uid hiện tại), 4 (không xóa gì), 8 (mọi truy vấn có `shop_id`, JOIN cùng shop) giữ.
 
 Tự review: đã chấp nhận.
+
+## Sửa sau review PR #55
+
+Ảnh/video hàng hoàn trong hồ sơ CHƯA đăng do tài khoản khác tạo: tính `foreign` (SQL `countUnsyncedByOwner` JOIN `return_cases`: `own` khi hồ sơ đã đăng bản neo hoặc do chính uid tạo), hiển thị quan hệ `case_owner` với câu "Tệp chỉ tải lên được sau khi người tạo hồ sơ này đăng nhập lại trên máy." ở D03/D06/D07. `ReturnCase.anchorPublishedAtDevice?` đọc từ cột sẵn có. Test: SQLite A tạo hồ sơ chưa đăng -> B chụp -> foreign, B đăng xuất được (`read-device-facts.test.ts`), đăng neo xong -> own; UI D03/D06; `returnMediaUploader`.
+

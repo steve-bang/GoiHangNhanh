@@ -611,7 +611,9 @@ export function createSqliteOrderStore(
     countUnsyncedByOwner: (scope, uid) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
         // Đóng gói: người tạo là người tạo PHIÊN (tệp gắn phiên, bất biến 2); phiên không còn hoặc
-        // `created_by` NULL tính là "không rõ" (foreign). Hàng hoàn: `return_media.created_by`.
+        // `created_by` NULL tính là "không rõ" (foreign). Hàng hoàn: `return_media.created_by` VÀ hồ sơ
+        // tải được dưới uid này: bản neo đã đăng, hoặc chính uid tạo hồ sơ (sẽ tự đăng). Ảnh uid chụp vào
+        // hồ sơ CHƯA đăng của người khác chỉ tải được sau khi người đó đăng nhập lại: tính foreign.
         const device = scope === 'device';
         const shopFilter = (alias: string) => (device ? '' : `AND ${alias}.shop_id = ?`);
         const shopArg = device ? [] : [scope];
@@ -623,8 +625,10 @@ export function createSqliteOrderStore(
                 JOIN packing_sessions s ON s.id = f.session_id AND s.shop_id = f.shop_id
                 WHERE f.state IN (${UNSYNCED_SQL}) AND s.created_by = ? ${shopFilter('f')})
            + (SELECT COUNT(*) FROM return_media m
-                WHERE m.state IN (${UNSYNCED_SQL}) AND m.created_by = ? ${shopFilter('m')}) AS own`,
-          [...shopArg, ...shopArg, uid, ...shopArg, uid, ...shopArg],
+                JOIN return_cases c ON c.id = m.return_id AND c.shop_id = m.shop_id
+                WHERE m.state IN (${UNSYNCED_SQL}) AND m.created_by = ?
+                  AND (c.remote_synced_at_device IS NOT NULL OR c.created_by = ?) ${shopFilter('m')}) AS own`,
+          [...shopArg, ...shopArg, uid, ...shopArg, uid, uid, ...shopArg],
         );
         const total = row?.total ?? 0;
         const own = uid ? (row?.own ?? 0) : 0;
