@@ -8,7 +8,7 @@
 
 - [ ] **D-1. Tên ứng dụng và định danh gói chính thức** (O-11, Q-06). Giữ chỗ hiện tại khi `APP_ENV=prod`: `vn.doncung.app`. Bundle id/applicationId **không đổi được** sau lần tải lên đầu.
 - [ ] **D-2. Sàn hệ điều hành** (O-20). Mặc định v1: sàn kỹ thuật của Expo SDK 58/RN 0.88 và thư viện đã chọn (RN: iOS 15.1, Android 7.0/API 24); xác nhận lại sàn thật sau `expo prebuild`.
-- [ ] **D-3. Duyệt các câu hỏi R-1…R-8** ở v1-release-plan.md mục 7.3.
+- [x] **D-3. Câu hỏi R-1…R-8** (v1-release-plan.md mục 7.3): **đã được điều phối chốt** ở mục 7.5 (2026-10-30; chưa có xác nhận trực tiếp của người dùng). R-7 vẫn cần người dùng xác nhận ở D-1/D-2 trước lần tải đầu.
 - [ ] **D-4. Địa chỉ email hỗ trợ và tên miền web thật**; điền vào `src/core/config/public-links.ts` và `web/src/config/site.ts` (test tooling bắt khác nhau).
 
 ## F. Firebase production
@@ -21,7 +21,7 @@
 - [ ] **F-6.** Mẫu thư **đặt lại mật khẩu**: ngôn ngữ tiếng Việt, tên người gửi, kiểm tra thư không vào Thư rác (Gmail, Outlook) ở G-2.
 - [ ] **F-7.** Đăng ký app iOS (bundle id D-1) và Android (package D-1, thêm SHA-1/SHA-256 của khóa ký Google Play sau S-5); tải `GoogleService-Info.plist`, `google-services.json` lên **EAS file secret** môi trường `production` (`DEPLOYMENT.md` mục 4.5). Không commit.
 - [ ] **F-8.** Bật **Crashlytics** trong Console (nếu V1-16 có trong v1).
-- [ ] **F-9.** Tạo **tài khoản demo** cho người duyệt store (email/mật khẩu riêng, một cửa hàng, vài đơn mẫu); ghi vào App Review/Play App access, không ghi vào repo.
+- [ ] **F-9.** Tạo **tài khoản demo** cho người duyệt store (email/mật khẩu riêng, đã tạo cửa hàng); ghi vào App Review/Play App access, không ghi vào repo. **Không hứa "có sẵn đơn mẫu":** đơn và bằng chứng chỉ nằm trên máy tạo ra chúng (Q-24a), máy của người duyệt sẽ trống. Ghi chú cho người duyệt: cách tự tạo đơn bằng Tạo đơn nhanh hoặc quét **mã vạch mẫu đính kèm** (ảnh Code 128 của mã giả, ví dụ `DH-DEMO-0001`, in hoặc mở trên màn khác), rồi quay video đóng gói; nội dung ghi chú ở `docs/engineering/store-listing.md` (V1-20).
 - [ ] **F-10.** Kiểm `accountDeletions` và `auditEvents` không đọc được từ client (thử bằng tài khoản demo).
 
 ## S. Tài khoản store và build
@@ -35,6 +35,8 @@
 - [ ] **S-7.** Kiểm `PrivacyInfo.xcprivacy` được tổng hợp trong bản build iOS (Expo + RNFirebase) và lý do API bắt buộc (dung lượng đĩa, thời gian tệp, UserDefaults) đủ; App Store Connect không báo thiếu.
 
 ## G. Cổng thiết bị (iOS + Android thật, bản `staging`)
+
+- [ ] **G-0. Chuẩn bị dự án dev cho staging (trước mọi mục G khác):** deploy đúng **commit ứng viên** lên dự án dev `ghn-test-67b39`: `npm run test:rules` xanh -> `firestore:rules`, `firestore:indexes`, `storage` -> `functions` (đủ Function như F-4); kiểm IAM ký URL như F-5; Auth bật Email/Password + "Email enumeration protection"; mẫu thư đặt lại mật khẩu tiếng Việt như F-6; tệp cấu hình dev trong EAS file secret môi trường `preview`. Ghi sha commit đã deploy vào kết quả G; deploy lại nếu commit ứng viên đổi.
 
 Ma trận tối thiểu: 1 iPhone đời cũ ở sàn D-2 + 1 iPhone mới; 1 Android tầm thấp (RAM ≤ 4 GB) + 1 Android phổ biến tại Việt Nam (Samsung/Xiaomi/OPPO). Ghi kết quả vào `docs/engineering/testing.md` và ADR-020.
 

@@ -30,7 +30,7 @@
 | Tải lên khi app mở, đối soát, xác minh mã băm phía máy chủ; mất mạng không tốn lượt; "Chỉ tải khi có Wi‑Fi" (Q-24c B) | Tải nền khi app đã bị đóng (không hứa, bất biến 11) |
 | Trung tâm đồng bộ thật + Thử lại; Trang chủ số liệu thật; Thông báo là trạng thái rỗng trung thực | Thông báo đẩy, dữ liệu minh họa ở bất kỳ màn nào của bản production |
 | **Xem lại video/ảnh đã ghi trên chính máy** (phát tệp cục bộ, `expo-video`) | Xem trên máy khác |
-| **Xóa tài khoản thật trong app** (Function, xác thực lại, dọn dữ liệu máy chủ có thời hạn, giữ nhật ký) | Khôi phục tài khoản đã xóa |
+| **Xóa tài khoản thật trong app** (Function, xác thực lại, xóa hẳn dữ liệu cửa hàng trên máy chủ sau 30 ngày, kể cả nhật ký kiểm toán của cửa hàng; chỉ giữ bản ghi tối thiểu `accountDeletions`) | Khôi phục tài khoản đã xóa |
 | Loại video/CSDL khỏi iCloud Backup/Android Auto Backup (Q-24d A) | Sao lưu/chuyển dữ liệu chưa tải sang máy mới |
 | Báo lỗi ứng dụng (Crashlytics) có che PII, tắt được | Analytics hành vi |
 | Miễn phí, **ẩn Gói dịch vụ**, không mua trong app (O-06, O-16) | Gói, thanh toán, thời hạn lưu theo gói, tự động xóa khi hết hạn |
@@ -46,7 +46,7 @@
 | Q-24d | **A.** Loại video bằng chứng và CSDL khỏi iCloud Backup/Android Auto Backup; ghi vào chính sách quyền riêng tư | Android `allowBackup: false`; iOS module cục bộ đặt `isExcludedFromBackup` | V1-01, V1-12, V1-19 |
 | Q-24e | **B.** Giữ slogan màn Chào mừng; điều kiện phát hành: đường tải lên đã kiểm chứng trên thiết bị | Mục cổng thiết bị G-3 | release-checklist |
 | Q-24f | **A.** `@react-native-community/netinfo` **12.0.1** (đúng bản `bundledNativeModules.json` của Expo SDK 58 trong `node_modules/expo`, cũng là bản mới nhất trên npm ngày 2026-10-30) và `expo-keep-awake` **~58.0.3** (cùng nguồn), sau adapter `src/platform/` | `npx expo install` bị proxy chặn (ADR-013): cài bằng `npm install <gói>@<bản trong bundledNativeModules>` | V1-02, V1-11 |
-| Q-24g | **A.** Một máy một tài khoản; tệp do uid khác tạo: không tải hộ, báo rõ (như Q-23g cho đơn) | Nguồn tải bằng chứng đóng gói lọc theo `packing_sessions.created_by` (không cần migration) | V1-07 |
+| Q-24g | **A (một máy một tài khoản) + lọc theo `created_by` như Q-23g:** tệp do uid khác tạo không tải hộ, báo rõ | Nguồn tải bằng chứng đóng gói lọc theo `packing_sessions.created_by` (không cần migration) | V1-07 |
 | Q-24h | **A.** Lỗi mạng không tính lượt (backoff, trần 15 phút); lỗi máy chủ từ chối tối đa 8 lần rồi "cần xử lý", có nút Thử lại | Thêm sự kiện người dùng `needs_attention -> queued` có điều kiện (mục 7, điểm R-3) | V1-02, V1-08 |
 | O-09 | Không thu tiếng, không xin quyền micro | Giữ `microphonePermission: false`, `recordAudioAndroid: false`; V1-01 kiểm tra manifest sinh ra không có `RECORD_AUDIO` | V1-01 |
 | O-15 | Chỉ email + mật khẩu. Ẩn nút Apple/Google bằng **cờ cấu hình sẵn có** `SOCIAL_SIGN_IN_FLAGS` (`src/core/config/feature-flags.ts:13-16`) đặt `false`. Ba màn đã dựng sẵn nhánh `providers.length > 0` (`WelcomeScreen.tsx:123`, `SignInScreen.tsx:250`, `SignUpScreen.tsx:311`) nên **không sửa tệp màn đã khách xác nhận**. **Lệch có chủ đích:** màn Chào mừng/Đăng nhập/Đăng ký mất khối nút mạng xã hội so với ảnh đã duyệt | Không cần duyệt Sign in with Apple (Guideline 4.8 không áp dụng khi không có đăng nhập bên thứ ba) | V1-03 |
@@ -58,7 +58,7 @@
 | Build/phát hành | EAS Build iOS + Android; profile `production` đặt `APP_ENV=prod` (giá trị sẵn có của `app.config.js` và `scripts/env/prod.env`; nhận thêm bí danh `production`), bundle id không `.dev`, dự án Firebase production riêng (người dùng tạo sau); **chốt chặn** cờ cổng giả ở cả lúc build lẫn lúc chạy | Store, thiết bị, deploy: checklist con người | V1-01, release-checklist |
 | Tài liệu store | Chính sách quyền riêng tư, điều khoản, hỗ trợ, yêu cầu xóa tài khoản (web), khai báo Privacy Labels/Data safety, chuỗi quyền, mô tả store. URL/email thật chưa có: placeholder ở **một** chỗ cho app (`src/core/config/public-links.ts`) và một chỗ cho web (`web/src/config/site.ts`), có test đối chiếu hai chỗ khớp nhau | | V1-18, V1-19, V1-20 |
 
-**Không tự chốt (vẫn mở, cần người/điều phối):** tên thương hiệu và bundle id chính thức (O-11; không đổi được sau lần tải đầu, giá trị giữ chỗ `vn.doncung.app`); sàn hệ điều hành (O-20; v1 dùng sàn kỹ thuật của framework/thư viện, không tự nâng); câu chữ mới (BA); rà soát pháp lý chính sách quyền riêng tư theo luật Việt Nam; các điểm R-1…R-6 ở mục 7.3.
+**Không tự chốt (vẫn mở, cần người/điều phối):** tên thương hiệu và bundle id chính thức (O-11; không đổi được sau lần tải đầu, giá trị giữ chỗ `vn.doncung.app`); sàn hệ điều hành (O-20; v1 dùng sàn kỹ thuật của framework/thư viện, không tự nâng); câu chữ mới (BA); rà soát pháp lý chính sách quyền riêng tư theo luật Việt Nam. Các điểm R-1…R-8 (mục 7.3) **đã được điều phối chốt ở mục 7.5**.
 
 ---
 
@@ -131,10 +131,10 @@ Ngoài tab Cá nhân, `src/api/firebase/firebase-api.ts:68-71`: `signInWithProvi
 | V1-02 | network-retry | NetInfo thật, lỗi mạng không tốn lượt, timeout, không treo hàng đợi | PR2, Q-24f/h | – | V1-00/01/03/04/11/12/19/20 | M |
 | V1-03 | auth-email-reset | Quên mật khẩu bằng email Firebase, ẩn Apple/Google | O-15, D-14 | – | V1-00/01/02/04/11/12/19/20 | S-M |
 | V1-04 | server-audit-rules | Trigger kiểm toán, siết Rules + trần dung lượng mọi bằng chứng, sửa Function | PR6, Q-24c | – | mọi PR không đụng `firebase/` | M |
-| V1-05 | personal-firebase | Đổi mật khẩu, họ tên, danh sách/đổi tên shop thật; ẩn Cài đặt thông báo | Q-20t | V1-03 | V1-06, V1-07, V1-14, V1-16, V1-17 | M |
+| V1-05 | personal-firebase | Đổi mật khẩu, họ tên, danh sách/đổi tên shop thật; ẩn Cài đặt thông báo | Q-20t | V1-03 | V1-06, V1-07, V1-14, V1-17 | M |
 | V1-06 | session-guard | Chặn route khi chưa đăng nhập; không tạo đơn khi chưa biết shop thật | release-hardening mục 6 | – (hợp nhất sau V1-02 nếu dùng `useIsOffline`) | V1-05, V1-07 | S-M |
 | V1-07 | uploader-identity | Không tải hộ tệp do tài khoản khác tạo trên máy | Q-24g | V1-02 (hợp nhất sau) | V1-05, V1-06 | S |
-| V1-08 | sync-center | UI-F01/F02 dữ liệu thật, Thử lại, "Cần xử lý" thử lại được có điều kiện | PR4, Q-24h | V1-02, V1-07 | V1-15, V1-16, V1-17 | M-L |
+| V1-08 | sync-center | UI-F01/F02 dữ liệu thật, Thử lại, "Cần xử lý" thử lại được có điều kiện | PR4, Q-24h | V1-02, V1-07 | V1-15, V1-17 | M-L |
 | V1-09 | wifi-only | Công tắc "Chỉ tải khi có Wi‑Fi" (migration v15, bảng `device_settings`) | Q-24c | V1-02, V1-08 | V1-14…V1-20 | S-M |
 | V1-10 | home-real-data | Trang chủ, thẻ Dữ liệu bằng chứng thật, Thông báo rỗng trung thực, cấm dữ liệu minh họa | mục 2.3, Q-24a | V1-08, V1-09 | V1-13…V1-20 | M |
 | V1-11 | recording-hardening | Giữ màn hình sáng, xử lý vào nền khi quay, câu giới hạn Q-24b | PR5, Q-24b | – | làn A | S-M |
@@ -142,7 +142,7 @@ Ngoài tab Cá nhân, `src/api/firebase/firebase-api.ts:68-71`: `signInWithProvi
 | V1-13 | hash-efficiency | Băm nhường luồng JS, không băm lại tệp không đổi (migration v16) | PR7 bước 2 | V1-02, V1-09 | V1-14…V1-20 | S-M |
 | V1-14 | account-delete-server | Function `deleteAccount` + `purgeDeletedShops` + nhật ký | xóa tài khoản | V1-04 | V1-05…V1-13 | M |
 | V1-15 | account-delete-client | Luồng xóa trong app, xóa dữ liệu cục bộ sau khi máy chủ xác nhận | xóa tài khoản | V1-05, V1-14 | V1-16, V1-17 | M |
-| V1-16 | crashlytics | Báo lỗi ứng dụng sau adapter, che PII, có công tắc | Q-07 | V1-01 | V1-14, V1-15, V1-17 | S-M (native) |
+| V1-16 | crashlytics | Báo lỗi ứng dụng sau adapter, che PII, có công tắc (lưu ở `device_settings`) | Q-07 | V1-01, V1-09 | V1-14, V1-15, V1-17 | S-M (native) |
 | V1-17 | local-playback | UI-E04 thật: phát video/xem ảnh từ tệp trên máy | Q-24a | – (sau V1-16 về lockfile) | V1-14, V1-15 | M (native) |
 | V1-18 | content-help-legal | Trợ giúp, câu thời hạn lưu, chuỗi quyền, `public-links.ts` một chỗ | Q-24a/b, store | V1-03, V1-11 (i18n) | V1-19, V1-20 | S-M |
 | V1-19 | web-legal-pages | Trang web quyền riêng tư, điều khoản, hỗ trợ, yêu cầu xóa tài khoản | store | – | tất cả | S (web) |
@@ -156,9 +156,10 @@ PR8 (chia đoạn video) và PR9 (kéo xuống) của release-hardening-plan **k
 
 ```
 Làn A (bắt đầu ngay, khác tệp):  V1-00  V1-01  V1-02  V1-03  V1-04  V1-11  V1-12  V1-19  V1-20
-Làn B (sau phụ thuộc):           V1-05 (sau 03)   V1-06   V1-07 (sau 02)   V1-14 (sau 04)   V1-16 (sau 01)   V1-17
+Làn B (sau phụ thuộc):           V1-05 (sau 03)   V1-06   V1-07 (sau 02)   V1-14 (sau 04)   V1-17
 Làn C:                           V1-08 (sau 02, 07)        V1-15 (sau 05, 14)
 Làn D:                           V1-09 (sau 08)
+Làn D2:                          V1-16 (sau 01, 09)
 Làn E:                           V1-10 (sau 08, 09)        V1-13 (sau 02, 09)        V1-18 (sau 03, 11)
 Build staging EAS -> CỔNG THIẾT BỊ (QA-01…14, iOS + Android) -> PR sửa lỗi nếu có -> V1-21 -> build production
 ```
@@ -203,9 +204,9 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
 
 #### V1-04 server-audit-rules
 - **Mục tiêu:** thực thi bất biến 7 phía máy chủ; giảm bề mặt ghi tùy ý; trần dung lượng cho mọi bằng chứng.
-- **Tệp:** `firebase/functions/src/audit.ts` (mới: `onDocumentWritten` cho `shops/{s}/orders/{o}`, `.../sessions/{x}`, `.../evidence/{e}`, `.../returns/{r}`; id sự kiện cố định từ `(đường dẫn, updateTime)` để idempotent; chỉ tên trường đổi và `before/after` của trường không nhạy cảm; không ghi mã đơn/mã vận đơn vào log Function), `index.ts`, `shop.ts` (`updateShop` dùng `ID_PATTERN`), `uploads.ts` (`createUploadSession` kiểm `evidence.createdBy == uid` và `sizeBytes` trong trần), `index.ts` `verifyEvidence` (thay `retry: true` vô hạn bằng: lỗi tạm ném để thử lại, lỗi bền (đối tượng không còn, kích thước vượt trần) ghi kiểm toán rồi kết thúc, có trần theo tuổi sự kiện), `firebase/firestore.rules` (kiểu/độ dài `orderCode`, `trackingCode*`, `note`, `lastError`, `interruptions`; `sizeBytes` ảnh ≤ 25 000 000, video ≤ 2 000 000 000 cho bằng chứng đóng gói như hàng hoàn; cấm tạo bằng chứng cho phiên đã `confirmed`), `firebase/firestore.indexes.json` nếu truy vấn mới cần.
+- **Tệp:** `firebase/functions/src/audit.ts` (mới: `onDocumentWritten` cho `shops/{s}/orders/{o}`, `.../sessions/{x}`, `.../evidence/{e}`, `.../returns/{r}`; id sự kiện cố định từ `(đường dẫn, updateTime)` để idempotent; chỉ tên trường đổi và `before/after` của trường không nhạy cảm; không ghi mã đơn/mã vận đơn vào log Function), `index.ts`, `shop.ts` (`updateShop` dùng `ID_PATTERN`), `uploads.ts` (`createUploadSession` kiểm `evidence.createdBy == uid` và `sizeBytes` trong trần), `index.ts` `verifyEvidence` (thay `retry: true` vô hạn bằng: lỗi tạm ném để thử lại, lỗi bền (đối tượng không còn, kích thước vượt trần) ghi kiểm toán rồi kết thúc, có trần theo tuổi sự kiện), `firebase/firestore.rules` (kiểu/độ dài `orderCode`, `trackingCode*`, `note`, `lastError`, `interruptions`; `sizeBytes` ảnh ≤ 25 000 000, video ≤ 2 000 000 000 cho bằng chứng đóng gói như hàng hoàn); **không** chặn tạo bằng chứng theo trạng thái phiên: phiên được đăng với trạng thái mới nhất (`order-sync.ts:108`, `remote-order-writer.ts:51-56`), nên luồng quay -> xác nhận -> tải sau thường có phiên `confirmed` trên máy chủ TRƯỚC khi bằng chứng được khai báo. Ràng buộc chỉ dựa trên điều không phụ thuộc thứ tự đồng bộ: phiên tồn tại cùng shop, `createdBy == auth.uid`, `capturedAtDevice` không sau thời điểm khai báo; không thêm điều kiện trạng thái phiên), `firebase/firestore.indexes.json` nếu truy vấn mới cần.
 - **Thư viện:** không. **Migration:** không.
-- **Test (`firebase/tests/rules`, `npm run test:rules`):** mỗi cập nhật tạo đúng một `auditEvents`, chạy lại không nhân đôi; client không ghi/xóa `auditEvents` (`assertFails`); kiểu/độ dài sai bị từ chối; trần dung lượng: 25 000 000 qua, 25 000 001 bị từ chối (ảnh), tương tự video; tạo bằng chứng vào phiên `confirmed` bị từ chối; truy cập chéo shop ở mọi luật mới (QA-11); `verifyEvidence` lỗi bền không thử lại vô hạn.
+- **Test (`firebase/tests/rules`, `npm run test:rules`):** mỗi cập nhật tạo đúng một `auditEvents`, chạy lại không nhân đôi; client không ghi/xóa `auditEvents` (`assertFails`); kiểu/độ dài sai bị từ chối; trần dung lượng: 25 000 000 qua, 25 000 001 bị từ chối (ảnh), tương tự video; **bắt buộc:** phiên đăng ở `confirmed` trước, bằng chứng khai báo sau vẫn qua (`assertSucceeds`), và tương tự với phiên `ended`/`interrupted`; bằng chứng cho phiên không tồn tại hoặc phiên của shop khác bị từ chối; truy cập chéo shop ở mọi luật mới (QA-11); `verifyEvidence` lỗi bền không thử lại vô hạn.
 - **Ảnh:** không.
 - **Rủi ro:** chi phí: mỗi thay đổi thêm một lần ghi Firestore + một lần gọi Function (ước tính và ghi vào `architecture.md` mục chi phí); siết Rules làm hỏng bản app cũ: v1 là bản phát hành đầu, chỉ có bản dev, chấp nhận. Trigger chỉ có hiệu lực sau deploy (checklist F-4). **Phụ thuộc:** không.
 
@@ -287,23 +288,23 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
   1. Callable `deleteAccount` (region `asia-southeast1`): yêu cầu `request.auth`, `auth_time` trong vòng 5 phút (client vừa xác thực lại), nếu không `failed-precondition` (`requires-recent-login`).
   2. Với mỗi shop của uid (`userShops/{uid}`): nếu uid là **chủ duy nhất và không còn thành viên hoạt động khác** -> đặt `shops/{id}.status = 'deleting'`, `deletionRequestedAt` (giờ máy chủ), `purgeAfter = +30 ngày`; nếu shop còn thành viên khác (không xảy ra ở v1) -> từ chối, mã đề xuất `ACCOUNT_DELETE_SHOP_HAS_MEMBERS`; nếu uid không phải chủ -> chỉ gỡ thành viên.
   3. Xóa `shops/{id}/members/{uid}` và `userShops/{uid}` ngay (Rules hiện có từ chối mọi truy cập khi không còn là thành viên, nên dữ liệu không còn đọc được từ app).
-  4. Ghi `accountDeletions/{autoId}` (cấp gốc, Rules `allow read, write: if false`): `uid`, `shopIds`, `requestedAt`, `purgeAfter`, `status`; **không** email, không mã đơn.
+  4. Ghi `accountDeletions/{autoId}` (cấp gốc, Rules `allow read, write: if false`): `uid`, `shopIds`, `requestedAt`, `purgeAfter`, `status`, `reason` (lý do kỹ thuật); **không** email, không tên, không mã đơn. Đây là bản ghi DUY NHẤT còn lại sau purge.
   5. Xóa người dùng Auth bằng Admin SDK (bước cuối; lỗi giữa chừng -> chạy lại idempotent).
-  6. Scheduled `purgeDeletedShops` (hằng ngày): shop `deleting` quá `purgeAfter` và **không** có `legalHold == true` (trường chỉ Admin đặt; v1 chưa có giao diện đặt) -> xóa đối tượng Storage `shops/{id}/` theo trang, `recursiveDelete` Firestore `shops/{id}`, cập nhật `accountDeletions.status = 'purged'` + số lượng. Bằng chứng đang bị giữ do tranh chấp: v1 tranh chấp **chỉ ở trên máy**, máy chủ không có hồ sơ giữ nào; client chặn xóa khi còn tranh chấp mở (V1-15). Trường `legalHold` là chỗ để yêu cầu pháp lý/hỗ trợ dừng việc dọn (bất biến 9).
+  6. Scheduled `purgeDeletedShops` (hằng ngày): shop `deleting` quá `purgeAfter` và **không** có `legalHold == true` (trường chỉ Admin đặt; v1 chưa có giao diện đặt) -> xóa đối tượng Storage `shops/{id}/` theo trang, `recursiveDelete` Firestore `shops/{id}` **gồm cả `auditEvents` của shop** (điều phối chốt: xóa theo yêu cầu của chủ, sau 30 ngày, trừ khi có `legalHold`/tranh chấp), cập nhật `accountDeletions.status = 'purged'` + số lượng. Sau purge, thứ duy nhất còn lại là `accountDeletions` (uid, thời điểm yêu cầu/purge, `shopIds`, lý do kỹ thuật như `owner_request`/`legal_hold_skip`, số lượng; không email, không tên, không mã đơn). Bằng chứng đang bị giữ do tranh chấp: v1 tranh chấp **chỉ ở trên máy**, máy chủ không có hồ sơ giữ nào; client chặn xóa khi còn tranh chấp mở (V1-15). Trường `legalHold` là chỗ để yêu cầu pháp lý/hỗ trợ dừng việc dọn (bất biến 9).
   7. Script hỗ trợ `firebase/functions/src/admin/delete-account-cli.ts` dùng chung hàm thuần để nhân viên hỗ trợ xử lý yêu cầu xóa gửi qua web (Google Play yêu cầu kênh web).
 - **Tệp:** `firebase/functions/src/account.ts` (mới, hàm thuần `deleteAccountForUser`, `purgeShop`), `index.ts`, `firebase/firestore.rules` (`accountDeletions` từ chối client; shop `deleting` từ chối ghi), test.
 - **Thư viện/Migration:** không.
-- **Test (Emulator):** chưa xác thực lại -> từ chối; chủ duy nhất -> shop `deleting`, thành viên + `userShops` mất, Auth bị xóa, nhật ký có; gọi hai lần không lỗi, không nhân đôi nhật ký; sau khi xóa, client cũ đọc/ghi `shops/{id}/**` bị từ chối (`assertFails`); người khác shop không gọi thay được; purge bỏ qua shop `legalHold`; purge trước `purgeAfter` không làm gì; Storage giả bị xóa đúng tiền tố, không đụng shop khác (QA-11).
+- **Test (Emulator):** chưa xác thực lại -> từ chối; chủ duy nhất -> shop `deleting`, thành viên + `userShops` mất, Auth bị xóa, nhật ký có; gọi hai lần không lỗi, không nhân đôi nhật ký; sau khi xóa, client cũ đọc/ghi `shops/{id}/**` bị từ chối (`assertFails`); người khác shop không gọi thay được; purge bỏ qua shop `legalHold`; purge trước `purgeAfter` không làm gì; purge xong thì `shops/{id}` và MỌI collection con (orders, sessions, evidence, returns, members, **auditEvents**) không còn tài liệu nào, `accountDeletions` vẫn còn với `status = 'purged'` và không có trường email/tên; Storage giả bị xóa đúng tiền tố, không đụng shop khác (QA-11).
 - **Ảnh:** không.
 - **Rủi ro:** Function dài khi nhiều tệp: purge chạy theo trang, có thể kéo nhiều ngày; chi phí xóa thấp. Lưu `uid` trong `accountDeletions` sau khi xóa là dữ liệu cá nhân còn lại: cần rà pháp lý (mục 7, R-1). **Phụ thuộc:** V1-04 (cùng `index.ts`, `firestore.rules`).
 
 #### V1-15 account-delete-client
 - **Mục tiêu:** người dùng xóa được tài khoản trong app, an toàn và trung thực.
 - **Luồng:** màn Xóa tài khoản (đã có) -> điều kiện thật: **đang quay: chặn**; **còn hồ sơ tranh chấp mở trên máy: chặn** (đóng hồ sơ không xóa dữ liệu, Q-27); **tệp chưa lên máy chủ: cảnh báo rõ "N tệp chưa tải lên sẽ bị xóa khỏi máy này và không thể khôi phục" + bắt buộc tích xác nhận riêng**; là chủ cửa hàng: thông tin "cửa hàng và dữ liệu trên máy chủ sẽ bị xóa hẳn trong vòng 30 ngày". -> "Tôi hiểu và đồng ý" -> nhập mật khẩu (xác thực lại) -> gọi `deleteAccount` -> **chỉ khi máy chủ trả thành công**: dừng `UploadRunner`/`OrderSyncRunner`/`ReturnSyncRunner`, xóa dữ liệu cục bộ, thoát phiên, về Chào mừng với thông báo đã xóa. Lỗi mạng/máy chủ: giữ nguyên mọi thứ, báo thử lại.
-- **Xóa dữ liệu cục bộ:** hàm `wipeLocalData()` trong `features/orders/data` (chạy trong hàng đợi CSDL: `DELETE` mọi bảng nghiệp vụ trong một giao dịch, giữ `user_version`), rồi xóa thư mục `evidence/` qua `platform/recording-files.ts`; đặt dấu `pending_local_wipe` trước khi bắt đầu để lần mở app sau làm nốt nếu bị kill giữa chừng.
+- **Xóa dữ liệu cục bộ:** hàm `wipeLocalData()` trong `features/orders/data` (chạy trong hàng đợi CSDL: `DELETE` mọi bảng nghiệp vụ trong một giao dịch, giữ `user_version`), và xóa thư mục `evidence/` qua `platform/recording-files.ts`. Dấu `pending_local_wipe` lưu **ngoài CSDL sắp bị xóa**: tệp đánh dấu riêng `Paths.document/.pending-local-wipe` (adapter `platform/`, ghi bằng `expo-file-system`, không chứa PII). Thứ tự cố định: (1) đặt dấu, (2) xóa tệp trong `evidence/`, (3) xóa dữ liệu CSDL, (4) gỡ dấu. Khi khởi động, nếu thấy dấu thì chạy lại TỪ ĐẦU bước 2–4 trước khi mở bất kỳ runner nào (mọi bước idempotent: tệp/hàng đã mất thì bỏ qua).
 - **Tệp:** `src/api/contract` (`account.deleteAccount(password)`), ba hiện thực API, `firebase-personal-gateways.ts`, `DeleteAccountScreen.tsx`, `delete-account-conditions.ts` (điều kiện `disputes` đọc `DisputeStore` cục bộ: số hồ sơ mở; điều kiện `unsynced` đổi từ chặn sang cảnh báo có xác nhận), `read-device-facts.ts`, `features/orders/data/wipe-local-data.ts`, `platform/recording-files.ts`, `SessionProvider` (xả phiên sau xóa), i18n, `decisions.md` (ghi ngoại lệ bất biến 4, mục 7 R-2).
 - **Thư viện/Migration/Rules:** không.
-- **Test:** điều kiện (tranh chấp mở chặn, đang quay chặn, tệp chưa tải cần tích thêm); thất bại máy chủ không xóa gì cục bộ; thành công gọi theo đúng thứ tự (dừng runner -> xóa CSDL -> xóa tệp -> thoát); dấu `pending_local_wipe` làm nốt khi mở lại; `wipeLocalData` trên `node:sqlite` xóa hết bảng nghiệp vụ, giữ schema; contract test `deleteAccount`.
+- **Test:** điều kiện (tranh chấp mở chặn, đang quay chặn, tệp chưa tải cần tích thêm); thất bại máy chủ không xóa gì cục bộ; thành công gọi theo đúng thứ tự (dừng runner -> đặt dấu -> xóa tệp -> xóa CSDL -> gỡ dấu -> thoát); dấu nằm ngoài CSDL (xóa CSDL không làm mất dấu); thứ tự đặt dấu -> xóa `evidence/` -> xóa CSDL -> gỡ dấu (adapter giả ghi nhật ký gọi); giả lập kill sau từng bước (1, 2, 3) rồi khởi động lại: thấy dấu, chạy lại từ đầu, kết quả cuối giống chạy một lần, dấu bị gỡ; khởi động không có dấu thì không xóa gì; runner chỉ chạy sau khi xóa xong; `wipeLocalData` trên `node:sqlite` xóa hết bảng nghiệp vụ, giữ schema; contract test `deleteAccount`.
 - **Ảnh:** màn Xóa tài khoản: các điều kiện (đạt, chặn tranh chấp, cảnh báo tệp chưa tải), bước nhập mật khẩu, lỗi mật khẩu sai, lỗi mạng, màn Chào mừng sau khi xóa (thông báo).
 - **Rủi ro:** xóa tệp cục bộ là **xóa bằng chứng theo yêu cầu người dùng**: ngoại lệ có chủ đích với bất biến 4 (mục 7, R-2). **Phụ thuộc:** V1-05, V1-14.
 
@@ -314,7 +315,7 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
 - **Thư viện:** `@react-native-firebase/crashlytics@27.1.0`. **Migration/Rules:** không.
 - **Test:** logger: sink không bao giờ nhận mã đơn/mã vận đơn/email/đường dẫn tệp (test với chuỗi mẫu); không gọi `setUserId`; công tắc tắt -> `setEnabled(false)`; bản test/dev không bật.
 - **Ảnh:** UI-I05 có công tắc.
-- **Rủi ro:** như trên; khai báo Data safety/App Privacy thêm "Crash logs/Diagnostics" (V1-20). **Phụ thuộc:** V1-01 (cùng `app.json`); hợp nhất sau V1-11 (lockfile).
+- **Rủi ro:** như trên; khai báo Data safety/App Privacy thêm "Crash logs/Diagnostics" (V1-20). **Phụ thuộc:** V1-01 (cùng `app.json`), V1-09 (kho `device_settings`, migration v15, cho công tắc); hợp nhất sau V1-11 (lockfile).
 
 #### V1-17 local-playback
 - **Đánh giá đưa vào v1:** **nên đưa.** Lý do: không có URL máy chủ, đây là cách duy nhất người bán xem lại bằng chứng của chính mình (đối chiếu khi khiếu nại); `expo-video` là thư viện Expo chính chủ, bản `~58.0.12` theo SDK, chạy cả iOS và Android, phát từ `file://` ở lớp native (không nạp video vào bộ nhớ JS), chỉ đọc (không sửa bản gốc). Chi phí: một màn (UI-E04 đang là khung) + lối vào từ UI-E03/G03/D07. Rủi ro native thấp hơn camera/tải; nếu có lỗi build thì là PR tách được.
@@ -335,13 +336,13 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
 #### V1-19 web-legal-pages
 - **Mục tiêu:** có URL công khai cho store: Chính sách quyền riêng tư, Điều khoản, Hỗ trợ, Yêu cầu xóa tài khoản (Google Play yêu cầu kênh web).
 - **Tệp:** `web/src/pages/{chinh-sach-quyen-rieng-tu,dieu-khoan,ho-tro,xoa-tai-khoan}.astro`, `web/src/config/site.ts` (giữ chỗ URL/email cùng giá trị với app), liên kết chân trang, `web/README.md`.
-- **Nội dung chính sách (bản nháp, chờ pháp lý):** dữ liệu thu thập: email, họ tên (nếu nhập), tên cửa hàng, mã đơn/mã vận đơn/sản phẩm do người dùng nhập, video/ảnh bằng chứng và mã băm khi tải lên, thời gian thiết bị/máy chủ, báo lỗi ứng dụng (nếu bật); **vị trí lúc chụp ảnh hàng hoàn chỉ lưu trên máy, không gửi lên** (Q-28a); video/CSDL không vào sao lưu iCloud/Android (Q-24d); máy chủ Firebase khu vực Singapore (Q-08); không quảng cáo, không bán dữ liệu; xóa tài khoản trong app hoặc qua trang web, dữ liệu máy chủ xóa hẳn trong 30 ngày; chưa tự động xóa theo thời hạn; liên hệ.
+- **Nội dung chính sách (bản nháp, chờ pháp lý):** dữ liệu thu thập: email, họ tên (nếu nhập), tên cửa hàng, mã đơn/mã vận đơn/sản phẩm do người dùng nhập, video/ảnh bằng chứng và mã băm khi tải lên, thời gian thiết bị/máy chủ, báo lỗi ứng dụng (nếu bật); **vị trí lúc chụp ảnh hàng hoàn chỉ lưu trên máy, không gửi lên** (Q-28a); video/CSDL không vào sao lưu iCloud/Android (Q-24d); máy chủ Firebase khu vực Singapore (Q-08); không quảng cáo, không bán dữ liệu; xóa tài khoản trong app hoặc qua trang web: tài khoản bị xóa ngay, dữ liệu cửa hàng trên máy chủ (đơn, phiên, bằng chứng, hồ sơ neo, **nhật ký kiểm toán của cửa hàng**) xóa hẳn sau 30 ngày, trừ khi có yêu cầu giữ lại vì pháp lý/tranh chấp; sau đó chỉ còn một bản ghi tối thiểu gồm mã tài khoản nội bộ (uid), thời điểm, mã cửa hàng và lý do kỹ thuật (không email, không tên) để chứng minh đã xử lý yêu cầu; chưa tự động xóa theo thời hạn; liên hệ.
 - **Test:** `npm --prefix web run check` (SEO, liên kết hỏng). **Ảnh:** 4 trang (360x800).
 - **Rủi ro:** nội dung pháp lý cần luật sư rà theo luật bảo vệ dữ liệu cá nhân Việt Nam (checklist C-2). **Phụ thuộc:** không.
 
 #### V1-20 store-listing-docs
 - **Mục tiêu:** soạn sẵn mọi nội dung con người sẽ dán vào Play Console/App Store Connect.
-- **Tệp:** `docs/engineering/store-listing.md`: tên, mô tả ngắn/dài tiếng Việt trung thực (bất biến 11), từ khóa, danh mục; **Apple App Privacy** và **Google Data safety** theo bảng dữ liệu ở V1-19 (vị trí: xử lý trên máy, không "thu thập" theo định nghĩa của cả hai store vì không rời máy; ảnh/video, email, user ID, nội dung người dùng: thu thập, gắn tài khoản, mục đích chức năng app; crash: chẩn đoán, không gắn tài khoản; không theo dõi/ATT); ghi chú cho người duyệt (tài khoản demo, cách quét mã mẫu, app không có mua trong app, cách xóa tài khoản); danh sách ảnh chụp store cần có; chuỗi quyền.
+- **Tệp:** `docs/engineering/store-listing.md`: tên, mô tả ngắn/dài tiếng Việt trung thực (bất biến 11), từ khóa, danh mục; **Apple App Privacy** và **Google Data safety** theo bảng dữ liệu ở V1-19 (vị trí: xử lý trên máy, không "thu thập" theo định nghĩa của cả hai store vì không rời máy; ảnh/video, email, user ID, nội dung người dùng: thu thập, gắn tài khoản, mục đích chức năng app; crash: chẩn đoán, không gắn tài khoản; **"Device or other IDs"** (Google) / "Device ID" (Apple): ID cài đặt Firebase (Firebase installation ID) do Crashlytics và các SDK Firebase dùng, mục đích phân tích lỗi/chức năng app, không gắn tài khoản; không theo dõi/ATT; **đối chiếu từng mục với trang công bố dữ liệu chính thức của Firebase cho Google Play Data safety và Apple App Privacy** (Auth, Firestore, Functions, Crashlytics, Installations) trước khi điền); ghi chú cho người duyệt (tài khoản demo **không có sẵn đơn mẫu** vì dữ liệu đơn/bằng chứng chỉ nằm trên máy: hướng dẫn người duyệt tự tạo đơn bằng Tạo đơn nhanh hoặc quét mã vạch mẫu **đính kèm trong ghi chú** (ảnh mã vạch Code 128 của một mã đơn giả, ví dụ `DH-DEMO-0001`), rồi quay video đóng gói; app không có mua trong app; cách xóa tài khoản); danh sách ảnh chụp store cần có; chuỗi quyền.
 - **Test:** không (tài liệu). **Phụ thuộc:** không; cập nhật lại sau V1-16 nếu Crashlytics bị tách khỏi v1.
 
 #### V1-21 release-1.0.0 (sau cổng thiết bị)
@@ -440,7 +441,7 @@ Chi tiết từng bước, người chịu trách nhiệm và cách ghi kết qu
 
 ### 7.2 Đã sửa trong kế hoạch theo vòng 1
 
-- **a, b:** V1-15 chặn khi còn tranh chấp mở trên máy (đóng hồ sơ không xóa gì), chặn khi đang quay, tệp chưa tải phải tích xác nhận riêng; xóa cục bộ **chỉ sau** khi máy chủ xác nhận; V1-14 thêm `legalHold` và hạn 30 ngày trước khi dọn máy chủ; ghi ngoại lệ ở R-2 dưới đây để điều phối/người dùng duyệt.
+- **a, b:** V1-15 chặn khi còn tranh chấp mở trên máy (đóng hồ sơ không xóa gì), chặn khi đang quay, tệp chưa tải phải tích xác nhận riêng; xóa cục bộ **chỉ sau** khi máy chủ xác nhận; V1-14 thêm `legalHold` và hạn 30 ngày trước khi dọn máy chủ (dọn cả `auditEvents` của shop, chỉ giữ `accountDeletions`, điều phối chốt); ghi ngoại lệ ở R-2 dưới đây để điều phối/người dùng duyệt.
 - **c:** V1-08 thêm sự kiện `USER_RETRY_ATTENTION` có điều kiện, `origin: 'device'`, chỉ tới `queued`; test cấm với lỗi cục bộ và `hash_mismatch`; đề xuất BA ghi vào docs (R-3).
 - **d:** V1-02 hiển thị "Đang chờ mạng/đang thử lại, lần thử gần nhất lúc …" ở UI-F01 (V1-08); phân loại `permission-denied` chỉ là "chờ" khi phụ thuộc chưa đăng, còn lại đếm lượt.
 - **e:** tách Wi‑Fi‑only thành V1-09 sau V1-08.
@@ -459,7 +460,7 @@ Chi tiết từng bước, người chịu trách nhiệm và cách ghi kết qu
 
 Kích thước ước tính (dòng mã, không tính test/tài liệu): V1-08 ~800 (lớn nhất: hook + 2 màn + máy trạng thái), V1-15 ~650, V1-14 ~500, V1-10 ~600, V1-02 ~550, các PR khác < 400. Không PR nào vượt ~1500. Nếu V1-17 thêm cả lối vào hàng hoàn/tranh chấp mà vượt 800 thì tách V1-17b (đã ghi).
 
-Phụ thuộc vòng: không có (V1-05 -> V1-03; V1-15 -> V1-05, V1-14; V1-13 -> V1-09 -> V1-08 -> V1-07 -> V1-02). Hai PR cùng làn mà đụng cùng tệp: V1-09 và V1-10 cùng dùng `device_settings` nhưng V1-10 chỉ đọc/ghi qua kho của V1-09, nên V1-10 phải hợp nhất **sau** V1-09 (đã sửa bảng 3.1: V1-10 phụ thuộc V1-09).
+Phụ thuộc vòng: không có (V1-05 -> V1-03; V1-16 -> V1-01, V1-09; V1-15 -> V1-05, V1-14; V1-13 -> V1-09 -> V1-08 -> V1-07 -> V1-02). Hai PR cùng làn mà đụng cùng tệp: V1-09 và V1-10 cùng dùng `device_settings` nhưng V1-10 chỉ đọc/ghi qua kho của V1-09, nên V1-10 phải hợp nhất **sau** V1-09 (đã sửa bảng 3.1: V1-10 phụ thuộc V1-09).
 
 Đối chiếu bất biến 1–11 lần cuối:
 
@@ -471,7 +472,7 @@ Phụ thuộc vòng: không có (V1-05 -> V1-03; V1-15 -> V1-05, V1-14; V1-13 ->
 | 4 bản gốc bất biến | V1-13, V1-15, V1-17 | Băm/phát chỉ đọc; xóa chỉ ở V1-15 theo yêu cầu xóa tài khoản (R-2) |
 | 5 không tự liên kết | V1-07 | Tệp của uid khác không bị gán lại cho uid hiện tại |
 | 6 không dữ liệu giả | V1-08, V1-10, V1-11 | Bỏ dữ liệu minh họa; gián đoạn ghi `interrupted`, không ghép |
-| 7 lịch sử, kiểm toán bất biến | V1-04, V1-14 | Trigger chỉ Admin SDK ghi; `accountDeletions` client không đọc/ghi |
+| 7 lịch sử, kiểm toán bất biến | V1-04, V1-14 | Trigger chỉ Admin SDK ghi; `accountDeletions` client không đọc/ghi. Người dùng thường vẫn không sửa/xóa được nhật ký; `auditEvents` của shop chỉ bị máy chủ xóa khi purge theo yêu cầu xóa tài khoản của chủ, sau 30 ngày, không có `legalHold`/tranh chấp (điều phối chốt, mục 7.5) |
 | 8 cô lập shop, không URL công khai | V1-04, V1-06, V1-14 | Test chéo shop cho mọi luật mới; không thêm URL đọc |
 | 9 không xóa bằng chứng bị giữ | V1-14, V1-15 | Chặn khi tranh chấp mở; `legalHold`; không có dọn theo hạn lưu |
 | 10 dữ liệu tối giản | – | Không đổi mô hình đơn |
@@ -508,5 +509,7 @@ Kế hoạch **được chấp nhận**. Các điểm R-x được điều phố
 | R-6 | **A** — chấp nhận QA-13 một phần cho v1, ghi Trợ giúp + checklist | Sửa đơn có lịch sử sau khi quay là việc đầu tiên sau v1 |
 | R-7 | Sàn kỹ thuật của Expo SDK 58/RN (O-20); bundle id giữ chỗ `vn.doncung.app` | Người dùng xác nhận ở S-2 trước lần tải đầu (không đổi được sau đó) |
 | R-8 | **A** — báo lỗi ứng dụng mặc định bật, có công tắc tắt, nêu trong chính sách | |
+
+**Purge dữ liệu shop khi xóa tài khoản (điều phối chốt sau review PR #40):** xóa cả shop gồm `auditEvents` theo yêu cầu xóa của chủ, sau 30 ngày, trừ khi có `legalHold`/tranh chấp; chỉ giữ `accountDeletions` (uid, thời điểm, `shopIds`, lý do kỹ thuật; không email/tên). Áp dụng ở V1-14 (test purge), V1-19 (chính sách).
 
 `APP_ENV`: giữ giá trị `prod` đang dùng, nhận thêm bí danh `production` (đúng như kế hoạch).
