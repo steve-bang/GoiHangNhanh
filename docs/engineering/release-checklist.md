@@ -9,7 +9,7 @@
 - [ ] **D-1. Tên ứng dụng và định danh gói chính thức** (O-11, Q-06). Giữ chỗ hiện tại khi `APP_ENV=prod`: `vn.doncung.app`. Bundle id/applicationId **không đổi được** sau lần tải lên đầu.
 - [ ] **D-2. Sàn hệ điều hành** (O-20). Mặc định v1: sàn kỹ thuật của Expo SDK 58/RN 0.88 và thư viện đã chọn (RN: iOS 15.1, Android 7.0/API 24); xác nhận lại sàn thật sau `expo prebuild`.
 - [x] **D-3. Câu hỏi R-1…R-8** (v1-release-plan.md mục 7.3): **đã được điều phối chốt** ở mục 7.5 (2026-10-30; chưa có xác nhận trực tiếp của người dùng). R-7 vẫn cần người dùng xác nhận ở D-1/D-2 trước lần tải đầu.
-- [ ] **D-4. Địa chỉ email hỗ trợ và tên miền web thật**; điền vào `src/core/config/public-links.ts` và `web/src/config/site.ts` (test tooling bắt khác nhau).
+- [ ] **D-4. Địa chỉ email hỗ trợ và tên miền web thật**; điền vào `src/core/config/public-links.ts` và `web/src/config/site.ts` (test tooling bắt khác nhau). Ở web: `site.url` (giữ chỗ `https://don-chung.invalid`), `site.legal.supportEmail`, `site.legal.operatorName`, `site.legal.operatorAddress` (đều `null` = **cần điền trước khi phát hành**; trang hiện câu "sẽ công bố"), rồi đặt `site.indexable = true`. `npm --prefix web run check` báo lỗi nếu bật `indexable` khi còn giữ chỗ. Hộp thư hỗ trợ phải có người trực để xử lý yêu cầu xóa tài khoản qua email (script hỗ trợ của V1-14).
 
 ## F. Firebase production
 
@@ -55,9 +55,11 @@ Ma trận tối thiểu: 1 iPhone đời cũ ở sàn D-2 + 1 iPhone mới; 1 An
 ## C. Duyệt câu chữ và pháp lý
 
 - [ ] **C-1.** BA/khách duyệt chuỗi mới (Q-29 trong `decisions.md` và các PR V1-xx): thông báo lỗi tải, "Đang chờ Wi‑Fi", câu thời hạn lưu, câu giới hạn khi quay, Kiểm tra hộp thư, Xóa tài khoản, Trợ giúp; xác nhận lệch có chủ đích (ẩn Apple/Google, 4 màn khôi phục mật khẩu thành 2).
-- [ ] **C-2.** Luật sư rà **Chính sách quyền riêng tư**, **Điều khoản**, trang **Xóa tài khoản** theo pháp luật bảo vệ dữ liệu cá nhân Việt Nam; R-1 (lưu uid sau xóa), R-8 (báo lỗi mặc định bật).
+- [ ] **C-2.** Luật sư rà **Chính sách quyền riêng tư**, **Điều khoản**, trang **Xóa tài khoản** (`web/src/pages/{chinh-sach-quyen-rieng-tu,dieu-khoan,xoa-tai-khoan}.astro`, bản nháp V1-19) theo pháp luật bảo vệ dữ liệu cá nhân Việt Nam; R-1 (lưu uid sau xóa, hiện ghi "giữ không thời hạn"), R-8 (báo lỗi mặc định bật). Điểm cần luật sư quyết/viết thêm: tên pháp nhân và địa chỉ (bên kiểm soát dữ liệu), cơ sở xử lý/đồng ý, chuyển dữ liệu ra nước ngoài (Firebase Auth/Crashlytics không chọn khu vực), luật áp dụng và nơi giải quyết tranh chấp, giới hạn trách nhiệm (Điều khoản chưa có các mục này), số ngày trả lời yêu cầu xóa qua email (`site.legal.emailRequestDays`, đề xuất 7 ngày làm việc), độ tuổi tối thiểu. Sau khi duyệt: cập nhật `site.legal.effectiveDate` bằng ngày đăng.
 - [ ] **C-3.** Kiểm tra thương hiệu/pháp lý Splash (D-15: logo sàn, câu "Bảo vệ quyền lợi") và slogan Chào mừng (Q-24e) trước khi công khai.
 - [ ] **C-4.** Duyệt mô tả store và khai báo Privacy Labels/Data safety ở `docs/engineering/store-listing.md` (V1-20) khớp app thật.
+- [ ] **C-6.** Đối chiếu bốn trang web V1-19 với **app thật ở bản phát hành** trước khi đặt `site.indexable = true`: đường đi menu Cá nhân > Quyền riêng tư và bảo mật > Xóa tài khoản, điều kiện chặn/cảnh báo (V1-15), 30 ngày (R-4, hằng số `purgeDeletedShops` V1-14), loại khỏi sao lưu (V1-01/V1-12; nếu V1-12 bị bỏ thì sửa mục "Sao lưu" của chính sách), báo lỗi bật sẵn có công tắc (V1-16; nếu V1-16 bị tách khỏi v1 thì bỏ mục "Báo lỗi ứng dụng"), câu thời hạn lưu khớp app (V1-18), "Chỉ tải khi có Wi‑Fi" (V1-09). Đối chiếu thời hạn lưu dữ liệu của Firebase Crashlytics với tài liệu chính thức hiện hành (trang chỉ ghi "theo thời hạn của dịch vụ", chưa ghi số).
+- [ ] **C-7.** Điều kiện trước: D-4, C-2, C-6 đã xong và `npm --prefix web run check:release` đạt (báo lỗi khi còn email/tên/địa chỉ/tên miền giữ chỗ, dù `indexable` đang tắt). Sau đó nhập URL trang web vào store: Google Play Console > App content > Privacy policy = `/chinh-sach-quyen-rieng-tu/`, Data safety > Data deletion URL = `/xoa-tai-khoan/`; App Store Connect > Privacy Policy URL và Support URL = `/ho-tro/` (tên miền thật D-4). Mở từng URL trên điện thoại, không lỗi, không cần đăng nhập.
 - [ ] **C-5.** Icon/ảnh splash chính thức (O-23, O-24): icon 1024×1024 không trong suốt (App Store), 512×512 (Play).
 
 ## P. Phát hành
