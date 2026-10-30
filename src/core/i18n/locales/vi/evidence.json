@@ -66,7 +66,7 @@
       },
       "missingMessage": {
         "server": "Ứng dụng chưa hỗ trợ xem lại tệp từ máy chủ.",
-        "lost": "Tệp chưa được tải lên máy chủ, nên bằng chứng này đã mất.",
+        "lost": "Tệp không còn trên máy này và máy chủ chưa xác nhận có bản.",
         "mismatch": "Bản trên máy chủ không khớp với tệp gốc, và tệp gốc trên máy đã mất."
       },
       "playFailedTitle": {

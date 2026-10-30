@@ -71,6 +71,6 @@ Vòng 2: không còn điểm vi phạm; câu chữ mới ghi chờ BA ở decisi
 
 ## Sửa sau review PR #54
 
-- Tệp không còn trên máy: câu theo việc máy chủ đã xác nhận hay chưa (`isServerConfirmed`); chưa xác nhận thì "Tệp chưa được tải lên máy chủ, nên bằng chứng này đã mất." và ẩn thẻ nhãn trạng thái (không còn "Đã lưu trên máy" khi tệp đã mất).
+- Tệp không còn trên máy: câu theo việc máy chủ đã xác nhận hay chưa (`isServerConfirmed`); chưa xác nhận thì "Tệp không còn trên máy này và máy chủ chưa xác nhận có bản." và ẩn thẻ nhãn trạng thái (không còn "Đã lưu trên máy" khi tệp đã mất).
 - Câu giải thích "Đã lưu trên máy" theo loại tệp (video/ảnh).
 

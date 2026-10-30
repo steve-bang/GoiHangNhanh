@@ -142,7 +142,7 @@ describe('UI-E04 Chi tiết bằng chứng (xem lại trên máy)', () => {
       await open(store, [file(state)], { orderId: d.order.id, evidenceId: 'ev-1' });
       expect(await screen.findByText('Video không còn trên máy này.')).toBeOnTheScreen();
       expect(
-        screen.getByText('Tệp chưa được tải lên máy chủ, nên bằng chứng này đã mất.'),
+        screen.getByText('Tệp không còn trên máy này và máy chủ chưa xác nhận có bản.'),
       ).toBeOnTheScreen();
       expect(screen.queryByText(/từ máy chủ\./)).toBeNull();
       expect(screen.queryByTestId('evidence-detail-status')).toBeNull();
