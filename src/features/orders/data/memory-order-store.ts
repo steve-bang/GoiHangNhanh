@@ -282,6 +282,9 @@ export function createMemoryOrderStore(
       const session = sessions.get(sessionId);
       if (session && session.shopId === shopId) publishedSessions.set(sessionId, status);
     },
+    async isSessionPublished(shopId, sessionId) {
+      return sessions.get(sessionId)?.shopId === shopId && publishedSessions.has(sessionId);
+    },
     async hasRecordingInProgress(shopId) {
       return [...sessions.values()].some(
         (s) => s.shopId === shopId && isSessionStatusRecording(s.sessionStatus),

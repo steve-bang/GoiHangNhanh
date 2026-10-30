@@ -55,5 +55,6 @@ export function createLocalOrderStore(
     markPackagePublished: async (s, p, a) => (await get()).markPackagePublished(s, p, a),
     listSessionsPendingRemote: async (s, l, u) => (await get()).listSessionsPendingRemote(s, l, u),
     markSessionPublished: async (s, i, st) => (await get()).markSessionPublished(s, i, st),
+    isSessionPublished: async (s, i) => (await get()).isSessionPublished(s, i),
   };
 }

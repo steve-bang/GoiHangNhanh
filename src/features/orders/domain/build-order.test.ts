@@ -81,3 +81,28 @@ describe('buildOrder', () => {
     expect(next.orderId).toBe(r.details.order.id);
   });
 });
+
+describe('trần độ dài khớp Rules (V1-04)', () => {
+  const line = (name: string, variant = '') => ({ name, variant, quantity: 1 });
+  it('tên/variant đúng 200 ký tự và mã vận đơn đúng 64 ký tự vẫn hợp lệ', () => {
+    const r = buildOrder(
+      { ...base, trackingCode: 'T'.repeat(64), lines: [line('Á'.repeat(200), 'Đ'.repeat(200))] },
+      ctx,
+    );
+    expect(r.ok).toBe(true);
+  });
+  it('vượt trần một ký tự là lỗi theo đúng ô, không cắt âm thầm', () => {
+    expect(buildOrder({ ...base, trackingCode: 'T'.repeat(65) }, ctx)).toEqual({
+      ok: false,
+      error: { kind: 'invalid_tracking_code' },
+    });
+    expect(buildOrder({ ...base, lines: [line('ok'), line('a'.repeat(201))] }, ctx)).toEqual({
+      ok: false,
+      error: { kind: 'name_too_long', lineIndex: 1 },
+    });
+    expect(buildOrder({ ...base, lines: [line('ok', 'v'.repeat(201))] }, ctx)).toEqual({
+      ok: false,
+      error: { kind: 'variant_too_long', lineIndex: 0 },
+    });
+  });
+});

@@ -70,3 +70,24 @@ describe('Bắt đầu quay đi qua kiểm tra sẵn sàng (UI-C02)', () => {
     expect(call[0]).toBe(ROUTES.packRecord);
   });
 });
+
+describe('Bắt đầu quay ở bản Firebase khi phiên chưa biết cửa hàng (V1-06)', () => {
+  it('không tạo phiên, không mở kiểm tra/màn quay (chặn TRƯỚC khi quay, bất biến 2)', async () => {
+    const store = createMemoryOrderStore();
+    const details = await seedOrder(store, sampleOrder());
+    const saveSession = jest.spyOn(store, 'saveSession');
+    mockNavigation.params = { orderId: details.order.id };
+    await renderWithProviders(<OrderPreviewScreen />, {
+      orderStore: store,
+      requireKnownShop: true,
+    });
+    await screen.findByTestId('preview-order-code');
+    await fireEvent.press(screen.getByTestId('preview-start'));
+    expect(
+      await screen.findByText('Chưa xử lý được đơn trên máy. Bạn thử lại nhé.'),
+    ).toBeOnTheScreen();
+    expect(saveSession).not.toHaveBeenCalled();
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    expect(mockNavigation.push).not.toHaveBeenCalled();
+  });
+});

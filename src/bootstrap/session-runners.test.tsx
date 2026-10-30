@@ -31,7 +31,7 @@ jest.mock('@/platform/app-state', () => ({
     return () => mockAppActive.delete(cb);
   },
 }));
-jest.mock('@/platform/connectivity', () => ({ useIsOffline: () => false }));
+// Trạng thái mạng: mock mặc định của jest.setup.ts (có mạng).
 
 const SHOP_A = 'shop-a';
 const SHOP_B = 'shop-b';
@@ -90,16 +90,20 @@ function setup() {
     });
     if (!built.ok) throw new Error('fixture');
     await orderStore.saveSession(built.session);
+    // Phiên đã quay xong (có tệp): mới được đăng lên máy chủ, và tệp chỉ tải sau khi phiên đã đăng.
+    await orderStore.updateSessionStatus(shopId as never, built.session.id, 'recording');
+    await orderStore.updateSessionStatus(shopId as never, built.session.id, 'ended');
     state.authUid = previous;
   };
-  const seedFile = async (shopId: string, id: string) => {
+  /** Tệp của phiên đơn `code` (đã seed): hàng đợi chỉ tải khi phiên đó đã đăng lên máy chủ (V1-02). */
+  const seedFile = async (shopId: string, id: string, code: string) => {
     const evidenceId = id as EvidenceId;
     await files.create({
       id: evidenceId,
       shopId: shopId as never,
       orderId: 'o' as OrderId,
       packageId: 'p' as PackageId,
-      sessionId: 's' as SessionId,
+      sessionId: `s-${code}` as SessionId,
       group: 'pack',
       kind: 'video',
       createdAtDevice: 1,
@@ -187,9 +191,9 @@ describe('runner đồng bộ/tải lên theo phiên (PR1)', () => {
   it('A đăng xuất rồi B đăng nhập: runner dừng với shop A, sau đó chỉ chạy với shop B', async () => {
     const t = setup();
     await t.seedOrder(SHOP_A, 'uid-a', 'A-1');
-    await t.seedFile(SHOP_A, 'ev-a-1');
+    await t.seedFile(SHOP_A, 'ev-a-1', 'A-1');
     await t.seedOrder(SHOP_B, 'uid-b', 'B-1');
-    await t.seedFile(SHOP_B, 'ev-b-1');
+    await t.seedFile(SHOP_B, 'ev-b-1', 'B-1');
     await t.mount();
     await flush();
     // Chưa đăng nhập: shop tạm, không runner nào chạy.
@@ -198,6 +202,8 @@ describe('runner đồng bộ/tải lên theo phiên (PR1)', () => {
 
     await t.press('login-a');
     await flush();
+    // Lượt tải đầu có thể chạy trước khi phiên kịp đăng (V1-02: chờ phiên, không tốn lượt); lượt sau tải.
+    await foreground();
     expect(t.publishedIn(SHOP_A).length).toBeGreaterThan(0);
     expect(t.publishedIn(SHOP_B)).toEqual([]);
     expect(t.uploaded).toEqual(['ev-a-1']);
@@ -205,7 +211,7 @@ describe('runner đồng bộ/tải lên theo phiên (PR1)', () => {
 
     // Việc mới của A xuất hiện NGAY TRƯỚC khi đăng xuất, rồi đăng xuất thật thành công.
     await t.seedOrder(SHOP_A, 'uid-a', 'A-2');
-    await t.seedFile(SHOP_A, 'ev-a-2');
+    await t.seedFile(SHOP_A, 'ev-a-2', 'A-2');
     const before = { published: t.published.length, uploaded: t.uploaded.length };
     await t.press('out');
     await flush();
@@ -224,6 +230,7 @@ describe('runner đồng bộ/tải lên theo phiên (PR1)', () => {
     // B đăng nhập: chỉ chạy với shop B; dữ liệu của A không bị đăng/tải.
     await t.press('login-b');
     await flush();
+    await foreground();
     expect(t.publishedIn(SHOP_B).length).toBeGreaterThan(0);
     expect(t.published.filter((p) => p.startsWith(`shops/${SHOP_A}/`))).toHaveLength(
       before.published,
@@ -245,8 +252,9 @@ describe('runner đồng bộ/tải lên theo phiên (PR1)', () => {
     expect(mockAppActive.size).toBe(2);
 
     await t.seedOrder(SHOP_A, 'uid-a', 'A-3');
-    await t.seedFile(SHOP_A, 'ev-a-3');
+    await t.seedFile(SHOP_A, 'ev-a-3', 'A-3');
     await foreground();
+    await foreground(); // lượt đầu đăng phiên, lượt sau tải tệp của phiên đã đăng
     expect(t.publishedIn(SHOP_A).length).toBeGreaterThan(0);
     expect(t.uploaded).toEqual(['ev-a-3']);
     expect(await t.pendingFor(SHOP_A, 'uid-a')).toEqual([]);

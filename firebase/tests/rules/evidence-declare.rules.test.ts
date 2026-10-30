@@ -61,7 +61,7 @@ describe('khai báo bằng chứng đúng hình dạng Rules yêu cầu', () => 
 
   it('thiếu durationMs vẫn qua (tùy chọn)', async () => {
     const w = evidenceWrite(
-      request(SHOP_A, { durationMs: null, kind: 'photo' }),
+      request(SHOP_A, { durationMs: null, kind: 'photo', mimeType: 'image/jpeg' }),
       USERS.packerA,
       values,
     );

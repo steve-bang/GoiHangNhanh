@@ -114,6 +114,35 @@ describe('UI-B04 Tạo đơn nhanh (ORD-05) và Xác nhận (ORD-06)', () => {
       expect(screen.getByText('Mã đơn chưa hợp lệ. Hãy kiểm tra lại.')).toBeOnTheScreen();
     });
 
+    it('ô nhập cho quá trần một ký tự (không cắt âm thầm); tên/variant/mã vận đơn quá dài báo đúng ô (V1-04)', async () => {
+      const store = await open();
+      expect(screen.getByTestId('quick-order-code').props.maxLength).toBe(65);
+      expect(screen.getByTestId('line-name-0').props.maxLength).toBe(201);
+      expect(screen.getByTestId('line-variant-0').props.maxLength).toBe(201);
+      await typeCode('DH-LONG');
+      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'a'.repeat(201));
+      await next();
+      expect(
+        await screen.findByText('Tên sản phẩm dài quá 200 ký tự. Hãy rút gọn.'),
+      ).toBeOnTheScreen();
+      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo');
+      await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'v'.repeat(201));
+      await next();
+      expect(
+        await screen.findByText('Phân loại dài quá 200 ký tự. Hãy rút gọn.'),
+      ).toBeOnTheScreen();
+      await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'Đen');
+      await fireEvent.press(screen.getByTestId('quick-add-tracking'));
+      expect(screen.getByTestId('quick-tracking').props.maxLength).toBe(65);
+      await fireEvent.changeText(screen.getByTestId('quick-tracking'), 'T'.repeat(65));
+      await next();
+      expect(
+        await screen.findByText('Mã vận đơn dài quá 64 ký tự hoặc có ký tự lạ. Hãy kiểm tra lại.'),
+      ).toBeOnTheScreen();
+      expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
+      expect(await store.countOrders(LOCAL_SHOP_ID, {})).toBe(0);
+    });
+
     it('variant mà không có tên: báo lỗi ở dòng (tên sản phẩm KHÔNG bắt buộc nếu không có variant)', async () => {
       await open();
       await typeCode('DH3');
@@ -504,5 +533,38 @@ describe('UI-B04 Tạo đơn nhanh (ORD-05) và Xác nhận (ORD-06)', () => {
       await fireEvent(screen.getByTestId('line-name-0'), 'focus');
       expect(screen.queryByTestId('line-suggestions-0')).toBeNull();
     });
+  });
+});
+
+describe('UI-B04 ở bản Firebase khi phiên chưa biết cửa hàng (V1-06, lớp phòng thủ thứ hai)', () => {
+  it('bấm Tạo đơn hàng: KHÔNG ghi đơn dưới shop tạm, báo chưa tạo được, không điều hướng', async () => {
+    const store = createMemoryOrderStore();
+    const save = jest.spyOn(store, 'saveNewOrder');
+    // Chế độ chặt, không có phiên (cổng phiên lẽ ra đã chặn màn; ở đây render thẳng để thử lớp thứ hai).
+    await renderWithProviders(<QuickOrderScreen />, { orderStore: store, requireKnownShop: true });
+    await typeCode('DH-V106');
+    await fireEvent.press(screen.getByTestId('quick-continue'));
+    await fireEvent.press(screen.getByTestId('quick-create'));
+    expect(await screen.findByTestId('save-error')).toBeOnTheScreen();
+    expect(save).not.toHaveBeenCalled();
+    expect(await store.countOrders(LOCAL_SHOP_ID, {})).toBe(0);
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+  });
+
+  it('cùng chế độ chặt nhưng phiên đã biết shop: lưu bình thường dưới shop đó', async () => {
+    const store = createMemoryOrderStore();
+    const shop = 'shop-real' as ShopId;
+    await renderWithProviders(
+      <CurrentShopProvider shopId={shop} strict>
+        <QuickOrderScreen />
+      </CurrentShopProvider>,
+      { orderStore: store, requireKnownShop: true },
+    );
+    await typeCode('DH-V106');
+    await fireEvent.press(screen.getByTestId('quick-continue'));
+    await fireEvent.press(screen.getByTestId('quick-create'));
+    await waitFor(() => expect(mockNavigation.replace).toHaveBeenCalled());
+    expect(await store.countOrders(shop, {})).toBe(1);
+    expect(await store.countOrders(LOCAL_SHOP_ID, {})).toBe(0);
   });
 });

@@ -10,5 +10,6 @@
   "src/test-utils/mock-camera-recorder.tsx": "Tệp mới chỉ cho test (mock bộ ghi camera, ADR-020); không phải giao diện và không đổi màn đã xác nhận.",
   "src/test-utils/mock-camera-photo.tsx": "Tệp mới chỉ cho test (mock camera chụp ảnh kiện hàng hoàn, R2a); không phải giao diện và không đổi màn đã xác nhận.",
   "src/test-utils/mock-location.ts": "Tệp test mới (mock adapter vị trí cho Q-26k); không đổi giao diện màn đã xác nhận.",
+  "src/test-utils/mock-connectivity.ts": "Tệp test mới (mock adapter trạng thái mạng NetInfo, V1-02); không phải giao diện và không đổi màn đã xác nhận.",
   "src/features/shop/ui/auth-layout.ts": "V1-03 (review PR #47): computeForgotLayout nhận tùy chọn descriptionChars (mặc định 62 như cũ) để ước tính theo câu mô tả đang hiện; chế độ otp không đổi kết quả (có test)."
 }

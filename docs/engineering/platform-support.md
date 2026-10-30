@@ -53,6 +53,7 @@ Chưa kiểm tra: sàn mà **Expo SDK 58** đặt (có thể cao hơn RN) và s�
 | Chữ lớn | Dynamic Type | Font scale | Nút chính không vỡ bố cục khi chữ lớn (`docs/09` mục 3) |
 | Thanh toán gói dịch vụ | Chính sách App Store | Chính sách Google Play | O-16: chưa kết luận |
 | Đăng nhập bên thứ ba | Cần kiểm tra điều kiện của App Store khi có đăng nhập Google | — | O-15; chưa xác minh |
+| Trạng thái mạng (NetInfo, V1-02) | Theo `NWPathMonitor`; Wi‑Fi chưa đăng nhập (captive) vẫn báo có kết nối | Theo `ConnectivityManager`; một số hãng tiết kiệm pin hoãn sự kiện mạng khi app ở nền | Chỉ dùng "chắc chắn mất kết nối" để tạm dừng; lỗi thật vẫn là lỗi mạng không tốn lượt; kiểm thử chế độ máy bay, đổi Wi‑Fi↔4G/5G, Wi‑Fi không ra Internet trên cả hai (release-hardening-plan mục 9, bước 2). **Chưa kiểm chứng trên máy thật** |
 | Hết bộ nhớ, thiết bị nóng | Hệ điều hành có thể dừng app | Tiến trình có thể bị giết theo chính sách từng hãng | QA-04, QA-12 |
 
 ## 5. Ma trận kiểm thử đề xuất (tối thiểu)

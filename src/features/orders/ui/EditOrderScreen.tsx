@@ -46,6 +46,7 @@ import {
 } from '../domain';
 import { OrderMatchSheet } from './OrderMatchSheet';
 import { OrderSourcePicker } from './OrderSourcePicker';
+import { INPUT_LIMITS, lineErrorText, trackingErrorText } from './draft-error-text';
 import { QuickOrderLineEditor, type LineInput } from './QuickOrderLineEditor';
 import { useOrderDetail } from './use-order-detail';
 import { useOrderLookup } from './use-order-lookup';
@@ -303,14 +304,7 @@ function EditForm({ header, details }: { header: EditHeader; details: OrderDetai
   };
 
   const activeLine = lines.find((l) => l.key === activeKey) ?? null;
-  const errorFor = (lineIndex: number, kind: 'name_required' | 'invalid_quantity') =>
-    fieldError && fieldError.kind === kind && fieldError.lineIndex === lineIndex
-      ? t(
-          kind === 'name_required'
-            ? 'screens:quickOrder.nameRequired'
-            : 'screens:quickOrder.quantityInvalid',
-        )
-      : undefined;
+  const trackingError = trackingErrorText(t, fieldError);
 
   const requestClose = () => (dirty ? setLeaveOpen(true) : navigation.back());
 
@@ -419,8 +413,9 @@ function EditForm({ header, details }: { header: EditHeader; details: OrderDetai
           index={index}
           total={lines.length}
           line={line}
-          nameError={errorFor(index, 'name_required')}
-          quantityError={errorFor(index, 'invalid_quantity')}
+          nameError={lineErrorText(t, fieldError, index, 'name')}
+          variantError={lineErrorText(t, fieldError, index, 'variant')}
+          quantityError={lineErrorText(t, fieldError, index, 'quantity')}
           nameSuggestions={
             activeLine?.key === line.key ? suggestProductNames(history, line.name) : []
           }
@@ -458,8 +453,13 @@ function EditForm({ header, details }: { header: EditHeader; details: OrderDetai
         compact
         label={t('screens:quickOrder.trackingCode')}
         value={tracking}
-        onChangeText={setTracking}
+        onChangeText={(value) => {
+          setFieldError(null);
+          setTracking(value);
+        }}
         autoCapitalize="characters"
+        maxLength={INPUT_LIMITS.tracking}
+        {...(trackingError ? { error: trackingError } : {})}
       />
 
       <BottomSheet

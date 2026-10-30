@@ -1,11 +1,21 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 import type { RemoteDocuments } from '@/api/contract';
-import { useCurrentShopId, useEvidenceFileStore, LOCAL_SHOP_ID } from '@/features/orders';
+import {
+  useCurrentShopId,
+  useEvidenceFileStore,
+  useOrderStore,
+  LOCAL_SHOP_ID,
+} from '@/features/orders';
 import { useReturnStore } from '@/features/returns';
-import { getAppVersion, subscribeAppActive, useIsOffline } from '@/platform';
+import {
+  getAppVersion,
+  getConnectivity,
+  subscribeAppActive,
+  subscribeConnectivity,
+} from '@/platform';
 
-import { createUploadQueue, type UploadQueue } from '../domain/upload-queue';
+import { createUploadQueue, type UploadRunOptions } from '../domain/upload-queue';
 import { evidenceFileSource, returnMediaSource } from '../domain/upload-sources';
 import type { LocalFileHasher, UploadGateway } from '../domain/ports';
 import { createDeviceUploadGateway, deviceHasher } from './device-gateway';
@@ -20,8 +30,10 @@ const UPLOAD_INTERVAL_MS = 60_000;
  * nền). Không hiển thị gì, nuốt mọi lỗi (hàng đợi tự thử lại và giữ trạng thái đúng).
  * `gateway`/`hasher` chỉ để test thay thế.
  *
- * Hàng đợi là MỘT thể hiện ổn định theo (cổng, kho, shop): trạng thái mạng đổi KHÔNG tạo lại nó (đọc qua
- * ref), nếu không cờ `running` của thể hiện cũ mất tác dụng và hai lượt tải chạy chồng nhau.
+ * Hàng đợi là MỘT thể hiện ổn định theo (cổng, kho, shop): trạng thái mạng đổi KHÔNG tạo lại nó (đọc
+ * thẳng từ `platform/connectivity`), nếu không cờ `running` của thể hiện cũ mất tác dụng và hai lượt tải
+ * chạy chồng nhau. Mất mạng: hàng đợi dừng (lần gửi đang chạy bị hủy); có mạng lại: chạy ngay, tệp lỗi
+ * mạng tới hạn ngay (V1-02).
  */
 export function UploadRunner({
   docs,
@@ -33,15 +45,9 @@ export function UploadRunner({
   hasher?: LocalFileHasher;
 }) {
   const files = useEvidenceFileStore();
+  const orders = useOrderStore();
   const returns = useReturnStore();
   const shopId = useCurrentShopId();
-  const offline = useIsOffline();
-  const offlineRef = useRef(offline);
-  const queueRef = useRef<UploadQueue | null>(null);
-
-  useEffect(() => {
-    offlineRef.current = offline;
-  }, [offline]);
 
   useEffect(() => {
     const effectiveGateway =
@@ -50,33 +56,38 @@ export function UploadRunner({
     const queue = createUploadQueue({
       // Tệp đóng gói + media hàng hoàn dùng CHUNG một hàng đợi (Q-28). Media hàng hoàn chỉ tải khi hồ sơ
       // đã đăng bản neo và do chính tài khoản đang đăng nhập tạo.
+      // Tệp đóng gói chỉ khai báo khi phiên đã đăng (không gọi máy chủ rồi chờ bị từ chối).
       sources: [
-        evidenceFileSource(files),
+        evidenceFileSource(files, orders),
         returnMediaSource(returns, () => docs?.currentUid() ?? null),
       ],
       gateway: effectiveGateway,
       hasher: hasher ?? deviceHasher,
       now: Date.now,
-      isOnline: () => !offlineRef.current,
+      isOnline: () => getConnectivity().online,
+      subscribeOffline: (onOffline) =>
+        subscribeConnectivity((value) => {
+          if (!value.online) onOffline();
+        }),
     });
-    queueRef.current = queue;
-    const run = () => {
-      void queue.runOnce(shopId).catch(() => undefined);
+    const run = (options?: UploadRunOptions) => {
+      void queue.runOnce(shopId, options).catch(() => undefined);
     };
     run();
-    const timer = setInterval(run, UPLOAD_INTERVAL_MS);
-    const unsubscribe = subscribeAppActive(run);
+    const timer = setInterval(() => run(), UPLOAD_INTERVAL_MS);
+    const unsubscribeActive = subscribeAppActive(() => run());
+    // Có mạng lại: tải ngay thay vì đợi chu kỳ kế tiếp (lượt đang chạy thì bỏ qua, `busy`).
+    let wasOnline = getConnectivity().online;
+    const unsubscribeNetwork = subscribeConnectivity((value) => {
+      if (value.online && !wasOnline) run({ networkRestored: true });
+      wasOnline = value.online;
+    });
     return () => {
       clearInterval(timer);
-      unsubscribe();
-      queueRef.current = null;
+      unsubscribeActive();
+      unsubscribeNetwork();
     };
-  }, [docs, gateway, hasher, files, returns, shopId]);
-
-  // Có mạng lại: tải ngay thay vì đợi chu kỳ kế tiếp (lượt đang chạy thì bỏ qua, `busy`).
-  useEffect(() => {
-    if (!offline) void queueRef.current?.runOnce(shopId).catch(() => undefined);
-  }, [offline, shopId]);
+  }, [docs, gateway, hasher, files, orders, returns, shopId]);
 
   return null;
 }

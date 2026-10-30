@@ -1,1 +1,4 @@
-export { PackPrecheckScreen as default } from '@/features/packing';
+import { PackPrecheckScreen } from '@/features/packing';
+import { withSessionGate } from '@/features/personal';
+
+export default withSessionGate(PackPrecheckScreen);

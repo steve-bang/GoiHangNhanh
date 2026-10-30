@@ -10,6 +10,9 @@ import { createMemoryOrderStore } from './memory-order-store';
 import { OrderStoreProvider } from './OrderStoreProvider';
 import { OrderSyncRunner } from './OrderSyncRunner';
 import { makeOrder } from './order-store.contract';
+import { resetMockConnectivity, setMockConnectivity } from '@/test-utils/mock-connectivity';
+
+afterEach(() => resetMockConnectivity());
 
 const REAL_SHOP = 'shop-that';
 
@@ -116,5 +119,41 @@ describe('OrderSyncRunner', () => {
     expect(t.created.some((p) => p.includes(details.order.id))).toBe(true);
     await view.unmount();
     expect(activeListener).toBeNull();
+  });
+
+  it('ngoại tuyến thì không đăng; có mạng lại thì đăng ngay, không tạo lại bộ đồng bộ', async () => {
+    setMockConnectivity({ online: false });
+    const { store } = await storeWithSession(REAL_SHOP);
+    const t = fakeDocs();
+    await mount(store, t.docs, REAL_SHOP);
+    await flush();
+    expect(t.created).toEqual([]);
+    await act(async () => setMockConnectivity({ online: true }));
+    await flush();
+    expect(t.created.some((p) => p.startsWith(`shops/${REAL_SHOP}/orders/`))).toBe(true);
+  });
+
+  it('lệnh ghi treo: lượt khác bị bỏ qua (busy) chứ không chạy chồng; xong thì chạy tiếp được', async () => {
+    const { store } = await storeWithSession(REAL_SHOP);
+    let release: () => void = () => undefined;
+    let calls = 0;
+    const t = fakeDocs();
+    const docs: RemoteDocuments = {
+      ...t.docs,
+      createMissing: async () => {
+        calls += 1;
+        if (calls === 1) await new Promise<void>((resolve) => (release = resolve));
+      },
+    };
+    await mount(store, docs, REAL_SHOP);
+    await flush();
+    for (const online of [false, true, false, true]) {
+      await act(async () => setMockConnectivity({ online }));
+      await flush();
+    }
+    expect(calls).toBe(1); // không tạo bộ đồng bộ mới chạy chồng lên lệnh đang treo
+    release();
+    await flush();
+    expect(await store.listOrdersPendingRemote(REAL_SHOP as never, 5, 'uid')).toEqual([]);
   });
 });

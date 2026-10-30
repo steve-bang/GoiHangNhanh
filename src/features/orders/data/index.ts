@@ -1,4 +1,9 @@
-export { CurrentShopProvider, useCurrentShopId, useCurrentUid } from './current-shop';
+export {
+  CurrentShopProvider,
+  useCurrentShopId,
+  useCurrentUid,
+  useWritableShopId,
+} from './current-shop';
 export { createLocalOrderStore } from './create-order-store';
 export { createMemoryOrderStore } from './memory-order-store';
 export { OrderStoreProvider, useOrderStore } from './OrderStoreProvider';

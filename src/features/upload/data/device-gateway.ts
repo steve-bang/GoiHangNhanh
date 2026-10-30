@@ -18,15 +18,18 @@ export const deviceHasher: LocalFileHasher = {
   },
 };
 
-/** Gửi tệp qua phiên tải có thể tiếp tục; loại tệp suy từ đuôi tệp như lúc khai báo. */
+/**
+ * Gửi tệp qua phiên tải có thể tiếp tục; loại tệp suy từ đuôi tệp như lúc khai báo. `signal` hủy
+ * (mất mạng) thì dừng lần gửi ở lớp native.
+ */
 const deviceBytes: BytesUploader = {
-  async send(session, localPath, _sizeBytes) {
+  async send(session, localPath, _sizeBytes, signal) {
     const contentType = mimeTypeOf(
       localPath,
       localPath.match(/\.(jpe?g|png)$/i) ? 'photo' : 'video',
     );
     if (!contentType) throw new UploadPortError('attention', 'UNSUPPORTED_FILE_TYPE');
-    const result = await uploadFileResumable(session, localPath, contentType);
+    const result = await uploadFileResumable(session, localPath, contentType, signal);
     if (!result.ok) throw new UploadPortError(result.kind, result.code);
   },
 };
