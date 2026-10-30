@@ -61,3 +61,5 @@ Cá nhân (menu sau khi ẩn), Cài đặt cửa hàng, Sửa tên cửa hàng, 
 - `displayName` hiển thị ở máy khác chỉ cập nhật sau khi SDK làm mới người dùng.
 
 Tự review: đã chấp nhận. Điểm đã sửa khi review: (1) bỏ ý định gọi `updateShop` từ cổng cá nhân (sẽ phải biết mã SDK và có nguy cơ ghi đè nguồn bán bằng mảng rỗng) -> `renameShop` trong `api/firebase`, nguồn bán không đọc được thì `SHOP_SAVE_FAILED`, không gửi `[]`; (2) `switchShop` không đổi phiên sang shop mà `userShops` không trỏ tới (lần mở sau sẽ lệch shop) -> chỉ chấp nhận shop đang dùng; (3) không đổi ánh xạ lỗi của luồng thiết lập shop; (4) không đụng `session.identity`/SessionProvider (V1-06 song song). Bất biến: không báo thành công trước khi máy chủ xác nhận (#3, #11); cô lập shop do Rules + Function kiểm `members` (#8); đổi tên shop có kiểm toán phía máy chủ sẵn trong `updateShop` (#7); không đụng bằng chứng.
+
+**Sau review PR #51:** nút "Đăng nhập lại" của Đổi mật khẩu đi qua luồng Đăng xuất an toàn (chặn đang quay/tệp chưa đồng bộ), email điền sẵn qua `SessionProvider.signInEmailHint` (decisions.md `Q-29 / V1-05` mục h).

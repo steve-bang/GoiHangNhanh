@@ -62,6 +62,12 @@ export interface SessionContextValue {
   readonly gatesHeld: boolean;
   /** Chỉ `SessionGate` có `latch` gọi khi đã mở. Trả hàm nhả. */
   holdSessionGates(): () => void;
+  /**
+   * Email điền sẵn cho màn Đăng nhập sau "Đăng nhập lại" (đăng xuất an toàn từ Đổi mật khẩu, V1-05). Chỉ
+   * trong bộ nhớ, không qua tham số route (không đặt email vào URL). Màn Đăng nhập đọc một lần rồi xóa.
+   */
+  readonly signInEmailHint: string | null;
+  setSignInEmailHint(email: string | null): void;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -84,6 +90,7 @@ export function SessionProvider({
   const [hydration, setHydration] = useState<SessionHydration>('pending');
   const hydrationRetry = useRef<(() => void) | null>(null);
   const [holds, setHolds] = useState(0);
+  const [signInEmailHint, setSignInEmailHint] = useState<string | null>(null);
   const listeners = useRef(new Set<() => void>());
   const inFlight = useRef<Promise<void> | null>(null);
   const lastEpoch = useRef(state.epoch);
@@ -97,6 +104,7 @@ export function SessionProvider({
 
   const beginSession = useCallback((user: SessionUser, shopId: string | null) => {
     dispatch({ type: 'signed_in', user, shopId });
+    setSignInEmailHint(null);
     // Đăng nhập/tạo shop trong app là câu trả lời dứt khoát: không còn "đang nạp".
     setHydration('settled');
   }, []);
@@ -168,6 +176,8 @@ export function SessionProvider({
       retryHydration,
       gatesHeld,
       holdSessionGates,
+      signInEmailHint,
+      setSignInEmailHint,
     }),
     [
       state,
@@ -184,6 +194,7 @@ export function SessionProvider({
       retryHydration,
       gatesHeld,
       holdSessionGates,
+      signInEmailHint,
     ],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
