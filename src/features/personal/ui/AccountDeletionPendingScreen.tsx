@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
+import { PUBLIC_LINKS, supportContactUrl } from '@/core/config/public-links';
+import { getSupportEmail } from '@/core/config/support-contact';
+import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
+import { openExternalLink } from '@/platform';
 import { Button, Card, IconTile, Screen, Text, useTheme } from '@/shared/ui';
 
 import { canSubmitDelete } from '../domain/delete-account-conditions';
@@ -31,6 +35,17 @@ export function AccountDeletionPendingScreen() {
   // Đồng ý xóa đã có từ lần yêu cầu trước (trong app hoặc qua hỗ trợ); chỉ còn tích riêng cho tệp chưa tải.
   const consent = { agreed: true, unsyncedAcknowledged };
   const allowed = gate !== null && canSubmitDelete(gate, consent);
+  // Không vào được màn Liên hệ hỗ trợ trong tab (không còn cửa hàng): mở trang Hỗ trợ trên web hoặc email.
+  // Còn giữ chỗ thì không có nút (V1-18; cùng mẫu nút ở điều kiện "dữ liệu tài khoản khác").
+  const supportUrl = supportContactUrl(PUBLIC_LINKS.support, getSupportEmail());
+  const supportMail = supportUrl?.startsWith('mailto:') ? supportUrl.slice('mailto:'.length) : null;
+  // Mở không được (không có trình duyệt/ứng dụng email): báo lỗi như Liên hệ hỗ trợ/Điều khoản; nhánh email
+  // hiện luôn địa chỉ (chọn được) để người dùng tự gửi.
+  const [supportOpenFailed, setSupportOpenFailed] = useState(false);
+  const openSupport = (url: string) => {
+    setSupportOpenFailed(false);
+    void openExternalLink(url).then((opened) => setSupportOpenFailed(!opened));
+  };
 
   const confirm = () => {
     setSubmitted(true);
@@ -77,9 +92,39 @@ export function AccountDeletionPendingScreen() {
       ) : null}
 
       {gate && !gate.allowed ? (
-        <Text variant="caption" color="textMuted" testID="delete-blocked-hint">
-          {t('personal:deleteAccount.pending.blockedHint')}
-        </Text>
+        <View style={{ gap: tokens.space.sm }}>
+          <Text variant="caption" color="textMuted" testID="delete-blocked-hint">
+            {t('personal:deleteAccount.pending.blockedHint')}
+          </Text>
+          {supportUrl ? (
+            <Button
+              label={t('personal:deleteAccount.supportLink')}
+              variant="secondary"
+              size="slim"
+              onPress={() => openSupport(supportUrl)}
+              testID="pending-support-link"
+            />
+          ) : null}
+          {supportOpenFailed ? (
+            <View style={{ gap: tokens.space.xs }}>
+              <Text color="danger" accessibilityRole="alert" testID="pending-support-open-error">
+                {supportMail
+                  ? errorText(resolveErrorMessage(t, 'SUPPORT_MAIL_UNAVAILABLE'))
+                  : t('personal:help.legal.openFailed')}
+              </Text>
+              {supportMail ? (
+                <>
+                  <Text variant="caption" color="textMuted">
+                    {t('personal:deleteAccount.pending.supportEmail')}
+                  </Text>
+                  <Text selectable bold testID="pending-support-email">
+                    {supportMail}
+                  </Text>
+                </>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
       ) : (
         <DeletePasswordForm
           password={password}

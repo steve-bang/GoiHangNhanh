@@ -110,6 +110,8 @@ const styles = StyleSheet.create({
     gap: layout.space.sm,
     borderWidth: layout.borderWidth.thin,
   },
-  input: { flex: 1, paddingVertical: layout.space.sm },
+  // `minWidth: 0`: ô nhập được co hẹp hơn bề rộng nội tại (react-native-web: thẻ `<input>` có bề rộng mặc
+  // định nên đẩy nút quét ra ngoài viền ở màn 320 pt; V1-18).
+  input: { flex: 1, minWidth: 0, paddingVertical: layout.space.sm },
   clear: { alignItems: 'center', justifyContent: 'center' },
 });

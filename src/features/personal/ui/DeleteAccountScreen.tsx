@@ -46,7 +46,8 @@ export function DeleteAccountScreen() {
   const consent = { agreed, unsyncedAcknowledged };
   const canContinue = gate !== null && canSubmitDelete(gate, consent);
   const hasSupport = getSupportEmail() !== null;
-  // TODO(V1-18): liên kết dùng chung với web; còn giữ chỗ `.invalid` thì ẩn (không mở trang chắc chắn lỗi).
+  // Liên kết dùng chung với web (`public-links.ts`, V1-18); còn giữ chỗ `.invalid` thì ẩn (không mở trang
+  // chắc chắn lỗi).
   const webLink = isPlaceholderLink(LEGAL_LINKS.accountDeletion)
     ? null
     : LEGAL_LINKS.accountDeletion;
@@ -93,7 +94,36 @@ export function DeleteAccountScreen() {
         />
       ) : (
         <>
-          <DeleteConditionList conditions={conditions} />
+          <DeleteConditionList
+            conditions={conditions}
+            actions={{
+              // Câu của mục này bảo "xóa qua trang web hoặc liên hệ hỗ trợ": có kênh thật thì bấm được ngay.
+              // Còn giữ chỗ thì không có nút (như trước V1-18).
+              foreign:
+                webLink || hasSupport ? (
+                  <>
+                    {webLink ? (
+                      <Button
+                        label={t('personal:deleteAccount.webLink')}
+                        variant="secondary"
+                        size="slim"
+                        onPress={() => void openExternalLink(webLink)}
+                        testID="delete-foreign-web-link"
+                      />
+                    ) : null}
+                    {hasSupport ? (
+                      <Button
+                        label={t('personal:deleteAccount.supportLink')}
+                        variant="secondary"
+                        size="slim"
+                        onPress={() => navigation.push(ROUTES.helpContact)}
+                        testID="delete-foreign-support-link"
+                      />
+                    ) : null}
+                  </>
+                ) : undefined,
+            }}
+          />
           {gate && gate.allowed && gate.unsyncedToLose > 0 ? (
             <UnsyncedLossNotice
               count={gate.unsyncedToLose}

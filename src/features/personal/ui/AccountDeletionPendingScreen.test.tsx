@@ -1,11 +1,13 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
+import { PUBLIC_LINKS } from '@/core/config/public-links';
 import type { DisputeId, OrderId, ShopId } from '@/core/ids';
 import { ROUTES } from '@/core/navigation';
 import { createMemoryDisputeStore } from '@/features/disputes';
 import { createMemoryOrderStore, type OrderStore } from '@/features/orders';
 import { createMemoryLocalWipe } from '@/test-utils/memory-local-wipe';
+import { openExternalLink } from '@/platform/external-link';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
@@ -18,7 +20,25 @@ jest.mock(
   () => jest.requireActual('@/test-utils/mock-navigation').navigationMock,
 );
 
-beforeEach(() => resetMockNavigation());
+jest.mock('@/platform/external-link', () => ({
+  openExternalLink: jest.fn(async () => true),
+  openAppSettings: jest.fn(),
+}));
+const mockSupportEmail = jest.fn<string | null, []>(() => null);
+jest.mock('@/core/config/support-contact', () => ({
+  getSupportEmail: () => mockSupportEmail(),
+}));
+// PUBLIC_LINKS không bị đóng băng lúc chạy: test đặt URL thật rồi khôi phục.
+const links = PUBLIC_LINKS as { support: string };
+const ORIGINAL_SUPPORT = PUBLIC_LINKS.support;
+const open = openExternalLink as jest.MockedFunction<typeof openExternalLink>;
+
+beforeEach(() => {
+  resetMockNavigation();
+  mockSupportEmail.mockReturnValue(null);
+  links.support = ORIGINAL_SUPPORT;
+  open.mockClear();
+});
 
 function SessionProbe() {
   const { beginSession } = useSession();
@@ -113,6 +133,59 @@ describe('Đang hoàn tất xóa tài khoản (V1-15, xóa dở dang V1-14 l)', 
     await fireEvent.press(dialogConfirm);
     await waitFor(() => expect(gateways.account.signOutCalls).toBe(1));
     expect(gateways.account.deleteAccountCalls).toBe(0);
+  });
+
+  it('bị chặn + kênh hỗ trợ còn giữ chỗ: không có nút Liên hệ hỗ trợ (V1-18)', async () => {
+    await setup({ openDisputes: 1 });
+    await screen.findByTestId('delete-blocked-hint');
+    expect(screen.queryByTestId('pending-support-link')).toBeNull();
+  });
+
+  it('bị chặn + có trang Hỗ trợ thật: nút mở trang web (V1-18)', async () => {
+    links.support = 'https://doncung.vn/ho-tro/';
+    await setup({ openDisputes: 1 });
+    await fireEvent.press(await screen.findByTestId('pending-support-link'));
+    expect(open).toHaveBeenCalledWith('https://doncung.vn/ho-tro/');
+    expect(mockNavigation.push).not.toHaveBeenCalled();
+  });
+
+  it('bị chặn + trang web còn giữ chỗ nhưng có email thật: nút mở email (V1-18)', async () => {
+    mockSupportEmail.mockReturnValue('ho-tro@example.test');
+    await setup({ openDisputes: 1 });
+    await fireEvent.press(await screen.findByTestId('pending-support-link'));
+    expect(open).toHaveBeenCalledWith('mailto:ho-tro@example.test');
+  });
+
+  it('mở trang Hỗ trợ không được: báo lỗi như Điều khoản, không hiện email', async () => {
+    links.support = 'https://doncung.vn/ho-tro/';
+    open.mockResolvedValueOnce(false);
+    await setup({ openDisputes: 1 });
+    await fireEvent.press(await screen.findByTestId('pending-support-link'));
+    expect(await screen.findByTestId('pending-support-open-error')).toHaveTextContent(
+      'Chưa mở được trang này. Bạn thử lại nhé.',
+    );
+    expect(screen.queryByTestId('pending-support-email')).toBeNull();
+  });
+
+  it('mở ứng dụng email không được: báo lỗi và hiện địa chỉ chọn được để tự gửi', async () => {
+    mockSupportEmail.mockReturnValue('ho-tro@example.test');
+    open.mockResolvedValueOnce(false);
+    await setup({ openDisputes: 1 });
+    await fireEvent.press(await screen.findByTestId('pending-support-link'));
+    expect(await screen.findByTestId('pending-support-open-error')).toHaveTextContent(
+      /Chưa mở được ứng dụng email/,
+    );
+    const email = screen.getByTestId('pending-support-email');
+    expect(email).toHaveTextContent('ho-tro@example.test');
+    expect(email.props.selectable).toBe(true);
+  });
+
+  it('mở được: không có dòng lỗi', async () => {
+    mockSupportEmail.mockReturnValue('ho-tro@example.test');
+    await setup({ openDisputes: 1 });
+    await fireEvent.press(await screen.findByTestId('pending-support-link'));
+    await waitFor(() => expect(open).toHaveBeenCalled());
+    expect(screen.queryByTestId('pending-support-open-error')).toBeNull();
   });
 
   it('còn tệp chưa tải: phải tích riêng mới hoàn tất; đăng xuất KHÔNG bị chặn vì tệp (cửa hàng đã khóa)', async () => {

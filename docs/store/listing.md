@@ -177,7 +177,7 @@ Chọn **18 tuổi trở lên** (người bán hàng). Không chọn nhóm dư�
 
 ## 6. URL và liên hệ
 
-Đường dẫn cố định ở `web/src/config/site.ts` `legalPages` (PR V1-19); tên miền **giữ chỗ** `https://don-chung.invalid` (RFC 2606, không bao giờ phân giải). App dùng cùng giá trị ở `src/core/config/public-links.ts` (**[theo V1-18]**), có test so khớp.
+Đường dẫn cố định ở `web/src/config/site.ts` `legalPages` (PR V1-19); tên miền **giữ chỗ** `https://don-chung.invalid` (RFC 2606, không bao giờ phân giải). App dùng cùng giá trị ở `src/core/config/public-links.ts` (V1-18), test tooling `scripts/public-links.test.cjs` so khớp từng URL/email.
 
 | Trường | App Store Connect | Google Play Console | URL (giữ chỗ) |
 |---|---|---|---|
@@ -244,7 +244,7 @@ Quy tắc chụp:
 
 Chuỗi sở hữu ở `app.json` (iOS `NSCameraUsageDescription`, `NSLocationWhenInUseUsageDescription`); không chép sang đây để tránh lệch. Nội dung v1:
 
-- Camera: hiện là "Đơn Chứng dùng camera để quét mã trên đơn hàng và xem trước khi quay." Chuỗi này **chưa nói tới quay video/chụp ảnh**: **[theo V1-18]** đổi thành câu nêu đủ quét mã, quay video đóng gói và mở kiện, chụp ảnh kiện hàng hoàn, không ghi âm. App Review 5.1.1(ii) yêu cầu chuỗi mục đích mô tả đầy đủ cách dùng ([App Review Guidelines][guidelines]): **không nộp với chuỗi camera cũ khi đã bật ghi video**.
+- Camera (đã đổi ở V1-18): "Đơn Chứng dùng camera để quét mã đơn hàng, quay video đóng gói và mở kiện, chụp ảnh kiện hàng hoàn. Ứng dụng không ghi âm." Nêu đủ các cách dùng camera theo App Review 5.1.1(ii) ([App Review Guidelines][guidelines]).
 - Vị trí (khi đang dùng app): giữ nguyên chuỗi hiện có (ghi nơi chụp ảnh kiện hàng hoàn; không cho phép vẫn chụp được).
 - Micro: không xin (O-09). Thư viện ảnh: không xin.
 

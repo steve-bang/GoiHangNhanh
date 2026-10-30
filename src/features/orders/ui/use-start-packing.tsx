@@ -137,7 +137,13 @@ export function useStartPacking(options: { navigate?: 'push' | 'replace' } = {})
     <CameraPermissionSheet
       visible={pending !== null && sheetStatus !== null}
       status={sheetStatus ?? 'askable'}
-      reason={t('screens:preview.permissionReason')}
+      // Câu giải thích theo cờ ghi video (V1-18): bật cờ thì nói thật là quay video, không ghi âm (O-09);
+      // tắt cờ thì nói bản này chưa ghi video.
+      reason={t(
+        RECORDER_ENABLED
+          ? 'screens:preview.permissionReason'
+          : 'screens:preview.permissionReasonPreview',
+      )}
       onClose={() => setPending(null)}
       onRequest={() => void permission.request()}
       onOpenSettings={() => void openAppSettings()}

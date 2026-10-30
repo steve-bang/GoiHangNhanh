@@ -147,7 +147,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Đơn Chứng dùng camera để quét mã trên đơn hàng và xem trước khi quay.",
+          "cameraPermission": "Đơn Chứng dùng camera để quét mã đơn hàng, quay video đóng gói và mở kiện, chụp ảnh kiện hàng hoàn. Ứng dụng không ghi âm.",
           "microphonePermission": false,
           "recordAudioAndroid": false
         }

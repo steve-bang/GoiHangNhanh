@@ -1,12 +1,9 @@
-/**
- * Địa chỉ email nhận yêu cầu hỗ trợ. CHƯA CÓ địa chỉ thật (decisions.md Q-20g, Q-21ae): để `null` thì màn
- * Liên hệ hỗ trợ khóa nút gửi và nói rõ chưa có kênh. KHÔNG điền địa chỉ đoán hay tên miền giữ chỗ; chỉ điền
- * khi BA/chủ sản phẩm cung cấp một hộp thư thật đã có người trực.
- */
-export const SUPPORT_EMAIL: string | null = null;
+import { PUBLIC_LINKS } from './public-links';
 
-/** Địa chỉ hỗ trợ hợp lệ để soạn email, hoặc `null` (chưa cấu hình hoặc sai dạng). */
-export function getSupportEmail(raw: string | null = SUPPORT_EMAIL): string | null {
-  const email = raw?.trim() ?? '';
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
-}
+/**
+ * Lớp tương thích: email hỗ trợ lấy từ `public-links.ts` (nguồn duy nhất, khớp web). `null` = chưa có hộp
+ * thư thật (decisions.md Q-20g, Q-21ae): màn Liên hệ hỗ trợ khóa nút gửi và nói rõ chưa có kênh.
+ */
+export const SUPPORT_EMAIL: string | null = PUBLIC_LINKS.supportEmail;
+
+export { getSupportEmail } from './public-links';

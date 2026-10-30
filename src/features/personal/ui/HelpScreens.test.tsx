@@ -13,6 +13,7 @@ import { HELP_ARTICLES, HELP_CATEGORY_IDS } from '../domain/help-content';
 import { HelpArticleScreen } from './HelpArticleScreen';
 import { HelpCategoryScreen } from './HelpCategoryScreen';
 import { HelpScreen } from './HelpScreen';
+import { helpArticleKey } from './help-text';
 import { LegalScreen } from './LegalScreen';
 import { SupportContactScreen } from './SupportContactScreen';
 
@@ -47,9 +48,7 @@ describe('Trung tâm trợ giúp (UI-I06, khung 15)', () => {
   it('hiện ô tìm, ba danh mục có bài (không "Cập nhật sản phẩm"), bài đề xuất và lối liên hệ/điều khoản', async () => {
     await renderWithProviders(<HelpScreen />);
     expect(screen.getByTestId('screen-UI-I06')).toBeOnTheScreen();
-    expect(
-      screen.getByPlaceholderText('Tìm hướng dẫn, ví dụ: video chưa đồng bộ'),
-    ).toBeOnTheScreen();
+    expect(screen.getByPlaceholderText('Tìm hướng dẫn, ví dụ: tải lên')).toBeOnTheScreen();
     for (const category of HELP_CATEGORY_IDS) {
       expect(screen.getByTestId(`help-category-${category}`)).toBeOnTheScreen();
     }
@@ -63,7 +62,7 @@ describe('Trung tâm trợ giúp (UI-I06, khung 15)', () => {
   it('danh mục đọc kèm số bài; bấm mở danh mục, bài đề xuất, liên hệ, điều khoản', async () => {
     await renderWithProviders(<HelpScreen />);
     const row = screen.getByTestId('help-category-guide');
-    expect(row.props.accessibilityLabel).toBe('Hướng dẫn sử dụng, 3 bài');
+    expect(row.props.accessibilityLabel).toBe('Hướng dẫn sử dụng, 4 bài');
     await fireEvent.press(row);
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.helpCategory, {
       categoryId: 'guide',
@@ -80,7 +79,7 @@ describe('Trung tâm trợ giúp (UI-I06, khung 15)', () => {
 
   it('tìm không dấu có kết quả: thay danh mục bằng danh sách kết quả, đếm kết quả, bấm mở bài', async () => {
     await renderWithProviders(<HelpScreen />);
-    await fireEvent.changeText(screen.getByTestId('help-search'), 'video chua dong bo');
+    await fireEvent.changeText(screen.getByTestId('help-search'), 'nhan trang thai');
     expect(screen.getByTestId('help-results')).toBeOnTheScreen();
     expect(screen.getByTestId('help-result-unsynced')).toBeOnTheScreen();
     expect(screen.getByTestId('help-result-count')).toHaveTextContent('Có 1 hướng dẫn phù hợp');
@@ -167,7 +166,7 @@ describe('Chi tiết bài hướng dẫn (khung 16)', () => {
   });
 
   it('bài cuối của danh mục: không có "Tiếp theo"; bài hỏi đáp không có phần các bước', async () => {
-    mockNavigation.params = { articleId: 'recordingLimits' };
+    mockNavigation.params = { articleId: 'deleteAccount' };
     await renderWithProviders(<HelpArticleScreen />);
     expect(screen.queryByTestId('help-article-next')).toBeNull();
     expect(screen.queryByText('Các bước thực hiện')).toBeNull();
@@ -200,6 +199,61 @@ describe('Chi tiết bài hướng dẫn (khung 16)', () => {
     expect(step3).toHaveTextContent(/máy chủ tính lại mã băm và thấy khớp/);
     expect(step3).toHaveTextContent(/không cho biết video quay lúc nào hay có chân thực không/);
     expect(step3).not.toHaveTextContent(/vẫn được giữ/);
+  });
+
+  it('bài Wi‑Fi (V1-18): chỉ đường tới công tắc; điểm phát Wi‑Fi từ máy khác vẫn tốn dữ liệu di động', async () => {
+    mockNavigation.params = { articleId: 'wifiOnly' };
+    await renderWithProviders(<HelpArticleScreen />);
+    expect(screen.getByTestId('help-article-title')).toHaveTextContent('Chỉ tải khi có Wi‑Fi');
+    expect(screen.getByTestId('help-article-summary')).toHaveTextContent(/Mặc định .* 4G\/5G/);
+    expect(screen.getByTestId('help-article-step-1')).toHaveTextContent(/Trung tâm đồng bộ/);
+    expect(screen.getByTestId('help-article-step-3')).toHaveTextContent(
+      /Phát Wi‑Fi từ một điện thoại khác vẫn được coi là Wi‑Fi, nên vẫn tốn dữ liệu di động/,
+    );
+  });
+
+  it('bài tải lên (V1-18): chỉ tải khi app mở, tắt thì dừng, mở lại thì tiếp; không hứa tải nền', async () => {
+    mockNavigation.params = { articleId: 'uploadWhenOpen' };
+    await renderWithProviders(<HelpArticleScreen />);
+    const summary = screen.getByTestId('help-article-summary');
+    expect(summary).toHaveTextContent(/chỉ tải lên khi đang mở/);
+    expect(summary).toHaveTextContent(/Tắt ứng dụng thì việc tải dừng lại, mở lại thì tải tiếp/);
+    expect(summary).not.toHaveTextContent(/nền/);
+  });
+
+  it('bài đổi máy, thời hạn lưu, xóa tài khoản, mã băm: đúng câu v1 (Q-24a, mục 1.2, R-4)', async () => {
+    const summaryOf = async (articleId: string) => {
+      mockNavigation.params = { articleId };
+      await renderWithProviders(<HelpArticleScreen />);
+      return screen.getAllByTestId('help-article-summary').at(-1);
+    };
+    const change = await summaryOf('changeDevice');
+    expect(change).toHaveTextContent(/Tệp trên máy này sẽ mất nếu bạn gỡ ứng dụng\./);
+    expect(change).toHaveTextContent(/máy mới sẽ không thấy đơn và video của máy cũ/);
+    expect(await summaryOf('retention')).toHaveTextContent(
+      'Hiện ứng dụng chưa tự động xóa bằng chứng đã tải lên và chưa áp dụng thời hạn lưu. Nếu có thay đổi, bạn sẽ được báo trước trong ứng dụng. Tệp trên máy này sẽ mất nếu bạn gỡ ứng dụng.',
+    );
+    expect(await summaryOf('deleteAccount')).toHaveTextContent(
+      /xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở/,
+    );
+    const hash = await summaryOf('hashMeaning');
+    expect(hash).toHaveTextContent(/tệp không đổi kể từ lúc tính/);
+    expect(hash).toHaveTextContent(/không cho biết video quay lúc nào hay có chân thực không/);
+    const where = await summaryOf('whereData');
+    expect(where).toHaveTextContent(/một tài khoản trên một máy/);
+    // Không nói máy chủ "chỉ" giữ tệp: liệt kê đủ (review PR #63).
+    expect(where).not.toHaveTextContent(/Máy chủ chỉ/);
+    expect(where).toHaveTextContent(
+      /tài khoản và cửa hàng, thông tin cơ bản của đơn và phiên quay, tệp bằng chứng đã tải lên, mã định danh hồ sơ hàng hoàn và báo lỗi ứng dụng nếu bạn bật/,
+    );
+  });
+
+  it('bài tìm đơn nói đúng giới hạn sửa đơn (R-6, QA-13 một phần): đơn đã quay chưa sửa được sản phẩm', async () => {
+    mockNavigation.params = { articleId: 'findOrder' };
+    await renderWithProviders(<HelpArticleScreen />);
+    expect(screen.getByTestId('help-article-step-3')).toHaveTextContent(
+      /Đơn chưa quay thì sửa được\. Đơn đã quay thì bản này chưa cho sửa sản phẩm\./,
+    );
   });
 
   it('bài lạ: trạng thái rỗng, nút về Trung tâm trợ giúp (không trang trắng)', async () => {
@@ -395,6 +449,36 @@ describe('Điều khoản và chính sách (khung 18)', () => {
   });
 });
 
+describe('bản bài theo cờ ghi video (V1-18)', () => {
+  it('cờ tắt: bài quay/đồng bộ dùng bản "chưa ghi video"; cờ bật: bản quay thật; bài khác không đổi', () => {
+    expect(helpArticleKey('recordPack', false)).toBe('personal:help.articlesPreview.recordPack');
+    expect(helpArticleKey('recordPack', true)).toBe('personal:help.articles.recordPack');
+    expect(helpArticleKey('unsynced', false)).toBe('personal:help.articlesPreview.unsynced');
+    expect(helpArticleKey('unsynced', true)).toBe('personal:help.articles.unsynced');
+    expect(helpArticleKey('wifiOnly', false)).toBe('personal:help.articles.wifiOnly');
+  });
+
+  it('bản cờ bật không nói "chưa ghi video"; hai bản cùng số bước khai báo', () => {
+    for (const article of HELP_ARTICLES.filter((a) => a.previewVariant)) {
+      const live = help.articles[article.id as keyof typeof help.articles] as {
+        title: string;
+        summary: string;
+        step?: Record<string, string>;
+      };
+      const preview = help.articlesPreview[article.id as keyof typeof help.articlesPreview] as {
+        title: string;
+        summary: string;
+        keywords: string;
+        step?: Record<string, string>;
+      };
+      expect(`${live.title} ${live.summary}`).not.toMatch(/chưa ghi/);
+      expect(preview.keywords).toBeTruthy();
+      expect(Object.keys(preview.step ?? {})).toHaveLength(article.stepCount);
+    }
+    expect(help.articles.recordPack.step['3']).toMatch(/chưa phải bản trên máy chủ/);
+  });
+});
+
 describe('câu chữ Trợ giúp (bất biến 6, 11)', () => {
   const FORBIDDEN =
     /vui lòng|bảo vệ|an toàn|tuyệt đối|24\/7|pháp lý|đảm bảo|mã hóa|luôn sẵn sàng|chắc chắn|thắng/i;
@@ -403,8 +487,25 @@ describe('câu chữ Trợ giúp (bất biến 6, 11)', () => {
       ? [value]
       : Object.values(value as Record<string, unknown>).flatMap(flatten);
 
+  /**
+   * Ngoại lệ hẹp (V1-18, review PR #63): bài Xóa tài khoản dùng NGUYÊN VĂN câu chung 30 ngày (decisions.md
+   * Q-29 / V1-20 điểm 11, V1-15 l). "lý do pháp lý" nói về nghĩa vụ giữ dữ liệu, không hứa giá trị pháp lý:
+   * chỉ bỏ đúng cụm này, chỉ ở đúng khóa này; phần còn lại của câu vẫn bị quét.
+   */
+  const RETENTION_SENTENCE =
+    'dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở';
+
   it('không có cụm hứa quá mức hay cụm cấm trong nội dung trợ giúp', () => {
-    for (const text of flatten(help)) expect(text).not.toMatch(FORBIDDEN);
+    const { deleteAccount, ...otherArticles } = help.articles;
+    const rest = { ...help, articles: otherArticles };
+    for (const text of flatten(rest)) expect(text).not.toMatch(FORBIDDEN);
+    for (const text of flatten(deleteAccount)) {
+      expect(text.replace(RETENTION_SENTENCE, '')).not.toMatch(FORBIDDEN);
+    }
+  });
+
+  it('bài Xóa tài khoản chứa nguyên văn câu chung 30 ngày', () => {
+    expect(help.articles.deleteAccount.summary).toContain(RETENTION_SENTENCE);
   });
 
   it('mỗi bài có tiêu đề, tóm tắt, từ khóa, đủ số bước khai báo; câu thông báo ngắn', () => {

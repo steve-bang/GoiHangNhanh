@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { ROUTES } from '@/core/navigation';
-import { resetMockScanner } from '@/test-utils/mock-barcode-scanner';
+import { mockScanner, resetMockScanner } from '@/test-utils/mock-barcode-scanner';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { sampleOrder, sampleSession, seedOrder } from '@/test-utils/order-fixtures';
 import { renderWithProviders } from '@/test-utils/render';
@@ -89,5 +89,34 @@ describe('Bắt đầu quay ở bản Firebase khi phiên chưa biết cửa hà
     expect(saveSession).not.toHaveBeenCalled();
     expect(mockNavigation.replace).not.toHaveBeenCalled();
     expect(mockNavigation.push).not.toHaveBeenCalled();
+  });
+});
+
+describe('Hộp giải thích quyền camera theo cờ ghi video (V1-18)', () => {
+  async function openPermission(): Promise<void> {
+    mockScanner.permission = 'askable';
+    const store = createMemoryOrderStore();
+    const details = await seedOrder(store, sampleOrder());
+    mockNavigation.params = { orderId: details.order.id };
+    await renderWithProviders(<OrderPreviewScreen />, { orderStore: store });
+    await screen.findByTestId('preview-order-code');
+    await fireEvent.press(screen.getByTestId('preview-start'));
+    await screen.findByTestId('start-permission-modal');
+  }
+
+  it('bộ ghi bật: nói quay video đóng gói, không ghi âm; không nói "chưa ghi video"', async () => {
+    await openPermission();
+    expect(
+      screen.getByText('Ứng dụng dùng camera để quay video đóng gói. Ứng dụng không ghi âm.'),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText(/chưa ghi video/)).toBeNull();
+  });
+
+  it('bộ ghi tắt: nói bản này chưa ghi video', async () => {
+    mockEnabled = false;
+    await openPermission();
+    expect(
+      screen.getByText('Ứng dụng cần camera để xem trước khi quay. Phiên bản này chưa ghi video.'),
+    ).toBeOnTheScreen();
   });
 });

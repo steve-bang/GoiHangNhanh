@@ -1,10 +1,12 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
+import { LEGAL_LINKS } from '@/core/config/legal-links';
 import { AppError } from '@/core/errors/app-error';
 import type { DisputeId, OrderId, ShopId } from '@/core/ids';
 import { resources } from '@/core/i18n/resources';
 import { ROUTES } from '@/core/navigation';
+import { openExternalLink } from '@/platform/external-link';
 import { createMemoryDisputeStore, type DisputeStore } from '@/features/disputes';
 import { createMemoryOrderStore, type OrderStore } from '@/features/orders';
 import { createMemoryLocalWipe } from '@/test-utils/memory-local-wipe';
@@ -29,14 +31,24 @@ jest.mock(
   '@/platform/navigation',
   () => jest.requireActual('@/test-utils/mock-navigation').navigationMock,
 );
+jest.mock('@/platform/external-link', () => ({
+  openExternalLink: jest.fn(async () => true),
+  openAppSettings: jest.fn(),
+}));
 const mockSupportEmail = jest.fn<string | null, []>(() => null);
 jest.mock('@/core/config/support-contact', () => ({
   getSupportEmail: () => mockSupportEmail(),
 }));
+// LEGAL_LINKS là hằng `as const` nhưng không bị đóng băng lúc chạy: test đặt URL thật rồi khôi phục.
+const legal = LEGAL_LINKS as { accountDeletion: string };
+const ORIGINAL_DELETION_LINK = LEGAL_LINKS.accountDeletion;
+const open = openExternalLink as jest.MockedFunction<typeof openExternalLink>;
 
 beforeEach(() => {
   resetMockNavigation();
   mockSupportEmail.mockReturnValue(null);
+  legal.accountDeletion = ORIGINAL_DELETION_LINK;
+  open.mockClear();
 });
 
 const withStore = (overrides: Partial<OrderStore>): OrderStore => ({
@@ -169,6 +181,40 @@ describe('Xóa tài khoản (UI-I05 route con, khung 20; luồng thật V1-15)',
     expect(screen.getByTestId('delete-condition-foreign')).toHaveTextContent(/qua trang web/);
     await pressAgree();
     expect(screen.getByTestId('delete-submit')).toBeDisabled();
+  });
+
+  it('tài khoản khác + kênh còn giữ chỗ (V1-18): không có nút ở mục đó (không mở trang chắc chắn lỗi)', async () => {
+    await setup({ localWipe: createMemoryLocalWipe({ foreignRecords: 1 }) });
+    expect(await statusOf('foreign')).toHaveTextContent('Cần xử lý');
+    expect(screen.queryByTestId('delete-condition-foreign-actions')).toBeNull();
+    expect(screen.queryByTestId('delete-foreign-web-link')).toBeNull();
+    expect(screen.queryByTestId('delete-foreign-support-link')).toBeNull();
+  });
+
+  it('tài khoản khác + có trang web và email thật (V1-18): bấm được ngay ở mục đó', async () => {
+    legal.accountDeletion = 'https://doncung.vn/xoa-tai-khoan/';
+    mockSupportEmail.mockReturnValue('ho-tro@example.test');
+    await setup({ localWipe: createMemoryLocalWipe({ foreignRecords: 1 }) });
+    expect(await statusOf('foreign')).toHaveTextContent('Cần xử lý');
+    await fireEvent.press(screen.getByTestId('delete-foreign-web-link'));
+    expect(open).toHaveBeenCalledWith('https://doncung.vn/xoa-tai-khoan/');
+    await fireEvent.press(screen.getByTestId('delete-foreign-support-link'));
+    expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.helpContact);
+    // Nút nằm ngoài vùng đọc gộp của hàng: trình đọc màn hình chạm được từng nút.
+    expect(screen.getByTestId('delete-condition-foreign').props.accessible).toBe(true);
+    expect(
+      within(screen.getByTestId('delete-condition-foreign')).queryByTestId(
+        'delete-foreign-web-link',
+      ),
+    ).toBeNull();
+  });
+
+  it('tài khoản này tạo hết dữ liệu: mục đạt, không hiện nút dù có kênh thật', async () => {
+    legal.accountDeletion = 'https://doncung.vn/xoa-tai-khoan/';
+    await setup();
+    await waitFor(async () => expect(await statusOf('foreign')).toHaveTextContent('Đạt'));
+    expect(screen.queryByTestId('delete-foreign-web-link')).toBeNull();
+    expect(screen.getByTestId('delete-web-link')).toBeOnTheScreen();
   });
 
   it('chưa biết tài khoản đang đăng nhập: mục tài khoản khác "Chưa kiểm tra được", chặn', async () => {

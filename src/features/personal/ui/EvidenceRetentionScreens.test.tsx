@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, within } from '@testing-library/react-native';
 
 import {
   createMemoryDeviceSettingsStore,
@@ -113,28 +113,27 @@ describe('EvidenceDataScreen (UI-I01 route con, khung 11)', () => {
 });
 
 describe('RetentionDetailScreen (UI-I01 route con, khung 12)', () => {
-  it('tên gói và ba loại bằng chứng đều "Chưa có thông tin"', async () => {
+  it('câu thời hạn lưu v1 đúng nguyên văn (v1-release-plan mục 1.2), không "theo gói", không "Chưa có thông tin"', async () => {
     await renderWithProviders(<RetentionDetailScreen />);
-    expect(screen.getByTestId('retention-plan-name')).toHaveTextContent('Chưa có thông tin');
-    const rows: [string, string][] = [
-      ['retention-row-videoPack', 'Video đóng gói: Chưa có thông tin'],
-      ['retention-row-photoDelivery', 'Ảnh giao hàng: Chưa có thông tin'],
-      ['retention-row-photoReturn', 'Ảnh hoàn hàng: Chưa có thông tin'],
-    ];
-    for (const [id, label] of rows) {
-      expect(screen.getByTestId(id).props.accessibilityLabel).toBe(label);
-    }
-    expect(screen.getByText('Thời hạn lưu theo gói dịch vụ')).toBeOnTheScreen();
+    expect(screen.getByTestId('retention-plan-name')).toHaveTextContent('Chưa áp dụng');
+    expect(screen.getByText('Thời hạn lưu bằng chứng')).toBeOnTheScreen();
+    expect(
+      within(screen.getByTestId('retention-note')).getByText(
+        'Hiện ứng dụng chưa tự động xóa bằng chứng đã tải lên và chưa áp dụng thời hạn lưu. Nếu có thay đổi, bạn sẽ được báo trước trong ứng dụng.',
+      ),
+    ).toBeOnTheScreen();
+    expect(
+      within(screen.getByTestId('retention-device-note')).getByText(
+        'Tệp trên máy này sẽ mất nếu bạn gỡ ứng dụng.',
+      ),
+    ).toBeOnTheScreen();
+    const root = screen.getByTestId('screen-UI-I01-retention');
+    expect(root).not.toHaveTextContent(/theo gói|Chưa có thông tin|Ảnh giao hàng/);
   });
 
-  it('thẻ ghi chú không hứa dữ liệu còn xem được/khôi phục sau hết hạn (D19), không ngày hay gói bịa', async () => {
+  it('không hứa dữ liệu còn xem được/khôi phục, không ngày, số ngày hay gói bịa', async () => {
     await renderWithProviders(<RetentionDetailScreen />);
-    const note = screen.getByTestId('retention-note');
-    expect(note).toHaveTextContent(/chưa được công bố/);
-    expect(note).toHaveTextContent(
-      /Theo chính sách dự kiến, bằng chứng đang tranh chấp được giữ lại/,
-    );
-    expect(note).toHaveTextContent(/hạ cấp gói không xóa bằng chứng ngay/);
     expect(screen.getByTestId('screen-UI-I01-retention')).not.toHaveTextContent(OVERPROMISE);
+    expect(screen.getByTestId('screen-UI-I01-retention')).not.toHaveTextContent(/vĩnh viễn/);
   });
 });
