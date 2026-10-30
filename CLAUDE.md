@@ -31,7 +31,7 @@ Repo có tài liệu nghiệp vụ (`docs/`), **khung kỹ thuật** (Expo SDK 5
 
 ### Còn là khung hoặc giả
 
-- **Cổng giả** chọn qua `src/api/create-api.ts`: test và `__DEV__` = giả; bản build thường = Firebase thật, thiếu tệp cấu hình thì "chưa kết nối". `EXPO_PUBLIC_BACKEND=fake` hoặc `EXPO_PUBLIC_USE_FAKE_BACKEND=1` **ép cổng giả ở mọi bản build** (chưa có chốt chặn cho bản production).
+- **Cổng giả** chọn qua `src/api/create-api.ts`: test và `__DEV__` = giả; bản build thường = Firebase thật, thiếu tệp cấu hình thì "chưa kết nối". `EXPO_PUBLIC_BACKEND=fake` hoặc `EXPO_PUBLIC_USE_FAKE_BACKEND=1` **ép cổng giả ở mọi bản build** (bản production `EXPO_PUBLIC_APP_ENV=prod` bỏ qua các cờ này, V1-01).
 - **Cổng tab Cá nhân ở chế độ Firebase nối một phần** (PR1 gia cố `1097a3c`, Q-20t): danh tính phiên, hồ sơ, cửa hàng đang dùng và đăng xuất đã nối thật; `listShops`, `updateShopName`, `switchShop`, `updateProfile`, `changePassword` và cài đặt thông báo vẫn trả `AUTH_SERVICE_UNAVAILABLE`. Khôi phục mật khẩu và Apple/Google cũng chưa nối.
 - **Chưa có route guard.** `useIsOffline` là khung (`platform/connectivity.ts`, luôn `false`); chưa có thư viện trạng thái mạng.
 - **Màn minh họa:** Trung tâm đồng bộ UI-F01 (dữ liệu `ILLUSTRATIVE_SYNC_JOBS`, chưa có nút thử lại), Trang chủ (có dải "minh họa" trong mã); Thông báo, Thành viên, Dung lượng là khung (chưa rà từng màn). Chưa có xem lại video, xuất hồ sơ, hết hạn/giữ do tranh chấp, quản lý thành viên (O-03, O-07), thanh toán/gói (O-06, O-16), đẩy thông báo.
