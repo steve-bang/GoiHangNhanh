@@ -2,7 +2,7 @@
 
 **Ảnh bản web (react-native-web trong Chromium) với cổng giả, không phải ảnh iOS/Android; chưa kiểm chứng trên thiết bị.** Font, bóng, vùng an toàn, bàn phím, chữ lớn hệ thống khác thiết bị thật. Bản giả không gửi thư thật.
 
-Cách chụp (`scripts/screens/capture.cjs`, phiên giả `signed_out`, 390x844 @2x; Kiểm tra hộp thư thêm 320x568 và 360x800):
+Cách chụp (`scripts/screens/capture.cjs`, phiên giả `signed_out`, 390x844 @2x; Quên mật khẩu thêm 320x568; Kiểm tra hộp thư thêm 320x568 và 360x800). Ảnh Quên mật khẩu và Kiểm tra hộp thư chụp lại sau review PR #47 (bố cục theo độ dài câu mô tả):
 
 - "Trước": `--source origin/main` (`4e59fd3`).
 - "Sau": `--source claude/v1-03-auth-email-reset`.
@@ -33,6 +33,7 @@ Trước | Sau
 Trước | Sau
 ---|---
 ![Quên mật khẩu trước: gửi mã xác minh](04-forgot-password-before-390x844.png) | ![Quên mật khẩu sau: gửi email đặt lại](04-forgot-password-after-390x844.png)
+![Quên mật khẩu trước 320x568](04-forgot-password-before-320x568.png) | ![Quên mật khẩu sau 320x568: câu dài hơn, bố cục theo độ dài câu](04-forgot-password-after-320x568.png)
 
 ## 5. Kiểm tra hộp thư (UI-A07, `/forgot-password/sent`, màn mới)
 
