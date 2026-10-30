@@ -26,7 +26,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Fixed
 
-- Test giao diện nặng không còn đỏ chập chờn khi máy tải cao: hạn mỗi test của project `unit` nâng lên 20 giây (#50).
+- Test giao diện nặng không còn đỏ chập chờn khi máy tải cao: hạn mỗi test Jest đặt ở gốc cấu hình là 30 giây (giá trị đặt trong từng project trước đây bị Jest bỏ qua) (#50).
 
 ### Đã có trước khi mở nhật ký (đến commit `42f6a3c`, gom từ PR #13–#39)
 
