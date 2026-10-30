@@ -4,7 +4,7 @@
  * Data deletion). Bản nháp chờ luật sư rà (release-checklist C-2). Mô tả đúng thiết kế V1-14
  * (`deleteAccount`, `purgeDeletedShops`: xóa cả shop gồm `auditEvents` sau 30 ngày trừ khi `legalHold`;
  * chỉ giữ `accountDeletions`: uid, shopIds, thời điểm, lý do kỹ thuật, số lượng; không email/tên) và V1-15
- * (chặn khi đang quay hoặc còn tranh chấp mở; cảnh báo + xác nhận riêng khi còn tệp chưa tải; chỉ xóa cục bộ
+ * (chặn khi đang quay, còn tranh chấp mở hoặc máy còn dữ liệu của tài khoản khác; cảnh báo + xác nhận riêng khi còn tệp chưa tải; chỉ xóa cục bộ
  * sau khi máy chủ trả thành công). Yêu cầu qua email xử lý bằng script hỗ trợ của V1-14. Số ngày trả lời
  * email `site.legal.emailRequestDays` là đề xuất chờ duyệt. Đối chiếu app thật ở C-6.
  */
@@ -48,6 +48,10 @@ const toc = [
   <ul>
     <li>Đang quay video. Hãy quay xong trước.</li>
     <li>Còn hồ sơ tranh chấp đang mở trên máy. Hãy đóng hồ sơ trước.</li>
+    <li>
+      Điện thoại còn dữ liệu do tài khoản khác tạo. Ứng dụng không xóa để tránh xóa nhầm; bạn dùng cách gửi
+      email bên dưới.
+    </li>
   </ul>
   <p>
     Nếu còn tệp chưa tải lên, ứng dụng báo số tệp sẽ mất và yêu cầu bạn xác nhận riêng. Mất mạng hoặc máy

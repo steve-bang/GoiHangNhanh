@@ -268,6 +268,13 @@ describe('cổng cá nhân chế độ Firebase: tab Cá nhân thật (V1-05)', 
     expect(await codeOf(account.updateProfile({ displayName: 'A' }))).toBe('AUTH_NETWORK_ERROR');
   });
 
+  it('xóa tài khoản (V1-15): chuyển mật khẩu cho API; sai -> AUTH_WRONG_CURRENT_PASSWORD; đúng -> resolve', async () => {
+    const { api, account } = await setup();
+    expect(await codeOf(account.deleteAccount('sai-1'))).toBe('AUTH_WRONG_CURRENT_PASSWORD');
+    await expect(account.deleteAccount('Mat-khau-1')).resolves.toBeUndefined();
+    expect(api.auth.deleteAccountCalls).toBe(2);
+  });
+
   it('đổi mật khẩu: sai mật khẩu hiện tại -> AUTH_WRONG_CURRENT_PASSWORD; đúng -> resolve', async () => {
     const { api, account, email } = await setup();
     expect(

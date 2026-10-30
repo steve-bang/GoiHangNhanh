@@ -155,6 +155,22 @@ export function describeApiContract(name: string, makeApi: () => ApiClient): voi
       );
     });
 
+    it('xóa tài khoản: sai mật khẩu không đổi gì; đúng thì không đăng nhập lại được (V1-15)', async () => {
+      const api = makeApi();
+      const email = newEmail();
+      await api.auth.signUpWithEmail({ email, password: PASSWORD });
+      await expect(api.auth.deleteAccount({ password: 'sai-mat-khau-9' })).rejects.toMatchObject({
+        code: 'AUTH_WRONG_CURRENT_PASSWORD',
+      });
+      await expect(
+        api.auth.signInWithPassword({ email, password: PASSWORD }),
+      ).resolves.toMatchObject({ email: expect.any(String) });
+      await expect(api.auth.deleteAccount({ password: PASSWORD })).resolves.toBeUndefined();
+      await expect(
+        api.auth.signInWithPassword({ email, password: PASSWORD }),
+      ).rejects.toMatchObject({ code: 'AUTH_INVALID_CREDENTIALS' });
+    });
+
     // Chưa kiểm được ở bản giả (cổng shop giả không biết tài khoản hiện tại); bản Firebase phải
     // thêm ca thật: gọi createShop hai lần cùng một tài khoản trả CÙNG shop, không tạo shop thứ hai.
     it.todo('createShop idempotent theo tài khoản (decisions.md Q-13b)');

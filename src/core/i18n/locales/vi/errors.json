@@ -90,6 +90,14 @@
     "title": "Chưa mở được ứng dụng email.",
     "hint": "Bạn thử lại nhé."
   },
+  "ACCOUNT_DELETE_SHOP_HAS_MEMBERS": {
+    "title": "Cửa hàng còn người khác đang dùng.",
+    "hint": "Bạn liên hệ hỗ trợ để xóa tài khoản."
+  },
+  "ACCOUNT_DELETION_PENDING": {
+    "title": "Tài khoản đang được xóa.",
+    "hint": "Bạn nhập mật khẩu để hoàn tất nhé."
+  },
   "BATTERY_LOW": "Pin còn quá thấp để quay an toàn. Hãy cắm sạc rồi kiểm tra lại.",
   "DEVICE_OVERHEATED": "Máy đang quá nóng để quay an toàn. Hãy để máy nguội rồi kiểm tra lại."
 }

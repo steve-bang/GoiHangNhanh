@@ -7,6 +7,7 @@ import type {
   AuthAccount,
   AuthApi,
   ChangePasswordInput,
+  DeleteAccountInput,
   CreatedShop,
   CreateShopInput,
   ApiClient,
@@ -102,6 +103,8 @@ export class FakeAuthApi implements AuthApi {
   /** Số lần đổi mật khẩu (không lưu nội dung mật khẩu). */
   changePasswordCalls = 0;
   readonly displayNameCalls: string[] = [];
+  /** Số lần xóa tài khoản được gọi (không lưu mật khẩu). */
+  deleteAccountCalls = 0;
   private readonly latencyMs: number;
   private readonly now: () => number;
   /** Tài khoản đang đăng nhập (sau `signUp`/`signIn`, như Firebase Auth); `null` sau `signOut`. */
@@ -244,6 +247,22 @@ export class FakeAuthApi implements AuthApi {
     this.consumeFailure();
     this.currentAccount().displayName = displayName;
     return { displayName };
+  }
+
+  /**
+   * Như máy chủ V1-14: sai mật khẩu thì không đổi gì; đúng thì tài khoản biến mất (không đăng nhập lại
+   * được) và phiên trên máy kết thúc. Bản giả không có cửa hàng theo tài khoản để khóa.
+   */
+  async deleteAccount(input: DeleteAccountInput): Promise<void> {
+    this.deleteAccountCalls += 1;
+    await delay(this.latencyMs);
+    this.consumeFailure();
+    const account = this.currentAccount();
+    if (account.password === null || account.password !== input.password) {
+      throw new AppError('AUTH_WRONG_CURRENT_PASSWORD');
+    }
+    if (this.currentKey) this.accounts.delete(this.currentKey);
+    this.currentKey = null;
   }
 
   /**

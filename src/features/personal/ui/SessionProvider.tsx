@@ -38,6 +38,12 @@ export interface SessionContextValue {
    */
   signOut(): Promise<void>;
   /**
+   * Kết thúc phiên trong bộ nhớ sau khi tài khoản ĐÃ bị xóa ở máy chủ và dữ liệu trên máy đã được xóa
+   * (V1-15, `LocalWipeProvider`). Không gọi cổng: phiên Auth trên máy đã được thoát trong lúc xóa (lỗi
+   * thoát bị bỏ qua vì tài khoản không còn). Chỉ `LocalWipeProvider` gọi.
+   */
+  endSessionAfterAccountDeletion(): void;
+  /**
    * Đăng ký hàm xả state/cache trong bộ nhớ, gọi khi phiên đổi danh tính (đăng xuất, đổi shop,
    * đăng nhập tài khoản khác). Trả về hàm hủy đăng ký.
    */
@@ -159,6 +165,11 @@ export function SessionProvider({
     return inFlight.current;
   }, [account]);
 
+  const endSessionAfterAccountDeletion = useCallback(() => {
+    dispatch({ type: 'signed_out' });
+    setHydration('settled');
+  }, []);
+
   const value = useMemo<SessionContextValue>(
     () => ({
       state,
@@ -168,6 +179,7 @@ export function SessionProvider({
       updateDisplayName,
       notifyShopUpdated,
       signOut,
+      endSessionAfterAccountDeletion,
       onSessionCleared,
       requireKnownShop: strict,
       hydration,
@@ -186,6 +198,7 @@ export function SessionProvider({
       updateDisplayName,
       notifyShopUpdated,
       signOut,
+      endSessionAfterAccountDeletion,
       onSessionCleared,
       strict,
       hydration,

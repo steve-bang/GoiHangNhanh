@@ -124,6 +124,17 @@ describe('UI-A04 Tạo hồ sơ shop: ghi shop vào phiên toàn app', () => {
     await fireEvent.press(submit());
     expect(screen.getByTestId('probe')).toHaveTextContent('signed_out|-|-');
   });
+
+  it('tài khoản đang được xóa dở (V1-15): sang "Đang hoàn tất xóa tài khoản", không báo lỗi form', async () => {
+    const fake = createFakeApi();
+    await renderWithProviders(<CreateShopScreen />, { gateways: fake });
+    fake.shop.failNext('ACCOUNT_DELETION_PENDING');
+    await fireEvent.changeText(nameInput(), 'Shop');
+    await fireEvent.press(submit());
+    expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.accountDeletionPending);
+    expect(mockNavigation.push).not.toHaveBeenCalledWith(ROUTES.setupDone);
+    expect(screen.queryByText(fullText(errors.ACCOUNT_DELETION_PENDING))).toBeNull();
+  });
 });
 
 describe('UI-A04 Tạo hồ sơ shop: giao diện', () => {

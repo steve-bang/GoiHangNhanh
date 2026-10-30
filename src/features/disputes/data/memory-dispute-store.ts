@@ -139,5 +139,7 @@ export function createMemoryDisputeStore(
       }
       return [...held];
     },
+    countOpenOnDevice: async () =>
+      [...rows.values()].filter((r) => r.dispute.status === 'open').length,
   };
 }

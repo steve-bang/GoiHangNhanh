@@ -1,7 +1,11 @@
 import { createFakeApi } from '@/api/testing';
 import { AppError } from '@/core/errors/app-error';
 
-import { createFakePersonalGateways, FAKE_ACCOUNT_PASSWORD } from './fake-personal-gateways';
+import {
+  createFakePersonalGateways,
+  FAKE_ACCOUNT_PASSWORD,
+  FAKE_DELETE_OFFLINE_PASSWORD,
+} from './fake-personal-gateways';
 import {
   createPersonalGateways,
   getDefaultPersonalGateways,
@@ -110,6 +114,28 @@ describe('cổng cá nhân giả', () => {
     expect(await settings.getNotificationPreferences()).toEqual(before);
     await settings.updateNotificationPreferences({ ...before, syncCompleted: true });
     expect((await settings.getNotificationPreferences()).syncCompleted).toBe(true);
+  });
+});
+
+describe('cổng cá nhân giả: xóa tài khoản (V1-15)', () => {
+  it('sai mật khẩu / mô phỏng mất mạng: lỗi, chưa xóa; đúng: xóa, gọi lại báo phiên hết hạn; đăng xuất thì dùng lại được', async () => {
+    const { account } = createFakePersonalGateways();
+    expect(await codeOf(account.deleteAccount('sai'))).toBe('AUTH_WRONG_CURRENT_PASSWORD');
+    expect(await codeOf(account.deleteAccount(FAKE_DELETE_OFFLINE_PASSWORD))).toBe(
+      'AUTH_NETWORK_ERROR',
+    );
+    expect(account.deleted).toBe(false);
+    await account.deleteAccount(FAKE_ACCOUNT_PASSWORD);
+    expect(account.deleted).toBe(true);
+    expect(await codeOf(account.deleteAccount(FAKE_ACCOUNT_PASSWORD))).toBe('AUTH_SESSION_EXPIRED');
+    await account.signOut();
+    expect(account.deleted).toBe(false);
+  });
+
+  it('cổng "chưa kết nối" không bao giờ báo đã xóa', async () => {
+    expect(await codeOf(createUnavailablePersonalGateways().account.deleteAccount('x'))).toBe(
+      'AUTH_SERVICE_UNAVAILABLE',
+    );
   });
 });
 

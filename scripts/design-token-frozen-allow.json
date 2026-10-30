@@ -1,12 +1,12 @@
 {
-  "src/test-utils/render.tsx": "Chỉ thêm provider (cổng cá nhân, phiên, toast) quanh cây test; không đổi giao diện màn đã xác nhận.",
+  "src/test-utils/render.tsx": "Chỉ thêm provider (cổng cá nhân, phiên, toast) quanh cây test; không đổi giao diện màn đã xác nhận. V1-15: thêm LocalWipeProvider (bản giả bộ nhớ) quanh cây test.",
   "src/features/shop/ui/ForgotPasswordScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện. V1-03: đổi đích sau khi gửi và câu chữ theo PASSWORD_RECOVERY_MODE, truyền độ dài câu mô tả vào computeForgotLayout; bố cục giữ nguyên (lệch có chủ đích, decisions.md Q-29 / V1-03).",
   "src/features/shop/ui/NewPasswordScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện. V1-03: chặn liên kết sâu ở chế độ email_link (về Đăng nhập), chỉ tầng logic.",
   "src/features/shop/ui/SignUpScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện.",
   "src/features/shop/ui/VerifyOtpScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện. V1-03: chặn liên kết sâu ở chế độ email_link (về Đăng nhập), chỉ tầng logic.",
   "src/features/shop/ui/onboarding/OnboardingParts.tsx": "Chỉ chuyển helper resolveErrorMessage/errorText/ErrorMessage sang core/i18n/error-message (dùng chung với tab Cá nhân); giữ nguyên giao diện.",
   "src/features/shop/ui/SignInScreen.tsx": "Chỉ đổi import: helper resolveErrorMessage/ErrorMessage chuyển sang core/i18n/error-message (PR2 tab Cá nhân); không đổi giao diện. Thêm ghi phiên toàn app (session.beginSession) sau khi đăng nhập thành công, chỉ tầng logic. PR1 gia cố: truyền shopId do cổng trả vào beginSession (không đổi giao diện).",
-  "src/features/shop/ui/CreateShopScreen.tsx": "PR1 gia cố phát hành: sau khi máy chủ xác nhận tạo/sửa shop, ghi shopId vào phiên toàn app (useSession). Chỉ tầng logic, không đổi JSX hay giao diện.",
+  "src/features/shop/ui/CreateShopScreen.tsx": "PR1 gia cố phát hành: sau khi máy chủ xác nhận tạo/sửa shop, ghi shopId vào phiên toàn app (useSession). Chỉ tầng logic, không đổi JSX hay giao diện. V1-15: createShop trả ACCOUNT_DELETION_PENDING thì chuyển sang màn Đang hoàn tất xóa tài khoản (onFail của useGatewayTask), chỉ tầng logic.",
   "src/test-utils/mock-camera-recorder.tsx": "Tệp mới chỉ cho test (mock bộ ghi camera, ADR-020); không phải giao diện và không đổi màn đã xác nhận.",
   "src/test-utils/mock-camera-photo.tsx": "Tệp mới chỉ cho test (mock camera chụp ảnh kiện hàng hoàn, R2a); không phải giao diện và không đổi màn đã xác nhận.",
   "src/test-utils/mock-location.ts": "Tệp test mới (mock adapter vị trí cho Q-26k); không đổi giao diện màn đã xác nhận.",
@@ -14,5 +14,6 @@
   "src/features/shop/ui/auth-layout.ts": "V1-03 (review PR #47): computeForgotLayout nhận tùy chọn descriptionChars (mặc định 62 như cũ) để ước tính theo câu mô tả đang hiện; chế độ otp không đổi kết quả (có test).",
   "src/test-utils/mock-video-player.tsx": "Tệp test mới (mock adapter phát video cục bộ expo-video, V1-17); không phải giao diện và không đổi màn đã xác nhận.",
   "src/test-utils/mock-keep-awake.ts": "Tệp test mới (mock adapter giữ màn hình sáng expo-keep-awake, V1-11); không phải giao diện và không đổi màn đã xác nhận.",
-  "src/test-utils/mock-app-state.ts": "Tệp test mới (mock adapter AppState điều khiển được: vào nền/trở lại app, V1-11); không phải giao diện và không đổi màn đã xác nhận."
+  "src/test-utils/mock-app-state.ts": "Tệp test mới (mock adapter AppState điều khiển được: vào nền/trở lại app, V1-11); không phải giao diện và không đổi màn đã xác nhận.",
+  "src/test-utils/memory-local-wipe.ts": "Tệp test mới (bản giả dấu xóa/evidence/CSDL cho LocalWipeProvider, V1-15); không phải giao diện và không đổi màn đã xác nhận."
 }

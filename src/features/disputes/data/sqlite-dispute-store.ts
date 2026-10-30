@@ -282,5 +282,12 @@ export function createSqliteDisputeStore(
         );
         return rows.map((r) => r.evidence_id as EvidenceId);
       }),
+    countOpenOnDevice: () =>
+      guarded(async () => {
+        const row = await db.getFirstAsync<{ n: number }>(
+          "SELECT COUNT(*) AS n FROM disputes WHERE status = 'open'",
+        );
+        return row?.n ?? 0;
+      }),
   };
 }

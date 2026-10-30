@@ -6,6 +6,12 @@
 export const LEGAL_LINKS = {
   terms: 'https://don-chung.invalid/terms',
   privacy: 'https://don-chung.invalid/privacy',
+  /**
+   * Trang web hướng dẫn xóa tài khoản (`web/src/config/site.ts` `legalPages.accountDeletionRequest`,
+   * V1-19). TODO(V1-18): thay bằng `public-links.ts` dùng chung giá trị với web khi có tên miền thật;
+   * còn giữ chỗ thì màn Xóa tài khoản ẩn liên kết (không mở trang chắc chắn lỗi).
+   */
+  accountDeletion: 'https://don-chung.invalid/xoa-tai-khoan/',
 } as const;
 
 /**

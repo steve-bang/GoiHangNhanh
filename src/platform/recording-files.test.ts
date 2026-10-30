@@ -1,4 +1,5 @@
 import {
+  deleteAllEvidenceFiles,
   deleteRecording,
   excludeEvidenceDirFromBackup,
   findPersistedRecording,
@@ -334,5 +335,36 @@ describe('loại thư mục bằng chứng khỏi sao lưu (V1-12, Q-24d)', () =
   it('probeEvidenceDirWritable tự tạo thư mục thì cũng đặt cờ', () => {
     expect(probeEvidenceDirWritable()).toBe(true);
     expect(mockExclude).toHaveBeenCalledWith('evidence', 'file:///docs/evidence');
+  });
+});
+
+describe('deleteAllEvidenceFiles (chỉ sau khi máy chủ xác nhận xóa tài khoản, V1-15)', () => {
+  it('xóa mọi tệp trong evidence/, giữ thư mục, không đụng tệp ngoài evidence/', () => {
+    mockDirs.add('file:///docs/evidence');
+    mockFiles.set('file:///docs/evidence/ev-1.mp4', 10);
+    mockFiles.set('file:///docs/evidence/m-1.jpg', 5);
+    mockFiles.set('file:///docs/.pending-local-wipe', 2);
+    mockFiles.set('file:///cache/tmp.mp4', 1);
+    expect(deleteAllEvidenceFiles()).toBe(true);
+    expect([...mockFiles.keys()].sort()).toEqual([
+      'file:///cache/tmp.mp4',
+      'file:///docs/.pending-local-wipe',
+    ]);
+    expect(mockDirs.has('file:///docs/evidence')).toBe(true);
+  });
+
+  it('idempotent: thư mục không có hoặc đã rỗng thì true', () => {
+    expect(deleteAllEvidenceFiles()).toBe(true);
+    mockDirs.add('file:///docs/evidence');
+    expect(deleteAllEvidenceFiles()).toBe(true);
+  });
+
+  it('còn sót tệp (xóa lỗi) thì false, không ném', () => {
+    mockDirs.add('file:///docs/evidence');
+    mockFiles.set('file:///docs/evidence/ev-1.mp4', 10);
+    mockDeleteMode = 'throw';
+    expect(deleteAllEvidenceFiles()).toBe(false);
+    mockDeleteMode = 'noop';
+    expect(deleteAllEvidenceFiles()).toBe(false);
   });
 });

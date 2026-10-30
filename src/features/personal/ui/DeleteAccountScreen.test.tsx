@@ -1,9 +1,12 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
+import type { DisputeId, OrderId, ShopId } from '@/core/ids';
 import { resources } from '@/core/i18n/resources';
 import { ROUTES } from '@/core/navigation';
+import { createMemoryDisputeStore, type DisputeStore } from '@/features/disputes';
 import { createMemoryOrderStore, type OrderStore } from '@/features/orders';
+import { createMemoryLocalWipe } from '@/test-utils/memory-local-wipe';
 import {
   mockNavigation,
   resetMockNavigation,
@@ -11,7 +14,11 @@ import {
 } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
-import { createFakePersonalGateways } from '../data/fake-personal-gateways';
+import {
+  createFakePersonalGateways,
+  FAKE_ACCOUNT_PASSWORD,
+  FAKE_DELETE_OFFLINE_PASSWORD,
+} from '../data/fake-personal-gateways';
 import { createUnavailablePersonalGateways } from '../data/unavailable-personal-gateways';
 import { DeleteAccountScreen } from './DeleteAccountScreen';
 import { useSession } from './SessionProvider';
@@ -35,77 +42,166 @@ const withStore = (overrides: Partial<OrderStore>): OrderStore => ({
   ...overrides,
 });
 
+async function openDisputeStore(count: number): Promise<DisputeStore> {
+  const store = createMemoryDisputeStore();
+  for (let i = 0; i < count; i += 1) {
+    await store.createDispute({
+      id: `d-${i}` as DisputeId,
+      shopId: 'shop-x' as ShopId,
+      subject: { kind: 'order', orderId: 'o1' as OrderId, label: 'DH001' },
+      issueType: 'missing_item',
+      note: '',
+      createdAtDevice: 1,
+    });
+  }
+  return store;
+}
+
+function SessionProbe() {
+  const { beginSession } = useSession();
+  return (
+    <Pressable
+      testID="begin-session"
+      onPress={() => beginSession({ uid: 'u1', email: 'a@example.com', displayName: null }, 's1')}
+    />
+  );
+}
+
 async function setup(
   options: {
     gateways?: ReturnType<typeof createFakePersonalGateways>;
     store?: OrderStore;
+    disputeStore?: DisputeStore;
+    localWipe?: ReturnType<typeof createMemoryLocalWipe>;
+    signedIn?: boolean;
   } = {},
 ) {
   const gateways = options.gateways ?? createFakePersonalGateways({ shop: { role: 'member' } });
-  await renderWithProviders(<DeleteAccountScreen />, {
-    personalGateways: gateways,
-    orderStore: options.store ?? createMemoryOrderStore(),
-  });
-  return gateways;
+  const localWipe = options.localWipe ?? createMemoryLocalWipe();
+  await renderWithProviders(
+    <>
+      <SessionProbe />
+      <DeleteAccountScreen />
+    </>,
+    {
+      personalGateways: gateways,
+      orderStore: options.store ?? createMemoryOrderStore(),
+      disputeStore: options.disputeStore ?? createMemoryDisputeStore(),
+      localWipe,
+    },
+  );
+  // Có tài khoản đang đăng nhập (điều kiện "dữ liệu tài khoản khác" cần biết uid).
+  if (options.signedIn !== false) await fireEvent.press(screen.getByTestId('begin-session'));
+  return { gateways, localWipe };
 }
 
 const statusOf = (id: string) => screen.findByTestId(`delete-condition-${id}-status`);
+const pressAgree = () =>
+  fireEvent.press(screen.getByRole('checkbox', { name: 'Tôi hiểu và đồng ý' }));
 
-describe('Xóa tài khoản (UI-I05 route con, khung 20)', () => {
-  it('hiện tiêu đề, câu dẫn theo BA, danh sách điều kiện, giải thích dữ liệu, hộp kiểm và nút', async () => {
+async function goToPassword() {
+  await waitFor(async () => expect(await statusOf('foreign')).toHaveTextContent('Đạt'));
+  await pressAgree();
+  await fireEvent.press(screen.getByTestId('delete-submit'));
+  expect(screen.getByTestId('delete-password-step')).toBeOnTheScreen();
+}
+
+describe('Xóa tài khoản (UI-I05 route con, khung 20; luồng thật V1-15)', () => {
+  it('hiện tiêu đề, câu dẫn, năm điều kiện, khối dữ liệu (câu chung 30 ngày nguyên văn), hộp kiểm và nút', async () => {
     await setup();
     expect(screen.getByTestId('screen-UI-I05-delete-account')).toBeOnTheScreen();
     expect(screen.getByText('Xóa tài khoản?')).toBeOnTheScreen();
-    expect(screen.getByTestId('delete-intro')).toHaveTextContent(
-      'Đây là thao tác quan trọng. Hãy đọc kỹ thông tin về dữ liệu và quyền truy cập trước khi tiếp tục.',
+    for (const id of ['recording', 'disputes', 'foreign', 'unsynced', 'ownership']) {
+      expect(screen.getByTestId(`delete-condition-${id}`)).toBeOnTheScreen();
+    }
+    expect(screen.getByTestId('delete-data-server')).toHaveTextContent(
+      /dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở\./,
     );
-    expect(screen.getByText('Điều kiện')).toBeOnTheScreen();
-    expect(screen.getByTestId('delete-data')).toBeOnTheScreen();
     expect(screen.getByRole('checkbox', { name: 'Tôi hiểu và đồng ý' })).toBeOnTheScreen();
     expect(screen.getByTestId('delete-keep')).toHaveTextContent('Giữ tài khoản của tôi');
   });
 
-  it('sạch: ba mục có nguồn "Đạt"; mục tranh chấp "Chưa kiểm tra được"', async () => {
+  it('sạch: mọi mục "Đạt"; nút chỉ bật sau "Tôi hiểu và đồng ý"', async () => {
     await setup();
-    await waitFor(async () => expect(await statusOf('recording')).toHaveTextContent('Đạt'));
-    expect(await statusOf('unsynced')).toHaveTextContent('Đạt');
-    expect(await statusOf('ownership')).toHaveTextContent('Đạt');
-    expect(await statusOf('disputes')).toHaveTextContent('Chưa kiểm tra được');
-    expect(screen.getByTestId('delete-condition-disputes')).toHaveTextContent(
-      /chưa có dữ liệu để kiểm tra/,
-    );
-    expect(screen.queryByTestId('delete-sync-link')).toBeNull();
+    await waitFor(async () => expect(await statusOf('foreign')).toHaveTextContent('Đạt'));
+    for (const id of ['recording', 'disputes', 'unsynced', 'ownership']) {
+      expect(await statusOf(id)).toHaveTextContent('Đạt');
+    }
+    expect(screen.getByTestId('delete-submit')).toBeDisabled();
+    await pressAgree();
+    expect(screen.getByTestId('delete-submit')).toBeEnabled();
+    expect(screen.queryByTestId('delete-blocked-hint')).toBeNull();
   });
 
-  it('đang kiểm tra: chưa hiện "Đạt" trước khi có kết quả', async () => {
+  it('đang kiểm tra: chưa hiện "Đạt" và nút khóa', async () => {
     await setup({
       store: withStore({ hasRecordingOnDevice: () => new Promise(() => undefined) }),
     });
     expect(screen.getByTestId('delete-condition-recording')).toHaveTextContent(/Đang kiểm tra/);
     expect(screen.queryByText('Đạt')).toBeNull();
+    await pressAgree();
+    expect(screen.getByTestId('delete-submit')).toBeDisabled();
   });
 
-  it('đang quay: "Cần xử lý" kèm hướng dẫn dừng quay', async () => {
+  it('đang quay: chặn', async () => {
     await setup({ store: withStore({ hasRecordingOnDevice: async () => true }) });
-    expect(await screen.findByText('Hãy dừng quay trước khi xóa tài khoản.')).toBeOnTheScreen();
     expect(await statusOf('recording')).toHaveTextContent('Cần xử lý');
+    await pressAgree();
+    expect(screen.getByTestId('delete-submit')).toBeDisabled();
+    expect(screen.getByTestId('delete-blocked-hint')).toBeOnTheScreen();
   });
 
-  it('còn tệp chưa đồng bộ: nêu số thật, có lối tới trung tâm đồng bộ', async () => {
+  it('còn hồ sơ tranh chấp mở trên máy (mọi shop): chặn, nói đóng hồ sơ không xóa bằng chứng (bất biến 9)', async () => {
+    await setup({ disputeStore: await openDisputeStore(2) });
+    expect(await statusOf('disputes')).toHaveTextContent('Cần xử lý');
+    expect(screen.getByTestId('delete-condition-disputes')).toHaveTextContent(
+      /Còn 2 hồ sơ tranh chấp đang mở\..*Đóng hồ sơ không xóa bằng chứng\./,
+    );
+    await pressAgree();
+    expect(screen.getByTestId('delete-submit')).toBeDisabled();
+  });
+
+  it('máy còn dữ liệu của tài khoản khác: chặn (không xóa nhầm), chỉ cách qua web/hỗ trợ', async () => {
+    await setup({ localWipe: createMemoryLocalWipe({ foreignRecords: 3 }) });
+    expect(await statusOf('foreign')).toHaveTextContent('Cần xử lý');
+    expect(screen.getByTestId('delete-condition-foreign')).toHaveTextContent(/qua trang web/);
+    await pressAgree();
+    expect(screen.getByTestId('delete-submit')).toBeDisabled();
+  });
+
+  it('chưa biết tài khoản đang đăng nhập: mục tài khoản khác "Chưa kiểm tra được", chặn', async () => {
+    await setup({ signedIn: false });
+    expect(await statusOf('foreign')).toHaveTextContent('Chưa kiểm tra được');
+    await pressAgree();
+    expect(screen.getByTestId('delete-submit')).toBeDisabled();
+  });
+
+  it('còn tệp chưa tải: "Lưu ý" + cảnh báo mất tệp + tích riêng mới bật nút; có lối tới đồng bộ (R-2 A)', async () => {
     await setup({ store: withStore({ countUnsyncedOnDevice: async () => 3 }) });
-    expect(await screen.findByText('Còn 3 tệp chưa được máy chủ xác nhận.')).toBeOnTheScreen();
-    expect(await statusOf('unsynced')).toHaveTextContent('Cần xử lý');
+    expect(await statusOf('unsynced')).toHaveTextContent('Lưu ý');
+    expect(
+      screen.getByText('3 tệp chưa tải lên sẽ bị xóa khỏi máy này và không thể khôi phục.'),
+    ).toBeOnTheScreen();
+    await pressAgree();
+    expect(screen.getByTestId('delete-submit')).toBeDisabled();
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Tôi hiểu 3 tệp này sẽ mất' }));
+    expect(screen.getByTestId('delete-submit')).toBeEnabled();
     await fireEvent.press(screen.getByTestId('delete-sync-link'));
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.sync);
   });
 
-  it('là chủ cửa hàng: cần xử lý, nói cách xử lý chưa được công bố', async () => {
+  it('là chủ cửa hàng: "Lưu ý", không chặn', async () => {
     await setup({ gateways: createFakePersonalGateways() });
-    expect(await screen.findByText(/Bạn là chủ 1 cửa hàng\./)).toBeOnTheScreen();
-    expect(await statusOf('ownership')).toHaveTextContent('Cần xử lý');
+    expect(await statusOf('ownership')).toHaveTextContent('Lưu ý');
+    expect(screen.getByTestId('delete-condition-ownership')).toHaveTextContent(
+      /Bạn là chủ 1 cửa hàng\./,
+    );
+    await waitFor(async () => expect(await statusOf('foreign')).toHaveTextContent('Đạt'));
+    await pressAgree();
+    expect(screen.getByTestId('delete-submit')).toBeEnabled();
   });
 
-  it('đọc kho/cửa hàng lỗi: "Chưa kiểm tra được", không dấu tích', async () => {
+  it('đọc kho lỗi: "Chưa kiểm tra được", không dấu tích, nút khóa', async () => {
     await setup({
       gateways: createUnavailablePersonalGateways() as never,
       store: withStore({
@@ -116,124 +212,154 @@ describe('Xóa tài khoản (UI-I05 route con, khung 20)', () => {
           throw new Error('x');
         },
       }),
+      disputeStore: {
+        ...createMemoryDisputeStore(),
+        countOpenOnDevice: async () => {
+          throw new Error('x');
+        },
+      },
     });
     for (const id of ['recording', 'unsynced', 'ownership', 'disputes']) {
       expect(await statusOf(id)).toHaveTextContent('Chưa kiểm tra được');
     }
-    expect(screen.queryByText('Đạt')).toBeNull();
+    expect(screen.queryByText('Đạt')).not.toBeNull(); // chỉ mục tài khoản khác đọc được
+    await pressAgree();
+    expect(screen.getByTestId('delete-submit')).toBeDisabled();
   });
 
-  it('nút xóa KHÓA kể cả khi sạch và đã chọn hộp kiểm; bấm không gọi cổng, không điều hướng, không đăng xuất', async () => {
-    const gateways = await setup();
-    await waitFor(async () => expect(await statusOf('recording')).toHaveTextContent('Đạt'));
-    const agree = screen.getByRole('checkbox', { name: 'Tôi hiểu và đồng ý' });
-    await fireEvent.press(agree);
-    expect(screen.getByRole('checkbox', { name: 'Tôi hiểu và đồng ý' })).toBeChecked();
-    const button = screen.getByTestId('delete-submit');
-    expect(button).toBeDisabled();
-    expect(button.props.accessibilityHint).toBe(
-      'Chưa dùng được. Việc xóa tài khoản trong ứng dụng sắp có.',
-    );
-    expect(button.props.accessibilityState).toMatchObject({ disabled: true });
-    // Nút khóa: bấm không kích hoạt gì (lớp bảo vệ là `disabled`; bỏ nó thì onPress/cổng/điều hướng sẽ chạy).
-    await fireEvent.press(button);
-    expect(gateways.account.signOutCalls).toBe(0);
-    expect(mockNavigation.push).toHaveBeenCalledTimes(0);
-    expect(mockNavigation.replace).toHaveBeenCalledTimes(0);
-    expect(mockNavigation.reset).toHaveBeenCalledTimes(0);
-    expect(mockNavigation.back).toHaveBeenCalledTimes(0);
-    expect(screen.getByTestId('delete-soon')).toHaveTextContent(
-      'Sắp có. Hiện chưa xóa được tài khoản trong ứng dụng.',
-    );
-  });
+  describe('nhập mật khẩu và gọi máy chủ', () => {
+    it('sai mật khẩu: báo tại ô, KHÔNG xóa gì trên máy', async () => {
+      const { gateways, localWipe } = await setup();
+      await goToPassword();
+      await fireEvent.changeText(screen.getByTestId('delete-password'), 'sai-mat-khau');
+      await fireEvent.press(screen.getByTestId('delete-confirm'));
+      expect(await screen.findByText('Mật khẩu hiện tại chưa đúng.')).toBeOnTheScreen();
+      expect(gateways.account.deleteAccountCalls).toBe(1);
+      expect(localWipe.state.log).toEqual([]);
+      expect(mockNavigation.reset).not.toHaveBeenCalled();
+    });
 
-  describe('đọc lại và cô lập theo phiên', () => {
-    function SwitchProbe() {
-      const { beginSession } = useSession();
-      return (
-        <Pressable
-          testID="switch-session"
-          onPress={() =>
-            beginSession({ uid: 'u2', email: 'b@example.com', displayName: null }, 's2')
-          }
-        />
+    it('mất mạng: báo lỗi + "Chưa có gì bị xóa", không xóa gì trên máy', async () => {
+      const { localWipe } = await setup();
+      await goToPassword();
+      await fireEvent.changeText(
+        screen.getByTestId('delete-password'),
+        FAKE_DELETE_OFFLINE_PASSWORD,
       );
-    }
+      await fireEvent.press(screen.getByTestId('delete-confirm'));
+      expect(await screen.findByTestId('delete-error')).toHaveTextContent(/Mất kết nối mạng\./);
+      expect(screen.getByTestId('delete-nothing-deleted')).toHaveTextContent(
+        'Chưa có gì bị xóa. Tài khoản và dữ liệu vẫn còn nguyên.',
+      );
+      expect(localWipe.state.log).toEqual([]);
+    });
 
-    it('quay về từ trung tâm đồng bộ: đọc lại, số tệp cập nhật', async () => {
-      let unsynced = 3;
-      const reads: number[] = [];
-      await setup({
-        store: withStore({
-          countUnsyncedOnDevice: async () => {
-            reads.push(unsynced);
-            return unsynced;
-          },
-        }),
+    it('ô trống: nhắc nhập mật khẩu, không gọi máy chủ', async () => {
+      const { gateways } = await setup();
+      await goToPassword();
+      await fireEvent.press(screen.getByTestId('delete-confirm'));
+      expect(screen.getByText('Hãy nhập mật khẩu.')).toBeOnTheScreen();
+      expect(gateways.account.deleteAccountCalls).toBe(0);
+    });
+
+    it('tình trạng máy đổi trước khi gửi (vừa có tranh chấp mở): không gọi máy chủ', async () => {
+      const disputes = createMemoryDisputeStore();
+      const { gateways } = await setup({ disputeStore: disputes });
+      await goToPassword();
+      await disputes.createDispute({
+        id: 'd-late' as DisputeId,
+        shopId: 'shop-x' as ShopId,
+        subject: { kind: 'order', orderId: 'o1' as OrderId, label: 'DH001' },
+        issueType: 'missing_item',
+        note: '',
+        createdAtDevice: 1,
       });
-      expect(await screen.findByText('Còn 3 tệp chưa được máy chủ xác nhận.')).toBeOnTheScreen();
-      await act(async () => setMockScreenFocused(false));
-      expect(reads).toHaveLength(1); // rời màn không đọc thêm
-      unsynced = 0;
-      await act(async () => setMockScreenFocused(true));
-      await waitFor(async () => expect(await statusOf('unsynced')).toHaveTextContent('Đạt'));
-      expect(reads).toEqual([3, 0]);
-      expect(screen.queryByTestId('delete-sync-link')).toBeNull();
+      await fireEvent.changeText(screen.getByTestId('delete-password'), FAKE_ACCOUNT_PASSWORD);
+      await fireEvent.press(screen.getByTestId('delete-confirm'));
+      expect(await screen.findByTestId('delete-error')).toHaveTextContent(/vừa thay đổi/);
+      expect(gateways.account.deleteAccountCalls).toBe(0);
     });
 
-    it('đổi phiên khi lần đọc cũ chưa xong: kết quả cũ bị bỏ, không rò sang phiên mới', async () => {
-      const resolvers: ((n: number) => void)[] = [];
-      await renderWithProviders(
-        <>
-          <SwitchProbe />
-          <DeleteAccountScreen />
-        </>,
-        {
-          personalGateways: createFakePersonalGateways({ shop: { role: 'member' } }),
-          orderStore: withStore({
-            countUnsyncedOnDevice: () => new Promise<number>((res) => resolvers.push(res)),
-          }),
-        },
-      );
-      await waitFor(() => expect(resolvers).toHaveLength(1));
-      await fireEvent.press(screen.getByTestId('switch-session'));
-      await waitFor(() => expect(resolvers).toHaveLength(2));
-      // Lần đọc cũ (phiên trước) xong sau: không được hiện.
-      await act(async () => resolvers[0]?.(9));
-      expect(screen.queryByText('Còn 9 tệp chưa được máy chủ xác nhận.')).toBeNull();
-      expect(screen.getByTestId('delete-condition-unsynced')).toHaveTextContent(/Đang kiểm tra/);
-      await act(async () => resolvers[1]?.(0));
-      await waitFor(async () => expect(await statusOf('unsynced')).toHaveTextContent('Đạt'));
+    it('máy chủ xác nhận: xóa trên máy theo thứ tự bền, kết thúc phiên, về Chào mừng + thông báo', async () => {
+      const { gateways, localWipe } = await setup();
+      await goToPassword();
+      await fireEvent.changeText(screen.getByTestId('delete-password'), FAKE_ACCOUNT_PASSWORD);
+      await fireEvent.press(screen.getByTestId('delete-confirm'));
+      await waitFor(() => expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.welcome));
+      expect(gateways.account.deleteAccountCalls).toBe(1);
+      expect(localWipe.state.log).toEqual([
+        'setMarker',
+        'deleteEvidenceFiles',
+        'wipeDatabase',
+        'clearMarker',
+      ]);
+      // Thoát Auth trên máy nằm giữa xóa CSDL và gỡ dấu (cổng giả ghi số lần).
+      expect(gateways.account.signOutCalls).toBe(1);
+      expect(localWipe.state.marker).toBe(false);
+      expect(
+        await screen.findByText('Đã xóa tài khoản và dữ liệu trên máy này.'),
+      ).toBeOnTheScreen();
+    });
+
+    it('máy chủ xác nhận nhưng xóa CSDL lỗi: lớp phủ "Chưa xóa xong" có Thử lại, dấu còn, chưa về Chào mừng', async () => {
+      const localWipe = createMemoryLocalWipe({ failDatabase: true });
+      await setup({ localWipe });
+      await goToPassword();
+      await fireEvent.changeText(screen.getByTestId('delete-password'), FAKE_ACCOUNT_PASSWORD);
+      await fireEvent.press(screen.getByTestId('delete-confirm'));
+      expect(await screen.findByTestId('local-wipe-failed')).toBeOnTheScreen();
+      expect(localWipe.state.marker).toBe(true);
+      expect(mockNavigation.reset).not.toHaveBeenCalled();
+      localWipe.state.failDatabase = false;
+      await fireEvent.press(screen.getByText('Thử lại'));
+      await waitFor(() => expect(screen.queryByTestId('local-wipe-overlay')).toBeNull());
+      expect(localWipe.state.marker).toBe(false);
+    });
+
+    it('Quay lại từ bước mật khẩu về danh sách điều kiện, không gọi gì', async () => {
+      const { gateways } = await setup();
+      await goToPassword();
+      await fireEvent.press(screen.getByTestId('delete-password-back'));
+      expect(screen.getByTestId('delete-conditions')).toBeOnTheScreen();
+      expect(gateways.account.deleteAccountCalls).toBe(0);
     });
   });
 
-  it('chưa có địa chỉ hỗ trợ thật: không nhắc đường dẫn hỗ trợ nào', async () => {
-    await setup();
-    expect(screen.queryByTestId('delete-support')).toBeNull();
+  it('quay về từ trung tâm đồng bộ: đọc lại, số tệp cập nhật', async () => {
+    let unsynced = 3;
+    await setup({ store: withStore({ countUnsyncedOnDevice: async () => unsynced }) });
+    expect(await statusOf('unsynced')).toHaveTextContent('Lưu ý');
+    await act(async () => setMockScreenFocused(false));
+    unsynced = 0;
+    await act(async () => setMockScreenFocused(true));
+    await waitFor(async () => expect(await statusOf('unsynced')).toHaveTextContent('Đạt'));
+    expect(screen.queryByTestId('delete-unsynced-warning')).toBeNull();
   });
 
-  it('có địa chỉ hỗ trợ thật: hiện lối Liên hệ hỗ trợ (không hứa sẽ xóa)', async () => {
+  it('có địa chỉ hỗ trợ thật: hiện lối Liên hệ hỗ trợ; trang web giữ chỗ thì ẩn (V1-18)', async () => {
     mockSupportEmail.mockReturnValue('ho-tro@example.test');
     await setup();
     expect(screen.getByTestId('delete-support')).toBeOnTheScreen();
+    expect(screen.queryByTestId('delete-web-link')).toBeNull();
     await fireEvent.press(screen.getByTestId('delete-support-link'));
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.helpContact);
   });
 
-  it('"Giữ tài khoản của tôi" quay lại, không đổi gì', async () => {
-    const gateways = await setup();
+  it('"Giữ tài khoản của tôi" quay lại, không gọi gì', async () => {
+    const { gateways } = await setup();
     await fireEvent.press(screen.getByTestId('delete-keep'));
     expect(mockNavigation.back).toHaveBeenCalledTimes(1);
-    expect(gateways.account.signOutCalls).toBe(0);
+    expect(gateways.account.deleteAccountCalls).toBe(0);
   });
 
-  it('không dùng cụm hứa quá mức hoặc cấm trong chuỗi của màn', () => {
-    const text = JSON.stringify(resources.vi.personal.deleteAccount);
-    expect(text).not.toMatch(
-      /vui lòng|bảo vệ|an toàn|ngay lập tức|tuyệt đối|khôi phục|vĩnh viễn|đã xóa|xác thực|dự kiến/i,
+  it('chuỗi trung thực: câu 30 ngày đúng nguyên văn decisions; không hứa quá mức', () => {
+    const copy = resources.vi.personal.deleteAccount;
+    expect(copy.dataServer).toContain(
+      'dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở',
     );
-    expect(resources.vi.personal.deleteAccount.dataDispute).toBe(
-      'Bằng chứng đang tranh chấp không bị xóa tự động. Cách xử lý khi xóa tài khoản chưa được công bố.',
+    const text = JSON.stringify(copy);
+    expect(text).not.toMatch(
+      /vui lòng|bảo vệ|an toàn|ngay lập tức|tuyệt đối|dự kiến|trong vòng 30 ngày/i,
     );
   });
 });

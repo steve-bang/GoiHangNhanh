@@ -78,6 +78,24 @@ export const CHANGE_PASSWORD_ERRORS: ErrorOverrides = {
   'auth/password-does-not-meet-requirements': 'AUTH_WEAK_PASSWORD',
 };
 
+/**
+ * Xóa tài khoản (V1-15): bước xác thực lại mang nghĩa như đổi mật khẩu (sai = mật khẩu hiện tại sai).
+ * Lỗi mạng của callable có thể đến ở cả hai dạng mã (có/không tiền tố `functions/`, chưa kiểm chứng trên
+ * thiết bị): cả hai là mất mạng, không phải "hệ thống bận". `details.reason` đã ưu tiên ở `mapFirebaseError`.
+ */
+export const DELETE_ACCOUNT_ERRORS: ErrorOverrides = {
+  ...CHANGE_PASSWORD_ERRORS,
+  unavailable: 'AUTH_NETWORK_ERROR',
+  'deadline-exceeded': 'AUTH_NETWORK_ERROR',
+};
+
+/** Trạng thái hợp lệ của kết quả `deleteAccount` (firebase/functions/src/account.ts `DeleteAccountResult`). */
+export const DELETE_ACCOUNT_OK_STATUSES: readonly string[] = [
+  'pending_purge',
+  'completed',
+  'purged',
+];
+
 /** Đổi tên shop qua Function `updateShop`: từ chối quyền và dữ liệu bị từ chối có mã riêng của màn Sửa tên. */
 export const RENAME_SHOP_ERRORS: ErrorOverrides = {
   'functions/permission-denied': 'SHOP_PERMISSION_DENIED',
@@ -151,6 +169,19 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
         await ops.updateDisplayName(displayName);
         return { displayName };
       }),
+    // Chỉ resolve khi máy chủ trả kết quả đúng dạng: bên gọi sẽ xóa dữ liệu cục bộ ngay sau đó, nên kết
+    // quả lạ (thiếu `status`) coi là chưa xác nhận, không bao giờ là thành công.
+    deleteAccount: ({ password }) =>
+      guard(async () => {
+        await ops.reauthenticateForSensitiveAction(password);
+        const result = await ops.callDeleteAccount();
+        if (
+          typeof result.status !== 'string' ||
+          !DELETE_ACCOUNT_OK_STATUSES.includes(result.status)
+        ) {
+          throw new AppError('AUTH_SERVICE_UNAVAILABLE');
+        }
+      }, DELETE_ACCOUNT_ERRORS),
   };
 
   /** Người dùng đang đăng nhập hoặc lỗi phiên hết hạn (không coi "chưa đăng nhập" là "không có shop"). */

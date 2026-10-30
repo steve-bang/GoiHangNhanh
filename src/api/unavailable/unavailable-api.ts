@@ -20,6 +20,7 @@ export function createUnavailableApi(): ApiClient {
     signOut: unavailable,
     changePassword: unavailable,
     updateDisplayName: unavailable,
+    deleteAccount: unavailable,
   };
   const shop: ShopApi = {
     createShop: unavailable,

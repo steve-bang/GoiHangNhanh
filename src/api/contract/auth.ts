@@ -47,6 +47,11 @@ export interface ChangePasswordInput {
   readonly newPassword: string;
 }
 
+export interface DeleteAccountInput {
+  /** Mật khẩu hiện tại để xác thực lại; chỉ giữ trong bộ nhớ lời gọi, không log. */
+  readonly password: string;
+}
+
 export interface SignUpWithEmailInput {
   readonly email: string;
   readonly password: string;
@@ -94,4 +99,14 @@ export interface AuthApi {
    * resolve khi máy chủ xác nhận; trả tên máy chủ đã nhận. Không còn phiên: `AUTH_SESSION_EXPIRED`.
    */
   updateDisplayName(displayName: string): Promise<{ readonly displayName: string }>;
+  /**
+   * Xóa tài khoản đang đăng nhập (V1-15; máy chủ V1-14): xác thực lại bằng mật khẩu, lấy ID token mới
+   * (máy chủ đòi `auth_time` trong 5 phút) rồi gọi Function `deleteAccount`. CHỈ resolve khi máy chủ xác
+   * nhận đã ghi nhận yêu cầu (tài khoản bị khóa ngay, dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30
+   * ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở). Lỗi: `AUTH_WRONG_CURRENT_PASSWORD`,
+   * `AUTH_REQUIRES_RECENT_LOGIN`, `AUTH_SESSION_EXPIRED`, `AUTH_TOO_MANY_REQUESTS`, `AUTH_NETWORK_ERROR`,
+   * `ACCOUNT_DELETE_SHOP_HAS_MEMBERS`, `ACCOUNT_DELETION_PENDING`, `AUTH_SERVICE_UNAVAILABLE`. Hàm này
+   * KHÔNG xóa gì trên máy; bên gọi chỉ xóa dữ liệu cục bộ sau khi hàm resolve.
+   */
+  deleteAccount(input: DeleteAccountInput): Promise<void>;
 }

@@ -43,6 +43,11 @@ export interface FakePersonalOptions {
 
 /** Mật khẩu hiện tại của tài khoản giả (CHỈ bản giả; không phải bí mật). Trùng mật khẩu dev của cổng đăng nhập giả. */
 export const FAKE_ACCOUNT_PASSWORD = 'demo-matkhau-1';
+/**
+ * Mật khẩu mô phỏng mất mạng khi xóa tài khoản (CHỈ bản giả; để chụp ảnh/thử tay luồng lỗi mạng mà không
+ * cần mạng thật). Không phải bí mật.
+ */
+export const FAKE_DELETE_OFFLINE_PASSWORD = 'demo-matmang-1';
 /** Mật khẩu coi là quá yếu (chỉ bản giả): độ dài tối thiểu do màn hình kiểm tra riêng. */
 export const FAKE_ACCOUNT_WEAK_PASSWORDS: readonly string[] = ['12345678', '11111111', 'password'];
 
@@ -89,6 +94,10 @@ export class FakeAccountGateway implements AccountGateway {
   readonly updateCalls: UpdateProfileInput[] = [];
   /** Số lần đổi mật khẩu được gọi (không lưu nội dung mật khẩu). */
   changePasswordCalls = 0;
+  /** Số lần xóa tài khoản được gọi (không lưu mật khẩu). */
+  deleteAccountCalls = 0;
+  /** true sau khi "máy chủ" giả đã xóa tài khoản (mọi lời gọi sau đó coi như phiên hết hạn). */
+  deleted = false;
   signOutCalls = 0;
   private readonly latencyMs: number;
   private profile!: UserProfile;
@@ -117,6 +126,8 @@ export class FakeAccountGateway implements AccountGateway {
     this.generation += 1;
     const options = this.options;
     this.password = FAKE_ACCOUNT_PASSWORD;
+    // Bản giả chỉ có MỘT tài khoản minh họa: sau khi "xóa" rồi đăng xuất thì tài khoản minh họa dùng lại được.
+    this.deleted = false;
     if (options.shops) {
       this.shops = options.shops.map((shop) => ({ ...shop }));
     } else if (options.shop === null) {
@@ -225,6 +236,16 @@ export class FakeAccountGateway implements AccountGateway {
       throw new AppError('AUTH_WEAK_PASSWORD');
     }
     if (generation === this.generation) this.password = input.newPassword;
+  }
+
+  async deleteAccount(password: string): Promise<void> {
+    this.deleteAccountCalls += 1;
+    await delay(this.latencyMs);
+    this.failure.consume();
+    if (password === FAKE_DELETE_OFFLINE_PASSWORD) throw new AppError('AUTH_NETWORK_ERROR');
+    if (this.deleted) throw new AppError('AUTH_SESSION_EXPIRED');
+    if (password !== this.password) throw new AppError('AUTH_WRONG_CURRENT_PASSWORD');
+    this.deleted = true;
   }
 
   async signOut(): Promise<void> {

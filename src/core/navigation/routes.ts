@@ -107,6 +107,9 @@ export const ROUTES = {
   // Biến thể đăng ký của UI-A03: dùng chung mã UI-A03 với /sign-in (một màn, hai chế độ).
   signUp: route('/sign-up', 'UI-A03'),
   createShop: route('/create-shop', 'UI-A04'),
+  // V1-15: tài khoản đang được xóa dở (`createShop` trả `account_deleted`): màn "Đang hoàn tất xóa tài
+  // khoản", route con của Tạo cửa hàng (cùng mã UI-A04, ngoài nhóm tab, không cần cửa hàng).
+  accountDeletionPending: subRoute('/create-shop/deletion-pending', 'createShop', 'UI-A04'),
   permissions: route('/permissions', 'UI-A05'),
   setupDone: route('/setup-done', 'UI-A06'),
   // Quên mật khẩu -> Nhập mã xác minh -> Mật khẩu mới (docs/09; chỉ vào được theo thứ tự này).

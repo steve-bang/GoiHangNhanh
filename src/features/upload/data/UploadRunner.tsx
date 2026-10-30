@@ -87,11 +87,17 @@ interface Engine {
  */
 export function UploadRunner({
   docs,
+  enabled = true,
   gateway,
   hasher,
   children,
 }: {
   docs: RemoteDocuments | null;
+  /**
+   * `false` = không chạy hàng đợi (đang xóa dữ liệu trên máy sau khi xóa tài khoản, V1-15). Vẫn bọc
+   * `children` để không gỡ màn hình đang hiện. Lần gửi đang chạy dở không bị hủy ngay; lượt kế tiếp không chạy.
+   */
+  enabled?: boolean;
   gateway?: UploadGateway;
   hasher?: LocalFileHasher;
   children?: ReactNode;
@@ -131,7 +137,7 @@ export function UploadRunner({
   useEffect(() => {
     const effectiveGateway =
       gateway ?? (docs ? createDeviceUploadGateway(docs, getAppVersion() ?? undefined) : null);
-    if (!effectiveGateway || shopId === LOCAL_SHOP_ID) return undefined;
+    if (!enabled || !effectiveGateway || shopId === LOCAL_SHOP_ID) return undefined;
     // Tài khoản đang đăng nhập theo Firebase Auth (cùng uid mà Rules thấy), đọc MỖI lượt.
     const currentUid = () => docs?.currentUid() ?? null;
     // Mạng + công tắc Wi‑Fi đọc MỖI lần hỏi. Cài đặt chưa nạp xong = chưa biết (chờ, xem network-policy).
@@ -214,7 +220,7 @@ export function UploadRunner({
       unsubscribeNetwork();
       unsubscribeSetting();
     };
-  }, [docs, gateway, hasher, files, orders, returns, settings, shopId]);
+  }, [docs, enabled, gateway, hasher, files, orders, returns, settings, shopId]);
 
   return <UploadQueueContext.Provider value={control}>{children}</UploadQueueContext.Provider>;
 }

@@ -83,6 +83,7 @@ export function createFirebasePersonalGateways(api: ApiClient): PersonalGateways
         };
       },
       changePassword: (input) => api.auth.changePassword(input),
+      deleteAccount: (password) => api.auth.deleteAccount({ password }),
       signOut: () => api.auth.signOut(),
     },
     settings,

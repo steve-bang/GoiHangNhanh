@@ -17,6 +17,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 - Công tắc "Chỉ tải khi có Wi‑Fi" ở Trung tâm đồng bộ và màn Dữ liệu bằng chứng (mặc định tắt: luôn tải kể cả 4G/5G); khi bật mà máy không dùng Wi‑Fi thì ảnh/video chờ, tệp hiện "Đang chờ Wi‑Fi.", có Wi‑Fi lại thì tải tiếp khi ứng dụng đang mở. Lưu cài đặt trên máy (CSDL cục bộ phiên bản 15). Chưa kiểm chứng trên thiết bị (V1-09).
 
 - Màn quay video (đóng gói và mở kiện hàng hoàn) giữ màn hình sáng; ứng dụng chuyển sang nền khi đang quay thì dừng quay, lưu phần đã quay và đánh dấu gián đoạn (không tự quay tiếp), quay lại ứng dụng có thông báo; camera bị hệ thống ngắt sớm cũng được đánh dấu gián đoạn; thêm dòng nhắc "nếu ứng dụng bị tắt, đoạn đang quay có thể mất" và bài Trợ giúp. Ghi video vẫn tắt mặc định, chưa kiểm chứng trên thiết bị (V1-11).
+- Xóa tài khoản trong ứng dụng (bản Firebase): điều kiện thật (chặn khi đang quay, còn tranh chấp mở hoặc máy còn dữ liệu của tài khoản khác; cảnh báo và xác nhận riêng khi còn tệp chưa tải), nhập mật khẩu để xác nhận; chỉ sau khi máy chủ xác nhận mới xóa video, ảnh và dữ liệu trên máy (có dấu để xóa tiếp nếu ứng dụng bị tắt giữa chừng); màn "Đang hoàn tất xóa tài khoản" khi việc xóa còn dở. Chưa kiểm chứng trên thiết bị (V1-15).
 
 ### Security
 

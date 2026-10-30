@@ -45,4 +45,9 @@ export interface DisputeStore {
   ): Promise<DisputeDetails>;
   /** Mọi bằng chứng đang bị giữ bởi hồ sơ tranh chấp ĐANG MỞ của shop (bất biến 9). */
   listHeldEvidenceIds(shopId: ShopId): Promise<readonly EvidenceId[]>;
+  /**
+   * Số hồ sơ ĐANG MỞ trên máy này, ở MỌI shop (V1-15: xóa tài khoản bị chặn khi > 0, bất biến 9; xóa
+   * tài khoản xóa dữ liệu của cả máy nên không lọc theo shop đang dùng).
+   */
+  countOpenOnDevice(): Promise<number>;
 }

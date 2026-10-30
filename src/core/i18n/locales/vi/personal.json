@@ -407,6 +407,7 @@
     "status": {
       "met": "Đạt",
       "attention": "Cần xử lý",
+      "notice": "Lưu ý",
       "unknown": "Chưa kiểm tra được"
     },
     "conditions": {
@@ -416,34 +417,72 @@
         "attention": "Hãy dừng quay trước khi xóa tài khoản.",
         "unknown": "Chưa đọc được dữ liệu trên máy."
       },
-      "unsynced": {
-        "title": "Không còn tệp chưa đồng bộ trên máy này",
-        "met": "Không có tệp nào đang chờ đồng bộ.",
-        "attention": "Còn {{count}} tệp chưa được máy chủ xác nhận.",
+      "disputes": {
+        "title": "Không còn hồ sơ tranh chấp đang mở",
+        "met": "Trên máy này không có hồ sơ tranh chấp nào đang mở.",
+        "attention": "Còn {{count}} hồ sơ tranh chấp đang mở. Hãy đóng hồ sơ trước. Đóng hồ sơ không xóa bằng chứng.",
+        "unknown": "Chưa đọc được hồ sơ tranh chấp trên máy."
+      },
+      "foreign": {
+        "title": "Không có dữ liệu của tài khoản khác trên máy này",
+        "met": "Dữ liệu trên máy đều do tài khoản này tạo.",
+        "attention": "Máy này còn dữ liệu do tài khoản khác tạo. Để không xóa nhầm, bạn hãy xóa tài khoản qua trang web hoặc liên hệ hỗ trợ.",
         "unknown": "Chưa đọc được dữ liệu trên máy."
       },
-      "disputes": {
-        "title": "Bằng chứng đang tranh chấp hoặc cần giữ lại",
-        "unknown": "Ứng dụng chưa có dữ liệu để kiểm tra mục này."
+      "unsynced": {
+        "title": "Tệp chưa tải lên máy chủ",
+        "met": "Không có tệp nào chưa tải lên.",
+        "attention": "Còn {{count}} tệp chưa tải lên máy chủ.",
+        "unknown": "Chưa đọc được dữ liệu trên máy."
       },
       "ownership": {
         "title": "Cửa hàng bạn là chủ",
         "met": "Bạn không là chủ cửa hàng nào.",
-        "attention": "Bạn là chủ {{count}} cửa hàng. Cách xử lý cửa hàng chưa được công bố.",
+        "attention": "Bạn là chủ {{count}} cửa hàng. Cửa hàng sẽ bị khóa ngay khi xóa tài khoản.",
         "unknown": "Chưa đọc được danh sách cửa hàng."
       }
     },
     "syncLink": "Xem trung tâm đồng bộ",
+    "unsyncedWarning": "{{count}} tệp chưa tải lên sẽ bị xóa khỏi máy này và không thể khôi phục.",
+    "unsyncedAck": "Tôi hiểu {{count}} tệp này sẽ mất",
     "dataTitle": "Dữ liệu sẽ ra sao",
-    "dataDispute": "Bằng chứng đang tranh chấp không bị xóa tự động. Cách xử lý khi xóa tài khoản chưa được công bố.",
-    "dataDevice": "Cách xử lý video và dữ liệu trên máy này chưa được công bố.",
-    "dataServer": "Thời gian và cách xóa dữ liệu trên máy chủ chưa được công bố.",
+    "dataServer": "Tài khoản bị xóa ngay. Sau đó, dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở.",
+    "dataDevice": "Video, ảnh và dữ liệu trên máy này bị xóa ngay sau khi máy chủ xác nhận, kể cả tệp chưa tải lên.",
+    "dataDispute": "Không xóa được khi máy còn hồ sơ tranh chấp đang mở. Đóng hồ sơ không xóa bằng chứng.",
+    "dataRestore": "Tài khoản đã xóa không khôi phục được.",
     "agree": "Tôi hiểu và đồng ý",
     "delete": "Xóa tài khoản",
-    "deleteHint": "Chưa dùng được. Việc xóa tài khoản trong ứng dụng sắp có.",
-    "soon": "Sắp có. Hiện chưa xóa được tài khoản trong ứng dụng.",
+    "deleteHint": "Mở bước nhập mật khẩu để xác nhận xóa tài khoản.",
+    "blockedHint": "Hãy xử lý các mục Cần xử lý ở trên trước khi xóa tài khoản.",
     "support": "Bạn có thể liên hệ hỗ trợ để hỏi về việc xóa tài khoản.",
     "supportLink": "Liên hệ hỗ trợ",
-    "keep": "Giữ tài khoản của tôi"
+    "webLink": "Xóa tài khoản qua trang web",
+    "keep": "Giữ tài khoản của tôi",
+    "password": {
+      "title": "Nhập mật khẩu để xác nhận",
+      "intro": "Đây là bước cuối. Sau khi xác nhận, tài khoản bị xóa và không khôi phục được.",
+      "label": "Mật khẩu",
+      "placeholder": "Nhập mật khẩu hiện tại",
+      "required": "Hãy nhập mật khẩu.",
+      "confirm": "Xác nhận xóa tài khoản",
+      "back": "Quay lại",
+      "nothingDeleted": "Chưa có gì bị xóa. Tài khoản và dữ liệu vẫn còn nguyên."
+    },
+    "done": "Đã xóa tài khoản và dữ liệu trên máy này.",
+    "wipe": {
+      "inProgress": "Đang xóa dữ liệu trên máy này",
+      "inProgressHint": "Tài khoản đã được xóa. Bạn giữ ứng dụng mở trong giây lát nhé.",
+      "failedTitle": "Chưa xóa xong dữ liệu trên máy này.",
+      "failedHint": "Tài khoản đã được xóa. Bạn bấm Thử lại để xóa tiếp nhé."
+    },
+    "pending": {
+      "title": "Đang hoàn tất xóa tài khoản",
+      "intro": "Việc xóa tài khoản này đã bắt đầu nhưng chưa xong. Nhập mật khẩu để hoàn tất, hoặc đăng xuất.",
+      "autoComplete": "Nếu bạn đăng xuất, máy chủ sẽ tự hoàn tất việc xóa trong lần xử lý hằng ngày.",
+      "blockedHint": "Dữ liệu trên máy này chỉ được xóa khi các mục ở trên đạt. Bạn vẫn có thể đăng xuất.",
+      "confirm": "Hoàn tất xóa tài khoản",
+      "signOut": "Đăng xuất"
+    },
+    "conditionsChanged": "Tình trạng trên máy vừa thay đổi. Bạn xem lại các điều kiện nhé."
   }
 }

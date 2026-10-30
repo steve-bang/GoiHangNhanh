@@ -24,8 +24,17 @@ export {
   createDeviceSettings,
   createMemoryDeviceSettingsStore,
   createSqliteDeviceSettingsStore,
+  createLocalDataWiper,
+  createLocalDeviceData,
+  LocalWipeError,
 } from './data';
-export type { DeviceSettings, DeviceSettingSnapshot } from './data';
+export type {
+  DeviceSettings,
+  DeviceSettingSnapshot,
+  LocalDataWiper,
+  LocalDeviceData,
+  LocalWipeSteps,
+} from './data';
 export {
   LOCAL_SHOP_ID,
   booleanSetting,
