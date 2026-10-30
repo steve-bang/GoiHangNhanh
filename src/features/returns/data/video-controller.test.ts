@@ -5,6 +5,7 @@ import { recoverInterruptedMedia } from '../domain/media-recovery';
 import { hasOpeningEvidenceLimit } from '../domain/evidence-limits';
 import type { ReturnStore } from '../domain/return-store';
 import {
+  findUnrecordedVideo,
   startOpeningVideo,
   type VideoHashOutcome,
   type VideoPersistOutcome,
@@ -342,6 +343,156 @@ describe('startOpeningVideo: quay video mở kiện', () => {
       kind: 'recorded',
       mediaId: active.mediaId,
       interrupted: true,
+    });
+  });
+
+  describe('V1-13: cờ gián đoạn lưu BỀN trên bản ghi video', () => {
+    /** Cổng khôi phục lúc mở app (tệp còn ở đường dẫn đã ghi). */
+    const recoveryPorts = (store: ReturnStore) => ({
+      store,
+      persist: (_tmp: string, id: string, ext: string) => ({
+        ok: true as const,
+        uri: `evidence/${id}.${ext}`,
+        sizeBytes: 9,
+      }),
+      hash: async () => ({ ok: true as const, sha256: 'cd'.repeat(32), sizeBytes: 9 }),
+      exists: () => true,
+      findPersisted: () => null,
+      now: () => 99_999,
+      newId: () => 'rec-1',
+    });
+
+    it('markInterrupted ghi cờ NGAY khi đang quay (trước khi camera trả kết quả), không đổi trạng thái tệp', async () => {
+      const t = setup();
+      const returnId = await makeCase(t.store);
+      let finishRecording: (r: VideoRecordResult) => void = () => undefined;
+      t.control.record = () => ({
+        done: new Promise<VideoRecordResult>((resolve) => {
+          finishRecording = resolve;
+        }),
+        stop: () => undefined,
+      });
+      const active = await startOpeningVideo(t.ports, { shopId: SHOP, returnId });
+      if ('kind' in active) throw new Error(active.reason);
+      await active.markInterrupted();
+      await active.markInterrupted(); // idempotent
+      expect((await mediaOf(t.store, returnId))[0]).toMatchObject({
+        state: 'recording',
+        interrupted: true,
+      });
+      finishRecording({ ok: true, tempUri: 'file:///cache/Camera/v.mov' });
+      await active.result;
+    });
+
+    it('markInterrupted không ném khi kho lỗi', async () => {
+      const t = setup();
+      const returnId = await makeCase(t.store);
+      const active = await startOpeningVideo(t.ports, { shopId: SHOP, returnId });
+      if ('kind' in active) throw new Error(active.reason);
+      t.ports.store.markMediaInterrupted = async () => {
+        throw new Error('db');
+      };
+      await expect(active.markInterrupted()).resolves.toBeUndefined();
+      await active.result;
+    });
+
+    it('(a) video lưu xong nhưng app bị tắt trước khi ghi vào hồ sơ: lần mở sau đối soát ghi interrupted: true', async () => {
+      const t = setup();
+      const returnId = await makeCase(t.store);
+      // Camera ngắt sớm/vào nền: cờ trong bộ nhớ = true lúc camera trả kết quả.
+      const ports = { ...t.ports, wasInterrupted: () => true };
+      // Ghi vào hồ sơ không xảy ra (mô phỏng app bị tắt đúng lúc đó: lời gọi không bao giờ tới kho).
+      const saveCase = t.store.saveOpeningVideoRecorded;
+      ports.store = {
+        ...t.store,
+        saveOpeningVideoRecorded: async () => Promise.reject(new Error('killed')),
+      };
+      const active = await startOpeningVideo(ports, { shopId: SHOP, returnId });
+      if ('kind' in active) throw new Error(active.reason);
+      expect(await active.result).toMatchObject({ kind: 'saved', recordedInCase: false });
+      // Lần mở sau: bộ nhớ của màn đã mất; chỉ còn dữ liệu bền.
+      const details = await t.store.getReturn(SHOP, returnId);
+      const unrecorded = findUnrecordedVideo(
+        details?.returnCase.openingVideo ?? null,
+        await mediaOf(t.store, returnId),
+      );
+      expect(unrecorded).toMatchObject({ id: active.mediaId, state: 'queued', interrupted: true });
+      await saveCase(SHOP, returnId, {
+        mediaId: unrecorded?.id ?? '',
+        interrupted: unrecorded?.interrupted === true,
+        atDevice: 5,
+        eventId: 'e-reconcile',
+      });
+      expect((await t.store.getReturn(SHOP, returnId))?.returnCase.openingVideo).toMatchObject({
+        kind: 'recorded',
+        interrupted: true,
+      });
+    });
+
+    it('(b) vào nền -> lưu lỗi (local_save_failed) -> khôi phục lúc mở app: hồ sơ vẫn ghi interrupted: true', async () => {
+      const t = setup();
+      const returnId = await makeCase(t.store);
+      let finishRecording: (r: VideoRecordResult) => void = () => undefined;
+      t.control.record = () => ({
+        done: new Promise<VideoRecordResult>((resolve) => {
+          finishRecording = resolve;
+        }),
+        stop: () => undefined,
+      });
+      let interrupted = false;
+      const ports = { ...t.ports, wasInterrupted: () => interrupted };
+      const active = await startOpeningVideo(ports, { shopId: SHOP, returnId });
+      if ('kind' in active) throw new Error(active.reason);
+      // App vào nền: màn đánh dấu ngay rồi dừng.
+      interrupted = true;
+      await active.markInterrupted();
+      t.control.hash = { ok: false, reason: 'FILE_UNREADABLE' }; // lưu lỗi sau khi vào nền
+      finishRecording({ ok: true, tempUri: 'file:///cache/Camera/v.mov' });
+      expect(await active.result).toMatchObject({ kind: 'failed', reason: 'FILE_UNREADABLE' });
+      expect((await mediaOf(t.store, returnId))[0]).toMatchObject({
+        state: 'local_save_failed',
+        interrupted: true,
+      });
+      // App bị tắt; lần mở sau khôi phục (nhánh local_save_failed).
+      const result = await recoverInterruptedMedia(recoveryPorts(t.store), 1_000_000);
+      expect(result).toMatchObject({ rescued: 1, lost: 0 });
+      expect((await t.store.getReturn(SHOP, returnId))?.returnCase.openingVideo).toMatchObject({
+        kind: 'recorded',
+        mediaId: active.mediaId,
+        interrupted: true,
+      });
+    });
+
+    it('(b) cờ chỉ trong bộ nhớ (camera tự dừng sớm, không gọi markInterrupted) cũng được ghi bền ở đầu bước lưu', async () => {
+      const t = setup();
+      const returnId = await makeCase(t.store);
+      t.control.persist = { ok: false, reason: 'STORAGE_FULL' };
+      const ports = { ...t.ports, wasInterrupted: () => true };
+      const active = await startOpeningVideo(ports, { shopId: SHOP, returnId });
+      if ('kind' in active) throw new Error(active.reason);
+      expect(await active.result).toMatchObject({ kind: 'failed', reason: 'STORAGE_FULL' });
+      expect((await mediaOf(t.store, returnId))[0]).toMatchObject({
+        state: 'local_save_failed',
+        interrupted: true,
+      });
+      await recoverInterruptedMedia(recoveryPorts(t.store), 1_000_000);
+      expect((await t.store.getReturn(SHOP, returnId))?.returnCase.openingVideo).toMatchObject({
+        interrupted: true,
+      });
+    });
+
+    it('không gián đoạn: lưu lỗi -> khôi phục ghi interrupted: false như cũ', async () => {
+      const t = setup();
+      const returnId = await makeCase(t.store);
+      t.control.hash = { ok: false, reason: 'FILE_UNREADABLE' };
+      const active = await startOpeningVideo(t.ports, { shopId: SHOP, returnId });
+      if ('kind' in active) throw new Error(active.reason);
+      await active.result;
+      expect((await mediaOf(t.store, returnId))[0]?.interrupted ?? false).toBe(false);
+      await recoverInterruptedMedia(recoveryPorts(t.store), 1_000_000);
+      expect((await t.store.getReturn(SHOP, returnId))?.returnCase.openingVideo).toMatchObject({
+        interrupted: false,
+      });
     });
   });
 

@@ -6,7 +6,7 @@ import { migrateLocalDatabase } from './sqlite-order-store';
 /** V1-09: v15 chỉ thêm bảng `device_settings`; dữ liệu có sẵn ở v14 giữ nguyên. */
 describe('migration v15 (device_settings)', () => {
   it('v14 -> v15: thêm bảng, dữ liệu cũ nguyên vẹn; chạy lại không đổi gì', async () => {
-    expect(MIGRATIONS).toHaveLength(15);
+    expect(MIGRATIONS.length).toBeGreaterThanOrEqual(15);
     const db = createNodeSqliteDatabase();
     for (const sql of MIGRATIONS.slice(0, 14)) await db.execAsync(sql);
     await db.execAsync('PRAGMA user_version = 14');
@@ -18,7 +18,7 @@ describe('migration v15 (device_settings)', () => {
 
     await migrateLocalDatabase(db);
     const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
-    expect(version?.user_version).toBe(15);
+    expect(version?.user_version).toBe(MIGRATIONS.length);
     expect(await db.getAllAsync('SELECT * FROM orders')).toEqual(before);
     const columns = await db.getAllAsync<{ name: string; notnull: number; pk: number }>(
       'PRAGMA table_info(device_settings)',

@@ -105,7 +105,8 @@ export function ReturnRecordLive({ details }: { details: ReturnDetails }) {
   const [reconcileTry, setReconcileTry] = useState(0);
   /**
    * Video vừa lưu bị gián đoạn mà hồ sơ chưa ghi nhận được (lỗi kho): bước đối soát ghi đúng cờ gián đoạn.
-   * Chỉ trong bộ nhớ: app bị tắt giữa hai bước thì đối soát lần sau ghi `interrupted: false` (hiếm).
+   * Bổ sung cho cờ BỀN trên bản ghi video (`ReturnMedia.interrupted`, V1-13), phòng khi kho lỗi đúng lúc
+   * ghi cờ; app bị tắt giữa hai bước thì đối soát lần sau đọc cờ bền.
    */
   const [interruptedVideoId, setInterruptedVideoId] = useState<string | null>(null);
 
@@ -134,7 +135,11 @@ export function ReturnRecordLive({ details }: { details: ReturnDetails }) {
     if (!unrecorded || redirect) return undefined;
     let alive = true;
     ops
-      .recordOpeningVideo(returnCase.id, unrecorded.id, interruptedVideoId === unrecorded.id)
+      .recordOpeningVideo(
+        returnCase.id,
+        unrecorded.id,
+        unrecorded.interrupted === true || interruptedVideoId === unrecorded.id,
+      )
       .then(() => alive && toItems())
       .catch((error: unknown) => {
         logger.warn('returns.video_reconcile_failed', {
@@ -416,6 +421,8 @@ function LiveCamera({
       return;
     }
     active.current = recording;
+    // Vào nền trong lúc khởi động (V1-11): ghi cờ gián đoạn bền ngay khi đã có bản ghi (V1-13).
+    if (interrupted.current) void recording.markInterrupted();
     void recording.result.then((outcome) => {
       active.current = null;
       if (outcome.kind === 'saved') {
@@ -461,6 +468,7 @@ function LiveCamera({
         const startingNow = current === 'preparing' && started.current && !active.current;
         if (!recordingNow && !startingNow) return;
         interrupted.current = true;
+        void active.current?.markInterrupted(); // ghi cờ gián đoạn BỀN ngay, không chờ lưu xong (V1-13)
         phaseRef.current = 'saving';
         setStoppedInBackground(true);
         setPhase('saving');

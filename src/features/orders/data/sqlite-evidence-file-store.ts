@@ -31,12 +31,14 @@ interface FileRow {
   attempt_count: number;
   next_attempt_at_device: number | null;
   last_error_code: string | null;
+  hashed_size_bytes: number | null;
+  hashed_mtime_device: number | null;
   created_at_device: number;
   updated_at_device: number;
 }
 
 const COLUMNS =
-  'id, shop_id, order_id, package_id, session_id, file_group, kind, state, local_path, size_bytes, duration_ms, sha256_client, attempt_count, next_attempt_at_device, last_error_code, created_at_device, updated_at_device';
+  'id, shop_id, order_id, package_id, session_id, file_group, kind, state, local_path, size_bytes, duration_ms, sha256_client, attempt_count, next_attempt_at_device, last_error_code, hashed_size_bytes, hashed_mtime_device, created_at_device, updated_at_device';
 
 /** `COLUMNS` với tiền tố bảng `f.` (truy vấn có JOIN). */
 const PREFIXED_COLUMNS = COLUMNS.split(', ')
@@ -62,6 +64,14 @@ function toFile(row: FileRow): EvidenceFile {
     attemptCount: row.attempt_count,
     nextAttemptAtDevice: row.next_attempt_at_device,
     lastErrorCode: row.last_error_code,
+    ...(row.hashed_size_bytes !== null && row.hashed_mtime_device !== null
+      ? {
+          hashedFingerprint: {
+            sizeBytes: row.hashed_size_bytes,
+            modifiedAtMs: row.hashed_mtime_device,
+          },
+        }
+      : {}),
     createdAtDevice: row.created_at_device,
     updatedAtDevice: row.updated_at_device,
   };
@@ -138,7 +148,7 @@ export function createSqliteEvidenceFileStore(db: SqlDatabase): EvidenceFileStor
           );
           if (!linked) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
           await db.runAsync(
-            `INSERT INTO evidence_files (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, 'recording', NULL, NULL, NULL, NULL, 0, NULL, NULL, ?, ?)`,
+            `INSERT INTO evidence_files (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, 'recording', NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, ?, ?)`,
             [
               input.id,
               input.shopId,
@@ -171,7 +181,7 @@ export function createSqliteEvidenceFileStore(db: SqlDatabase): EvidenceFileStor
           if (!outcome.ok) return;
           const f = outcome.file;
           await db.runAsync(
-            'UPDATE evidence_files SET state = ?, local_path = ?, size_bytes = ?, duration_ms = ?, sha256_client = ?, attempt_count = ?, next_attempt_at_device = ?, last_error_code = ?, updated_at_device = ? WHERE shop_id = ? AND id = ?',
+            'UPDATE evidence_files SET state = ?, local_path = ?, size_bytes = ?, duration_ms = ?, sha256_client = ?, attempt_count = ?, next_attempt_at_device = ?, last_error_code = ?, hashed_size_bytes = ?, hashed_mtime_device = ?, updated_at_device = ? WHERE shop_id = ? AND id = ?',
             [
               f.state,
               f.localPath,
@@ -181,6 +191,8 @@ export function createSqliteEvidenceFileStore(db: SqlDatabase): EvidenceFileStor
               f.attemptCount,
               f.nextAttemptAtDevice,
               f.lastErrorCode,
+              f.hashedFingerprint?.sizeBytes ?? null,
+              f.hashedFingerprint?.modifiedAtMs ?? null,
               f.updatedAtDevice,
               shopId,
               id,

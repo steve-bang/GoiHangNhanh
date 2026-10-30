@@ -14,6 +14,7 @@ import {
 } from '../domain/return-rules';
 import {
   applyMediaEvent,
+  applyMediaInterrupted,
   applyMediaLocation,
   assertMediaDeletable,
   isMediaSavedLocally,
@@ -351,6 +352,14 @@ export function createMemoryReturnStore(
       const current = media.get(id);
       if (!current || current.shopId !== shopId) return { ok: false, error: 'MEDIA_NOT_FOUND' };
       const result = applyMediaLocation(current, location);
+      if (!result.ok) return result;
+      media.set(id, result.media);
+      return { ok: true, media: copy(result.media) };
+    },
+    async markMediaInterrupted(shopId, id) {
+      const current = media.get(id);
+      if (!current || current.shopId !== shopId) return { ok: false, error: 'MEDIA_NOT_FOUND' };
+      const result = applyMediaInterrupted(current);
       if (!result.ok) return result;
       media.set(id, result.media);
       return { ok: true, media: copy(result.media) };

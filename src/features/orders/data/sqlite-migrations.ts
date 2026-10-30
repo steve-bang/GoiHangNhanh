@@ -335,6 +335,19 @@ export const MIGRATIONS: readonly string[] = [
     updated_at_device INTEGER NOT NULL
   );
   `,
+  // v16 (V1-13): (1) dấu tệp đã băm (kích thước + thời điểm sửa đổi, giờ thiết bị ms) để hàng đợi tải lên
+  // không băm lại tệp không đổi ở mỗi lần thử; NULL = chưa có dấu, phải băm lại. (2) Cờ gián đoạn BỀN của
+  // video mở kiện hàng hoàn (0/1, chỉ bật), ghi ngay khi phát hiện vào nền/camera ngắt sớm. (3) Index từ
+  // review V1-10. Chỉ ADD COLUMN nullable/có mặc định và CREATE INDEX: dữ liệu có sẵn giữ nguyên.
+  `
+  ALTER TABLE evidence_files ADD COLUMN hashed_size_bytes INTEGER;
+  ALTER TABLE evidence_files ADD COLUMN hashed_mtime_device INTEGER;
+  ALTER TABLE return_media ADD COLUMN hashed_size_bytes INTEGER;
+  ALTER TABLE return_media ADD COLUMN hashed_mtime_device INTEGER;
+  ALTER TABLE return_media ADD COLUMN interrupted INTEGER NOT NULL DEFAULT 0 CHECK (interrupted IN (0, 1));
+  CREATE INDEX idx_sessions_shop_started ON packing_sessions (shop_id, started_at_device);
+  CREATE INDEX idx_return_media_shop_state ON return_media (shop_id, state);
+  `,
 ];
 
 /**

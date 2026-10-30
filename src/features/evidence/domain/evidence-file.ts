@@ -36,8 +36,32 @@ export interface EvidenceFile {
   readonly nextAttemptAtDevice: number | null;
   /** Mã lỗi gần nhất của lần tải lên (mã nghiệp vụ, không chứa đường dẫn/PII). */
   readonly lastErrorCode: string | null;
+  /**
+   * Dấu tệp lúc hàng đợi băm lại gần nhất và mã băm KHỚP `sha256Client` (V1-13). Vắng/`null` = chưa có:
+   * lần thử tải sau phải băm lại. Là bộ nhớ đệm, không phải chi tiết bất biến của bản gốc.
+   */
+  readonly hashedFingerprint?: FileFingerprint | null;
   readonly createdAtDevice: number;
   readonly updatedAtDevice: number;
+}
+
+/**
+ * Dấu rẻ của tệp cục bộ (kích thước + thời điểm sửa đổi của hệ tệp, giờ THIẾT BỊ ms) để hàng đợi tải lên
+ * KHÔNG băm lại toàn tệp ở mỗi lần thử khi tệp không đổi (V1-13, R9). Dấu khác hoặc thiếu thì băm lại.
+ * Không chứng minh nội dung không đổi (tệp sửa mà giữ nguyên hai giá trị này sẽ lọt kiểm tra cục bộ);
+ * máy chủ luôn băm lại độc lập nên tệp như vậy thành `hash_mismatch`, không bao giờ `verified` sai.
+ */
+export interface FileFingerprint {
+  readonly sizeBytes: number;
+  readonly modifiedAtMs: number;
+}
+
+/** Hai dấu cùng kích thước và cùng thời điểm sửa đổi. `null`/vắng không bao giờ khớp. */
+export function sameFingerprint(
+  a: FileFingerprint | null | undefined,
+  b: FileFingerprint | null | undefined,
+): boolean {
+  return !!a && !!b && a.sizeBytes === b.sizeBytes && a.modifiedAtMs === b.modifiedAtMs;
 }
 
 /** Dữ liệu tạo tệp mới: luôn bắt đầu ở trạng thái `recording`, chưa có đường dẫn/mã băm. */
@@ -57,6 +81,8 @@ export interface EvidenceFilePatch {
   readonly nextAttemptAtDevice?: number | null;
   /** `null` xóa mã lỗi. */
   readonly lastErrorCode?: string | null;
+  /** Dấu tệp đã băm (V1-13); `null` xóa dấu. Chỉ hàng đợi tải lên ghi. */
+  readonly hashedFingerprint?: FileFingerprint | null;
 }
 
 export type ApplyEventError =
@@ -181,6 +207,9 @@ export function applyEventToFile(
         ? file.nextAttemptAtDevice
         : patch.nextAttemptAtDevice,
     lastErrorCode: patch.lastErrorCode === undefined ? file.lastErrorCode : patch.lastErrorCode,
+    ...(patch.hashedFingerprint !== undefined
+      ? { hashedFingerprint: patch.hashedFingerprint }
+      : {}),
     updatedAtDevice: nowDevice,
   };
   if (result.state === FILE_STATES.QUEUED && !hasQueueDetails(file, patch)) {

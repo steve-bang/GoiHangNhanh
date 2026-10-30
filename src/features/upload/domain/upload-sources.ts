@@ -23,6 +23,7 @@ const fromEvidenceFile = (f: EvidenceFile): UploadItem => ({
   attemptCount: f.attemptCount,
   nextAttemptAtDevice: f.nextAttemptAtDevice,
   lastErrorCode: f.lastErrorCode,
+  hashedFingerprint: f.hashedFingerprint ?? null,
   createdAtDevice: f.createdAtDevice,
 });
 
@@ -79,6 +80,7 @@ const fromReturnMedia = (m: ReturnMedia): UploadItem => ({
   attemptCount: m.attemptCount,
   nextAttemptAtDevice: m.nextAttemptAtDevice,
   lastErrorCode: m.lastErrorCode,
+  hashedFingerprint: m.hashedFingerprint ?? null,
   createdAtDevice: m.createdAtDevice,
 });
 

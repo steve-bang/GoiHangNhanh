@@ -1,5 +1,5 @@
 import type { EvidenceId, OrderId, PackageId, ReturnCaseId, SessionId, ShopId } from '@/core/ids';
-import type { FileEvent, FileState } from '@/features/evidence';
+import type { FileEvent, FileFingerprint, FileState } from '@/features/evidence';
 
 /** Kết quả tính mã băm tệp cục bộ. Không ném lỗi: tệp mất/không đọc được là kết quả bình thường. */
 export type HashResult =
@@ -9,6 +9,11 @@ export type HashResult =
 /** Tính SHA-256 theo luồng của tệp gốc (không nạp cả video vào bộ nhớ). Hiện thực thật ở `platform`. */
 export interface LocalFileHasher {
   sha256(localPath: string): Promise<HashResult>;
+  /**
+   * Dấu rẻ của tệp (kích thước + thời điểm sửa đổi), không đọc nội dung (V1-13). `null` = không có tệp
+   * hoặc hệ tệp không báo đủ: hàng đợi phải băm lại. Không có hàm này = luôn băm lại (như trước V1-13).
+   */
+  fingerprint?(localPath: string): Promise<FileFingerprint | null>;
 }
 
 /**
@@ -100,6 +105,8 @@ export interface UploadItem {
   readonly attemptCount: number;
   readonly nextAttemptAtDevice: number | null;
   readonly lastErrorCode: string | null;
+  /** Dấu tệp ở lần băm lại khớp gần nhất (V1-13); `null` = phải băm lại trước khi gửi. */
+  readonly hashedFingerprint: FileFingerprint | null;
   readonly createdAtDevice: number;
 }
 
@@ -110,6 +117,8 @@ export interface UploadItemPatch {
   readonly nextAttemptAtDevice?: number | null;
   /** `null` xóa mã lỗi. */
   readonly lastErrorCode?: string | null;
+  /** Dấu tệp đã băm lại khớp (V1-13); `null` xóa dấu. */
+  readonly hashedFingerprint?: FileFingerprint | null;
 }
 
 export type UploadItemResult =

@@ -195,4 +195,55 @@ describe('UI-D04 giữ màn hình sáng và vào nền (V1-11)', () => {
     );
     expect(await openingVideo(store, id)).toMatchObject({ kind: 'recorded', interrupted: true });
   });
+
+  it('V1-13: vào nền ghi cờ gián đoạn BỀN ngay, trước khi camera trả kết quả', async () => {
+    const { store, id } = await startRecording();
+    await act(async () => emitAppState('background'));
+    await waitFor(async () =>
+      expect((await store.listMedia(SHOP, id))[0]).toMatchObject({
+        kind: 'video',
+        state: 'recording',
+        interrupted: true,
+      }),
+    );
+    await act(async () => mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mov' }));
+    await waitFor(async () =>
+      expect(await openingVideo(store, id)).toMatchObject({ interrupted: true }),
+    );
+  });
+
+  it('V1-13 (a): mở lại màn khi video đã lưu mà hồ sơ chưa ghi nhận (app bị tắt giữa hai bước): đối soát đọc cờ bền', async () => {
+    const store = createMemoryReturnStore();
+    const id = await seedOpening(store);
+    // Trạng thái để lại sau khi app bị tắt: video `queued`, có cờ gián đoạn bền, hồ sơ chưa có video.
+    const d = (type: string) => ({ type, origin: 'device' }) as never;
+    await store.createMedia({
+      id: 'v-old',
+      shopId: SHOP,
+      returnId: id,
+      kind: 'video',
+      atDevice: 3,
+    });
+    await store.markMediaInterrupted(SHOP, 'v-old');
+    await store.applyMediaEvent(SHOP, 'v-old', d('STOP_RECORDING'), 4, { localPath: 'tmp/v.mov' });
+    await store.applyMediaEvent(SHOP, 'v-old', d('LOCAL_FILE_MOVED'), 5, {
+      localPath: 'evidence/v-old.mov',
+    });
+    await store.applyMediaEvent(SHOP, 'v-old', d('LOCAL_FILE_READABLE'), 6, {
+      localPath: 'evidence/v-old.mov',
+      sizeBytes: 10,
+      sha256Client: 'cd'.repeat(32),
+    });
+    mockNavigation.params = { returnId: id };
+    await renderWithProviders(<ReturnRecordScreen />, { returnStore: store });
+    await waitFor(() =>
+      expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.returnItems, { returnId: id }),
+    );
+    expect(await openingVideo(store, id)).toMatchObject({
+      kind: 'recorded',
+      mediaId: 'v-old',
+      interrupted: true,
+    });
+    expect(mockRecorder.recordCalls).toBe(0);
+  });
 });

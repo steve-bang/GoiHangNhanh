@@ -1,5 +1,5 @@
 import type { RemoteDocuments } from '@/api/contract';
-import { hashFile, uploadFileResumable } from '@/platform';
+import { fileFingerprint, hashFile, uploadFileResumable } from '@/platform';
 
 import {
   createUploadGateway,
@@ -10,12 +10,13 @@ import {
 import type { LocalFileHasher, UploadGateway } from '../domain/ports';
 import { createFirebaseUploadPorts } from './firebase-ports';
 
-/** Bộ băm tệp thật (đọc theo khối, native). */
+/** Bộ băm tệp thật (đọc theo khối, nhường luồng JS; V1-13) + dấu tệp rẻ để không băm lại tệp không đổi. */
 export const deviceHasher: LocalFileHasher = {
   sha256: async (path) => {
     const result = await hashFile(path);
     return result.ok ? { ok: true, sha256: result.sha256 } : { ok: false, reason: result.reason };
   },
+  fingerprint: async (path) => fileFingerprint(path),
 };
 
 /**

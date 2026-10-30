@@ -5,6 +5,7 @@ import {
   mayHaveReachedServer,
   transition,
   type FileEvent,
+  type FileFingerprint,
   type FileState,
 } from '@/features/evidence';
 
@@ -51,6 +52,14 @@ export interface ReturnMedia {
   readonly nextAttemptAtDevice: number | null;
   /** Mã lỗi gần nhất của lần tải lên (mã nghiệp vụ, không chứa đường dẫn/PII). */
   readonly lastErrorCode: string | null;
+  /** Dấu tệp lúc hàng đợi băm lại khớp mã băm gần nhất (V1-13); vắng/`null` = phải băm lại. */
+  readonly hashedFingerprint?: FileFingerprint | null;
+  /**
+   * Video mở kiện bị GIÁN ĐOẠN (app vào nền, camera bị ngắt sớm; V1-13), lưu bền ngay khi phát hiện để
+   * khôi phục sau khi app bị tắt vẫn ghi hồ sơ `interrupted: true`. Chỉ bật, không bao giờ tắt. Vắng =
+   * `false`. Ảnh luôn `false`.
+   */
+  readonly interrupted?: boolean;
   readonly createdAtDevice: number;
   readonly updatedAtDevice: number;
   readonly createdBy?: string;
@@ -73,6 +82,8 @@ export interface ReturnMediaPatch {
   readonly nextAttemptAtDevice?: number | null;
   /** `null` xóa mã lỗi. */
   readonly lastErrorCode?: string | null;
+  /** Dấu tệp đã băm (V1-13); `null` xóa dấu. Chỉ hàng đợi tải lên ghi. */
+  readonly hashedFingerprint?: FileFingerprint | null;
 }
 
 export type MediaEventError =
@@ -125,6 +136,9 @@ export function applyMediaEvent(
         ? media.nextAttemptAtDevice
         : patch.nextAttemptAtDevice,
     lastErrorCode: patch.lastErrorCode === undefined ? media.lastErrorCode : patch.lastErrorCode,
+    ...(patch.hashedFingerprint !== undefined
+      ? { hashedFingerprint: patch.hashedFingerprint }
+      : {}),
     updatedAtDevice: atDevice,
   };
   if (
@@ -134,6 +148,15 @@ export function applyMediaEvent(
     return { ok: false, error: 'MISSING_FILE_DETAILS' };
   }
   return { ok: true, media: next };
+}
+
+/**
+ * Bật cờ gián đoạn của VIDEO (thuần, không I/O; V1-13). Idempotent; không đổi trạng thái tệp hay
+ * `updatedAtDevice` (không phải sự kiện tệp). Ảnh -> `ILLEGAL_TRANSITION`.
+ */
+export function applyMediaInterrupted(media: ReturnMedia): MediaEventResult {
+  if (media.kind !== 'video') return { ok: false, error: 'ILLEGAL_TRANSITION' };
+  return { ok: true, media: { ...media, interrupted: true } };
 }
 
 /** Số ảnh tối đa cho một hồ sơ hàng hoàn (R2a): đủ các góc cần thiết, tránh đầy bộ nhớ vì ảnh thừa. */
