@@ -4,7 +4,7 @@ import { normalizeSources } from '@/core/orders/selling-sources';
 import { describeApiContract } from '../contract-tests/api.contract';
 
 import type { FirebaseServices } from './client';
-import { createFirebaseApi } from './firebase-api';
+import { createFirebaseApi, PASSWORD_RESET_RESEND_SECONDS } from './firebase-api';
 import type { FirebaseOps, FirebaseUser } from './ops';
 
 // Mô phỏng SDK trong bộ nhớ ở mức FirebaseOps, để kiểm tra phần GHÉP (ánh xạ lỗi, hasShop, restore)
@@ -15,7 +15,9 @@ function fakeOps(): FirebaseOps & {
   failSignOut(error: unknown): void;
   failReadShopId(error: unknown): void;
   patchCurrent(patch: Partial<FirebaseUser>): void;
+  failPasswordReset(error: unknown): void;
   readonly signOutCalls: () => number;
+  readonly resetEmails: string[];
 } {
   const accounts = new Map<string, { uid: string; password: string }>();
   const shops = new Map<string, string>();
@@ -23,6 +25,8 @@ function fakeOps(): FirebaseOps & {
   let signOutError: unknown = null;
   let readShopIdError: unknown = null;
   let signOutCalls = 0;
+  let passwordResetError: unknown = null;
+  const resetEmails: string[] = [];
   const sdkError = (code: string) => Object.assign(new Error(code), { code });
   return {
     async createUser(email, password) {
@@ -66,6 +70,10 @@ function fakeOps(): FirebaseOps & {
       if (signOutError) throw signOutError;
       current = null;
     },
+    async sendPasswordReset(email) {
+      resetEmails.push(email);
+      if (passwordResetError) throw passwordResetError;
+    },
     async readShopDetails(shopId, uid) {
       return shops.get(uid) === shopId
         ? { id: shopId, name: 'Shop thật', role: 'owner', canEdit: true }
@@ -93,7 +101,11 @@ function fakeOps(): FirebaseOps & {
     patchCurrent(patch) {
       if (current) current = { ...current, ...patch };
     },
+    failPasswordReset(error) {
+      passwordResetError = error;
+    },
     signOutCalls: () => signOutCalls,
+    resetEmails,
   };
 }
 
@@ -243,15 +255,44 @@ describe('api/firebase', () => {
     await expect(attempt).rejects.toMatchObject({ code: 'AUTH_NETWORK_ERROR' });
   });
 
-  it('khôi phục mật khẩu và đăng nhập Apple/Google chưa làm: luôn AUTH_SERVICE_UNAVAILABLE', async () => {
+  it('mã 6 số và đăng nhập Apple/Google chưa làm: luôn AUTH_SERVICE_UNAVAILABLE', async () => {
     const { auth } = makeApi();
     for (const call of [
       () => auth.signInWithProvider('apple'),
-      () => auth.requestPasswordRecovery('a@example.com'),
       () => auth.verifyRecoveryCode({ email: 'a@example.com', code: '123456' }),
       () => auth.resetPassword({ ticket: 't', newPassword: 'Mat-khau-1' }),
     ]) {
       await expect(call()).rejects.toMatchObject({ code: 'AUTH_SERVICE_UNAVAILABLE' });
     }
+  });
+});
+
+describe('api/firebase: quên mật khẩu bằng thư của Firebase (D-14 v1)', () => {
+  it('gửi thư cho email đã cắt khoảng trắng, báo thời gian chờ gửi lại', async () => {
+    const ops = fakeOps();
+    const result = await makeApi(ops).auth.requestPasswordRecovery('  lan@example.com ');
+    expect(ops.resetEmails).toEqual(['lan@example.com']);
+    expect(result).toEqual({ retryAfterSeconds: PASSWORD_RESET_RESEND_SECONDS });
+  });
+
+  it('email không có tài khoản (auth/user-not-found): trung tính, cùng kết quả như email có tài khoản', async () => {
+    const ops = fakeOps();
+    ops.failPasswordReset({ code: 'auth/user-not-found' });
+    await expect(
+      makeApi(ops).auth.requestPasswordRecovery('khong.co@example.com'),
+    ).resolves.toEqual({ retryAfterSeconds: PASSWORD_RESET_RESEND_SECONDS });
+  });
+
+  it.each([
+    ['auth/invalid-email', 'AUTH_INVALID_CREDENTIALS'],
+    ['auth/too-many-requests', 'AUTH_TOO_MANY_REQUESTS'],
+    ['auth/network-request-failed', 'AUTH_NETWORK_ERROR'],
+    ['auth/internal-error', 'AUTH_SERVICE_UNAVAILABLE'],
+  ])('lỗi SDK %s -> %s (AppError, không lộ thông điệp SDK)', async (sdkCode, code) => {
+    const ops = fakeOps();
+    ops.failPasswordReset(Object.assign(new Error('chi tiết SDK'), { code: sdkCode }));
+    const attempt = makeApi(ops).auth.requestPasswordRecovery('lan@example.com');
+    await expect(attempt).rejects.toBeInstanceOf(AppError);
+    await expect(attempt).rejects.toMatchObject({ code });
   });
 });

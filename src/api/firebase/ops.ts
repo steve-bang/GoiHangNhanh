@@ -1,6 +1,8 @@
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
+  setLanguageCode,
   signInWithEmailAndPassword,
   signOut,
 } from '@react-native-firebase/auth';
@@ -35,6 +37,11 @@ export interface FirebaseOps {
   readShopIdForRestore(uid: string): Promise<string | null>;
   /** Thoát Firebase Auth (xóa phiên trên máy). */
   signOut(): Promise<void>;
+  /**
+   * Firebase gửi thư có đường dẫn đặt lại mật khẩu (D-14 v1). Thư tiếng Việt nếu mẫu thư có bản
+   * tiếng Việt (Console). Không `actionCodeSettings`: mật khẩu mới đặt trên trang của Firebase.
+   */
+  sendPasswordReset(email: string): Promise<void>;
   /** Thông tin shop + vai trò của `uid` trong shop; `null` nếu không có shop hoặc không phải thành viên đang hoạt động. */
   readShopDetails(shopId: string, uid: string): Promise<ShopDetails | null>;
   callShop(
@@ -42,6 +49,9 @@ export interface FirebaseOps {
     input: CreateShopInput | UpdateShopInput,
   ): Promise<CreatedShop>;
 }
+
+/** Ngôn ngữ thư đặt lại mật khẩu của Firebase Auth. */
+export const PASSWORD_RESET_LANGUAGE = 'vi';
 
 const providerIdsOf = (user: { providerData?: readonly { providerId: string }[] }): string[] =>
   (user.providerData ?? []).map((info) => info.providerId);
@@ -116,6 +126,11 @@ export function createFirebaseOps({ auth, db, functions }: FirebaseServices): Fi
     },
     signOut() {
       return signOut(auth);
+    },
+    async sendPasswordReset(email) {
+      // Ngôn ngữ thư: đặt lỗi thì vẫn gửi (thư có thể ra tiếng Anh), không chặn người dùng lấy lại mật khẩu.
+      await setLanguageCode(auth, PASSWORD_RESET_LANGUAGE).catch(() => undefined);
+      await sendPasswordResetEmail(auth, email);
     },
     async readShopDetails(shopId, uid) {
       // Chỉ thành viên đang hoạt động đọc được (Rules). Rules từ chối (`permission-denied`) thì coi như

@@ -10,6 +10,11 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 - Kế hoạch tổng phát hành v1.0, checklist phát hành cho con người và nhật ký thay đổi này (tài liệu).
 - Công cụ chụp ảnh màn hình bản web với cổng giả cho PR (`scripts/screens`, không đổi phụ thuộc, không chạy ở CI) và bộ ảnh mốc các màn chính (V1-00).
+- Quên mật khẩu gửi thư đặt lại của Firebase Auth (thư tiếng Việt, trả lời trung tính) và màn mới "Kiểm tra hộp thư"; chưa kiểm chứng gửi thư thật trên thiết bị (V1-03).
+
+### Changed
+
+- Ẩn nút đăng nhập Apple/Google ở Chào mừng, Đăng nhập, Đăng ký: bản v1 chỉ có email + mật khẩu (V1-03).
 
 ### Đã có trước khi mở nhật ký (đến commit `42f6a3c`, gom từ PR #13–#39)
 

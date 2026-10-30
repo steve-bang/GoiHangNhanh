@@ -9,6 +9,7 @@ export { SplashScreen } from './SplashScreen';
 export { WelcomeScreen } from './WelcomeScreen';
 export { SignInScreen } from './SignInScreen';
 export { ForgotPasswordScreen } from './ForgotPasswordScreen';
+export { RecoveryEmailSentScreen } from './RecoveryEmailSentScreen';
 export { VerifyOtpScreen } from './VerifyOtpScreen';
 export { NewPasswordScreen } from './NewPasswordScreen';
 export { SignUpScreen } from './SignUpScreen';

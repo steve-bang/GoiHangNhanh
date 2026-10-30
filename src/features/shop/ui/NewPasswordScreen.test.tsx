@@ -18,6 +18,17 @@ jest.mock(
   '@/platform/navigation',
   () => jest.requireActual('@/test-utils/mock-navigation').navigationMock,
 );
+// Chế độ mã 6 số (O-22 hướng B, để sau v1): giữ kiểm thử giao diện đã có. v1 chạy `email_link`
+// (decisions.md Q-29 / V1-03); chặn liên kết sâu ở chế độ đó có test cuối tệp.
+let mockRecoveryMode: 'email_link' | 'otp' = 'otp';
+// Thuộc tính đọc lúc dùng (getter), không chép giá trị lúc nạp module (biến lúc đó chưa gán).
+jest.mock('@/core/config/feature-flags', () =>
+  Object.defineProperty(
+    { ...jest.requireActual<object>('@/core/config/feature-flags') },
+    'PASSWORD_RECOVERY_MODE',
+    { get: () => mockRecoveryMode, enumerable: true },
+  ),
+);
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
   __esModule: true,
   default: jest.fn(),
@@ -401,5 +412,30 @@ describe('UI-A09 Mật khẩu mới: gửi', () => {
     await fireEvent.press(submit());
     expect(screen.getByTestId('form-error')).toBeOnTheScreen();
     expect(mockNavigation.reset).not.toHaveBeenCalled();
+  });
+});
+
+describe('UI-A09 Mật khẩu mới: chế độ thư đặt lại (v1, D-14)', () => {
+  beforeEach(() => {
+    mockRecoveryMode = 'email_link';
+  });
+  afterEach(() => {
+    mockRecoveryMode = 'otp';
+  });
+
+  it('liên kết sâu /new-password: không hiện màn, về Đăng nhập (kể cả khi có vé cũ)', async () => {
+    await renderWithProviders(
+      <WithRecoveryState
+        actions={() => [
+          { type: 'code_requested', email: FAKE_DEMO_EMAIL, resendAvailableAt: Date.now() },
+          { type: 'code_verified', ticket: 'ticket-cu' },
+        ]}
+      >
+        <NewPasswordScreen />
+      </WithRecoveryState>,
+    );
+    expect(screen.queryByTestId('screen-UI-A09')).toBeNull();
+    expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.signIn);
+    expect(mockNavigation.replace).toHaveBeenCalledTimes(1);
   });
 });
