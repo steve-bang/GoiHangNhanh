@@ -248,18 +248,89 @@
     }
   },
   "sync": {
-    "note": "Tải nền có thể tạm dừng khi hệ điều hành giới hạn. Mở ứng dụng để tiếp tục.",
+    "note": "Ứng dụng chỉ tải lên khi đang mở. Đóng ứng dụng thì việc tải tạm dừng, mở lại sẽ tiếp tục.",
+    "offline": "Máy đang mất mạng. Tệp vẫn ở trên máy, sẽ tải khi có mạng lại.",
     "filter": {
       "uploading": "Đang tải lên",
       "waiting_upload": "Chờ tải lên",
       "error": "Lỗi",
       "uploaded": "Đã tải lên"
     },
+    "filterCount": "{{label}} ({{count}})",
+    "loading": "Đang đọc danh sách tệp…",
+    "loadError": "Chưa đọc được danh sách tệp. Bạn thử lại nhé.",
+    "reload": "Thử lại",
+    "record": {
+      "pack": "{{code}} · Kiện {{index}}",
+      "packNoIndex": "{{code}}",
+      "return": "Hàng hoàn {{code}}",
+      "unknown": "Hồ sơ không còn trên máy"
+    },
+    "kind": {
+      "video": "Video",
+      "photo": "Ảnh"
+    },
+    "size": "{{kind}} · {{size}}",
+    "reason": {
+      "queued": "Đang chờ lượt tải. Ứng dụng tải khi đang mở.",
+      "offline": "Đang chờ mạng.",
+      "waitingNetwork": "Mạng chập chờn. Ứng dụng sẽ tự thử lại.",
+      "willRetry": "Chưa tải được. Ứng dụng sẽ tự thử lại.",
+      "serverRejected": "Máy chủ chưa nhận tệp sau nhiều lần thử.",
+      "signInAgain": "Cần đăng nhập lại để tải lên.",
+      "tooLarge": "Tệp quá lớn nên không tải lên được. Tệp vẫn còn trên máy này.",
+      "fileChanged": "Tệp trên máy đã khác lúc lưu nên không tải lên.",
+      "fileMissing": "Không tìm thấy tệp trên máy này.",
+      "fileUnreadable": "Không đọc được tệp trên máy này.",
+      "unsupportedType": "Loại tệp này không tải lên được.",
+      "unknownAttention": "Tệp cần được kiểm tra.",
+      "hashMismatch": "Bản trên máy chủ không khớp tệp gốc nên không được tính là đã xác minh.",
+      "localSaveFailed": "Lưu tệp trên máy bị lỗi.",
+      "unrecoverable": "Tệp hỏng hoặc đã mất, không còn bản nào.",
+      "verifying": "Máy chủ đang kiểm tra tệp.",
+      "verifyStuck": "Máy chủ đã nhận tệp nhưng chưa kiểm tra xong."
+    },
+    "foreignTitle": "Do tài khoản khác tạo trên máy này",
+    "foreignHint": "Máy này không tải các tệp này lên. Tệp vẫn được giữ trên máy.",
+    "retry": "Thử lại",
+    "retryAll": "Thử lại tất cả ({{count}})",
+    "recheck": "Kiểm tra lại",
     "details": "Chi tiết",
+    "openRecord": "Mở hồ sơ",
+    "doneLimit": "Chỉ hiện {{count}} tệp mới nhất.",
+    "toast": {
+      "retried": "Đã đưa vào hàng chờ tải lên.",
+      "retriedOffline": "Đã đưa vào hàng chờ. Sẽ tải khi có mạng và ứng dụng đang mở.",
+      "retryChanged": "Trạng thái tệp vừa đổi. Danh sách đã được cập nhật.",
+      "retryFailed": "Chưa đưa tệp vào hàng chờ được. Bạn thử lại nhé.",
+      "recheckRequested": "Đã nhờ máy chủ kiểm tra lại. Kết quả sẽ hiện ở đây.",
+      "recheckOffline": "Cần có mạng để kiểm tra lại.",
+      "recheckFailed": "Chưa nhờ máy chủ kiểm tra lại được. Bạn thử lại sau nhé.",
+      "recheckUnavailable": "Chưa kết nối máy chủ nên chưa kiểm tra lại được."
+    },
     "emptyTitle": "Không có tệp ở mục này",
     "emptyMessage": "Chọn mục khác để xem các tệp còn lại, hoặc mở danh sách đơn.",
     "emptyAction": "Mở danh sách đơn",
-    "waitingNetwork": "Đang chờ mạng"
+    "detail": {
+      "causeTitle": "Chuyện gì xảy ra",
+      "whereTitle": "Dữ liệu đang ở đâu",
+      "where": {
+        "local": "Tệp gốc vẫn còn trên máy này. Không cần quay hay chụp lại.",
+        "localUnreadable": "Tệp vẫn ở trên máy này nhưng không đọc được.",
+        "missing": "Tệp gốc không còn trên máy này.",
+        "partial": "Tệp có thể chưa được lưu đầy đủ trên máy này.",
+        "server": "Máy chủ đã nhận tệp. Tệp gốc vẫn còn trên máy này."
+      },
+      "info": {
+        "attempts": "Số lần đã thử: {{count}}",
+        "updated": "Cập nhật lúc {{time}} (giờ trên máy)"
+      },
+      "noAction": "Ứng dụng không thử lại được lỗi này. Tệp vẫn được giữ, không bị xóa.",
+      "foreignNoAction": "Chỉ tài khoản đã tạo tệp mới tải lên được.",
+      "notFoundTitle": "Tệp này không còn cần xử lý.",
+      "notFoundMessage": "Có thể tệp đã tải lên xong. Xem lại ở Trung tâm đồng bộ.",
+      "back": "Về Trung tâm đồng bộ"
+    }
   },
   "splash": {
     "brandName": "Đơn Chứng",
@@ -493,8 +564,14 @@
     "emptyReturnMessage": "Đơn này chưa có tệp hàng hoàn nào.",
     "recordPack": "Quay đóng gói",
     "kind": {
-      "pack": { "video": "Video đóng gói", "photo": "Ảnh đóng gói" },
-      "return": { "video": "Video hàng hoàn", "photo": "Ảnh hàng hoàn" }
+      "pack": {
+        "video": "Video đóng gói",
+        "photo": "Ảnh đóng gói"
+      },
+      "return": {
+        "video": "Video hàng hoàn",
+        "photo": "Ảnh hàng hoàn"
+      }
     },
     "capturedAt": "Ghi lúc {{time}} (giờ thiết bị)",
     "errorHint": "Tệp này cần xử lý.",

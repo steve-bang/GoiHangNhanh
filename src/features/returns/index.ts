@@ -8,5 +8,12 @@ export {
   ReturnSyncRunner,
   useReturnStore,
 } from './data';
-export { hasOpeningEvidenceLimit, isMediaSavedLocally } from './domain';
-export type { ReturnDetails, ReturnMedia, ReturnStore, ReturnSummary } from './domain';
+export { hasOpeningEvidenceLimit, isMediaSavedLocally, returnMediaUploader } from './domain';
+export type {
+  ReturnCase,
+  ReturnStatus,
+  ReturnDetails,
+  ReturnMedia,
+  ReturnStore,
+  ReturnSummary,
+} from './domain';

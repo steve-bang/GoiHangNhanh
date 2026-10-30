@@ -17,7 +17,7 @@ import { ReturnStoreProvider, createMemoryReturnStore, type ReturnStore } from '
 import { resetMockConnectivity, setMockConnectivity } from '@/test-utils/mock-connectivity';
 
 import type { UploadGateway } from '../domain/ports';
-import { UploadRunner } from './UploadRunner';
+import { UploadRunner, useUploadQueueControl, type UploadQueueControl } from './UploadRunner';
 
 const REAL_SHOP = 'shop-that';
 
@@ -350,5 +350,92 @@ describe('UploadRunner', () => {
     await flush();
     expect(t.uploads).toEqual([]);
     expect((await files.get(REAL_SHOP as never, 'ev-1' as EvidenceId))?.state).toBe('queued');
+  });
+});
+
+describe('điều khiển hàng đợi cho Trung tâm đồng bộ (V1-08)', () => {
+  function Probe({ onControl }: { onControl: (c: UploadQueueControl) => void }) {
+    onControl(useUploadQueueControl());
+    return null;
+  }
+
+  const withProbe = (
+    files: ReturnType<typeof createMemoryEvidenceFileStore>,
+    props: { docs: RemoteDocuments | null; gateway?: UploadGateway },
+    onControl: (c: UploadQueueControl) => void,
+  ) =>
+    render(
+      <CurrentShopProvider shopId={REAL_SHOP}>
+        <OrderStoreProvider store={orderStore}>
+          <EvidenceFileStoreProvider store={files}>
+            <ReturnStoreProvider store={createMemoryReturnStore()}>
+              <UploadRunner
+                docs={props.docs}
+                hasher={hasher}
+                {...(props.gateway ? { gateway: props.gateway } : {})}
+              >
+                <Probe onControl={onControl} />
+              </UploadRunner>
+            </ReturnStoreProvider>
+          </EvidenceFileStoreProvider>
+        </OrderStoreProvider>
+      </CurrentShopProvider>,
+    );
+
+  it('không có hàng đợi thật: không làm gì, kiểm tra lại báo chưa hỗ trợ', async () => {
+    let control: UploadQueueControl | null = null;
+    await withProbe(createMemoryEvidenceFileStore(), { docs: null }, (c) => (control = c));
+    await flush();
+    const c = control as unknown as UploadQueueControl;
+    expect(c.active).toBe(false);
+    expect(() => c.runNow()).not.toThrow();
+    expect(await c.requestServerCheck('ev-1')).toBe('unsupported');
+  });
+
+  it('runNow khi đang có lượt chạy: chạy lại MỘT lần sau đó; báo cho màn hình sau mỗi lượt', async () => {
+    const files = await storeWithQueuedFile(REAL_SHOP);
+    const uploads: string[] = [];
+    let release: (() => void) | null = null;
+    const gateway: UploadGateway = {
+      upload: async (request) => {
+        uploads.push(request.evidenceId);
+        if (uploads.length === 1) await new Promise<void>((r) => (release = r));
+        return { kind: 'received' };
+      },
+      fetchServerStates: async () => new Map(),
+    };
+    let control: UploadQueueControl | null = null;
+    await withProbe(files, { docs, gateway }, (c) => (control = c));
+    await flush();
+    const c = control as unknown as UploadQueueControl;
+    expect(c.active).toBe(true);
+    const finished = jest.fn();
+    c.subscribe(finished);
+    expect(uploads).toEqual(['ev-1']);
+    // Tệp thứ hai vào hàng chờ khi lượt đầu còn chạy; người dùng bấm Thử lại (runNow) hai lần.
+    await files.create({
+      id: 'ev-2' as EvidenceId,
+      shopId: REAL_SHOP as never,
+      orderId: 'o' as OrderId,
+      packageId: 'p' as PackageId,
+      sessionId: 's' as SessionId,
+      group: 'pack',
+      kind: 'video',
+      createdAtDevice: 10,
+    });
+    const d = (type: string) => ({ type, origin: 'device' }) as never;
+    await files.applyEvent(REAL_SHOP as never, 'ev-2' as EvidenceId, d('STOP_RECORDING'), 11);
+    await files.applyEvent(REAL_SHOP as never, 'ev-2' as EvidenceId, d('LOCAL_FILE_READABLE'), 12, {
+      localPath: 'file:///v2.mp4',
+      sizeBytes: 5,
+      sha256Client: 'ab'.repeat(32),
+    });
+    c.runNow();
+    c.runNow();
+    await act(async () => (release as unknown as () => void)());
+    await flush();
+    await flush();
+    expect(uploads).toEqual(['ev-1', 'ev-2']);
+    expect(finished).toHaveBeenCalledTimes(2);
   });
 });

@@ -136,6 +136,19 @@ export function createUploadGateway(
         return fromError(error);
       }
     },
+    async requestServerCheck(shopId, evidenceId) {
+      // Máy chủ đã có bản gốc: `createUploadSession` đặt yêu cầu xác minh lại rồi trả `already_received`.
+      // Không bao giờ gửi tệp từ đây, kể cả khi máy chủ (bất thường) cấp URL.
+      try {
+        await withTimeout(ports.sessions.create(shopId, evidenceId), timeoutMs);
+      } catch (error) {
+        const outcome = fromError(error);
+        throw new UploadPortError(
+          outcome.kind === 'received' ? 'retryable' : outcome.kind,
+          outcome.kind === 'received' ? 'UPLOAD_EXCEPTION' : outcome.code,
+        );
+      }
+    },
     fetchServerStates: (shopId, ids) =>
       withTimeout(ports.serverStates.read(shopId, ids), timeoutMs),
   };

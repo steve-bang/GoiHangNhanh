@@ -831,6 +831,19 @@ export function createSqliteReturnStore(
         return rows.map(toMedia);
       }),
 
+    listMediaByStates: (shopId, states) =>
+      guarded(async () => {
+        if (states.length === 0) return [];
+        const marks = states.map(() => '?').join(', ');
+        const rows = await db.getAllAsync<MediaRow>(
+          `SELECT ${MEDIA_COLUMNS} FROM return_media
+           WHERE shop_id = ? AND state IN (${marks})
+           ORDER BY created_at_device, rowid`,
+          [shopId, ...states],
+        );
+        return rows.map(toMedia);
+      }),
+
     listMedia: (shopId, returnId) =>
       guarded(async () => {
         const rows = await db.getAllAsync<MediaRow>(

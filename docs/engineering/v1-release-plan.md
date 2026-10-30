@@ -241,6 +241,7 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
 - **Test:** `file-state.test.ts` (sự kiện mới: từ đúng trạng thái, từ chối với lỗi cục bộ và `hash_mismatch`, không bao giờ tới `uploaded`/`verified`); UI: bốn bộ lọc, không bao giờ "Đã tải lên" khi chưa `uploaded`/`verified`, nút Thử lại phát đúng sự kiện rồi gọi `runOnce` một lần (bấm đúp), nút ẩn với lỗi cục bộ, nhóm tài khoản khác không có nút; dòng giải thích tải chỉ khi app mở giữ nguyên.
 - **Ảnh:** UI-F01 bốn bộ lọc (có dữ liệu: tạo đơn + tệp giả trong bản sao), trạng thái rỗng, nhóm "tài khoản khác"; UI-F02 lỗi máy chủ (có Thử lại) và lỗi cục bộ (không có Thử lại).
 - **Rủi ro:** chuyển trạng thái mới đụng bất biến 3 (mục 7, R-3). Thiếu mã/thông báo lỗi tải trong docs/04–05: đề xuất ở Q-29. **Phụ thuộc:** V1-02, V1-07.
+- *Đã làm (2026-10-30): xem [plans/v1-08-sync-center.md](plans/v1-08-sync-center.md) và decisions.md Q-29 / V1-08. Thêm so với kế hoạch: nút "Kiểm tra lại" cho tệp kẹt `uploaded` (gọi `createUploadSession`, V1-04), `ReturnStore.listMediaByStates`; Thử lại giữ `lastErrorCode` (không xóa) để vẫn đối soát trước khi gửi lại.*
 
 #### V1-09 wifi-only
 - **Mục tiêu:** Q-24c B.

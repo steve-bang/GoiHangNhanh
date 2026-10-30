@@ -404,6 +404,12 @@ export function createMemoryReturnStore(
         .sort((a, b) => a.createdAtDevice - b.createdAtDevice)
         .map(copy);
     },
+    async listMediaByStates(shopId, states) {
+      return [...media.values()]
+        .filter((m) => m.shopId === shopId && states.includes(m.state))
+        .sort((a, b) => a.createdAtDevice - b.createdAtDevice)
+        .map(copy);
+    },
     async listMedia(shopId, returnId) {
       return [...media.values()]
         .filter((m) => m.shopId === shopId && m.returnId === returnId)

@@ -98,6 +98,8 @@ Phiên có thể đã xác nhận trong khi video vẫn chưa tải lên. Không
 
 Trạng thái lỗi rõ ràng: **Lỗi lưu cục bộ, Tải lên thất bại (có thể thử lại), Tệp không khớp mã băm (cách ly), Cần xử lý, Không thể khôi phục**. Không chuyển thành thành công chỉ vì người dùng đóng màn hình hoặc vì yêu cầu tải lên đã được gửi.
 
+*Người dùng thử lại tệp "Cần xử lý"* (V1-08, quyết định R-3, chờ BA rà câu chữ): ở Trung tâm đồng bộ, người dùng bấm **Thử lại** đưa tệp từ **Cần xử lý** về **Chờ tải lên**, chỉ khi lý do là máy chủ từ chối/đăng nhập hết hạn, **không** khi lỗi nằm ở chính tệp trên máy (tệp mất, đổi nội dung, không đọc được, quá lớn, sai loại). Đây là thao tác trên thiết bị, chỉ về **Chờ tải lên**; không bao giờ đưa tệp tới Đã tải lên/Đã xác minh (chỉ máy chủ xác lập). Tệp không khớp mã băm không thử lại được. Tệp **Đã tải lên** lâu chưa xác minh: người dùng có thể nhờ máy chủ **kiểm tra lại**; trạng thái chỉ đổi khi máy chủ báo kết quả. Chi tiết kỹ thuật: [engineering/decisions.md Q-29 / V1-08](engineering/decisions.md).
+
 ### Hồ sơ hàng hoàn
 
 Chưa bắt đầu → Đang tiếp nhận → Đang mở kiện → Đang kiểm tra → Đã xác nhận → Đã đóng; nhánh: Cần xử lý, Chờ tải lên (về bằng chứng). Trạng thái liên kết đơn gốc riêng: Chưa liên kết / Đã liên kết (mỗi lần liên kết là một sự kiện có người thực hiện, thời điểm, căn cứ).

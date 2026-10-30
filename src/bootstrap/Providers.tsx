@@ -49,8 +49,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
                         <ReturnMediaRecovery />
                         <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
                         <ReturnSyncRunner docs={getDefaultRemoteDocuments()} />
-                        <UploadRunner docs={getDefaultRemoteDocuments()} />
-                        {children}
+                        {/* Bọc màn hình: Trung tâm đồng bộ gọi hàng đợi qua `useUploadQueueControl` (V1-08). */}
+                        <UploadRunner docs={getDefaultRemoteDocuments()}>{children}</UploadRunner>
                       </DisputeStoreProvider>
                     </ReturnStoreProvider>
                   </EvidenceFileStoreProvider>

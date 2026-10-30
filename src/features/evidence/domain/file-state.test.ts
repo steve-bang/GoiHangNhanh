@@ -3,8 +3,10 @@ import {
   ERROR_STATES,
   FILE_EVENT_TYPES,
   FILE_STATES,
+  NON_RETRYABLE_ATTENTION_CODES,
   SERVER_ONLY_STATES,
   allowedEvents,
+  isUserRetryableAttention,
   isLocalCopyReleasable,
   originOf,
   transition,
@@ -157,6 +159,63 @@ describe('tình huống gián đoạn và lỗi (docs/04 A05/A07, QA-04/05/09/12
     const state = run('needs_attention', ['MARK_UNRECOVERABLE']);
     expect(state).toBe('unrecoverable');
     expect(allowedEvents(state)).toEqual([]);
+  });
+});
+
+describe('người dùng bấm Thử lại tệp "cần xử lý" (V1-08, R-3)', () => {
+  const retry = device('USER_RETRY_ATTENTION');
+
+  it('lỗi máy chủ từ chối: needs_attention -> queued, origin device', () => {
+    expect(originOf('USER_RETRY_ATTENTION')).toBe('device');
+    for (const code of ['PERMISSION_DENIED', 'HTTP_403', 'UPLOAD_EXCEPTION', 'AUTH_REQUIRED']) {
+      expect(transition('needs_attention', retry, { lastErrorCode: code })).toEqual({
+        ok: true,
+        state: 'queued',
+      });
+    }
+  });
+
+  it.each([...NON_RETRYABLE_ATTENTION_CODES])('từ chối với lỗi tệp cục bộ %s', (code) => {
+    expect(transition('needs_attention', retry, { lastErrorCode: code })).toEqual({
+      ok: false,
+      error: 'NOT_USER_RETRYABLE',
+      state: 'needs_attention',
+    });
+  });
+
+  it('không biết mã lỗi (null hoặc thiếu ngữ cảnh) thì từ chối', () => {
+    expect(transition('needs_attention', retry, { lastErrorCode: null })).toMatchObject({
+      ok: false,
+      error: 'NOT_USER_RETRYABLE',
+    });
+    expect(transition('needs_attention', retry)).toMatchObject({
+      ok: false,
+      error: 'NOT_USER_RETRYABLE',
+    });
+    expect(isUserRetryableAttention(undefined)).toBe(false);
+    expect(isUserRetryableAttention('')).toBe(false);
+  });
+
+  it('hash_mismatch và mọi trạng thái khác needs_attention đều bị từ chối, kể cả với lỗi máy chủ', () => {
+    for (const state of ALL_FILE_STATES.filter((s) => s !== 'needs_attention')) {
+      expect(transition(state, retry, { lastErrorCode: 'PERMISSION_DENIED' })).toEqual({
+        ok: false,
+        error: 'ILLEGAL_TRANSITION',
+        state,
+      });
+    }
+  });
+
+  it('giả danh origin server bị từ chối; không bao giờ tới trạng thái do máy chủ xác lập', () => {
+    expect(
+      transition('needs_attention', server('USER_RETRY_ATTENTION'), {
+        lastErrorCode: 'PERMISSION_DENIED',
+      }),
+    ).toMatchObject({ ok: false, error: 'ORIGIN_NOT_ALLOWED' });
+    for (const state of ALL_FILE_STATES) {
+      const r = transition(state, retry, { lastErrorCode: 'PERMISSION_DENIED' });
+      if (r.ok) expect(SERVER_ONLY_STATES).not.toContain(r.state);
+    }
   });
 });
 
