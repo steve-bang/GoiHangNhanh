@@ -11,6 +11,7 @@ import { onObjectFinalized } from 'firebase-functions/v2/storage';
 
 import { AUDITED_ENTITIES, entityLocation, recordAuditForWrite, type AuditedEntity } from './audit';
 import { handleEvidenceFinalized } from './evidence';
+import { toHttpsError } from './http-errors';
 import { isEventTooOld } from './limits';
 import {
   handleReverifyRequest,
@@ -21,16 +22,9 @@ import {
 import {
   createUploadSessionForUser,
   parseUploadSessionInput,
-  UploadError,
   type UploadUrlSigner,
 } from './uploads';
-import {
-  createShopForUser,
-  parseShopId,
-  parseShopInput,
-  ShopError,
-  updateShopForUser,
-} from './shop';
+import { createShopForUser, parseShopId, parseShopInput, updateShopForUser } from './shop';
 
 // Khu vực dữ liệu đã chốt: Singapore (decisions.md Q-08). Phải khớp getFunctions(app, region) ở app.
 const REGION = 'asia-southeast1';
@@ -40,14 +34,6 @@ initializeApp();
 function requireUid(auth: { uid: string } | undefined): string {
   if (!auth) throw new HttpsError('unauthenticated', 'Cần đăng nhập.');
   return auth.uid;
-}
-
-function toHttpsError(error: unknown): never {
-  if (error instanceof ShopError || error instanceof UploadError) {
-    throw new HttpsError(error.code, error.message);
-  }
-  if (error instanceof HttpsError) throw error;
-  throw new HttpsError('internal', 'Lỗi hệ thống.');
 }
 
 export const createShop = onCall({ region: REGION }, async (request) => {
