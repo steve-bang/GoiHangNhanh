@@ -42,7 +42,7 @@
 | Nội dung hồ sơ hàng hoàn (tình trạng, kiểm hàng, ghi chú) | Q-26c: chỉ bản neo D9 lên máy chủ |
 | Hồ sơ tranh chấp, văn bản tóm tắt | Q-27: chỉ trên máy. Chia sẻ văn bản là hành động người dùng chủ động qua bảng chia sẻ của hệ điều hành (mục 5) |
 | Lịch sử tìm kiếm trong app | Bảng `search_history` SQLite |
-| Video/ảnh chưa tải lên; CSDL đơn | Thư mục tài liệu của app. Android: **đã có** `android.allowBackup: false` (V1-01, PR #43) nên không vào Auto Backup. iOS: **[theo V1-12]** loại khỏi iCloud Backup (Q-24d) |
+| Video/ảnh chưa tải lên; CSDL đơn | Thư mục tài liệu của app. Android: **đã có** `android.allowBackup: false` (V1-01, PR #43) nên không vào Auto Backup. iOS: **đã có** (V1-12, PR #46) đặt `isExcludedFromBackup` cho `Documents/evidence` và `Documents/SQLite` (Q-24d); chưa kiểm chứng trên máy (G-7) |
 | Âm thanh | Không ghi âm, không xin micro (O-09, `app.json`) |
 
 ## 3. Apple App Privacy (App Store Connect)
