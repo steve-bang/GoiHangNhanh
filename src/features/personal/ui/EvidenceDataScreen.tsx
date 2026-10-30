@@ -2,22 +2,24 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
-import { WifiOnlySwitch } from '@/features/upload';
+import { useEvidenceTotals, WifiOnlySwitch } from '@/features/upload';
 import { useAppNavigation } from '@/platform';
 import { Button, Card, ListGroup, ListItem, MetricTile, Screen, Text, useTheme } from '@/shared/ui';
 
 /**
- * Quản lý dữ liệu bằng chứng (PER-11; board 07 khung 11), route con của UI-I01 (Q-21b). Chưa có tệp bằng
- * chứng (chưa ghi/tải lên thật) và chưa có nguồn đếm theo một cửa hàng (`countUnsyncedOnDevice` đếm cả máy),
- * nên mọi ô là "Chưa có số liệu": KHÔNG số giả (Q-21y). Ba ô giữ ba nhãn của board nhưng phần giải thích nói
- * rõ "Trên thiết bị" chưa phải bản sao lưu và "Trên đám mây" chỉ tính tệp máy chủ đã xác nhận (bất biến 3).
- * Công tắc "Chỉ tải khi có Wi‑Fi" (V1-09) dùng chung cài đặt máy với Trung tâm đồng bộ.
+ * Quản lý dữ liệu bằng chứng (PER-11; board 07 khung 11), route con của UI-I01 (Q-21b). Số đếm THẬT tệp
+ * của cửa hàng đang dùng trên máy này (V1-10; `upload/domain/evidence-stats.ts`); đang đọc/đọc lỗi hiện
+ * "–", không số giả (Q-21y). Phần giải thích nói rõ "Trên thiết bị" chưa phải bản sao lưu và "Trên đám
+ * mây" chỉ tính tệp máy chủ đã kiểm tra khớp (bất biến 3). Công tắc "Chỉ tải khi có Wi‑Fi" (V1-09) dùng
+ * chung cài đặt máy với Trung tâm đồng bộ.
  */
 export function EvidenceDataScreen() {
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const navigation = useAppNavigation();
-  const noData = t('personal:evidenceData.noData');
+  const { state } = useEvidenceTotals();
+  const value = (key: 'total' | 'onDevice' | 'pending' | 'cloud') =>
+    state.kind === 'ready' ? state.data[key] : t('personal:evidenceOverview.unknown');
   return (
     <Screen
       title={t('nav:subTitles.evidenceData')}
@@ -30,7 +32,7 @@ export function EvidenceDataScreen() {
           layout="row"
           icon="clipboard"
           label={t('personal:evidenceData.total')}
-          value={noData}
+          value={value('total')}
           testID="evidence-total-metric"
         />
       </Card>
@@ -39,7 +41,7 @@ export function EvidenceDataScreen() {
           layout="row"
           icon="device-saved"
           label={t('personal:evidenceOverview.onDevice')}
-          value={noData}
+          value={value('onDevice')}
           testID="evidence-on-device"
         />
         <MetricTile
@@ -47,7 +49,7 @@ export function EvidenceDataScreen() {
           icon="sync"
           tone="warning"
           label={t('personal:evidenceOverview.pendingSync')}
-          value={noData}
+          value={value('pending')}
           testID="evidence-pending-sync"
         />
         <MetricTile
@@ -55,11 +57,19 @@ export function EvidenceDataScreen() {
           icon="cloud"
           tone="blue"
           label={t('personal:evidenceOverview.cloud')}
-          value={noData}
+          value={value('cloud')}
           testID="evidence-cloud"
         />
       </ListGroup>
       <View style={{ gap: tokens.space.xs }} testID="evidence-explain">
+        {state.kind === 'error' ? (
+          <Text variant="caption" color="textMuted" testID="evidence-load-error">
+            {t('personal:evidenceData.loadError')}
+          </Text>
+        ) : null}
+        <Text variant="caption" color="textMuted">
+          {t('personal:evidenceData.scope')}
+        </Text>
         <Text variant="caption" color="textMuted">
           {t('personal:evidenceData.explainOnDevice')}
         </Text>

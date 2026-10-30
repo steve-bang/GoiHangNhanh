@@ -20,7 +20,21 @@
       "error": "Lỗi – cần xử lý"
     },
     "tipTitle": "Ghi hình đủ các bước",
-    "tipHint": "Quay từ lúc lấy hàng đến khi dán niêm phong xong."
+    "tipHint": "Quay từ lúc lấy hàng đến khi dán niêm phong xong.",
+    "shopFallback": "Cửa hàng của bạn",
+    "statUnknown": "–",
+    "todayEmpty": "Hôm nay chưa có đơn đóng gói hay tệp tải lên trên máy này.",
+    "todayLoadError": "Không đọc được số liệu trên máy.",
+    "deviceNotice": {
+      "title": "Dữ liệu nằm trên máy này",
+      "body": "Đơn và bằng chứng chỉ xem được trên máy đã tạo. Đổi máy hoặc cài lại ứng dụng sẽ không thấy dữ liệu cũ.",
+      "dismiss": "Đã hiểu"
+    }
+  },
+  "notificationList": {
+    "title": "Chưa có thông báo",
+    "message": "Ứng dụng chưa gửi thông báo. Lỗi tải lên xem ở Trung tâm đồng bộ.",
+    "openSync": "Mở Trung tâm đồng bộ"
   },
   "scan": {
     "hint": "Đưa mã QR / mã vạch vào khung hình để quét tự động",

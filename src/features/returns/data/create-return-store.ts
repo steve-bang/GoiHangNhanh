@@ -56,6 +56,7 @@ export function createLocalReturnStore(
       (await get()).listMediaForUpload(shop, states, uid),
     listUnfinishedMedia: async () => (await get()).listUnfinishedMedia(),
     listMediaByStates: async (shop, states) => (await get()).listMediaByStates(shop, states),
+    countMediaByState: async (shop, range) => (await get()).countMediaByState(shop, range),
     listMedia: async (shop, returnId) => (await get()).listMedia(shop, returnId),
   };
 }

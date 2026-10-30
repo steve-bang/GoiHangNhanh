@@ -4,6 +4,7 @@ import { logger } from '@/core/logging/logger';
 import {
   applyEventToFile,
   hasSameBinding,
+  toStateCounts,
   UNSYNCED_STATES,
   type EvidenceFile,
   type EvidenceFileStore,
@@ -249,6 +250,15 @@ export function createSqliteEvidenceFileStore(db: SqlDatabase): EvidenceFileStor
           `SELECT COUNT(*) AS n FROM evidence_files WHERE state IN (${UNSYNCED_SQL})`,
         );
         return row?.n ?? 0;
+      }),
+    countByState: (shopId, updatedIn) =>
+      guarded(async () => {
+        const range = updatedIn ? ' AND updated_at_device >= ? AND updated_at_device < ?' : '';
+        const rows = await db.getAllAsync<{ state: string; n: number }>(
+          `SELECT state, COUNT(*) AS n FROM evidence_files WHERE shop_id = ?${range} GROUP BY state`,
+          updatedIn ? [shopId, updatedIn.fromDevice, updatedIn.toDevice] : [shopId],
+        );
+        return toStateCounts(rows);
       }),
   };
 }

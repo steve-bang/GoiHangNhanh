@@ -259,6 +259,7 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
 - **Test:** hook số liệu với kho bộ nhớ (ranh giới "hôm nay" theo giờ thiết bị, ô Đã tải lên chỉ đếm `uploaded`/`verified`); Trang chủ không có chuỗi `common:illustrative`; ESLint rule có test trong `eslint-rules` hoặc ca lint âm tính.
 - **Ảnh:** Trang chủ (rỗng: máy mới; có dữ liệu), thẻ thông tin một thiết bị, Cá nhân (thẻ Dữ liệu bằng chứng có số), tab Thông báo.
 - **Rủi ro:** đếm mỗi lần focus tốn đọc SQLite: chỉ đếm khi focus và sau khi hàng đợi đổi trạng thái (không định kỳ). **Phụ thuộc:** V1-08 (phân loại dùng chung), V1-09 (kho `device_settings`; hợp nhất sau V1-09).
+- *Đã làm (2026-10-30): xem [plans/v1-10-home-real-data.md](plans/v1-10-home-real-data.md) và decisions.md Q-29 / V1-10. Lệch so với dòng trên: (1) Trang chủ chuyển sang feature mới `features/home` (tránh vòng `orders -> upload -> orders`); (2) thêm hàm đếm SQL ở ba kho thay vì nạp mọi dòng; (3) ô Lỗi đếm mọi lỗi hiện có, không chỉ hôm nay; (4) ESLint cấm import dữ liệu minh họa ở mọi tệp, kể cả test (tệp đã xóa).*
 
 #### V1-11 recording-hardening
 - **Mục tiêu:** quay trên giá không tắt màn hình; vào nền khi đang quay được xử lý có chủ đích; người dùng biết giới hạn Q-24b.

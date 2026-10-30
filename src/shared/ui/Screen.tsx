@@ -6,14 +6,12 @@ import {
   View,
   type RefreshControlProps,
 } from 'react-native';
-import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getKeyboardAvoidingBehavior, useIsOffline } from '@/platform';
 
 import { OfflineBanner } from './OfflineBanner';
 import { ScreenHeader } from './ScreenHeader';
-import { Text } from './Text';
 import { AppThemeScope, useTheme } from './theme';
 
 interface ScreenProps {
@@ -28,8 +26,6 @@ interface ScreenProps {
   scroll?: boolean;
   /** Màn nằm trong thanh tab: thanh tab đã lo vùng an toàn đáy nên không cộng thêm. */
   inTabs?: boolean;
-  /** Nội dung dùng dữ liệu giả cục bộ của khung giao diện: hiện ghi chú "minh họa". */
-  illustrative?: boolean;
   /**
    * Nhóm màn "form/quy trình" (Tạo đơn nhanh, Xác nhận đơn; mockup 03): nền trắng sạch và tiêu đề
    * header nhỏ hơn. Không đổi nền toàn app.
@@ -56,28 +52,17 @@ export function Screen({
   footer,
   scroll = true,
   inTabs = false,
-  illustrative = false,
   form = false,
   contentGap,
   refreshControl,
   children,
   testID,
 }: ScreenProps) {
-  const { t } = useTranslation();
   const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
   const offline = useIsOffline();
 
-  const content = (
-    <>
-      {children}
-      {illustrative ? (
-        <Text variant="caption" color="textMuted">
-          {t('common:illustrative')}
-        </Text>
-      ) : null}
-    </>
-  );
+  const content = children;
   const background = form ? tokens.color.surface.raised : tokens.color.surface.screen;
   const contentStyle = { padding: tokens.space.lg, gap: contentGap ?? tokens.space.lg } as const;
 

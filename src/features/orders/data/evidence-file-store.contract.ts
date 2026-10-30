@@ -340,6 +340,30 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
       expect(await h.files.countUnsyncedOnDevice()).toBe(1);
     });
 
+    it('countByState: đếm theo trạng thái của MỘT shop, lọc theo giờ đổi trạng thái [from, to)', async () => {
+      const h = await make();
+      const a = await seedFile(h, 'CNT-A');
+      const b = await seedFile(h, 'CNT-B');
+      const other = await seedFile(h, 'CNT-X', { shopId: 'shop-x' as ShopId });
+      await h.files.create(a);
+      await h.files.create(b);
+      await h.files.create(other);
+      await h.files.applyEvent(LOCAL_SHOP_ID, a.id, device('STOP_RECORDING'), 100);
+      await h.files.applyEvent(LOCAL_SHOP_ID, a.id, device('LOCAL_FILE_READABLE'), 200, CLOSED);
+      await h.files.applyEvent(LOCAL_SHOP_ID, a.id, device('UPLOAD_STARTED'), 300);
+      await h.files.applyEvent(LOCAL_SHOP_ID, a.id, server('SERVER_RECEIVED'), 400);
+      expect(await h.files.countByState(LOCAL_SHOP_ID)).toEqual({ uploaded: 1, recording: 1 });
+      expect(await h.files.countByState('shop-x' as ShopId)).toEqual({ recording: 1 });
+      expect(await h.files.countByState('shop-none' as ShopId)).toEqual({});
+      // Nửa mở: đúng mốc `fromDevice` tính, đúng mốc `toDevice` không tính.
+      expect(await h.files.countByState(LOCAL_SHOP_ID, { fromDevice: 400, toDevice: 401 })).toEqual(
+        { uploaded: 1 },
+      );
+      expect(await h.files.countByState(LOCAL_SHOP_ID, { fromDevice: 0, toDevice: 400 })).toEqual(
+        {},
+      );
+    });
+
     it('ghi và xóa số lần thử, thời điểm thử lại, mã lỗi; listByStates lọc theo trạng thái', async () => {
       const h = await make();
       const a = await seedFile(h, 'K');

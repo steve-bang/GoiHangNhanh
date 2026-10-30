@@ -159,23 +159,20 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     }
   });
 
-  it('dữ liệu bằng chứng: ba ô nhãn + "Chưa có số liệu" (không số giả), nút mở Trung tâm đồng bộ', async () => {
+  it('dữ liệu bằng chứng: ba ô đếm THẬT trên máy (máy trống = 0), nút mở Trung tâm đồng bộ', async () => {
     await renderProfile(createFakePersonalGateways(NAMED));
     const block = screen.getByTestId('evidence-overview');
     expect(block).toHaveTextContent(/Dữ liệu bằng chứng/);
-    expect(screen.getByTestId('metric-on-device').props.accessibilityLabel).toBe(
-      'Trên thiết bị: Chưa có số liệu',
+    await waitFor(() =>
+      expect(screen.getByTestId('metric-on-device').props.accessibilityLabel).toBe(
+        'Trên thiết bị: 0',
+      ),
     );
     expect(screen.getByTestId('metric-pending-sync').props.accessibilityLabel).toBe(
-      'Đang chờ đồng bộ: Chưa có số liệu',
+      'Đang chờ đồng bộ: 0',
     );
-    expect(screen.getByTestId('metric-cloud').props.accessibilityLabel).toBe(
-      'Trên đám mây: Chưa có số liệu',
-    );
-    for (const id of ['metric-on-device', 'metric-pending-sync', 'metric-cloud']) {
-      expect(screen.getByTestId(id)).toHaveTextContent(/Chưa có số liệu/);
-    }
-    expect(block).not.toHaveTextContent(/\d/);
+    expect(screen.getByTestId('metric-cloud').props.accessibilityLabel).toBe('Trên đám mây: 0');
+    expect(block).not.toHaveTextContent(/Chưa có số liệu/);
     await fireEvent.press(screen.getByRole('button', { name: 'Xem trung tâm đồng bộ' }));
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.sync);
   });

@@ -8,3 +8,4 @@ export * from './limits';
 export * from './sync-jobs';
 export * from './load-sync-jobs';
 export * from './network-policy';
+export * from './evidence-stats';

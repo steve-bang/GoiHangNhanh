@@ -6,7 +6,6 @@ import type { ComponentType } from 'react';
 
 import nav from '@/core/i18n/locales/vi/nav.json';
 import { ROUTES, type RouteDef } from '@/core/navigation';
-import { ILLUSTRATIVE_SHOP_NAME } from '@/shared/fixtures/illustrative-data';
 import { resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
@@ -66,7 +65,8 @@ describe('mọi route của app render được (khung giao diện)', () => {
     // không có thanh tiêu đề; các màn còn lại hiện đúng tiêu đề.
     // Riêng Tổng quan (UI-B01) tiêu đề là tên shop (docs/09), tên tab vẫn là "Tổng quan".
     if (route.code === 'UI-B01') {
-      expect(screen.getByText(ILLUSTRATIVE_SHOP_NAME)).toBeOnTheScreen();
+      // Tên shop thật từ cổng phiên (cổng giả khi test), không còn dữ liệu minh họa (V1-10).
+      expect(await screen.findByText('Cửa hàng minh họa')).toBeOnTheScreen();
     } else if (route.parent) {
       const key = Object.keys(ROUTES).find((name) => ROUTES[name as keyof typeof ROUTES] === route);
       expect(

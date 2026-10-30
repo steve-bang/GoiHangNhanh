@@ -1122,6 +1122,23 @@ export function runReturnStoreContract(
         expect(await mine.listMediaByStates(SHOP, [])).toEqual([]);
       });
 
+      it('countMediaByState: đếm theo trạng thái của MỘT shop, lọc theo giờ đổi trạng thái (V1-10)', async () => {
+        const store = await withUid('u-1');
+        const made = await store.createReturn(makeNewReturn({ atDevice: 100 }));
+        await addMedia(store, made.returnCase.id, 'm-q', 'queued'); // đổi lần cuối lúc 12
+        await addMedia(store, made.returnCase.id, 'm-s', 'saving_local'); // lúc 11
+        await addMedia(store, made.returnCase.id, 'm-r', 'recording'); // lúc 10
+        expect(await store.countMediaByState(SHOP)).toEqual({
+          queued: 1,
+          saving_local: 1,
+          recording: 1,
+        });
+        expect(await store.countMediaByState(SHOP, { fromDevice: 11, toDevice: 12 })).toEqual({
+          saving_local: 1,
+        });
+        expect(await store.countMediaByState(OTHER)).toEqual({});
+      });
+
       it('giới hạn số lượng một lượt, cũ nhất trước', async () => {
         const store = await withUid('u-1');
         const ids: ReturnCaseId[] = [];

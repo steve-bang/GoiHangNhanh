@@ -37,5 +37,6 @@ export function createLocalEvidenceFileStore(
     listBySession: async (s, ss) => (await get()).listBySession(s, ss),
     countUnsynced: async (s) => (await get()).countUnsynced(s),
     countUnsyncedOnDevice: async () => (await get()).countUnsyncedOnDevice(),
+    countByState: async (s, r) => (await get()).countByState(s, r),
   };
 }

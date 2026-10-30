@@ -233,4 +233,57 @@ export interface EvidenceFileStore {
   countUnsynced(shopId: ShopId): Promise<number>;
   /** Như `countUnsynced` nhưng mọi shop trên máy; chỉ để bảo vệ dữ liệu khi đăng xuất. */
   countUnsyncedOnDevice(): Promise<number>;
+  /**
+   * Số tệp của shop theo trạng thái (đếm trên máy, không nạp từng dòng; V1-10). `updatedIn`: chỉ tệp có
+   * lần đổi trạng thái cuối (`updatedAtDevice`) trong khoảng giờ THIẾT BỊ đó.
+   */
+  countByState(shopId: ShopId, updatedIn?: DeviceTimeRange): Promise<FileStateCounts>;
+}
+
+/** Khoảng giờ THIẾT BỊ (ms) nửa mở `[fromDevice, toDevice)`. */
+export interface DeviceTimeRange {
+  readonly fromDevice: number;
+  readonly toDevice: number;
+}
+
+/** Số tệp theo trạng thái; trạng thái không có tệp nào thì vắng mặt. */
+export type FileStateCounts = Readonly<Partial<Record<FileState, number>>>;
+
+export const inDeviceRange = (at: number, range: DeviceTimeRange | undefined): boolean =>
+  !range || (at >= range.fromDevice && at < range.toDevice);
+
+/** Đếm theo trạng thái trên danh sách trong bộ nhớ (kho bộ nhớ). */
+export function countStates(
+  items: Iterable<{ readonly state: FileState; readonly updatedAtDevice: number }>,
+  updatedIn?: DeviceTimeRange,
+): FileStateCounts {
+  const counts: Partial<Record<FileState, number>> = {};
+  for (const item of items) {
+    if (!inDeviceRange(item.updatedAtDevice, updatedIn)) continue;
+    counts[item.state] = (counts[item.state] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/** Gộp dòng `state, n` của SQL thành `FileStateCounts`; trạng thái lạ bị bỏ (không đoán). */
+export function toStateCounts(
+  rows: readonly { readonly state: string; readonly n: number }[],
+): FileStateCounts {
+  const counts: Partial<Record<FileState, number>> = {};
+  for (const row of rows) {
+    if ((ALL_FILE_STATES as readonly string[]).includes(row.state) && row.n > 0) {
+      counts[row.state as FileState] = row.n;
+    }
+  }
+  return counts;
+}
+
+/** Tổng số tệp ở các trạng thái `states` (mặc định: mọi trạng thái) của một hay nhiều bảng đếm. */
+export function sumCounts(
+  counts: readonly FileStateCounts[],
+  states: readonly FileState[] = ALL_FILE_STATES,
+): number {
+  let total = 0;
+  for (const c of counts) for (const s of states) total += c[s] ?? 0;
+  return total;
 }

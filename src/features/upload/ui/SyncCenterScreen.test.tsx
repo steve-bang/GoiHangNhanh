@@ -182,6 +182,26 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
     expect(screen.queryByTestId('sync-job-pack:bad')).toBeNull();
   });
 
+  const twoFiles = () =>
+    setup([
+      file('up', 'uploading'),
+      file('bad', 'needs_attention', { lastErrorCode: 'PERMISSION_DENIED' }),
+    ]);
+
+  it('tham số route filter=error (ô Lỗi ở Trang chủ, V1-10) mở thẳng bộ lọc Lỗi', async () => {
+    mockNavigation.params = { filter: 'error' };
+    await open(twoFiles());
+    expect(await screen.findByTestId('sync-job-pack:bad')).toBeOnTheScreen();
+    expect(screen.queryByTestId('sync-job-pack:up')).toBeNull();
+  });
+
+  it('tham số filter lạ: về bộ lọc mặc định Đang tải lên', async () => {
+    mockNavigation.params = { filter: 'khong-co' };
+    await open(twoFiles());
+    expect(await screen.findByTestId('sync-job-pack:up')).toBeOnTheScreen();
+    expect(screen.queryByTestId('sync-job-pack:bad')).toBeNull();
+  });
+
   it('Thử lại lỗi máy chủ: phát USER_RETRY_ATTENTION (device) một lần dù bấm đúp, rồi chạy hàng đợi một lần', async () => {
     const t = setup([
       file('bad', 'needs_attention', { lastErrorCode: 'HTTP_403', attemptCount: 8 }),

@@ -162,7 +162,7 @@
     "onDevice": "Trên thiết bị",
     "pendingSync": "Đang chờ đồng bộ",
     "cloud": "Trên đám mây",
-    "noData": "Chưa có số liệu",
+    "unknown": "–",
     "openSync": "Xem trung tâm đồng bộ",
     "openDetail": "Xem chi tiết dữ liệu bằng chứng"
   },
@@ -198,7 +198,8 @@
   },
   "evidenceData": {
     "total": "Tổng số bằng chứng",
-    "noData": "Chưa có số liệu",
+    "loadError": "Không đọc được số liệu trên máy.",
+    "scope": "Chỉ tính tệp của cửa hàng này trên máy này.",
     "explainOnDevice": "Trên thiết bị: tệp còn trên máy này. Đây chưa phải bản sao lưu.",
     "explainPending": "Đang chờ đồng bộ: tệp chưa được máy chủ xác nhận đã nhận.",
     "explainCloud": "Trên đám mây: chỉ tính tệp máy chủ đã xác nhận và kiểm tra khớp.",

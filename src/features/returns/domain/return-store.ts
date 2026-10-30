@@ -1,5 +1,5 @@
 import type { OrderId, ReturnCaseId, ShopId } from '@/core/ids';
-import type { FileEvent, FileState } from '@/features/evidence';
+import type { DeviceTimeRange, FileEvent, FileState, FileStateCounts } from '@/features/evidence';
 
 import type {
   DeleteMediaResult,
@@ -213,6 +213,11 @@ export interface ReturnStore {
    * dùng `listMediaForUpload`. Shop khác không bao giờ xuất hiện.
    */
   listMediaByStates(shopId: ShopId, states: readonly FileState[]): Promise<readonly ReturnMedia[]>;
+  /**
+   * Số ảnh/video của shop theo trạng thái (MỌI người tạo trên máy này), đếm trên máy (V1-10).
+   * `updatedIn`: chỉ media có lần đổi trạng thái cuối trong khoảng giờ THIẾT BỊ đó.
+   */
+  countMediaByState(shopId: ShopId, updatedIn?: DeviceTimeRange): Promise<FileStateCounts>;
   /** Ảnh/video của hồ sơ, cũ nhất trước. */
   listMedia(shopId: ShopId, returnId: ReturnCaseId): Promise<readonly ReturnMedia[]>;
 }
