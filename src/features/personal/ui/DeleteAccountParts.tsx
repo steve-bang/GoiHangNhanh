@@ -39,6 +39,7 @@ const NOTHING_DELETED_ERRORS: readonly (ErrorCode | 'conditions_changed')[] = [
   'AUTH_SERVICE_UNAVAILABLE',
   'AUTH_REQUIRES_RECENT_LOGIN',
   'ACCOUNT_DELETE_SHOP_HAS_MEMBERS',
+  'ACCOUNT_DISABLED',
 ];
 
 const STATUS_ICON: Record<DeleteConditionStatus | 'checking', IconName> = {

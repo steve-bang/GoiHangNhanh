@@ -1,6 +1,7 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
+import { AppError } from '@/core/errors/app-error';
 import type { DisputeId, OrderId, ShopId } from '@/core/ids';
 import { resources } from '@/core/i18n/resources';
 import { ROUTES } from '@/core/navigation';
@@ -314,6 +315,24 @@ describe('Xóa tài khoản (UI-I05 route con, khung 20; luồng thật V1-15)',
           'Tài khoản đã được xóa. Dữ liệu trên máy này được giữ lại; bạn liên hệ hỗ trợ nếu muốn xóa.',
         ),
       ).toBeOnTheScreen();
+    });
+
+    it('tài khoản bị khóa (ACCOUNT_DISABLED): báo, kèm "Chưa có gì bị xóa", KHÔNG xóa trên máy', async () => {
+      const { gateways, localWipe } = await setup();
+      await goToPassword();
+      // Chỉ lời gọi xóa bị từ chối (failNext sẽ bị lần đọc danh sách cửa hàng trước khi gửi dùng mất).
+      gateways.account.deleteAccount = async () => {
+        throw new AppError('ACCOUNT_DISABLED');
+      };
+      await fireEvent.changeText(screen.getByTestId('delete-password'), FAKE_ACCOUNT_PASSWORD);
+      await fireEvent.press(screen.getByTestId('delete-confirm'));
+      expect(await screen.findByTestId('delete-error')).toHaveTextContent(
+        /Tài khoản đang bị khóa\./,
+      );
+      expect(screen.getByTestId('delete-nothing-deleted')).toBeOnTheScreen();
+      expect(localWipe.state.log).toEqual([]);
+      expect(gateways.account.signOutCalls).toBe(0);
+      expect(mockNavigation.reset).not.toHaveBeenCalled();
     });
 
     it('ô trống: nhắc nhập mật khẩu, không gọi máy chủ', async () => {

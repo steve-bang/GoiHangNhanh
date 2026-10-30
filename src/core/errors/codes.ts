@@ -84,6 +84,8 @@ export const ERROR_CODES = {
   // Lời gọi xóa đã gửi đi nhưng không có xác nhận rõ (lỗi mạng/máy chủ không lý do): KHÔNG được nói
   // "chưa có gì bị xóa" (review PR #61).
   ACCOUNT_DELETE_UNCONFIRMED: 'ACCOUNT_DELETE_UNCONFIRMED',
+  // Tài khoản bị khóa (`auth/user-disabled`) khi xóa tài khoản: KHÔNG phải đã xóa; không gọi máy chủ.
+  ACCOUNT_DISABLED: 'ACCOUNT_DISABLED',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

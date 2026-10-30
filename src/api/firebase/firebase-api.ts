@@ -91,21 +91,20 @@ export const CHANGE_PASSWORD_ERRORS: ErrorOverrides = {
  */
 export const DELETE_ACCOUNT_ERRORS: ErrorOverrides = {
   ...CHANGE_PASSWORD_ERRORS,
+  'auth/user-disabled': 'ACCOUNT_DISABLED',
   unavailable: 'AUTH_NETWORK_ERROR',
   'deadline-exceeded': 'AUTH_NETWORK_ERROR',
 };
 
 /**
  * Lỗi Auth nghĩa là "tài khoản không còn" (máy chủ đã xóa người dùng Auth ở lần gọi trước). Chỉ tin ở
- * bước xác thực lại: `user-not-found`, `user-disabled`; ở bước lấy token mới NGAY SAU khi xác thực lại
- * thành công: thêm `user-token-expired` (token bị thu hồi). Sai mật khẩu (`wrong-password`,
+ * bước xác thực lại: `user-not-found`; ở bước lấy token mới NGAY SAU khi xác thực lại thành công: thêm
+ * `user-token-expired` (token bị thu hồi). `user-disabled` là tài khoản BỊ KHÓA, máy chủ vẫn còn tài
+ * khoản: KHÔNG phải đã xóa (`ACCOUNT_DISABLED`, không gọi Function, không xóa gì trên máy). Sai mật khẩu (`wrong-password`,
  * `invalid-credential`) KHÔNG BAO GIỜ được coi là đã xóa. Hạn chế: dự án bật chống dò email thì Firebase
  * trả `invalid-credential` cả khi người dùng không còn, nên đường này không xảy ra (decisions Q-29 / V1-15 o).
  */
-export const ACCOUNT_GONE_ON_REAUTH: readonly string[] = [
-  'auth/user-not-found',
-  'auth/user-disabled',
-];
+export const ACCOUNT_GONE_ON_REAUTH: readonly string[] = ['auth/user-not-found'];
 export const ACCOUNT_GONE_ON_TOKEN: readonly string[] = [
   ...ACCOUNT_GONE_ON_REAUTH,
   'auth/user-token-expired',

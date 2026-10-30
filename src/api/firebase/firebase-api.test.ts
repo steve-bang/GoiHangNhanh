@@ -699,14 +699,23 @@ describe('api/firebase: xóa tài khoản (V1-15)', () => {
     });
   });
 
-  it.each([['auth/user-disabled'], ['auth/user-not-found']])(
-    'xác thực lại báo %s -> already_deleted',
-    async (sdkCode) => {
+  it('xác thực lại báo auth/user-not-found -> already_deleted', async () => {
+    const { api, ops } = await signedUp();
+    ops.failOnce('reauth', sdk('auth/user-not-found'));
+    await expect(api.auth.deleteAccount({ password: 'sai-cung-vay' })).resolves.toBe(
+      'already_deleted',
+    );
+  });
+
+  it.each([['reauth'], ['refreshToken']] as const)(
+    'auth/user-disabled ở bước %s: tài khoản BỊ KHÓA, không phải đã xóa -> ACCOUNT_DISABLED, không gọi Function',
+    async (step) => {
       const { api, ops } = await signedUp();
-      ops.failOnce('reauth', sdk(sdkCode));
-      await expect(api.auth.deleteAccount({ password: 'sai-cung-vay' })).resolves.toBe(
-        'already_deleted',
-      );
+      ops.failOnce(step, sdk('auth/user-disabled'));
+      await expect(api.auth.deleteAccount({ password: 'Mat-khau-1' })).rejects.toMatchObject({
+        code: 'ACCOUNT_DISABLED',
+      });
+      expect(ops.calls).not.toContain('callDeleteAccount');
     },
   );
 
