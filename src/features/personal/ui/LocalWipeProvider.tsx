@@ -17,13 +17,7 @@ import {
   type LocalDeviceData,
   type LocalWipeSteps,
 } from '@/features/orders';
-import {
-  clearPendingLocalWipe,
-  deleteAllEvidenceFiles,
-  hasPendingLocalWipe,
-  openLocalDatabase,
-  setPendingLocalWipe,
-} from '@/platform';
+import { LOCAL_WIPE_FILE_STEPS, openLocalDatabase } from '@/platform';
 import { ErrorState, Text, useTheme } from '@/shared/ui';
 
 import { usePersonalGateways } from './PersonalGatewaysProvider';
@@ -60,12 +54,7 @@ export type LocalWipeFileSteps = Pick<
   'hasMarker' | 'setMarker' | 'deleteEvidenceFiles' | 'clearMarker'
 >;
 
-const DEVICE_FILES: LocalWipeFileSteps = {
-  hasMarker: hasPendingLocalWipe,
-  setMarker: setPendingLocalWipe,
-  deleteEvidenceFiles: deleteAllEvidenceFiles,
-  clearMarker: clearPendingLocalWipe,
-};
+const DEVICE_FILES: LocalWipeFileSteps = LOCAL_WIPE_FILE_STEPS;
 
 /**
  * Xóa dữ liệu trên máy sau khi xóa tài khoản (V1-15). Đặt NGAY dưới `SessionProvider` trong `Providers.tsx`

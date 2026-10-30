@@ -41,7 +41,6 @@ export { monotonicNow } from './monotonic-clock';
 export { fileFingerprint, hashFile, HASH_CHUNK_BYTES } from './file-hasher';
 export type { FileFingerprintReading, HashFileResult } from './file-hasher';
 export {
-  deleteAllEvidenceFiles,
   deleteRecording,
   excludeEvidenceDirFromBackup,
   findPersistedRecording,
@@ -52,12 +51,8 @@ export {
   resolveRecordingUri,
 } from './recording-files';
 export type { DeleteRecordingResult, PersistResult } from './recording-files';
-export {
-  clearPendingLocalWipe,
-  hasPendingLocalWipe,
-  LOCAL_WIPE_MARKER_NAME,
-  setPendingLocalWipe,
-} from './local-wipe-marker';
+export { LOCAL_WIPE_MARKER_NAME } from './local-wipe-marker';
+export { LOCAL_WIPE_FILE_STEPS } from './local-wipe-files';
 export { classifyUploadStatus, uploadFileResumable } from './resumable-upload';
 export type { UploadFileResult, UploadSessionRequest } from './resumable-upload';
 export { CameraPhoto, usePhotoPermission } from './camera-photo';
