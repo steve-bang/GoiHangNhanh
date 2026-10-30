@@ -1,0 +1,10 @@
+[
+  { "route": "/", "name": "01-home" },
+  { "route": "/orders", "name": "02-orders" },
+  { "route": "/account", "name": "03-account" },
+  { "route": "/sync", "name": "04-sync" },
+  { "route": "/returns", "name": "05-returns" },
+  { "route": "/disputes", "name": "06-disputes" },
+  { "route": "/notifications", "name": "07-notifications" },
+  { "route": "/welcome", "name": "08-welcome-signed-out", "session": "signed_out" }
+]
