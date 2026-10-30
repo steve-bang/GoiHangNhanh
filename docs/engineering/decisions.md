@@ -735,3 +735,28 @@ Theo quy trình tự động của điều phối; không đổi hành vi nghi�
 **Mã lỗi/chuỗi mới chờ BA (bổ sung khi làm từng PR V1-xx, không thêm vào `codes.ts` khi chưa duyệt):** `UPLOAD_WAITING_NETWORK`, `UPLOAD_INTERRUPTED`, `UPLOAD_EXCEPTION` (V1-02), `ACCOUNT_DELETE_SHOP_HAS_MEMBERS` (V1-14); câu "Đang chờ Wi‑Fi" (V1-09), câu thời hạn lưu v1 (V1-18), câu giới hạn khi quay (V1-11), màn Kiểm tra hộp thư (V1-03), luồng Xóa tài khoản (V1-15).
 
 **V1-00 (công cụ chụp ảnh, tự chốt khi làm PR, không ảnh hưởng nghiệp vụ):** (1) Viết bằng Node `scripts/screens/capture.cjs` thay `capture.sh` của kế hoạch để qua ESLint/Prettier và test phần thuần bằng Jest (project `tooling`). (2) **Không** thêm `react-native-web`/`@expo/metro-runtime`/Playwright vào `package.json`: cài `--no-save` trong bản sao ngoài repo, Playwright nạp từ bản cài toàn cục; lý do: CI không dùng web, tránh đụng `package.json`/lockfile đang "nóng" (V1-02/11/16/17) và tránh kéo `react-dom` + trình duyệt vào `npm ci` của CI. Nếu sau này cần chụp ảnh ở CI thì mới thêm devDependency đúng bản SDK. (3) Cỡ mặc định 390x844 (`--sizes all` cho ba cỡ). (4) Máy chủ tĩnh Node nội bộ thay `npx serve` (không cần mạng, báo cổng bận rõ ràng). Chi tiết: [plans/v1-00-screens-tooling.md](plans/v1-00-screens-tooling.md).
+
+#### Q-29 / V1-20 — store-listing-docs
+
+Tài liệu: [docs/store/listing.md](../store/listing.md), [privacy-declarations.md](../store/privacy-declarations.md), [review-notes.md](../store/review-notes.md); kế hoạch PR [plans/v1-20-store-listing-docs.md](plans/v1-20-store-listing-docs.md). Agent tự chốt theo ủy quyền (chưa có xác nhận trực tiếp của người dùng; khách/BA duyệt ở release-checklist C-4):
+
+1. **Ba tệp ở `docs/store/`** thay cho một tệp `docs/engineering/store-listing.md` của kế hoạch: theo yêu cầu điều phối; tham chiếu trong release-checklist và kế hoạch đã cập nhật.
+2. **Tên/phụ đề:** App Store `Đơn Chứng` + phụ đề `Video đóng gói và hàng hoàn`; Google Play `Đơn Chứng – Video đóng hàng`. Tên vẫn là tên làm việc (O-11 mở). Không tên sàn trong tên, phụ đề, từ khóa (App Review 2.3.7; app không tích hợp sàn).
+3. **Khu vực: chỉ Việt Nam**, trang tiếng Việt, miễn phí, không mua trong app. Lý do: giao diện chỉ tiếng Việt, chính sách chờ rà theo pháp luật Việt Nam; mở khu vực khác kéo theo nghĩa vụ khác.
+4. **Vị trí: "không thu thập"** ở cả hai store (chỉ xử lý trên máy, mã không gửi vị trí; định nghĩa "thu thập" của Apple/Google). Điều kiện: G-12 xác nhận tệp ảnh tải lên không mang GPS.
+5. **Crash Data và Device ID (Apple): "không gắn danh tính"**, có ba điều kiện (privacy-declarations mục 3.2); một điều kiện sai thì khai "gắn". **Other Diagnostic Data: "gắn"** vì phiên bản app đi kèm bản ghi có uid (khai thận trọng).
+6. **Ảnh/video (Google): "Bắt buộc"** vì đã quay thì app tự tải lên, công tắc Wi‑Fi chỉ hoãn; crash/ID cài đặt: "Tùy chọn" (có công tắc, R-8).
+7. **Phân loại:** Apple dự kiến 4+ (không UGC phát tán, không trình duyệt trong app); Google đối tượng **18+**, IARC dự kiến mức thấp nhất.
+8. **Ghi chú người duyệt bằng tiếng Anh** (trường Notes của Apple giới hạn 4000 byte; chữ có dấu tốn 2–3 byte), nhãn nút giữ tiếng Việt.
+9. **Không commit ảnh mã vạch** `DH-DEMO-0001`: tạo lúc nộp bằng công cụ chuẩn và quét thử bằng bản staging; người duyệt Google nhập tay.
+10. **Nhật ký thao tác trước lỗi (breadcrumb, V1-16) khai là thu thập** (điều phối chốt sau review PR #45): Google "App activity > App interactions" = Có, Tùy chọn, mục đích phân tích/chẩn đoán lỗi; Apple "Product Interaction" = Có, không gắn danh tính; Privacy Manifest thêm `NSPrivacyCollectedDataTypeProductInteraction`. Khớp trang chính sách mục "Báo lỗi ứng dụng". Bỏ cả hai nếu V1-16 bị tách.
+11. **Cách nói thời hạn xóa dữ liệu máy chủ khi xóa tài khoản, dùng chung cho app (V1-15), web và store** (điều phối chốt sau review PR #45): tiếng Việt "**dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở**"; tiếng Anh "**deleted after 30 days, unless kept for a legal reason or an open dispute**". Không dùng "trong vòng 30 ngày"/"within 30 days" (purge chạy sau `purgeAfter`, không sớm hơn).
+12. **Không sửa `app.json`** (PR chỉ tài liệu): cấu hình `ios.privacyManifests` đề xuất ở privacy-declarations mục 6.2 cho một PR mã sau (chưa có PR V1-xx nào sở hữu; điều phối chọn, gợi ý gộp với V1-16 hoặc làm trước S-7).
+
+**Lỗ hổng phát hiện khi đối chiếu (chưa sửa, ngoài phạm vi PR tài liệu):**
+
+- `src/core/i18n/locales/vi/common.json` `syncBar.hint`: "Tải nền có thể tạm dừng khi hệ điều hành giới hạn…" nói như có tải nền, trong khi v1 chỉ tải khi app mở (mục 1.1; bất biến 11). Đề xuất V1-18 đổi câu.
+- `app.json` chuỗi quyền camera chưa nói tới quay video/chụp ảnh (App Review 5.1.1(ii)): đã có trong V1-18; không nộp khi chưa đổi.
+- Báo lỗi bật sẵn (R-8) có thể vướng 5.1.1(ii) "must secure user consent": đưa vào rà pháp lý C-2 (review-notes mục 6).
+- Trang chính sách còn `operatorName`/`operatorAddress`/`supportEmail` = `null`: Google yêu cầu trang xóa tài khoản nêu tên nhà phát triển như trên trang store; điền ở D-4.
+- Không đọc được trang trợ giúp Google Play và trang công bố dữ liệu Firebase trong môi trường soạn (tên miền bị chặn): các số liệu Google và ánh xạ SDK Firebase ghi "chưa đọc trực tiếp", kiểm ở release-checklist S-8.
