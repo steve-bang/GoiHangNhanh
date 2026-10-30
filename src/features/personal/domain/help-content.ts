@@ -31,6 +31,7 @@ export const HELP_ARTICLES: readonly HelpArticleDef[] = [
   { id: 'codes', category: 'faq', stepCount: 0, featured: false },
   { id: 'scope', category: 'faq', stepCount: 0, featured: false },
   { id: 'whereData', category: 'faq', stepCount: 0, featured: false },
+  { id: 'recordingLimits', category: 'faq', stepCount: 0, featured: false },
 ];
 
 export function findHelpArticle(id: string | undefined): HelpArticleDef | null {

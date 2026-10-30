@@ -2,6 +2,7 @@
 export * from './ui';
 export {
   ACTIVE_RECORDING_POLICY,
+  classifyCameraEnd,
   RECORDER_ENABLED,
   WARN_BEFORE_LIMIT_SECONDS,
   formatElapsed,

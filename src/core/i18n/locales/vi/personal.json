@@ -350,6 +350,11 @@
         "title": "Đơn của tôi được lưu ở đâu?",
         "summary": "Ở bản này, đơn lưu trên chính điện thoại của bạn và chưa đồng bộ lên máy chủ. Gỡ ứng dụng sẽ xóa đơn trên máy đó.",
         "keywords": "dữ liệu lưu trữ điện thoại máy chủ gỡ ứng dụng"
+      },
+      "recordingLimits": {
+        "title": "Đang quay mà ứng dụng bị tắt thì sao?",
+        "summary": "Hãy giữ ứng dụng mở trong lúc quay. Nếu ứng dụng chuyển sang nền, việc quay dừng lại và chỉ giữ phần đã quay, ứng dụng không tự quay tiếp. Nếu ứng dụng bị tắt giữa chừng, đoạn đang quay có thể mất.",
+        "keywords": "quay video bị tắt mất video chuyển nền cuộc gọi màn hình tắt gián đoạn"
       }
     },
     "contact": {

@@ -9,6 +9,7 @@ import { useCurrentShopId } from '@/features/orders';
 import {
   ACTIVE_RECORDING_POLICY,
   WARN_BEFORE_LIMIT_SECONDS,
+  classifyCameraEnd,
   formatElapsed,
   maxRecordSeconds,
   requiredFreeBytes,
@@ -19,8 +20,11 @@ import {
   hashFile,
   monotonicNow,
   newReturnRecordId,
+  onceAppActive,
   persistRecording,
+  subscribeAppBackground,
   useAppNavigation,
+  useKeepScreenAwake,
   useScannerPermission,
   useScreenFocused,
   type CameraRecorderHandle,
@@ -81,8 +85,11 @@ const FAILED_REASONS: readonly MissingVideoReason[] = ['device_problem', 'user_s
  * camera nữa (bất biến 4, 6). Video đã lưu mà hồ sơ chưa ghi nhận (lỗi kho ở bước cuối, app bị đóng) thì
  * tự ghi nhận khi mở màn. Kiện đã mở trước khi quay vẫn là nhánh ngoại lệ: video chỉ ghi tình trạng
  * hiện tại và hồ sơ vẫn mang nhãn hạn chế bằng chứng. Chưa kiểm tra pin/nhiệt độ/ghi thử (A04) như UI-C02
- * của đóng gói; chỉ kiểm dung lượng. Video bị chặn rời màn bằng hộp thoại của khung. CẦN kiểm chứng trên
- * iOS và Android thật (cùng danh sách ở ADR-020).
+ * của đóng gói; chỉ kiểm dung lượng. Video bị chặn rời màn bằng hộp thoại của khung.
+ *
+ * V1-11 (giống UI-C03): giữ màn hình sáng khi chuẩn bị/quay/lưu; app vào nền khi đang quay thì dừng qua đường
+ * lưu sẵn có và ghi video `interrupted: true` (hạn chế bằng chứng, không quay bù/quay tiếp: bất biến 6);
+ * camera tự dừng sớm cũng là gián đoạn. CẦN kiểm chứng trên iOS và Android thật (cùng danh sách ở ADR-020).
  */
 export function ReturnRecordLive({ details }: { details: ReturnDetails }) {
   const { t } = useTranslation();
@@ -96,6 +103,11 @@ export function ReturnRecordLive({ details }: { details: ReturnDetails }) {
   const [busy, setBusy] = useState(false);
   const [reconcileFailed, setReconcileFailed] = useState(false);
   const [reconcileTry, setReconcileTry] = useState(0);
+  /**
+   * Video vừa lưu bị gián đoạn mà hồ sơ chưa ghi nhận được (lỗi kho): bước đối soát ghi đúng cờ gián đoạn.
+   * Chỉ trong bộ nhớ: app bị tắt giữa hai bước thì đối soát lần sau ghi `interrupted: false` (hiếm).
+   */
+  const [interruptedVideoId, setInterruptedVideoId] = useState<string | null>(null);
 
   const toItems = useCallback(
     () => navigation.replace(ROUTES.returnItems, { returnId: returnCase.id }),
@@ -122,7 +134,7 @@ export function ReturnRecordLive({ details }: { details: ReturnDetails }) {
     if (!unrecorded || redirect) return undefined;
     let alive = true;
     ops
-      .recordOpeningVideo(returnCase.id, unrecorded.id)
+      .recordOpeningVideo(returnCase.id, unrecorded.id, interruptedVideoId === unrecorded.id)
       .then(() => alive && toItems())
       .catch((error: unknown) => {
         logger.warn('returns.video_reconcile_failed', {
@@ -134,7 +146,7 @@ export function ReturnRecordLive({ details }: { details: ReturnDetails }) {
       alive = false;
     };
     // `reconcileTry` đổi khi người dùng bấm Thử lại.
-  }, [unrecorded, redirect, ops, returnCase.id, toItems, reconcileTry]);
+  }, [unrecorded, redirect, ops, returnCase.id, toItems, reconcileTry, interruptedVideoId]);
 
   const skip = async (chosen: MissingVideoReason) => {
     if (busy) return;
@@ -254,9 +266,13 @@ export function ReturnRecordLive({ details }: { details: ReturnDetails }) {
   return (
     <LiveCamera
       details={details}
-      onSaved={(recordedInCase) => {
-        if (recordedInCase) toItems();
-        else void reload(); // đối soát ở trên sẽ ghi nhận video đã lưu vào hồ sơ
+      onSaved={(saved) => {
+        if (saved.recordedInCase) {
+          toItems();
+          return;
+        }
+        if (saved.interrupted) setInterruptedVideoId(saved.mediaId);
+        void reload(); // đối soát ở trên sẽ ghi nhận video đã lưu vào hồ sơ
       }}
       onFailedAskReason={askForReason}
       toList={toList}
@@ -273,7 +289,11 @@ function LiveCamera({
   sheet,
 }: {
   details: ReturnDetails;
-  onSaved: (recordedInCase: boolean) => void;
+  onSaved: (saved: {
+    readonly mediaId: string;
+    readonly recordedInCase: boolean;
+    readonly interrupted: boolean;
+  }) => void;
   onFailedAskReason: () => void;
   toList: () => void;
   sheet: React.ReactNode;
@@ -302,6 +322,14 @@ function LiveCamera({
   const [torch, setTorch] = useState(false);
   const [cameraFailed, setCameraFailed] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
+  /** Lần quay bị gián đoạn (vào nền, camera bị ngắt sớm): video ghi vào hồ sơ `interrupted: true`. */
+  const interrupted = useRef(false);
+  const [stoppedInBackground, setStoppedInBackground] = useState(false);
+  /**
+   * Bản đồng bộ của `phase` cho trình nghe vào nền: mọi chỗ gọi `setPhase` đặt ref NGAY cùng lúc (không chờ
+   * render), để sự kiện tới giữa lúc đổi pha và lần vẽ kế tiếp không bị bỏ qua.
+   */
+  const phaseRef = useRef<Phase>('preparing');
 
   /** Dừng đúng một lần (tránh gọi `stopRecording` hai lần khi vừa bấm dừng vừa gỡ màn). */
   const requestStop = useCallback(() => {
@@ -327,9 +355,21 @@ function LiveCamera({
         record: (options) => {
           const handle = handleRef.current;
           if (!handle) throw new Error('camera_not_ready');
+          const begun = monotonicNow();
           const recording = handle.record(options);
+          let marked = false;
           const mark = () => {
+            if (marked) return;
+            marked = true;
+            // Camera tự dừng sớm mà không ai yêu cầu (hệ thống ngắt camera): video có thể thiếu phần sau.
+            const ended = classifyCameraEnd({
+              stopRequested: stopRequested.current,
+              elapsedMs: monotonicNow() - begun,
+              limitSeconds: LIMIT_SECONDS,
+            });
+            if (ended === 'early') interrupted.current = true;
             // Camera đã trả kết quả: từ đây chỉ còn lưu + băm.
+            if (phaseRef.current !== 'failed') phaseRef.current = 'saving';
             if (mounted.current) setPhase((current) => (current === 'failed' ? current : 'saving'));
           };
           return {
@@ -352,6 +392,7 @@ function LiveCamera({
       hash: hashFile,
       availableBytes: getAvailableDiskBytes,
       maxDurationSec: LIMIT_SECONDS,
+      wasInterrupted: () => interrupted.current,
       newId: newReturnRecordId,
       now: Date.now, // giờ THIẾT BỊ cho dấu thời gian bằng chứng (không dùng đồng hồ đơn điệu)
     }),
@@ -360,6 +401,7 @@ function LiveCamera({
 
   const fail = useCallback((key: FailureKey) => {
     if (!mounted.current) return;
+    phaseRef.current = 'failed';
     setFailure(key);
     setPhase('failed');
   }, []);
@@ -383,7 +425,7 @@ function LiveCamera({
             durationMs: 8000,
           });
         }
-        onSaved(outcome.recordedInCase);
+        onSaved(outcome);
       } else {
         logger.warn('returns.video_failed', { reason: outcome.reason });
         fail(FAILURE_BY_REASON[outcome.reason]);
@@ -394,15 +436,42 @@ function LiveCamera({
     if (mounted.current) {
       startedAtRef.current = monotonicNow();
       setStartedAt(startedAtRef.current);
-      setPhase(pendingStop.current ? 'saving' : 'recording');
+      // Đặt ref NGAY (không chờ render): sự kiện vào nền tới trước lần vẽ kế tiếp vẫn thấy "đang quay".
+      const next: Phase = pendingStop.current ? 'saving' : 'recording';
+      if (phaseRef.current !== 'failed') phaseRef.current = next;
+      setPhase(next);
     }
   }, [fail, onSaved, ports, requestStop, returnCase.id, shopId, t, toast]);
 
   const stop = useCallback(() => {
     if (!active.current) return;
+    phaseRef.current = 'saving';
     setPhase('saving');
     requestStop();
   }, [requestStop]);
+
+  useKeepScreenAwake(phase !== 'failed');
+
+  // App vào nền khi đang quay (V1-11): dừng qua đường lưu sẵn có, ghi gián đoạn, báo khi quay lại app.
+  useEffect(
+    () =>
+      subscribeAppBackground(() => {
+        const current = phaseRef.current;
+        const recordingNow = current === 'recording' && active.current && !stopRequested.current;
+        const startingNow = current === 'preparing' && started.current && !active.current;
+        if (!recordingNow && !startingNow) return;
+        interrupted.current = true;
+        phaseRef.current = 'saving';
+        setStoppedInBackground(true);
+        setPhase('saving');
+        if (recordingNow) requestStop();
+        else pendingStop.current = true; // bản ghi đang khởi động: dừng ngay khi bắt đầu xong
+        onceAppActive(() =>
+          toast.show(t('screens:record.stoppedInBackground'), { tone: 'info', durationMs: 10000 }),
+        );
+      }),
+    [requestStop, t, toast],
+  );
 
   // Đồng hồ + giới hạn thời lượng: tới hạn thì tự dừng và lưu như người dùng bấm "Dừng quay".
   useEffect(() => {
@@ -426,6 +495,7 @@ function LiveCamera({
       stop();
     } else if (phase === 'preparing' && started.current) {
       pendingStop.current = true; // bản ghi đang khởi động: dừng ngay khi xong
+      phaseRef.current = 'saving';
       setPhase('saving');
     } else {
       cancelled.current = true; // chưa tạo gì, hoặc việc lưu chạy ở nền
@@ -442,7 +512,14 @@ function LiveCamera({
   const openedBefore = returnCase.openedBefore !== null;
   const notice =
     phase === 'saving'
-      ? t(limitReached ? 'screens:record.limitReachedSaving' : 'screens:record.saving', { minutes })
+      ? t(
+          stoppedInBackground
+            ? 'screens:record.backgroundSaving'
+            : limitReached
+              ? 'screens:record.limitReachedSaving'
+              : 'screens:record.saving',
+          { minutes },
+        )
       : remainingSeconds !== null && remainingSeconds <= WARN_BEFORE_LIMIT_SECONDS
         ? t('screens:record.limitSoon', { minutes })
         : openedBefore
@@ -488,6 +565,7 @@ function LiveCamera({
         }
         clockLabel={formatElapsed(startedAt ?? now, now)}
         guidance={t('screens:record.returnGuidance')}
+        footnote={t('screens:record.killWarning')}
         recording={phase === 'recording'}
         badgeLabel={t('screens:record.badge')}
         previewLabel={t('screens:record.previewBadge')}

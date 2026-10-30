@@ -101,7 +101,12 @@ describe('startOpeningVideo: quay video mở kiện', () => {
     const active = await startOpeningVideo(t.ports, { shopId: SHOP, returnId });
     if ('kind' in active) throw new Error(active.reason);
     const outcome = await active.result;
-    expect(outcome).toEqual({ kind: 'saved', mediaId: active.mediaId, recordedInCase: true });
+    expect(outcome).toEqual({
+      kind: 'saved',
+      mediaId: active.mediaId,
+      recordedInCase: true,
+      interrupted: false,
+    });
     expect(await atRecordTime).toMatchObject([
       { id: active.mediaId, kind: 'video', state: 'recording', localPath: null, returnId },
     ]);
@@ -316,8 +321,28 @@ describe('startOpeningVideo: quay video mở kiện', () => {
       kind: 'saved',
       mediaId: active.mediaId,
       recordedInCase: false,
+      interrupted: false,
     });
     expect((await mediaOf(t.store, returnId))[0]?.state).toBe('queued');
+  });
+
+  it('V1-11: lần quay bị gián đoạn (vào nền, camera bị ngắt sớm): video lưu như thường, hồ sơ ghi interrupted (hạn chế bằng chứng)', async () => {
+    const t = setup();
+    const returnId = await makeCase(t.store);
+    let interrupted = false;
+    const ports = { ...t.ports, wasInterrupted: () => interrupted };
+    const active = await startOpeningVideo(ports, { shopId: SHOP, returnId });
+    if ('kind' in active) throw new Error(active.reason);
+    interrupted = true; // đánh dấu trong lúc đang ghi; đọc khi đã lưu bền
+    const outcome = await active.result;
+    expect(outcome).toMatchObject({ kind: 'saved', recordedInCase: true, interrupted: true });
+    expect((await mediaOf(t.store, returnId))[0]?.state).toBe('queued');
+    const details = await t.store.getReturn(SHOP, returnId);
+    expect(details?.returnCase.openingVideo).toMatchObject({
+      kind: 'recorded',
+      mediaId: active.mediaId,
+      interrupted: true,
+    });
   });
 
   it('kiện đã mở trước khi quay: vẫn ghi được video tình trạng hiện tại nhưng hạn chế bằng chứng KHÔNG mất', async () => {

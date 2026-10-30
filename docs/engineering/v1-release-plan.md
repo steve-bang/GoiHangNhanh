@@ -268,6 +268,7 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
 - **Test:** adapter giả: bật/tắt đúng pha, đúng một lần; vào nền khi ghi gọi dừng một lần và phiên `interrupted`; không gọi sau khi màn bị gỡ; không có `Platform.OS` trong màn.
 - **Ảnh:** màn quay (xem trước, cờ ghi tắt trên web) với dòng chú thích; hộp báo "đã dừng vì ứng dụng vào nền" (tham số tạm trong bản sao).
 - **Rủi ro:** iOS có thể không cho đủ thời gian lưu/băm khi vào nền: dựa vào `recoverInterruptedRecordings` lúc mở lại (đã có); hành vi `expo-camera` khi vào nền **chỉ biết trên máy thật** (cổng G-4). **Phụ thuộc:** không.
+- *Đã làm (2026-10-30): xem [plans/v1-11-recording-hardening.md](plans/v1-11-recording-hardening.md) và decisions.md Q-29 / V1-11. Lệch so với dòng trên: (1) chỉ `background` mới dừng, `inactive` của iOS không (hộp thoại hệ thống, Trung tâm điều khiển); (2) giữ sáng cả lúc đang lưu; (3) camera tự dừng sớm cũng đánh dấu gián đoạn; (4) dòng chú thích chỉ hiện khi ghi thật; thêm câu cảnh báo ở UI-C04 cho phiên `interrupted` và bài hỏi đáp Trợ giúp. Pin/nhiệt độ cho D04 ngoài phạm vi.*
 
 #### V1-12 backup-exclusion-ios
 - **Mục tiêu:** Q-24d A cho iOS (Android đã xong ở V1-01).
@@ -283,6 +284,7 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
 - **Thư viện:** không. **Rules:** không.
 - **Test:** vectơ SHA-256 hiện có vẫn qua; tệp không đổi không băm lại; đổi kích thước/mtime -> băm lại; mã khác -> không tải (bất biến 4); migration v15 -> v16.
 - **Ảnh:** không.
+- **Thêm từ review V1-11 (điều phối chốt, PR #59):** cùng migration v16, lưu **bền** cờ gián đoạn của video mở kiện hàng hoàn (`return_media.interrupted` hoặc tương đương, ghi ngay khi màn phát hiện vào nền/camera bị ngắt). Hiện cờ chỉ trong bộ nhớ (`ReturnRecordLive`), nên hai đường ghi nhầm `interrupted: false`: (a) app bị tắt giữa lúc video lưu xong và lúc ghi vào hồ sơ, đối soát lần sau ghi `false`; (b) vào nền -> lưu lỗi (`local_save_failed`) -> khôi phục lúc mở app (`media-recovery.ts`, nhánh `local_save_failed` không coi là gián đoạn) ghi `false`. **Phải xong trước khi bật cờ ghi video cho người dùng thật.** Test: hai đường trên ra `interrupted: true`.
 - **Rủi ro:** mtime không đáng tin sau khôi phục backup (đã loại khỏi backup ở V1-12/V1-01); máy chủ vẫn băm lại độc lập nên một tệp lọt kiểm tra cục bộ sẽ thành `hash_mismatch`, không thành `verified` sai. Tốc độ băm JS trên Hermes **chưa đo** (cổng G-5). **Phụ thuộc:** V1-02 (`upload-queue.ts`), V1-09 (số migration).
 
 #### V1-14 account-delete-server

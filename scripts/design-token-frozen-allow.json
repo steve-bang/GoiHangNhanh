@@ -12,5 +12,7 @@
   "src/test-utils/mock-location.ts": "Tệp test mới (mock adapter vị trí cho Q-26k); không đổi giao diện màn đã xác nhận.",
   "src/test-utils/mock-connectivity.ts": "Tệp test mới (mock adapter trạng thái mạng NetInfo, V1-02); không phải giao diện và không đổi màn đã xác nhận.",
   "src/features/shop/ui/auth-layout.ts": "V1-03 (review PR #47): computeForgotLayout nhận tùy chọn descriptionChars (mặc định 62 như cũ) để ước tính theo câu mô tả đang hiện; chế độ otp không đổi kết quả (có test).",
-  "src/test-utils/mock-video-player.tsx": "Tệp test mới (mock adapter phát video cục bộ expo-video, V1-17); không phải giao diện và không đổi màn đã xác nhận."
+  "src/test-utils/mock-video-player.tsx": "Tệp test mới (mock adapter phát video cục bộ expo-video, V1-17); không phải giao diện và không đổi màn đã xác nhận.",
+  "src/test-utils/mock-keep-awake.ts": "Tệp test mới (mock adapter giữ màn hình sáng expo-keep-awake, V1-11); không phải giao diện và không đổi màn đã xác nhận.",
+  "src/test-utils/mock-app-state.ts": "Tệp test mới (mock adapter AppState điều khiển được: vào nền/trở lại app, V1-11); không phải giao diện và không đổi màn đã xác nhận."
 }

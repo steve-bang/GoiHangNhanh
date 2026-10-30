@@ -128,6 +128,8 @@ Mỗi PR: nhánh riêng, `npm run check` xanh, thêm test theo mục; PR đụng
 
 ### PR5. Giữ màn hình sáng và xử lý nền/cuộc gọi khi quay (R7)
 
+> Đã làm ở **V1-11** (2026-10-30, chưa kiểm chứng trên thiết bị): [plans/v1-11-recording-hardening.md](plans/v1-11-recording-hardening.md), decisions.md Q-29 / V1-11. Lệch: không dừng khi `inactive` (iOS).
+
 - **Mục tiêu:** quay trên giá đỡ không bị tắt màn hình giữa chừng; app vào nền/ngắt quãng được xử lý có chủ đích và nói đúng sự thật.
 - **Nguyên nhân gốc đã xác minh:** `PackRecordLive.tsx` chỉ dùng `useScreenFocused` và `usePreventRemove`; không có `AppState` hay keep-awake (grep `keepAwake|idleTimer` không có kết quả); `package.json` không có `expo-keep-awake`; `camera-recorder.tsx:49` gọi `recordAsync()` không `maxDuration`. Hành vi `expo-camera` khi app vào nền lúc đang ghi: **chưa xác minh** (cần máy thật; ADR-020 R-12).
 - **Cách sửa đề xuất:**

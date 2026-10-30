@@ -1,3 +1,4 @@
+export { classifyCameraEnd, LIMIT_TOLERANCE_MS, type CameraEnd } from './camera-end';
 export { formatElapsed } from './elapsed';
 export { RECORDER_ENABLED } from './recorder';
 export {
