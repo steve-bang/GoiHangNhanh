@@ -32,7 +32,7 @@
 | D11 | Nhật ký thao tác của cửa hàng (loại thao tác, uid, thời điểm, giá trị trước/sau) | Khi máy chủ ghi nhận thay đổi | Firestore `auditEvents` (chỉ máy chủ ghi) | Có | Có: sau 30 ngày (điều phối chốt sau review PR #40) | **[theo V1-04]** trigger kiểm toán |
 | D12 | Báo cáo lỗi: mã lỗi, stack (nhật ký thao tác trước lỗi tách ra D14), đời máy, phiên bản hệ điều hành, bộ nhớ trống, pin, hướng màn hình, phiên bản app | Khi app gặp lỗi, nếu công tắc bật (mặc định bật, R-8) | Firebase Crashlytics | **Không** (không `setUserId`; bộ che PII bỏ mã đơn/mã vận đơn/email/đường dẫn tệp) | Không theo tài khoản; tự xóa theo thời hạn của Crashlytics | **[theo V1-16]** |
 | D13 | ID cài đặt Firebase (Firebase installation ID / UUID cài đặt của Crashlytics) | Cùng D12 | Firebase | **Không** | Đổi khi cài lại app; không xóa theo tài khoản | **[theo V1-16]** |
-| D14 | Nhật ký thao tác kỹ thuật ngay trước lỗi (breadcrumb: màn đang mở, tên module, mã thao tác; không mã đơn/mã vận đơn/email/đường dẫn tệp) | Gửi kèm D12, cùng công tắc | Firebase Crashlytics | **Không** | Như D12 | **[theo V1-16]**; trang chính sách mục "Báo lỗi ứng dụng" |
+| D14 | Nhật ký thao tác kỹ thuật ngay trước lỗi (breadcrumb: tên thao tác dạng `orders.local_store_failed` và mã lỗi, theo danh sách cho phép `src/core/logging/crash-safe.ts`; không màn đang mở, không mã đơn/mã vận đơn/email/uid/shopId/đường dẫn tệp) | Gửi kèm D12, cùng công tắc | Firebase Crashlytics | **Không** | Như D12 | **[theo V1-16]**; trang chính sách mục "Báo lỗi ứng dụng" |
 
 **Không rời máy** (không khai là thu thập; nêu ở trang chính sách mục "Dữ liệu chỉ nằm trên điện thoại"):
 
@@ -60,14 +60,15 @@
 | User Content > Other User Content | D5, D6, D8, D9, D11 | Có | Có | Không | App Functionality |
 | Diagnostics > Other Diagnostic Data | D10; D12 phần trạng thái máy **[theo V1-16]** | Có | **Có** (D10 đi kèm bản ghi có uid) | Không | App Functionality |
 | Diagnostics > Crash Data | D12 **[theo V1-16]** | Có | Không (xem 3.2) | Không | App Functionality |
+| Diagnostics > Performance Data | D12 phần bộ nhớ trống/pin do Crashlytics gửi kèm báo cáo **[theo V1-16]** | Có | Không (xem 3.2) | Không | App Functionality |
 | Identifiers > Device ID | D13 **[theo V1-16]** | Có | Không (xem 3.2) | Không | App Functionality |
 | Usage Data > Product Interaction | D14 **[theo V1-16]** | Có | Không (cùng điều kiện 3.2) | Không | App Functionality (chẩn đoán lỗi) |
 
-Mọi loại khác: **không thu thập** — Location (Precise, Coarse), Audio Data, Contacts, Health & Fitness, Financial Info, Purchases, Browsing History, Search History, Sensitive Info, Phone Number, Physical Address, Other Contact Info, Advertising Data, Performance Data (*kiểm lại với trang Firebase*, mục 6), Other Data.
+Mọi loại khác: **không thu thập** — Location (Precise, Coarse), Audio Data, Contacts, Health & Fitness, Financial Info, Purchases, Browsing History, Search History, Sensitive Info, Phone Number, Physical Address, Other Contact Info, Advertising Data, Other Data. (Performance Data: khai **Có** từ V1-16 theo hướng khai khi phân vân, mục 1 điểm 3; kiểm lại với trang Firebase, mục 7.)
 
 **Tracking: không.** App không liên kết dữ liệu với dữ liệu bên thứ ba cho quảng cáo, không chia sẻ cho data broker; không cần App Tracking Transparency và không có `NSUserTrackingUsageDescription`.
 
-### 3.2 Vì sao Crash Data, Device ID và Product Interaction khai "không gắn danh tính" (Q-29 / V1-20)
+### 3.2 Vì sao Crash Data, Performance Data, Device ID và Product Interaction khai "không gắn danh tính" (Q-29 / V1-20, V1-16)
 
 Apple coi dữ liệu là không gắn khi đã bỏ định danh trực tiếp trước khi thu thập và không tìm cách nối lại ([App privacy details][apple-privacy]). V1-16 thiết kế: không gọi `setUserId`, chỉ gửi mã lỗi + tên module + stack qua bộ che PII, không mã đơn/mã vận đơn/email/đường dẫn tệp; ID cài đặt là ngẫu nhiên, đổi khi cài lại, không lưu cạnh uid ở Firestore. Trang chính sách cũng viết "Chúng tôi không gắn báo cáo với tài khoản của bạn".
 
@@ -141,7 +142,9 @@ Apple yêu cầu app và từng SDK bên thứ ba tự khai **API cần lý do**
 
 Thư viện tự mang manifest (cần xác nhận trong bản build, không chép vào manifest của app): Firebase iOS SDK (Auth, Firestore, Functions, Crashlytics, Installations), các module Expo (`expo-file-system`, `expo-sqlite`, `expo-camera`, `expo-location`, `expo-constants`…), React Native. Với thư viện liên kết tĩnh qua CocoaPods, manifest của thư viện có thể **không** được Xcode gộp; cách an toàn là khai thêm các mục trên ở cấp app.
 
-### 6.2 Đề xuất cấu hình (chưa áp dụng; PR này chỉ tài liệu)
+### 6.2 Cấu hình (đã áp dụng ở V1-16 trong `app.json` `expo.ios.privacyManifests`)
+
+**V1-16:** khóa `ios.privacyManifests` của Expo SDK 58 đã kiểm bằng `npx expo config --type introspect` và `npx expo prebuild --no-install` trên bản sao: sinh `ios/<App>/PrivacyInfo.xcprivacy` có đủ 4 loại API, `NSPrivacyTracking` = `false` và 10 kiểu dữ liệu đúng bảng 3.1 (gắn danh tính: EmailAddress, Name, UserID, PhotosorVideos, OtherUserContent, OtherDiagnosticData; không gắn: CrashData, PerformanceData, DeviceID, ProductInteraction; tracking `false`, mục đích `NSPrivacyCollectedDataTypePurposeAppFunctionality`). `Podfile.properties.json` có `apple.privacyManifestAggregationEnabled: true`. Chưa build nên chưa có Privacy Report thật (mục 6.3). Bản đề xuất gốc của V1-20:
 
 Expo cho khai manifest cấp app ở `app.json` `expo.ios.privacyManifests` (*kiểm tên khóa với tài liệu Expo SDK 58 khi làm*; `docs.expo.dev` bị chặn trong môi trường soạn). Đề xuất (để PR mã sau, ví dụ cùng V1-16 hoặc một PR riêng trước S-7):
 

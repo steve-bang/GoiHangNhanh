@@ -26,6 +26,8 @@ import { UploadRunner } from '@/features/upload';
 import { excludeEvidenceDirFromBackup } from '@/platform';
 import { ToastProvider } from '@/shared/ui';
 
+import { CrashReportingBridge } from './CrashReportingBridge';
+
 const i18n = initI18n();
 
 /**
@@ -79,6 +81,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
                       <ReturnStoreProvider>
                         <DisputeStoreProvider>
                           <DeviceSettingsProvider>
+                            {/* V1-16: công tắc "Gửi báo lỗi ứng dụng" -> Crashlytics (chỉ bản build Firebase). */}
+                            <CrashReportingBridge />
                             <BackgroundRunners>{children}</BackgroundRunners>
                           </DeviceSettingsProvider>
                         </DisputeStoreProvider>

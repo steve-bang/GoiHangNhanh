@@ -18,6 +18,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 - Màn quay video (đóng gói và mở kiện hàng hoàn) giữ màn hình sáng; ứng dụng chuyển sang nền khi đang quay thì dừng quay, lưu phần đã quay và đánh dấu gián đoạn (không tự quay tiếp), quay lại ứng dụng có thông báo; camera bị hệ thống ngắt sớm cũng được đánh dấu gián đoạn; thêm dòng nhắc "nếu ứng dụng bị tắt, đoạn đang quay có thể mất" và bài Trợ giúp. Ghi video vẫn tắt mặc định, chưa kiểm chứng trên thiết bị (V1-11).
 - Xóa tài khoản trong ứng dụng (bản Firebase): điều kiện thật (chặn khi đang quay, còn tranh chấp mở hoặc máy còn dữ liệu của tài khoản khác; cảnh báo và xác nhận riêng khi còn tệp chưa tải), nhập mật khẩu để xác nhận; chỉ sau khi máy chủ xác nhận mới xóa video, ảnh và dữ liệu trên máy (có dấu để xóa tiếp nếu ứng dụng bị tắt giữa chừng); màn "Đang hoàn tất xóa tài khoản" khi việc xóa còn dở. Chưa kiểm chứng trên thiết bị (V1-15).
+- Báo lỗi ứng dụng bằng Firebase Crashlytics: chỉ gửi mã lỗi, tên thao tác và vị trí lỗi trong mã đã lọc (không email, mã tài khoản, mã cửa hàng, mã đơn, mã vận đơn, đường dẫn tệp, không gắn tài khoản); công tắc "Gửi báo lỗi ứng dụng" ở Quyền riêng tư và bảo mật, mặc định bật, tắt có hiệu lực ngay; khai báo quyền riêng tư iOS (privacy manifest). Chưa build native, chưa kiểm chứng trên thiết bị (V1-16).
 
 ### Security
 

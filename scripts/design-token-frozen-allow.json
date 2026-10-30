@@ -16,5 +16,6 @@
   "src/test-utils/mock-keep-awake.ts": "Tệp test mới (mock adapter giữ màn hình sáng expo-keep-awake, V1-11); không phải giao diện và không đổi màn đã xác nhận.",
   "src/test-utils/mock-app-state.ts": "Tệp test mới (mock adapter AppState điều khiển được: vào nền/trở lại app, V1-11); không phải giao diện và không đổi màn đã xác nhận.",
   "src/test-utils/memory-local-wipe.ts": "Tệp test mới (bản giả dấu xóa/evidence/CSDL cho LocalWipeProvider, V1-15); không phải giao diện và không đổi màn đã xác nhận.",
-  "src/test-utils/node-sqlite.ts": "V1-15 (review PR #61): thêm tham số đường dẫn tệp (mặc định :memory:) để test đọc nội dung tệp CSDL sau khi xóa; không phải giao diện."
+  "src/test-utils/node-sqlite.ts": "V1-15 (review PR #61): thêm tham số đường dẫn tệp (mặc định :memory:) để test đọc nội dung tệp CSDL sau khi xóa; không phải giao diện.",
+  "src/test-utils/pii-samples.ts": "Tệp test mới (chuỗi mẫu PII để kiểm báo lỗi ứng dụng không gửi dữ liệu nhạy cảm, V1-16); không phải giao diện và không đổi màn đã xác nhận."
 }

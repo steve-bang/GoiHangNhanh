@@ -98,7 +98,7 @@ Sơ đồ thư mục: [architecture.md mục 3](architecture.md#3-phân-lớp-m�
 
 - Chỉ ghi log qua `src/core/logging/logger.ts` (ESLint cấm `console`). Logger **che** các khóa nhạy cảm (mã đơn, mã vận đơn, mã hoàn, mã quét, tên/SĐT/địa chỉ, ghi chú, tên sản phẩm/variant, token, URL ký, session URI). Đó là lưới an toàn thứ hai: người viết vẫn không được đưa dữ liệu nhạy cảm vào log.
 - Log bằng **ID nội bộ và trạng thái** (`evidenceId`, `sessionId`, `state`, mã lỗi), không bằng mã đơn.
-- Không gửi mã đơn/mã vận đơn/thông tin khách vào dịch vụ crash/analytics. Chưa chọn dịch vụ crash/analytics (quyết định riêng, cần duyệt); khi chọn phải cấu hình bộ lọc dữ liệu trước khi gửi và tắt thu thập vị trí/danh bạ (UI-A05: không xin danh bạ/vị trí).
+- Không gửi mã đơn/mã vận đơn/thông tin khách vào dịch vụ crash/analytics. **Báo lỗi ứng dụng (V1-16):** Firebase Crashlytics sau adapter `src/platform/crash-reporter.ts`, chỉ nhận bản ghi `warn`/`error` của logger đã qua **danh sách cho phép** `src/core/logging/crash-safe.ts`: tên sự kiện dạng `nhom.ten_su_kien` (chữ thường, không số), khóa `reason`/`step`/`target`/`result`/`kind`/`status`/`stage`/`attempt` với giá trị là mã lỗi trong `codes.ts`, tên lớp lỗi, nhãn chữ thường không số, boolean hoặc số nguyên 0..999; mọi thứ khác bị bỏ. Lỗi gửi đi không mang `error.message` (chỉ tên lớp lỗi hoặc mã `AppError`), stack chỉ còn khung với tên tệp. Không `setUserId`/`setAttribute`. Muốn một trường mới tới báo lỗi: thêm khóa vào `CRASH_SAFE_FIELD_KEYS` kèm test, chỉ khi giá trị là mã/nhãn kỹ thuật. Không có Analytics.
 - Ảnh chụp màn hình/video trong PR không chứa dữ liệu khách thật (mẫu PR đã nhắc).
 - Thu thập tối thiểu: chỉ thu thập phiên bản app và thông tin thiết bị tối thiểu cần để điều tra sự cố (docs/06).
 

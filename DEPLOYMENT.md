@@ -24,20 +24,20 @@ Hướng dẫn từ máy phát triển đến phát hành production trên **Goo
 
 Không gửi bản lên cửa hàng công khai khi còn mục nào dưới đây chưa xong.
 
-| #   | Việc                                                                                               | Trạng thái  | Ghi chú                                                                        |
-| --- | -------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------ |
-| 1   | Chốt **tên ứng dụng và định danh gói** (O-11, Q-06)                                                | Chưa        | `vn.doncung.app.dev` là chỗ giữ chỗ và **không đổi được sau khi đã phát hành** |
-| 2   | Chốt **khu vực dữ liệu Firebase** (Q-08)                                                           | Chưa        | Không đổi được sau khi tạo; cần rà soát pháp lý (D-08)                         |
-| 3   | Tạo dự án Firebase `dev`/`staging`/`prod`, thay cổng giả bằng Firebase thật (ADR-002, ADR-009)     | Chưa        | Hiện chỉ có Rules + Emulator                                                   |
-| 4   | Chốt thư viện **ghi video, tải nền, mã băm** qua spike S1–S6 trên thiết bị thật (ADR-003, ADR-004) | Chưa        | Rủi ro kỹ thuật cao nhất                                                       |
-| 5   | Bật ghi video thật (`RECORDER_ENABLED`), bỏ dải "chưa ghi video"                                   | Chưa        | Không phát hành bản quảng bá ghi bằng chứng khi chưa ghi được                  |
-| 6   | Chốt **sàn phiên bản** iOS/Android (O-20)                                                          | Chưa        | Xem `docs/engineering/platform-support.md`                                     |
-| 7   | Chốt **đăng nhập Apple/Google** (O-15) và OTP (O-22)                                               | Chưa        | Liên quan quy định của Apple (mục 8.3)                                         |
-| 8   | URL thật cho Điều khoản và Chính sách quyền riêng tư                                               | Chưa        | `src/core/config/legal-links.ts` đang là `.invalid`                            |
-| 9   | Chọn dịch vụ crash/analytics hoặc quyết định không dùng (Q-07)                                     | Chưa        | Phải lọc mã đơn/vận đơn/thông tin khách                                        |
-| 10  | Chạy ma trận kiểm thử trên máy thật iOS + Android (`platform-support.md` mục 5, QA-01…14)          | Chưa        |                                                                                |
-| 11  | `npm run check` và `npm run test:rules` qua trên commit phát hành                                  | Có thể chạy |                                                                                |
-| 12  | Quyết định sao lưu bản gốc cục bộ (Q-09)                                                           | Chưa        |                                                                                |
+| #   | Việc                                                                                               | Trạng thái                   | Ghi chú                                                                        |
+| --- | -------------------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------ |
+| 1   | Chốt **tên ứng dụng và định danh gói** (O-11, Q-06)                                                | Chưa                         | `vn.doncung.app.dev` là chỗ giữ chỗ và **không đổi được sau khi đã phát hành** |
+| 2   | Chốt **khu vực dữ liệu Firebase** (Q-08)                                                           | Chưa                         | Không đổi được sau khi tạo; cần rà soát pháp lý (D-08)                         |
+| 3   | Tạo dự án Firebase `dev`/`staging`/`prod`, thay cổng giả bằng Firebase thật (ADR-002, ADR-009)     | Chưa                         | Hiện chỉ có Rules + Emulator                                                   |
+| 4   | Chốt thư viện **ghi video, tải nền, mã băm** qua spike S1–S6 trên thiết bị thật (ADR-003, ADR-004) | Chưa                         | Rủi ro kỹ thuật cao nhất                                                       |
+| 5   | Bật ghi video thật (`RECORDER_ENABLED`), bỏ dải "chưa ghi video"                                   | Chưa                         | Không phát hành bản quảng bá ghi bằng chứng khi chưa ghi được                  |
+| 6   | Chốt **sàn phiên bản** iOS/Android (O-20)                                                          | Chưa                         | Xem `docs/engineering/platform-support.md`                                     |
+| 7   | Chốt **đăng nhập Apple/Google** (O-15) và OTP (O-22)                                               | Chưa                         | Liên quan quy định của Apple (mục 8.3)                                         |
+| 8   | URL thật cho Điều khoản và Chính sách quyền riêng tư                                               | Chưa                         | `src/core/config/legal-links.ts` đang là `.invalid`                            |
+| 9   | Chọn dịch vụ crash/analytics hoặc quyết định không dùng (Q-07)                                     | Đã có mã (V1-16), chưa build | Crashlytics có lọc dữ liệu, không Analytics; kiểm release-checklist S-3b, G-9  |
+| 10  | Chạy ma trận kiểm thử trên máy thật iOS + Android (`platform-support.md` mục 5, QA-01…14)          | Chưa                         |                                                                                |
+| 11  | `npm run check` và `npm run test:rules` qua trên commit phát hành                                  | Có thể chạy                  |                                                                                |
+| 12  | Quyết định sao lưu bản gốc cục bộ (Q-09)                                                           | Chưa                         |                                                                                |
 
 ## 2. Môi trường và tài khoản
 

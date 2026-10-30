@@ -248,7 +248,13 @@
     "devices": "Thiết bị đăng nhập",
     "dataAccess": "Dữ liệu và quyền truy cập",
     "deleteAccount": "Xóa tài khoản",
-    "lockedHint": "Chưa dùng được. Tính năng này sắp có."
+    "lockedHint": "Chưa dùng được. Tính năng này sắp có.",
+    "crashReports": {
+      "label": "Gửi báo lỗi ứng dụng",
+      "description": "Khi ứng dụng gặp lỗi, gửi mã lỗi và loại máy để sửa lỗi. Không kèm tài khoản, email, mã đơn hay video.",
+      "enabled": "Đã bật báo lỗi. Có hiệu lực đầy đủ từ lần mở ứng dụng sau.",
+      "saveFailed": "Chưa lưu được cài đặt. Bạn thử lại nhé."
+    }
   },
   "help": {
     "searchPlaceholder": "Tìm hướng dẫn, ví dụ: video chưa đồng bộ",
