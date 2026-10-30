@@ -15,6 +15,10 @@
     "verified": "Đã lưu an toàn trên máy chủ: mã băm tệp trên máy chủ khớp với bản gốc.",
     "error": "Tệp có lỗi cần xử lý. Bản trên thiết bị vẫn được giữ lại."
   },
+  "uploaderNote": {
+    "other": "Tệp do tài khoản khác tạo trên máy này. Chỉ tài khoản đó đăng nhập lại mới tải lên được.",
+    "unknown": "Không rõ tài khoản nào tạo tệp này nên không tải lên được. Tệp vẫn được giữ trên máy."
+  },
   "capture": {
     "recording": "Đang ghi hình",
     "saving_local": "Đang lưu trên thiết bị"

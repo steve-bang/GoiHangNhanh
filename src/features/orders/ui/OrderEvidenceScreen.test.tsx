@@ -11,6 +11,7 @@ import { renderWithProviders } from '@/test-utils/render';
 import { CurrentShopProvider, createMemoryOrderStore } from '../data';
 import { makeOrder } from '../data/order-store.contract';
 import type { OrderEvidenceItem, OrderStore } from '../domain';
+import { LOCAL_SHOP_ID } from '../domain/local-shop';
 import { buildPackingSession } from '../domain/start-session';
 import { OrderEvidenceScreen } from './OrderEvidenceScreen';
 
@@ -36,12 +37,28 @@ beforeEach(() => {
 });
 
 function item(id: string, state: FileState, extra: Partial<OrderEvidenceItem> = {}) {
-  mockItems.push({ id, group: 'pack', kind: 'video', capturedAtDevice: AT, state, ...extra });
+  mockItems.push({
+    id,
+    group: 'pack',
+    kind: 'video',
+    sessionId: 'sess-none',
+    capturedAtDevice: AT,
+    state,
+    ...extra,
+  });
 }
 
-async function open(store: OrderStore, orderId: string | undefined) {
+async function open(store: OrderStore, orderId: string | undefined, signedInAs?: string) {
   mockNavigation.params = orderId ? { orderId } : {};
-  await renderWithProviders(<OrderEvidenceScreen />, { orderStore: store });
+  // `signedInAs`: tài khoản đang đăng nhập (V1-07); không truyền = như phiên của bộ render test.
+  const ui = signedInAs ? (
+    <CurrentShopProvider shopId={LOCAL_SHOP_ID} uid={signedInAs}>
+      <OrderEvidenceScreen />
+    </CurrentShopProvider>
+  ) : (
+    <OrderEvidenceScreen />
+  );
+  await renderWithProviders(ui, { orderStore: store });
 }
 
 describe('UI-E03 Bằng chứng của đơn', () => {
@@ -99,6 +116,36 @@ describe('UI-E03 Bằng chứng của đơn', () => {
     expect(await screen.findByText('Đơn này chưa có bằng chứng.')).toBeOnTheScreen();
     expect(screen.getByText('Hàng hoàn (1)')).toBeOnTheScreen();
     expect(screen.getByTestId('order-evidence-record')).toBeOnTheScreen();
+  });
+
+  it('V1-07: tệp của phiên do tài khoản khác tạo: "Chờ tải lên" + lý do; tệp của mình giữ nhãn cũ', async () => {
+    let creator = 'u-2';
+    const store = createMemoryOrderStore({ creatorUid: () => creator });
+    const d = makeOrder('DH-EV-U', { at: AT });
+    await store.saveNewOrder(d);
+    const pkg = d.packages[0];
+    if (!pkg) throw new Error('fixture');
+    for (const [sessionId, by] of [
+      ['sess-theirs', 'u-2'],
+      ['sess-mine', 'u-1'],
+    ] as const) {
+      creator = by;
+      const built = buildPackingSession(d, pkg.id as PackageId, {
+        sessionId: sessionId as SessionId,
+        nowDevice: AT,
+      });
+      if (!built.ok) throw new Error('fixture');
+      await store.saveSession({ ...built.session, sessionStatus: 'ended' });
+    }
+    item('theirs', 'queued', { sessionId: 'sess-theirs' });
+    item('mine', 'queued', { sessionId: 'sess-mine' });
+    await open(store, d.order.id, 'u-1');
+    expect(await screen.findByTestId('evidence-uploader-note-theirs')).toHaveTextContent(
+      'Tệp do tài khoản khác tạo trên máy này. Chỉ tài khoản đó đăng nhập lại mới tải lên được.',
+    );
+    expect(screen.getByTestId('evidence-status-theirs')).toHaveTextContent(/Chờ tải lên/);
+    expect(screen.getByTestId('evidence-status-mine')).toHaveTextContent(/Đã lưu trên máy/);
+    expect(screen.queryByTestId('evidence-uploader-note-mine')).toBeNull();
   });
 
   it('nhóm Hàng hoàn trống có câu riêng', async () => {

@@ -53,13 +53,16 @@ export function UploadRunner({
     const effectiveGateway =
       gateway ?? (docs ? createDeviceUploadGateway(docs, getAppVersion() ?? undefined) : null);
     if (!effectiveGateway || shopId === LOCAL_SHOP_ID) return undefined;
+    // Tài khoản đang đăng nhập theo Firebase Auth (cùng uid mà Rules thấy), đọc MỖI lượt.
+    const currentUid = () => docs?.currentUid() ?? null;
     const queue = createUploadQueue({
-      // Tệp đóng gói + media hàng hoàn dùng CHUNG một hàng đợi (Q-28). Media hàng hoàn chỉ tải khi hồ sơ
-      // đã đăng bản neo và do chính tài khoản đang đăng nhập tạo.
-      // Tệp đóng gói chỉ khai báo khi phiên đã đăng (không gọi máy chủ rồi chờ bị từ chối).
+      // Tệp đóng gói + media hàng hoàn dùng CHUNG một hàng đợi (Q-28), và CHỈ tệp do chính tài khoản đang
+      // đăng nhập tạo (Q-24g, V1-07: không tải hộ tài khoản khác dùng chung máy). Media hàng hoàn chỉ tải
+      // khi hồ sơ đã đăng bản neo; tệp đóng gói chỉ khai báo khi phiên đã đăng (không gọi máy chủ rồi
+      // chờ bị từ chối).
       sources: [
-        evidenceFileSource(files, orders),
-        returnMediaSource(returns, () => docs?.currentUid() ?? null),
+        evidenceFileSource(files, orders, currentUid),
+        returnMediaSource(returns, currentUid),
       ],
       gateway: effectiveGateway,
       hasher: hasher ?? deviceHasher,

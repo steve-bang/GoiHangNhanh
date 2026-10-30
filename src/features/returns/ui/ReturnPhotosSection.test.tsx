@@ -1,7 +1,7 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import type { ReturnCaseId } from '@/core/ids';
-import { createMemoryOrderStore, LOCAL_SHOP_ID } from '@/features/orders';
+import { CurrentShopProvider, createMemoryOrderStore, LOCAL_SHOP_ID } from '@/features/orders';
 import { mockPhoto, resetMockPhoto } from '@/test-utils/mock-camera-photo';
 import { mockLocation, resetMockLocation } from '@/test-utils/mock-location';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
@@ -127,6 +127,30 @@ describe('UI-D03 Ảnh kiện hàng', () => {
       `1/${MAX_RETURN_PHOTOS} ảnh`,
     );
     expect(screen.queryByText(/Đang tải lên|Đã tải lên|Chờ tải lên/)).toBeNull();
+  });
+
+  it('V1-07: ảnh do tài khoản khác chụp trên máy này: "Chờ tải lên" + lý do; ảnh của mình như cũ', async () => {
+    let creator = 'u-2';
+    const store = createMemoryReturnStore({ creatorUid: () => creator });
+    const id = await seedReturn(store);
+    await seedPhoto(store, id, 'ph-theirs', []);
+    creator = 'u-1';
+    await seedPhoto(store, id, 'ph-mine', []);
+    mockNavigation.params = { returnId: id };
+    await renderWithProviders(
+      <CurrentShopProvider shopId={SHOP} uid="u-1">
+        <ReturnExteriorScreen />
+      </CurrentShopProvider>,
+      { returnStore: store },
+    );
+    expect(await screen.findByTestId('return-photo-status-ph-theirs')).toHaveTextContent(
+      /Chờ tải lên/,
+    );
+    expect(screen.getByTestId('return-photo-uploader-ph-theirs')).toHaveTextContent(
+      'Tệp do tài khoản khác tạo trên máy này. Chỉ tài khoản đó đăng nhập lại mới tải lên được.',
+    );
+    expect(screen.getByTestId('return-photo-status-ph-mine')).toHaveTextContent(/Đã lưu trên máy/);
+    expect(screen.queryByTestId('return-photo-uploader-ph-mine')).toBeNull();
   });
 
   describe('vị trí (Q-26k)', () => {

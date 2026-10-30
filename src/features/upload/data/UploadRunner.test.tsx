@@ -42,12 +42,28 @@ const goOnline = (online: boolean) => act(async () => setMockConnectivity({ onli
 
 beforeEach(() => {
   sessionPublished = true;
+  signedInAs = 'uid-1';
 });
 
 afterEach(() => resetMockConnectivity());
 
-async function storeWithQueuedFile(shopId: string) {
-  const files = createMemoryEvidenceFileStore();
+/**
+ * Kho tệp có một video `queued` thuộc phiên 's' do `creator` tạo (`null` = không rõ người tạo).
+ * Tra cứu phiên giả để kho bộ nhớ biết người tạo phiên (V1-07).
+ */
+async function storeWithQueuedFile(shopId: string, creator: string | null = 'uid-1') {
+  const files = createMemoryEvidenceFileStore({
+    sessions: {
+      getSession: async () =>
+        ({
+          id: 's',
+          shopId,
+          orderId: 'o',
+          packageId: 'p',
+          ...(creator ? { createdBy: creator } : {}),
+        }) as never,
+    },
+  });
   const id = 'ev-1' as EvidenceId;
   await files.create({
     id,
@@ -82,7 +98,9 @@ function fakeGateway() {
 }
 
 const hasher = { sha256: async () => ({ ok: true as const, sha256: 'ab'.repeat(32) }) };
-const docs = {} as RemoteDocuments;
+/** Tài khoản đang đăng nhập (Firebase Auth) của bài test; đổi qua `signedInAs`. */
+let signedInAs: string | null = 'uid-1';
+const docs = { currentUid: () => signedInAs } as RemoteDocuments;
 const flush = () => act(async () => void (await new Promise((r) => setTimeout(r, 0))));
 
 const element = (
@@ -194,6 +212,32 @@ describe('UploadRunner', () => {
     await flush();
     expect(t.uploads).toEqual(['ev-1']);
     expect((await files.get(REAL_SHOP as never, 'ev-1' as EvidenceId))?.state).toBe('uploaded');
+  });
+
+  it('V1-07: tệp của phiên do tài khoản KHÁC (hoặc không rõ) tạo không bị tải hộ, giữ nguyên trạng thái', async () => {
+    for (const creator of ['uid-khac', null]) {
+      const files = await storeWithQueuedFile(REAL_SHOP, creator);
+      const t = fakeGateway();
+      const view = await mount(files, REAL_SHOP, { docs, gateway: t.gateway });
+      await flush();
+      expect(t.uploads).toEqual([]);
+      expect((await files.get(REAL_SHOP as never, 'ev-1' as EvidenceId))?.state).toBe('queued');
+      await view.unmount();
+    }
+  });
+
+  it('V1-07: tài khoản tạo phiên đăng nhập lại thì tệp được tải; chưa đăng nhập thì không', async () => {
+    const files = await storeWithQueuedFile(REAL_SHOP, 'uid-2');
+    const t = fakeGateway();
+    signedInAs = null;
+    const view = await mount(files, REAL_SHOP, { docs, gateway: t.gateway });
+    await flush();
+    expect(t.uploads).toEqual([]);
+    await view.unmount();
+    signedInAs = 'uid-2';
+    await mount(files, REAL_SHOP, { docs, gateway: t.gateway });
+    await flush();
+    expect(t.uploads).toEqual(['ev-1']);
   });
 
   it('không có cổng (cổng giả/test/thiếu cấu hình): không làm gì', async () => {

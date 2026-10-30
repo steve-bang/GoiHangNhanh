@@ -608,6 +608,28 @@ export function createSqliteOrderStore(
         );
         return row?.n ?? 0;
       }),
+    countUnsyncedByOwner: (scope, uid) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        // Đóng gói: người tạo là người tạo PHIÊN (tệp gắn phiên, bất biến 2); phiên không còn hoặc
+        // `created_by` NULL tính là "không rõ" (foreign). Hàng hoàn: `return_media.created_by`.
+        const device = scope === 'device';
+        const shopFilter = (alias: string) => (device ? '' : `AND ${alias}.shop_id = ?`);
+        const shopArg = device ? [] : [scope];
+        const row = await db.getFirstAsync<{ total: number; own: number }>(
+          `SELECT
+             (SELECT COUNT(*) FROM evidence_files f WHERE f.state IN (${UNSYNCED_SQL}) ${shopFilter('f')})
+           + (SELECT COUNT(*) FROM return_media m WHERE m.state IN (${UNSYNCED_SQL}) ${shopFilter('m')}) AS total,
+             (SELECT COUNT(*) FROM evidence_files f
+                JOIN packing_sessions s ON s.id = f.session_id AND s.shop_id = f.shop_id
+                WHERE f.state IN (${UNSYNCED_SQL}) AND s.created_by = ? ${shopFilter('f')})
+           + (SELECT COUNT(*) FROM return_media m
+                WHERE m.state IN (${UNSYNCED_SQL}) AND m.created_by = ? ${shopFilter('m')}) AS own`,
+          [...shopArg, ...shopArg, uid, ...shopArg, uid, ...shopArg],
+        );
+        const total = row?.total ?? 0;
+        const own = uid ? (row?.own ?? 0) : 0;
+        return { own, foreign: total - own };
+      }),
     listOrdersPendingRemote: (shopId, limit, uid) =>
       guarded('ORDER_SAVE_FAILED', async () => {
         const rows = await db.getAllAsync<{ id: string }>(

@@ -189,7 +189,9 @@ describe('Đăng xuất an toàn (PER-21)', () => {
 
   it('còn bằng chứng chưa đồng bộ: cảnh báo cụ thể, có lối tới trung tâm đồng bộ, KHÔNG đăng xuất', async () => {
     const gateways = await setup({
-      store: withStore({ countUnsyncedOnDevice: jest.fn().mockResolvedValue(3) }),
+      store: withStore({
+        countUnsyncedByOwner: jest.fn().mockResolvedValue({ own: 3, foreign: 0 }),
+      }),
     });
     await openDialog();
     await confirmSignOut();
@@ -212,7 +214,7 @@ describe('Đăng xuất an toàn (PER-21)', () => {
 
   it('kho cục bộ không đọc được: không coi là an toàn, báo AUTH_SIGN_OUT_FAILED và giữ phiên', async () => {
     const gateways = await setup({
-      store: withStore({ countUnsyncedOnDevice: jest.fn().mockRejectedValue(new Error('x')) }),
+      store: withStore({ countUnsyncedByOwner: jest.fn().mockRejectedValue(new Error('x')) }),
     });
     await openDialog();
     await confirmSignOut();
@@ -243,22 +245,47 @@ describe('Đăng xuất an toàn (PER-21)', () => {
     expect(gateways.account.signOutCalls).toBe(2);
   });
 
+  it('V1-07: chỉ tệp do CHÍNH tài khoản này tạo chặn đăng xuất (đếm toàn máy theo uid đang đăng nhập)', async () => {
+    const countUnsyncedByOwner = jest.fn().mockResolvedValue({ own: 2, foreign: 5 });
+    const countUnsyncedOnDevice = jest.fn().mockResolvedValue(7);
+    await setup({ store: withStore({ countUnsyncedByOwner, countUnsyncedOnDevice }) });
+    await openDialog();
+    await confirmSignOut();
+    await waitFor(() => expect(screen.getByTestId('sign-out-unsynced')).toBeOnTheScreen());
+    expect(screen.getByTestId('sign-out-unsynced')).toHaveTextContent(/Còn 2 tệp bằng chứng/);
+    expect(countUnsyncedByOwner).toHaveBeenCalledWith('device', 'user-a');
+    expect(countUnsyncedOnDevice).not.toHaveBeenCalled();
+  });
+
+  it('V1-07: tệp chỉ của tài khoản khác trên máy KHÔNG chặn đăng xuất (đăng xuất để tài khoản kia tải; không xóa gì)', async () => {
+    const gateways = await setup({
+      store: withStore({
+        countUnsyncedByOwner: jest.fn().mockResolvedValue({ own: 0, foreign: 4 }),
+      }),
+    });
+    await openDialog();
+    await confirmSignOut();
+    await waitFor(() => expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.welcome));
+    expect(gateways.account.signOutCalls).toBe(1);
+    expect(screen.queryByTestId('sign-out-unsynced')).toBeNull();
+  });
+
   it('chống bấm lặp: bấm xác nhận nhiều lần khi đang kiểm tra chỉ đăng xuất một lần', async () => {
     let release: (n: number) => void = () => undefined;
-    const countUnsyncedOnDevice = jest.fn(
+    const countUnsyncedByOwner = jest.fn(
       () =>
-        new Promise<number>((resolve) => {
-          release = resolve;
+        new Promise<{ own: number; foreign: number }>((resolve) => {
+          release = (own) => resolve({ own, foreign: 0 });
         }),
     );
-    const gateways = await setup({ store: withStore({ countUnsyncedOnDevice }) });
+    const gateways = await setup({ store: withStore({ countUnsyncedByOwner }) });
     await openDialog();
     const confirm = screen.getAllByText('Đăng xuất').at(-1);
     if (!confirm) throw new Error('Không thấy nút xác nhận');
     await fireEvent.press(confirm);
     await fireEvent.press(confirm);
     await fireEvent.press(confirm);
-    expect(countUnsyncedOnDevice).toHaveBeenCalledTimes(1);
+    expect(countUnsyncedByOwner).toHaveBeenCalledTimes(1);
     await act(async () => release(0));
     await waitFor(() => expect(mockNavigation.reset).toHaveBeenCalledTimes(1));
     expect(gateways.account.signOutCalls).toBe(1);

@@ -30,6 +30,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Fixed
 
+- Một máy một tài khoản: app chỉ tải lên ảnh/video do chính tài khoản đang đăng nhập tạo, không tải hộ tài khoản khác dùng chung máy; tệp của tài khoản khác hiện "Chờ tải lên" kèm lý do; tệp của tài khoản khác không còn chặn đăng xuất. Chưa kiểm chứng trên thiết bị (V1-07).
 - Bản Firebase: đơn có nguồn bán "Khác" nay đăng được lên máy chủ (trước đây bị từ chối nên phiên và bằng chứng của đơn đó không bao giờ tải lên), tạo/sửa cửa hàng chọn "Khác" không còn bị từ chối; dữ liệu trên máy không đổi. Chưa deploy, chưa kiểm chứng trên thiết bị (fix-other-source).
 - Test giao diện nặng không còn đỏ chập chờn khi máy tải cao: hạn mỗi test Jest đặt ở gốc cấu hình là 30 giây (giá trị đặt trong từng project trước đây bị Jest bỏ qua) (#50).
 - Tải lên bằng chứng theo trạng thái mạng thật: mất mạng không còn làm tệp thành "cần xử lý" (chỉ lỗi máy chủ từ chối mới tính lượt, tối đa 8), lệnh tới máy chủ có hạn 30 giây để hàng đợi không treo, hàng đợi dừng khi mất mạng và chạy lại ngay khi có mạng; dải "ngoại tuyến" hiện thật (chưa kiểm chứng trên thiết bị) (V1-02, #48).

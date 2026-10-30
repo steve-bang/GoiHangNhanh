@@ -1,8 +1,8 @@
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { toCodeKey } from '@/features/orders';
-import { toDisplayStatus } from '@/features/evidence';
+import { toCodeKey, useCurrentUid } from '@/features/orders';
+import { foreignUploadNote, toDisplayStatus, uploaderRelation } from '@/features/evidence';
 import { Card, EvidenceStatusBadge, Icon, Text, useTheme } from '@/shared/ui';
 
 import {
@@ -236,7 +236,10 @@ function OpeningVideoStatus({
   video: ReturnMedia | null;
 }) {
   const { t } = useTranslation();
-  const display = video ? toDisplayStatus(video.state) : null;
+  // Video do tài khoản khác quay trên máy này: máy này không tải hộ, nói rõ lý do (V1-07, Q-24g).
+  const uploader = uploaderRelation(video?.createdBy, useCurrentUid());
+  const display = video ? toDisplayStatus(video.state, { uploader }) : null;
+  const note = video ? foreignUploadNote(video.state, uploader) : null;
   return (
     <>
       <Text variant="formBody" testID="return-video-recorded">
@@ -244,6 +247,11 @@ function OpeningVideoStatus({
       </Text>
       {display?.kind === 'label' ? (
         <EvidenceStatusBadge compact status={display.label} testID="return-video-status" />
+      ) : null}
+      {note ? (
+        <Text variant="caption" color="textMuted" testID="return-video-uploader-note">
+          {t(`evidence:uploaderNote.${note}`)}
+        </Text>
       ) : null}
       {openedBefore ? (
         <Text variant="caption" color="textMuted" testID="return-video-opened-before">

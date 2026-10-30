@@ -6,7 +6,12 @@ import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigatio
 import { mockVideoPlayer, resetMockVideoPlayer } from '@/test-utils/mock-video-player';
 import { renderWithProviders } from '@/test-utils/render';
 
-import { createMemoryEvidenceFileStore, createMemoryOrderStore } from '../data';
+import {
+  CurrentShopProvider,
+  createMemoryEvidenceFileStore,
+  createMemoryOrderStore,
+} from '../data';
+import { LOCAL_SHOP_ID } from '../domain/local-shop';
 import { makeOrder } from '../data/order-store.contract';
 import type { OrderDetails, OrderStore } from '../domain';
 import { buildPackingSession } from '../domain/start-session';
@@ -45,12 +50,16 @@ function fileStore(files: EvidenceFile[]): EvidenceFileStore {
   };
 }
 
-async function seed(code = 'DH-PLAY-1'): Promise<{
+async function seed(
+  code = 'DH-PLAY-1',
+  /** Tài khoản tạo phiên (kho đơn ghi `createdBy`); không truyền = không rõ người tạo. */
+  creator?: string,
+): Promise<{
   store: OrderStore;
   d: OrderDetails;
   file: (state: FileState, extra?: Partial<EvidenceFile>) => EvidenceFile;
 }> {
-  const store = createMemoryOrderStore();
+  const store = createMemoryOrderStore(creator ? { creatorUid: () => creator } : {});
   const d = makeOrder(code, { at: AT });
   await store.saveNewOrder(d);
   const pkg = d.packages[0];
@@ -88,9 +97,18 @@ async function open(
   store: OrderStore,
   files: EvidenceFile[],
   params: { orderId?: string; evidenceId?: string },
+  /** Tài khoản đang đăng nhập (V1-07); không truyền = như phiên của bộ render test. */
+  signedInAs?: string,
 ) {
   mockNavigation.params = params;
-  await renderWithProviders(<EvidenceDetailScreen />, {
+  const screenUi = signedInAs ? (
+    <CurrentShopProvider shopId={LOCAL_SHOP_ID} uid={signedInAs}>
+      <EvidenceDetailScreen />
+    </CurrentShopProvider>
+  ) : (
+    <EvidenceDetailScreen />
+  );
+  await renderWithProviders(screenUi, {
     orderStore: store,
     evidenceFileStore: fileStore(files),
   });
@@ -133,6 +151,35 @@ describe('UI-E04 Chi tiết bằng chứng (xem lại trên máy)', () => {
     if (state !== 'verified' && state !== 'uploaded') {
       expect(screen.queryByText(/máy chủ đã nhận|lưu an toàn trên máy chủ/i)).toBeNull();
     }
+  });
+
+  it.each<[string | undefined, string]>([
+    [
+      'u-khac',
+      'Tệp do tài khoản khác tạo trên máy này. Chỉ tài khoản đó đăng nhập lại mới tải lên được.',
+    ],
+    [
+      undefined,
+      'Không rõ tài khoản nào tạo tệp này nên không tải lên được. Tệp vẫn được giữ trên máy.',
+    ],
+  ])(
+    'V1-07: phiên do tài khoản %s tạo: "Chờ tải lên" + lý do máy này không tải (không "Đang tải lên")',
+    async (creator, note) => {
+      const { store, d, file } = await seed('DH-PLAY-1', creator);
+      mockExisting.add(PATH);
+      await open(store, [file('uploading')], { orderId: d.order.id, evidenceId: 'ev-1' }, 'u-1');
+      expect(await screen.findByText('Chờ tải lên')).toBeOnTheScreen();
+      expect(screen.getByTestId('evidence-detail-hint')).toHaveTextContent(note);
+      expect(screen.queryByText('Đang tải lên')).toBeNull();
+    },
+  );
+
+  it('V1-07: phiên do CHÍNH tài khoản đang đăng nhập tạo: nhãn như cũ, không có câu tài khoản khác', async () => {
+    const { store, d, file } = await seed('DH-PLAY-1', 'u-1');
+    mockExisting.add(PATH);
+    await open(store, [file('queued')], { orderId: d.order.id, evidenceId: 'ev-1' }, 'u-1');
+    expect(await screen.findByText('Đã lưu trên máy')).toBeOnTheScreen();
+    expect(screen.queryByText(/tài khoản/)).toBeNull();
   });
 
   it.each<FileState>(['queued', 'needs_attention', 'upload_failed', 'unrecoverable'])(

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { resolveErrorMessage, errorText } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
-import { useOrderStore } from '@/features/orders';
+import { useCurrentUid, useOrderStore } from '@/features/orders';
 import { useAppNavigation } from '@/platform';
 import { useToast } from '@/shared/ui';
 
@@ -26,7 +26,8 @@ export interface SignOutOptions {
  * Luồng đăng xuất an toàn (PER-21): xác nhận -> kiểm tra (đang quay, chưa đồng bộ) -> cổng đăng xuất
  * -> về Chào mừng. Chỉ đăng xuất khi người dùng đã xác nhận VÀ điều kiện bảo vệ dữ liệu đáp ứng; lỗi
  * (cổng hoặc đọc kho cục bộ) báo `AUTH_SIGN_OUT_FAILED` và giữ phiên. Không xóa dữ liệu cục bộ (Q-20h).
- * Kiểm tra theo TOÀN THIẾT BỊ (mọi shop trên máy), vì đăng xuất rời cả tài khoản (Q-20o, bổ sung).
+ * Kiểm tra theo TOÀN THIẾT BỊ (mọi shop trên máy), vì đăng xuất rời cả tài khoản (Q-20o, bổ sung), và chỉ
+ * tính tệp do chính tài khoản đang đăng nhập tạo (V1-07, Q-24g: tệp của tài khoản khác không chặn).
  * Chống bấm lặp bằng `busy`. Toast thành công chỉ hiện SAU khi cổng xác nhận và đã điều hướng.
  */
 export function useSignOut(options: SignOutOptions = {}) {
@@ -36,6 +37,7 @@ export function useSignOut(options: SignOutOptions = {}) {
   const toast = useToast();
   const session = useSession();
   const store = useOrderStore();
+  const uid = useCurrentUid();
   const [step, setStep] = useState<SignOutStep>('closed');
   const [unsyncedCount, setUnsyncedCount] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -59,7 +61,8 @@ export function useSignOut(options: SignOutOptions = {}) {
     try {
       let guard: SignOutGuard;
       try {
-        guard = evaluateSignOutGuard(await readDeviceFacts(store));
+        // Chỉ tệp của CHÍNH tài khoản này chặn đăng xuất (V1-07); chưa biết tài khoản thì đếm cả máy.
+        guard = evaluateSignOutGuard(await readDeviceFacts(store, uid));
       } catch {
         guard = { kind: 'unknown' };
       }
@@ -91,7 +94,7 @@ export function useSignOut(options: SignOutOptions = {}) {
       busyRef.current = false;
       setBusy(false);
     }
-  }, [store, session, navigation, toast, t, fail, signInAgainEmail]);
+  }, [store, uid, session, navigation, toast, t, fail, signInAgainEmail]);
 
   const openSyncCenter = useCallback(() => {
     setStep('closed');

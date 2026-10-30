@@ -231,7 +231,7 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
 - **Tệp:** `src/features/orders/data/sqlite-evidence-file-store.ts` (+ bản bộ nhớ) thêm `listForUpload(shopId, states, uid)` nối `packing_sessions.created_by`; `src/features/upload/domain/upload-sources.ts` (`evidenceFileSource(files, currentUid)`); `UploadRunner.tsx`; hàm đếm `countForeignUnsynced(shopId, uid)` cho UI-F01.
 - **Migration:** không (dùng cột `created_by` của v5). **Rules:** không (Rules đã ép `createdBy == auth.uid`).
 - **Test:** hợp đồng kho (SQLite `node:sqlite` + bộ nhớ): tệp của uid khác không vào danh sách; phiên `created_by` NULL không bao giờ tải; test hàng đợi hai uid.
-- **Ảnh:** không (hiển thị ở V1-08).
+- **Ảnh:** ~~không (hiển thị ở V1-08)~~ có: khi làm, nhãn "Chờ tải lên" + lý do cho tệp của tài khoản khác ở UI-E03/E04 và ảnh/video hàng hoàn (điều phối yêu cầu báo rõ, không im lặng; decisions Q-29 / V1-07). Đăng xuất/chuyển cửa hàng chỉ đếm tệp của chính tài khoản. `countForeignUnsynced` thành `OrderStore.countUnsyncedByOwner(scope, uid)` (`own`/`foreign`). Migration: không (v15/v16 giữ nguyên cho V1-09/V1-13).
 - **Rủi ro:** tệp cũ có phiên `created_by` NULL (tạo trước v5 trên máy dev) không bao giờ tải: chỉ máy dev. **Phụ thuộc:** hợp nhất sau V1-02.
 
 #### V1-08 sync-center

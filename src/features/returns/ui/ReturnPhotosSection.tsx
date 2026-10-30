@@ -6,8 +6,13 @@ import type { TFunction } from 'i18next';
 import type { ErrorCode } from '@/core/errors/codes';
 import type { ReturnCaseId } from '@/core/ids';
 import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
-import { mayHaveReachedServer, toDisplayStatus } from '@/features/evidence';
-import { formatDeviceDateTime } from '@/features/orders';
+import {
+  foreignUploadNote,
+  mayHaveReachedServer,
+  toDisplayStatus,
+  uploaderRelation,
+} from '@/features/evidence';
+import { formatDeviceDateTime, useCurrentUid } from '@/features/orders';
 import {
   CameraPhoto,
   getMinTouchTarget,
@@ -393,7 +398,10 @@ function PhotoRow({
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const side = tokens.component.tile.xl;
-  const display = toDisplayStatus(item.state);
+  // Ảnh do tài khoản khác chụp trên máy này: máy này không tải hộ, nói rõ lý do (V1-07, Q-24g).
+  const uploader = uploaderRelation(item.createdBy, useCurrentUid());
+  const display = toDisplayStatus(item.state, { uploader });
+  const note = foreignUploadNote(item.state, uploader);
   const hasFile = isMediaSavedLocally(item) && item.localPath !== null;
   return (
     <View
@@ -443,6 +451,11 @@ function PhotoRow({
             {t(busy ? 'returns:photos.saving' : 'returns:photos.unfinished')}
           </Text>
         )}
+        {note ? (
+          <Text variant="caption" color="textMuted" testID={`return-photo-uploader-${item.id}`}>
+            {t(`evidence:uploaderNote.${note}`)}
+          </Text>
+        ) : null}
         {hasFile ? (
           <Text variant="caption" color="textMuted" testID={`return-photo-location-${item.id}`}>
             {locationText(t, item)}

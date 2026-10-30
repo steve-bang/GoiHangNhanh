@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
-import { useCurrentShopId, useOrderStore } from '@/features/orders';
+import { useCurrentShopId, useCurrentUid, useOrderStore } from '@/features/orders';
 import { useAppNavigation } from '@/platform';
 import { useToast } from '@/shared/ui';
 
@@ -30,6 +30,7 @@ export function useSwitchShop() {
   const { account } = usePersonalGateways();
   const store = useOrderStore();
   const currentShopId = useCurrentShopId();
+  const uid = useCurrentUid();
   const [step, setStep] = useState<SwitchShopStep>('closed');
   const [target, setTarget] = useState<ShopSummary | null>(null);
   const [unsyncedCount, setUnsyncedCount] = useState(0);
@@ -52,7 +53,12 @@ export function useSwitchShop() {
         try {
           const [recording, unsynced] = await Promise.all([
             store.hasRecordingInProgress(currentShopId).catch(() => null),
-            store.countUnsynced(currentShopId).catch(() => null),
+            // Chỉ tệp của CHÍNH tài khoản này (V1-07): tệp của tài khoản khác không tải dưới tài
+            // khoản này dù ở shop nào. Chưa biết tài khoản thì đếm mọi tệp của shop (bảo thủ).
+            (uid
+              ? store.countUnsyncedByOwner(currentShopId, uid).then((n) => n.own)
+              : store.countUnsynced(currentShopId)
+            ).catch(() => null),
           ]);
           guard = evaluateSwitchShopGuard({ recording, unsynced });
         } catch {
@@ -74,7 +80,7 @@ export function useSwitchShop() {
         setBusy(false);
       }
     },
-    [store, currentShopId, fail],
+    [store, currentShopId, uid, fail],
   );
 
   const dismiss = useCallback(() => {
