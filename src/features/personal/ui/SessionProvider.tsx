@@ -6,8 +6,12 @@ import {
   useMemo,
   useReducer,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
+
+import { requiresKnownShop } from '../data/session-mode';
+import type { SessionHydration } from '../domain/session-gate';
 
 import {
   INITIAL_SESSION,
@@ -38,17 +42,48 @@ export interface SessionContextValue {
    * đăng nhập tài khoản khác). Trả về hàm hủy đăng ký.
    */
   onSessionCleared(listener: () => void): () => void;
+  /**
+   * Chế độ chặt (bản Firebase/"chưa kết nối", V1-06): màn nghiệp vụ chỉ mở và chỉ ghi dữ liệu khi phiên đã
+   * đăng nhập VÀ biết shop thật. Cổng giả = `false` (giữ hành vi cũ).
+   */
+  readonly requireKnownShop: boolean;
+  /** Phiên trong bộ nhớ đã được đối chiếu với phiên lưu trên máy chưa (xem `session-gate.ts`). */
+  readonly hydration: SessionHydration;
+  /** Chỉ `SessionHydrator` gọi: báo trạng thái nạp danh tính (`pending` khi người dùng bấm Thử lại). */
+  reportHydration(result: SessionHydration): void;
+  /** Chỉ `SessionHydrator` gọi: đăng ký hàm thử nạp lại ngay. Trả về hàm hủy đăng ký. */
+  registerHydrationRetry(retry: () => void): () => void;
+  /** Người dùng bấm Thử lại (màn "Chưa kết nối được cửa hàng"): thử nạp danh tính ngay. */
+  retryHydration(): void;
+  /**
+   * Có màn `latch` (màn quay) đang mở (V1-06, bất biến 2). Khi `true`, mọi cổng phiên khác KHÔNG điều
+   * hướng (`reset` sẽ gỡ màn quay khỏi ngăn xếp) và giữ nội dung đang hiện; xét lại khi màn quay đóng.
+   */
+  readonly gatesHeld: boolean;
+  /** Chỉ `SessionGate` có `latch` gọi khi đã mở. Trả hàm nhả. */
+  holdSessionGates(): () => void;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 /**
- * Phiên toàn app. Chưa nối vào Splash/đăng nhập (PR sau); hôm nay luôn bắt đầu `signed_out` và không
- * tự khôi phục: không suy đoán phiên khi cổng chưa xác nhận.
+ * Phiên toàn app. Luôn bắt đầu `signed_out` + `hydration: 'pending'`; `SessionHydrator` (gắn ở gốc) nạp
+ * danh tính đã lưu trên máy. Không suy đoán phiên khi cổng chưa xác nhận.
  */
-export function SessionProvider({ children }: { children: ReactNode }) {
+export function SessionProvider({
+  children,
+  requireKnownShop,
+}: {
+  children: ReactNode;
+  /** Mặc định theo môi trường (`requiresKnownShop`); test truyền thẳng. */
+  requireKnownShop?: boolean;
+}) {
   const { account } = usePersonalGateways();
   const [state, dispatch] = useReducer(sessionReducer, INITIAL_SESSION);
+  const [strict] = useState(() => requireKnownShop ?? requiresKnownShop());
+  const [hydration, setHydration] = useState<SessionHydration>('pending');
+  const hydrationRetry = useRef<(() => void) | null>(null);
+  const [holds, setHolds] = useState(0);
   const listeners = useRef(new Set<() => void>());
   const inFlight = useRef<Promise<void> | null>(null);
   const lastEpoch = useRef(state.epoch);
@@ -62,7 +97,31 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const beginSession = useCallback((user: SessionUser, shopId: string | null) => {
     dispatch({ type: 'signed_in', user, shopId });
+    // Đăng nhập/tạo shop trong app là câu trả lời dứt khoát: không còn "đang nạp".
+    setHydration('settled');
   }, []);
+  const reportHydration = useCallback((result: SessionHydration) => {
+    setHydration(result);
+  }, []);
+  const registerHydrationRetry = useCallback((retry: () => void) => {
+    hydrationRetry.current = retry;
+    return () => {
+      if (hydrationRetry.current === retry) hydrationRetry.current = null;
+    };
+  }, []);
+  const retryHydration = useCallback(() => {
+    hydrationRetry.current?.();
+  }, []);
+  const holdSessionGates = useCallback(() => {
+    setHolds((n) => n + 1);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      setHolds((n) => n - 1);
+    };
+  }, []);
+  const gatesHeld = holds > 0;
   const changeShop = useCallback((shopId: string | null) => {
     dispatch({ type: 'shop_changed', shopId });
   }, []);
@@ -83,6 +142,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       .signOut()
       .then(() => {
         dispatch({ type: 'signed_out' });
+        // Cổng đã xác nhận đăng xuất: "chưa đăng nhập" là dứt khoát (không phải đang nạp).
+        setHydration('settled');
       })
       .finally(() => {
         inFlight.current = null;
@@ -100,6 +161,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       notifyShopUpdated,
       signOut,
       onSessionCleared,
+      requireKnownShop: strict,
+      hydration,
+      reportHydration,
+      registerHydrationRetry,
+      retryHydration,
+      gatesHeld,
+      holdSessionGates,
     }),
     [
       state,
@@ -109,6 +177,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       notifyShopUpdated,
       signOut,
       onSessionCleared,
+      strict,
+      hydration,
+      reportHydration,
+      registerHydrationRetry,
+      retryHydration,
+      gatesHeld,
+      holdSessionGates,
     ],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

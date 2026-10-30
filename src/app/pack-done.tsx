@@ -1,1 +1,4 @@
-export { PackDoneScreen as default } from '@/features/packing';
+import { PackDoneScreen } from '@/features/packing';
+import { withSessionGate } from '@/features/personal';
+
+export default withSessionGate(PackDoneScreen);

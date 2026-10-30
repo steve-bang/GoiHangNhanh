@@ -10,6 +10,7 @@ import { DisputeStoreProvider } from '@/features/disputes';
 import { ReturnMediaRecovery, ReturnStoreProvider, ReturnSyncRunner } from '@/features/returns';
 import {
   PersonalGatewaysProvider,
+  SessionHydrator,
   SessionProvider,
   SessionShopProvider,
 } from '@/features/personal';
@@ -36,6 +37,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <OnboardingFlowProvider>
         <PersonalGatewaysProvider>
           <SessionProvider>
+            {/* Nạp phiên ở gốc (V1-06): liên kết sâu tới màn ngoài nhóm tab cũng được nạp. */}
+            <SessionHydrator />
             <ToastProvider>
               <SessionShopProvider>
                 <OrderStoreProvider>

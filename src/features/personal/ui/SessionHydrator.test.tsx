@@ -59,9 +59,11 @@ const advance = (ms: number) => {
 };
 
 function Probe() {
-  const { state, signOut, beginSession } = useSession();
+  const { state, signOut, beginSession, hydration, retryHydration } = useSession();
   return (
     <>
+      <Text testID="hydration">{hydration}</Text>
+      <Text testID="retry" onPress={retryHydration} />
       <Text testID="status">{state.status}</Text>
       <Text testID="user">{String(state.user?.uid)}</Text>
       <Text testID="shop">{String(state.shopId)}</Text>
@@ -183,5 +185,77 @@ describe('SessionHydrator: thử lại khi nạp danh tính lỗi', () => {
     await foreground();
     expect(identity).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('status')).toHaveTextContent('signed_out');
+  });
+});
+
+describe('SessionHydrator: báo trạng thái nạp cho cổng phiên (V1-06)', () => {
+  it('bắt đầu "đang nạp"; có danh tính -> "đã xong"', async () => {
+    let resolve: (value: SessionIdentity | null) => void = () => undefined;
+    const identity = jest.fn(
+      () =>
+        new Promise<SessionIdentity | null>((r) => {
+          resolve = r;
+        }),
+    );
+    await setup(identity);
+    expect(screen.getByTestId('hydration')).toHaveTextContent('pending');
+    await act(async () => resolve(IDENTITY_A));
+    expect(screen.getByTestId('hydration')).toHaveTextContent('settled');
+    expect(screen.getByTestId('status')).toHaveTextContent('signed_in');
+  });
+
+  it('chưa đăng nhập (null) -> "đã xong", vẫn signed_out', async () => {
+    await setup(jest.fn().mockResolvedValue(null));
+    await act(async () => undefined);
+    expect(screen.getByTestId('hydration')).toHaveTextContent('settled');
+    expect(screen.getByTestId('status')).toHaveTextContent('signed_out');
+  });
+
+  it('lỗi -> "lỗi"; Thử lại của người dùng thử NGAY (bỏ giãn cách), hiện "đang nạp" rồi nạp được', async () => {
+    let resolve: (value: SessionIdentity | null) => void = () => undefined;
+    const identity = jest
+      .fn()
+      .mockRejectedValueOnce(networkError())
+      .mockImplementation(
+        () =>
+          new Promise<SessionIdentity | null>((r) => {
+            resolve = r;
+          }),
+      );
+    await setup(identity);
+    await act(async () => undefined);
+    expect(screen.getByTestId('hydration')).toHaveTextContent('failed');
+
+    // Chưa hết giãn cách 10 giây nhưng người dùng bấm: vẫn thử.
+    await act(async () => screen.getByTestId('retry').props.onPress());
+    expect(identity).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('hydration')).toHaveTextContent('pending');
+    // Bấm lặp khi đang chờ: không chạy chồng.
+    await act(async () => screen.getByTestId('retry').props.onPress());
+    expect(identity).toHaveBeenCalledTimes(2);
+
+    await act(async () => resolve(IDENTITY_A));
+    expect(screen.getByTestId('hydration')).toHaveTextContent('settled');
+    expect(screen.getByTestId('shop')).toHaveTextContent('shop-a');
+  });
+
+  it('Thử lại lỗi tiếp -> quay về "lỗi"', async () => {
+    const identity = jest.fn().mockRejectedValue(networkError());
+    await setup(identity);
+    await act(async () => undefined);
+    await act(async () => screen.getByTestId('retry').props.onPress());
+    expect(identity).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('hydration')).toHaveTextContent('failed');
+  });
+
+  it('đăng nhập trong app khi đang lỗi nạp -> "đã xong"; đăng xuất sau đó vẫn "đã xong"', async () => {
+    await setup(jest.fn().mockRejectedValue(networkError()));
+    await act(async () => undefined);
+    expect(screen.getByTestId('hydration')).toHaveTextContent('failed');
+    await act(async () => screen.getByTestId('login-b').props.onPress());
+    expect(screen.getByTestId('hydration')).toHaveTextContent('settled');
+    await act(async () => screen.getByTestId('out').props.onPress());
+    expect(screen.getByTestId('status')).toHaveTextContent('signed_out');
+    expect(screen.getByTestId('hydration')).toHaveTextContent('settled');
   });
 });

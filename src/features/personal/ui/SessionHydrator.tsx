@@ -9,7 +9,15 @@ import { useSession } from './SessionProvider';
 export const HYDRATE_MIN_RETRY_INTERVAL_MS = 10_000;
 
 /**
- * Nạp danh tính vào `SessionProvider` khi app vào khu có thanh tab mà phiên trong bộ nhớ còn trống
+ * Lần nạp danh tính chưa trả lời sau khoảng này thì báo "lỗi" để cổng phiên chuyển từ "Đang nạp" sang
+ * "Chưa kết nối được cửa hàng" (có Thử lại, Đăng xuất) thay vì quay mãi (V1-06). Kết quả đến muộn vẫn
+ * được dùng nếu là danh tính (nạp phiên); lỗi đến muộn của lần đã quá hạn bị bỏ.
+ */
+export const HYDRATE_TIMEOUT_MS = 15_000;
+
+/**
+ * Nạp danh tính vào `SessionProvider` khi mở app (gắn ở gốc `AppProviders`, V1-06, để cả liên kết sâu
+ * tới màn ngoài nhóm tab cũng được nạp) mà phiên trong bộ nhớ còn trống
  * (phiên được khôi phục lúc mở app: `SessionGateway.restore` của Splash chỉ trả trạng thái, không
  * trả danh tính nên không có `beginSession`). Không đổi Splash (đã được khách xác nhận). Không hiển
  * thị gì. Danh tính lấy từ `getSessionIdentity` (Firebase Auth + `userShops/{uid}`, Q-20m; không chờ mạng
@@ -26,12 +34,14 @@ export function SessionHydrator() {
   const session = useSession();
   const offline = useIsOffline();
   const begin = session.beginSession;
+  const report = session.reportHydration;
+  const registerRetry = session.registerHydrationRetry;
   const signedIn = session.state.status === 'signed_in';
 
   // Giá trị mới nhất cho các callback dài hạn (đăng ký một lần khi gắn).
-  const latest = useRef({ account, begin });
+  const latest = useRef({ account, begin, report });
   useEffect(() => {
-    latest.current = { account, begin };
+    latest.current = { account, begin, report };
   });
   // `done`: đã có câu trả lời dứt khoát hoặc phiên từng đăng nhập: không thử nữa.
   const done = useRef(signedIn);
@@ -39,13 +49,17 @@ export function SessionHydrator() {
     if (signedIn) done.current = true;
   }, [signedIn]);
   const inFlight = useRef(false);
+  const generation = useRef(0);
+  const timeoutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAttemptAt = useRef<number | null>(null);
   const mounted = useRef(true);
 
-  const attempt = useCallback(() => {
+  /** `force`: người dùng bấm Thử lại, bỏ qua khoảng tối thiểu (vẫn không chạy chồng). */
+  const attempt = useCallback((force = false) => {
     if (done.current || inFlight.current || !mounted.current) return;
     const now = Date.now();
     if (
+      !force &&
       lastAttemptAt.current !== null &&
       now - lastAttemptAt.current < HYDRATE_MIN_RETRY_INTERVAL_MS
     ) {
@@ -53,21 +67,43 @@ export function SessionHydrator() {
     }
     lastAttemptAt.current = now;
     inFlight.current = true;
+    const gen = (generation.current += 1);
+    const isCurrent = () => generation.current === gen;
+    // Người dùng bấm Thử lại: hiện "đang nạp" thay cho thông báo lỗi cũ trong lúc chờ.
+    if (force) latest.current.report('pending');
+    if (timeoutTimer.current) clearTimeout(timeoutTimer.current);
+    const timer = setTimeout(() => {
+      if (!isCurrent() || done.current || !mounted.current) return;
+      // Quá hạn: coi như lỗi, cho phép thử lại (lần cũ thành "cũ", không chặn lần mới).
+      generation.current += 1;
+      inFlight.current = false;
+      latest.current.report('failed');
+    }, HYDRATE_TIMEOUT_MS);
+    timeoutTimer.current = timer;
     void latest.current.account.getSessionIdentity().then(
       (identity) => {
-        inFlight.current = false;
+        clearTimeout(timer);
+        if (isCurrent()) inFlight.current = false;
         // Đăng nhập giữa chừng (hoặc đã rời): bỏ kết quả, không thay phiên đang hợp lệ.
         if (done.current || !mounted.current) return;
         done.current = true;
-        if (!identity) return;
+        if (!identity) {
+          latest.current.report('settled');
+          return;
+        }
         latest.current.begin(
           { uid: identity.uid, email: identity.email, displayName: identity.displayName },
           identity.shopId,
         );
       },
       () => {
-        // Lỗi tạm thời: giữ nguyên chưa nạp, lần kích hoạt sau (foreground / có mạng) thử lại.
+        clearTimeout(timer);
+        // Lỗi của lần đã quá hạn (đã báo "lỗi", có thể đang có lần mới): bỏ.
+        if (!isCurrent()) return;
+        // Lỗi tạm thời: giữ nguyên chưa nạp, lần kích hoạt sau (foreground / có mạng / Thử lại) thử lại.
         inFlight.current = false;
+        if (done.current || !mounted.current) return;
+        latest.current.report('failed');
       },
     );
   }, []);
@@ -75,14 +111,18 @@ export function SessionHydrator() {
   useEffect(() => {
     mounted.current = true;
     attempt();
-    const unsubscribe = subscribeAppActive(attempt);
+    const unsubscribe = subscribeAppActive(() => attempt());
+    const unregister = registerRetry(() => attempt(true));
     return () => {
       mounted.current = false;
       unsubscribe();
+      unregister();
+      if (timeoutTimer.current) clearTimeout(timeoutTimer.current);
     };
-  }, [attempt]);
+  }, [attempt, registerRetry]);
 
-  // Mạng có lại (offline -> online): thử lại. Lần gắn đầu đã thử ở trên.
+  // Mạng có lại (offline -> online): thử lại. Lần gắn đầu đã thử ở trên. Báo kết quả qua
+  // `reportHydration` (`settled` khi có câu trả lời dứt khoát, `failed` khi lỗi) cho cổng phiên.
   const wasOffline = useRef(offline);
   useEffect(() => {
     if (wasOffline.current && !offline) attempt();

@@ -259,6 +259,22 @@ describe('UI-D02 Tìm đơn gốc', () => {
     expect(saved?.returnCase.observedCode).toBeNull();
   });
 
+  it('bản Firebase, phiên chưa biết cửa hàng (V1-06): KHÔNG tạo hồ sơ dưới shop tạm, báo chưa lưu được', async () => {
+    const store = createMemoryReturnStore();
+    const create = jest.spyOn(store, 'createReturn');
+    await renderWithProviders(<ReturnFindOrderScreen />, {
+      returnStore: store,
+      orderStore: createMemoryOrderStore(),
+      requireKnownShop: true,
+    });
+    await fireEvent.press(screen.getByTestId('return-unlinked'));
+    expect(
+      await screen.findByText('Chưa lưu được hồ sơ hàng hoàn trên máy. Bạn thử lại nhé.'),
+    ).toBeOnTheScreen();
+    expect(create).not.toHaveBeenCalled();
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+  });
+
   it('mã không hợp lệ (rỗng) khi bấm Tìm: báo tại ô nhập, không tra', async () => {
     await open(createMemoryReturnStore(), createMemoryOrderStore());
     await fireEvent.press(screen.getByTestId('return-search'));
