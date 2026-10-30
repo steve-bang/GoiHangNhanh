@@ -172,7 +172,7 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
 
 #### V1-00 screens-tooling
 - **Mục tiêu:** một lệnh chụp ảnh bản web cổng giả cho PR, dựa trên quy trình đã chạy được (mục 4), không đổi phụ thuộc của repo.
-- **Tệp:** `scripts/screens/capture.sh` (sao repo ra thư mục tạm bằng `git archive`, chép `node_modules`, `npm i --no-save react-native-web@~0.21.4 @expo/metro-runtime@~58.0.15`, `expo export --platform web`, phục vụ `serve -s`, gọi `shoot.cjs`), `scripts/screens/shoot.cjs` (Playwright toàn cục, danh sách route + cỡ 320x568/360x800/390x844, hệ số 2, ghi lỗi trang), `scripts/screens/README.md`; thêm dòng vào mục "Lệnh" của `CLAUDE.md` (điều phối duyệt).
+- **Tệp:** `scripts/screens/capture.cjs` (sao cây làm việc hoặc `git archive <ref>` ra thư mục làm việc ngoài repo, chép `node_modules`, `npm i --no-save react-native-web@~0.21.4 @expo/metro-runtime@~58.0.15`, `expo export --platform web` cho từng phiên giả, máy chủ tĩnh Node nội bộ, gọi `shoot.cjs`), `scripts/screens/shoot.cjs` (Playwright ngoài repo, danh sách route + cỡ `390x844` mặc định hoặc `all` = 320x568/360x800/390x844, hệ số 2, ghi lỗi trang), `scripts/screens/README.md`; thêm dòng vào mục "Lệnh" của `CLAUDE.md` (điều phối duyệt). *Đã làm (2026-10-30): dùng Node `.cjs` thay `capture.sh` để qua lint/test; xem [plans/v1-00-screens-tooling.md](plans/v1-00-screens-tooling.md).*
 - **Thư viện:** không thêm vào repo. **Migration/Rules:** không.
 - **Test:** chạy thật một lần, đính ảnh màn Trang chủ/Cá nhân/Đồng bộ vào PR. **Ảnh:** 3 ảnh đó (làm mốc "trước" cho V1-08/V1-10).
 - **Rủi ro:** Playwright/Chromium toàn cục có thể không có ở môi trường khác: script báo lỗi rõ, README ghi cách cài. **Phụ thuộc:** không.
@@ -372,7 +372,7 @@ NODE_PATH=/opt/node-tools/node_modules node shoot.js http://localhost:5173 $S/sh
 
 `shoot.js` (đã dùng): `chromium.launch()`, `newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })`, với mỗi route `page.goto(url, { waitUntil: 'networkidle' })`, chờ 3,5 giây (cổng giả trễ ~450 ms), `page.screenshot`, gom `pageerror`. Kết quả: 3 ảnh `/`, `/account`, `/sync` render đúng, **0 lỗi trang**. Ảnh xác nhận hiện trạng ở mục 2.3: Trang chủ hiện "Shop minh họa", số 12/11/1 và dải "Dữ liệu minh họa…"; `/sync` hiện "DEMO-0002 · Kiện 1"; thẻ Dữ liệu bằng chứng ở `/account` hiện "Chưa có số liệu".
 
-V1-00 đóng gói đúng các lệnh này vào `scripts/screens/capture.sh`. Mặc định chụp 3 cỡ 320x568, 360x800, 390x844; chữ lớn mô phỏng như tiền lệ `personal-tab-v3` (tham số tạm trong bản sao).
+V1-00 đóng gói các lệnh này vào `node scripts/screens/capture.cjs` (cách dùng: [scripts/screens/README.md](../../scripts/screens/README.md)). Mặc định một cỡ 390x844, `--sizes all` cho 320x568, 360x800, 390x844; chữ lớn chưa có tham số trong công cụ, vẫn mô phỏng như tiền lệ `personal-tab-v3` (thay đổi tạm trên nhánh nháp, `--source <nhánh>`). Ảnh mốc "trước": `docs/assets/screens/v1-00-baseline/`.
 
 ### 4.2 Giới hạn (ghi vào README ảnh của mỗi PR)
 

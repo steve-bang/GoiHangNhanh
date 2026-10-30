@@ -1,0 +1,88 @@
+---
+/*
+ * GHI CHÚ NỘI BỘ (không hiển thị): câu trả lời mô tả bản v1 (v1-release-plan.md mục 1.1, 1.2: Q-24a một máy,
+ * Q-24b video đang quay có thể mất, Q-24c Chỉ tải khi có Wi-Fi, D-14 đặt lại mật khẩu bằng email, O-09
+ * không ghi âm). Câu chữ chờ BA/khách duyệt (release-checklist C-1); đối chiếu app thật ở C-6.
+ * FAQPage JSON-LD lấy đúng mảng `faqs` hiển thị bên dưới (check-seo kiểm khớp).
+ */
+import LegalPage from '../components/LegalPage.astro';
+import Contact from '../components/Contact.astro';
+import { site } from '../config/site';
+import { faqLd, type Faq } from '../lib/jsonld';
+
+const faqs: Faq[] = [
+  {
+    question: 'Tôi quên mật khẩu thì làm sao?',
+    answer:
+      'Ở màn Đăng nhập, chọn Quên mật khẩu và nhập email đã đăng ký. Mở thư đặt lại mật khẩu, đặt mật khẩu mới rồi đăng nhập lại. Không thấy thư thì xem cả mục Thư rác.',
+  },
+  {
+    question: 'Vì sao video chưa được tải lên?',
+    answer:
+      'Ứng dụng chỉ tải lên khi đang mở. Hãy mở ứng dụng và giữ kết nối mạng. Nếu bạn bật Chỉ tải khi có Wi-Fi, tệp sẽ chờ đến khi có Wi-Fi.',
+  },
+  {
+    question: 'Đã tải lên và Đã xác minh khác nhau thế nào?',
+    answer:
+      'Đã tải lên là máy chủ đã nhận đủ tệp. Đã xác minh là máy chủ đã kiểm tra mã băm và thấy khớp với bản trên máy. Mã băm chỉ cho biết tệp không bị đổi kể từ lúc tính, không chứng minh thời điểm quay.',
+  },
+  {
+    question: 'Tôi đổi điện thoại thì dữ liệu có theo sang không?',
+    answer:
+      'Chưa. Mỗi tài khoản dùng trên một điện thoại. Dữ liệu trên máy cũ không tự chuyển sang máy mới. Trước khi đổi máy, hãy mở ứng dụng để tải hết tệp còn chờ.',
+  },
+  {
+    question: 'Ứng dụng bị tắt khi đang quay thì sao?',
+    answer:
+      'Video đang quay có thể bị mất. Ứng dụng ghi nhận phiên quay bị gián đoạn và không coi là đầy đủ. Nếu quay lại, đó là một phiên mới, không thay phiên cũ.',
+  },
+  {
+    question: 'Video có ghi âm không?',
+    answer: 'Không. Ứng dụng không xin quyền micro và video không có tiếng.',
+  },
+  {
+    question: 'Video có giúp tôi chắc chắn thắng khiếu nại không?',
+    answer:
+      'Không. Ứng dụng giúp bạn lưu và tìm lại bằng chứng có tổ chức. Sàn và đơn vị vận chuyển mới là bên quyết định.',
+  },
+  {
+    question: 'Làm sao xóa tài khoản?',
+    answer:
+      'Trong ứng dụng, vào Cá nhân, chọn Quyền riêng tư và bảo mật, rồi chọn Xóa tài khoản. Nếu không còn mở được ứng dụng, hãy gửi yêu cầu qua email hỗ trợ.',
+  },
+];
+---
+
+<LegalPage
+  title={`Hỗ trợ ${site.name}: cách liên hệ và câu hỏi thường gặp`}
+  description={`Cách liên hệ hỗ trợ ${site.name} và câu trả lời ngắn: quên mật khẩu, video chưa tải lên, đổi điện thoại, ghi âm, xóa tài khoản.`}
+  path={site.legalPages.support}
+  heading={`Hỗ trợ ${site.name}`}
+  crumb="Hỗ trợ"
+  jsonLd={[faqLd(faqs)]}
+  hideEffectiveDate
+>
+  <h2 id="lien-he">Liên hệ</h2>
+  <Contact subject={`Hỗ trợ ${site.name}`} />
+  <p class="note">
+    Khi gửi thư, hãy ghi email đăng ký và mô tả ngắn việc gặp phải. Đừng gửi mật khẩu. Đừng gửi video nếu
+    chúng tôi chưa hỏi.
+  </p>
+
+  <h2 id="cau-hoi">Câu hỏi thường gặp</h2>
+  {
+    faqs.map((f) => (
+      <section class="faq">
+        <h3>{f.question}</h3>
+        <p>{f.answer}</p>
+      </section>
+    ))
+  }
+
+  <h2 id="xem-them">Xem thêm</h2>
+  <ul>
+    <li><a href={site.legalPages.accountDeletionRequest}>Yêu cầu xóa tài khoản và dữ liệu</a></li>
+    <li><a href={site.legalPages.privacy}>Chính sách quyền riêng tư</a></li>
+    <li><a href={site.legalPages.terms}>Điều khoản sử dụng</a></li>
+  </ul>
+</LegalPage>

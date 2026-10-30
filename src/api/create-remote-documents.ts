@@ -1,4 +1,9 @@
-import { readBackendEnv, resolveBackendMode, type BackendEnv } from './create-api';
+import {
+  firebaseEmulatorHost,
+  readBackendEnv,
+  resolveBackendMode,
+  type BackendEnv,
+} from './create-api';
 import type { RemoteDocuments } from './contract';
 // eslint-disable-next-line no-restricted-imports -- đây là thư mục src/api/firebase, không phải gói SDK 'firebase'
 import type * as FirebaseModule_ from './firebase';
@@ -10,9 +15,8 @@ function tryCreateFirebaseRemoteDocuments(env: BackendEnv): RemoteDocuments | nu
     const { createFirestoreRemoteDocuments, getFirebaseServices } =
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('./firebase') as FirebaseModule;
-    return createFirestoreRemoteDocuments(
-      getFirebaseServices(env.emulatorHost ? { host: env.emulatorHost } : undefined),
-    );
+    const host = firebaseEmulatorHost(env);
+    return createFirestoreRemoteDocuments(getFirebaseServices(host ? { host } : undefined));
   } catch {
     return null;
   }
