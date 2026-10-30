@@ -1,6 +1,7 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { ROUTES } from '@/core/navigation';
+import { createMemoryDeviceSettingsStore, type DeviceSettingsStore } from '@/features/orders';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
@@ -110,5 +111,73 @@ describe('SecurityScreen (UI-I05, khung 14)', () => {
     expect(mockNavigation.push).not.toHaveBeenCalled();
     // Các hàng khóa vẫn hiện, lỗi một khu vực không làm mất cả màn.
     expect(screen.getByTestId('security-twoFactor')).toBeOnTheScreen();
+  });
+
+  describe('Gửi báo lỗi ứng dụng (V1-16)', () => {
+    const LABEL = { name: /Gửi báo lỗi ứng dụng/ };
+
+    async function openWith(store: DeviceSettingsStore) {
+      await renderWithProviders(<SecurityScreen />, {
+        personalGateways: createFakePersonalGateways(),
+        deviceSettingsStore: store,
+      });
+      const toggle = await screen.findByRole('switch', LABEL);
+      await waitFor(() =>
+        expect(toggle.props.accessibilityState).toMatchObject({ disabled: false }),
+      );
+      return toggle;
+    }
+
+    it('mặc định bật, mô tả nói rõ không kèm tài khoản/email/mã đơn/video, nằm nhóm riêng', async () => {
+      const toggle = await openWith(createMemoryDeviceSettingsStore());
+      expect(toggle.props.accessibilityState).toMatchObject({ checked: true });
+      expect(screen.getByTestId('security-group-diagnostics')).toContainElement(toggle);
+      expect(
+        screen.getByText(
+          'Khi ứng dụng gặp lỗi, gửi mã lỗi và loại máy để sửa lỗi. Không kèm tài khoản, email, mã đơn hay video.',
+        ),
+      ).toBeOnTheScreen();
+    });
+
+    it('tắt: lưu vào cài đặt máy; bật lại: báo hiệu lực đầy đủ từ lần mở sau', async () => {
+      const store = createMemoryDeviceSettingsStore();
+      const toggle = await openWith(store);
+      await act(async () => fireEvent.press(toggle));
+      await waitFor(async () => expect(await store.read('privacy.crash_reports')).toBe('false'));
+      expect(screen.getByRole('switch', LABEL).props.accessibilityState).toMatchObject({
+        checked: false,
+      });
+      await waitFor(() =>
+        expect(screen.getByRole('switch', LABEL).props.accessibilityState).toMatchObject({
+          disabled: false,
+        }),
+      );
+      await act(async () => fireEvent.press(screen.getByRole('switch', LABEL)));
+      await waitFor(async () => expect(await store.read('privacy.crash_reports')).toBe('true'));
+      expect(
+        await screen.findByText('Đã bật báo lỗi. Có hiệu lực đầy đủ từ lần mở ứng dụng sau.'),
+      ).toBeOnTheScreen();
+    });
+
+    it('đã lưu tắt thì hiện tắt', async () => {
+      const store = createMemoryDeviceSettingsStore();
+      await store.write('privacy.crash_reports', 'false', 1);
+      const toggle = await openWith(store);
+      expect(toggle.props.accessibilityState).toMatchObject({ checked: false });
+    });
+
+    it('ghi cài đặt lỗi: báo lỗi, công tắc giữ nguyên', async () => {
+      const toggle = await openWith({
+        read: async () => undefined,
+        write: async () => {
+          throw new Error('đầy');
+        },
+      });
+      await act(async () => fireEvent.press(toggle));
+      expect(await screen.findByText('Chưa lưu được cài đặt. Bạn thử lại nhé.')).toBeOnTheScreen();
+      expect(screen.getByRole('switch', LABEL).props.accessibilityState).toMatchObject({
+        checked: true,
+      });
+    });
   });
 });

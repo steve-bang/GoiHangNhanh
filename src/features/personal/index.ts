@@ -16,6 +16,7 @@ export { ProfileScreen } from './ui/ProfileScreen';
 export { useCurrentShopName } from './ui/use-current-shop-name';
 export { RetentionDetailScreen } from './ui/RetentionDetailScreen';
 export { SecurityScreen } from './ui/SecurityScreen';
+export { CRASH_REPORTS_ENABLED } from './domain/crash-reports';
 export { ShopEditScreen } from './ui/ShopEditScreen';
 export { ShopSettingsScreen } from './ui/ShopSettingsScreen';
 export { ShopSwitchScreen } from './ui/ShopSwitchScreen';

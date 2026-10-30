@@ -254,7 +254,7 @@ Rủi ro kỹ thuật cần kiểm tra khi làm Function xác minh (spike S5): t
 - **Vai trò** `owner`, `manager`, `packer`, `returns_staff`, `dispute_handler`, `viewer` (docs/07). Ma trận quyền theo hành động còn mở (O-07), nên Rules hiện dùng **khung tạm**: thành viên đang hoạt động đọc được; `owner`/`manager`/`packer` ghi đơn, phiên, bằng chứng; chỉ `owner`/`manager`/`dispute_handler` đọc audit; mọi thay đổi thành viên qua Function. Khi O-07 chốt phải cập nhật Rules + test.
 - **Test truy cập chéo shop (QA-11)**: `firebase/tests/rules/firestore.rules.test.ts` và `storage.rules.test.ts` (đã chạy được với Emulator). Gồm: không đăng nhập, đoán ID tài liệu/danh sách của shop khác (kể cả chủ shop khác), người lạ, thành viên bị thu hồi, tự nâng quyền, giả mạo `shopId`.
 - **Không bí mật trong app**: không khóa dịch vụ, không khóa ký URL; mọi thao tác cần quyền cao đi qua Function.
-- **Quyền riêng tư**: thu thập tối thiểu; không đưa mã đơn/mã vận đơn/thông tin khách vào log/crash/analytics (logger che trường nhạy cảm; xem conventions mục 7). Chọn dịch vụ crash/analytics là quyết định riêng, chưa làm.
+- **Quyền riêng tư**: thu thập tối thiểu; không đưa mã đơn/mã vận đơn/thông tin khách vào log/crash/analytics (logger che trường nhạy cảm; xem conventions mục 7). Báo lỗi ứng dụng: Firebase Crashlytics (V1-16, mục 11.7c), không Analytics.
 
 ## 10. Offline-first và xung đột đồng bộ
 
@@ -355,6 +355,18 @@ Ngày kiểm tra: **2026-10-26**. "Cập nhật" = thời điểm xuất bản g
 | Cấu hình | Config plugin; đặt `supportsBackgroundPlayback`/`supportsPictureInPicture` = `false` (không thêm quyền/chế độ nền) | Thủ công |
 
 **Chọn `expo-video`** sau adapter `src/platform/video-player.tsx` (`LocalVideoPlayer`, `useCaching: false`, chỉ đọc). Chưa kiểm chứng trên thiết bị (video dài, tua, máy yếu: release-checklist G-6).
+
+### 11.7c Báo lỗi ứng dụng (V1-16, 2026-10-30)
+
+`@react-native-firebase/crashlytics` **27.1.0** (cùng họ `app`/`auth`/`firestore`/`functions` 27.1.0 đã dùng, kế hoạch v1 mục 1.2; không thêm SDK bên thứ ba khác). Không cân nhắc Sentry/Bugsnag: thêm một bên xử lý dữ liệu mới, khai báo store thêm một SDK, trong khi Firebase đã là backend.
+
+- **Cấu hình:** plugin `@react-native-firebase/crashlytics` trong `app.json` (Gradle Android: plugin `com.google.firebase.crashlytics` để tải mapping; iOS: pha tải dSYM của RNFirebase). `firebase.json` ở **gốc repo** (RNFirebase đọc lúc build; khác `firebase/firebase.json` của Firebase CLI, mọi lệnh CLI của repo đã dùng `--config firebase/firebase.json`): `crashlytics_auto_collection_enabled: false` (không gửi gì tới khi app đọc công tắc), `crashlytics_debug_enabled: false`, `crashlytics_is_error_generation_on_js_crash_enabled: false`.
+- **Luồng:** `src/bootstrap/CrashReportingBridge.tsx` (chỉ bản build không `__DEV__`, không test, backend `firebase`) đọc cài đặt máy `privacy.crash_reports` (mặc định bật, R-8 A) -> `crashReporter.setEnabled` + `setLogSink` của logger. Logger chuyển bản ghi `warn` (dòng nhật ký kèm báo cáo) và `error` (thêm lỗi không fatal `LoggedError`) **sau khi lọc** bằng `core/logging/crash-safe.ts`. Adapter thay handler lỗi JS toàn cục của RNFirebase: lỗi được lọc rồi mới ghi/chuyển cho handler mặc định React Native (sập native mang thông điệp đã lọc).
+- **Tắt:** ngay lập tức phía JS, `setCrashlyticsCollectionEnabled(false)` (SDK nhớ qua các lần mở) + `deleteUnsentReports`. **Bật lại:** lỗi JS ghi ngay; sập native chắc chắn từ lần mở app sau.
+- **Lỗi render và lúc khởi động (sửa sau review PR #62):** RN 0.88 đưa lỗi render chưa bắt thẳng tới `ExceptionsManager.handleException` (không qua `ErrorUtils`). Vì vậy app có `RootErrorBoundary` ngoài cùng (không vẽ UI, có lỗi thì `null`): lọc lỗi tại chỗ trong `getDerivedStateFromError`, rồi chuyển cho handler toàn cục như fatal. Handler lọc cài ngay khi nạp `src/app/_layout.tsx` (`bootstrap/crash-reporting-early.ts`), không đợi effect.
+- **Stack:** một dòng chỉ là khung khi kết thúc bằng vị trí (`:dòng:cột`, `native`, `<anonymous>`); tên hàm phải là định danh JS không có chuỗi 4+ chữ số, tên tệp chỉ giữ tên cuối có đuôi mã/bundle, không khớp thì `<unknown>`/`<file>`.
+- **Không gửi:** `setUserId`, khóa tùy chỉnh, `error.message`, componentStack, đường dẫn. Lỗi Promise bị từ chối không bắt (Hermes) không được gửi, trừ khi đi qua `logger.error`; handler Promise của RNFirebase gửi `message` gốc nhưng bất hoạt trên Hermes (decisions Q-29 / V1-16 k, kiểm G-9).
+- **Chưa kiểm chứng:** build iOS `useFrameworks: "dynamic"` + Crashlytics, dSYM/mapping, báo cáo thật trong Console (release-checklist S-3b, G-9).
 
 ### 11.8 Quản lý state, điều hướng, form, i18n
 

@@ -24,20 +24,20 @@ Hướng dẫn từ máy phát triển đến phát hành production trên **Goo
 
 Không gửi bản lên cửa hàng công khai khi còn mục nào dưới đây chưa xong.
 
-| #   | Việc                                                                                               | Trạng thái  | Ghi chú                                                                        |
-| --- | -------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------ |
-| 1   | Chốt **tên ứng dụng và định danh gói** (O-11, Q-06)                                                | Chưa        | `vn.doncung.app.dev` là chỗ giữ chỗ và **không đổi được sau khi đã phát hành** |
-| 2   | Chốt **khu vực dữ liệu Firebase** (Q-08)                                                           | Chưa        | Không đổi được sau khi tạo; cần rà soát pháp lý (D-08)                         |
-| 3   | Tạo dự án Firebase `dev`/`staging`/`prod`, thay cổng giả bằng Firebase thật (ADR-002, ADR-009)     | Chưa        | Hiện chỉ có Rules + Emulator                                                   |
-| 4   | Chốt thư viện **ghi video, tải nền, mã băm** qua spike S1–S6 trên thiết bị thật (ADR-003, ADR-004) | Chưa        | Rủi ro kỹ thuật cao nhất                                                       |
-| 5   | Bật ghi video thật (`RECORDER_ENABLED`), bỏ dải "chưa ghi video"                                   | Chưa        | Không phát hành bản quảng bá ghi bằng chứng khi chưa ghi được                  |
-| 6   | Chốt **sàn phiên bản** iOS/Android (O-20)                                                          | Chưa        | Xem `docs/engineering/platform-support.md`                                     |
-| 7   | Chốt **đăng nhập Apple/Google** (O-15) và OTP (O-22)                                               | Chưa        | Liên quan quy định của Apple (mục 8.3)                                         |
-| 8   | URL thật cho Điều khoản và Chính sách quyền riêng tư                                               | Chưa        | `src/core/config/legal-links.ts` đang là `.invalid`                            |
-| 9   | Chọn dịch vụ crash/analytics hoặc quyết định không dùng (Q-07)                                     | Chưa        | Phải lọc mã đơn/vận đơn/thông tin khách                                        |
-| 10  | Chạy ma trận kiểm thử trên máy thật iOS + Android (`platform-support.md` mục 5, QA-01…14)          | Chưa        |                                                                                |
-| 11  | `npm run check` và `npm run test:rules` qua trên commit phát hành                                  | Có thể chạy |                                                                                |
-| 12  | Quyết định sao lưu bản gốc cục bộ (Q-09)                                                           | Chưa        |                                                                                |
+| #   | Việc                                                                                               | Trạng thái                   | Ghi chú                                                                        |
+| --- | -------------------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------ |
+| 1   | Chốt **tên ứng dụng và định danh gói** (O-11, Q-06)                                                | Chưa                         | `vn.doncung.app.dev` là chỗ giữ chỗ và **không đổi được sau khi đã phát hành** |
+| 2   | Chốt **khu vực dữ liệu Firebase** (Q-08)                                                           | Chưa                         | Không đổi được sau khi tạo; cần rà soát pháp lý (D-08)                         |
+| 3   | Tạo dự án Firebase `dev`/`staging`/`prod`, thay cổng giả bằng Firebase thật (ADR-002, ADR-009)     | Chưa                         | Hiện chỉ có Rules + Emulator                                                   |
+| 4   | Chốt thư viện **ghi video, tải nền, mã băm** qua spike S1–S6 trên thiết bị thật (ADR-003, ADR-004) | Chưa                         | Rủi ro kỹ thuật cao nhất                                                       |
+| 5   | Bật ghi video thật (`RECORDER_ENABLED`), bỏ dải "chưa ghi video"                                   | Chưa                         | Không phát hành bản quảng bá ghi bằng chứng khi chưa ghi được                  |
+| 6   | Chốt **sàn phiên bản** iOS/Android (O-20)                                                          | Chưa                         | Xem `docs/engineering/platform-support.md`                                     |
+| 7   | Chốt **đăng nhập Apple/Google** (O-15) và OTP (O-22)                                               | Chưa                         | Liên quan quy định của Apple (mục 8.3)                                         |
+| 8   | URL thật cho Điều khoản và Chính sách quyền riêng tư                                               | Chưa                         | `src/core/config/legal-links.ts` đang là `.invalid`                            |
+| 9   | Chọn dịch vụ crash/analytics hoặc quyết định không dùng (Q-07)                                     | Đã có mã (V1-16), chưa build | Crashlytics có lọc dữ liệu, không Analytics; kiểm release-checklist S-3b, G-9  |
+| 10  | Chạy ma trận kiểm thử trên máy thật iOS + Android (`platform-support.md` mục 5, QA-01…14)          | Chưa                         |                                                                                |
+| 11  | `npm run check` và `npm run test:rules` qua trên commit phát hành                                  | Có thể chạy                  |                                                                                |
+| 12  | Quyết định sao lưu bản gốc cục bộ (Q-09)                                                           | Chưa                         |                                                                                |
 
 ## 2. Môi trường và tài khoản
 
@@ -191,7 +191,14 @@ Rules là lớp bảo vệ thật (cô lập theo shop, bất biến #8): **khô
 
 ### 4.4 Cloud Functions
 
-`firebase/functions/` chưa có mã **[Chưa có]**. Khi thêm: tạo `package.json` riêng, thêm khối `"functions"` vào `firebase/firebase.json`, thêm Functions vào Emulator của `test:rules`/CI, rồi `npx firebase deploy --only functions --project <env>`. Callable `createShop` là chức năng đầu tiên dự kiến (decisions Q-14).
+`firebase/functions/` **đã có mã** (`package.json` riêng; khối `"functions"` đã có trong `firebase/firebase.json`): `createShop`, `updateShop`, `createUploadSession`, `verifyEvidence`, trigger kiểm toán và xác minh lại (V1-04), `deleteAccount`, `purgeDeletedShops` (V1-14). Logic được test trong `npm run test:rules` (Emulator). Deploy (chi tiết và thứ tự: `docs/engineering/firebase-setup.md` mục 5):
+
+```bash
+npm --prefix firebase/functions ci
+npx firebase deploy --config firebase/firebase.json --project <env> --only functions
+```
+
+**Luôn dùng `--config firebase/firebase.json`** (hoặc chạy trong thư mục `firebase/`): `firebase.json` ở gốc repo là cấu hình của React Native Firebase cho Crashlytics (V1-16, khóa `react-native`), không phải cấu hình Firebase CLI; chạy `firebase deploy` ở gốc mà không có `--config` sẽ không thấy Rules/Functions.
 
 ### 4.5 Tệp cấu hình Firebase cho app
 

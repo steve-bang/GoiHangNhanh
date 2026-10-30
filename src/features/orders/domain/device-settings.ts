@@ -6,6 +6,7 @@
  *
  * Khóa đã dùng (thêm khóa mới vào danh sách này để tránh trùng):
  * - `upload.wifi_only` (boolean, mặc định `false`): V1-09, `features/upload`.
+ * - `privacy.crash_reports` (boolean, mặc định `true`): V1-16, `features/personal` (Gửi báo lỗi ứng dụng).
  */
 export interface DeviceSettingDefinition<T> {
   /** Khóa ổn định dạng `<nhóm>.<tên>`; không đổi sau khi phát hành (giá trị cũ sẽ mất). */

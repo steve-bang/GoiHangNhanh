@@ -26,6 +26,9 @@ import { UploadRunner } from '@/features/upload';
 import { excludeEvidenceDirFromBackup } from '@/platform';
 import { ToastProvider } from '@/shared/ui';
 
+import { CrashReportingBridge } from './CrashReportingBridge';
+import { RootErrorBoundary } from './RootErrorBoundary';
+
 const i18n = initI18n();
 
 /**
@@ -63,34 +66,39 @@ export function AppProviders({ children }: { children: ReactNode }) {
     excludeEvidenceDirFromBackup().catch(() => undefined);
   }, []);
   return (
-    <I18nextProvider i18n={i18n}>
-      <StatusBar style="dark" />
-      <OnboardingFlowProvider>
-        <PersonalGatewaysProvider>
-          <SessionProvider>
-            {/* V1-15: thấy dấu xóa dở thì xóa xong TRƯỚC khi nạp phiên, dựng kho/tiến trình nền/màn hình. */}
-            <LocalWipeProvider>
-              {/* Nạp phiên ở gốc (V1-06): liên kết sâu tới màn ngoài nhóm tab cũng được nạp. */}
-              <SessionHydrator />
-              <ToastProvider>
-                <SessionShopProvider>
-                  <OrderStoreProvider>
-                    <EvidenceFileStoreProvider>
-                      <ReturnStoreProvider>
-                        <DisputeStoreProvider>
-                          <DeviceSettingsProvider>
-                            <BackgroundRunners>{children}</BackgroundRunners>
-                          </DeviceSettingsProvider>
-                        </DisputeStoreProvider>
-                      </ReturnStoreProvider>
-                    </EvidenceFileStoreProvider>
-                  </OrderStoreProvider>
-                </SessionShopProvider>
-              </ToastProvider>
-            </LocalWipeProvider>
-          </SessionProvider>
-        </PersonalGatewaysProvider>
-      </OnboardingFlowProvider>
-    </I18nextProvider>
+    // V1-16: boundary ngoài cùng, không vẽ UI; lỗi render đi qua bộ lọc báo lỗi rồi dừng app như cũ.
+    <RootErrorBoundary>
+      <I18nextProvider i18n={i18n}>
+        <StatusBar style="dark" />
+        <OnboardingFlowProvider>
+          <PersonalGatewaysProvider>
+            <SessionProvider>
+              {/* V1-15: thấy dấu xóa dở thì xóa xong TRƯỚC khi nạp phiên, dựng kho/tiến trình nền/màn hình. */}
+              <LocalWipeProvider>
+                {/* Nạp phiên ở gốc (V1-06): liên kết sâu tới màn ngoài nhóm tab cũng được nạp. */}
+                <SessionHydrator />
+                <ToastProvider>
+                  <SessionShopProvider>
+                    <OrderStoreProvider>
+                      <EvidenceFileStoreProvider>
+                        <ReturnStoreProvider>
+                          <DisputeStoreProvider>
+                            <DeviceSettingsProvider>
+                              {/* V1-16: công tắc "Gửi báo lỗi ứng dụng" -> Crashlytics (chỉ bản build Firebase). */}
+                              <CrashReportingBridge />
+                              <BackgroundRunners>{children}</BackgroundRunners>
+                            </DeviceSettingsProvider>
+                          </DisputeStoreProvider>
+                        </ReturnStoreProvider>
+                      </EvidenceFileStoreProvider>
+                    </OrderStoreProvider>
+                  </SessionShopProvider>
+                </ToastProvider>
+              </LocalWipeProvider>
+            </SessionProvider>
+          </PersonalGatewaysProvider>
+        </OnboardingFlowProvider>
+      </I18nextProvider>
+    </RootErrorBoundary>
   );
 }

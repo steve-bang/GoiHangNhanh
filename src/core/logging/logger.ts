@@ -1,4 +1,5 @@
 /* eslint-disable no-console -- đây là điểm duy nhất được phép ghi console */
+import { crashSafeEvent, crashSafeFields, type CrashSafeRecord } from './crash-safe';
 
 /**
  * Logger tối giản có che trường nhạy cảm. Mọi log trong ứng dụng đi qua đây (rule no-console).
@@ -62,10 +63,34 @@ export function redact(value: unknown, depth = 0): unknown {
 
 type Level = 'debug' | 'info' | 'warn' | 'error';
 
+/**
+ * Nơi nhận bản ghi mức `warn`/`error` ĐÃ LỌC theo danh sách cho phép (`crash-safe.ts`), ví dụ báo lỗi
+ * ứng dụng (V1-16). Sink không bao giờ thấy trường thô; `debug`/`info` không tới sink.
+ */
+export type LogSink = (record: CrashSafeRecord) => void;
+
+let sink: LogSink | null = null;
+
+/** Gắn (hoặc gỡ bằng `null`) sink. Chỉ composition root gọi (`CrashReportingBridge`). */
+export function setLogSink(next: LogSink | null): void {
+  sink = next;
+}
+
+function forward(level: 'warn' | 'error', event: string, redacted: unknown): void {
+  const current = sink;
+  if (!current) return;
+  try {
+    current({ level, event: crashSafeEvent(event), fields: crashSafeFields(redacted) });
+  } catch {
+    // Log không bao giờ làm hỏng luồng chính; lỗi của sink bị bỏ qua.
+  }
+}
+
 function emit(level: Level, event: string, fields?: Record<string, unknown>): void {
   const payload = fields === undefined ? undefined : redact(fields);
   if (payload === undefined) console[level](`[${level}] ${event}`);
   else console[level](`[${level}] ${event}`, payload);
+  if (level === 'warn' || level === 'error') forward(level, event, payload);
 }
 
 export const logger = {
