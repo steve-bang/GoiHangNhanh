@@ -268,6 +268,7 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
 - **Test:** adapter giả: bật/tắt đúng pha, đúng một lần; vào nền khi ghi gọi dừng một lần và phiên `interrupted`; không gọi sau khi màn bị gỡ; không có `Platform.OS` trong màn.
 - **Ảnh:** màn quay (xem trước, cờ ghi tắt trên web) với dòng chú thích; hộp báo "đã dừng vì ứng dụng vào nền" (tham số tạm trong bản sao).
 - **Rủi ro:** iOS có thể không cho đủ thời gian lưu/băm khi vào nền: dựa vào `recoverInterruptedRecordings` lúc mở lại (đã có); hành vi `expo-camera` khi vào nền **chỉ biết trên máy thật** (cổng G-4). **Phụ thuộc:** không.
+- *Đã làm (2026-10-30): xem [plans/v1-11-recording-hardening.md](plans/v1-11-recording-hardening.md) và decisions.md Q-29 / V1-11. Lệch so với dòng trên: (1) chỉ `background` mới dừng, `inactive` của iOS không (hộp thoại hệ thống, Trung tâm điều khiển); (2) giữ sáng cả lúc đang lưu; (3) camera tự dừng sớm cũng đánh dấu gián đoạn; (4) dòng chú thích chỉ hiện khi ghi thật; thêm câu cảnh báo ở UI-C04 cho phiên `interrupted` và bài hỏi đáp Trợ giúp. Pin/nhiệt độ cho D04 ngoài phạm vi.*
 
 #### V1-12 backup-exclusion-ios
 - **Mục tiêu:** Q-24d A cho iOS (Android đã xong ở V1-01).

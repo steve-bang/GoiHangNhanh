@@ -57,6 +57,12 @@ export interface RecordingPorts {
   readonly minFreeBytes?: number;
   /** Giới hạn thời lượng một lần quay (giây); không truyền = không giới hạn ở camera. */
   readonly maxDurationSec?: number;
+  /**
+   * Lần quay bị gián đoạn (app vào nền, camera bị hệ thống ngắt sớm; V1-11): đọc khi tệp ĐÃ lưu bền để
+   * đặt phiên `interrupted` thay vì `ended`. Video vẫn là bản gốc của phần đã ghi, không ghép/quay tiếp.
+   * Không truyền = không gián đoạn.
+   */
+  wasInterrupted?(): boolean;
 }
 
 export type RecordingOutcome =
@@ -97,7 +103,8 @@ const extensionOf = (uri: string): string => {
  *    (bất biến 2); không tạo được thì KHÔNG quay.
  * 2. Phiên chuyển `recording` rồi mới ghi.
  * 3. Dừng: `saving_local` -> chuyển tệp vào thư mục bền -> băm -> `queued` (có đường dẫn, kích thước,
- *    mã băm). Tới đây tệp mới "đã lưu trên máy". Lỗi ở bất kỳ bước nào ghi `local_save_failed` hoặc
+ *    mã băm). Tới đây tệp mới "đã lưu trên máy"; phiên `ended`, hoặc `interrupted` nếu
+ *    `ports.wasInterrupted()` (vào nền, camera bị ngắt sớm). Lỗi ở bất kỳ bước nào ghi `local_save_failed` hoặc
  *    giữ trạng thái đúng thực tế và phiên `needs_attention`/`interrupted`; KHÔNG nói đã lưu.
  *    Ngay sau khi chuyển tệp, đường dẫn MỚI được ghi vào bản ghi (`LOCAL_FILE_MOVED`) TRƯỚC khi băm
  *    (băm bằng JS có thể mất rất lâu): app bị kill lúc băm thì không mất dấu bản gốc. Mọi lỗi sau bước
@@ -250,9 +257,11 @@ async function finish(
     }
     // Từ đây video ĐÃ an toàn trong hàng đợi: cập nhật phiên chỉ là cố gắng. Lỗi ở đây KHÔNG được làm
     // UI báo "chưa lưu được"; phiên kẹt ở `recording` sẽ được đối chiếu lại lúc mở app (reconcile).
-    await orders
-      .updateSessionStatus(shopId, session.id, SESSION_STATUS.ENDED)
-      .catch(() => undefined);
+    // Gián đoạn (V1-11) thì phiên `interrupted`: video có thể thiếu phần sau, không được coi là đủ (A05).
+    const sessionStatus = ports.wasInterrupted?.()
+      ? SESSION_STATUS.INTERRUPTED
+      : SESSION_STATUS.ENDED;
+    await orders.updateSessionStatus(shopId, session.id, sessionStatus).catch(() => undefined);
     return { kind: 'saved', evidenceId };
   } catch {
     // Lỗi kho cục bộ giữa chừng: cố ghi lỗi (kèm đường dẫn bền nếu đã chuyển tệp); không được thì lần

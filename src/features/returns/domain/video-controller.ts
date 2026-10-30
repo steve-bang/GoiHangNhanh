@@ -48,6 +48,11 @@ export interface VideoPorts {
   readonly minFreeBytes: number;
   /** Giới hạn thời lượng một lần quay (giây); camera tự dừng và trả tệp hợp lệ khi tới hạn. */
   readonly maxDurationSec?: number;
+  /**
+   * Lần quay bị gián đoạn (app vào nền, camera bị hệ thống ngắt sớm; V1-11): đọc khi video ĐÃ lưu bền để
+   * ghi vào hồ sơ `interrupted: true` (hạn chế bằng chứng). Không truyền = không gián đoạn.
+   */
+  wasInterrupted?(): boolean;
 }
 
 /** Vì sao KHÔNG bắt đầu quay (chưa tạo bản ghi nào, trừ `LOCAL_STORE`/`RECORDER_FAILED`). */
@@ -73,6 +78,8 @@ export type VideoOutcome =
        * hồ sơ (lỗi kho); bên gọi thử lại bằng `saveOpeningVideoRecorded`, không được báo "chưa lưu video".
        */
       readonly recordedInCase: boolean;
+      /** Lần quay bị gián đoạn (giá trị đã ghi, hoặc cần ghi khi đối soát nếu `recordedInCase = false`). */
+      readonly interrupted: boolean;
     }
   | { readonly kind: 'failed'; readonly mediaId: string | null; readonly reason: VideoFailure };
 
@@ -227,10 +234,11 @@ async function finish(
     }
     // Từ đây video ĐÃ an toàn trong hàng đợi: ghi vào hồ sơ chỉ là cố gắng. Lỗi ở đây KHÔNG được làm UI
     // báo "chưa lưu được video"; màn mở lại sẽ đối chiếu (video đã lưu mà hồ sơ chưa ghi nhận).
+    const interrupted = ports.wasInterrupted?.() ?? false;
     const recordedInCase = await store
       .saveOpeningVideoRecorded(shopId, returnId, {
         mediaId,
-        interrupted: false,
+        interrupted,
         atDevice: now(),
         eventId: newId(),
       })
@@ -238,7 +246,7 @@ async function finish(
         () => true,
         () => false, // lỗi kho hoặc hồ sơ đã có kết luận khác (hiếm): video vẫn nằm trong hàng đợi
       );
-    return { kind: 'saved', mediaId, recordedInCase };
+    return { kind: 'saved', mediaId, recordedInCase, interrupted };
   } catch {
     // Lỗi kho cục bộ giữa chừng: cố ghi lỗi (kèm đường dẫn bền nếu đã chuyển tệp).
     await markFailed(ports, shopId, mediaId, savedUri ?? undefined);

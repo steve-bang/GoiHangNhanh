@@ -171,7 +171,10 @@
     "backToOrder": "Về đơn hàng",
     "limitSoon": "Sắp đủ {{minutes}} phút. App sẽ tự dừng quay.",
     "limitReachedSaving": "Đã đủ {{minutes}} phút. App đang dừng quay và lưu video.",
-    "limitReached": "Mỗi lần quay tối đa {{minutes}} phút nên app đã tự dừng. Video đã lưu trên máy."
+    "limitReached": "Mỗi lần quay tối đa {{minutes}} phút nên app đã tự dừng. Video đã lưu trên máy.",
+    "killWarning": "Giữ ứng dụng mở trong lúc quay. Nếu ứng dụng bị tắt, đoạn đang quay có thể mất.",
+    "backgroundSaving": "Đã dừng quay vì ứng dụng chuyển sang nền. Đang lưu phần đã quay…",
+    "stoppedInBackground": "Đã dừng quay vì ứng dụng chuyển sang nền. Ứng dụng không tự quay tiếp."
   },
   "confirm": {
     "nothingSaved": "Bản thử giao diện: chưa có video nào được lưu.",
@@ -193,7 +196,8 @@
     "uploadFailedMessage": "Video vẫn lưu trên máy. Tải lên chưa được, app sẽ tự thử lại.",
     "uploadAttentionMessage": "Video vẫn lưu trên máy. Việc tải lên cần bạn xử lý ở phần bằng chứng của đơn.",
     "hashMismatchMessage": "Máy chủ báo tệp không khớp bản trên máy. Video gốc vẫn được giữ trên máy.",
-    "partialFailed": "Một số video chưa lưu được trên máy. Video còn lại đã lưu trên máy."
+    "partialFailed": "Một số video chưa lưu được trên máy. Video còn lại đã lưu trên máy.",
+    "interrupted": "Lần quay bị gián đoạn giữa chừng. Video có thể thiếu phần sau."
   },
   "packDone": {
     "nothingSaved": "Bản thử giao diện: chưa có video nào được lưu.",

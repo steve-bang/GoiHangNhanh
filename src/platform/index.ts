@@ -35,7 +35,8 @@ export {
 export { shareText } from './share-text';
 export { openLocalDatabase } from './local-db';
 export type { SqlDatabase, SqlParam } from './sql-database';
-export { subscribeAppActive } from './app-state';
+export { onceAppActive, subscribeAppActive, subscribeAppBackground } from './app-state';
+export { useKeepScreenAwake } from './keep-awake';
 export { monotonicNow } from './monotonic-clock';
 export { hashFile, HASH_CHUNK_BYTES } from './file-hasher';
 export type { HashFileResult } from './file-hasher';

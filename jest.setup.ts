@@ -53,3 +53,10 @@ jest.mock(
   '@/platform/video-player',
   () => jest.requireActual('@/test-utils/mock-video-player').videoPlayerMock,
 );
+
+// Giữ màn hình sáng (expo-keep-awake là mô-đun native): thay bằng bộ đếm bật/tắt theo tag. Điều khiển
+// qua `mockKeepAwake` trong `src/test-utils/mock-keep-awake.ts`; test của adapter dùng `jest.unmock`.
+jest.mock(
+  '@/platform/keep-awake',
+  () => jest.requireActual('@/test-utils/mock-keep-awake').keepAwakeMock,
+);

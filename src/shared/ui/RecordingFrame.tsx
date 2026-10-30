@@ -20,6 +20,11 @@ interface RecordingFrameProps {
   secondaryLabel: string;
   clockLabel: string;
   guidance: string;
+  /**
+   * Một dòng chữ nhỏ dưới nút dừng, nói giới hạn của việc ghi (V1-11, Q-24b: "nếu ứng dụng bị tắt, đoạn
+   * đang quay có thể mất"). Chỉ màn GHI THẬT truyền; màn chỉ xem trước không ghi gì nên không có.
+   */
+  footnote?: string;
   /** Người dùng chọn "Dừng quay". */
   onStop: () => void;
   /** Người dùng xác nhận "Kết thúc phiên" trong hộp thoại cảnh báo rời màn. */
@@ -72,6 +77,7 @@ function RecordingFrameBody({
   secondaryLabel,
   clockLabel,
   guidance,
+  footnote,
   onStop,
   onEndSession,
   stopHidden = false,
@@ -289,6 +295,25 @@ function RecordingFrameBody({
               </View>
             </Pressable>
           )}
+          {footnote ? (
+            <Text
+              testID="recording-footnote"
+              variant="caption"
+              style={[
+                styles.previewText,
+                styles.footnote,
+                {
+                  color: tokens.color.camera.onCamera,
+                  backgroundColor: tokens.color.overlay.scrim,
+                  borderRadius: tokens.radius.md,
+                  paddingHorizontal: tokens.space.sm,
+                  paddingVertical: tokens.space.tight,
+                },
+              ]}
+            >
+              {footnote}
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -342,6 +367,7 @@ const styles = StyleSheet.create({
   previewText: { textAlign: 'center', alignSelf: 'stretch' },
   bottom: { alignItems: 'center' },
   guidance: { alignSelf: 'stretch' },
+  footnote: { overflow: 'hidden' },
   stopWrap: {
     alignItems: 'center',
     minHeight: layout.component.record.stopAreaMinHeight,

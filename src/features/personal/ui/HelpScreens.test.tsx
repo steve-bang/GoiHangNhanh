@@ -167,11 +167,19 @@ describe('Chi tiết bài hướng dẫn (khung 16)', () => {
   });
 
   it('bài cuối của danh mục: không có "Tiếp theo"; bài hỏi đáp không có phần các bước', async () => {
-    mockNavigation.params = { articleId: 'whereData' };
+    mockNavigation.params = { articleId: 'recordingLimits' };
     await renderWithProviders(<HelpArticleScreen />);
     expect(screen.queryByTestId('help-article-next')).toBeNull();
     expect(screen.queryByText('Các bước thực hiện')).toBeNull();
     expect(screen.getByTestId('help-article-summary')).toBeOnTheScreen();
+  });
+
+  it('bài giới hạn khi quay (Q-24b): nói đoạn đang quay có thể mất khi app bị tắt, không hứa quay tiếp', async () => {
+    mockNavigation.params = { articleId: 'recordingLimits' };
+    await renderWithProviders(<HelpArticleScreen />);
+    const summary = screen.getByTestId('help-article-summary');
+    expect(summary).toHaveTextContent(/bị tắt giữa chừng, đoạn đang quay có thể mất/);
+    expect(summary).toHaveTextContent(/không tự quay tiếp/);
   });
 
   it('bài "chưa ghi video" nói thẳng điều đó, không hướng dẫn như đã quay được', async () => {

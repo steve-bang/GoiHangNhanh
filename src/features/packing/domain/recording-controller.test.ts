@@ -113,6 +113,27 @@ describe('startRecording', () => {
     });
   });
 
+  it('V1-11: không gián đoạn thì phiên ended; bị gián đoạn (vào nền, camera bị ngắt sớm) thì tệp lưu như thường và phiên interrupted, cùng ID phiên/kiện', async () => {
+    for (const interrupted of [false, true]) {
+      const t = await setup();
+      const ports: RecordingPorts = { ...t.ports, wasInterrupted: () => interrupted };
+      const active = await startRecording(ports, t.session);
+      if ('kind' in active) throw new Error('should start');
+      active.stop();
+      t.finish({ ok: true, tempUri: 'file:///cache/Camera/x.mov' });
+      expect(await active.result).toEqual({ kind: 'saved', evidenceId: 'ev-1' });
+      expect(t.stops).toHaveLength(1);
+      expect(await t.files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId)).toMatchObject({
+        state: 'queued',
+        sessionId: t.session.id,
+        packageId: t.session.packageId,
+      });
+      expect((await t.orders.getSession(LOCAL_SHOP_ID, t.session.id))?.sessionStatus).toBe(
+        interrupted ? 'interrupted' : 'ended',
+      );
+    }
+  });
+
   it('không chuyển được tệp vào thư mục bền: local_save_failed, KHÔNG báo đã lưu, giữ tệp tạm', async () => {
     const t = await setup();
     const active = await started(t);
