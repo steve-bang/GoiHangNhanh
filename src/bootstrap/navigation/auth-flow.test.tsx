@@ -11,6 +11,17 @@ const DEMO = 'demo@example.com';
 const DEMO_PASSWORD = 'demo-matkhau-1';
 const NEW_PASSWORD = 'mat-khau-moi-9';
 
+// v1 chạy `email_link` (D-14; decisions.md Q-29 / V1-03). Nhóm test luồng mã 6 số (để sau v1) đặt
+// `otp` để giữ kiểm thử giao diện đã có. Getter: đọc lúc dùng, không chép lúc nạp module.
+let mockRecoveryMode: 'email_link' | 'otp' = 'email_link';
+jest.mock('@/core/config/feature-flags', () =>
+  Object.defineProperty(
+    { ...jest.requireActual<object>('@/core/config/feature-flags') },
+    'PASSWORD_RECOVERY_MODE',
+    { get: () => mockRecoveryMode, enumerable: true },
+  ),
+);
+
 /**
  * Luồng đăng nhập và khôi phục mật khẩu qua Expo Router thật (trong bộ nhớ) với cổng giả của môi
  * trường test. Không thay thế kiểm thử trên thiết bị (bàn phím/tự điền mã thật, Back phần cứng).
@@ -69,16 +80,86 @@ describe('đăng nhập (Expo Router thật, cổng giả)', () => {
     expect(screen.getByTestId('signin-password').props.value).toBe('');
   });
 
-  it('màn Đăng nhập thật không có "Duy trì đăng nhập" và nút TikTok', async () => {
+  it('màn Đăng nhập thật không có "Duy trì đăng nhập", TikTok, và v1 không có Apple/Google (O-15)', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.signIn.path });
     expect(screen.queryByText(/Duy trì đăng nhập/)).toBeNull();
     expect(screen.queryByText(/TikTok/i)).toBeNull();
-    expect(screen.getByTestId('signin-social-apple')).toBeOnTheScreen();
-    expect(screen.getByTestId('signin-social-google')).toBeOnTheScreen();
+    expect(screen.queryByTestId('signin-social-apple')).toBeNull();
+    expect(screen.queryByTestId('signin-social-google')).toBeNull();
+    expect(screen.queryByText(/Apple|Google/)).toBeNull();
+  });
+
+  it.each([ROUTES.welcome.path, ROUTES.signUp.path])(
+    '%s: v1 không có nút Apple/Google (O-15)',
+    async (path) => {
+      await renderRouter(APP_DIR, { initialUrl: path });
+      expect(screen.queryByText(/Apple|Google/)).toBeNull();
+    },
+  );
+});
+
+describe('quên mật khẩu bằng thư đặt lại (v1, D-14; Expo Router thật, cổng giả)', () => {
+  it('Đăng nhập -> Quên mật khẩu -> Kiểm tra hộp thư -> Quay lại đăng nhập (email điền sẵn, không quay lại được)', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.signIn.path });
+    await fireEvent.press(screen.getByTestId('signin-forgot'));
+    await fireEvent.changeText(screen.getByTestId('forgot-email'), DEMO);
+    await fireEvent.press(screen.getByTestId('forgot-submit'));
+    expect(await screen.findByTestId('screen-UI-A07-sent')).toBeOnTheScreen();
+    expect(screen.getByTestId('recovery-sent-description')).toHaveTextContent(/de•••@example\.com/);
+    expect(screen.queryByTestId('screen-UI-A08')).toBeNull();
+
+    await fireEvent.press(screen.getByTestId('recovery-sent-back-to-sign-in'));
+    expect(await screen.findByTestId('signin-email')).toBeOnTheScreen();
+    expect(screen.getByTestId('signin-email').props.value).toBe(DEMO);
+    expect(screen.getByTestId('signin-password').props.value).toBe('');
+    // không có banner "đã đặt lại": app không biết người dùng đã đặt mật khẩu mới trên trang web chưa
+    expect(screen.queryByTestId('signin-reset-success')).toBeNull();
+    expect(router.canGoBack()).toBe(false);
+  });
+
+  it('email chưa có tài khoản: cùng màn Kiểm tra hộp thư (trung tính)', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.forgotPassword.path });
+    await fireEvent.changeText(screen.getByTestId('forgot-email'), 'khong.co@example.com');
+    await fireEvent.press(screen.getByTestId('forgot-submit'));
+    expect(await screen.findByTestId('screen-UI-A07-sent')).toBeOnTheScreen();
+    expect(screen.queryByTestId('form-error')).toBeNull();
+  });
+
+  it('"Đổi email": về Quên mật khẩu với email cũ', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.forgotPassword.path });
+    await fireEvent.changeText(screen.getByTestId('forgot-email'), DEMO);
+    await fireEvent.press(screen.getByTestId('forgot-submit'));
+    await screen.findByTestId('screen-UI-A07-sent');
+    await fireEvent.press(screen.getByTestId('recovery-sent-change-email'));
+    expect(await screen.findByTestId('forgot-email')).toBeOnTheScreen();
+    expect(screen.getByTestId('forgot-email').props.value).toBe(DEMO);
+  });
+
+  it.each([ROUTES.verifyOtp.path, ROUTES.newPassword.path])(
+    'liên kết sâu %s: về Đăng nhập (không có màn mã/mật khẩu mới ở v1)',
+    async (path) => {
+      await renderRouter(APP_DIR, { initialUrl: path });
+      expect(await screen.findByTestId('signin-email')).toBeOnTheScreen();
+      expect(screen.queryByTestId('screen-UI-A08')).toBeNull();
+      expect(screen.queryByTestId('screen-UI-A09')).toBeNull();
+    },
+  );
+
+  it('liên kết sâu /forgot-password/sent khi chưa gửi: về Quên mật khẩu', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.recoveryEmailSent.path });
+    expect(await screen.findByTestId('screen-UI-A07')).toBeOnTheScreen();
+    expect(screen.queryByTestId('screen-UI-A07-sent')).toBeNull();
   });
 });
 
-describe('quên mật khẩu -> nhập mã -> mật khẩu mới -> đăng nhập (Expo Router thật, cổng giả)', () => {
+describe('quên mật khẩu -> nhập mã -> mật khẩu mới -> đăng nhập (chế độ otp, để sau v1; Expo Router thật, cổng giả)', () => {
+  beforeEach(() => {
+    mockRecoveryMode = 'otp';
+  });
+  afterEach(() => {
+    mockRecoveryMode = 'email_link';
+  });
+
   it('đi hết luồng; về /sign-in kèm banner thành công MỘT lần; đăng nhập được bằng mật khẩu mới', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.signIn.path });
     await forgotAndVerify(DEMO);

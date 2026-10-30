@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PASSWORD_RECOVERY_MODE } from '@/core/config/feature-flags';
 import { resolveErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
@@ -31,10 +32,12 @@ export function VerifyOtpScreen() {
   const navigation = useAppNavigation();
   const { recovery, dispatchRecovery, gateways } = useOnboardingFlow();
   const requestedEmail = recovery.requestedEmail;
-  // Chặn vào bằng đường dẫn trực tiếp: kiểm tra một lần lúc mở màn.
-  const [allowed] = useState(requestedEmail !== null);
+  // Chặn vào bằng đường dẫn trực tiếp: kiểm tra một lần lúc mở màn. Chế độ thư đặt lại (v1, D-14)
+  // không có màn Nhập mã: liên kết sâu thì về Đăng nhập (decisions.md Q-29 / V1-03).
+  const otpMode = PASSWORD_RECOVERY_MODE === 'otp';
+  const [allowed] = useState(otpMode && requestedEmail !== null);
   useEffect(() => {
-    if (!allowed) navigation.replace(ROUTES.forgotPassword);
+    if (!allowed) navigation.replace(otpMode ? ROUTES.forgotPassword : ROUTES.signIn);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

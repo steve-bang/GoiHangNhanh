@@ -205,6 +205,11 @@ export class FakeAuthApi implements AuthApi {
     this.consumeFailure();
   }
 
+  /**
+   * Dùng chung cho hai chế độ (`PASSWORD_RECOVERY_MODE`): `email_link` (v1) chỉ cần kết quả trung tính
+   * và các kịch bản lỗi (bận, quá nhiều lần, mất mạng); mã `123456` chỉ có nghĩa ở chế độ `otp`.
+   * Bản giả không gửi thư thật.
+   */
   async requestPasswordRecovery(email: string): Promise<{ retryAfterSeconds?: number }> {
     this.recoveryRequests.push(email);
     await delay(this.latencyMs);

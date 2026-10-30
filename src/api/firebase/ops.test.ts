@@ -20,7 +20,17 @@ jest.mock('@react-native-firebase/firestore', () => ({
     throw new Error('unused');
   },
 }));
-jest.mock('@react-native-firebase/auth', () => ({}));
+const mockAuthCalls: string[] = [];
+let mockLanguageError: unknown = null;
+jest.mock('@react-native-firebase/auth', () => ({
+  setLanguageCode: async (_auth: unknown, code: string) => {
+    mockAuthCalls.push(`lang:${code}`);
+    if (mockLanguageError) throw mockLanguageError;
+  },
+  sendPasswordResetEmail: async (_auth: unknown, email: string, settings?: unknown) => {
+    mockAuthCalls.push(`reset:${email}:${settings === undefined ? 'no-settings' : 'settings'}`);
+  },
+}));
 jest.mock('@react-native-firebase/functions', () => ({}));
 
 const ops = createFirebaseOps({ auth: {}, db: {}, functions: {} } as FirebaseServices);
@@ -28,6 +38,8 @@ const ops = createFirebaseOps({ auth: {}, db: {}, functions: {} } as FirebaseSer
 beforeEach(() => {
   mockDocs.clear();
   mockErrors.clear();
+  mockAuthCalls.length = 0;
+  mockLanguageError = null;
 });
 
 const seed = (status: string, roles: string[]) => {
@@ -80,5 +92,18 @@ describe('isPermissionDenied', () => {
     expect(isPermissionDenied({ code: 'firestore/unavailable' })).toBe(false);
     expect(isPermissionDenied(null)).toBe(false);
     expect(isPermissionDenied(new Error('x'))).toBe(false);
+  });
+});
+
+describe('FirebaseOps.sendPasswordReset (D-14 v1)', () => {
+  it('đặt ngôn ngữ thư tiếng Việt TRƯỚC khi gửi; không actionCodeSettings (trang của Firebase)', async () => {
+    await ops.sendPasswordReset('lan@example.com');
+    expect(mockAuthCalls).toEqual(['lang:vi', 'reset:lan@example.com:no-settings']);
+  });
+
+  it('đặt ngôn ngữ lỗi: vẫn gửi thư (không chặn người dùng lấy lại mật khẩu)', async () => {
+    mockLanguageError = new Error('native');
+    await ops.sendPasswordReset('lan@example.com');
+    expect(mockAuthCalls).toEqual(['lang:vi', 'reset:lan@example.com:no-settings']);
   });
 });

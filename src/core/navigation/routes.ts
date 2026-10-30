@@ -109,8 +109,11 @@ export const ROUTES = {
   createShop: route('/create-shop', 'UI-A04'),
   permissions: route('/permissions', 'UI-A05'),
   setupDone: route('/setup-done', 'UI-A06'),
-  // Quên mật khẩu -> Nhập mã xác minh -> Mật khẩu mới (docs/09; chỉ vào được theo thứ tự này)
+  // Quên mật khẩu -> Nhập mã xác minh -> Mật khẩu mới (docs/09; chỉ vào được theo thứ tự này).
+  // v1 (`PASSWORD_RECOVERY_MODE = 'email_link'`, D-14): Quên mật khẩu -> Kiểm tra hộp thư; UI-A08/A09
+  // không có lối vào (vào thẳng thì về Đăng nhập). decisions.md Q-29 / V1-03.
   forgotPassword: route('/forgot-password', 'UI-A07'),
+  recoveryEmailSent: subRoute('/forgot-password/sent', 'forgotPassword', 'UI-A07'),
   verifyOtp: route('/verify-otp', 'UI-A08'),
   newPassword: route('/new-password', 'UI-A09'),
   // Nhóm B + C01 - tab Tổng quan

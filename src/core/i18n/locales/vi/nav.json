@@ -85,6 +85,7 @@
     "helpContact": "Liên hệ hỗ trợ",
     "helpLegal": "Điều khoản và chính sách",
     "deleteAccount": "Xóa tài khoản",
-    "orderEdit": "Sửa thông tin đơn"
+    "orderEdit": "Sửa thông tin đơn",
+    "recoveryEmailSent": "Kiểm tra hộp thư"
   }
 }

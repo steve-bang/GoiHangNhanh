@@ -3,6 +3,7 @@ import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PASSWORD_RECOVERY_MODE } from '@/core/config/feature-flags';
 import type { ErrorCode } from '@/core/errors/codes';
 import { resolveErrorMessage, type ErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
@@ -39,9 +40,14 @@ export function NewPasswordScreen() {
       : recovery.ticket,
   );
   const [requestedEmail] = useState(recovery.requestedEmail);
-  const allowed = ticket !== null;
+  // Chế độ thư đặt lại (v1, D-14): mật khẩu mới đặt trên trang của Firebase, màn này không có lối
+  // vào; liên kết sâu thì về Đăng nhập (decisions.md Q-29 / V1-03).
+  const otpMode = PASSWORD_RECOVERY_MODE === 'otp';
+  const allowed = otpMode && ticket !== null;
   useEffect(() => {
-    if (!allowed) {
+    if (!otpMode) {
+      navigation.replace(ROUTES.signIn);
+    } else if (!allowed) {
       if (recovery.ticket !== null) dispatchRecovery({ type: 'ticket_expired' });
       navigation.replace(requestedEmail ? ROUTES.verifyOtp : ROUTES.forgotPassword);
     }
