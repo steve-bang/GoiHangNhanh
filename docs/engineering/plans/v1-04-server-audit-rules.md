@@ -23,12 +23,12 @@ Nguồn: [v1-release-plan.md](../v1-release-plan.md) mục 1.2 (Q-24c), 3.0, 3.3
 - **Idempotent:** id sự kiện = `write-` + SHA-256 của `(đường dẫn tương đối trong shop, updateTime của bản sau)`; ghi bằng `create()`, đã có thì bỏ qua (giao lặp at-least-once không nhân đôi).
 - **Nội dung:** `type` (`order.created`, `session.updated`...), `entity`, `entityId`, `entityPath`, `changedFields` (tên trường cấp một đổi), `before`/`after` CHỈ của trường không nhạy cảm theo danh sách cho phép từng loại (trạng thái, số, enum, ID nội bộ, mốc thời gian; với `server` chỉ `server.state`). **Không** ghi `orderCode`, `trackingCode*`, `note`, `orderSnapshot`, tên/variant dòng, nhãn kiện, `lastError`, `interruptions` (chỉ tên trường đổi). `actorUid`: `createdBy` khi tạo, `updatedBy` khi sửa đơn (Rules ép bằng `auth.uid`), còn lại `null`; kèm `auth: { type, id }` thô từ sự kiện nếu có. `at` = giờ máy chủ.
 - **Xóa:** bỏ qua (client không xóa được; chỉ máy chủ xóa khi purge V1-14, ghi kiểm toán riêng ở `accountDeletions`; ghi sự kiện lúc purge sẽ làm sống lại `auditEvents` của shop đã xóa). Không có thay đổi trường nào (ghi lặp y nguyên): bỏ qua.
-- **Thử lại:** `retry: true` + trần tuổi sự kiện 6 giờ (quá trần: log lỗi không PII rồi kết thúc). Không ghi mã đơn/mã vận đơn vào log Function.
+- **Thử lại:** `retry: true` + trần tuổi sự kiện 24 giờ (sau review; ban đầu 6 giờ) (quá trần: log lỗi không PII rồi kết thúc). Không ghi mã đơn/mã vận đơn vào log Function.
 
 ### `verifyEvidence`
 
 - `evidence.ts` thêm `handleEvidenceFinalized(db, reader, object, eventTime, nowMs)`:
-  - Sự kiện quá 6 giờ: ghi kiểm toán `evidence.verify_abandoned` (id cố định theo generation), kết thúc, không ném.
+  - Sự kiện quá 24 giờ (sau review; ban đầu 6 giờ): ghi kiểm toán `evidence.verify_abandoned` (id cố định theo generation), kết thúc, không ném.
   - Đối tượng không còn (Storage 404): kiểm toán `evidence.verify_failed` lý do `object_missing`, kết thúc. Trạng thái máy chủ giữ `uploaded` (không bao giờ `verified`).
   - Lỗi khác (đọc tạm, Firestore): ném để thử lại.
 - `verifyEvidenceObject` nhận thêm `objectSizeBytes` (kích thước từ sự kiện finalize): vượt trần theo loại khai báo thì chốt `hash_mismatch` lý do `size_exceeds_limit` KHÔNG băm (không tốn CPU cho tệp quá cỡ), có kiểm toán như hiện tại.
@@ -83,3 +83,12 @@ Vòng 1 (bất biến 1–11, rủi ro dữ liệu, kích thước):
 Vòng 2: kiểm lại test cũ bị ảnh hưởng: `evidence-declare.rules.test.ts` dùng `kind: 'photo'` với `video/mp4` -> sửa test sang `image/jpeg` (luật loại/mime mới; app không bao giờ tạo bằng chứng đóng gói kiểu ảnh). `uploads.test.ts` seed không có `createdBy` -> seed đặt `createdBy: uid`. Không còn điểm mở.
 
 **Tự review: đã chấp nhận.** Điểm đã sửa: thêm trigger dòng/kiện; bỏ ghi sự kiện khi xóa; bỏ ràng buộc người tạo phiên; thêm test giờ thiết bị tương lai cho phiên.
+
+## Cập nhật sau review PR #44
+
+1. 🔴 Rules chặn giá trị dài mà app cho nhập (đơn không bao giờ đăng được): thêm CÙNG trần vào app (`codes.ts`, `build-order.ts`, `update-order.ts`, `maxLength = trần + 1` ở UI-B04 và Sửa đơn, lời nhắc đúng ô); bản chuẩn hóa ≤ 192 trong Rules; hàng đợi chặn trước tệp vượt trần (`UPLOAD_FILE_TOO_LARGE`). Test Rules đăng `orderWrites()` với giá trị dài nhất (qua) và dài hơn 1 (bị từ chối); unit test domain và màn.
+2. 🟡 Trần tuổi sự kiện 24 giờ (nguồn Cloud Run functions/Eventarc); `createUploadSession` xác minh lại bằng chứng kẹt `uploaded` > 15 phút; test emulator.
+3. 🟡 `occurredAt` = `updateTime`.
+4. 🟡 Tiêu đề decisions `#### Q-29 / V1-04 — server-audit-rules`.
+
+Màn đổi hiển thị (lời nhắc lỗi mới ở UI-B04 Tạo đơn nhanh và Sửa đơn): chụp ảnh ở `docs/assets/screens/v1-04-server-audit-rules/`.

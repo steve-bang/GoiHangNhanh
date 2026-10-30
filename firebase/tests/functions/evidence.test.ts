@@ -401,7 +401,19 @@ describe('handleEvidenceFinalized: thử lại có trần', () => {
   const bytes = Buffer.from('video-goc-handle');
   const NOW = Date.parse('2026-10-30T12:00:00Z');
 
-  it('sự kiện mới: xác minh như thường', async () => {
+  it('sự kiện mới, hoặc đã 23 giờ (còn trong cửa sổ thử lại 24 giờ): xác minh như thường', async () => {
+    const late = await declare(bytes);
+    expect(
+      (
+        await handleEvidenceFinalized(
+          db,
+          readerOf(bytes),
+          { name: late.path, generation: '5' },
+          new Date(NOW - 23 * 60 * 60_000).toISOString(),
+          NOW,
+        )
+      ).outcome,
+    ).toBe('verified');
     const { path } = await declare(bytes);
     const r = await handleEvidenceFinalized(
       db,
@@ -413,14 +425,14 @@ describe('handleEvidenceFinalized: thử lại có trần', () => {
     expect(r.outcome).toBe('verified');
   });
 
-  it('sự kiện quá 6 giờ: không đọc tệp, ghi một kiểm toán verify_abandoned, chạy lại không nhân đôi', async () => {
+  it('sự kiện quá 24 giờ: không đọc tệp, ghi một kiểm toán verify_abandoned, chạy lại không nhân đôi', async () => {
     const { shopId, evidenceId, path } = await declare(bytes);
     const reader: EvidenceObjectReader = {
       open: () => {
         throw new Error('không được đọc');
       },
     };
-    const old = new Date(NOW - 6 * 60 * 60_000 - 1).toISOString();
+    const old = new Date(NOW - 24 * 60 * 60_000 - 1).toISOString();
     for (let i = 0; i < 2; i += 1) {
       expect(
         (await handleEvidenceFinalized(db, reader, { name: path, generation: '5' }, old, NOW))

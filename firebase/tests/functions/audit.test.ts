@@ -82,7 +82,7 @@ describe('so sánh và tên trường đổi', () => {
 describe('recordAuditForWrite', () => {
   it('tạo đơn: đúng một sự kiện order.created, người tạo từ createdBy, không lộ mã đơn/mã vận đơn/ghi chú', async () => {
     const shopId = newShop();
-    const { outcome } = await write(
+    const { outcome, input } = await write(
       'order',
       shopId,
       { orderId: 'o1' },
@@ -117,6 +117,10 @@ describe('recordAuditForWrite', () => {
     expect(events[0]?.changedFields).toEqual(
       expect.arrayContaining(['orderCode', 'trackingCode', 'note', 'status']),
     );
+    // occurredAt = updateTime của tài liệu (lúc thay đổi xảy ra); at = lúc ghi sự kiện (không sớm hơn).
+    const occurredAt = events[0]?.occurredAt as Timestamp;
+    expect(occurredAt.isEqual(input.after.updateTime as Timestamp)).toBe(true);
+    expect((events[0]?.at as Timestamp).toMillis()).toBeGreaterThanOrEqual(occurredAt.toMillis());
     const text = JSON.stringify(events);
     for (const secret of SENSITIVE) expect(text).not.toContain(secret);
   });

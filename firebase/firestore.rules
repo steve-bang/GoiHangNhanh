@@ -68,16 +68,17 @@ service cloud.firestore {
         || (data[key] is string && data[key].size() > 0 && data[key].size() <= max);
     }
 
-    // Mã đơn/vận đơn (khớp MAX_CODE_LENGTH = 64 của app; bản chuẩn hóa viết hoa có thể dài hơn).
+    // Mã đơn/vận đơn (khớp MAX_CODE_LENGTH = 64 của app). Bản chuẩn hóa là viết hoa (toUpperCase), có
+    // thể dài gấp tối đa 3 lần (ví dụ "ﬃ" -> "FFI"), nên trần 192 = 3 x 64.
     function validOrderCodes(data) {
       return data.orderCode is string
         && data.orderCode.size() > 0
         && data.orderCode.size() <= 64
         && data.orderCodeNormalized is string
         && data.orderCodeNormalized.size() > 0
-        && data.orderCodeNormalized.size() <= 128
+        && data.orderCodeNormalized.size() <= 192
         && optionalNonEmptyText(data, 'trackingCode', 64)
-        && optionalNonEmptyText(data, 'trackingCodeNormalized', 128)
+        && optionalNonEmptyText(data, 'trackingCodeNormalized', 192)
         && optionalText(data, 'note', 500);
     }
 

@@ -277,18 +277,18 @@ describe('đơn, dòng, kiện, phiên: kiểu và độ dài', () => {
         ...base,
         orderCode: 'x'.repeat(64),
         trackingCode: 'y'.repeat(64),
-        trackingCodeNormalized: 'Y'.repeat(128),
+        trackingCodeNormalized: 'Y'.repeat(192),
         note: 'n'.repeat(500),
       }),
     );
     for (const bad of [
       { orderCode: 'x'.repeat(65) },
       { orderCodeNormalized: '' },
-      { orderCodeNormalized: 'x'.repeat(129) },
+      { orderCodeNormalized: 'x'.repeat(193) },
       { trackingCode: '' },
       { trackingCode: 'y'.repeat(65) },
       { trackingCode: 123 },
-      { trackingCodeNormalized: 'Y'.repeat(129) },
+      { trackingCodeNormalized: 'Y'.repeat(193) },
       { note: 'n'.repeat(501) },
       { note: ['x'] },
     ]) {

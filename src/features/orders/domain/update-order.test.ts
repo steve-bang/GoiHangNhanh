@@ -103,4 +103,35 @@ describe('buildOrderEdit', () => {
     if (!r.ok) throw new Error('phải hợp lệ');
     expect(r.edit.lines[0]?.id).not.toBe('la-hoac');
   });
+
+  it('trần độ dài khớp Rules (V1-04): mã vận đơn 64, tên/variant 200; vượt trần là lỗi', () => {
+    const ok = buildOrderEdit(
+      details,
+      {
+        ...same,
+        trackingCode: 'T'.repeat(64),
+        lines: [{ id: a.id, name: 'n'.repeat(200), variant: 'v'.repeat(200), quantity: 1 }],
+      },
+      ctx(),
+    );
+    expect(ok.ok).toBe(true);
+    expect(buildOrderEdit(details, { ...same, trackingCode: 'T'.repeat(65) }, ctx())).toEqual({
+      ok: false,
+      error: { kind: 'invalid_tracking_code' },
+    });
+    expect(
+      buildOrderEdit(
+        details,
+        { ...same, lines: [{ id: a.id, name: 'n'.repeat(201), variant: '', quantity: 1 }] },
+        ctx(),
+      ),
+    ).toEqual({ ok: false, error: { kind: 'name_too_long', lineIndex: 0 } });
+    expect(
+      buildOrderEdit(
+        details,
+        { ...same, lines: [{ id: a.id, name: 'Áo', variant: 'v'.repeat(201), quantity: 1 }] },
+        ctx(),
+      ),
+    ).toEqual({ ok: false, error: { kind: 'variant_too_long', lineIndex: 0 } });
+  });
 });

@@ -50,6 +50,7 @@ Ma trận tối thiểu: 1 iPhone đời cũ ở sàn D-2 + 1 iPhone mới; 1 An
 - [ ] **G-8. Xóa tài khoản:** điều kiện chặn (đang quay, tranh chấp mở), cảnh báo tệp chưa tải, sai mật khẩu, mất mạng (không xóa gì), thành công (về Chào mừng, dữ liệu cục bộ mất, đăng nhập lại báo sai thông tin, Firestore shop ở `deleting`).
 - [ ] **G-9. Crashlytics:** gây lỗi thử ở bản staging, thấy báo cáo trong Console, **không** chứa mã đơn/mã vận đơn/email; tắt công tắc thì không gửi.
 - [ ] **G-10. Truy cập chéo shop** (QA-11) bằng hai tài khoản thật trên dự án dev.
+- [ ] **G-10b. Kiểm toán và xác minh lại (V1-04):** sau một lượt quay -> xác nhận -> tải, Console Firestore có `auditEvents` cho đơn, dòng, kiện, phiên, bằng chứng (mỗi lần ghi một sự kiện, có `occurredAt`, không chứa mã đơn/mã vận đơn/tên sản phẩm), ghi lại giá trị `auth.type` thực tế. Gỡ kẹt: tạm thu quyền đọc bucket của tài khoản dịch vụ Functions để `verifyEvidence` lỗi, trả lại quyền sau > 24 giờ (hoặc xóa thủ công `server` về `uploaded` trên tài liệu thử), rồi để app thử tải lại tệp đó: `createUploadSession` phải chốt `verified`. Đơn có mã vận đơn 64 ký tự và tên sản phẩm 200 ký tự có dấu đăng được.
 - [ ] **G-11.** Chữ lớn hệ thống, VoiceOver/TalkBack ở UI-F01, UI-E04, màn quay; nút Back phần cứng Android.
 
 ## C. Duyệt câu chữ và pháp lý

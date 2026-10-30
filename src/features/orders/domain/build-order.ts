@@ -1,7 +1,13 @@
 import type { OrderId, OrderLineId, PackageId, ShopId } from '@/core/ids';
 import type { OrderSource } from '@/core/orders/order-source';
 
-import { validateCode, validateQuantity } from './codes';
+import {
+  MAX_LINE_NAME_LENGTH,
+  MAX_LINE_VARIANT_LENGTH,
+  validateCode,
+  validateQuantity,
+  validateTrackingCode,
+} from './codes';
 import type { OrderDetails, OrderLine, OrderPackage } from './types';
 
 export interface LineDraft {
@@ -26,8 +32,31 @@ export interface IdFactory {
 
 export type DraftError =
   | { kind: 'invalid_code' }
+  | { kind: 'invalid_tracking_code' }
   | { kind: 'invalid_quantity'; lineIndex: number }
-  | { kind: 'name_required'; lineIndex: number };
+  | { kind: 'name_required'; lineIndex: number }
+  | { kind: 'name_too_long'; lineIndex: number }
+  | { kind: 'variant_too_long'; lineIndex: number };
+
+export type LineError = Extract<DraftError, { lineIndex: number }>;
+
+/**
+ * Kiểm một dòng đã cắt khoảng trắng: thiếu tên khi có variant, tên/variant quá dài (trần khớp Rules,
+ * V1-04), số lượng ngoài 1..99.999. Dùng chung cho tạo và sửa đơn.
+ */
+export function checkLine(
+  name: string,
+  variant: string,
+  quantity: number,
+  lineIndex: number,
+): LineError | { quantity: number } {
+  if (name.length === 0) return { kind: 'name_required', lineIndex };
+  if (name.length > MAX_LINE_NAME_LENGTH) return { kind: 'name_too_long', lineIndex };
+  if (variant.length > MAX_LINE_VARIANT_LENGTH) return { kind: 'variant_too_long', lineIndex };
+  const checked = validateQuantity(quantity);
+  if (!checked.ok) return { kind: 'invalid_quantity', lineIndex };
+  return { quantity: checked.quantity };
+}
 
 export type BuildResult = { ok: true; details: OrderDetails } | { ok: false; error: DraftError };
 
@@ -43,7 +72,8 @@ export function buildOrder(
 ): BuildResult {
   const code = validateCode(draft.orderCode);
   if (!code.ok) return { ok: false, error: { kind: 'invalid_code' } };
-  const tracking = draft.trackingCode.trim();
+  const tracking = validateTrackingCode(draft.trackingCode);
+  if (!tracking.ok) return { ok: false, error: { kind: 'invalid_tracking_code' } };
   const orderId = context.ids.orderId();
 
   const lines: OrderLine[] = [];
@@ -51,15 +81,14 @@ export function buildOrder(
     const name = line.name.trim();
     const variant = line.variant.trim();
     if (name.length === 0 && variant.length === 0) continue;
-    if (name.length === 0) return { ok: false, error: { kind: 'name_required', lineIndex } };
-    const quantity = validateQuantity(line.quantity);
-    if (!quantity.ok) return { ok: false, error: { kind: 'invalid_quantity', lineIndex } };
+    const checked = checkLine(name, variant, line.quantity, lineIndex);
+    if ('kind' in checked) return { ok: false, error: checked };
     lines.push({
       id: context.ids.lineId(),
       orderId,
       name,
       variant: variant.length > 0 ? variant : null,
-      quantity: quantity.quantity,
+      quantity: checked.quantity,
       position: lines.length,
       dataOrigin: 'entered_by_user',
       createdAtDevice: context.nowDevice,
@@ -80,7 +109,7 @@ export function buildOrder(
         shopId: context.shopId,
         orderCode: code.code,
         source: draft.source,
-        trackingCode: tracking.length > 0 ? tracking : null,
+        trackingCode: tracking.code,
         dataOrigin: 'entered_by_user',
         createdAtDevice: context.nowDevice,
       },

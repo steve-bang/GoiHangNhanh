@@ -128,6 +128,19 @@ describe('UI-E02 Sửa thông tin đơn (route con, ORD-08)', () => {
     expect((await store.getOrder(LOCAL_SHOP_ID, d.order.id))?.order.trackingCode).toBe('TRK-1');
   });
 
+  it('validate: mã vận đơn quá 64 ký tự báo lỗi ở ô, không lưu (trần khớp Rules, V1-04)', async () => {
+    const store = createMemoryOrderStore();
+    const d = await seed(store);
+    await open(store, d);
+    expect(screen.getByTestId('quick-tracking').props.maxLength).toBe(65);
+    await fireEvent.changeText(screen.getByTestId('quick-tracking'), 'T'.repeat(65));
+    await save();
+    expect(
+      await screen.findByText('Mã vận đơn dài quá 64 ký tự hoặc có ký tự lạ. Hãy kiểm tra lại.'),
+    ).toBeOnTheScreen();
+    expect(await store.getOrder(LOCAL_SHOP_ID, d.order.id)).toEqual(d);
+  });
+
   it('validate: variant thiếu tên báo lỗi ở dòng, không lưu; xóa hết dòng vẫn lưu được (Chưa khai báo sản phẩm)', async () => {
     const store = createMemoryOrderStore();
     const d = await seed(store);

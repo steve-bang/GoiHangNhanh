@@ -1,11 +1,16 @@
+import { createHash } from 'node:crypto';
+import { Readable } from 'node:stream';
+
 import { deleteApp, initializeApp, type App } from 'firebase-admin/app';
-import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp, type Firestore } from 'firebase-admin/firestore';
 
 import {
   CREATE_ONLY_HEADERS,
   createUploadSessionForUser,
   parseUploadSessionInput,
+  REVERIFY_AFTER_MS,
   UPLOAD_URL_TTL_MS,
+  type EvidenceReverifier,
   UploadError,
   type UploadUrlSigner,
 } from '../../functions/src/uploads';
@@ -318,5 +323,138 @@ describe('createUploadSessionForUser', () => {
       });
       expect(signed).toEqual([]);
     }
+  });
+});
+
+describe('xác minh lại bằng chứng kẹt ở uploaded (review PR #44)', () => {
+  const bytes = Buffer.from('ban-goc-da-nhan');
+  const sha = createHash('sha256').update(bytes).digest('hex');
+  const NOW = 10_000_000_000;
+
+  function reverifierOf(
+    content: Buffer | Error,
+    info: { generation?: string; sizeBytes?: number; updatedAtMs?: number } | null = {
+      generation: '7',
+      sizeBytes: bytes.length,
+      updatedAtMs: NOW - REVERIFY_AFTER_MS - 1,
+    },
+  ) {
+    let opened = 0;
+    const reverifier: EvidenceReverifier = {
+      objectInfo: async () => info,
+      reader: {
+        open: () => {
+          opened += 1;
+          if (content instanceof Error) {
+            return new Readable({
+              read() {
+                this.destroy(content);
+              },
+            });
+          }
+          return Readable.from([content]);
+        },
+      },
+    };
+    return { reverifier, opened: () => opened };
+  }
+
+  const stuck = (receivedAgoMs: number) =>
+    seed({
+      evidence: {
+        sha256Client: sha,
+        sizeBytes: bytes.length,
+        server: {
+          state: 'uploaded',
+          receivedAt: Timestamp.fromMillis(NOW - receivedAgoMs),
+          generation: '7',
+        },
+      },
+    });
+
+  const serverOf = async (s: { shopId: string; evidenceId: string }) =>
+    (await db.doc(`shops/${s.shopId}/evidence/${s.evidenceId}`).get()).data()?.server;
+
+  it('kẹt quá 15 phút: chạy lại đúng hàm xác minh, chốt verified + kiểm toán, không cấp URL', async () => {
+    const s = await stuck(REVERIFY_AFTER_MS + 1);
+    const { signer, signed } = fakeSigner(true);
+    const r = reverifierOf(bytes);
+    expect(await createUploadSessionForUser(db, signer, s.uid, s, NOW, r.reverifier)).toMatchObject(
+      {
+        status: 'already_received',
+      },
+    );
+    expect(signed).toEqual([]);
+    expect(await serverOf(s)).toMatchObject({ state: 'verified', sha256Server: sha });
+    expect(await audit(s.shopId)).toEqual([
+      expect.objectContaining({ type: 'evidence.verified', actor: 'system:verifyEvidence' }),
+    ]);
+    // Gọi lại (client thử lại lần nữa): đã chốt, không băm lại, không nhân đôi kiểm toán.
+    const again = reverifierOf(bytes);
+    await createUploadSessionForUser(db, signer, s.uid, s, NOW, again.reverifier);
+    expect(again.opened()).toBe(0);
+    expect(await audit(s.shopId)).toHaveLength(1);
+  });
+
+  it('nội dung khác khai báo: hash_mismatch, không bao giờ verified', async () => {
+    const s = await stuck(REVERIFY_AFTER_MS + 1);
+    const r = reverifierOf(Buffer.from('noi-dung-khac'));
+    await createUploadSessionForUser(db, fakeSigner(true).signer, s.uid, s, NOW, r.reverifier);
+    const server = await serverOf(s);
+    expect(server.state).toBe('hash_mismatch');
+    expect(server.verifiedAt).toBeUndefined();
+  });
+
+  it('mới nhận chưa tới 15 phút (trigger có thể đang băm): không băm chồng, giữ uploaded', async () => {
+    const s = await stuck(60_000);
+    const r = reverifierOf(bytes);
+    await createUploadSessionForUser(db, fakeSigner(true).signer, s.uid, s, NOW, r.reverifier);
+    expect(r.opened()).toBe(0);
+    expect((await serverOf(s)).state).toBe('uploaded');
+  });
+
+  it('chưa có trạng thái máy chủ (trigger bỏ cuộc trước bước nhận) mà đối tượng đã có lâu: xác minh được', async () => {
+    const s = await seed({ evidence: { sha256Client: sha, sizeBytes: bytes.length } });
+    const r = reverifierOf(bytes);
+    await createUploadSessionForUser(db, fakeSigner(true).signer, s.uid, s, NOW, r.reverifier);
+    expect((await serverOf(s)).state).toBe('verified');
+  });
+
+  it('lỗi đọc khi xác minh lại hoặc đối tượng không còn: vẫn trả already_received, giữ uploaded, lần sau làm lại', async () => {
+    const s = await stuck(REVERIFY_AFTER_MS + 1);
+    const broken = reverifierOf(Object.assign(new Error('reset'), { code: 'ECONNRESET' }));
+    expect(
+      await createUploadSessionForUser(
+        db,
+        fakeSigner(true).signer,
+        s.uid,
+        s,
+        NOW,
+        broken.reverifier,
+      ),
+    ).toMatchObject({ status: 'already_received' });
+    expect((await serverOf(s)).state).toBe('uploaded');
+    const gone = reverifierOf(bytes, null);
+    await createUploadSessionForUser(db, fakeSigner(true).signer, s.uid, s, NOW, gone.reverifier);
+    expect(gone.opened()).toBe(0);
+    expect((await serverOf(s)).state).toBe('uploaded');
+    await createUploadSessionForUser(
+      db,
+      fakeSigner(true).signer,
+      s.uid,
+      s,
+      NOW,
+      reverifierOf(bytes).reverifier,
+    );
+    expect((await serverOf(s)).state).toBe('verified');
+  });
+
+  it('tài khoản khác không kích hoạt được xác minh lại (permission-denied trước)', async () => {
+    const s = await stuck(REVERIFY_AFTER_MS + 1);
+    const r = reverifierOf(bytes);
+    await expect(
+      createUploadSessionForUser(db, fakeSigner(true).signer, 'u-khac', s, NOW, r.reverifier),
+    ).rejects.toMatchObject({ code: 'permission-denied' });
+    expect(r.opened()).toBe(0);
   });
 });

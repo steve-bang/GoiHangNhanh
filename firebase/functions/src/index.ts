@@ -12,6 +12,7 @@ import { isEventTooOld } from './limits';
 import {
   createUploadSessionForUser,
   parseUploadSessionInput,
+  type EvidenceReverifier,
   UploadError,
   type UploadUrlSigner,
 } from './uploads';
@@ -63,7 +64,7 @@ export const updateShop = onCall({ region: REGION }, async (request) => {
 /**
  * Khi bản gốc bằng chứng được tải lên Storage: máy chủ tính lại SHA-256 và ghi `server.*` + kiểm toán
  * (evidence.ts). Mọi đối tượng khác bị bỏ qua. Thử lại CÓ TRẦN (`handleEvidenceFinalized`): lỗi tạm
- * ném để Cloud Functions thử lại; lỗi bền (đối tượng không còn) hoặc sự kiện quá 6 giờ thì ghi kiểm
+ * ném để Cloud Functions thử lại; lỗi bền (đối tượng không còn) hoặc sự kiện quá 24 giờ thì ghi kiểm
  * toán rồi kết thúc, không thử lại vô hạn.
  */
 export const verifyEvidence = onObjectFinalized(
@@ -92,7 +93,7 @@ export const verifyEvidence = onObjectFinalized(
 
 /**
  * Trigger kiểm toán cho mọi collection client ghi được (audit.ts; bất biến 7). `retry: true` vì sự
- * kiện id cố định nên thử lại không nhân đôi; quá 6 giờ thì dừng (log không PII) để không thử vô hạn.
+ * kiện id cố định nên thử lại không nhân đôi; quá 24 giờ thì dừng (log không PII) để không thử vô hạn.
  */
 function auditTrigger(entity: AuditedEntity) {
   return onDocumentWrittenWithAuthContext(
@@ -142,17 +143,49 @@ const storageSigner = (bucketName?: string): UploadUrlSigner => {
   };
 };
 
-/** Cấp URL ký để tải bản gốc bằng chứng (uploads.ts). Client không có quyền Storage trực tiếp. */
-export const createUploadSession = onCall({ region: REGION }, async (request) => {
-  const uid = requireUid(request.auth);
-  try {
-    return await createUploadSessionForUser(
-      getFirestore(),
-      storageSigner(),
-      uid,
-      parseUploadSessionInput(request.data),
-    );
-  } catch (error) {
-    return toHttpsError(error);
-  }
-});
+const storageReverifier = (): EvidenceReverifier => {
+  const bucket = getStorage().bucket();
+  return {
+    objectInfo: async (path) => {
+      try {
+        const [meta] = await bucket.file(path).getMetadata();
+        const size = Number(meta.size);
+        const updated = Date.parse(String(meta.updated ?? meta.timeCreated ?? ''));
+        return {
+          ...(meta.generation !== undefined ? { generation: String(meta.generation) } : {}),
+          ...(Number.isFinite(size) ? { sizeBytes: size } : {}),
+          ...(Number.isFinite(updated) ? { updatedAtMs: updated } : {}),
+        };
+      } catch (error) {
+        if ((error as { code?: unknown } | null)?.code === 404) return null;
+        throw error;
+      }
+    },
+    reader: {
+      open: (path) => bucket.file(path).createReadStream(),
+    },
+  };
+};
+
+/**
+ * Cấp URL ký để tải bản gốc bằng chứng (uploads.ts). Client không có quyền Storage trực tiếp. Thời
+ * gian chạy và bộ nhớ như `verifyEvidence` vì có thể xác minh lại bản gốc đang kẹt (băm theo luồng).
+ */
+export const createUploadSession = onCall(
+  { region: REGION, timeoutSeconds: 540, memory: '512MiB' },
+  async (request) => {
+    const uid = requireUid(request.auth);
+    try {
+      return await createUploadSessionForUser(
+        getFirestore(),
+        storageSigner(),
+        uid,
+        parseUploadSessionInput(request.data),
+        Date.now(),
+        storageReverifier(),
+      );
+    } catch (error) {
+      return toHttpsError(error);
+    }
+  },
+);

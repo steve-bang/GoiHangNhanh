@@ -1,11 +1,12 @@
 import { createHash } from 'node:crypto';
 
-import { FieldValue, type Firestore } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp, type Firestore } from 'firebase-admin/firestore';
 
 /**
  * Trigger kiểm toán (bất biến 7; Q-23k; V1-04): mỗi lần TẠO hoặc SỬA tài liệu mà client ghi được thì
  * máy chủ ghi đúng một sự kiện vào `shops/{shopId}/auditEvents` (Rules: client không ghi/sửa/xóa).
  *
+ * - Hai mốc giờ máy chủ: `occurredAt` (lúc tài liệu đổi, `updateTime`) và `at` (lúc ghi sự kiện).
  * - Idempotent: id sự kiện cố định theo (đường dẫn, updateTime của bản sau), ghi bằng `create()`; giao
  *   lặp (at-least-once) hoặc thử lại không nhân đôi.
  * - Chỉ ghi TÊN trường đổi; giá trị trước/sau chỉ của trường không nhạy cảm (danh sách cho phép theo
@@ -190,6 +191,11 @@ export async function recordAuditForWrite(
     after: projectSafe(entity, afterData, created ? Object.keys(afterData) : fields),
     actorUid: typeof claimed === 'string' ? claimed : null,
     actor: 'system:auditTrigger',
+    // `occurredAt`: giờ máy chủ Firestore áp dụng thay đổi (updateTime của bản sau), đúng thời điểm
+    // việc xảy ra kể cả khi trigger chạy muộn/thử lại. `at`: giờ máy chủ ghi sự kiện kiểm toán.
+    occurredAt: after?.updateTime
+      ? new Timestamp(after.updateTime.seconds, after.updateTime.nanoseconds)
+      : null,
     at: FieldValue.serverTimestamp(),
   };
   if (input.authType !== undefined || input.authId !== undefined) {
