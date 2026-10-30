@@ -126,6 +126,7 @@ Ma trận thiết bị **đề xuất** — xem thêm các lớp phiên bản/h�
 9. **Ngôn ngữ trung thực trong UI** chỉ được quét tự động cho chuỗi i18n đã biết cụm cấm; người review vẫn phải đọc nội dung mới (kể cả ảnh/biểu ngữ).
 10. **Phê duyệt App Store/Google Play** (quyền, thanh toán trong ứng dụng O-16, đăng nhập bên thứ ba O-15).
 11. **Loại khỏi sao lưu iCloud (V1-12)** — Jest chỉ kiểm adapter `src/platform/backup-exclusion.ts` và điểm gọi (thư mục `evidence`, thư mục CSDL; lỗi không chặn, log không đường dẫn); `npx expo-modules-autolinking resolve --platform apple` xác nhận module được liên kết. Biên dịch Swift, `pod install` và việc iOS thật sự bỏ thư mục khỏi bản sao lưu chỉ kiểm được trên bản build thật (release-checklist G-7).
+12. **Xem lại bằng chứng trên máy (V1-17, UI-E04)** — Jest kiểm màn với adapter `LocalVideoPlayer` giả (tệp có/không, đang lưu, lỗi phát, ảnh, nhãn 6 trạng thái, cô lập shop, không nút sửa/xóa) và adapter với `expo-video` giả. Phát thật video dài, tua, xoay màn hình, toàn màn hình, tệp HEVC trên máy yếu chỉ kiểm được trên thiết bị iOS và Android.
 
 ## 7. Trạng thái kiểm chứng của khung (ngày 2026-10-26, Node 22.22, npm 10.9)
 

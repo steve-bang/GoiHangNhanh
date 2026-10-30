@@ -896,3 +896,21 @@ Agent tự chốt theo ủy quyền (2026-10-30; chưa có xác nhận trực ti
 | m | **Sửa sau review PR #53:** script hỗ trợ **bắt buộc `--project <dự án>`** (mẫu mã dự án Google Cloud), truyền thẳng `initializeApp({ projectId })` (không dựa vào `GOOGLE_CLOUD_PROJECT`/ADC mặc định), dòng đầu in `Dự án: <dự án>`, và trước khi xóa thật in `SẼ XÓA tài khoản <uid> trên dự án <dự án>.`; thiếu/sai `--project` -> mã 2, không kết nối | Tránh chạy nhầm lên dự án production/dev |
 
 **Chưa kiểm chứng:** lớp callable (`request.auth.token.auth_time` thật sau xác thực lại), job Cloud Scheduler, xóa Storage thật và quyền IAM của tài khoản dịch vụ; chỉ chạy trên Firestore Emulator với Auth/Storage giả. Chưa deploy.
+
+#### Q-29 / V1-17 — local-playback
+
+Kế hoạch: [plans/v1-17-local-playback.md](plans/v1-17-local-playback.md). Agent tự chốt theo ủy quyền (chưa có xác nhận trực tiếp của người dùng).
+
+| # | Chốt | Lý do / hệ quả |
+|---|---|---|
+| 1 | Thư viện `expo-video@~58.0.12` (bản `bundledNativeModules.json` SDK 58), sau adapter `src/platform/video-player.tsx`; plugin `app.json` đặt `supportsBackgroundPlayback: false`, `supportsPictureInPicture: false` | Module Expo chính chủ, iOS/Android ngang hàng, phát `file://` ở lớp native. Không cần phát nền/PiP nên không thêm `UIBackgroundModes audio` hay dịch vụ nền Android |
+| 2 | Màn UI-E04 đặt ở `features/orders/ui/EvidenceDetailScreen.tsx`, nội dung dùng chung `features/evidence/ui/EvidenceDetailView.tsx`; bỏ khung `EvidenceDetailScreen` ở `features/evidence` | Cần đơn/kiện/phiên (feature orders); đặt ở evidence sẽ tạo phụ thuộc vòng, theo tiền lệ UI-E03 |
+| 3 | Tệp phải thuộc **đơn trên đường dẫn**; lệch đơn, shop khác, ID lạ = "Không tìm thấy bằng chứng này." | Bất biến 1, 2, 8: không hiển thị tệp dưới đơn nó không thuộc |
+| 4 | Không cache (`useCaching: false`), không tự phát (người dùng bấm phát trên thanh điều khiển hệ điều hành), không nút sửa/xóa/cắt/**chia sẻ** | Bất biến 4. Chia sẻ/xuất (docs/09 UI-E04 "nếu được phép") để sau: chưa có quyết định ai được xuất và định dạng |
+| 5 | Tệp `recording`/`saving_local`: không mở ("Video đang được lưu."). Tệp không còn trên máy (không đường dẫn hoặc tệp mất): "Video không còn trên máy này." + "Ứng dụng chưa hỗ trợ xem lại tệp từ máy chủ."; nhãn vẫn là trạng thái tệp thật, câu giải thích nhãn bị ẩn khi tệp mất (trừ `uploaded`/`verified`) vì câu đó nói "tệp vẫn được giữ trên thiết bị". Màn **không** tự đổi trạng thái tệp | Trung thực (bất biến 3, 11; Q-24a: v1 chưa có URL xem). Đổi trạng thái tệp mất là việc của hàng đợi/khôi phục |
+| 6 | Giờ ghi là giờ thiết bị ("Ghi lúc (giờ trên máy)"); phiên hiện trạng thái + giờ bắt đầu thiết bị + 6 ký tự cuối ID; mã băm rút gọn 8…8 kèm câu "Mã băm chỉ chứng minh tệp không đổi kể từ lúc tính, không chứng minh thời điểm quay." | Bất biến 11. ID rút gọn chỉ để đối chiếu khi cần hỗ trợ, không dùng tra cứu. Thông tin "gián đoạn" của phiên chỉ có ở trạng thái phiên (`interrupted`), chưa có danh sách gián đoạn chi tiết |
+| 7 | Lối vào hàng hoàn (D03/D07) và tranh chấp (G03) **tách sang V1-17b** | Ảnh/video hàng hoàn ở kho `return_media` riêng, cần route mới ngoài `/orders/...` và màn nạp riêng; gộp sẽ chạm bảng route và vượt ngân sách ~800 dòng của kế hoạch. `EvidenceDetailView` đã tách để dùng lại |
+| 8 | Tiêu đề màn giữ "Chi tiết video" (`nav.json`, theo docs/09) dù màn cũng hiện ảnh | Không đổi tên màn khi chưa có BA; đề xuất BA đổi thành "Chi tiết bằng chứng" |
+| 9 | Một `token-exception` (`aspectRatio: 3 / 4` của khung xem, video quay dọc) ghi vào `scripts/design-token-exceptions.json`; `mock-video-player.tsx` thêm vào `design-token-frozen-allow.json` (tệp test) | Tỉ lệ khung hình không phải số thiết kế trong bảng token |
+
+**Chuỗi mới chờ BA duyệt (không mã lỗi mới):** `evidence.detail.*`, `screens.orderEvidence.openDetail`. **Chưa kiểm chứng trên thiết bị:** phát video dài, tua, toàn màn hình, xoay, máy yếu (G-6); build native với plugin `expo-video`.

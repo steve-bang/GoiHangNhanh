@@ -19,7 +19,11 @@ jest.mock('expo-video', () => ({
   },
 }));
 jest.mock('expo', () => ({
-  useEventListener: (_player: unknown, event: string, listener: (p: { status: string }) => void) => {
+  useEventListener: (
+    _player: unknown,
+    event: string,
+    listener: (p: { status: string }) => void,
+  ) => {
     if (event === 'statusChange') mockStatusListener = listener;
   },
 }));
@@ -33,7 +37,10 @@ beforeEach(() => {
 describe('LocalVideoPlayer (adapter expo-video)', () => {
   it('mở đúng tệp trên máy, không cache, có thanh điều khiển, không hình-trong-hình', async () => {
     await render(<LocalVideoPlayer uri="file:///docs/evidence/ev-1.mp4" testID="p" />);
-    expect(mockSources.at(-1)).toEqual({ uri: 'file:///docs/evidence/ev-1.mp4', useCaching: false });
+    expect(mockSources.at(-1)).toEqual({
+      uri: 'file:///docs/evidence/ev-1.mp4',
+      useCaching: false,
+    });
     const props = mockViewProps.mock.calls.at(-1)?.[0] as Record<string, unknown>;
     expect(props.nativeControls).toBe(true);
     expect(props.allowsPictureInPicture).toBe(false);
