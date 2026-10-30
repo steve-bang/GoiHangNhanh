@@ -51,7 +51,7 @@ Nguồn: [v1-release-plan.md](../v1-release-plan.md) mục 1.1, 1.2 (xóa tài k
 
 ### Script hỗ trợ `firebase/functions/src/admin/delete-account-cli.ts`
 
-- `node lib/admin/delete-account-cli.js --project <id> (--email <email> | --uid <uid>) [--execute]`. Mặc định **dry-run**: in uid, shop sẽ khóa/rời, trạng thái bản ghi cũ; không ghi gì. `--execute` gọi `deleteAccountForUser` với `channel: 'support'` (không cần `auth_time`; nhân viên đã xác minh qua email theo trang web). Không in email ra màn hình. Hàm thuần `runDeleteAccountCli(args, deps)` có test.
+- `node lib/admin/delete-account-cli.js --project <id> (--email <email> | --uid <uid>) [--execute]` (`--project` bắt buộc). Mặc định **dry-run**: in uid, shop sẽ khóa/rời, trạng thái bản ghi cũ; không ghi gì. `--execute` gọi `deleteAccountForUser` với `channel: 'support'` (không cần `auth_time`; nhân viên đã xác minh qua email theo trang web). Không in email ra màn hình. Hàm thuần `runDeleteAccountCli(args, deps)` có test.
 - Thêm script `npm --prefix firebase/functions run account:delete -- ...` và ghi ở `CLAUDE.md`-đề xuất + firebase-setup.
 
 ### Lịch
@@ -87,5 +87,7 @@ Vòng 1 (bất biến 1–11, dữ liệu, kích thước):
 Vòng 2: truy vấn purge chỉ cần chỉ mục một trường (`purgeAfter`), không đụng `firestore.indexes.json`; Rules thêm một `get()` (tổng ≤ 5 truy cập tài liệu/yêu cầu, dưới trần 10). Không đổi mã app.
 
 Vòng 3 (khi viết tài liệu deploy): bucket bật Object Versioning (Q-23i) thì `delete` chỉ tạo phiên bản cũ; câu "xóa hẳn sau 30 ngày" cần quy tắc vòng đời xóa phiên bản cũ. Ghi vào firebase-setup mục 5, checklist F-4b, decisions Q-29 / V1-14 k (không đổi mã).
+
+Sửa sau review PR #53: (1) `purged` chỉ khi đã có `authDeletedAt`; lịch hằng ngày gọi lại bước xóa Auth cho bản ghi `requested` quá 1 giờ (`retryPendingAuthDeletions`, `completeAuthDeletion`); client V1-15 gặp `account_deleted` -> màn "Đang hoàn tất xóa tài khoản". (2) Script bắt buộc `--project`, `initializeApp({ projectId })`, in tên dự án và câu "SẼ XÓA" trước khi xóa. Chi tiết: decisions Q-29 / V1-14 l, m.
 
 Tự review: đã chấp nhận.

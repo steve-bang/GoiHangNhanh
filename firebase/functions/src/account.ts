@@ -252,26 +252,92 @@ export async function deleteAccountForUser(
     };
   });
 
+  const status = await completeAuthDeletion(db, auth, uid);
+  return { status, purgeAfterMs: step1.purgeAfterMs, closedShopCount: step1.closedIds.length };
+}
+
+/**
+ * Bước 2 của xóa tài khoản: xóa người dùng Auth (`auth/user-not-found` = đã xóa) rồi chốt trạng thái bản
+ * ghi. Dùng chung cho `deleteAccountForUser` và cho lượt quét `retryPendingAuthDeletions` (review PR #53:
+ * bước 1 đã commit mà xóa Auth lỗi thì bản ghi kẹt `requested`). Trạng thái `purged` chỉ đặt khi đã có
+ * `authDeletedAt` VÀ mọi shop của bản ghi đã purge; purge chạy trước thì đặt ở đây.
+ */
+export async function completeAuthDeletion(
+  db: Firestore,
+  auth: AuthUserDeleter,
+  uid: string,
+): Promise<DeleteAccountResult['status']> {
+  const recordRef = db.doc(accountDeletionPath(uid));
   try {
     await auth.deleteUser(uid);
   } catch (error) {
     if (!isAuthUserMissing(error)) throw error;
   }
-
-  const status = await db.runTransaction(async (tx) => {
+  return db.runTransaction(async (tx) => {
     const record = await tx.get(recordRef);
-    const current = record.data()?.status;
-    // Purge có thể đã chạy xong trước khi lần gọi lại này xóa được Auth: không lùi trạng thái.
+    const data = record.data() ?? {};
+    const shopIds = (data.shopIds as string[] | undefined) ?? [];
+    const purgedIds = (data.purgedShopIds as string[] | undefined) ?? [];
+    const allPurged = shopIds.length > 0 && shopIds.every((id) => purgedIds.includes(id));
     const next: DeleteAccountResult['status'] =
-      current === 'purged' ? 'purged' : step1.closedIds.length > 0 ? 'pending_purge' : 'completed';
+      data.status === 'purged' || allPurged
+        ? 'purged'
+        : shopIds.length > 0
+          ? 'pending_purge'
+          : 'completed';
     tx.update(recordRef, {
       status: next,
-      ...(record.data()?.authDeletedAt ? {} : { authDeletedAt: FieldValue.serverTimestamp() }),
+      ...(data.authDeletedAt ? {} : { authDeletedAt: FieldValue.serverTimestamp() }),
     });
     return next;
   });
+}
 
-  return { status, purgeAfterMs: step1.purgeAfterMs, closedShopCount: step1.closedIds.length };
+/** Bản ghi `requested` cũ hơn chừng này mới được quét lại (tránh chạy chồng lời gọi `deleteAccount` đang dở). */
+export const AUTH_RETRY_MIN_AGE_MS = 60 * 60_000;
+
+export interface AuthRetrySummary {
+  readonly completed: number;
+  readonly failed: number;
+  readonly stoppedEarly: boolean;
+}
+
+/**
+ * Quét bản ghi kẹt ở `requested` (bước 1 xong, xóa Auth lỗi) quá `AUTH_RETRY_MIN_AGE_MS` và gọi lại bước 2.
+ * Truy vấn một trường (`status`, chỉ mục tự động) theo trang; lọc tuổi ở mã. Lỗi một bản ghi không dừng
+ * cả lượt; lần chạy sau thử lại.
+ */
+export async function retryPendingAuthDeletions(
+  db: Firestore,
+  auth: AuthUserDeleter,
+  options: PurgeOptions & { readonly pageSize?: number },
+): Promise<AuthRetrySummary> {
+  const clock = options.clock ?? Date.now;
+  const pageSize = options.pageSize ?? 50;
+  let completed = 0;
+  let failed = 0;
+  let cursor: DocumentSnapshot | undefined;
+  for (;;) {
+    let query = db
+      .collection('accountDeletions')
+      .where('status', '==', 'requested')
+      .limit(pageSize);
+    if (cursor) query = query.startAfter(cursor);
+    const page = await query.get();
+    for (const record of page.docs) {
+      if (clock() >= options.deadlineMs) return { completed, failed, stoppedEarly: true };
+      const requestedAt = millisOf(record.data().requestedAt);
+      if (requestedAt === null || options.nowMs - requestedAt < AUTH_RETRY_MIN_AGE_MS) continue;
+      try {
+        await completeAuthDeletion(db, auth, record.id);
+        completed += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    if (page.size < pageSize) return { completed, failed, stoppedEarly: false };
+    cursor = page.docs[page.docs.length - 1];
+  }
 }
 
 // ---------- purgeDeletedShops ----------
@@ -403,7 +469,10 @@ export async function purgeShop(
       tx.update(recordRef, {
         purgedShopIds: FieldValue.arrayUnion(shopId),
         'counts.firestoreDocs': FieldValue.increment(current.exists ? 1 : 0),
-        ...(allPurged ? { status: 'purged', purgedAt: FieldValue.serverTimestamp() } : {}),
+        // `purged` chỉ khi tài khoản Auth đã chắc chắn bị xóa (review PR #53); nếu chưa, lượt quét
+        // `retryPendingAuthDeletions` hoặc lần gọi lại `deleteAccount` sẽ đặt.
+        ...(allPurged ? { purgedAt: FieldValue.serverTimestamp() } : {}),
+        ...(allPurged && recordData.authDeletedAt ? { status: 'purged' } : {}),
       });
     }
   });

@@ -15,6 +15,7 @@ import {
   assertRecentAuth,
   deleteAccountForUser,
   purgeDeletedShops as purgeDeletedShopsNow,
+  retryPendingAuthDeletions,
   type AuthUserDeleter,
   type StoragePrefixDeleter,
 } from './account';
@@ -261,8 +262,8 @@ const PURGE_TIMEOUT_SECONDS = 540;
 const PURGE_BUDGET_MS = 480_000;
 
 /**
- * Hằng ngày 03:00 giờ Việt Nam: xóa hẳn shop đã yêu cầu xóa quá 30 ngày, trừ shop có `legalHold`
- * (account.ts). Không tự thử lại: lần chạy sau tiếp tục phần còn lại (idempotent). Log chỉ số lượng.
+ * Hằng ngày 03:00 giờ Việt Nam: (1) gọi lại bước xóa Auth cho bản ghi kẹt `requested` quá 1 giờ;
+ * (2) xóa hẳn shop đã yêu cầu xóa quá 30 ngày, trừ shop có `legalHold` (account.ts). Không tự thử lại: lần chạy sau tiếp tục phần còn lại (idempotent). Log chỉ số lượng.
  */
 export const purgeDeletedShops = onSchedule(
   {
@@ -275,10 +276,16 @@ export const purgeDeletedShops = onSchedule(
   },
   async () => {
     const nowMs = Date.now();
+    const deadlineMs = nowMs + PURGE_BUDGET_MS;
+    // Trước: hoàn tất các lần xóa Auth bị lỗi sau khi bước 1 đã commit (bản ghi kẹt `requested` > 1 giờ).
+    const authRetry = await retryPendingAuthDeletions(getFirestore(), authDeleter(), {
+      nowMs,
+      deadlineMs,
+    });
     const summary = await purgeDeletedShopsNow(getFirestore(), storagePrefixDeleter(), {
       nowMs,
-      deadlineMs: nowMs + PURGE_BUDGET_MS,
+      deadlineMs,
     });
-    logger.info('purgeDeletedShops done', summary);
+    logger.info('purgeDeletedShops done', { ...summary, authRetry });
   },
 );

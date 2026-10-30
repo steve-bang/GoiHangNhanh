@@ -6,9 +6,12 @@ import {
   AccountError,
   accountDeletionPath,
   assertRecentAuth,
+  AUTH_RETRY_MIN_AGE_MS,
+  completeAuthDeletion,
   deleteAccountForUser,
   purgeDeletedShops,
   purgeShop,
+  retryPendingAuthDeletions,
   shopStoragePrefix,
   type AuthUserDeleter,
   type StoragePrefixDeleter,
@@ -472,18 +475,95 @@ describe('purgeShop / purgeDeletedShops', () => {
   });
 });
 
+describe('xóa Auth lỗi sau khi bước 1 đã commit (review PR #53)', () => {
+  const sweep = (auth: AuthUserDeleter, nowMs: number) =>
+    retryPendingAuthDeletions(db, auth, {
+      nowMs,
+      deadlineMs: Number.MAX_SAFE_INTEGER,
+      pageSize: 2,
+    });
+
+  it('lượt quét bỏ qua bản ghi requested chưa đủ 1 giờ, quá 1 giờ thì gọi lại deleteUser và chốt', async () => {
+    const uid = nextId('u-stuck');
+    await seedShop(uid);
+    const flaky = fakeAuth(1);
+    await expect(
+      deleteAccountForUser(db, flaky.auth, uid, { nowMs: NOW, channel: 'app' }),
+    ).rejects.toThrow('auth tạm lỗi');
+    expect((await recordOf(uid))?.status).toBe('requested');
+
+    await sweep(flaky.auth, Date.now());
+    expect(flaky.deleted).toEqual([]);
+    expect((await recordOf(uid))?.status).toBe('requested');
+
+    const summary = await sweep(flaky.auth, Date.now() + AUTH_RETRY_MIN_AGE_MS + 60_000);
+    expect(summary.completed).toBeGreaterThanOrEqual(1);
+    expect(flaky.deleted).toEqual([uid]);
+    const record = await recordOf(uid);
+    expect(record?.status).toBe('pending_purge');
+    expect(record?.authDeletedAt).toBeInstanceOf(Timestamp);
+  });
+
+  it('deleteUser lỗi mãi: lượt quét đếm lỗi, bản ghi vẫn requested để lần sau thử lại', async () => {
+    const uid = nextId('u-stuck-hard');
+    await seedShop(uid);
+    const broken = fakeAuth(1_000);
+    await expect(
+      deleteAccountForUser(db, broken.auth, uid, { nowMs: NOW, channel: 'app' }),
+    ).rejects.toThrow();
+    const summary = await sweep(broken.auth, Date.now() + 2 * AUTH_RETRY_MIN_AGE_MS);
+    expect(summary.failed).toBeGreaterThanOrEqual(1);
+    expect((await recordOf(uid))?.status).toBe('requested');
+    expect((await recordOf(uid))?.authDeletedAt).toBeUndefined();
+  });
+
+  it('purge chạy khi Auth chưa bị xóa: dữ liệu xóa nhưng KHÔNG đặt purged; xóa Auth xong mới purged', async () => {
+    const uid = nextId('u-purge-first');
+    const shopId = await seedShop(uid);
+    await expect(
+      deleteAccountForUser(db, fakeAuth(1_000).auth, uid, { nowMs: NOW, channel: 'app' }),
+    ).rejects.toThrow();
+    expect(
+      await purgeShop(db, fakeStorage([]).storage, shopId, {
+        nowMs: NOW + 30 * DAY_MS,
+        deadlineMs: Number.MAX_SAFE_INTEGER,
+      }),
+    ).toBe('purged');
+    expect(await countUnder(shopId)).toBe(0);
+    let record = await recordOf(uid);
+    expect(record?.status).toBe('requested');
+    expect(record?.purgedShopIds).toEqual([shopId]);
+    expect(record?.purgedAt).toBeInstanceOf(Timestamp);
+
+    const ok = fakeAuth();
+    expect(await completeAuthDeletion(db, ok.auth, uid)).toBe('purged');
+    expect(ok.deleted).toEqual([uid]);
+    record = await recordOf(uid);
+    expect(record?.status).toBe('purged');
+    expect(record?.authDeletedAt).toBeInstanceOf(Timestamp);
+  });
+});
+
 describe('delete-account-cli', () => {
+  const PROJECT = 'demo-doncung';
   function deps(uidByEmail: Record<string, string>) {
     const lines: string[] = [];
+    const connected: string[] = [];
     const { auth, deleted } = fakeAuth();
     return {
       lines,
       deleted,
+      connected,
       deps: {
-        db,
-        auth: {
-          ...auth,
-          findUidByEmail: async (email: string) => uidByEmail[email] ?? null,
+        connect: (projectId: string) => {
+          connected.push(projectId);
+          return {
+            db,
+            auth: {
+              ...auth,
+              findUidByEmail: async (email: string) => uidByEmail[email] ?? null,
+            },
+          };
         },
         print: (line: string) => lines.push(line),
         nowMs: () => NOW,
@@ -491,34 +571,59 @@ describe('delete-account-cli', () => {
     };
   }
 
-  it('mặc định chạy thử: in kế hoạch, không ghi gì, không in email', async () => {
+  it('mặc định chạy thử: dòng đầu là tên dự án, in kế hoạch, không ghi gì, không in email', async () => {
     const uid = nextId('u-cli');
     const shopId = await seedShop(uid);
     const t = deps({ 'chu@cuahang.vn': uid });
-    expect(await runDeleteAccountCli(['--email', 'chu@cuahang.vn'], t.deps)).toBe(0);
+    expect(
+      await runDeleteAccountCli(['--project', PROJECT, '--email', 'chu@cuahang.vn'], t.deps),
+    ).toBe(0);
+    expect(t.lines[0]).toBe(`Dự án: ${PROJECT}`);
+    expect(t.connected).toEqual([PROJECT]);
     expect(t.deleted).toEqual([]);
     expect((await shopOf(shopId))?.status).toBeUndefined();
     expect(await recordOf(uid)).toBeUndefined();
     expect(t.lines.join('\n')).toContain(shopId);
+    expect(t.lines.join('\n')).not.toContain('SẼ XÓA');
     expect(t.lines.join('\n')).not.toContain('chu@cuahang.vn');
   });
 
-  it('--execute: xóa như trong app, kênh support', async () => {
+  it('--execute: in "SẼ XÓA trên dự án" trước khi xóa, xóa như trong app, kênh support', async () => {
     const uid = nextId('u-cli-x');
     const shopId = await seedShop(uid);
     const t = deps({});
-    expect(await runDeleteAccountCli(['--uid', uid, '--execute'], t.deps)).toBe(0);
+    expect(
+      await runDeleteAccountCli(['--uid', uid, '--execute', '--project', PROJECT], t.deps),
+    ).toBe(0);
+    expect(t.lines[0]).toBe(`Dự án: ${PROJECT}`);
+    const warn = t.lines.findIndex((l) => l === `SẼ XÓA tài khoản ${uid} trên dự án ${PROJECT}.`);
+    const done = t.lines.findIndex((l) => l.startsWith('Đã xóa tài khoản'));
+    expect(warn).toBeGreaterThan(0);
+    expect(done).toBeGreaterThan(warn);
     expect(t.deleted).toEqual([uid]);
     expect((await shopOf(shopId))?.status).toBe('deleting');
     expect(await recordOf(uid)).toMatchObject({ channel: 'support', status: 'pending_purge' });
   });
 
-  it('sai cách dùng hoặc không có tài khoản: mã thoát khác 0', async () => {
+  it('thiếu hoặc sai --project, sai cách dùng: mã 2, không kết nối dự án nào', async () => {
     const t = deps({});
     expect(await runDeleteAccountCli([], t.deps)).toBe(2);
-    expect(await runDeleteAccountCli(['--email', 'a@b.vn', '--uid', 'x'], t.deps)).toBe(2);
-    expect(await runDeleteAccountCli(['--bogus'], t.deps)).toBe(2);
-    expect(await runDeleteAccountCli(['--email', 'khong-co@b.vn'], t.deps)).toBe(1);
+    expect(await runDeleteAccountCli(['--uid', 'x', '--execute'], t.deps)).toBe(2);
+    expect(await runDeleteAccountCli(['--uid', 'x', '--project'], t.deps)).toBe(2);
+    expect(await runDeleteAccountCli(['--uid', 'x', '--project', 'Sai Du An'], t.deps)).toBe(2);
+    expect(
+      await runDeleteAccountCli(['--project', PROJECT, '--email', 'a@b.vn', '--uid', 'x'], t.deps),
+    ).toBe(2);
+    expect(await runDeleteAccountCli(['--project', PROJECT, '--bogus'], t.deps)).toBe(2);
+    expect(t.connected).toEqual([]);
+    expect(t.lines.every((l) => l.startsWith('Dùng:'))).toBe(true);
+  });
+
+  it('không có tài khoản với email: mã 1, không in lại email', async () => {
+    const t = deps({});
+    expect(
+      await runDeleteAccountCli(['--project', PROJECT, '--email', 'khong-co@b.vn'], t.deps),
+    ).toBe(1);
     expect(t.lines.join('\n')).not.toContain('khong-co@b.vn');
   });
 });
