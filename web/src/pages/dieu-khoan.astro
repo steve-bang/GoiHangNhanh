@@ -1,0 +1,137 @@
+---
+/*
+ * GHI CHÚ NỘI BỘ (không hiển thị): bản nháp chờ luật sư rà (release-checklist C-2): giới hạn trách nhiệm,
+ * luật áp dụng và cơ quan giải quyết tranh chấp CHƯA viết vì cần pháp lý chốt. Nội dung mô tả bản v1
+ * (miễn phí, không mua trong app, một máy một tài khoản, tải lên khi app mở). Đối chiếu app thật ở C-6.
+ */
+import LegalPage from '../components/LegalPage.astro';
+import Contact from '../components/Contact.astro';
+import { site } from '../config/site';
+
+const toc = [
+  { id: 'chap-nhan', label: 'Chấp nhận điều khoản' },
+  { id: 'dich-vu', label: 'Ứng dụng làm gì' },
+  { id: 'khong-hua', label: 'Điều ứng dụng không hứa' },
+  { id: 'gioi-han', label: 'Giới hạn kỹ thuật cần biết' },
+  { id: 'tai-khoan', label: 'Tài khoản' },
+  { id: 'noi-dung', label: 'Nội dung bạn ghi lại' },
+  { id: 'khong-duoc', label: 'Việc không được làm' },
+  { id: 'phi', label: 'Phí dịch vụ' },
+  { id: 'cham-dut', label: 'Ngừng sử dụng và xóa tài khoản' },
+  { id: 'trach-nhiem', label: 'Trách nhiệm' },
+  { id: 'thay-doi', label: 'Thay đổi điều khoản' },
+  { id: 'lien-he', label: 'Liên hệ' },
+];
+---
+
+<LegalPage
+  title={`Điều khoản sử dụng ứng dụng ${site.name} cho người bán`}
+  description={`Điều khoản khi dùng ${site.name}: ứng dụng làm gì, không hứa gì, giới hạn khi quay và tải lên, trách nhiệm với nội dung bạn ghi lại.`}
+  path={site.legalPages.terms}
+  heading="Điều khoản sử dụng"
+  crumb="Điều khoản"
+  toc={toc}
+>
+  <h2 id="chap-nhan">Chấp nhận điều khoản</h2>
+  <p>
+    Khi tạo tài khoản hoặc dùng ứng dụng {site.name}, bạn đồng ý với điều khoản này và
+    <a href={site.legalPages.privacy}>Chính sách quyền riêng tư</a>. Không đồng ý thì xin đừng dùng ứng
+    dụng.
+  </p>
+
+  <h2 id="dich-vu">Ứng dụng làm gì</h2>
+  <ul>
+    <li>Quét hoặc nhập mã đơn, tạo đơn nhanh.</li>
+    <li>Quay video đóng gói, gắn với đúng đơn và kiện hàng.</li>
+    <li>Ghi nhận hàng hoàn: chụp ảnh, quay video mở kiện, kiểm hàng.</li>
+    <li>Lập hồ sơ tranh chấp trên máy và chia sẻ văn bản tóm tắt.</li>
+    <li>Tải bằng chứng lên máy chủ và báo rõ trạng thái từng tệp.</li>
+  </ul>
+  <p>Ứng dụng không quản lý bán hàng: không có giá, khách hàng hay tồn kho.</p>
+
+  <h2 id="khong-hua">Điều ứng dụng không hứa</h2>
+  <ul>
+    <li>Không hứa bạn thắng khiếu nại hay tranh chấp. Sàn và đơn vị vận chuyển mới là bên quyết định.</li>
+    <li>Không hứa sàn, đơn vị vận chuyển hay cơ quan nào chấp nhận video của bạn.</li>
+    <li>
+      Mã băm chỉ cho biết tệp không bị đổi kể từ lúc tính. Nó không chứng minh thời điểm quay hay nội dung
+      là thật.
+    </li>
+    <li>Ứng dụng không tự kết luận ai đúng ai sai hay vì sao hàng bị thiếu.</li>
+    <li>{site.name} không phải dịch vụ tư vấn pháp lý.</li>
+  </ul>
+
+  <h2 id="gioi-han">Giới hạn kỹ thuật cần biết</h2>
+  <ul>
+    <li>
+      Ứng dụng chỉ tải lên khi đang mở. iPhone và Android giới hạn ứng dụng chạy nền, nên việc tải dừng khi
+      bạn tắt ứng dụng.
+    </li>
+    <li>Video đang quay có thể mất nếu ứng dụng bị tắt giữa chừng.</li>
+    <li>Mỗi tài khoản dùng trên một điện thoại. Dữ liệu không tự chuyển sang máy khác.</li>
+    <li>
+      Tệp chưa tải lên chỉ nằm trên máy. Gỡ ứng dụng, đổi máy hoặc mất máy thì tệp đó mất.
+    </li>
+    <li>Tệp hiện "Đã xác minh" nghĩa là máy chủ đã nhận tệp và mã băm khớp với bản trên máy.</li>
+    <li>Thời gian ghi trên bằng chứng lấy từ đồng hồ điện thoại. Thời gian máy chủ được lưu riêng.</li>
+  </ul>
+
+  <h2 id="tai-khoan">Tài khoản</h2>
+  <ul>
+    <li>Dùng email thật của bạn để đăng ký và nhận thư đặt lại mật khẩu.</li>
+    <li>Giữ kín mật khẩu. Bạn chịu trách nhiệm về việc làm trong tài khoản của mình.</li>
+    <li>Thấy tài khoản bị dùng trái phép, hãy đổi mật khẩu và báo chúng tôi.</li>
+  </ul>
+
+  <h2 id="noi-dung">Nội dung bạn ghi lại</h2>
+  <ul>
+    <li>Video, ảnh và thông tin đơn do bạn tạo vẫn thuộc về bạn.</li>
+    <li>
+      Bạn cho phép chúng tôi lưu và xử lý nội dung đó chỉ để chạy ứng dụng cho bạn, như lưu trữ và kiểm tra
+      mã băm.
+    </li>
+    <li>
+      Nếu video có người khác, như nhân viên đóng gói, bạn cần báo cho họ biết và có sự đồng ý theo quy định.
+    </li>
+    <li>Thông tin đơn và sản phẩm do bạn nhập. Ứng dụng không coi đó là dữ liệu chính thức của sàn.</li>
+  </ul>
+
+  <h2 id="khong-duoc">Việc không được làm</h2>
+  <ul>
+    <li>Ghi hoặc tải lên nội dung trái pháp luật.</li>
+    <li>Dựng bằng chứng giả, hoặc sửa tệp rồi nói là bản gốc.</li>
+    <li>Tìm cách đọc dữ liệu của cửa hàng khác hoặc phá hệ thống.</li>
+    <li>Dùng ứng dụng để gửi thư rác hay quấy rối.</li>
+  </ul>
+  <p>Vi phạm thì chúng tôi có thể tạm khóa hoặc chấm dứt tài khoản.</p>
+
+  <h2 id="phi">Phí dịch vụ</h2>
+  <p>
+    Hiện ứng dụng miễn phí và không có mua trong ứng dụng. Nếu sau này có gói trả phí, chúng tôi sẽ báo trước
+    trong ứng dụng. Không có khoản phí nào tự động trừ.
+  </p>
+
+  <h2 id="cham-dut">Ngừng sử dụng và xóa tài khoản</h2>
+  <p>
+    Bạn có thể ngừng dùng bất cứ lúc nào. Cách xóa tài khoản và dữ liệu được giữ lại: xem
+    <a href={site.legalPages.accountDeletionRequest}>Yêu cầu xóa tài khoản</a>.
+  </p>
+
+  <h2 id="trach-nhiem">Trách nhiệm</h2>
+  <ul>
+    <li>Chúng tôi cố gắng để ứng dụng chạy ổn định nhưng không bảo đảm luôn không lỗi.</li>
+    <li>
+      Hãy mở ứng dụng để tệp quan trọng được tải lên và xác minh. Đừng chỉ dựa vào bản trên một điện thoại.
+    </li>
+  </ul>
+
+  <h2 id="thay-doi">Thay đổi điều khoản</h2>
+  <p>
+    Khi điều khoản thay đổi, chúng tôi cập nhật ngày hiệu lực ở đầu trang. Thay đổi quan trọng sẽ được báo
+    trong ứng dụng.
+  </p>
+
+  <h2 id="lien-he">Liên hệ</h2>
+  <Contact kind="operator" subject={`Câu hỏi về điều khoản ${site.name}`} />
+  <p>Cần giúp khi dùng ứng dụng: xem <a href={site.legalPages.support}>trang Hỗ trợ</a>.</p>
+</LegalPage>
