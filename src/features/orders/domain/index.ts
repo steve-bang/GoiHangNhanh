@@ -80,3 +80,5 @@ export * from './order-sync';
 export * from './remote-documents';
 export { SESSION_STATUSES, canChangeSessionStatus, isSessionStatus } from './session-status';
 export type { SessionStatus } from './session-status';
+export { booleanSetting, decodeDeviceSetting, encodeDeviceSetting } from './device-settings';
+export type { DeviceSettingDefinition, DeviceSettingsStore } from './device-settings';

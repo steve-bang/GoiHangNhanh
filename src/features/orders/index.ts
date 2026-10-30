@@ -18,9 +18,17 @@ export {
   useCurrentUid,
   useWritableShopId,
   useOrderStore,
+  DeviceSettingsProvider,
+  useDeviceSetting,
+  useDeviceSettings,
+  createDeviceSettings,
+  createMemoryDeviceSettingsStore,
+  createSqliteDeviceSettingsStore,
 } from './data';
+export type { DeviceSettings, DeviceSettingSnapshot } from './data';
 export {
   LOCAL_SHOP_ID,
+  booleanSetting,
   classifyLookup,
   formatDeviceDateTime,
   normalizeCode,
@@ -29,7 +37,14 @@ export {
   validateCode,
   validateQuantity,
 } from './domain';
-export type { CreatorUidProvider, LookupMatch, LookupResult, MatchReason } from './domain';
+export type {
+  CreatorUidProvider,
+  DeviceSettingDefinition,
+  DeviceSettingsStore,
+  LookupMatch,
+  LookupResult,
+  MatchReason,
+} from './domain';
 export type {
   Order,
   OrderDetails,

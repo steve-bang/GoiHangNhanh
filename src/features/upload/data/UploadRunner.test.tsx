@@ -4,11 +4,15 @@ import type { RemoteDocuments } from '@/api/contract';
 import type { EvidenceId, OrderId, PackageId, SessionId } from '@/core/ids';
 import {
   CurrentShopProvider,
+  DeviceSettingsProvider,
   EvidenceFileStoreProvider,
   LOCAL_SHOP_ID,
   OrderStoreProvider,
+  createMemoryDeviceSettingsStore,
   createMemoryEvidenceFileStore,
+  useDeviceSettings,
   createMemoryOrderStore,
+  type DeviceSettingsStore,
   type OrderStore,
 } from '@/features/orders';
 
@@ -16,6 +20,7 @@ import { ReturnStoreProvider, createMemoryReturnStore, type ReturnStore } from '
 
 import { resetMockConnectivity, setMockConnectivity } from '@/test-utils/mock-connectivity';
 
+import { UPLOAD_WIFI_ONLY } from '../domain/network-policy';
 import type { UploadGateway } from '../domain/ports';
 import { UploadRunner, useUploadQueueControl, type UploadQueueControl } from './UploadRunner';
 
@@ -40,9 +45,13 @@ const orderStore: OrderStore = {
 
 const goOnline = (online: boolean) => act(async () => setMockConnectivity({ online }));
 
+/** Kho cài đặt máy của bài test (V1-09); mỗi test một kho mới = công tắc Wi‑Fi tắt (mặc định). */
+let settingsStore: DeviceSettingsStore = createMemoryDeviceSettingsStore();
+
 beforeEach(() => {
   sessionPublished = true;
   signedInAs = 'uid-1';
+  settingsStore = createMemoryDeviceSettingsStore();
 });
 
 afterEach(() => resetMockConnectivity());
@@ -113,11 +122,13 @@ const element = (
     <OrderStoreProvider store={orderStore}>
       <EvidenceFileStoreProvider store={files}>
         <ReturnStoreProvider store={returns}>
-          <UploadRunner
-            docs={props.docs}
-            hasher={hasher}
-            {...(props.gateway ? { gateway: props.gateway } : {})}
-          />
+          <DeviceSettingsProvider store={settingsStore}>
+            <UploadRunner
+              docs={props.docs}
+              hasher={hasher}
+              {...(props.gateway ? { gateway: props.gateway } : {})}
+            />
+          </DeviceSettingsProvider>
         </ReturnStoreProvider>
       </EvidenceFileStoreProvider>
     </OrderStoreProvider>
@@ -369,13 +380,15 @@ describe('điều khiển hàng đợi cho Trung tâm đồng bộ (V1-08)', () 
         <OrderStoreProvider store={orderStore}>
           <EvidenceFileStoreProvider store={files}>
             <ReturnStoreProvider store={createMemoryReturnStore()}>
-              <UploadRunner
-                docs={props.docs}
-                hasher={hasher}
-                {...(props.gateway ? { gateway: props.gateway } : {})}
-              >
-                <Probe onControl={onControl} />
-              </UploadRunner>
+              <DeviceSettingsProvider store={settingsStore}>
+                <UploadRunner
+                  docs={props.docs}
+                  hasher={hasher}
+                  {...(props.gateway ? { gateway: props.gateway } : {})}
+                >
+                  <Probe onControl={onControl} />
+                </UploadRunner>
+              </DeviceSettingsProvider>
             </ReturnStoreProvider>
           </EvidenceFileStoreProvider>
         </OrderStoreProvider>
@@ -437,5 +450,141 @@ describe('điều khiển hàng đợi cho Trung tâm đồng bộ (V1-08)', () 
     await flush();
     expect(uploads).toEqual(['ev-1', 'ev-2']);
     expect(finished).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('Chỉ tải khi có Wi‑Fi (V1-09, Q-24c B)', () => {
+  /** Lưu công tắc vào kho cài đặt máy TRƯỚC khi gắn (như đã bật từ lần mở app trước). */
+  const saveWifiOnly = (value: boolean) =>
+    settingsStore.write('upload.wifi_only', JSON.stringify(value), 1);
+  const useNetwork = (type: 'wifi' | 'cellular' | 'other') =>
+    act(async () => setMockConnectivity({ online: true, type }));
+
+  /** Mạng + cổng ghi lại MỌI lời gọi máy chủ (đối soát, gửi tệp). */
+  function countingGateway() {
+    const calls: string[] = [];
+    const gateway: UploadGateway = {
+      upload: async (request) => {
+        calls.push(`upload:${request.evidenceId}`);
+        return { kind: 'received' };
+      },
+      fetchServerStates: async () => {
+        calls.push('fetch');
+        return new Map();
+      },
+    };
+    return { gateway, calls };
+  }
+
+  it('mặc định (chưa lưu gì) = luôn tải, kể cả 4G/5G', async () => {
+    setMockConnectivity({ online: true, type: 'cellular' });
+    const files = await storeWithQueuedFile(REAL_SHOP);
+    const t = fakeGateway();
+    await mount(files, REAL_SHOP, { docs, gateway: t.gateway });
+    await flush();
+    expect(t.uploads).toEqual(['ev-1']);
+  });
+
+  it('bật + mạng di động hoặc mạng khác (VPN, Ethernet...): không gọi máy chủ, tệp và số lượt giữ nguyên', async () => {
+    for (const type of ['cellular', 'other'] as const) {
+      setMockConnectivity({ online: true, type });
+      settingsStore = createMemoryDeviceSettingsStore();
+      await saveWifiOnly(true);
+      const files = await storeWithQueuedFile(REAL_SHOP);
+      const t = countingGateway();
+      const view = await mount(files, REAL_SHOP, { docs, gateway: t.gateway });
+      await flush();
+      expect(t.calls).toEqual([]);
+      expect(await files.get(REAL_SHOP as never, 'ev-1' as EvidenceId)).toMatchObject({
+        state: 'queued',
+        attemptCount: 0,
+        lastErrorCode: null,
+      });
+      await view.unmount();
+    }
+  });
+
+  it('bật + di động -> có Wi‑Fi lại: tải ngay (không đợi chu kỳ 60 giây)', async () => {
+    setMockConnectivity({ online: true, type: 'cellular' });
+    await saveWifiOnly(true);
+    const files = await storeWithQueuedFile(REAL_SHOP);
+    const t = fakeGateway();
+    await mount(files, REAL_SHOP, { docs, gateway: t.gateway });
+    await flush();
+    expect(t.uploads).toEqual([]);
+    await useNetwork('wifi');
+    await flush();
+    expect(t.uploads).toEqual(['ev-1']);
+  });
+
+  it('bật + di động -> người dùng tắt công tắc: tải ngay', async () => {
+    setMockConnectivity({ online: true, type: 'cellular' });
+    await saveWifiOnly(true);
+    const files = await storeWithQueuedFile(REAL_SHOP);
+    const t = fakeGateway();
+    let control: { set: (v: boolean) => Promise<void> } | null = null;
+    function Toggle() {
+      const settings = useDeviceSettings();
+      control = {
+        set: (v) => settings.set(UPLOAD_WIFI_ONLY, v),
+      };
+      return null;
+    }
+    await render(
+      <CurrentShopProvider shopId={REAL_SHOP}>
+        <OrderStoreProvider store={orderStore}>
+          <EvidenceFileStoreProvider store={files}>
+            <ReturnStoreProvider store={createMemoryReturnStore()}>
+              <DeviceSettingsProvider store={settingsStore}>
+                <Toggle />
+                <UploadRunner docs={docs} hasher={hasher} gateway={t.gateway} />
+              </DeviceSettingsProvider>
+            </ReturnStoreProvider>
+          </EvidenceFileStoreProvider>
+        </OrderStoreProvider>
+      </CurrentShopProvider>,
+    );
+    await flush();
+    expect(t.uploads).toEqual([]);
+    await act(async () =>
+      (control as unknown as { set: (v: boolean) => Promise<void> }).set(false),
+    );
+    await flush();
+    expect(t.uploads).toEqual(['ev-1']);
+    expect(JSON.parse((await settingsStore.read('upload.wifi_only')) ?? 'null')).toBe(false);
+  });
+
+  it('đang gửi trên Wi‑Fi thì chuyển sang di động: hủy lần gửi, lỗi mạng không tốn lượt; Wi‑Fi lại thì tải tiếp', async () => {
+    await saveWifiOnly(true);
+    const files = await storeWithQueuedFile(REAL_SHOP);
+    const uploads: string[] = [];
+    let hang = true;
+    const gateway: UploadGateway = {
+      upload: async (request, options) => {
+        uploads.push(request.evidenceId);
+        if (!hang) return { kind: 'received' };
+        hang = false;
+        return new Promise((resolve) =>
+          options?.signal?.addEventListener('abort', () =>
+            resolve({ kind: 'network', code: 'NETWORK_LOST' }),
+          ),
+        );
+      },
+      fetchServerStates: async () => new Map(),
+    };
+    await mount(files, REAL_SHOP, { docs, gateway });
+    await flush();
+    expect(uploads).toEqual(['ev-1']);
+    await useNetwork('cellular');
+    await flush();
+    expect(await files.get(REAL_SHOP as never, 'ev-1' as EvidenceId)).toMatchObject({
+      state: 'upload_failed',
+      attemptCount: 0,
+      lastErrorCode: 'NETWORK_LOST',
+    });
+    await useNetwork('wifi');
+    await flush();
+    expect(uploads).toEqual(['ev-1', 'ev-1']);
+    expect((await files.get(REAL_SHOP as never, 'ev-1' as EvidenceId))?.state).toBe('uploaded');
   });
 });

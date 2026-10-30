@@ -2,6 +2,7 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
+import { WifiOnlySwitch } from '@/features/upload';
 import { useAppNavigation } from '@/platform';
 import { Button, Card, ListGroup, ListItem, MetricTile, Screen, Text, useTheme } from '@/shared/ui';
 
@@ -10,6 +11,7 @@ import { Button, Card, ListGroup, ListItem, MetricTile, Screen, Text, useTheme }
  * chứng (chưa ghi/tải lên thật) và chưa có nguồn đếm theo một cửa hàng (`countUnsyncedOnDevice` đếm cả máy),
  * nên mọi ô là "Chưa có số liệu": KHÔNG số giả (Q-21y). Ba ô giữ ba nhãn của board nhưng phần giải thích nói
  * rõ "Trên thiết bị" chưa phải bản sao lưu và "Trên đám mây" chỉ tính tệp máy chủ đã xác nhận (bất biến 3).
+ * Công tắc "Chỉ tải khi có Wi‑Fi" (V1-09) dùng chung cài đặt máy với Trung tâm đồng bộ.
  */
 export function EvidenceDataScreen() {
   const { t } = useTranslation();
@@ -68,6 +70,9 @@ export function EvidenceDataScreen() {
           {t('personal:evidenceData.explainCloud')}
         </Text>
       </View>
+      <ListGroup>
+        <WifiOnlySwitch testID="evidence-wifi-only" />
+      </ListGroup>
       <ListGroup>
         <ListItem
           leadingIcon="clock"

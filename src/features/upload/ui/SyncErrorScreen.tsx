@@ -30,6 +30,7 @@ import {
 import { useUploadQueueControl } from '../data';
 import { openSyncRecord, useSyncJobText } from './SyncJobCard';
 import { useSyncActions } from './use-sync-actions';
+import { useUploadNetworkGate } from './wifi-only';
 import { useSyncJobStores } from './use-sync-jobs';
 
 /** UI-F02 mở cho tệp còn việc đồng bộ hoặc đã nhận mà chưa xác minh; `verified` = không còn cần xử lý. */
@@ -67,6 +68,7 @@ export function SyncErrorScreen() {
   const uid = useCurrentUid();
   const focused = useScreenFocused();
   const { online } = useConnectivity();
+  const waitingWifi = useUploadNetworkGate() === 'waiting_wifi';
   const control = useUploadQueueControl();
   const stores = useSyncJobStores();
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
@@ -123,7 +125,9 @@ export function SyncErrorScreen() {
     );
   }
   const view =
-    state.kind === 'ready' ? describeSyncJob(state.job, { online, now: state.loadedAt }) : null;
+    state.kind === 'ready'
+      ? describeSyncJob(state.job, { online, now: state.loadedAt, waitingWifi })
+      : null;
   if (state.kind === 'gone' || !view) {
     return (
       <Screen {...header}>

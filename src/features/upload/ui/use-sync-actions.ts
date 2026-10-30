@@ -7,6 +7,7 @@ import { useToast } from '@/shared/ui';
 
 import { userRetryEvent, type SyncJob, type SyncJobStores } from '../domain';
 import { useUploadQueueControl } from '../data';
+import { useUploadNetworkGate } from './wifi-only';
 
 type RetryOutcome = 'queued' | 'changed' | 'failed';
 
@@ -43,6 +44,7 @@ export function useSyncActions(stores: SyncJobStores, reload: () => Promise<void
   const toast = useToast();
   const control = useUploadQueueControl();
   const { online } = useConnectivity();
+  const waitingWifi = useUploadNetworkGate() === 'waiting_wifi';
   const running = useRef(new Set<string>());
   const [busy, setBusy] = useState<ReadonlySet<string>>(new Set());
 
@@ -71,14 +73,13 @@ export function useSyncActions(stores: SyncJobStores, reload: () => Promise<void
       } else if (!outcomes.includes('queued')) {
         toast.show(t('screens:sync.toast.retryChanged'), { tone: 'info' });
       } else {
-        toast.show(t(online ? 'screens:sync.toast.retried' : 'screens:sync.toast.retriedOffline'), {
-          tone: 'info',
-        });
+        const message = !online ? 'retriedOffline' : waitingWifi ? 'retriedWaitingWifi' : 'retried';
+        toast.show(t(`screens:sync.toast.${message}`), { tone: 'info' });
       }
       release(keys);
       await reload();
     },
-    [stores, control, online, reload, t, toast],
+    [stores, control, online, waitingWifi, reload, t, toast],
   );
 
   const recheck = useCallback(

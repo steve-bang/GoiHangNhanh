@@ -9,6 +9,7 @@ import {
   EmptyState,
   ErrorState,
   FilterChips,
+  ListGroup,
   Screen,
   SkeletonCard,
   Text,
@@ -28,6 +29,7 @@ import {
 import { SyncJobCard } from './SyncJobCard';
 import { useSyncActions } from './use-sync-actions';
 import { useSyncJobs, useSyncJobStores } from './use-sync-jobs';
+import { useUploadNetworkGate, WifiOnlySwitch } from './wifi-only';
 
 interface Row {
   readonly job: SyncJob;
@@ -40,13 +42,15 @@ interface Row {
  * theo trạng thái tệp (`describeSyncJob` -> `toDisplayStatus`), "Đã tải lên" chỉ khi máy chủ đã xác lập.
  * Thử lại cho tệp đủ điều kiện (R-3), Kiểm tra lại cho tệp máy chủ nhận lâu chưa xác minh. Tệp do tài
  * khoản khác tạo hiện riêng, không có nút. KHÔNG có "Xóa tất cả" (UI-F01). Câu đầu nói đúng: ứng dụng
- * chỉ tải khi đang mở, không hứa tải nền (bất biến 11).
+ * chỉ tải khi đang mở, không hứa tải nền (bất biến 11). Công tắc "Chỉ tải khi có Wi‑Fi" ở đầu màn (V1-09);
+ * đang chờ Wi‑Fi thì câu đầu và lý do từng tệp nói rõ, nhãn trạng thái tệp giữ nguyên.
  */
 export function SyncCenterScreen() {
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const { online } = useConnectivity();
+  const waitingWifi = useUploadNetworkGate() === 'waiting_wifi';
   const [filter, setFilter] = useState<SyncFilter>('uploading');
   const stores = useSyncJobStores();
   const { state, reload } = useSyncJobs(filter === 'uploaded');
@@ -57,11 +61,11 @@ export function SyncCenterScreen() {
     const now = state.loadedAt;
     const describe = (jobs: readonly SyncJob[]): Row[] =>
       jobs.flatMap((job) => {
-        const view = describeSyncJob(job, { online, now });
+        const view = describeSyncJob(job, { online, now, waitingWifi });
         return view ? [{ job, view }] : [];
       });
     return { pending: describe(state.pending), done: state.done ? describe(state.done) : null };
-  }, [state, online]);
+  }, [state, online, waitingWifi]);
 
   const count = (key: SyncFilter) =>
     rows ? rows.pending.filter((r) => r.view.filter === key).length : 0;
@@ -94,8 +98,17 @@ export function SyncCenterScreen() {
   return (
     <Screen title={t('nav:titles.UI-F01')} onBack={navigation.back} testID="screen-UI-F01">
       <Text color="textMuted" testID="sync-note">
-        {t(online ? 'screens:sync.note' : 'screens:sync.offline')}
+        {t(
+          !online
+            ? 'screens:sync.offline'
+            : waitingWifi
+              ? 'screens:sync.waitingWifi'
+              : 'screens:sync.note',
+        )}
       </Text>
+      <ListGroup>
+        <WifiOnlySwitch />
+      </ListGroup>
       <FilterChips options={options} selectedKey={filter} onSelect={setFilter} size="compact" />
       {state.kind === 'loading' || doneLoading ? (
         <View style={{ gap: tokens.space.md }}>

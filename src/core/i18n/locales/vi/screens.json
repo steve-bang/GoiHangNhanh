@@ -250,6 +250,12 @@
   "sync": {
     "note": "Ứng dụng chỉ tải lên khi đang mở. Đóng ứng dụng thì việc tải tạm dừng, mở lại sẽ tiếp tục.",
     "offline": "Máy đang mất mạng. Tệp vẫn ở trên máy, sẽ tải khi có mạng lại.",
+    "waitingWifi": "Đang chờ Wi‑Fi. Tệp vẫn ở trên máy, sẽ tải khi máy dùng Wi‑Fi và ứng dụng đang mở.",
+    "wifiOnly": {
+      "label": "Chỉ tải khi có Wi‑Fi",
+      "description": "Bật để ảnh và video không tải qua mạng di động. Thông tin đơn vẫn được gửi.",
+      "saveFailed": "Chưa lưu được cài đặt. Bạn thử lại nhé."
+    },
     "filter": {
       "uploading": "Đang tải lên",
       "waiting_upload": "Chờ tải lên",
@@ -274,6 +280,7 @@
     "reason": {
       "queued": "Đang chờ lượt tải. Ứng dụng tải khi đang mở.",
       "offline": "Đang chờ mạng.",
+      "waitingWifi": "Đang chờ Wi‑Fi.",
       "waitingNetwork": "Mạng chập chờn. Ứng dụng sẽ tự thử lại.",
       "willRetry": "Chưa tải được. Ứng dụng sẽ tự thử lại.",
       "serverRejected": "Máy chủ chưa nhận tệp sau nhiều lần thử.",
@@ -301,6 +308,7 @@
     "toast": {
       "retried": "Đã đưa vào hàng chờ tải lên.",
       "retriedOffline": "Đã đưa vào hàng chờ. Sẽ tải khi có mạng và ứng dụng đang mở.",
+      "retriedWaitingWifi": "Đã đưa vào hàng chờ. Sẽ tải khi có Wi‑Fi và ứng dụng đang mở.",
       "retryChanged": "Trạng thái tệp vừa đổi. Danh sách đã được cập nhật.",
       "retryFailed": "Chưa đưa tệp vào hàng chờ được. Bạn thử lại nhé.",
       "recheckRequested": "Đã nhờ máy chủ kiểm tra lại. Kết quả sẽ hiện ở đây.",

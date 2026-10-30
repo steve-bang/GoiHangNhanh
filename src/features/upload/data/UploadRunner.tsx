@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode }
 import type { RemoteDocuments } from '@/api/contract';
 import {
   useCurrentShopId,
+  useDeviceSettings,
   useEvidenceFileStore,
   useOrderStore,
   LOCAL_SHOP_ID,
@@ -22,6 +23,11 @@ import {
   type UploadRunOptions,
 } from '../domain/upload-queue';
 import { evidenceFileSource, returnMediaSource } from '../domain/upload-sources';
+import {
+  UPLOAD_WIFI_ONLY,
+  uploadNetworkGate,
+  type UploadNetworkGate,
+} from '../domain/network-policy';
 import type { LocalFileHasher, UploadGateway } from '../domain/ports';
 import { createDeviceUploadGateway, deviceHasher } from './device-gateway';
 
@@ -74,6 +80,10 @@ interface Engine {
  * thẳng từ `platform/connectivity`), nếu không cờ `running` của thể hiện cũ mất tác dụng và hai lượt tải
  * chạy chồng nhau. Mất mạng: hàng đợi dừng (lần gửi đang chạy bị hủy); có mạng lại: chạy ngay, tệp lỗi
  * mạng tới hạn ngay (V1-02).
+ *
+ * "Chỉ tải khi có Wi‑Fi" (V1-09, cài đặt máy `UPLOAD_WIFI_ONLY`): bật mà mạng không phải Wi‑Fi thì như
+ * mất mạng với hàng đợi (không chạy lượt, lần gửi đang chạy bị hủy). Có Wi‑Fi lại hoặc tắt công tắc:
+ * chạy ngay. Cài đặt cũng đọc thẳng (không tạo lại hàng đợi khi đổi).
  */
 export function UploadRunner({
   docs,
@@ -89,6 +99,7 @@ export function UploadRunner({
   const files = useEvidenceFileStore();
   const orders = useOrderStore();
   const returns = useReturnStore();
+  const settings = useDeviceSettings();
   const shopId = useCurrentShopId();
   const engine = useRef<Engine | null>(null);
   const listeners = useRef(new Set<() => void>());
@@ -123,6 +134,13 @@ export function UploadRunner({
     if (!effectiveGateway || shopId === LOCAL_SHOP_ID) return undefined;
     // Tài khoản đang đăng nhập theo Firebase Auth (cùng uid mà Rules thấy), đọc MỖI lượt.
     const currentUid = () => docs?.currentUid() ?? null;
+    // Mạng + công tắc Wi‑Fi đọc MỖI lần hỏi. Cài đặt chưa nạp xong = chưa biết (chờ, xem network-policy).
+    void settings.load(UPLOAD_WIFI_ONLY);
+    const gate = (): UploadNetworkGate => {
+      const wifiOnly = settings.peek(UPLOAD_WIFI_ONLY);
+      return uploadNetworkGate(getConnectivity(), wifiOnly.loaded ? wifiOnly.value : null);
+    };
+    const stopListeners = new Set<() => void>();
     const queue = createUploadQueue({
       // Tệp đóng gói + media hàng hoàn dùng CHUNG một hàng đợi (Q-28), và CHỈ tệp do chính tài khoản đang
       // đăng nhập tạo (Q-24g, V1-07: không tải hộ tài khoản khác dùng chung máy). Media hàng hoàn chỉ tải
@@ -136,10 +154,13 @@ export function UploadRunner({
       hasher: hasher ?? deviceHasher,
       now: Date.now,
       isOnline: () => getConnectivity().online,
-      subscribeOffline: (onOffline) =>
-        subscribeConnectivity((value) => {
-          if (!value.online) onOffline();
-        }),
+      isWaitingForWifi: () => gate() === 'waiting_wifi',
+      subscribeOffline: (onStop) => {
+        stopListeners.add(onStop);
+        return () => {
+          stopListeners.delete(onStop);
+        };
+      },
     });
     // Một lượt tại một thời điểm. Lượt do người dùng bấm (hoặc có mạng lại) khi đang chạy thì chạy lại
     // MỘT lần sau đó (lượt định kỳ trùng thì bỏ, như trước). Xong mỗi lượt báo cho màn hình.
@@ -170,20 +191,30 @@ export function UploadRunner({
     run();
     const timer = setInterval(() => run(), UPLOAD_INTERVAL_MS);
     const unsubscribeActive = subscribeAppActive(() => run());
-    // Có mạng lại: tải ngay thay vì đợi chu kỳ kế tiếp (lượt đang chạy thì bỏ qua, `busy`).
-    let wasOnline = getConnectivity().online;
-    const unsubscribeNetwork = subscribeConnectivity((value) => {
-      if (value.online && !wasOnline) run({ networkRestored: true }, true);
-      wasOnline = value.online;
-    });
+    // Mạng hoặc công tắc Wi‑Fi đổi: không còn được gửi -> hủy lần gửi đang chạy; được gửi trở lại (có
+    // mạng lại, có Wi‑Fi lại, tắt công tắc, nạp xong cài đặt) -> tải ngay thay vì đợi chu kỳ kế tiếp.
+    let previous = gate();
+    const onGateChange = () => {
+      const next = gate();
+      if (next === previous) return;
+      previous = next;
+      if (next === 'allowed') {
+        run({ networkRestored: true }, true);
+      } else {
+        for (const listener of [...stopListeners]) listener();
+      }
+    };
+    const unsubscribeNetwork = subscribeConnectivity(onGateChange);
+    const unsubscribeSetting = settings.subscribe(UPLOAD_WIFI_ONLY.key, onGateChange);
     return () => {
       disposed = true;
       if (engine.current?.queue === queue) engine.current = null;
       clearInterval(timer);
       unsubscribeActive();
       unsubscribeNetwork();
+      unsubscribeSetting();
     };
-  }, [docs, gateway, hasher, files, orders, returns, shopId]);
+  }, [docs, gateway, hasher, files, orders, returns, settings, shopId]);
 
   return <UploadQueueContext.Provider value={control}>{children}</UploadQueueContext.Provider>;
 }

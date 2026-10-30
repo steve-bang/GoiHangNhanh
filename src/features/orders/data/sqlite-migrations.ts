@@ -326,6 +326,15 @@ export const MIGRATIONS: readonly string[] = [
   ALTER TABLE return_media_v14 RENAME TO return_media;
   CREATE INDEX idx_return_media_return ON return_media (return_id, created_at_device);
   `,
+  // v15 (V1-09): cài đặt THEO MÁY (khóa/giá trị JSON, ví dụ "Chỉ tải khi có Wi‑Fi"). Chỉ thêm bảng mới;
+  // chưa có dòng nào = mọi cài đặt ở giá trị mặc định. Không gắn shop/tài khoản (không phải dữ liệu shop).
+  `
+  CREATE TABLE device_settings (
+    key TEXT PRIMARY KEY NOT NULL,
+    value TEXT NOT NULL,
+    updated_at_device INTEGER NOT NULL
+  );
+  `,
 ];
 
 /**

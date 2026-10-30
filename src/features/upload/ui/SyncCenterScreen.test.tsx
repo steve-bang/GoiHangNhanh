@@ -10,8 +10,10 @@ import {
 } from '@/features/evidence';
 import {
   CurrentShopProvider,
+  createMemoryDeviceSettingsStore,
   createMemoryEvidenceFileStore,
   createMemoryOrderStore,
+  type DeviceSettingsStore,
   type OrderDetails,
   type OrderStore,
   type PackingSession,
@@ -119,7 +121,11 @@ function setup(files: EvidenceFile[], medias: ReturnMedia[] = []) {
   return { evidenceFileStore, orderStore, returnStore, control, applyEvent, records };
 }
 
-async function open(t: ReturnType<typeof setup>, ui = <SyncCenterScreen />) {
+async function open(
+  t: ReturnType<typeof setup>,
+  ui = <SyncCenterScreen />,
+  deviceSettingsStore: DeviceSettingsStore = createMemoryDeviceSettingsStore(),
+) {
   await renderWithProviders(
     <CurrentShopProvider shopId={SHOP} uid="uid-1">
       <UploadQueueContext.Provider value={t.control}>{ui}</UploadQueueContext.Provider>
@@ -128,6 +134,7 @@ async function open(t: ReturnType<typeof setup>, ui = <SyncCenterScreen />) {
       evidenceFileStore: t.evidenceFileStore,
       orderStore: t.orderStore,
       returnStore: t.returnStore,
+      deviceSettingsStore,
     },
   );
 }
@@ -367,5 +374,80 @@ describe('UI-F02 Chi tiết lỗi đồng bộ (V1-08)', () => {
     mockNavigation.params = { jobId: 'pack:a' };
     await open(setup([file('a', 'verified')]), <SyncErrorScreen />);
     expect(await screen.findByText('Tệp này không còn cần xử lý.')).toBeOnTheScreen();
+  });
+});
+
+describe('UI-F01: Chỉ tải khi có Wi‑Fi (V1-09)', () => {
+  const WIFI_ONLY = { name: 'Chỉ tải khi có Wi‑Fi' };
+
+  it('công tắc ở đầu màn, mặc định tắt; bật khi đang dùng mạng di động: câu đầu và lý do "Đang chờ Wi‑Fi.", nhãn tệp không đổi', async () => {
+    setMockConnectivity({ online: true, type: 'cellular' });
+    const store = createMemoryDeviceSettingsStore();
+    await open(setup([file('q', 'queued'), file('up', 'uploading')]), <SyncCenterScreen />, store);
+    const toggle = await screen.findByRole('switch', WIFI_ONLY);
+    expect(toggle.props.accessibilityState).toMatchObject({ checked: false });
+    expect(screen.getByTestId('sync-note')).toHaveTextContent(/Ứng dụng chỉ tải lên khi đang mở/);
+    expect(screen.queryByText('Đang chờ Wi‑Fi.')).toBeNull();
+
+    await act(async () => fireEvent.press(toggle));
+    expect(await store.read('upload.wifi_only')).toBe('true');
+    expect(await screen.findByTestId('sync-note')).toHaveTextContent(
+      'Đang chờ Wi‑Fi. Tệp vẫn ở trên máy, sẽ tải khi máy dùng Wi‑Fi và ứng dụng đang mở.',
+    );
+    // Tệp còn dở từ lần trước: nhãn "Đang tải lên" giữ nguyên (trạng thái tệp), lý do nói đang chờ.
+    expect(screen.getByTestId('sync-job-status-pack:up')).toHaveTextContent(/Đang tải lên/);
+    expect(screen.getByTestId('sync-job-status-pack:up')).toHaveTextContent(/Đang chờ Wi‑Fi\./);
+    await fireEvent.press(screen.getByText('Chờ tải lên (1)'));
+    const status = await screen.findByTestId('sync-job-status-pack:q');
+    expect(status).toHaveTextContent(/Chờ tải lên/);
+    expect(status).toHaveTextContent(/Đang chờ Wi‑Fi\./);
+  });
+
+  it('đã bật nhưng đang dùng Wi‑Fi: không có lý do chờ Wi‑Fi', async () => {
+    const store = createMemoryDeviceSettingsStore();
+    await store.write('upload.wifi_only', 'true', 1);
+    await open(setup([file('q', 'queued')]), <SyncCenterScreen />, store);
+    await waitFor(() =>
+      expect(screen.getByRole('switch', WIFI_ONLY).props.accessibilityState).toMatchObject({
+        checked: true,
+      }),
+    );
+    await fireEvent.press(screen.getByText('Chờ tải lên (1)'));
+    expect(await screen.findByTestId('sync-job-status-pack:q')).toHaveTextContent(
+      /Đang chờ lượt tải/,
+    );
+    expect(screen.getByTestId('sync-note')).toHaveTextContent(/Ứng dụng chỉ tải lên khi đang mở/);
+  });
+
+  it('Thử lại khi đang chờ Wi‑Fi: vẫn đưa vào hàng chờ và nói sẽ tải khi có Wi‑Fi', async () => {
+    setMockConnectivity({ online: true, type: 'cellular' });
+    const store = createMemoryDeviceSettingsStore();
+    await store.write('upload.wifi_only', 'true', 1);
+    const t = setup([file('bad', 'upload_failed', { lastErrorCode: 'HTTP_500', attemptCount: 1 })]);
+    await open(t, <SyncCenterScreen />, store);
+    await fireEvent.press(await screen.findByText('Lỗi (1)'));
+    expect(await screen.findByText('Đang chờ Wi‑Fi.')).toBeOnTheScreen();
+    await act(async () => fireEvent.press(screen.getByTestId('sync-job-retry-pack:bad')));
+    expect(
+      await screen.findByText('Đã đưa vào hàng chờ. Sẽ tải khi có Wi‑Fi và ứng dụng đang mở.'),
+    ).toBeOnTheScreen();
+    expect(t.records.get('bad')?.state).toBe('queued');
+  });
+
+  it('ghi cài đặt lỗi: báo lỗi, công tắc giữ nguyên', async () => {
+    const store: DeviceSettingsStore = {
+      read: async () => undefined,
+      write: async () => {
+        throw new Error('đầy');
+      },
+    };
+    await open(setup([]), <SyncCenterScreen />, store);
+    const toggle = await screen.findByRole('switch', WIFI_ONLY);
+    await waitFor(() => expect(toggle.props.accessibilityState).toMatchObject({ disabled: false }));
+    await act(async () => fireEvent.press(toggle));
+    expect(await screen.findByText('Chưa lưu được cài đặt. Bạn thử lại nhé.')).toBeOnTheScreen();
+    expect(screen.getByRole('switch', WIFI_ONLY).props.accessibilityState).toMatchObject({
+      checked: false,
+    });
   });
 });

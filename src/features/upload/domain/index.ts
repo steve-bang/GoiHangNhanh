@@ -7,3 +7,4 @@ export * from './upload-sources';
 export * from './limits';
 export * from './sync-jobs';
 export * from './load-sync-jobs';
+export * from './network-policy';
