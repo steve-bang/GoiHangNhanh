@@ -13,7 +13,7 @@
    - Google: dữ liệu chỉ truy cập trên thiết bị và không gửi ra ngoài thì không phải khai là thu thập; chuyển cho **bên cung cấp dịch vụ** xử lý thay nhà phát triển không tính là "chia sẻ" ([Data safety, Play Console Help 10787469][gp-datasafety], *chưa đọc trực tiếp*, xem mục 7).
 2. **Khai cả dữ liệu do SDK bên thứ ba thu thập** (Apple yêu cầu rõ; Google cũng vậy). App dùng `@react-native-firebase` 27.1.0: `app`, `auth`, `firestore`, `functions` (đã có), `crashlytics` (**[theo V1-16]**). Không có Firebase Analytics, không có SDK quảng cáo (`package.json`).
 3. **Khi phân vân giữa khai và không khai, khai** (bất biến 11: không để người dùng tưởng app thu ít hơn thực tế). Ngoại lệ duy nhất: vị trí, vì chắc chắn không rời máy (mục 4).
-4. Mọi dòng phụ thuộc PR chưa hợp nhất ghi **[theo V1-xx]**. Nếu V1-16 (Crashlytics) bị tách khỏi v1: **bỏ** các dòng Crash, Device ID và phần chẩn đoán từ báo lỗi (v1-release-plan mục 3.3 V1-16, 7.2 k).
+4. Mọi dòng phụ thuộc PR chưa hợp nhất ghi **[theo V1-xx]**. Nếu V1-16 (Crashlytics) bị tách khỏi v1: **bỏ** các dòng Crash, Device ID, Product Interaction/App interactions và phần chẩn đoán từ báo lỗi (v1-release-plan mục 3.3 V1-16, 7.2 k).
 
 ## 2. Bảng dữ liệu của app (nguồn chung cho hai store)
 
@@ -30,8 +30,9 @@
 | D9 | Bản neo hồ sơ hàng hoàn: ID + nhãn (ví dụ RH-00001), không có nội dung hồ sơ | Khi tải ảnh/video hàng hoàn | Firestore `returns` | Có | Có: sau 30 ngày | `features/returns/domain/remote-documents.ts` |
 | D10 | Phiên bản ứng dụng đi kèm bản ghi | Cùng D6–D9 | Firestore | Có | Có: sau 30 ngày | `appVersion` trong các `*Write` |
 | D11 | Nhật ký thao tác của cửa hàng (loại thao tác, uid, thời điểm, giá trị trước/sau) | Khi máy chủ ghi nhận thay đổi | Firestore `auditEvents` (chỉ máy chủ ghi) | Có | Có: sau 30 ngày (điều phối chốt sau review PR #40) | **[theo V1-04]** trigger kiểm toán |
-| D12 | Báo cáo lỗi: mã lỗi, stack, nhật ký kỹ thuật ngay trước lỗi, đời máy, phiên bản hệ điều hành, bộ nhớ trống, pin, hướng màn hình, phiên bản app | Khi app gặp lỗi, nếu công tắc bật (mặc định bật, R-8) | Firebase Crashlytics | **Không** (không `setUserId`; bộ che PII bỏ mã đơn/mã vận đơn/email/đường dẫn tệp) | Không theo tài khoản; tự xóa theo thời hạn của Crashlytics | **[theo V1-16]** |
+| D12 | Báo cáo lỗi: mã lỗi, stack (nhật ký thao tác trước lỗi tách ra D14), đời máy, phiên bản hệ điều hành, bộ nhớ trống, pin, hướng màn hình, phiên bản app | Khi app gặp lỗi, nếu công tắc bật (mặc định bật, R-8) | Firebase Crashlytics | **Không** (không `setUserId`; bộ che PII bỏ mã đơn/mã vận đơn/email/đường dẫn tệp) | Không theo tài khoản; tự xóa theo thời hạn của Crashlytics | **[theo V1-16]** |
 | D13 | ID cài đặt Firebase (Firebase installation ID / UUID cài đặt của Crashlytics) | Cùng D12 | Firebase | **Không** | Đổi khi cài lại app; không xóa theo tài khoản | **[theo V1-16]** |
+| D14 | Nhật ký thao tác kỹ thuật ngay trước lỗi (breadcrumb: màn đang mở, tên module, mã thao tác; không mã đơn/mã vận đơn/email/đường dẫn tệp) | Gửi kèm D12, cùng công tắc | Firebase Crashlytics | **Không** | Như D12 | **[theo V1-16]**; trang chính sách mục "Báo lỗi ứng dụng" |
 
 **Không rời máy** (không khai là thu thập; nêu ở trang chính sách mục "Dữ liệu chỉ nằm trên điện thoại"):
 
@@ -41,7 +42,7 @@
 | Nội dung hồ sơ hàng hoàn (tình trạng, kiểm hàng, ghi chú) | Q-26c: chỉ bản neo D9 lên máy chủ |
 | Hồ sơ tranh chấp, văn bản tóm tắt | Q-27: chỉ trên máy. Chia sẻ văn bản là hành động người dùng chủ động qua bảng chia sẻ của hệ điều hành (mục 5) |
 | Lịch sử tìm kiếm trong app | Bảng `search_history` SQLite |
-| Video/ảnh chưa tải lên; CSDL đơn | Thư mục tài liệu của app; **[theo V1-01/V1-12]** loại khỏi iCloud Backup/Android Auto Backup (Q-24d) |
+| Video/ảnh chưa tải lên; CSDL đơn | Thư mục tài liệu của app. Android: **đã có** `android.allowBackup: false` (V1-01, PR #43) nên không vào Auto Backup. iOS: **[theo V1-12]** loại khỏi iCloud Backup (Q-24d) |
 | Âm thanh | Không ghi âm, không xin micro (O-09, `app.json`) |
 
 ## 3. Apple App Privacy (App Store Connect)
@@ -60,13 +61,13 @@
 | Diagnostics > Other Diagnostic Data | D10; D12 phần trạng thái máy **[theo V1-16]** | Có | **Có** (D10 đi kèm bản ghi có uid) | Không | App Functionality |
 | Diagnostics > Crash Data | D12 **[theo V1-16]** | Có | Không (xem 3.2) | Không | App Functionality |
 | Identifiers > Device ID | D13 **[theo V1-16]** | Có | Không (xem 3.2) | Không | App Functionality |
-| Usage Data > Product Interaction | Chỉ khi V1-16 ghi tên màn/thao tác vào nhật ký trước lỗi | Có điều kiện | Không | Không | App Functionality |
+| Usage Data > Product Interaction | D14 **[theo V1-16]** | Có | Không (cùng điều kiện 3.2) | Không | App Functionality (chẩn đoán lỗi) |
 
 Mọi loại khác: **không thu thập** — Location (Precise, Coarse), Audio Data, Contacts, Health & Fitness, Financial Info, Purchases, Browsing History, Search History, Sensitive Info, Phone Number, Physical Address, Other Contact Info, Advertising Data, Performance Data (*kiểm lại với trang Firebase*, mục 6), Other Data.
 
 **Tracking: không.** App không liên kết dữ liệu với dữ liệu bên thứ ba cho quảng cáo, không chia sẻ cho data broker; không cần App Tracking Transparency và không có `NSUserTrackingUsageDescription`.
 
-### 3.2 Vì sao Crash Data và Device ID khai "không gắn danh tính" (Q-29 / V1-20)
+### 3.2 Vì sao Crash Data, Device ID và Product Interaction khai "không gắn danh tính" (Q-29 / V1-20)
 
 Apple coi dữ liệu là không gắn khi đã bỏ định danh trực tiếp trước khi thu thập và không tìm cách nối lại ([App privacy details][apple-privacy]). V1-16 thiết kế: không gọi `setUserId`, chỉ gửi mã lỗi + tên module + stack qua bộ che PII, không mã đơn/mã vận đơn/email/đường dẫn tệp; ID cài đặt là ngẫu nhiên, đổi khi cài lại, không lưu cạnh uid ở Firestore. Trang chính sách cũng viết "Chúng tôi không gắn báo cáo với tài khoản của bạn".
 
@@ -109,9 +110,12 @@ Lưu ý: Apple ghi "Personal Information/Personal Data theo luật về quyền 
 | App info and performance > Diagnostics | D10; D12 phần trạng thái máy **[theo V1-16]** | Có | Bắt buộc (D10 luôn đi kèm bản ghi) | App functionality; Analytics (*kiểm định nghĩa Analytics của Google có gồm chẩn đoán lỗi không*) |
 | App info and performance > Crash logs | D12 **[theo V1-16]** | Có | Tùy chọn (công tắc ở Cá nhân > Quyền riêng tư và bảo mật) | Analytics hoặc App functionality (*kiểm định nghĩa*) |
 | Device or other IDs | D13 **[theo V1-16]** | Có | Tùy chọn (đi cùng công tắc báo lỗi) | Analytics hoặc App functionality (*kiểm*) |
+| App activity > App interactions | D14 **[theo V1-16]** | Có | Tùy chọn (đi cùng công tắc báo lỗi) | Analytics (phân tích, chẩn đoán lỗi) |
+
+Hai store khai **nhất quán**: D14 là Product Interaction (Apple) / App interactions (Google), chỉ dùng để chẩn đoán lỗi, không gắn tài khoản. Nếu V1-16 bị tách khỏi v1, bỏ cả hai dòng.
 
 - **Ảnh/video "Bắt buộc":** người dùng chọn có quay/chụp hay không, nhưng khi đã quay thì app tự tải lên (công tắc "Chỉ tải khi có Wi‑Fi" **[theo V1-09]** chỉ hoãn, không tắt). Khai "Tùy chọn" sẽ làm người dùng tưởng tắt được việc tải lên. Chọn "Bắt buộc" (Q-29 / V1-20).
-- **Không thu thập:** Location (Approximate, Precise) — chỉ xử lý trên máy (mục 2); Audio; Files and docs; Messages; Contacts; Calendar; Health and fitness; Financial info; Web browsing; App activity > App interactions, In-app search history, Installed apps; Personal info > Phone number, Address, Race/ethnicity, Political/religious beliefs, Sexual orientation, Other info.
+- **Không thu thập:** Location (Approximate, Precise) — chỉ xử lý trên máy (mục 2); Audio; Files and docs; Messages; Contacts; Calendar; Health and fitness; Financial info; Web browsing; App activity > In-app search history (chỉ trên máy), Installed apps; Personal info > Phone number, Address, Race/ethnicity, Political/religious beliefs, Sexual orientation, Other info.
 - **Địa chỉ IP:** máy chủ Firebase nhận IP khi kết nối. Google/Apple không coi IP chỉ dùng để phục vụ yêu cầu rồi bỏ là "thu thập"; nhưng nếu dịch vụ Firebase lưu IP (ví dụ nhật ký Auth) và trang công bố của Firebase ghi điều đó, phải khai theo hướng dẫn của Firebase. **Chưa chắc**: kiểm ở mục 6.
 
 ## 5. Hành vi cần giải thích nếu người duyệt hỏi
@@ -155,7 +159,7 @@ Expo cho khai manifest cấp app ở `app.json` `expo.ios.privacyManifests` (*ki
 }
 ```
 
-`NSPrivacyCollectedDataTypes`: mỗi dòng của bảng 3.1 thành một mục với `NSPrivacyCollectedDataType` (`NSPrivacyCollectedDataTypeEmailAddress`, `…Name`, `…UserID`, `…PhotosorVideos` (chữ "or" viết thường), `…OtherUserContent`, `…OtherDiagnosticData`, và **[theo V1-16]** `…CrashData`, `…DeviceID`), `NSPrivacyCollectedDataTypeLinked` đúng cột "Gắn với danh tính", `NSPrivacyCollectedDataTypeTracking: false`, `NSPrivacyCollectedDataTypePurposes: ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]` (*hằng mục đích chưa đọc được trên trang Apple; kiểm khi viết mã*).
+`NSPrivacyCollectedDataTypes`: mỗi dòng của bảng 3.1 thành một mục với `NSPrivacyCollectedDataType` (`NSPrivacyCollectedDataTypeEmailAddress`, `…Name`, `…UserID`, `…PhotosorVideos` (chữ "or" viết thường), `…OtherUserContent`, `…OtherDiagnosticData`, và **[theo V1-16]** `…CrashData`, `…DeviceID`, `NSPrivacyCollectedDataTypeProductInteraction` (Linked: false)), `NSPrivacyCollectedDataTypeLinked` đúng cột "Gắn với danh tính", `NSPrivacyCollectedDataTypeTracking: false`, `NSPrivacyCollectedDataTypePurposes: ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]` (*hằng mục đích chưa đọc được trên trang Apple; kiểm khi viết mã*).
 
 ### 6.3 Kiểm trên bản build (release-checklist S-7, S-8)
 
@@ -170,7 +174,7 @@ Expo cho khai manifest cấp app ở `app.json` `expo.ios.privacyManifests` (*ki
    - Apple: <https://firebase.google.com/docs/ios/app-store-data-collection>
    - *Hai trang này bị chặn trong môi trường soạn (tên miền `firebase.google.com`), chưa đọc*. Nếu trang ghi khác bảng ở đây, **theo trang Firebase** và sửa tệp này + trang chính sách.
 2. Đọc [Data safety, Play Console Help 10787469][gp-datasafety] và [yêu cầu xóa tài khoản 13327111][gp-delete] (bị chặn trong môi trường soạn) để kiểm tên loại dữ liệu, định nghĩa mục đích, ngoại lệ "người dùng chủ động".
-3. Xác nhận V1-16 có/không trong v1; nếu không: bỏ D12, D13 và các dòng tương ứng; trang chính sách bỏ mục "Báo lỗi ứng dụng".
+3. Xác nhận V1-16 có/không trong v1; nếu không: bỏ D12, D13, D14 và các dòng tương ứng; trang chính sách bỏ mục "Báo lỗi ứng dụng".
 4. Chạy kiểm 6.3 trên bản build ứng viên.
 5. Đối chiếu câu "30 ngày" (R-4) khớp app (**[theo V1-15]**), web (`site.legal.purgeAfterDays`) và Function `purgeDeletedShops` (**[theo V1-14]**).
 

@@ -735,7 +735,9 @@ Tài liệu: [docs/store/listing.md](../store/listing.md), [privacy-declarations
 7. **Phân loại:** Apple dự kiến 4+ (không UGC phát tán, không trình duyệt trong app); Google đối tượng **18+**, IARC dự kiến mức thấp nhất.
 8. **Ghi chú người duyệt bằng tiếng Anh** (trường Notes của Apple giới hạn 4000 byte; chữ có dấu tốn 2–3 byte), nhãn nút giữ tiếng Việt.
 9. **Không commit ảnh mã vạch** `DH-DEMO-0001`: tạo lúc nộp bằng công cụ chuẩn và quét thử bằng bản staging; người duyệt Google nhập tay.
-10. **Không sửa `app.json`** (PR chỉ tài liệu): cấu hình `ios.privacyManifests` đề xuất ở privacy-declarations mục 6.2 cho một PR mã sau (chưa có PR V1-xx nào sở hữu; điều phối chọn, gợi ý gộp với V1-16 hoặc làm trước S-7).
+10. **Nhật ký thao tác trước lỗi (breadcrumb, V1-16) khai là thu thập** (điều phối chốt sau review PR #45): Google "App activity > App interactions" = Có, Tùy chọn, mục đích phân tích/chẩn đoán lỗi; Apple "Product Interaction" = Có, không gắn danh tính; Privacy Manifest thêm `NSPrivacyCollectedDataTypeProductInteraction`. Khớp trang chính sách mục "Báo lỗi ứng dụng". Bỏ cả hai nếu V1-16 bị tách.
+11. **Cách nói thời hạn xóa dữ liệu máy chủ khi xóa tài khoản, dùng chung cho app (V1-15), web và store** (điều phối chốt sau review PR #45): tiếng Việt "**dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở**"; tiếng Anh "**deleted after 30 days, unless kept for a legal reason or an open dispute**". Không dùng "trong vòng 30 ngày"/"within 30 days" (purge chạy sau `purgeAfter`, không sớm hơn).
+12. **Không sửa `app.json`** (PR chỉ tài liệu): cấu hình `ios.privacyManifests` đề xuất ở privacy-declarations mục 6.2 cho một PR mã sau (chưa có PR V1-xx nào sở hữu; điều phối chọn, gợi ý gộp với V1-16 hoặc làm trước S-7).
 
 **Lỗ hổng phát hiện khi đối chiếu (chưa sửa, ngoài phạm vi PR tài liệu):**
 

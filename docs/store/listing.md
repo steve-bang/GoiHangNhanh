@@ -63,7 +63,7 @@ TRANH CHẤP
 • Đóng hồ sơ không xóa dữ liệu.
 
 TRẠNG THÁI TỆP RÕ RÀNG
-• Mỗi tệp hiện đúng trạng thái: đã lưu trên máy, chờ tải lên, đang tải lên, máy chủ đã nhận, đã xác minh.
+• Mỗi tệp hiện đúng trạng thái: "Đã lưu trên máy", "Chờ tải lên", "Đang tải lên", "Đã tải lên", "Đã xác minh", hoặc "Lỗi – cần xử lý".
 • Máy chủ tính lại mã băm SHA-256 để kiểm tra tệp còn nguyên. Mã băm chỉ cho biết tệp không bị đổi kể từ lúc tính. Nó không chứng minh thời điểm quay hay nội dung là thật.
 • Có tùy chọn chỉ tải lên khi có Wi-Fi.
 

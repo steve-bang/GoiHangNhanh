@@ -13,7 +13,7 @@
 - **Xóa tài khoản:** Cá nhân > Quyền riêng tư và bảo mật > Xóa tài khoản (**[theo V1-15]**; nhãn đã có trong `nav.json` `account.security`, `personal.json` `security.deleteAccount`).
 - **Không mua trong ứng dụng**, không quảng cáo; Gói dịch vụ đang ẩn (`account-menu.ts`, Q-21ag).
 - **Đăng nhập chỉ email + mật khẩu** (O-15): Guideline 4.8 (đăng nhập bên thứ ba) không áp dụng.
-- **Mã hóa xuất khẩu:** chỉ HTTPS; **[theo V1-01]** `ios.config.usesNonExemptEncryption: false` (`ITSAppUsesNonExemptEncryption = NO`).
+- **Mã hóa xuất khẩu:** chỉ HTTPS; **đã có** `ios.config.usesNonExemptEncryption: false` (`ITSAppUsesNonExemptEncryption = NO`) trong `app.json` (V1-01, PR #43).
 
 Ghi chú viết bằng **tiếng Anh** (người duyệt đọc nhanh hơn, và trường Notes của Apple giới hạn **4000 byte**: chữ có dấu tiếng Việt tốn 2–3 byte mỗi chữ; [Platform version information][asc-version]). Tên nút giữ nguyên tiếng Việt trong ngoặc kép để người duyệt tìm đúng trên màn hình.
 
@@ -44,7 +44,7 @@ PERMISSIONS
 - Location (while using the app, optional): saved on the device only, together with photos of returned parcels. It is never uploaded. Denying it does not block any feature.
 
 ACCOUNT DELETION
-"Cá nhân" (Profile tab) > "Quyền riêng tư và bảo mật" (Privacy and security) > "Xóa tài khoản" (Delete account). After password confirmation the account is deleted immediately and the shop data on the server is deleted within 30 days. Deletion waits while a video is being recorded or while an open dispute file exists on the device (close it first). Web request page: <https://DOMAIN/xoa-tai-khoan/>
+"Cá nhân" (Profile tab) > "Quyền riêng tư và bảo mật" (Privacy and security) > "Xóa tài khoản" (Delete account). After password confirmation the account is deleted immediately and the shop data on the server is deleted after 30 days, unless kept for a legal reason or an open dispute. Deletion waits while a video is being recorded or while an open dispute file exists on the device (close it first). Web request page: <https://DOMAIN/xoa-tai-khoan/>
 
 PURCHASES AND ADS
 The app is free. No in-app purchases, no subscriptions, no ads.
@@ -67,7 +67,7 @@ OTHER
 | 6 | Nhãn trạng thái | `docs/09` mục 3, `src/core/theme/evidence-status.ts` | – |
 | 7 | "Nhận hàng hoàn" | `screens.json` `home.receiveReturn` | – |
 | Xóa tài khoản | đường dẫn menu, điều kiện chặn | **[theo V1-15]** | Hôm nay nút xóa luôn khóa: **không nộp** trước V1-15 |
-| "within 30 days" | R-4 | **[theo V1-14]** `purgeDeletedShops` | Khớp app/web |
+| "after 30 days, unless kept for a legal reason or an open dispute" | R-4; cách nói chung "sau 30 ngày" (decisions Q-29 / V1-20) | **[theo V1-14]** `purgeDeletedShops` (`legalHold`) | Khớp app (V1-15) và web (`xoa-tai-khoan.astro`) |
 
 ## 3. Mã vạch mẫu `DH-DEMO-0001`
 
