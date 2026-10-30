@@ -284,6 +284,7 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
 - **Thư viện:** không. **Rules:** không.
 - **Test:** vectơ SHA-256 hiện có vẫn qua; tệp không đổi không băm lại; đổi kích thước/mtime -> băm lại; mã khác -> không tải (bất biến 4); migration v15 -> v16.
 - **Ảnh:** không.
+- **Thêm từ review V1-11 (điều phối chốt, PR #59):** cùng migration v16, lưu **bền** cờ gián đoạn của video mở kiện hàng hoàn (`return_media.interrupted` hoặc tương đương, ghi ngay khi màn phát hiện vào nền/camera bị ngắt). Hiện cờ chỉ trong bộ nhớ (`ReturnRecordLive`), nên hai đường ghi nhầm `interrupted: false`: (a) app bị tắt giữa lúc video lưu xong và lúc ghi vào hồ sơ, đối soát lần sau ghi `false`; (b) vào nền -> lưu lỗi (`local_save_failed`) -> khôi phục lúc mở app (`media-recovery.ts`, nhánh `local_save_failed` không coi là gián đoạn) ghi `false`. **Phải xong trước khi bật cờ ghi video cho người dùng thật.** Test: hai đường trên ra `interrupted: true`.
 - **Rủi ro:** mtime không đáng tin sau khôi phục backup (đã loại khỏi backup ở V1-12/V1-01); máy chủ vẫn băm lại độc lập nên một tệp lọt kiểm tra cục bộ sẽ thành `hash_mismatch`, không thành `verified` sai. Tốc độ băm JS trên Hermes **chưa đo** (cổng G-5). **Phụ thuộc:** V1-02 (`upload-queue.ts`), V1-09 (số migration).
 
 #### V1-14 account-delete-server

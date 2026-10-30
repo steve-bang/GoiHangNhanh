@@ -132,6 +132,31 @@ describe('UI-D04 giữ màn hình sáng và vào nền (V1-11)', () => {
     expect(mockRecorder.recordCalls).toBe(1);
   });
 
+  it('vào nền khi bản ghi còn đang khởi động: dừng ngay khi bắt đầu xong, video ghi interrupted', async () => {
+    const store = createMemoryReturnStore();
+    const original = store.createMedia.bind(store);
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    store.createMedia = async (...args) => {
+      await gate;
+      return original(...args);
+    };
+    const id = await seedOpening(store);
+    mockNavigation.params = { returnId: id };
+    await renderWithProviders(<ReturnRecordScreen />, { returnStore: store });
+    await act(async () => mockRecorder.signalReady()); // begin chờ createMedia
+    await act(async () => emitAppState('background'));
+    expect(mockRecorder.stopCalls).toBe(0);
+    await act(async () => release());
+    await act(async () => undefined);
+    expect(mockRecorder.recordCalls).toBe(1);
+    expect(mockRecorder.stopCalls).toBe(1);
+    await act(async () => mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mov' }));
+    await waitFor(async () =>
+      expect(await openingVideo(store, id)).toMatchObject({ interrupted: true }),
+    );
+  });
+
   it('iOS inactive: không dừng; người dùng tự dừng thì video không bị đánh gián đoạn', async () => {
     const { store, id } = await startRecording();
     await act(async () => emitAppState('inactive'));

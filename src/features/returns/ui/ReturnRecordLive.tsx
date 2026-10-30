@@ -325,6 +325,10 @@ function LiveCamera({
   /** Lần quay bị gián đoạn (vào nền, camera bị ngắt sớm): video ghi vào hồ sơ `interrupted: true`. */
   const interrupted = useRef(false);
   const [stoppedInBackground, setStoppedInBackground] = useState(false);
+  /**
+   * Bản đồng bộ của `phase` cho trình nghe vào nền: mọi chỗ gọi `setPhase` đặt ref NGAY cùng lúc (không chờ
+   * render), để sự kiện tới giữa lúc đổi pha và lần vẽ kế tiếp không bị bỏ qua.
+   */
   const phaseRef = useRef<Phase>('preparing');
 
   /** Dừng đúng một lần (tránh gọi `stopRecording` hai lần khi vừa bấm dừng vừa gỡ màn). */
@@ -365,6 +369,7 @@ function LiveCamera({
             });
             if (ended === 'early') interrupted.current = true;
             // Camera đã trả kết quả: từ đây chỉ còn lưu + băm.
+            if (phaseRef.current !== 'failed') phaseRef.current = 'saving';
             if (mounted.current) setPhase((current) => (current === 'failed' ? current : 'saving'));
           };
           return {
@@ -396,6 +401,7 @@ function LiveCamera({
 
   const fail = useCallback((key: FailureKey) => {
     if (!mounted.current) return;
+    phaseRef.current = 'failed';
     setFailure(key);
     setPhase('failed');
   }, []);
@@ -430,19 +436,20 @@ function LiveCamera({
     if (mounted.current) {
       startedAtRef.current = monotonicNow();
       setStartedAt(startedAtRef.current);
-      setPhase(pendingStop.current ? 'saving' : 'recording');
+      // Đặt ref NGAY (không chờ render): sự kiện vào nền tới trước lần vẽ kế tiếp vẫn thấy "đang quay".
+      const next: Phase = pendingStop.current ? 'saving' : 'recording';
+      if (phaseRef.current !== 'failed') phaseRef.current = next;
+      setPhase(next);
     }
   }, [fail, onSaved, ports, requestStop, returnCase.id, shopId, t, toast]);
 
   const stop = useCallback(() => {
     if (!active.current) return;
+    phaseRef.current = 'saving';
     setPhase('saving');
     requestStop();
   }, [requestStop]);
 
-  useEffect(() => {
-    phaseRef.current = phase;
-  }, [phase]);
   useKeepScreenAwake(phase !== 'failed');
 
   // App vào nền khi đang quay (V1-11): dừng qua đường lưu sẵn có, ghi gián đoạn, báo khi quay lại app.
@@ -488,6 +495,7 @@ function LiveCamera({
       stop();
     } else if (phase === 'preparing' && started.current) {
       pendingStop.current = true; // bản ghi đang khởi động: dừng ngay khi xong
+      phaseRef.current = 'saving';
       setPhase('saving');
     } else {
       cancelled.current = true; // chưa tạo gì, hoặc việc lưu chạy ở nền

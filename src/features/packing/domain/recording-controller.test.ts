@@ -134,6 +134,47 @@ describe('startRecording', () => {
     }
   });
 
+  it('V1-11: markInterrupted ghi phiên interrupted NGAY (trước khi camera trả kết quả), kill lúc đó vẫn giữ dấu gián đoạn', async () => {
+    const t = await setup();
+    const active = await started(t);
+    await active.markInterrupted();
+    expect((await t.orders.getSession(LOCAL_SHOP_ID, t.session.id))?.sessionStatus).toBe(
+      'interrupted',
+    );
+    expect(await t.fileState()).toBe('recording'); // tệp chưa đổi: chỉ phiên mang dấu gián đoạn
+  });
+
+  it('V1-11 chuỗi: gián đoạn -> lưu lỗi (máy đầy) -> phiên VẪN interrupted (không needs_attention); mở app khôi phục được tệp -> phiên vẫn interrupted', async () => {
+    const t = await setup();
+    t.state.persist = { ok: false, reason: 'STORAGE_FULL' };
+    const ports: RecordingPorts = { ...t.ports, wasInterrupted: () => true };
+    const active = await startRecording(ports, t.session);
+    if ('kind' in active) throw new Error('should start');
+    active.stop();
+    t.finish({ ok: true, tempUri: 'file:///cache/Camera/x.mov' });
+    expect(await active.result).toMatchObject({ kind: 'failed', reason: 'STORAGE_FULL' });
+    expect(await t.fileState()).toBe('local_save_failed');
+    const status = async () =>
+      (await t.orders.getSession(LOCAL_SHOP_ID, t.session.id))?.sessionStatus;
+    expect(await status()).toBe('interrupted');
+
+    t.state.persist = { ok: true, uri: 'file:///docs/evidence/ev-1.mp4', sizeBytes: 2048 };
+    await recoverInterruptedRecordings(
+      {
+        files: t.files,
+        orders: t.orders,
+        persist: t.ports.persist,
+        hash: t.ports.hash,
+        now: t.ports.now,
+        exists: () => true,
+        findPersisted: () => null,
+      },
+      LOCAL_SHOP_ID,
+    );
+    expect(await t.fileState()).toBe('queued');
+    expect(await status()).toBe('interrupted');
+  });
+
   it('không chuyển được tệp vào thư mục bền: local_save_failed, KHÔNG báo đã lưu, giữ tệp tạm', async () => {
     const t = await setup();
     const active = await started(t);

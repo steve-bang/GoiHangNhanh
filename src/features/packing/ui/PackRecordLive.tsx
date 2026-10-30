@@ -119,6 +119,10 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
   const interrupted = useRef(false);
   /** Đã dừng vì app vào nền (để nói đúng nguyên nhân ở dải báo). */
   const [stoppedInBackground, setStoppedInBackground] = useState(false);
+  /**
+   * Bản đồng bộ của `phase` cho trình nghe vào nền: mọi chỗ gọi `setPhase` đặt ref NGAY cùng lúc (không chờ
+   * render), để sự kiện tới giữa lúc đổi pha và lần vẽ kế tiếp không bị bỏ qua.
+   */
   const phaseRef = useRef<Phase>('preparing');
   const mounted = useRef(true);
 
@@ -169,6 +173,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
             } else if (ended === 'early') {
               interrupted.current = true; // hệ thống ngắt camera: video có thể thiếu phần sau
             }
+            if (phaseRef.current !== 'failed') phaseRef.current = 'saving';
             if (mounted.current) setPhase((current) => (current === 'failed' ? current : 'saving'));
           };
           return {
@@ -200,6 +205,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
 
   const fail = useCallback((key: FailureKey) => {
     if (!mounted.current) return;
+    phaseRef.current = 'failed';
     setFailure(key);
     setPhase('failed');
   }, []);
@@ -213,6 +219,8 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
       return;
     }
     active.current = recording;
+    // Vào nền trong lúc khởi động (V1-11): ghi phiên `interrupted` ngay khi đã có bản ghi.
+    if (interrupted.current) void recording.markInterrupted();
     void recording.result.then((outcome) => {
       active.current = null;
       if (!mounted.current) return;
@@ -236,19 +244,21 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
     if (mounted.current) {
       startedAtRef.current = monotonicNow();
       setStartedAt(startedAtRef.current);
-      setPhase(pendingStop.current || cameraTiming.current?.end != null ? 'saving' : 'recording');
+      // Đặt ref NGAY (không chờ render): sự kiện vào nền tới trước lần vẽ kế tiếp vẫn thấy "đang quay".
+      const next: Phase =
+        pendingStop.current || cameraTiming.current?.end != null ? 'saving' : 'recording';
+      if (phaseRef.current !== 'failed') phaseRef.current = next;
+      setPhase(next);
     }
   }, [fail, navigation, ports, requestStop, session, t, toast]);
 
   const stop = useCallback(() => {
     if (!active.current) return;
+    phaseRef.current = 'saving';
     setPhase('saving');
     requestStop();
   }, [requestStop]);
 
-  useEffect(() => {
-    phaseRef.current = phase;
-  }, [phase]);
   useKeepScreenAwake(phase !== 'failed');
 
   // App vào nền khi đang quay (V1-11): dừng có chủ đích qua đường lưu sẵn có, đánh dấu gián đoạn, báo khi
@@ -264,8 +274,10 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
         phaseRef.current = 'saving';
         setStoppedInBackground(true);
         setPhase('saving');
-        if (recordingNow) requestStop();
-        else pendingStop.current = true; // bản ghi đang khởi động: dừng ngay khi bắt đầu xong
+        if (recordingNow) {
+          void active.current?.markInterrupted(); // ghi phiên `interrupted` NGAY, không chờ lưu xong
+          requestStop();
+        } else pendingStop.current = true; // bản ghi đang khởi động: dừng ngay khi bắt đầu xong
         onceAppActive(() =>
           toast.show(t('screens:record.stoppedInBackground'), { tone: 'info', durationMs: 10000 }),
         );
@@ -307,6 +319,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
       stop();
     } else if (phase === 'preparing' && started.current) {
       pendingStop.current = true; // bản ghi đang khởi động: dừng ngay khi xong
+      phaseRef.current = 'saving';
       setPhase('saving');
     } else if (phase === 'preparing') {
       cancelled.current = true; // chưa tạo tệp/phiên nào: chỉ về đơn

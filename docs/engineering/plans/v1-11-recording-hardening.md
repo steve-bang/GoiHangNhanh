@@ -58,7 +58,8 @@ UI-C03 với cờ ghi bật (web không có camera: hiện khung "cần camera")
 ## Rủi ro
 
 - Hành vi `expo-camera` khi app vào nền lúc đang ghi **chỉ biết trên máy thật** (cổng G-4): iOS có thể đã tự kết thúc tệp trước khi JS nhận `background`; JS có thể bị tạm dừng trước khi lưu/băm xong -> khôi phục bằng `recoverInterruptedRecordings` lúc mở lại (đã có). Thứ tự sự kiện `background` và kết quả camera không bảo đảm: nếu camera trả trước, phiên vẫn `interrupted` (nhánh `early`) nhưng không có toast "vào nền".
-- Cập nhật phiên sang `interrupted` lỗi (lỗi kho) -> phiên kẹt `recording`, lần mở app sau đối chiếu về `ended` (mất dấu gián đoạn; hiếm). Hàng hoàn: app bị kill giữa lúc lưu xong và lúc ghi vào hồ sơ thì đối soát ghi `interrupted: false` (cờ chỉ trong bộ nhớ).
+- Đóng gói (sửa sau review PR #59): phiên ghi `interrupted` ngay khi phát hiện vào nền và ở đầu bước lưu; lỗi lưu giữ `interrupted`; khôi phục chỉ đưa `needs_attention` về `ended`. Chỉ còn mất dấu nếu kho lỗi đúng cả hai lần ghi `interrupted` (hiếm).
+- Hàng hoàn (chấp nhận trong PR này, điều phối chốt): cờ gián đoạn chỉ trong bộ nhớ, nên ghi nhầm `interrupted: false` khi (a) app bị kill giữa lúc lưu xong và lúc ghi vào hồ sơ, hoặc (b) vào nền -> lưu lỗi `local_save_failed` -> khôi phục lúc mở app (`media-recovery.ts`). Lưu cờ bền làm ở **V1-13 (migration v16) trước khi bật cờ ghi video cho người dùng thật**.
 - Kích thước ước tính ~350 dòng mã (ngoài test/tài liệu).
 
 ## Tự review
@@ -66,3 +67,5 @@ UI-C03 với cờ ghi bật (web không có camera: hiện khung "cần camera")
 Vòng 1: (1) Bản nháp dừng cả khi `inactive` theo kế hoạch tổng: iOS báo `inactive` cho hộp thoại hệ thống và Trung tâm điều khiển -> dừng oan, phiên bị đánh gián đoạn sai (bất biến 11 theo chiều ngược). Sửa: chỉ `background`; cuộc gọi làm camera bị ngắt thì đi nhánh `early`. (2) Bản nháp tắt giữ sáng khi bấm dừng: lúc băm JS nếu màn tự khóa thì iOS đưa app vào nền, việc lưu treo tới khi mở lại. Sửa: giữ sáng tới khi lưu xong (màn tự chuyển). (3) Toast gắn với màn quay sẽ mất nếu lưu xong lúc app ở nền (màn đã chuyển sang Xác nhận). Sửa: hẹn toast qua `onceAppActive` + câu cảnh báo bền ở UI-C04 theo trạng thái phiên. (4) Bất biến 2: không đổi trình tự tạo bản ghi; ID phiên/kiện chụp lúc mở màn. Bất biến 4/6: không ghép, không quay tiếp, không xóa; lưu nốt phần đã ghi qua đúng đường cũ. Bất biến 3: không trạng thái/sự kiện tệp mới; "gián đoạn" là trạng thái phiên đã có. Bất biến 11: câu chữ không hứa "đã lưu" khi vào nền (chỉ "đang lưu phần đã quay"), không hứa tải/quay nền. (5) Dòng Q-24b chỉ ở chế độ ghi thật để không nói sai khi cờ tắt.
 
 Tự review: đã chấp nhận.
+
+Sau review PR #59 (điều phối): (1) phiên đóng gói ghi `interrupted` ngay khi phát hiện, `markFailed` giữ `interrupted`, khôi phục chỉ `endSession` khi phiên `needs_attention`; (2) cờ hàng hoàn bền chuyển sang V1-13; (3) `phaseRef` đặt đồng bộ ở mọi chỗ đổi pha (bỏ hiệu ứng đồng bộ trễ) để sự kiện vào nền giữa lúc `begin()` xong và lần vẽ kế tiếp không bị bỏ qua.

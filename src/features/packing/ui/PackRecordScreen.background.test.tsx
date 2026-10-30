@@ -152,6 +152,83 @@ describe('UI-C03 app vào nền khi đang quay (V1-11)', () => {
     expect(mockRecorder.recordCalls).toBe(1); // không tự quay tiếp
   });
 
+  it('vào nền NGAY khi bắt đầu ghi xong, trước lần vẽ kế tiếp: vẫn dừng và phiên interrupted ngay (không chờ lưu)', async () => {
+    const orders = createMemoryOrderStore();
+    const base = createMemoryEvidenceFileStore();
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const files = {
+      ...base,
+      create: async (input: Parameters<typeof base.create>[0]) => {
+        await gate;
+        return base.create(input);
+      },
+    };
+    const details = await seedOrder(orders, sampleOrder());
+    const session = sampleSession(details, Date.now());
+    await orders.saveSession(session);
+    mockNavigation.params = { sessionId: session.id };
+    await renderWithProviders(<PackRecordScreen />, {
+      orderStore: orders,
+      evidenceFileStore: files,
+    });
+    await act(async () => mockRecorder.signalReady()); // begin chờ files.create
+    // Cùng một act: begin() chạy xong (đã gán bản ghi đang quay) nhưng React chưa vẽ lại pha mới.
+    mockRecorder.onRecord = () => {
+      queueMicrotask(() => queueMicrotask(() => queueMicrotask(() => emitAppState('background'))));
+    };
+    await act(async () => {
+      release();
+      for (let i = 0; i < 10; i += 1) await Promise.resolve();
+    });
+    expect(mockRecorder.recordCalls).toBe(1);
+    expect(mockRecorder.stopCalls).toBe(1);
+    expect((await orders.getSession(LOCAL_SHOP_ID, session.id))?.sessionStatus).toBe('interrupted');
+  });
+
+  it('vào nền khi bản ghi còn đang khởi động (chưa có bản ghi đang quay): dừng ngay khi bắt đầu xong, phiên interrupted', async () => {
+    const orders = createMemoryOrderStore();
+    const base = createMemoryEvidenceFileStore();
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const files = {
+      ...base,
+      create: async (input: Parameters<typeof base.create>[0]) => {
+        await gate;
+        return base.create(input);
+      },
+    };
+    const details = await seedOrder(orders, sampleOrder());
+    const session = sampleSession(details, Date.now());
+    await orders.saveSession(session);
+    mockNavigation.params = { sessionId: session.id };
+    await renderWithProviders(<PackRecordScreen />, {
+      orderStore: orders,
+      evidenceFileStore: files,
+    });
+    await act(async () => mockRecorder.signalReady()); // begin chờ files.create
+    await act(async () => emitAppState('background'));
+    expect(mockRecorder.stopCalls).toBe(0);
+    await act(async () => release());
+    await act(async () => undefined);
+    expect(mockRecorder.recordCalls).toBe(1);
+    expect(mockRecorder.stopCalls).toBe(1);
+    expect((await orders.getSession(LOCAL_SHOP_ID, session.id))?.sessionStatus).toBe('interrupted');
+    await act(async () => mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mov' }));
+    await act(async () => undefined);
+    expect((await orders.getSession(LOCAL_SHOP_ID, session.id))?.sessionStatus).toBe('interrupted');
+  });
+
+  it('vào nền rồi lưu lỗi (máy đầy): phiên vẫn interrupted, không needs_attention', async () => {
+    mockPersist.mockReturnValue({ ok: false, reason: 'STORAGE_FULL' });
+    const t = await startRecording();
+    await act(async () => emitAppState('background'));
+    expect(await statusOf(t)).toBe('interrupted'); // ghi ngay, trước khi camera trả kết quả
+    await act(async () => mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mov' }));
+    expect(await screen.findByText(/Máy đã đầy bộ nhớ/)).toBeOnTheScreen();
+    expect(await statusOf(t)).toBe('interrupted');
+  });
+
   it('iOS inactive (Trung tâm điều khiển, hộp thoại hệ thống): KHÔNG dừng quay', async () => {
     await startRecording();
     await act(async () => emitAppState('inactive'));
