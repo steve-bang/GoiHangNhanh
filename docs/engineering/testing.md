@@ -36,7 +36,7 @@ Nguyên tắc: đẩy tối đa logic xuống `domain` thuần để kiểm th�
 | Mã nghiệp vụ trọng yếu | Cần kiểm thử |
 |---|---|
 | Liên kết phiên–kiện–đơn | Phiên mang ID đúng; chuyển đơn tiếp theo không đổi liên kết phiên trước (QA-03); không bắt đầu phiên khi chưa xác định shop/đơn/kiện; kiện đã có phiên đang chạy bị từ chối |
-| Hàng đợi tải lên | Hàng đợi sống sót khi khởi động lại (đọc lại từ SQLite thật hoặc bản thay thế trong bộ nhớ có cùng hợp đồng); thử lại idempotent không tạo job thứ hai; **đối soát trước khi gửi lại** (QA-05); backoff; mất mạng không tính là lỗi; không bao giờ phát sinh lệnh xóa tệp cục bộ khi chưa `verified`; mã lỗi hết hạn xác thực/hạn mức → `needs_attention` |
+| Hàng đợi tải lên | Hàng đợi sống sót khi khởi động lại (đọc lại từ SQLite thật hoặc bản thay thế trong bộ nhớ có cùng hợp đồng); thử lại idempotent không tạo job thứ hai; **đối soát trước khi gửi lại** (QA-05); backoff; mất mạng không tính là lỗi (V1-02: `upload-queue.test.ts` 50 lỗi mạng liên tiếp vẫn `upload_failed`, 8 lỗi máy chủ → `needs_attention`, hủy khi mất mạng, hết giờ không giữ `running`; `with-timeout.test.ts`; `connectivity.test.tsx` với NetInfo giả; mock mặc định `src/test-utils/mock-connectivity.ts` đăng ký trong `jest.setup.ts`); không bao giờ phát sinh lệnh xóa tệp cục bộ khi chưa `verified`; mã lỗi hết hạn xác thực/hạn mức → `needs_attention` |
 | Khôi phục phiên | Tệp `recording`/`saving_local` mồ côi sau khi kill (QA-04); tệp không đọc được → `unrecoverable`, phiên `needs_attention`; không tự xác nhận phiên |
 | `releaseLocalCopy` | Chỉ chạy khi `verified` + chính sách + đã thông báo; từ chối với mọi trạng thái khác |
 | Phát hiện trùng/đơn | Nhiều kết quả → yêu cầu chọn, không tự lấy kết quả đầu (`ORDER_DUPLICATE`); chuẩn hóa mã; không gộp variant (QA-14) |
@@ -78,7 +78,7 @@ Mỗi Function có một "hợp đồng" kiểm thử bằng Emulator (Functions
 |---|---|---|
 | `createUploadSession` | Chỉ thành viên đúng shop và quyền ghi; bằng chứng phải tồn tại/chưa tải; đường dẫn đích cố định; gọi lại cùng `evidenceId` idempotent; shop khác bị từ chối; hết hạn mức → mã lỗi rõ, không cấp | 11, 05 |
 | `verifyEvidence` (khi tệp hoàn tất) | Hash khớp → `server.state = verified` + `verifiedAt` + audit; **không khớp → `hash_mismatch`, không bao giờ `verified`**; tệp thiếu/size lệch; chạy lặp không đổi kết quả; không tin `sha256Client` | 09, 05 |
-| Trigger audit | Mỗi thay đổi quan trọng sinh đúng một `auditEvents` (ai, gì, trước/sau); client không tạo được; chạy lại không nhân đôi | — |
+| Trigger audit | Mỗi thay đổi quan trọng sinh đúng một `auditEvents` (ai, gì, trước/sau); client không tạo được; chạy lại không nhân đôi | **Đã có (V1-04):** `firebase/tests/functions/audit.test.ts` (logic trigger trên Firestore Emulator, chưa kiểm phần nối trigger/auth context) và `firebase/tests/rules/audit-hardening.rules.test.ts` |
 | `createReadUrl` | URL có thời hạn; shop khác bị từ chối; ghi audit "đã xem"; không trả URL vĩnh viễn | 11 |
 | Dọn theo hạn lưu (lịch) | Hết hạn → xóa có audit; **bằng chứng có `retention.hold` không bị xóa**; gỡ cờ giữ thì tuân theo hạn; hạ cấp gói không xóa ngầm | 10 |
 | Cờ giữ tranh chấp | Mở/đóng tranh chấp đặt/gỡ cờ trên đúng bằng chứng; nhiều tranh chấp cùng giữ một bằng chứng | 10 |

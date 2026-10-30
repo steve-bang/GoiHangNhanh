@@ -58,8 +58,8 @@ export function createOrderSync(deps: OrderSyncDeps): OrderSync {
   // `currentUid()` và dừng lượt nếu khác. Lệnh ghi đang bay lúc đăng xuất vẫn có thể bị Rules từ chối
   // (tính vào `failed`, vô hại, idempotent); các mục còn lại không bị ghi bằng danh tính cũ.
   // Lưu ý: nếu một lệnh ghi treo giữa chừng (mất mạng, batch.commit chưa trả), `running` của lượt đó
-  // giữ nguyên cho đến khi lệnh settle; lượt mới trong lúc đó trả `skipped: 'busy'`. Đây là hành vi
-  // chấp nhận được, không phải lỗi: `OrderSyncRunner` tạo bộ đồng bộ mới khi trạng thái mạng đổi.
+  // giữ nguyên cho đến khi lệnh settle; lượt mới trong lúc đó trả `skipped: 'busy'`. Cổng Firestore
+  // thật giới hạn mỗi lệnh 30 giây (`REMOTE_CALL_TIMEOUT_MS`, V1-02), nên lượt không treo mãi.
   const { store, remote, now, isOnline, currentUid } = deps;
   let running = false;
 

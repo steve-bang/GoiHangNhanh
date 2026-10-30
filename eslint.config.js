@@ -14,6 +14,7 @@ const INFRA_PACKAGES = [
   'firebase',
   'firebase/*',
   '@react-native/*',
+  '@react-native-community/*',
 ];
 
 // Mẫu chung; mỗi khối override phải liệt kê lại (flat config thay thế, không gộp, cấu hình rule).

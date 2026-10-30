@@ -677,6 +677,15 @@ export function createSqliteOrderStore(
           shopId,
         ]),
       ),
+    isSessionPublished: (shopId, sessionId) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        const row = await db.getFirstAsync<{ id: string }>(
+          `SELECT id FROM packing_sessions
+           WHERE id = ? AND shop_id = ? AND remote_status IS NOT NULL LIMIT 1`,
+          [sessionId, shopId],
+        );
+        return row !== null;
+      }),
     hasRecordingOnDevice: () =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
         const row = await db.getFirstAsync<{ id: string }>(

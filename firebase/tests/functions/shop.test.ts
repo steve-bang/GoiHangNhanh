@@ -3,6 +3,7 @@ import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
 import {
   createShopForUser,
+  parseShopId,
   parseShopInput,
   ShopError,
   updateShopForUser,
@@ -123,5 +124,22 @@ describe('updateShopForUser', () => {
     const input = { name: 'X', sellingSources: [] } as const;
     await expect(updateShopForUser(db, packer, shop.id, input)).rejects.toBeInstanceOf(ShopError);
     await expect(updateShopForUser(db, revoked, shop.id, input)).rejects.toBeInstanceOf(ShopError);
+  });
+});
+
+describe('parseShopId', () => {
+  it('nhận mã cùng mẫu ID với các callable khác, từ chối ký tự đường dẫn, rỗng, quá dài, sai kiểu', () => {
+    expect(parseShopId({ shopId: 'shop_A-1' })).toBe('shop_A-1');
+    for (const bad of [
+      null,
+      {},
+      { shopId: '' },
+      { shopId: '../x' },
+      { shopId: 'a/b' },
+      { shopId: 'a'.repeat(129) },
+      { shopId: 5 },
+    ]) {
+      expect(() => parseShopId(bad)).toThrow(ShopError);
+    }
   });
 });

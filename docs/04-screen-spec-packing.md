@@ -181,6 +181,7 @@ Checklist hỗ trợ nhân viên nhưng không thay thế kiểm tra tính hợp
 | Tệp bị lỗi | Giữ trạng thái lỗi, hướng dẫn khôi phục |
 | Mã băm không khớp | Cách ly tệp, không đánh dấu đã xác minh |
 | Gói không cho lưu thêm | Hiển thị quyền lợi và lựa chọn; không xóa ngầm |
+| Tệp vượt giới hạn dung lượng (ảnh 25 MB, video 2 GB; mã `UPLOAD_FILE_TOO_LARGE`) | "Tệp quá lớn nên không tải lên được. Tệp vẫn còn trên máy này." Chuyển ngay sang cần xử lý, không gửi, không tự thử lại; không xóa tệp trên máy |
 
 **Nghiệm thu:**
 - Video đang tải không chặn mở đơn tiếp theo.

@@ -8,7 +8,13 @@ export function toCodeKey(raw: string): string {
   return normalizeCode(raw).toUpperCase();
 }
 
-const MAX_CODE_LENGTH = 64;
+/**
+ * Trần độ dài trường đơn do người dùng nhập. PHẢI khớp `firebase/firestore.rules` (`validOrderCodes`,
+ * `validLineFields`): vượt trần thì Rules từ chối và đơn không bao giờ đăng được (V1-04).
+ */
+export const MAX_CODE_LENGTH = 64;
+export const MAX_LINE_NAME_LENGTH = 200;
+export const MAX_LINE_VARIANT_LENGTH = 200;
 const CONTROL_CHARS = /[\u0000-\u001F\u007F]/;
 
 export type CodeCheck = { ok: true; code: string } | { ok: false; error: 'INVALID_CODE' };
@@ -19,6 +25,19 @@ export function validateCode(raw: string): CodeCheck {
   if (code.length === 0 || code.length > MAX_CODE_LENGTH || CONTROL_CHARS.test(code)) {
     return { ok: false, error: 'INVALID_CODE' };
   }
+  return { ok: true, code };
+}
+
+export type TrackingCheck = { ok: true; code: string | null } | { ok: false };
+
+/**
+ * Mã vận đơn (tùy chọn): bỏ khoảng trắng đầu cuối (giữ nguyên phần giữa như trước); rỗng là không có
+ * mã. Quá `MAX_CODE_LENGTH` hoặc chứa ký tự điều khiển là không hợp lệ (cùng trần với Rules).
+ */
+export function validateTrackingCode(raw: string): TrackingCheck {
+  const code = raw.trim();
+  if (code.length === 0) return { ok: true, code: null };
+  if (code.length > MAX_CODE_LENGTH || CONTROL_CHARS.test(code)) return { ok: false };
   return { ok: true, code };
 }
 

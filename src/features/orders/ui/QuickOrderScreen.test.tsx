@@ -114,6 +114,35 @@ describe('UI-B04 Tạo đơn nhanh (ORD-05) và Xác nhận (ORD-06)', () => {
       expect(screen.getByText('Mã đơn chưa hợp lệ. Hãy kiểm tra lại.')).toBeOnTheScreen();
     });
 
+    it('ô nhập cho quá trần một ký tự (không cắt âm thầm); tên/variant/mã vận đơn quá dài báo đúng ô (V1-04)', async () => {
+      const store = await open();
+      expect(screen.getByTestId('quick-order-code').props.maxLength).toBe(65);
+      expect(screen.getByTestId('line-name-0').props.maxLength).toBe(201);
+      expect(screen.getByTestId('line-variant-0').props.maxLength).toBe(201);
+      await typeCode('DH-LONG');
+      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'a'.repeat(201));
+      await next();
+      expect(
+        await screen.findByText('Tên sản phẩm dài quá 200 ký tự. Hãy rút gọn.'),
+      ).toBeOnTheScreen();
+      await fireEvent.changeText(screen.getByTestId('line-name-0'), 'Áo');
+      await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'v'.repeat(201));
+      await next();
+      expect(
+        await screen.findByText('Phân loại dài quá 200 ký tự. Hãy rút gọn.'),
+      ).toBeOnTheScreen();
+      await fireEvent.changeText(screen.getByTestId('line-variant-0'), 'Đen');
+      await fireEvent.press(screen.getByTestId('quick-add-tracking'));
+      expect(screen.getByTestId('quick-tracking').props.maxLength).toBe(65);
+      await fireEvent.changeText(screen.getByTestId('quick-tracking'), 'T'.repeat(65));
+      await next();
+      expect(
+        await screen.findByText('Mã vận đơn dài quá 64 ký tự hoặc có ký tự lạ. Hãy kiểm tra lại.'),
+      ).toBeOnTheScreen();
+      expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
+      expect(await store.countOrders(LOCAL_SHOP_ID, {})).toBe(0);
+    });
+
     it('variant mà không có tên: báo lỗi ở dòng (tên sản phẩm KHÔNG bắt buộc nếu không có variant)', async () => {
       await open();
       await typeCode('DH3');
