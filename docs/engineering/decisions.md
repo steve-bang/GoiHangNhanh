@@ -682,4 +682,19 @@ Mã lỗi/thông báo mới phát sinh từ PR2/PR4/PR5 (mất mạng, tệp tha
 
 Nguồn: [v1-release-plan.md](v1-release-plan.md) (2026-10-30). Các lựa chọn Q-24a–h, O-09, O-15 (v1), D-14 (cách làm tạm cho v1), xóa tài khoản, gói/thanh toán v1, crash reporting và quy trình build được **agent điều phối chốt thay người dùng** theo ủy quyền mà điều phối báo lại; **chưa có xác nhận trực tiếp của người dùng** và không phải D-xx. Bảng đầy đủ: kế hoạch mục 1.2. Câu hỏi R-1…R-8 (kế hoạch mục 7.3) **đã được điều phối chốt** ở kế hoạch mục 7.5; kèm chốt sau review PR #40: purge xóa cả shop gồm `auditEvents` theo yêu cầu xóa của chủ (sau 30 ngày, trừ khi có `legalHold`/tranh chấp), chỉ giữ `accountDeletions` (uid, thời điểm, `shopIds`, lý do kỹ thuật; không email/tên). **Q-24g:** A (một máy một tài khoản) + lọc theo `created_by` như Q-23g. Checklist con người: [release-checklist.md](release-checklist.md).
 
+**Q-29a — V1-19 trang web pháp lý (agent tự chốt theo ủy quyền, 2026-10-30; chờ rà pháp lý C-2):**
+
+| # | Chốt | Lý do |
+|---|---|---|
+| a | URL tiếng Việt không dấu, ổn định: `/chinh-sach-quyen-rieng-tu/`, `/dieu-khoan/`, `/ho-tro/`, `/xoa-tai-khoan/`; một nơi `site.legalPages` + `publicLinks()` trong `web/src/config/site.ts` | Theo kế hoạch V1-19; URL khai báo với store không được đổi sau phát hành |
+| b | `site.url` đổi `https://doncung.example` -> `https://don-chung.invalid` | Cùng tên miền giữ chỗ với app (`legal-links.ts`); `isPlaceholderLink` của app chỉ coi `.invalid` là giữ chỗ, nên V1-18 dùng chung giá trị mà liên kết vẫn khóa |
+| c | Email hỗ trợ, tên và địa chỉ bên vận hành để `null`; trang hiện "sẽ được công bố tại đây trước khi phát hành", không in email giả, không `mailto` hỏng; `check-seo` báo lỗi nếu bật `indexable` khi còn `null` hoặc tên miền `.invalid`/`.example` | Không bịa liên hệ; chặn phát hành nhầm |
+| d | Không hiện chữ "nháp" cho người đọc: hiện "Ngày hiệu lực" (`site.legal.effectiveDate`, tạm 2026-10-30); trạng thái chờ rà ghi trong chú thích mã mỗi trang và checklist C-2, C-6 | Theo yêu cầu điều phối |
+| e | Số ngày trả lời yêu cầu xóa qua email: **7 ngày làm việc** (`site.legal.emailRequestDays`), đề xuất | Google Play cần quy trình rõ; con số chờ người dùng/luật sư duyệt (C-2) |
+| f | Bản ghi `accountDeletions` ghi "hiện được giữ không thời hạn" | Thiết kế V1-14 không có bước xóa bản ghi này; nói đúng thực tế, R-1 để luật sư xem lại |
+| g | Không ghi số ngày lưu báo cáo lỗi của Crashlytics; không trích điều luật Việt Nam cụ thể; không viết luật áp dụng/giới hạn trách nhiệm ở Điều khoản | Chưa có nguồn chính thức hiện hành/chưa rà pháp lý (C-2, C-6) |
+| h | Nêu rõ Firebase Auth và Crashlytics không chọn khu vực nên có thể xử lý ở nước khác; Firestore/Storage/Functions ở Singapore | Trung thực về chuyển dữ liệu ra nước ngoài |
+| i | Trang chủ web: bỏ câu "Tải lên chạy nền" (2 chỗ), thay bằng "tải lên khi ứng dụng đang mở" | Bất biến 11; v1 không có tải nền |
+| j | `check-seo` thêm: bốn trang có mặt và trong sitemap, chân trang mọi trang liên kết đủ bốn trang, danh sách cụm từ cấm trên trang pháp lý ("pháp lý tuyệt đối", "đảm bảo thắng", "tải nền", "sao lưu an toàn", "bản nháp"…) | Kiểm tự động thay cho đọc tay |
+
 **Mã lỗi/chuỗi mới chờ BA (bổ sung khi làm từng PR V1-xx, không thêm vào `codes.ts` khi chưa duyệt):** `UPLOAD_WAITING_NETWORK`, `UPLOAD_INTERRUPTED`, `UPLOAD_EXCEPTION` (V1-02), `ACCOUNT_DELETE_SHOP_HAS_MEMBERS` (V1-14); câu "Đang chờ Wi‑Fi" (V1-09), câu thời hạn lưu v1 (V1-18), câu giới hạn khi quay (V1-11), màn Kiểm tra hộp thư (V1-03), luồng Xóa tài khoản (V1-15).

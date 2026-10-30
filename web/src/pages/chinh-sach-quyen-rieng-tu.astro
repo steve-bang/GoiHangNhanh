@@ -1,0 +1,276 @@
+---
+/*
+ * GHI CHÚ NỘI BỘ (không hiển thị): bản nháp chờ luật sư rà theo pháp luật bảo vệ dữ liệu cá nhân Việt Nam
+ * (release-checklist C-2). Nội dung mô tả hành vi của bản v1 sau khi V1-12 (loại khỏi sao lưu iOS),
+ * V1-14/V1-15 (xóa tài khoản) và V1-16 (báo lỗi ứng dụng) hợp nhất; đối chiếu lại với app thật trước khi
+ * bật `site.indexable` (checklist C-6). Nguồn: docs/engineering/v1-release-plan.md mục 1.1, 1.2, 3.3 V1-19,
+ * 7.5 (R-1, R-4, R-8). Không thêm điều luật cụ thể khi chưa rà pháp lý.
+ */
+import LegalPage from '../components/LegalPage.astro';
+import Contact from '../components/Contact.astro';
+import { site } from '../config/site';
+
+const days = site.legal.purgeAfterDays;
+const toc = [
+  { id: 'tom-tat', label: 'Tóm tắt' },
+  { id: 'ben-van-hanh', label: 'Ai chịu trách nhiệm' },
+  { id: 'may-chu', label: 'Dữ liệu lưu trên máy chủ' },
+  { id: 'tren-may', label: 'Dữ liệu chỉ nằm trên điện thoại' },
+  { id: 'quyen-ung-dung', label: 'Quyền ứng dụng xin' },
+  { id: 'bao-loi', label: 'Báo lỗi ứng dụng' },
+  { id: 'khong-lam', label: 'Những việc chúng tôi không làm' },
+  { id: 'noi-luu', label: 'Nơi lưu và bên cung cấp dịch vụ' },
+  { id: 'bao-ve', label: 'Cách bảo vệ dữ liệu' },
+  { id: 'sao-luu', label: 'Sao lưu và đổi điện thoại' },
+  { id: 'thoi-han', label: 'Lưu giữ bao lâu' },
+  { id: 'xoa', label: 'Xóa tài khoản' },
+  { id: 'quyen-cua-ban', label: 'Quyền của bạn' },
+  { id: 'trang-web', label: 'Trang web này' },
+  { id: 'thay-doi', label: 'Thay đổi chính sách' },
+  { id: 'lien-he', label: 'Liên hệ' },
+];
+---
+
+<LegalPage
+  title={`Chính sách quyền riêng tư và dữ liệu của ứng dụng ${site.name}`}
+  description={`${site.name} thu dữ liệu gì, lưu ở đâu, giữ bao lâu và xóa thế nào. Vị trí ảnh hàng hoàn chỉ ở trên máy. Không quảng cáo, không bán dữ liệu.`}
+  path={site.legalPages.privacy}
+  heading="Chính sách quyền riêng tư"
+  crumb="Quyền riêng tư"
+  toc={toc}
+>
+  <h2 id="tom-tat">Tóm tắt</h2>
+  <ul>
+    <li>
+      {site.name} là ứng dụng giúp người bán online lưu bằng chứng đóng gói, hàng hoàn và tranh chấp.
+    </li>
+    <li>Phần lớn dữ liệu nằm trên điện thoại của bạn. Máy chủ chỉ giữ những gì đã tải lên.</li>
+    <li>Ứng dụng không ghi âm. Vị trí lúc chụp ảnh hàng hoàn chỉ lưu trên máy, không gửi đi.</li>
+    <li>Chúng tôi không chạy quảng cáo và không bán dữ liệu của bạn.</li>
+    <li>Bạn có thể xóa tài khoản trong ứng dụng hoặc gửi yêu cầu qua email.</li>
+  </ul>
+
+  <h2 id="ben-van-hanh">Ai chịu trách nhiệm</h2>
+  <p>Bên vận hành ứng dụng {site.name} chịu trách nhiệm về dữ liệu mô tả ở trang này.</p>
+  <Contact kind="operator" />
+
+  <h2 id="may-chu">Dữ liệu lưu trên máy chủ</h2>
+  <p>Đây là dữ liệu rời điện thoại và lưu trên máy chủ, gắn với tài khoản của bạn.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Dữ liệu</th>
+          <th scope="col">Khi nào</th>
+          <th scope="col">Để làm gì</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Email, mật khẩu (chúng tôi không xem được mật khẩu), họ tên nếu bạn nhập</td>
+          <td>Khi đăng ký hoặc sửa hồ sơ</td>
+          <td>Đăng nhập, đặt lại mật khẩu, hiện tên của bạn</td>
+        </tr>
+        <tr>
+          <td>Tên cửa hàng, nguồn bán</td>
+          <td>Khi tạo hoặc sửa cửa hàng</td>
+          <td>Tách dữ liệu theo cửa hàng</td>
+        </tr>
+        <tr>
+          <td>
+            Mã đơn, mã vận đơn, tên sản phẩm, phân loại, số lượng, ghi chú do bạn nhập hoặc quét
+          </td>
+          <td>Khi đơn đã có phiên quay</td>
+          <td>Gắn bằng chứng đúng đơn, tìm lại đơn</td>
+        </tr>
+        <tr>
+          <td>Phiên quay, kiện hàng và thông tin tệp: loại tệp, dung lượng, thời lượng, mã băm</td>
+          <td>Khi đồng bộ đơn và khi tải tệp lên</td>
+          <td>Biết tệp thuộc đơn, kiện, phiên nào và kiểm tra tệp còn nguyên</td>
+        </tr>
+        <tr>
+          <td>Video đóng gói, video mở kiện, ảnh kiện hàng hoàn</td>
+          <td>Khi ứng dụng tải tệp lên</td>
+          <td>Giữ bản bằng chứng ngoài điện thoại</td>
+        </tr>
+        <tr>
+          <td>Mã hồ sơ hàng hoàn (chỉ mã định danh, không có nội dung hồ sơ)</td>
+          <td>Khi tải ảnh hoặc video hàng hoàn</td>
+          <td>Gắn ảnh, video với đúng hồ sơ</td>
+        </tr>
+        <tr>
+          <td>Thời gian theo đồng hồ điện thoại và thời gian của máy chủ, lưu riêng</td>
+          <td>Khi tạo bản ghi và khi tải lên</td>
+          <td>Ghi rõ mốc nào do máy bạn báo, mốc nào do máy chủ ghi</td>
+        </tr>
+        <tr>
+          <td>Nhật ký thao tác của cửa hàng (ai làm gì, lúc nào)</td>
+          <td>Khi máy chủ ghi nhận thay đổi</td>
+          <td>Giữ lịch sử, không cho sửa lặng lẽ</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Dữ liệu sản phẩm do bạn tự nhập. Ứng dụng không lấy dữ liệu từ sàn thương mại điện tử và không ghi
+    giá, khách hàng hay tồn kho.
+  </p>
+
+  <h2 id="tren-may">Dữ liệu chỉ nằm trên điện thoại</h2>
+  <p>Những dữ liệu sau không gửi lên máy chủ:</p>
+  <ul>
+    <li>Nội dung hồ sơ hàng hoàn: tình trạng kiện, kết quả kiểm hàng, ghi chú.</li>
+    <li>Hồ sơ tranh chấp và văn bản tóm tắt bạn tạo.</li>
+    <li>
+      Vị trí của máy lúc chụp ảnh kiện hàng hoàn. Vị trí chỉ lưu trên máy. Ứng dụng không hiện tọa độ và
+      vị trí không chứng minh nơi chụp.
+    </li>
+    <li>Lịch sử tìm kiếm trong ứng dụng.</li>
+    <li>Video, ảnh chưa tải lên.</li>
+  </ul>
+  <p>
+    Khi bạn chia sẻ văn bản tóm tắt tranh chấp, bạn tự chọn nơi gửi. Nơi nhận xử lý theo chính sách của
+    họ.
+  </p>
+
+  <h2 id="quyen-ung-dung">Quyền ứng dụng xin</h2>
+  <ul>
+    <li><strong>Camera:</strong> để quét mã, quay video và chụp ảnh kiện hàng.</li>
+    <li>
+      <strong>Vị trí khi đang dùng ứng dụng:</strong> chỉ để ghi nơi chụp ảnh hàng hoàn. Không cho phép
+      thì vẫn chụp được. Ứng dụng không dùng vị trí khi chạy nền.
+    </li>
+    <li><strong>Micro:</strong> không xin. Video không có tiếng.</li>
+  </ul>
+  <p>Bạn có thể tắt các quyền này trong phần Cài đặt của điện thoại.</p>
+
+  <h2 id="bao-loi">Báo lỗi ứng dụng</h2>
+  <ul>
+    <li>Khi ứng dụng gặp lỗi, điện thoại có thể gửi một báo cáo lỗi để chúng tôi sửa.</li>
+    <li>
+      Báo cáo gồm mã lỗi, phần mã bị lỗi, đời máy, phiên bản hệ điều hành và phiên bản ứng dụng.
+    </li>
+    <li>
+      Báo cáo dùng một mã cài đặt ngẫu nhiên do dịch vụ báo lỗi tạo. Chúng tôi không gắn báo cáo với tài
+      khoản của bạn.
+    </li>
+    <li>Ứng dụng che mã đơn, mã vận đơn, email và đường dẫn tệp trước khi gửi.</li>
+    <li>
+      Tính năng này <strong>bật sẵn</strong>. Bạn tắt được ở Cá nhân &gt; Quyền riêng tư và bảo mật.
+    </li>
+  </ul>
+
+  <h2 id="khong-lam">Những việc chúng tôi không làm</h2>
+  <ul>
+    <li>Không chạy quảng cáo, không gắn công cụ quảng cáo.</li>
+    <li>Không bán, không cho thuê dữ liệu của bạn.</li>
+    <li>Không theo dõi bạn qua ứng dụng hay trang web khác.</li>
+    <li>Không đo hành vi sử dụng để phân tích.</li>
+    <li>Không ghi âm.</li>
+  </ul>
+
+  <h2 id="noi-luu">Nơi lưu và bên cung cấp dịch vụ</h2>
+  <ul>
+    <li>
+      Máy chủ dùng dịch vụ Firebase của Google. Google xử lý dữ liệu thay chúng tôi để chạy ứng dụng.
+    </li>
+    <li>Cơ sở dữ liệu, kho tệp và hàm máy chủ đặt tại khu vực Singapore.</li>
+    <li>
+      Dịch vụ đăng nhập và dịch vụ báo lỗi của Firebase không cho chọn khu vực. Dữ liệu của hai dịch vụ
+      này có thể được xử lý ở nước khác.
+    </li>
+    <li>Chúng tôi chỉ chia sẻ dữ liệu khi pháp luật yêu cầu hoặc khi bạn đồng ý.</li>
+  </ul>
+
+  <h2 id="bao-ve">Cách bảo vệ dữ liệu</h2>
+  <ul>
+    <li>Dữ liệu truyền qua kết nối mã hóa.</li>
+    <li>Mỗi cửa hàng chỉ đọc được dữ liệu của chính mình.</li>
+    <li>Video không có đường dẫn công khai.</li>
+    <li>
+      Máy chủ tính lại mã băm của tệp đã tải lên. Mã băm chỉ cho biết tệp không bị đổi kể từ lúc tính.
+      Nó không chứng minh thời điểm quay hay nội dung là thật.
+    </li>
+  </ul>
+  <p>Không hệ thống nào an toàn tuyệt đối. Hãy giữ kín mật khẩu và khóa màn hình điện thoại.</p>
+
+  <h2 id="sao-luu">Sao lưu và đổi điện thoại</h2>
+  <ul>
+    <li>Mỗi tài khoản dùng trên một điện thoại.</li>
+    <li>
+      Video, ảnh và dữ liệu của ứng dụng không đưa vào sao lưu iCloud hay sao lưu Android. Việc này tránh
+      đầy bộ nhớ đám mây của bạn.
+    </li>
+    <li>
+      Vì vậy, nếu gỡ ứng dụng, đổi máy hoặc mất máy, tệp chưa tải lên sẽ mất. Dữ liệu chỉ nằm trên máy
+      cũng mất.
+    </li>
+    <li>Ứng dụng chỉ tải lên khi đang mở. Hãy mở ứng dụng để tải tệp còn chờ.</li>
+  </ul>
+
+  <h2 id="thoi-han">Lưu giữ bao lâu</h2>
+  <ul>
+    <li>
+      Hiện ứng dụng chưa tự động xóa bằng chứng đã tải lên và chưa áp dụng thời hạn lưu. Nếu có thay đổi,
+      bạn sẽ được báo trước trong ứng dụng.
+    </li>
+    <li>Dữ liệu trên máy chủ được giữ đến khi bạn xóa tài khoản.</li>
+    <li>Báo cáo lỗi được giữ theo thời hạn của dịch vụ báo lỗi, rồi tự xóa.</li>
+  </ul>
+
+  <h2 id="xoa">Xóa tài khoản</h2>
+  <ul>
+    <li>Tài khoản đăng nhập bị xóa ngay. Bạn không đăng nhập lại được.</li>
+    <li>
+      Dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau {days} ngày. Gồm đơn, phiên quay, bằng chứng, mã hồ sơ
+      hàng hoàn và nhật ký thao tác của cửa hàng.
+    </li>
+    <li>Nếu có yêu cầu giữ lại vì pháp luật hoặc tranh chấp, phần liên quan được giữ đến khi hết lý do.</li>
+    <li>
+      Sau đó chỉ còn một bản ghi nhỏ: mã tài khoản nội bộ, mã cửa hàng, thời điểm và lý do kỹ thuật. Bản
+      ghi này không có email hay tên. Nó dùng để chứng minh yêu cầu xóa đã được xử lý.
+    </li>
+  </ul>
+  <p>
+    Cách xóa và chi tiết: xem trang <a href={site.legalPages.accountDeletionRequest}
+      >Yêu cầu xóa tài khoản</a
+    >.
+  </p>
+
+  <h2 id="quyen-cua-ban">Quyền của bạn</h2>
+  <ul>
+    <li>Xem và sửa họ tên, tên cửa hàng trong ứng dụng.</li>
+    <li>Hỏi chúng tôi đang giữ dữ liệu gì về bạn.</li>
+    <li>Yêu cầu sửa, xóa dữ liệu, hoặc rút lại đồng ý.</li>
+    <li>Tắt báo lỗi ứng dụng, tắt quyền camera hoặc vị trí.</li>
+    <li>Khiếu nại tới cơ quan có thẩm quyền về bảo vệ dữ liệu cá nhân.</li>
+  </ul>
+  <p>Gửi yêu cầu qua email ở mục Liên hệ. Chúng tôi có thể hỏi thêm để xác minh bạn là chủ tài khoản.</p>
+  <p>
+    Ứng dụng dành cho người bán hàng, không dành cho trẻ em. Nếu bạn biết trẻ em đã tạo tài khoản, hãy báo
+    cho chúng tôi.
+  </p>
+
+  <h2 id="trang-web">Trang web này</h2>
+  <ul>
+    <li>Trang web không dùng cookie và không gắn công cụ phân tích hay quảng cáo.</li>
+    <li>Trang web không có biểu mẫu thu dữ liệu.</li>
+    <li>
+      Máy chủ lưu trữ trang web có thể ghi nhật ký truy cập kỹ thuật, như địa chỉ IP và thời gian, để vận
+      hành và chống tấn công.
+    </li>
+  </ul>
+
+  <h2 id="thay-doi">Thay đổi chính sách</h2>
+  <p>
+    Khi chính sách thay đổi, chúng tôi cập nhật ngày hiệu lực ở đầu trang. Thay đổi quan trọng sẽ được báo
+    trong ứng dụng.
+  </p>
+
+  <h2 id="lien-he">Liên hệ</h2>
+  <Contact subject={`Câu hỏi về quyền riêng tư ${site.name}`} />
+  <p>
+    Xem thêm: <a href={site.legalPages.terms}>Điều khoản sử dụng</a> và
+    <a href={site.legalPages.support}>trang Hỗ trợ</a>.
+  </p>
+</LegalPage>

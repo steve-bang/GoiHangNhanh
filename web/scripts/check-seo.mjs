@@ -46,6 +46,7 @@ const meta = (html, attr, name) => {
   return c ? decode(c[1]) : null;
 };
 
+const legalPaths = Object.values(site.legalPages);
 const pages = new Map();
 for (const f of htmlFiles) pages.set(urlOf(f), readFileSync(f, 'utf8'));
 
@@ -205,9 +206,57 @@ else {
     else if (/noindex/i.test(meta(p, 'name', 'robots') ?? '') && site.indexable)
       err('sitemap', `chứa trang noindex: ${loc}`);
   }
+  for (const p of legalPaths)
+    if (!locs.includes(new URL(p, site.url).toString())) err('sitemap', `thiếu trang ${p}`);
   if (!site.indexable)
     warn('sitemap', 'site.indexable=false: sitemap vẫn được sinh nhưng robots chặn toàn site');
 }
+
+// Trang pháp lý/hỗ trợ (V1-19): có mặt, trong sitemap, không câu cấm (CLAUDE.md bất biến 11),
+// và không được mở cho công cụ tìm kiếm khi thông tin liên hệ còn giữ chỗ.
+const visibleText = (html) =>
+  decode(
+    html
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' '),
+  )
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+const FORBIDDEN = [
+  'pháp lý tuyệt đối',
+  'đảm bảo thắng',
+  'bảo đảm thắng',
+  'chắc chắn thắng khiếu nại',
+  'cam kết thắng',
+  'tải nền',
+  'chạy nền liên tục',
+  'sao lưu an toàn',
+  'bản nháp',
+];
+// Câu hỏi FAQ được phép nhắc lại cụm từ để trả lời "Không" (ví dụ "chắc chắn thắng khiếu nại không?").
+const ALLOWED_QUESTIONS = ['có giúp tôi chắc chắn thắng khiếu nại không?'];
+for (const p of legalPaths) {
+  const html = pages.get(p);
+  if (!html) {
+    err(p, 'thiếu trang pháp lý/hỗ trợ');
+    continue;
+  }
+  let text = visibleText(html);
+  for (const q of ALLOWED_QUESTIONS) text = text.split(q).join(' ');
+  for (const w of FORBIDDEN) if (text.includes(w)) err(p, `có cụm từ cấm: "${w}"`);
+}
+for (const [url, html] of pages)
+  for (const lp of legalPaths)
+    if (!html.includes(`href="${lp}"`)) err(url, `chân trang thiếu liên kết ${lp}`);
+const placeholders = Object.entries(site.legal).filter(([, v]) => v === null);
+if (placeholders.length) {
+  const names = placeholders.map(([k]) => k).join(', ');
+  if (site.indexable) err('site.legal', `còn giữ chỗ khi indexable=true: ${names}`);
+  else warn('site.legal', `còn giữ chỗ (cần điền trước khi phát hành): ${names}`);
+}
+if (site.indexable && /\.(invalid|example)$/i.test(new URL(site.url).hostname))
+  err('site.url', `tên miền giữ chỗ khi indexable=true: ${site.url}`);
 
 console.log(`Đã kiểm ${pages.size} trang HTML.`);
 for (const w of warns) console.log('WARN ', w);
