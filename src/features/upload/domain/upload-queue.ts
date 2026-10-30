@@ -1,5 +1,11 @@
 import type { EvidenceId, ShopId } from '@/core/ids';
-import { FILE_STATES, mayHaveReachedServer, type FileEvent } from '@/features/evidence';
+import {
+  FILE_STATES,
+  mayHaveReachedServer,
+  sameFingerprint,
+  type FileEvent,
+  type FileFingerprint,
+} from '@/features/evidence';
 
 import { MAX_UPLOAD_ATTEMPTS, retryDelayMs } from './backoff';
 import { evidenceMaxBytes, UPLOAD_FILE_TOO_LARGE } from './limits';
@@ -139,6 +145,8 @@ interface Entry {
  * Hàng đợi tải lên nền (docs/architecture "hàng đợi tải lên"). Chạy qua máy trạng thái tệp:
  * - Chỉ ĐỌC tệp gốc, không bao giờ sửa/xóa; không có đường nào ở đây xóa bản cục bộ (bất biến 4).
  * - Trước khi tải, tính lại mã băm: khác mã lúc đóng tệp -> `needs_attention`, không tải bản đã đổi.
+ *   Không băm lại khi dấu tệp (kích thước + thời điểm sửa đổi) KHÔNG đổi kể từ lần băm lại khớp gần nhất
+ *   (V1-13, `checkLocalFile`); dấu khác/thiếu thì băm lại.
  * - Sự kiện `origin: 'server'` chỉ được tạo từ phản hồi của cổng máy chủ (xác nhận nhận đủ, trạng
  *   thái máy chủ báo); hàng đợi không tự phát ra `verified`.
  * - Tệp đang `uploading` mà app bị tắt: hỏi máy chủ trước (QA-05); máy chủ chưa có thì mới đưa về
@@ -274,6 +282,39 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
     }
   }
 
+  /**
+   * Tệp cục bộ còn đúng bản đã băm lúc đóng không (V1-13, R9). Dấu tệp đọc TRƯỚC khớp dấu đã lưu (và kích
+   * thước khớp `sizeBytes`) -> tin lần băm trước, không đọc lại cả tệp. Ngược lại băm lại toàn tệp; khớp mã
+   * thì trả dấu để lưu, nhưng CHỈ khi dấu trước và sau lúc băm giống nhau (tệp không bị ghi trong lúc băm).
+   * Tệp bị sửa mà giữ nguyên cả kích thước lẫn thời điểm sửa đổi sẽ lọt kiểm tra này; máy chủ băm lại độc
+   * lập nên tệp đó thành `hash_mismatch`, không bao giờ `verified`. Chỉ đọc tệp (bất biến 4).
+   */
+  async function checkLocalFile(
+    item: UploadItem,
+    localPath: string,
+    sha256Client: string,
+  ): Promise<
+    | { readonly ok: true; readonly fingerprint: FileFingerprint | null }
+    | { readonly ok: false; readonly code: string }
+  > {
+    const readFingerprint = async () =>
+      hasher.fingerprint ? await hasher.fingerprint(localPath).catch(() => null) : null;
+    const before = await readFingerprint();
+    if (
+      before &&
+      before.sizeBytes === item.sizeBytes &&
+      sameFingerprint(before, item.hashedFingerprint)
+    ) {
+      return { ok: true, fingerprint: before };
+    }
+    const hash = await hasher.sha256(localPath);
+    if (!hash.ok) return { ok: false, code: hash.reason };
+    if (hash.sha256 !== sha256Client) return { ok: false, code: 'LOCAL_HASH_CHANGED' };
+    if (!before) return { ok: true, fingerprint: null };
+    const after = await readFingerprint();
+    return { ok: true, fingerprint: sameFingerprint(before, after) ? before : null };
+  }
+
   /** Trả `'stop'` khi gặp lỗi mạng: tệp sau trong lượt cũng sẽ lỗi, dừng để không tốn lượt gọi. */
   async function uploadOne(entry: Entry, summary: Counters): Promise<'next' | 'stop'> {
     const { localPath, sizeBytes, sha256Client } = entry.item;
@@ -292,15 +333,16 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
     if (entry.source.isReadyToDeclare && !(await entry.source.isReadyToDeclare(entry.item))) {
       return 'next';
     }
-    const hash = await hasher.sha256(localPath);
-    if (!hash.ok || hash.sha256 !== sha256Client) {
-      const code = hash.ok ? 'LOCAL_HASH_CHANGED' : hash.reason;
+    const local = await checkLocalFile(entry.item, localPath, sha256Client);
+    if (!local.ok) {
+      const code = local.code;
       // Mã lỗi cục bộ ghi đè mã cũ: tệp ĐÃ TỪNG được đưa cho máy chủ (lỗi mạng, Thử lại sau khi bị từ
       // chối...) phải giữ dấu `attemptCount >= 1` để vẫn bị coi là có thể đã tới máy chủ (ảnh hàng hoàn
-      // không xóa được, Q-26j, bất biến 4).
+      // không xóa được, Q-26j, bất biến 4). Xóa dấu tệp: lần thử sau (nếu có) phải băm lại.
       await apply(entry, device('NEEDS_ATTENTION'), {
         lastErrorCode: code,
         nextAttemptAtDevice: null,
+        hashedFingerprint: null,
         ...(mayHaveReachedServer(entry.item)
           ? { attemptCount: Math.max(entry.item.attemptCount, 1) }
           : {}),
@@ -311,7 +353,11 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
     // Băm video dài mất thời gian: mạng có thể vừa đổi (mất mạng, sang 4G khi bật chỉ Wi‑Fi). Dừng TRƯỚC
     // khi đổi trạng thái để tệp giữ nguyên `queued` (không tốn lượt).
     if (!mayUseNetwork()) return 'stop';
-    const started = await apply(entry, device('UPLOAD_STARTED'));
+    // Dấu tệp ghi cùng sự kiện bắt đầu gửi (không thêm sự kiện/trạng thái tệp). Dừng ở trên vì mất mạng
+    // thì dấu chưa lưu: lần sau băm lại (chấp nhận).
+    const started = await apply(entry, device('UPLOAD_STARTED'), {
+      hashedFingerprint: local.fingerprint,
+    });
     if (!started.ok) return 'next';
     const current: Entry = { source: entry.source, item: started.item };
     const outcome = await attempt({

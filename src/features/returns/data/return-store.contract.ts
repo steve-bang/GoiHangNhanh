@@ -998,6 +998,67 @@ export function runReturnStoreContract(
         expect(await code(store.deleteMedia(SHOP, 'v1', 9, nid()))).toBe('RETURN_PHOTO_IN_USE');
         expect(await store.listMedia(SHOP, id)).toHaveLength(1);
       });
+
+      it('cờ gián đoạn bền (V1-13): chỉ video, chỉ bật, idempotent, giữ qua lưu lỗi; shop khác không thấy', async () => {
+        const store = await create();
+        const id = await toOpening(store);
+        await makeVideo(store, id, 'v1', 'recording');
+        const video = (await store.listMedia(SHOP, id)).find((m) => m.id === 'v1');
+        expect(video?.interrupted ?? false).toBe(false);
+        const marked = await store.markMediaInterrupted(SHOP, 'v1');
+        expect(marked.ok && marked.media.interrupted).toBe(true);
+        expect((await store.markMediaInterrupted(SHOP, 'v1')).ok).toBe(true);
+        // Không đổi trạng thái tệp.
+        const after = (await store.listMedia(SHOP, id)).find((m) => m.id === 'v1');
+        expect(after).toMatchObject({ state: 'recording', interrupted: true });
+        // Các sự kiện tệp sau đó (dừng, lưu lỗi) giữ nguyên cờ.
+        await store.applyMediaEvent(SHOP, 'v1', dev('STOP_RECORDING'), 20, {
+          localPath: 'tmp/v.mp4',
+        });
+        await store.applyMediaEvent(SHOP, 'v1', dev('LOCAL_WRITE_FAILED'), 21, {
+          localPath: 'tmp/v.mp4',
+        });
+        expect(await store.listUnfinishedMedia()).toEqual([
+          expect.objectContaining({ id: 'v1', state: 'local_save_failed', interrupted: true }),
+        ]);
+        expect(await store.markMediaInterrupted(OTHER, 'v1')).toEqual({
+          ok: false,
+          error: 'MEDIA_NOT_FOUND',
+        });
+        await store.createMedia({
+          id: 'p1',
+          shopId: SHOP,
+          returnId: id,
+          kind: 'photo',
+          atDevice: 9,
+        });
+        expect(await store.markMediaInterrupted(SHOP, 'p1')).toEqual({
+          ok: false,
+          error: 'ILLEGAL_TRANSITION',
+        });
+        const photo = (await store.listMedia(SHOP, id)).find((m) => m.id === 'p1');
+        expect(photo?.interrupted ?? false).toBe(false);
+      });
+
+      it('dấu tệp đã băm (V1-13): ghi cùng sự kiện tệp, đọc lại được, `null` xóa', async () => {
+        const store = await create();
+        const id = await toOpening(store);
+        await makeVideo(store, id, 'v1');
+        const fingerprint = { sizeBytes: 5000, modifiedAtMs: 1_700_000_000_456 };
+        const started = await store.applyMediaEvent(SHOP, 'v1', dev('UPLOAD_STARTED'), 30, {
+          hashedFingerprint: fingerprint,
+        });
+        expect(started.ok).toBe(true);
+        const read = async () => (await store.listMedia(SHOP, id)).find((m) => m.id === 'v1');
+        expect((await read())?.hashedFingerprint).toEqual(fingerprint);
+        await store.applyMediaEvent(SHOP, 'v1', dev('UPLOAD_FAILED'), 31, { lastErrorCode: 'X' });
+        expect((await read())?.hashedFingerprint).toEqual(fingerprint);
+        await store.applyMediaEvent(SHOP, 'v1', dev('NEEDS_ATTENTION'), 32, {
+          hashedFingerprint: null,
+        });
+        expect((await read())?.hashedFingerprint ?? null).toBeNull();
+        expect((await read())?.sha256Client).toBe(SHA);
+      });
     });
 
     describe('đăng bản neo lên máy chủ (Q-28)', () => {

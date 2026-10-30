@@ -38,8 +38,8 @@ export type { SqlDatabase, SqlParam } from './sql-database';
 export { onceAppActive, subscribeAppActive, subscribeAppBackground } from './app-state';
 export { useKeepScreenAwake } from './keep-awake';
 export { monotonicNow } from './monotonic-clock';
-export { hashFile, HASH_CHUNK_BYTES } from './file-hasher';
-export type { HashFileResult } from './file-hasher';
+export { fileFingerprint, hashFile, HASH_CHUNK_BYTES } from './file-hasher';
+export type { FileFingerprintReading, HashFileResult } from './file-hasher';
 export {
   deleteRecording,
   excludeEvidenceDirFromBackup,

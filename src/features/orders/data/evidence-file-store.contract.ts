@@ -462,5 +462,37 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
       expect((await h.files.get(LOCAL_SHOP_ID, theirs.id))?.state).toBe('queued');
       expect((await h.files.get(LOCAL_SHOP_ID, nobody.id))?.state).toBe('queued');
     });
+
+    it('dấu tệp đã băm (V1-13): ghi cùng sự kiện, đọc lại được, `null` xóa; không đổi mã băm gốc', async () => {
+      const h = await make();
+      const input = await seedFile(h, 'FP');
+      await h.files.create(input);
+      await h.files.applyEvent(input.shopId, input.id, device('STOP_RECORDING'), 3500);
+      await h.files.applyEvent(input.shopId, input.id, device('LOCAL_FILE_READABLE'), 4000, CLOSED);
+      expect((await h.files.get(input.shopId, input.id))?.hashedFingerprint ?? null).toBeNull();
+      const fingerprint = { sizeBytes: 1024, modifiedAtMs: 1_700_000_000_123 };
+      const started = await h.files.applyEvent(
+        input.shopId,
+        input.id,
+        device('UPLOAD_STARTED'),
+        5000,
+        { hashedFingerprint: fingerprint },
+      );
+      expect(started.ok).toBe(true);
+      const stored = await h.files.get(input.shopId, input.id);
+      expect(stored?.hashedFingerprint).toEqual(fingerprint);
+      expect(stored?.sha256Client).toBe(CLOSED.sha256Client);
+      // Sự kiện không mang dấu thì giữ nguyên dấu cũ.
+      await h.files.applyEvent(input.shopId, input.id, device('UPLOAD_FAILED'), 6000, {
+        lastErrorCode: 'NETWORK',
+      });
+      expect((await h.files.get(input.shopId, input.id))?.hashedFingerprint).toEqual(fingerprint);
+      await h.files.applyEvent(input.shopId, input.id, device('NEEDS_ATTENTION'), 7000, {
+        hashedFingerprint: null,
+      });
+      expect((await h.files.get(input.shopId, input.id))?.hashedFingerprint ?? null).toBeNull();
+      // Shop khác không thấy tệp (bất biến 8).
+      expect(await h.files.get('shop-khac' as ShopId, input.id)).toBeNull();
+    });
   });
 }

@@ -167,6 +167,12 @@ export interface ReturnStore {
    */
   setMediaLocation(shopId: ShopId, id: string, location: MediaLocation): Promise<MediaEventResult>;
   /**
+   * Bật cờ gián đoạn BỀN của một VIDEO (V1-13), ghi ngay khi màn quay phát hiện vào nền/camera ngắt sớm.
+   * Chỉ bật (không có hàm tắt), idempotent, không đổi trạng thái tệp. Ảnh -> `ok: false`
+   * (`ILLEGAL_TRANSITION`); shop khác -> `MEDIA_NOT_FOUND`. Lỗi lưu ném `RETURN_SAVE_FAILED`.
+   */
+  markMediaInterrupted(shopId: ShopId, id: string): Promise<MediaEventResult>;
+  /**
    * Kiểm điều kiện xóa ảnh (Q-26j) KHÔNG đổi dữ liệu: hồ sơ chưa xác nhận, ảnh chưa trong tranh chấp
    * nào, chưa tải lên máy chủ. Ném `RETURN_ALREADY_CONFIRMED` / `RETURN_PHOTO_IN_USE`; không thấy ảnh
    * (hoặc của shop khác) thì `ok: false`.

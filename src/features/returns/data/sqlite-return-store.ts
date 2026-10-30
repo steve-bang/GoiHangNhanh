@@ -20,6 +20,7 @@ import {
 } from '../domain/return-rules';
 import {
   applyMediaEvent,
+  applyMediaInterrupted,
   applyMediaLocation,
   assertMediaDeletable,
   isMediaSavedLocally,
@@ -124,9 +125,12 @@ interface MediaRow {
   attempt_count: number;
   next_attempt_at_device: number | null;
   last_error_code: string | null;
+  hashed_size_bytes: number | null;
+  hashed_mtime_device: number | null;
+  interrupted: number;
 }
 const MEDIA_COLUMNS =
-  'id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client, created_at_device, updated_at_device, created_by, lat, lng, accuracy_m, location_at_device, location_status, attempt_count, next_attempt_at_device, last_error_code';
+  'id, return_id, shop_id, kind, state, local_path, size_bytes, sha256_client, created_at_device, updated_at_device, created_by, lat, lng, accuracy_m, location_at_device, location_status, attempt_count, next_attempt_at_device, last_error_code, hashed_size_bytes, hashed_mtime_device, interrupted';
 const toMedia = (r: MediaRow): ReturnMedia => ({
   id: r.id,
   shopId: r.shop_id as ShopId,
@@ -149,6 +153,10 @@ const toMedia = (r: MediaRow): ReturnMedia => ({
   attemptCount: r.attempt_count,
   nextAttemptAtDevice: r.next_attempt_at_device,
   lastErrorCode: r.last_error_code,
+  ...(r.hashed_size_bytes !== null && r.hashed_mtime_device !== null
+    ? { hashedFingerprint: { sizeBytes: r.hashed_size_bytes, modifiedAtMs: r.hashed_mtime_device } }
+    : {}),
+  ...(r.interrupted === 1 ? { interrupted: true } : {}),
   createdAtDevice: r.created_at_device,
   updatedAtDevice: r.updated_at_device,
   ...(r.created_by ? { createdBy: r.created_by } : {}),
@@ -703,7 +711,7 @@ export function createSqliteReturnStore(
         if (!result.ok) return result;
         const m = result.media;
         await db.runAsync(
-          'UPDATE return_media SET state = ?, local_path = ?, size_bytes = ?, sha256_client = ?, attempt_count = ?, next_attempt_at_device = ?, last_error_code = ?, updated_at_device = ? WHERE id = ? AND shop_id = ?',
+          'UPDATE return_media SET state = ?, local_path = ?, size_bytes = ?, sha256_client = ?, attempt_count = ?, next_attempt_at_device = ?, last_error_code = ?, hashed_size_bytes = ?, hashed_mtime_device = ?, updated_at_device = ? WHERE id = ? AND shop_id = ?',
           [
             m.state,
             m.localPath,
@@ -712,6 +720,8 @@ export function createSqliteReturnStore(
             m.attemptCount,
             m.nextAttemptAtDevice,
             m.lastErrorCode,
+            m.hashedFingerprint?.sizeBytes ?? null,
+            m.hashedFingerprint?.modifiedAtMs ?? null,
             m.updatedAtDevice,
             id,
             shopId,
@@ -742,6 +752,23 @@ export function createSqliteReturnStore(
             id,
             shopId,
           ],
+        );
+        return result;
+      }),
+
+    markMediaInterrupted: (shopId, id) =>
+      guarded(async () => {
+        const row = await db.getFirstAsync<MediaRow>(
+          `SELECT ${MEDIA_COLUMNS} FROM return_media WHERE id = ? AND shop_id = ?`,
+          [id, shopId],
+        );
+        if (!row) return { ok: false as const, error: 'MEDIA_NOT_FOUND' as const };
+        const result = applyMediaInterrupted(toMedia(row));
+        if (!result.ok) return result;
+        // Chỉ bật (`kind = 'video'` cả ở tầng SQL); không đụng trạng thái tệp hay `updated_at_device`.
+        await db.runAsync(
+          "UPDATE return_media SET interrupted = 1 WHERE id = ? AND shop_id = ? AND kind = 'video'",
+          [id, shopId],
         );
         return result;
       }),

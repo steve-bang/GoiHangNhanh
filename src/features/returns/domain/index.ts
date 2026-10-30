@@ -19,6 +19,7 @@ export {
 } from './return-rules';
 export {
   applyMediaEvent,
+  applyMediaInterrupted,
   applyMediaLocation,
   assertMediaDeletable,
   describeLocation,

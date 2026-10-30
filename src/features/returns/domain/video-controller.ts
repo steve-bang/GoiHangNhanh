@@ -33,7 +33,12 @@ export type VideoHashOutcome =
 export interface VideoPorts {
   readonly store: Pick<
     ReturnStore,
-    'getReturn' | 'listMedia' | 'createMedia' | 'applyMediaEvent' | 'saveOpeningVideoRecorded'
+    | 'getReturn'
+    | 'listMedia'
+    | 'createMedia'
+    | 'applyMediaEvent'
+    | 'saveOpeningVideoRecorded'
+    | 'markMediaInterrupted'
   >;
   readonly recorder: VideoRecorder;
   /** Chuyển tệp tạm vào thư mục bền (không sao chép); `uri` là đường dẫn tương đối để lưu. */
@@ -49,8 +54,9 @@ export interface VideoPorts {
   /** Giới hạn thời lượng một lần quay (giây); camera tự dừng và trả tệp hợp lệ khi tới hạn. */
   readonly maxDurationSec?: number;
   /**
-   * Lần quay bị gián đoạn (app vào nền, camera bị hệ thống ngắt sớm; V1-11): đọc khi video ĐÃ lưu bền để
-   * ghi vào hồ sơ `interrupted: true` (hạn chế bằng chứng). Không truyền = không gián đoạn.
+   * Lần quay bị gián đoạn (app vào nền, camera bị hệ thống ngắt sớm; V1-11): đọc khi camera trả kết quả để
+   * ghi cờ BỀN lên bản ghi video (V1-13) và khi video ĐÃ lưu bền để ghi vào hồ sơ `interrupted: true`
+   * (hạn chế bằng chứng). Không truyền = không gián đoạn.
    */
   wasInterrupted?(): boolean;
 }
@@ -86,6 +92,12 @@ export type VideoOutcome =
 export interface ActiveVideo {
   readonly mediaId: string;
   stop(): void;
+  /**
+   * Ghi cờ gián đoạn BỀN lên bản ghi video NGAY (V1-13; app vào nền khi đang quay), để app bị tắt trước
+   * khi lưu xong/ghi vào hồ sơ thì khôi phục vẫn ghi `interrupted: true`. Không ném; lỗi kho bị nuốt (bước
+   * lưu ghi lại cờ khi `wasInterrupted()`).
+   */
+  markInterrupted(): Promise<void>;
   /** Luôn hoàn tất, không ném lỗi. */
   readonly result: Promise<VideoOutcome>;
 }
@@ -156,7 +168,17 @@ export async function startOpeningVideo(
     (recorded) => finish(ports, { shopId, returnId, mediaId }, recorded),
     () => finish(ports, { shopId, returnId, mediaId }, { ok: false, reason: 'RECORDER_FAILED' }),
   );
-  return { mediaId, stop: () => handle.stop(), result };
+  const markInterrupted = () => persistInterrupted(ports, shopId, mediaId);
+  return { mediaId, stop: () => handle.stop(), markInterrupted, result };
+}
+
+/** Bật cờ gián đoạn bền (cố gắng): lỗi kho bị nuốt, không ném. */
+async function persistInterrupted(ports: VideoPorts, shopId: ShopId, mediaId: string) {
+  try {
+    await ports.store.markMediaInterrupted(shopId, mediaId);
+  } catch {
+    // kho lỗi: cờ trong bộ nhớ vẫn còn cho bước lưu; lần ghi sau (đầu bước lưu) thử lại
+  }
 }
 
 async function markFailed(
@@ -188,6 +210,9 @@ async function finish(
   const fail = (reason: VideoFailure): VideoOutcome => ({ kind: 'failed', mediaId, reason });
   /** Đường dẫn bền sau khi chuyển tệp; có giá trị thì mọi lỗi về sau phải giữ nó. */
   let savedUri: string | null = null;
+  // Camera đã trả kết quả: gián đoạn (vào nền, camera tự dừng sớm) ghi cờ BỀN trước mọi bước lưu, để lưu
+  // lỗi/app bị tắt về sau vẫn khôi phục đúng `interrupted: true` (V1-13).
+  if (ports.wasInterrupted?.()) await persistInterrupted(ports, shopId, mediaId);
   try {
     if (!recorded.ok) {
       await markFailed(ports, shopId, mediaId);

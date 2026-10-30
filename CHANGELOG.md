@@ -28,6 +28,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Changed
 
+- Băm mã SHA-256 trước khi tải lên nhường luồng định kỳ để giao diện không đứng khi băm video dài, và không băm lại toàn tệp ở mỗi lần thử khi tệp không đổi (kích thước và thời điểm sửa đổi như lần băm trước; nghi ngờ thì băm lại, khác mã thì không tải); video mở kiện hàng hoàn lưu cờ gián đoạn bền ngay khi app vào nền, nên ứng dụng bị tắt hay lưu lỗi rồi khôi phục vẫn ghi đúng "bị gián đoạn"; thêm index (CSDL cục bộ phiên bản 16). Tốc độ băm trên điện thoại chưa đo, chưa kiểm chứng trên thiết bị (V1-13).
 - Tab Cá nhân ở bản Firebase: đổi mật khẩu (xác thực lại bằng mật khẩu hiện tại), đổi họ tên, danh sách và đổi tên cửa hàng chạy thật; ẩn Cài đặt thông báo vì bản v1 chưa gửi thông báo. Chưa kiểm chứng trên thiết bị (V1-05).
 - Ẩn nút đăng nhập Apple/Google ở Chào mừng, Đăng nhập, Đăng ký: bản v1 chỉ có email + mật khẩu (V1-03, #47).
 

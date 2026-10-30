@@ -113,8 +113,8 @@ async function completeLocalSave(
  *   hàng đợi; chỉ khi KHÔNG còn tệp nào mới `unrecoverable`. Lỗi tạm thì giữ `local_save_failed`.
  * - `local_save_failed` còn đường dẫn: thử lại cùng quy trình.
  * Video cứu được từ `saving_local` mà hồ sơ chưa có kết luận về video thì ghi vào hồ sơ là GIÁN ĐOẠN
- * (A05: không tự nhận là đầy đủ); video cứu từ `local_save_failed` (camera đã dừng bình thường) ghi là đầy
- * đủ. Ảnh không ảnh hưởng hồ sơ. Không bao giờ xóa tệp. Không ném lỗi (lỗi kho báo qua `storeFailed`).
+ * (A05: không tự nhận là đầy đủ); video cứu từ `local_save_failed` ghi là đầy đủ TRỪ KHI bản ghi mang cờ
+ * gián đoạn bền (`ReturnMedia.interrupted`, V1-13: vào nền/camera ngắt sớm rồi lưu lỗi). Ảnh không ảnh hưởng hồ sơ. Không bao giờ xóa tệp. Không ném lỗi (lỗi kho báo qua `storeFailed`).
  */
 export async function recoverInterruptedMedia(
   ports: MediaRecoveryPorts,
@@ -165,7 +165,10 @@ export async function recoverInterruptedMedia(
       rescued += 1;
       if (media.kind === 'video') {
         // Video đã an toàn trong hàng đợi: ghi vào hồ sơ nếu hồ sơ chưa có kết luận (cố gắng, bỏ qua lỗi).
-        await recordRescuedVideo(ports, media.shopId, media, wasInterrupted, newId());
+        // Gián đoạn = bị app đóng giữa chừng HOẶC cờ bền màn quay đã ghi (vào nền/camera ngắt sớm, rồi lưu
+        // lỗi; V1-13): không bao giờ đoán `false` cho video đã đánh dấu.
+        const interruptedVideo = wasInterrupted || media.interrupted === true;
+        await recordRescuedVideo(ports, media.shopId, media, interruptedVideo, newId());
       }
     }
   } catch {
