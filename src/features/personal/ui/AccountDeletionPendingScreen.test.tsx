@@ -156,6 +156,38 @@ describe('Đang hoàn tất xóa tài khoản (V1-15, xóa dở dang V1-14 l)', 
     expect(open).toHaveBeenCalledWith('mailto:ho-tro@example.test');
   });
 
+  it('mở trang Hỗ trợ không được: báo lỗi như Điều khoản, không hiện email', async () => {
+    links.support = 'https://doncung.vn/ho-tro/';
+    open.mockResolvedValueOnce(false);
+    await setup({ openDisputes: 1 });
+    await fireEvent.press(await screen.findByTestId('pending-support-link'));
+    expect(await screen.findByTestId('pending-support-open-error')).toHaveTextContent(
+      'Chưa mở được trang này. Bạn thử lại nhé.',
+    );
+    expect(screen.queryByTestId('pending-support-email')).toBeNull();
+  });
+
+  it('mở ứng dụng email không được: báo lỗi và hiện địa chỉ chọn được để tự gửi', async () => {
+    mockSupportEmail.mockReturnValue('ho-tro@example.test');
+    open.mockResolvedValueOnce(false);
+    await setup({ openDisputes: 1 });
+    await fireEvent.press(await screen.findByTestId('pending-support-link'));
+    expect(await screen.findByTestId('pending-support-open-error')).toHaveTextContent(
+      /Chưa mở được ứng dụng email/,
+    );
+    const email = screen.getByTestId('pending-support-email');
+    expect(email).toHaveTextContent('ho-tro@example.test');
+    expect(email.props.selectable).toBe(true);
+  });
+
+  it('mở được: không có dòng lỗi', async () => {
+    mockSupportEmail.mockReturnValue('ho-tro@example.test');
+    await setup({ openDisputes: 1 });
+    await fireEvent.press(await screen.findByTestId('pending-support-link'));
+    await waitFor(() => expect(open).toHaveBeenCalled());
+    expect(screen.queryByTestId('pending-support-open-error')).toBeNull();
+  });
+
   it('còn tệp chưa tải: phải tích riêng mới hoàn tất; đăng xuất KHÔNG bị chặn vì tệp (cửa hàng đã khóa)', async () => {
     const { gateways } = await setup({
       store: { ...createMemoryOrderStore(), countUnsyncedOnDevice: async () => 2 },

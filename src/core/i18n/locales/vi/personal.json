@@ -547,7 +547,8 @@
       "conditions": {
         "disputes": "Còn {{count}} hồ sơ tranh chấp đang mở trên máy, nên dữ liệu trên máy được giữ lại.",
         "foreign": "Máy này còn dữ liệu do tài khoản khác tạo, nên dữ liệu trên máy được giữ lại."
-      }
+      },
+      "supportEmail": "Bạn có thể tự gửi email tới địa chỉ này:"
     },
     "conditionsChanged": "Tình trạng trên máy vừa thay đổi. Bạn xem lại các điều kiện nhé.",
     "keptData": "Tài khoản đã được xóa. Dữ liệu trên máy này được giữ lại; bạn liên hệ hỗ trợ nếu muốn xóa."
