@@ -2,7 +2,10 @@
 const path = require('node:path');
 const { describe, expect, it } = require('@jest/globals');
 const {
+  WORK_MARKER,
+  assertGitRef,
   assertUniqueNames,
+  checkWorkDir,
   contentTypeFor,
   exportEnv,
   isInside,
@@ -139,6 +142,19 @@ describe('exportEnv', () => {
     });
   });
 
+  it('--env không được đặt lại khóa công cụ ép/bỏ', () => {
+    for (const key of [
+      'EXPO_PUBLIC_APP_ENV',
+      'EXPO_PUBLIC_FIREBASE_EMULATOR_HOST',
+      'EXPO_PUBLIC_BACKEND',
+      'EXPO_PUBLIC_USE_FAKE_BACKEND',
+      'EXPO_PUBLIC_FAKE_SESSION',
+    ]) {
+      expect(() => parseEnvPairs([`${key}=x`])).toThrow('không được đặt');
+      expect(() => exportEnv({}, 'signed_in', { [key]: 'x' })).toThrow('không được đặt');
+    }
+  });
+
   it('--env chỉ nhận EXPO_PUBLIC_*', () => {
     expect(parseEnvPairs(['EXPO_PUBLIC_A=x=y'])).toEqual({ EXPO_PUBLIC_A: 'x=y' });
     expect(() => parseEnvPairs(['PATH=/x'])).toThrow('EXPO_PUBLIC_');
@@ -172,5 +188,41 @@ describe('máy chủ tĩnh', () => {
     expect(isInside('/a/bc', '/a/b')).toBe(false);
     expect(contentTypeFor('x.JS')).toBe('text/javascript; charset=utf-8');
     expect(contentTypeFor('x.bin')).toBe('application/octet-stream');
+  });
+});
+
+describe('thư mục làm việc', () => {
+  const repo = path.resolve('/x/repo');
+
+  it('chấp nhận thư mục ngoài repo: mới/rỗng hoặc có tệp đánh dấu', () => {
+    expect(checkWorkDir('/tmp/w', repo, null)).toBe('new');
+    expect(checkWorkDir('/tmp/w', repo, [])).toBe('new');
+    expect(checkWorkDir('/tmp/w', repo, [WORK_MARKER, 'repo'])).toBe('owned');
+    expect(checkWorkDir('/x/repo-work', repo, null)).toBe('new');
+  });
+
+  it('từ chối thư mục trong repo', () => {
+    expect(() => checkWorkDir('/x/repo/tmp', repo, null)).toThrow('ngoài repo');
+    expect(() => checkWorkDir('/x/repo', repo, null)).toThrow('ngoài repo');
+  });
+
+  it('từ chối thư mục tổ tiên của repo (<work>/repo trùng hoặc chứa repo)', () => {
+    expect(() => checkWorkDir('/x', repo, ['repo'])).toThrow('chứa repo');
+    expect(() => checkWorkDir('/', repo, null)).toThrow('chứa repo');
+  });
+
+  it('từ chối thư mục có dữ liệu lạ (không có tệp đánh dấu)', () => {
+    expect(() => checkWorkDir('/home/u/docs', repo, ['a.txt'])).toThrow(WORK_MARKER);
+  });
+});
+
+describe('git ref', () => {
+  it('nhận nhánh/sha/HEAD~1, từ chối tùy chọn và ký tự lạ', () => {
+    expect(assertGitRef('claude/v1-00-screens-tooling')).toBe('claude/v1-00-screens-tooling');
+    expect(assertGitRef('HEAD~1')).toBe('HEAD~1');
+    expect(() => assertGitRef('--output=/tmp/x')).toThrow('không hợp lệ');
+    expect(() => assertGitRef('-o')).toThrow('không hợp lệ');
+    expect(() => assertGitRef('main;rm')).toThrow('không hợp lệ');
+    expect(() => assertGitRef('')).toThrow('không hợp lệ');
   });
 });

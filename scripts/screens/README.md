@@ -31,28 +31,28 @@ node scripts/screens/capture.cjs --work /tmp/ds-work --out /tmp/ds-shots --skip-
 
 `node scripts/screens/capture.cjs --help` liệt kê mọi tham số. Chính:
 
-| Tham số                 | Ý nghĩa                                                                                 | Mặc định                              |
-| ----------------------- | --------------------------------------------------------------------------------------- | ------------------------------------- |
-| `--routes "/a=ten,/b"`  | Route cần chụp; `=ten` là tên ảnh (không có thì lấy từ route, `/` là `root`)            | bắt buộc nếu không có `--routes-file` |
-| `--routes-file f.json`  | Mảng `{ "route", "name"?, "session"?, "waitFor"?, "waitMs"?, "fullPage"? }`             |                                       |
-| `--out <dir>`           | Nơi ghi ảnh `<tên>-<W>x<H>.png` (có thể là `docs/assets/screens/...`)                   | `<work>/shots`                        |
-| `--work <dir>`          | Thư mục làm việc, **phải nằm ngoài repo**                                               | `<tmp>/doncung-screens`               |
-| `--session`             | Phiên giả `signed_in` / `signed_out` / `no_shop` (`EXPO_PUBLIC_FAKE_SESSION`, lúc xuất) | `signed_in`                           |
-| `--sizes`               | `390x844`, danh sách cách bởi dấu phẩy, hoặc `all`                                      | `390x844`                             |
-| `--scale`               | `deviceScaleFactor`                                                                     | `2`                                   |
-| `--wait-for`            | Selector Playwright phải xuất hiện (tối đa 15 giây)                                     | không                                 |
-| `--wait-ms`             | Đợi thêm trước khi chụp (cổng giả trễ ~450 ms)                                          | `3500`                                |
-| `--port`                | Cổng máy chủ tĩnh (127.0.0.1). PR chạy song song dùng cổng khác nhau                    | `5100`                                |
-| `--source`              | `worktree` (gồm tệp chưa commit, bỏ tệp bị `.gitignore`) hoặc một git ref               | `worktree`                            |
-| `--env EXPO_PUBLIC_X=v` | Thêm biến `EXPO_PUBLIC_*` lúc xuất (lặp được)                                           |                                       |
-| `--skip-export`         | Không sao/xuất lại                                                                      |                                       |
-| `--allow-page-errors`   | Có lỗi trang vẫn thoát 0                                                                |                                       |
+| Tham số                 | Ý nghĩa                                                                                                                                                                                                                   | Mặc định                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `--routes "/a=ten,/b"`  | Route cần chụp; `=ten` là tên ảnh (không có thì lấy từ route, `/` là `root`)                                                                                                                                              | bắt buộc nếu không có `--routes-file` |
+| `--routes-file f.json`  | Mảng `{ "route", "name"?, "session"?, "waitFor"?, "waitMs"?, "fullPage"? }`                                                                                                                                               |                                       |
+| `--out <dir>`           | Nơi ghi ảnh `<tên>-<W>x<H>.png` (có thể là `docs/assets/screens/...`)                                                                                                                                                     | `<work>/shots`                        |
+| `--work <dir>`          | Thư mục làm việc: **ngoài repo, không chứa repo**, mới/rỗng hoặc do công cụ tạo (có `.doncung-screens-work`)                                                                                                              | `<tmp>/doncung-screens`               |
+| `--session`             | Phiên giả `signed_in` / `signed_out` / `no_shop` (`EXPO_PUBLIC_FAKE_SESSION`, lúc xuất)                                                                                                                                   | `signed_in`                           |
+| `--sizes`               | `390x844`, danh sách cách bởi dấu phẩy, hoặc `all`                                                                                                                                                                        | `390x844`                             |
+| `--scale`               | `deviceScaleFactor`                                                                                                                                                                                                       | `2`                                   |
+| `--wait-for`            | Selector Playwright phải xuất hiện (tối đa 15 giây)                                                                                                                                                                       | không                                 |
+| `--wait-ms`             | Đợi thêm trước khi chụp (cổng giả trễ ~450 ms)                                                                                                                                                                            | `3500`                                |
+| `--port`                | Cổng máy chủ tĩnh (127.0.0.1). PR chạy song song dùng cổng khác nhau                                                                                                                                                      | `5100`                                |
+| `--source`              | `worktree` (gồm tệp chưa commit, bỏ tệp bị `.gitignore`) hoặc một git ref                                                                                                                                                 | `worktree`                            |
+| `--env EXPO_PUBLIC_X=v` | Thêm biến `EXPO_PUBLIC_*` lúc xuất (lặp được); cấm các khóa công cụ ép/bỏ: `EXPO_PUBLIC_USE_FAKE_BACKEND`, `EXPO_PUBLIC_BACKEND`, `EXPO_PUBLIC_FAKE_SESSION`, `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` |                                       |
+| `--skip-export`         | Không sao/xuất lại                                                                                                                                                                                                        |                                       |
+| `--allow-page-errors`   | Có lỗi trang vẫn thoát 0                                                                                                                                                                                                  |                                       |
 
 Mã thoát khác 0 khi: tham số sai, xuất web lỗi, route không chụp được (hết giờ tải, `--wait-for` không thấy) hoặc trang có lỗi JavaScript (`pageerror`). `console.error` chỉ được in ra. Tóm tắt ghi ở `<work>/report.json`.
 
 ## Công cụ làm gì
 
-1. Xóa `<work>/repo` (giữ `node_modules`), sao mã nguồn: cây làm việc (`git ls-files -co --exclude-standard`) hoặc `git archive <ref>`.
+1. Kiểm thư mục làm việc (đường dẫn thật, bỏ symlink): từ chối nếu nằm trong repo, là repo hay thư mục cha của repo, hoặc đã có dữ liệu mà không có tệp đánh dấu `.doncung-screens-work` (công cụ tạo tệp này khi thư mục mới/rỗng). Chỉ sau đó mới xóa `<work>/repo` (giữ `node_modules`) và sao mã nguồn: cây làm việc (`git ls-files -co --exclude-standard`) hoặc `git archive --end-of-options <ref>` (ref bắt đầu bằng `-` hoặc có ký tự lạ bị từ chối trước mọi thao tác trên đĩa).
 2. Lần đầu (hoặc khi `package-lock.json` đổi): chép thật `node_modules` của repo (`cp -a`, không hardlink vì npm sẽ ghi vào), rồi `npm i --no-save react-native-web@~0.21.4 @expo/metro-runtime@~58.0.15` (bản Expo SDK 58 khuyến nghị) **trong bản sao**. `package.json`/`package-lock.json` của repo không đổi.
 3. Với mỗi phiên giả cần dùng: `npx expo export --platform web --clear` với `EXPO_PUBLIC_USE_FAKE_BACKEND=1`, `EXPO_PUBLIC_BACKEND=fake`, `EXPO_PUBLIC_FAKE_SESSION=<phiên>`, `APP_ENV=dev`; bỏ `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST`, `EXPO_PUBLIC_APP_ENV`.
 4. Phục vụ `<work>/dist-<phiên>` bằng máy chủ tĩnh Node (route không có tệp trả `index.html`), chụp từng route ở từng cỡ (`locale vi-VN`, múi giờ `Asia/Ho_Chi_Minh`), gom lỗi trang.

@@ -49,3 +49,10 @@ Mốc "trước": Trang chủ, Đơn hàng, Cá nhân, Trung tâm đồng bộ, 
 Bất biến 1–11: không đụng mã app, dữ liệu, Rules; ảnh và README ghi rõ là bản web cổng giả (bất biến 11, ngôn ngữ trung thực). Rủi ro dữ liệu: không có (thư mục làm việc ngoài repo, kiểm bắt buộc). Kích thước: ~600 dòng script + test, trong ngân sách S. Điểm đã sửa khi tự review: (1) bỏ `serve` qua `npx --yes` (cần mạng, không kiểm được lỗi cổng bận) thay bằng máy chủ Node nội bộ; (2) thêm kiểm tên ảnh trùng; (3) `resolveStaticFile` không thử `<root>.html` ngoài thư mục gốc; (4) đổi hướng dẫn "sửa trong `<work>/repo`" vì bước sao mã xóa bản sao mỗi lần.
 
 **Tự review: đã chấp nhận.**
+
+## Sửa sau review PR #41
+
+1. 🔴 Dọn `<work>/repo` có thể xóa nhầm repo (`--work` là thư mục cha của repo): thêm hàm thuần `checkWorkDir` (từ chối `<work>` trong repo, là repo/tổ tiên của repo, hoặc `<work>/repo` chứa repo; chỉ dọn thư mục mới/rỗng hoặc có tệp đánh dấu `.doncung-screens-work` do công cụ tạo), so trên đường dẫn thật (realpath). Test cả chiều tổ tiên.
+2. 🟡 `--source`: `assertGitRef` từ chối ref bắt đầu bằng `-`, kiểm trước mọi thao tác trên đĩa; gọi `git archive --end-of-options <ref>`. Test.
+3. 🟡 `--env` không được đặt lại khóa công cụ ép/bỏ (`EXPO_PUBLIC_USE_FAKE_BACKEND`, `EXPO_PUBLIC_BACKEND`, `EXPO_PUBLIC_FAKE_SESSION`, `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST`): chặn ở `parseEnvPairs` và `exportEnv` (lớp hai), lỗi rõ. Test.
+

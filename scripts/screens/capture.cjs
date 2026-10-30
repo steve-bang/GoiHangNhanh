@@ -22,9 +22,11 @@ const {
   DEFAULT_WAIT_MS,
   SESSIONS,
   WEB_PACKAGES,
+  WORK_MARKER,
+  assertGitRef,
   assertUniqueNames,
+  checkWorkDir,
   exportEnv,
-  isInside,
   parseArgs,
   parseEnvPairs,
   parseRoutes,
@@ -34,7 +36,7 @@ const {
 const { startStaticServer } = require('./serve.cjs');
 const { loadPlaywright, reportResult, shoot } = require('./shoot.cjs');
 
-const REPO_ROOT = path.resolve(__dirname, '..', '..');
+const REPO_ROOT = fs.realpathSync(path.resolve(__dirname, '..', '..'));
 const MARKER = '.doncung-screens-marker';
 
 const HELP = `Chụp ảnh bản web (cổng giả). Cách dùng: scripts/screens/README.md
@@ -66,7 +68,16 @@ function run(cmd, args, options = {}) {
   if (res.status !== 0) throw new Error(`Lệnh thất bại (mã ${res.status}): ${cmd} ${args[0]}`);
 }
 
-/** Xóa mọi thứ trong `dir` trừ `keep`. */
+function readDirOrNull(dir) {
+  try {
+    return fs.readdirSync(dir);
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
+/** Xóa mọi thứ trong `dir` trừ `keep` (chỉ gọi sau `checkWorkDir`). */
 function emptyDirExcept(dir, keep) {
   fs.mkdirSync(dir, { recursive: true });
   for (const name of fs.readdirSync(dir)) {
@@ -101,8 +112,8 @@ function copyWorktree(dest) {
 }
 
 function copyGitRef(ref, dest) {
-  if (!/^[\w./~^@-]+$/.test(ref)) throw new Error(`git ref không hợp lệ: ${ref}`);
-  const archive = spawnSync('git', ['archive', '--format=tar', ref], {
+  assertGitRef(ref);
+  const archive = spawnSync('git', ['archive', '--format=tar', '--end-of-options', ref], {
     cwd: REPO_ROOT,
     maxBuffer: 2 * 1024 * 1024 * 1024,
   });
@@ -180,19 +191,27 @@ async function main() {
   assertUniqueNames(entries);
   parseSizes(opts.sizes); // kiểm tra sớm, trước khi xuất
   const extraEnv = parseEnvPairs(opts.env);
+  const source = opts.source ?? 'worktree';
+  if (source !== 'worktree') assertGitRef(source); // trước mọi thao tác trên đĩa
   const work = path.resolve(opts.work ?? path.join(os.tmpdir(), 'doncung-screens'));
-  if (isInside(work, REPO_ROOT)) {
-    throw new Error(`--work phải nằm ngoài repo (${REPO_ROOT}) để không làm bẩn cây làm việc`);
-  }
+  // Đường dẫn thật (bỏ symlink) để không lách được kiểm tra bằng liên kết tới repo/thư mục cha.
+  const workReal = fs.existsSync(work) ? fs.realpathSync(work) : work;
+  const workState = checkWorkDir(workReal, REPO_ROOT, readDirOrNull(work));
   const out = path.resolve(opts.out ?? path.join(work, 'shots'));
   const port = opts.port ? Number(opts.port) : DEFAULT_PORT;
   loadPlaywright(); // báo thiếu Playwright trước khi tốn thời gian xuất
 
   const repoDir = path.join(work, 'repo');
   const sessions = [...new Set(entries.map((e) => e.session))];
+  if (workState === 'new') {
+    fs.mkdirSync(work, { recursive: true });
+    fs.writeFileSync(
+      path.join(work, WORK_MARKER),
+      'Thư mục làm việc của scripts/screens/capture.cjs\n',
+    );
+  }
   if (!opts.skipExport) {
     emptyDirExcept(repoDir, 'node_modules');
-    const source = opts.source ?? 'worktree';
     if (source === 'worktree') copyWorktree(repoDir);
     else copyGitRef(source, repoDir);
     ensureNodeModules(repoDir);

@@ -172,7 +172,27 @@ function assertUniqueNames(entries) {
   }
 }
 
-/** `["A=1","B=x=y"]` -> `{ A: "1", B: "x=y" }`; chỉ nhận khóa `EXPO_PUBLIC_*`. */
+/**
+ * Biến công cụ tự ép hoặc tự bỏ khi xuất: không cho `--env` đặt lại (nếu không, bản xuất có thể
+ * thành Firebase thật, nối Emulator, hay mang cờ prod mà ảnh vẫn ghi là "cổng giả").
+ */
+const FORBIDDEN_ENV_KEYS = [
+  'EXPO_PUBLIC_USE_FAKE_BACKEND',
+  'EXPO_PUBLIC_BACKEND',
+  'EXPO_PUBLIC_FAKE_SESSION',
+  'EXPO_PUBLIC_APP_ENV',
+  'EXPO_PUBLIC_FIREBASE_EMULATOR_HOST',
+];
+
+function assertAllowedEnvKey(key) {
+  if (FORBIDDEN_ENV_KEYS.includes(key)) {
+    throw new Error(
+      `--env không được đặt ${key}: công cụ luôn ép cổng giả (phiên giả chọn bằng --session)`,
+    );
+  }
+}
+
+/** `["A=1","B=x=y"]` -> `{ A: "1", B: "x=y" }`; chỉ nhận khóa `EXPO_PUBLIC_*` không bị cấm. */
 function parseEnvPairs(pairs) {
   const out = {};
   for (const pair of pairs) {
@@ -181,6 +201,7 @@ function parseEnvPairs(pairs) {
     if (eq === -1 || !/^EXPO_PUBLIC_[A-Z0-9_]+$/.test(key)) {
       throw new Error(`--env cần dạng EXPO_PUBLIC_TEN=giatri: "${pair}"`);
     }
+    assertAllowedEnvKey(key);
     out[key] = pair.slice(eq + 1);
   }
   return out;
@@ -188,21 +209,52 @@ function parseEnvPairs(pairs) {
 
 /**
  * Biến môi trường cho `expo export --platform web`: luôn cổng giả, phiên giả đã chọn, không Firebase
- * Emulator, không môi trường prod (V1-01 chặn cờ giả ở prod).
+ * Emulator, không môi trường prod (V1-01 chặn cờ giả ở prod). `extra` không được chứa khóa cấm.
  */
 function exportEnv(baseEnv, session, extra) {
-  const env = { ...baseEnv };
+  for (const key of Object.keys(extra)) assertAllowedEnvKey(key);
+  const env = { ...baseEnv, ...extra };
   delete env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST;
   delete env.EXPO_PUBLIC_APP_ENV;
   return {
     ...env,
-    ...extra,
     APP_ENV: 'dev',
     CI: '1',
     EXPO_PUBLIC_USE_FAKE_BACKEND: '1',
     EXPO_PUBLIC_BACKEND: 'fake',
     EXPO_PUBLIC_FAKE_SESSION: session,
   };
+}
+
+/** Tệp đánh dấu thư mục làm việc do công cụ tạo; chỉ thư mục có tệp này mới được dọn. */
+const WORK_MARKER = '.doncung-screens-work';
+
+/**
+ * Kiểm thư mục làm việc trước khi dọn `<work>/repo`. `workEntries`: tên trong `<work>` (`null` nếu
+ * chưa tồn tại). Trả `'new'` (chưa có/rỗng: tạo tệp đánh dấu) hoặc `'owned'` (có tệp đánh dấu);
+ * ném lỗi khi `<work>` chứa/nằm trong repo hay là thư mục lạ không do công cụ tạo.
+ */
+function checkWorkDir(work, repoRoot, workEntries) {
+  const repoDir = path.join(work, 'repo');
+  if (isInside(work, repoRoot)) {
+    throw new Error(`--work phải nằm ngoài repo (${repoRoot}): ${work}`);
+  }
+  if (isInside(repoRoot, work) || isInside(repoRoot, repoDir)) {
+    throw new Error(`--work không được là thư mục chứa repo (${repoRoot}): ${work}`);
+  }
+  if (workEntries === null || workEntries.length === 0) return 'new';
+  if (workEntries.includes(WORK_MARKER)) return 'owned';
+  throw new Error(
+    `--work đã có dữ liệu không do công cụ tạo (thiếu ${WORK_MARKER}); chọn thư mục mới hoặc rỗng: ${work}`,
+  );
+}
+
+/** Git ref an toàn để đưa vào `git archive` (không phải tùy chọn, không ký tự lạ). */
+function assertGitRef(ref) {
+  if (typeof ref !== 'string' || ref.startsWith('-') || !/^[\w./~^@-]+$/.test(ref)) {
+    throw new Error(`git ref không hợp lệ: ${ref}`);
+  }
+  return ref;
 }
 
 /** `child` nằm trong (hoặc bằng) `parent`? */
@@ -263,7 +315,11 @@ module.exports = {
   DEFAULT_WAIT_MS,
   SESSIONS,
   WEB_PACKAGES,
+  FORBIDDEN_ENV_KEYS,
+  WORK_MARKER,
+  assertGitRef,
   assertUniqueNames,
+  checkWorkDir,
   contentTypeFor,
   exportEnv,
   isInside,
