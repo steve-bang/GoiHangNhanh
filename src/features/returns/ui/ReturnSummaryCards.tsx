@@ -1,8 +1,8 @@
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { toCodeKey } from '@/features/orders';
-import { toDisplayStatus } from '@/features/evidence';
+import { toCodeKey, useCurrentUid } from '@/features/orders';
+import { foreignUploadNote, toDisplayStatus } from '@/features/evidence';
 import { Card, EvidenceStatusBadge, Icon, Text, useTheme } from '@/shared/ui';
 
 import {
@@ -10,7 +10,9 @@ import {
   describeLocation,
   evidenceLimits,
   isMediaSavedLocally,
+  returnMediaUploader,
   summarizeMediaSync,
+  type ReturnCase,
   type ReturnDetails,
   type ReturnMedia,
 } from '../domain';
@@ -72,6 +74,12 @@ export function ReturnSummaryCards({
     t(`returns:review.sync.${key}`, { count: sync[key] }),
   );
   const withLocation = savedPhotos.filter((m) => describeLocation(m).kind === 'has').length;
+  // Ảnh máy này chưa tải được dưới tài khoản hiện tại (V1-07): nói lý do đầu tiên gặp, không im lặng.
+  const uid = useCurrentUid();
+  const photoNote =
+    savedPhotos
+      .map((m) => foreignUploadNote(m.state, returnMediaUploader(m, returnCase, uid)))
+      .find((n) => n !== null) ?? null;
   const limits = evidenceLimits(details, photoCount);
   const recordedId =
     returnCase.openingVideo?.kind === 'recorded' ? returnCase.openingVideo.mediaId : null;
@@ -124,6 +132,11 @@ export function ReturnSummaryCards({
             {t('returns:review.photosLocation', { withLocation, count: photoCount })}
           </Text>
         ) : null}
+        {photoNote ? (
+          <Text variant="caption" color="textMuted" testID="return-summary-photos-uploader-note">
+            {t(`evidence:uploaderNote.${photoNote}`)}
+          </Text>
+        ) : null}
       </Section>
 
       <Section title={t('returns:review.video')} testID="return-summary-video">
@@ -131,6 +144,7 @@ export function ReturnSummaryCards({
           <OpeningVideoStatus
             interrupted={returnCase.openingVideo.interrupted}
             openedBefore={returnCase.openedBefore !== null}
+            returnCase={returnCase}
             video={videos?.find((m) => m.id === recordedId) ?? null}
           />
         ) : (
@@ -229,14 +243,20 @@ export function ReturnSummaryCards({
 function OpeningVideoStatus({
   interrupted,
   openedBefore,
+  returnCase,
   video,
 }: {
   interrupted: boolean;
   openedBefore: boolean;
+  returnCase: Pick<ReturnCase, 'createdBy' | 'anchorPublishedAtDevice'>;
   video: ReturnMedia | null;
 }) {
   const { t } = useTranslation();
-  const display = video ? toDisplayStatus(video.state) : null;
+  // Video do tài khoản khác quay, hoặc trong hồ sơ chưa gửi của người khác: máy này chưa tải được dưới
+  // tài khoản này, nói rõ lý do (V1-07, Q-24g).
+  const uploader = returnMediaUploader(video ?? {}, returnCase, useCurrentUid());
+  const display = video ? toDisplayStatus(video.state, { uploader }) : null;
+  const note = video ? foreignUploadNote(video.state, uploader) : null;
   return (
     <>
       <Text variant="formBody" testID="return-video-recorded">
@@ -244,6 +264,11 @@ function OpeningVideoStatus({
       </Text>
       {display?.kind === 'label' ? (
         <EvidenceStatusBadge compact status={display.label} testID="return-video-status" />
+      ) : null}
+      {note ? (
+        <Text variant="caption" color="textMuted" testID="return-video-uploader-note">
+          {t(`evidence:uploaderNote.${note}`)}
+        </Text>
       ) : null}
       {openedBefore ? (
         <Text variant="caption" color="textMuted" testID="return-video-opened-before">

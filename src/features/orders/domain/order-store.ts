@@ -10,6 +10,12 @@ import type { OrderEdit } from './update-order';
  * coi như không tồn tại, kể cả khi biết ID (bất biến 8). Lỗi ném `AppError`, không nuốt lỗi:
  * `ORDER_SAVE_FAILED` cho đơn/dòng/kiện; `LOCAL_SAVE_UNAVAILABLE` cho phiên.
  */
+/** Số tệp chưa đồng bộ tách theo người tạo (`OrderStore.countUnsyncedByOwner`). */
+export interface UnsyncedByOwner {
+  readonly own: number;
+  readonly foreign: number;
+}
+
 export interface OrderStore {
   /** Ghi đơn + dòng + kiện trong MỘT giao dịch: hoặc đủ hoặc không có gì. */
   saveNewOrder(details: OrderDetails): Promise<void>;
@@ -84,6 +90,14 @@ export interface OrderStore {
    * shop khác: mọi truy vấn còn lại vẫn theo `shopId`. Kho SQLite đếm từ `evidence_files` (ADR-020 R-7).
    */
   countUnsyncedOnDevice(): Promise<number>;
+  /**
+   * Tách số tệp chưa đồng bộ (cùng định nghĩa `countUnsynced`, gồm media hàng hoàn) theo người tạo
+   * (Q-24g, V1-07): `own` = do `uid` tạo VÀ tải được dưới `uid` (đóng gói: theo
+   * `packing_sessions.created_by`; hàng hoàn: `return_media.created_by` và hồ sơ đã đăng bản neo hoặc do
+   * chính `uid` tạo); `foreign` = còn lại (tài khoản khác, không rõ, hoặc chờ người tạo hồ sơ đăng bản neo).
+   * `scope` = một shop hoặc `'device'` (mọi shop, chỉ để bảo vệ dữ liệu khi đăng xuất). Kho bộ nhớ trả 0.
+   */
+  countUnsyncedByOwner(scope: ShopId | 'device', uid: string): Promise<UnsyncedByOwner>;
   /** Như `hasRecordingInProgress` nhưng cho mọi shop trên máy này (chỉ để chặn đăng xuất). Lỗi đọc ném `LOCAL_SAVE_UNAVAILABLE`. */
   hasRecordingOnDevice(): Promise<boolean>;
   /**

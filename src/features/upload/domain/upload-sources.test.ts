@@ -317,3 +317,105 @@ describe('hàng đợi tải lên với nguồn media hàng hoàn (Q-28)', () =>
     expect(m && mayHaveReachedServer(m)).toBe(true);
   });
 });
+
+describe('nguồn tệp đóng gói theo người tạo phiên (V1-07, Q-24g)', () => {
+  /** Hai tệp `queued` cùng shop: `ev-u1` thuộc phiên của u-1, `ev-u2` thuộc phiên của u-2. */
+  async function twoAccounts() {
+    const creators = new Map<string, string>([
+      ['s-u1', 'u-1'],
+      ['s-u2', 'u-2'],
+    ]);
+    const files = createMemoryEvidenceFileStore({
+      sessions: {
+        getSession: async (shopId, id) => {
+          const sessionId = id as string;
+          const createdBy = creators.get(sessionId);
+          const suffix = sessionId.slice(2);
+          return {
+            id,
+            shopId,
+            orderId: `o-${suffix}`,
+            packageId: `p-${suffix}`,
+            ...(createdBy ? { createdBy } : {}),
+          } as never;
+        },
+      },
+    });
+    for (const [suffix, at] of [
+      ['u1', 1000],
+      ['u2', 2000],
+    ] as const) {
+      const id = `ev-${suffix}` as EvidenceId;
+      await files.create({
+        id,
+        shopId: SHOP,
+        orderId: `o-${suffix}` as never,
+        packageId: `p-${suffix}` as never,
+        sessionId: `s-${suffix}` as never,
+        group: 'pack',
+        kind: 'video',
+        createdAtDevice: at,
+      });
+      await files.applyEvent(SHOP, id, d('STOP_RECORDING'), at);
+      await files.applyEvent(SHOP, id, d('LOCAL_FILE_READABLE'), at, {
+        localPath: `file:///v/${suffix}.mp4`,
+        sizeBytes: 10,
+        sha256Client: HASH,
+      });
+    }
+    let signedIn: string | null = 'u-1';
+    const uploads: string[] = [];
+    const asked: string[][] = [];
+    const queue = createUploadQueue({
+      sources: [evidenceFileSource(files, undefined, () => signedIn)],
+      gateway: {
+        upload: async (req) => {
+          uploads.push(req.evidenceId);
+          return { kind: 'received' };
+        },
+        fetchServerStates: async (_shop, ids) => {
+          asked.push([...ids]);
+          return new Map();
+        },
+      },
+      hasher: { sha256: async () => ({ ok: true, sha256: HASH }) },
+      now: () => 10_000,
+      isOnline: () => true,
+    });
+    return {
+      files,
+      queue,
+      uploads,
+      asked,
+      signInAs: (uid: string | null) => void (signedIn = uid),
+      state: async (id: string) => (await files.get(SHOP, id as EvidenceId))?.state,
+    };
+  }
+
+  it('chỉ tải tệp của tài khoản đang đăng nhập; tệp của người khác giữ nguyên, không bị gán lại', async () => {
+    const t = await twoAccounts();
+    await t.queue.runOnce(SHOP);
+    expect(t.uploads).toEqual(['ev-u1']);
+    expect(await t.state('ev-u1')).toBe('uploaded');
+    expect(await t.state('ev-u2')).toBe('queued');
+  });
+
+  it('chưa đăng nhập: không tải gì; tài khoản kia đăng nhập lại thì tệp của họ mới được tải', async () => {
+    const t = await twoAccounts();
+    t.signInAs(null);
+    await t.queue.runOnce(SHOP);
+    expect(t.uploads).toEqual([]);
+    t.signInAs('u-2');
+    await t.queue.runOnce(SHOP);
+    expect(t.uploads).toEqual(['ev-u2']);
+    expect(await t.state('ev-u1')).toBe('queued');
+  });
+
+  it('tệp ĐANG TẢI dở của tài khoản khác (bị đăng xuất giữa chừng): không đối soát, không đổi trạng thái', async () => {
+    const t = await twoAccounts();
+    await t.files.applyEvent(SHOP, 'ev-u2' as EvidenceId, d('UPLOAD_STARTED'), 3000);
+    await t.queue.runOnce(SHOP);
+    expect(t.asked.flat()).not.toContain('ev-u2');
+    expect(await t.state('ev-u2')).toBe('uploading');
+  });
+});

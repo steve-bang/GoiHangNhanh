@@ -201,6 +201,9 @@ export function createMemoryOrderStore(
     async countUnsyncedOnDevice() {
       return 0;
     },
+    async countUnsyncedByOwner() {
+      return { own: 0, foreign: 0 };
+    },
     async hasRecordingOnDevice() {
       return [...sessions.values()].some((s) => isSessionStatusRecording(s.sessionStatus));
     },

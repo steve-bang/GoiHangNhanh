@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react-native';
 
 import type { ReturnCaseId } from '@/core/ids';
-import { createMemoryOrderStore, LOCAL_SHOP_ID } from '@/features/orders';
+import { CurrentShopProvider, createMemoryOrderStore, LOCAL_SHOP_ID } from '@/features/orders';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
@@ -90,9 +90,17 @@ async function seedWithVideo(
   return id;
 }
 
-async function openD06(store: ReturnStore, id: ReturnCaseId) {
+async function openD06(store: ReturnStore, id: ReturnCaseId, signedInAs?: string) {
   mockNavigation.params = { returnId: id };
-  await renderWithProviders(<ReturnReviewScreen />, {
+  // `signedInAs`: tài khoản đang đăng nhập (V1-07); không truyền = như phiên của bộ render test.
+  const ui = signedInAs ? (
+    <CurrentShopProvider shopId={SHOP} uid={signedInAs}>
+      <ReturnReviewScreen />
+    </CurrentShopProvider>
+  ) : (
+    <ReturnReviewScreen />
+  );
+  await renderWithProviders(ui, {
     returnStore: store,
     orderStore: createMemoryOrderStore(),
   });
@@ -121,6 +129,43 @@ describe('D06/D07: video mở kiện đã quay', () => {
     const id = await seedWithVideo(store, { upTo });
     await openD06(store, id);
     expect(await screen.findByTestId('return-video-status')).toHaveTextContent(pattern);
+  });
+
+  it('V1-07: video do tài khoản khác quay trên máy này: "Chờ tải lên" + lý do, không "Đang tải lên"', async () => {
+    const store = createMemoryReturnStore({ creatorUid: () => 'u-2' });
+    const id = await seedWithVideo(store, { upTo: 'uploading' });
+    await openD06(store, id, 'u-1');
+    expect(await screen.findByTestId('return-video-status')).toHaveTextContent(/Chờ tải lên/);
+    expect(screen.getByTestId('return-video-uploader-note')).toHaveTextContent(
+      'Tệp do tài khoản khác tạo trên máy này. Chỉ tài khoản đó đăng nhập lại mới tải lên được.',
+    );
+    expect(screen.queryByText(/Đang tải lên/)).toBeNull();
+  });
+
+  it('V1-07: video do chính tài khoản đang đăng nhập quay: nhãn như cũ, không có câu tài khoản khác', async () => {
+    const store = createMemoryReturnStore({ creatorUid: () => 'u-1' });
+    const id = await seedWithVideo(store);
+    await openD06(store, id, 'u-1');
+    expect(await screen.findByTestId('return-video-status')).toHaveTextContent(/Đã lưu trên máy/);
+    expect(screen.queryByTestId('return-video-uploader-note')).toBeNull();
+  });
+
+  it('V1-07: video của mình trong hồ sơ CHƯA gửi do người khác tạo: "Chờ tải lên" + chờ người tạo hồ sơ', async () => {
+    let creator = 'u-2';
+    const store = createMemoryReturnStore({ creatorUid: () => creator });
+    const original = store.createReturn.bind(store);
+    store.createReturn = async (input) => {
+      creator = 'u-2';
+      const made = await original(input);
+      creator = 'u-1';
+      return made;
+    };
+    const id = await seedWithVideo(store);
+    await openD06(store, id, 'u-1');
+    expect(await screen.findByTestId('return-video-status')).toHaveTextContent(/Chờ tải lên/);
+    expect(screen.getByTestId('return-video-uploader-note')).toHaveTextContent(
+      'Tệp chỉ tải lên được sau khi người tạo hồ sơ này đăng nhập lại trên máy.',
+    );
   });
 
   it('video bị gián đoạn: nói rõ chưa phải video đầy đủ và vẫn nêu hạn chế bằng chứng', async () => {

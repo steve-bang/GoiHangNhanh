@@ -9,11 +9,13 @@ import { makeOrder } from './order-store.contract';
 export interface EvidenceHarness {
   readonly files: EvidenceFileStore;
   readonly orders: OrderStore;
+  /** Đổi tài khoản mà kho đơn ghi làm người tạo phiên (`creatorUid`); `null` = chưa biết (V1-07). */
+  readonly signInAs: (uid: string | null) => void;
 }
 
 /** Lưu đơn + phiên thật (khóa ngoại của SQLite cần chúng) rồi trả dữ liệu tạo tệp. */
 export async function seedFile(
-  h: EvidenceHarness,
+  h: Pick<EvidenceHarness, 'files' | 'orders'>,
   code: string,
   options: { id?: string; shopId?: ShopId; at?: number } = {},
 ): Promise<NewEvidenceFile> {
@@ -391,6 +393,50 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
       expect(await h.files.listByOrders(LOCAL_SHOP_ID, [b.orderId])).toHaveLength(1);
       expect(await h.files.listByOrders(LOCAL_SHOP_ID, [])).toEqual([]);
       expect(await h.files.listByOrders('shop-khac' as ShopId, [a.orderId])).toEqual([]);
+    });
+
+    it('listForUpload (V1-07): chỉ tệp của phiên do CHÍNH uid tạo; NULL, uid rỗng, khác shop, sai trạng thái không có', async () => {
+      const h = await make();
+      const close = async (input: NewEvidenceFile) => {
+        await h.files.create(input);
+        await h.files.applyEvent(input.shopId, input.id, device('STOP_RECORDING'), 4000);
+        await h.files.applyEvent(
+          input.shopId,
+          input.id,
+          device('LOCAL_FILE_READABLE'),
+          4000,
+          CLOSED,
+        );
+      };
+      h.signInAs('u-1');
+      const mine = await seedFile(h, 'U1', { at: 3000 });
+      const mineOld = await seedFile(h, 'U1B', { at: 1000 });
+      h.signInAs('u-2');
+      const theirs = await seedFile(h, 'U2');
+      h.signInAs(null);
+      const nobody = await seedFile(h, 'U0');
+      h.signInAs('u-1');
+      const otherShop = await seedFile(h, 'U1S', { shopId: 'shop-khac' as ShopId });
+      for (const f of [mine, mineOld, theirs, nobody, otherShop]) await close(f);
+      const queued = ['queued'] as const;
+      expect((await h.files.listForUpload(LOCAL_SHOP_ID, queued, 'u-1')).map((f) => f.id)).toEqual([
+        mineOld.id,
+        mine.id,
+      ]);
+      expect((await h.files.listForUpload(LOCAL_SHOP_ID, queued, 'u-2')).map((f) => f.id)).toEqual([
+        theirs.id,
+      ]);
+      // Phiên không rõ người tạo không bao giờ khớp, kể cả uid rỗng.
+      expect(await h.files.listForUpload(LOCAL_SHOP_ID, queued, '')).toEqual([]);
+      expect(await h.files.listForUpload(LOCAL_SHOP_ID, ['uploading'], 'u-1')).toEqual([]);
+      expect(await h.files.listForUpload(LOCAL_SHOP_ID, [], 'u-1')).toEqual([]);
+      expect(
+        (await h.files.listForUpload('shop-khac' as ShopId, queued, 'u-1')).map((f) => f.id),
+      ).toEqual([otherShop.id]);
+      expect(await h.files.listForUpload('shop-khac' as ShopId, queued, 'u-2')).toEqual([]);
+      // Đọc không đổi gì: tệp của người khác vẫn nguyên trạng thái.
+      expect((await h.files.get(LOCAL_SHOP_ID, theirs.id))?.state).toBe('queued');
+      expect((await h.files.get(LOCAL_SHOP_ID, nobody.id))?.state).toBe('queued');
     });
   });
 }

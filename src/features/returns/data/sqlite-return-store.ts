@@ -62,6 +62,7 @@ interface CaseRow {
   created_at_device: number;
   updated_at_device: number;
   created_by: string | null;
+  remote_synced_at_device: number | null;
 }
 interface LinkRow {
   id: string;
@@ -153,7 +154,7 @@ const toMedia = (r: MediaRow): ReturnMedia => ({
 });
 
 const CASE_COLUMNS =
-  'id, shop_id, seq, code, status, source_order_id, observed_code, exterior_json, opened_before_json, opening_video_json, final_note, confirmed_at_device, created_at_device, updated_at_device, created_by';
+  'id, shop_id, seq, code, status, source_order_id, observed_code, exterior_json, opened_before_json, opening_video_json, final_note, confirmed_at_device, created_at_device, updated_at_device, created_by, remote_synced_at_device';
 
 /** Đọc JSON đã lưu ở biên: sai dạng thì coi như không có (không ép kiểu mù; conventions mục 4). */
 function parseJson<T>(
@@ -217,6 +218,9 @@ const toCase = (r: CaseRow): ReturnCase => ({
   createdAtDevice: r.created_at_device,
   updatedAtDevice: r.updated_at_device,
   ...(r.created_by ? { createdBy: r.created_by } : {}),
+  ...(r.remote_synced_at_device !== null
+    ? { anchorPublishedAtDevice: r.remote_synced_at_device }
+    : {}),
 });
 const toLink = (r: LinkRow): ReturnLinkEvent => ({
   id: r.id,

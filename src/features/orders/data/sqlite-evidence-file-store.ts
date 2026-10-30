@@ -37,6 +37,11 @@ interface FileRow {
 const COLUMNS =
   'id, shop_id, order_id, package_id, session_id, file_group, kind, state, local_path, size_bytes, duration_ms, sha256_client, attempt_count, next_attempt_at_device, last_error_code, created_at_device, updated_at_device';
 
+/** `COLUMNS` với tiền tố bảng `f.` (truy vấn có JOIN). */
+const PREFIXED_COLUMNS = COLUMNS.split(', ')
+  .map((c) => `f.${c}`)
+  .join(', ');
+
 const UNSYNCED_SQL = UNSYNCED_STATES.map((s) => `'${s}'`).join(', ');
 
 function toFile(row: FileRow): EvidenceFile {
@@ -190,6 +195,21 @@ export function createSqliteEvidenceFileStore(db: SqlDatabase): EvidenceFileStor
         const rows = await db.getAllAsync<FileRow>(
           `SELECT ${COLUMNS} FROM evidence_files WHERE shop_id = ? AND state IN (${marks}) ORDER BY created_at_device, id`,
           [shopId, ...states],
+        );
+        return rows.map(toFile);
+      }),
+    listForUpload: (shopId, states, uid) =>
+      guarded(async () => {
+        if (!uid || states.length === 0) return [];
+        const marks = states.map(() => '?').join(', ');
+        // Chỉ tệp của phiên do CHÍNH uid tạo, cùng shop (NULL không bao giờ khớp; Q-24g, V1-07).
+        const rows = await db.getAllAsync<FileRow>(
+          `SELECT ${PREFIXED_COLUMNS}
+           FROM evidence_files f
+           JOIN packing_sessions s ON s.id = f.session_id AND s.shop_id = f.shop_id
+           WHERE f.shop_id = ? AND s.created_by = ? AND f.state IN (${marks})
+           ORDER BY f.created_at_device, f.id`,
+          [shopId, uid, ...states],
         );
         return rows.map(toFile);
       }),

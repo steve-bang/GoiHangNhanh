@@ -2,10 +2,16 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { EvidenceId, OrderId } from '@/core/ids';
-import { EvidenceDetailView, shortId, type EvidenceDetailRow } from '@/features/evidence';
+import {
+  EvidenceDetailView,
+  shortId,
+  uploaderRelation,
+  type EvidenceDetailRow,
+} from '@/features/evidence';
 import { useAppNavigation, useRouteParams } from '@/platform';
 import { EmptyState, ErrorState, Screen, SkeletonCard, Text, useTheme } from '@/shared/ui';
 
+import { useCurrentUid } from '../data';
 import { formatDeviceDateTime, isSessionStatus } from '../domain';
 import { useEvidenceDetail, type EvidenceDetailState } from './use-evidence-detail';
 
@@ -19,6 +25,7 @@ export function EvidenceDetailScreen() {
   const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const params = useRouteParams();
+  const uid = useCurrentUid();
   const { state, reload } = useEvidenceDetail(
     params.orderId as OrderId | undefined,
     params.evidenceId as EvidenceId | undefined,
@@ -78,6 +85,8 @@ export function EvidenceDetailScreen() {
         kindLabel={t(`screens:orderEvidence.kind.${state.file.group}.${state.file.kind}`)}
         capturedAtLabel={formatDeviceDateTime(state.file.createdAtDevice)}
         links={linkRows(state, t)}
+        // Người tạo tệp đóng gói = người tạo PHIÊN; không còn phiên = không rõ (không đoán, V1-07).
+        uploader={uploaderRelation(state.session?.createdBy, uid)}
       />
     </Screen>
   );

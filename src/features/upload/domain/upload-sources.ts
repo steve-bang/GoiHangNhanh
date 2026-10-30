@@ -30,10 +30,16 @@ const fromEvidenceFile = (f: EvidenceFile): UploadItem => ({
  * Nguồn tệp bằng chứng ĐÓNG GÓI (`EvidenceFileStore`). Có `sessions` thì chỉ khai báo tệp của phiên đã
  * đăng lên máy chủ (Rules cần phiên tồn tại): phiên chưa đăng thì tệp chờ ở `queued`, không gọi máy chủ,
  * không tốn lượt (V1-02). Không có `sessions` (test cũ) = luôn sẵn sàng.
+ *
+ * Có `currentUid` (đường chạy thật, Q-24g, V1-07): CHỈ tệp của phiên do chính tài khoản đang đăng nhập
+ * tạo (`listForUpload`), ở MỌI trạng thái hàng đợi đọc, nên máy này không khai báo, đối soát hay đổi
+ * trạng thái tệp của tài khoản khác (không gán lại cho uid hiện tại, bất biến 5); chưa đăng nhập thì
+ * không có gì. Không truyền `currentUid` (test cũ) = không lọc.
  */
 export function evidenceFileSource(
   files: EvidenceFileStore,
   sessions?: Pick<OrderStore, 'isSessionPublished'>,
+  currentUid?: () => string | null,
 ): UploadSource {
   return {
     ...(sessions
@@ -45,7 +51,10 @@ export function evidenceFileSource(
         }
       : {}),
     async listByStates(shopId, states) {
-      return (await files.listByStates(shopId, states)).map(fromEvidenceFile);
+      if (!currentUid) return (await files.listByStates(shopId, states)).map(fromEvidenceFile);
+      const uid = currentUid();
+      if (!uid) return [];
+      return (await files.listForUpload(shopId, states, uid)).map(fromEvidenceFile);
     },
     async applyEvent(shopId, id, event, atDevice, patch) {
       const result = await files.applyEvent(shopId, id, event, atDevice, patch);

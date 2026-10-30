@@ -8,6 +8,7 @@ import { Card, EmptyState, EvidenceStatusBadge, Text, useTheme } from '@/shared/
 import {
   formatDuration,
   FILE_STATES,
+  foreignUploadNote,
   formatFileSize,
   isServerConfirmed,
   localPlaybackOf,
@@ -15,6 +16,7 @@ import {
   toDisplayStatus,
   type EvidenceFile,
   type LocalPlayback,
+  type UploaderRelation,
 } from '../domain';
 
 export interface EvidenceDetailRow {
@@ -34,6 +36,11 @@ export interface EvidenceDetailViewProps {
   readonly capturedAtLabel: string;
   /** Liên kết đơn/kiện/phiên của tệp (theo ID lưu trong bản ghi tệp, không suy từ mã đơn). */
   readonly links: readonly EvidenceDetailRow[];
+  /**
+   * Ai đã tạo tệp so với tài khoản đang đăng nhập (V1-07). Khác `current`: nhãn "Chờ tải lên" kèm lý do
+   * máy này không tải tệp (Q-24g). Không truyền = `current`.
+   */
+  readonly uploader?: UploaderRelation;
 }
 
 /**
@@ -47,10 +54,12 @@ export function EvidenceDetailView({
   kindLabel,
   capturedAtLabel,
   links,
+  uploader = 'current',
 }: EvidenceDetailViewProps) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
-  const display = toDisplayStatus(file.state);
+  const display = toDisplayStatus(file.state, { uploader });
+  const uploaderNote = foreignUploadNote(file.state, uploader);
   const { state, localPath } = file;
   const playback = useMemo(
     () => localPlaybackOf({ state, localPath }, recordingExists),
@@ -108,9 +117,11 @@ export function EvidenceDetailView({
                 />
                 {showHint ? (
                   <Text variant="formBody" color="inkMuted" testID="evidence-detail-hint">
-                    {display.label === 'saved_on_device'
-                      ? t(`evidence:detail.savedOnDeviceHint.${noun}`)
-                      : t(`evidence:statusHint.${display.label}`)}
+                    {uploaderNote
+                      ? t(`evidence:uploaderNote.${uploaderNote}`)
+                      : display.label === 'saved_on_device'
+                        ? t(`evidence:detail.savedOnDeviceHint.${noun}`)
+                        : t(`evidence:statusHint.${display.label}`)}
                   </Text>
                 ) : null}
               </>

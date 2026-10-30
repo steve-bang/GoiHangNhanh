@@ -73,6 +73,16 @@ export function createMemoryEvidenceFileStore(
       ofShop(shopId)
         .filter((f) => states.includes(f.state))
         .sort(oldestFirst),
+    listForUpload: async (shopId, states, uid) => {
+      // Không có tra cứu phiên = không biết người tạo: không tải gì (không đoán, Q-24g).
+      if (!uid || !options.sessions) return [];
+      const result: EvidenceFile[] = [];
+      for (const file of ofShop(shopId).filter((f) => states.includes(f.state))) {
+        const session = await options.sessions.getSession(shopId, file.sessionId);
+        if (session?.createdBy === uid) result.push(file);
+      }
+      return result.sort(oldestFirst);
+    },
     listShopsWithStates: async (states) => [
       ...new Set([...files.values()].filter((f) => states.includes(f.state)).map((f) => f.shopId)),
     ],

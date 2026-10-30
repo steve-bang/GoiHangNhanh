@@ -210,6 +210,16 @@ export interface EvidenceFileStore {
   /** Tệp của shop đang ở một trong các trạng thái, cũ nhất trước (hàng đợi tải lên). */
   listByStates(shopId: ShopId, states: readonly FileState[]): Promise<readonly EvidenceFile[]>;
   /**
+   * Như `listByStates` nhưng CHỈ tệp thuộc phiên do CHÍNH `uid` tạo (`packing_sessions.created_by`; Q-24g,
+   * V1-07): hàng đợi tải lên không khai báo hộ tệp của tài khoản khác dùng chung máy. Phiên không rõ người
+   * tạo (`created_by` NULL) không bao giờ khớp; `uid` rỗng trả rỗng. Cũ nhất trước.
+   */
+  listForUpload(
+    shopId: ShopId,
+    states: readonly FileState[],
+    uid: string,
+  ): Promise<readonly EvidenceFile[]>;
+  /**
    * Các shop trên máy này có tệp ở một trong các trạng thái. CHỈ để khôi phục sau khi app bị đóng giữa
    * chừng (phiên của shop khác/shop tạm không được treo mãi ở "đang quay"); không dùng để hiển thị dữ liệu.
    */

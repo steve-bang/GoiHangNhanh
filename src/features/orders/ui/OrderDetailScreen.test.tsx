@@ -270,8 +270,22 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
       const d = makeOrder('HAS-EV', { at: CREATED });
       await store.saveNewOrder(d);
       mockItems.push(
-        { id: 'v', group: 'pack', kind: 'video', capturedAtDevice: CREATED, state: 'verified' },
-        { id: 'u', group: 'pack', kind: 'video', capturedAtDevice: CREATED, state: 'uploaded' },
+        {
+          id: 'v',
+          group: 'pack',
+          kind: 'video',
+          sessionId: 's',
+          capturedAtDevice: CREATED,
+          state: 'verified',
+        },
+        {
+          id: 'u',
+          group: 'pack',
+          kind: 'video',
+          sessionId: 's',
+          capturedAtDevice: CREATED,
+          state: 'uploaded',
+        },
       );
       await open(store, d.order.id);
       await screen.findByTestId('detail-order-code');
@@ -286,9 +300,30 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
       const d = makeOrder('CNT', { at: CREATED });
       await store.saveNewOrder(d);
       mockItems.push(
-        { id: 'a', group: 'pack', kind: 'video', capturedAtDevice: CREATED, state: 'queued' },
-        { id: 'b', group: 'pack', kind: 'photo', capturedAtDevice: CREATED, state: 'queued' },
-        { id: 'c', group: 'pack', kind: 'photo', capturedAtDevice: CREATED, state: 'queued' },
+        {
+          id: 'a',
+          group: 'pack',
+          kind: 'video',
+          sessionId: 's',
+          capturedAtDevice: CREATED,
+          state: 'queued',
+        },
+        {
+          id: 'b',
+          group: 'pack',
+          kind: 'photo',
+          sessionId: 's',
+          capturedAtDevice: CREATED,
+          state: 'queued',
+        },
+        {
+          id: 'c',
+          group: 'pack',
+          kind: 'photo',
+          sessionId: 's',
+          capturedAtDevice: CREATED,
+          state: 'queued',
+        },
       );
       await open(store, d.order.id);
       expect(await screen.findByTestId('detail-evidence-counts')).toHaveTextContent(
@@ -305,6 +340,7 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
       id: 'r',
       group: 'return',
       kind: 'video',
+      sessionId: 's',
       capturedAtDevice: CREATED,
       state: 'queued',
     });

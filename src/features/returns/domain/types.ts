@@ -152,6 +152,11 @@ export interface ReturnCase {
   readonly createdAtDevice: number;
   readonly updatedAtDevice: number;
   readonly createdBy?: string;
+  /**
+   * Giờ THIẾT BỊ lúc bản neo của hồ sơ được ghi nhận đã có trên máy chủ (Q-28); không có = chưa đăng. Chỉ
+   * người tạo hồ sơ đăng được bản neo, và media chỉ tải sau khi bản neo đã đăng (V1-07).
+   */
+  readonly anchorPublishedAtDevice?: number;
 }
 
 export interface ReturnDetails {
