@@ -222,17 +222,21 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     expectTabBarVisible(true);
   });
 
-  it('Thông báo (UI-I04) và Quyền riêng tư và bảo mật (UI-I05) mở từ menu Cá nhân; Đổi mật khẩu là route con ẩn thanh tab', async () => {
+  it('Cài đặt thông báo (UI-I04) ẩn khỏi menu ở v1 (V1-05) nhưng route vẫn mở được, có thanh tab', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.profile.path });
-    await fireEvent.press(await screen.findByTestId('menu-UI-I04'));
+    expect(await screen.findByTestId('menu-UI-I05')).toBeOnTheScreen();
+    expect(screen.queryByTestId('menu-UI-I04')).toBeNull();
+    await act(async () => {
+      router.push(ROUTES.notifications.path);
+    });
     expect(screen.getByTestId('screen-UI-I04')).toBeOnTheScreen();
     expect(await screen.findByTestId('notification-options')).toBeOnTheScreen();
     expectTabBarVisible(true);
-    await act(async () => {
-      router.back();
-    });
-    expect(screen.getByTestId('screen-UI-I01')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByTestId('menu-UI-I05'));
+  });
+
+  it('Quyền riêng tư và bảo mật (UI-I05) mở từ menu Cá nhân; Đổi mật khẩu là route con ẩn thanh tab', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.profile.path });
+    await fireEvent.press(await screen.findByTestId('menu-UI-I05'));
     expect(screen.getByTestId('screen-UI-I05')).toBeOnTheScreen();
     await fireEvent.press(await screen.findByTestId('security-password'));
     expect(screen.getByTestId('screen-UI-I05-change-password')).toBeOnTheScreen();

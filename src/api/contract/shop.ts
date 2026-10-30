@@ -33,6 +33,17 @@ export interface ShopApi {
    * có shop này hoặc không phải thành viên đang hoạt động (không phân biệt hai trường hợp).
    */
   getShop(shopId: string): Promise<ShopDetails | null>;
+  /**
+   * Mọi shop tài khoản đang đăng nhập là thành viên đang hoạt động (hôm nay máy chủ chỉ cho một shop
+   * mỗi tài khoản: 0 hoặc 1 phần tử). Chưa đăng nhập: `AUTH_SESSION_EXPIRED`.
+   */
+  listMyShops(): Promise<readonly ShopDetails[]>;
+  /**
+   * Đổi TÊN shop, giữ nguyên nguồn bán đang lưu. Chỉ resolve khi máy chủ xác nhận (Function ghi kiểm
+   * toán). Không được sửa: `SHOP_PERMISSION_DENIED`; shop không đọc được hoặc dữ liệu bị từ chối:
+   * `SHOP_SAVE_FAILED`. Bên gọi đã kiểm tra và chuẩn hóa tên.
+   */
+  renameShop(shopId: string, name: string): Promise<ShopDetails>;
 }
 
 export interface ShopDetails {

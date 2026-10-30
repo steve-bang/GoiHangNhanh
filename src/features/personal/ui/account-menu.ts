@@ -51,8 +51,10 @@ export const ACCOUNT_MENU: readonly MenuItem[] = [
     route: ROUTES.notifications,
     labelKey: 'nav:account.notifications',
     icon: 'notifications',
-    // Bật vì UI-I04 đã có ba công tắc hiển thị (bốn khi bật lại gói) lưu qua cổng cài đặt và nói rõ thông báo đẩy sắp có (Q-21ab).
-    availability: 'available',
+    // Ẩn ở v1 (V1-05, decisions.md Q-29 / V1-05): app chưa gửi thông báo nào và bản Firebase chưa có nơi lưu
+    // lựa chọn, nên không mời người dùng chỉnh cài đặt không có tác dụng. Màn UI-I04 và route giữ nguyên (Q-21ab);
+    // bật lại: đổi dòng này thành 'available' khi có thông báo đẩy và nơi lưu thật.
+    availability: 'hidden',
   },
   {
     id: 'security',

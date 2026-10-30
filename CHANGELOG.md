@@ -23,6 +23,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Changed
 
+- Tab Cá nhân ở bản Firebase: đổi mật khẩu (xác thực lại bằng mật khẩu hiện tại), đổi họ tên, danh sách và đổi tên cửa hàng chạy thật; ẩn Cài đặt thông báo vì bản v1 chưa gửi thông báo. Chưa kiểm chứng trên thiết bị (V1-05).
 - Ẩn nút đăng nhập Apple/Google ở Chào mừng, Đăng nhập, Đăng ký: bản v1 chỉ có email + mật khẩu (V1-03, #47).
 
 ### Fixed

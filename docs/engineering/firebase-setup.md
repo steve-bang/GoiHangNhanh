@@ -147,6 +147,7 @@ Làm sau khi deploy và có dev build (EAS hoặc `expo prebuild` + Xcode/Androi
 5. Bấm tạo shop hai lần liên tiếp/ngắt mạng giữa chừng → chỉ có một shop (idempotent).
 
    Quên mật khẩu (V1-03): email có tài khoản → nhận thư tiếng Việt (kiểm tra cả Thư rác), mở đường dẫn trên điện thoại, đặt mật khẩu mới trên trang Firebase, quay lại app đăng nhập bằng mật khẩu mới; email không có tài khoản → cùng màn "Kiểm tra hộp thư", không có thư; bấm Gửi lại nhiều lần → "Bạn đã gửi nhiều lần" (`auth/too-many-requests`).
+   Tab Cá nhân (V1-05): Sửa họ tên -> tắt mở app thấy tên mới; Đổi mật khẩu với mật khẩu hiện tại sai -> "Mật khẩu hiện tại chưa đúng", đúng -> đăng xuất rồi đăng nhập bằng mật khẩu mới; Sửa tên cửa hàng -> Console `shops/{id}.name` đổi, `sellingSources` giữ nguyên, có `auditEvents` `shop.updated`; Cài đặt cửa hàng hiện đúng một cửa hàng, không có nút chuyển.
 6. Ghi lại phiên bản máy/hệ điều hành và kết quả vào [platform-support.md](platform-support.md) và cập nhật "Trạng thái" ở đầu tài liệu này.
 
 ## 7. Lỗi thường gặp

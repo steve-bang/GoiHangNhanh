@@ -42,6 +42,11 @@ export interface ResetPasswordInput {
   readonly newPassword: string;
 }
 
+export interface ChangePasswordInput {
+  readonly currentPassword: string;
+  readonly newPassword: string;
+}
+
 export interface SignUpWithEmailInput {
   readonly email: string;
   readonly password: string;
@@ -77,4 +82,16 @@ export interface AuthApi {
    * và bên gọi KHÔNG được xả phiên (không báo đăng xuất giả). Không xóa dữ liệu cục bộ (Q-20h).
    */
   signOut(): Promise<void>;
+  /**
+   * Đổi mật khẩu của tài khoản đang đăng nhập: xác thực lại bằng mật khẩu hiện tại rồi đặt mật khẩu
+   * mới. Chỉ resolve khi máy chủ xác nhận. Lỗi: `AUTH_WRONG_CURRENT_PASSWORD`, `AUTH_WEAK_PASSWORD`,
+   * `AUTH_REQUIRES_RECENT_LOGIN`, `AUTH_SESSION_EXPIRED` (không còn phiên), `AUTH_TOO_MANY_REQUESTS`,
+   * `AUTH_NETWORK_ERROR`. Không log, không giữ mật khẩu (V1-05).
+   */
+  changePassword(input: ChangePasswordInput): Promise<void>;
+  /**
+   * Đổi họ tên hiển thị của tài khoản đang đăng nhập (nguồn: Auth). Bên gọi đã chuẩn hóa tên. Chỉ
+   * resolve khi máy chủ xác nhận; trả tên máy chủ đã nhận. Không còn phiên: `AUTH_SESSION_EXPIRED`.
+   */
+  updateDisplayName(displayName: string): Promise<{ readonly displayName: string }>;
 }

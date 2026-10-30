@@ -293,12 +293,13 @@ describe('chọn cổng theo môi trường (cùng cơ chế với src/api/creat
     }
   });
 
-  it('chế độ Firebase với API thật: đăng xuất đi qua auth.signOut của API, phần còn lại vẫn chưa kết nối', async () => {
+  it('chế độ Firebase với API thật: tài khoản đi qua API (V1-05), cài đặt thông báo vẫn chưa kết nối', async () => {
     const api = createFakeApi();
-    const { account } = createPersonalGateways(prod, () => api);
+    const { account, settings } = createPersonalGateways(prod, () => api);
     await account.signOut();
     expect(api.auth.signOutCalls).toBe(1);
-    expect(await codeOf(account.listShops())).toBe('AUTH_SERVICE_UNAVAILABLE');
+    expect(await account.listShops()).toEqual([]);
+    expect(await codeOf(settings.getNotificationPreferences())).toBe('AUTH_SERVICE_UNAVAILABLE');
   });
 
   it('cổng mặc định là một thể hiện cho cả phiên', () => {

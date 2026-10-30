@@ -228,10 +228,17 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     expect(screen.queryByRole('button', { name: 'Quay lại' })).toBeNull();
   });
 
-  it('Thông báo, Quyền riêng tư và bảo mật (PR-G) và Trợ giúp (PR-H) đã mở được, không còn nhãn "Sắp có"', async () => {
+  it('v1 ẩn Cài đặt thông báo (V1-05): không có hàng UI-I04, nhóm Cài đặt vẫn còn Bảo mật', async () => {
+    await renderProfile();
+    expect(screen.queryByTestId('menu-UI-I04')).toBeNull();
+    expect(ACCOUNT_MENU.find((item) => item.id === 'notifications')?.availability).toBe('hidden');
+    expect(screen.getByTestId('group-settings')).toBeOnTheScreen();
+    expect(screen.getByTestId('menu-UI-I05')).toBeOnTheScreen();
+  });
+
+  it('Quyền riêng tư và bảo mật (PR-G) và Trợ giúp (PR-H) đã mở được, không còn nhãn "Sắp có"', async () => {
     await renderProfile();
     for (const [code, route] of [
-      ['UI-I04', ROUTES.notifications],
       ['UI-I05', ROUTES.security],
       ['UI-I06', ROUTES.help],
     ] as const) {
