@@ -1,5 +1,6 @@
-import { openDatabaseAsync } from 'expo-sqlite';
+import { defaultDatabaseDirectory, openDatabaseAsync } from 'expo-sqlite';
 
+import { excludeFromBackup } from './backup-exclusion';
 import { applyConnectionSettings, type SqlDatabase } from './sql-database';
 
 const DATABASE_NAME = 'doncung.db';
@@ -36,5 +37,10 @@ async function openOnce(): Promise<SqlDatabase | null> {
     withTransactionAsync: (task) => db.withTransactionAsync(task),
   };
   await applyConnectionSettings(sql);
+  // V1-12 (Q-24d A): thư mục CSDL (gồm tệp -wal/-shm) không vào iCloud Backup. Thư mục chỉ chắc có sau
+  // khi mở; không chờ, lỗi không chặn mở CSDL (adapter tự log, không ném). Một lần mỗi tiến trình.
+  if (typeof defaultDatabaseDirectory === 'string' && defaultDatabaseDirectory.length > 0) {
+    excludeFromBackup('database', defaultDatabaseDirectory).catch(() => undefined);
+  }
   return sql;
 }

@@ -218,7 +218,7 @@ Trong `app.json` hiện có:
 - `ios.bundleIdentifier` / `android.package` = `vn.doncung.app.dev` (**giữ chỗ**; đặt giá trị chính thức trước bản build gửi cửa hàng đầu tiên). `app.config.js` bỏ hậu tố `.dev` khi `APP_ENV=prod` (hoặc bí danh `production`): profile `production` của `eas.json` ra `vn.doncung.app`
 - `version` = `0.0.0`
 - Quyền camera có chuỗi mô tả tiếng Việt; micro **tắt** (`microphonePermission: false`, `recordAudioAndroid: false`)
-- `android.allowBackup: false` (Q-24d): video, CSDL và phiên đăng nhập không vào Android Auto Backup; đổi máy phải đăng nhập lại. Phần iOS (loại khỏi iCloud Backup) làm ở V1-12
+- `android.allowBackup: false` (Q-24d): video, CSDL và phiên đăng nhập không vào Android Auto Backup; đổi máy phải đăng nhập lại. Phần iOS (loại khỏi iCloud Backup) làm ở V1-12: module Expo cục bộ `modules/backup-exclusion` (Swift, tự liên kết, chỉ có ở bản build native, không có trong Expo Go)
 - `android.blockedPermissions`: gỡ `RECORD_AUDIO` (O-09, phòng thủ thêm), `SYSTEM_ALERT_WINDOW` (mẫu RN thêm vào, app không cần; bản debug vẫn giữ trong manifest `debug/`), `READ/WRITE_EXTERNAL_STORAGE` (`expo-file-system` thêm; app chỉ ghi trong thư mục riêng của app)
 - `ios.config.usesNonExemptEncryption: false` -> `ITSAppUsesNonExemptEncryption = false` (app chỉ dùng HTTPS của hệ điều hành và SHA-256 để băm, không mã hóa riêng; thêm mã hóa riêng thì phải xem lại khai báo xuất khẩu)
 
