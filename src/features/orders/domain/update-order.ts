@@ -1,8 +1,8 @@
 import type { OrderLineId } from '@/core/ids';
 import type { OrderSource } from '@/core/orders/order-source';
 
-import type { DraftError } from './build-order';
-import { validateQuantity } from './codes';
+import { checkLine, type DraftError } from './build-order';
+import { validateTrackingCode } from './codes';
 import type { OrderDetails, OrderLine } from './types';
 
 /** Dòng trong form sửa: `id` có = dòng đã lưu (giữ ID), `null` = dòng mới thêm. */
@@ -32,7 +32,7 @@ export type EditBuildResult =
 
 /**
  * Dựng bản sửa từ form. Cùng quy tắc với `buildOrder`: dòng trống hoàn toàn bị bỏ; có variant mà thiếu
- * tên là lỗi; số lượng nguyên 1..99.999; không gộp dòng cùng tên khác variant (bất biến 10). Dòng đã
+ * tên là lỗi; tên/variant tối đa 200 ký tự, mã vận đơn tối đa 64 (khớp Rules, V1-04); số lượng nguyên 1..99.999; không gộp dòng cùng tên khác variant (bất biến 10). Dòng đã
  * lưu giữ ID, nguồn dữ liệu và thời điểm tạo; dòng mới nhận ID từ `lineId()`. Xóa hết dòng hợp lệ
  * (đơn *Chưa khai báo sản phẩm*, không chặn quay).
  */
@@ -47,26 +47,23 @@ export function buildOrderEdit(
     const name = line.name.trim();
     const variant = line.variant.trim();
     if (name.length === 0 && variant.length === 0) continue;
-    if (name.length === 0) return { ok: false, error: { kind: 'name_required', lineIndex } };
-    const quantity = validateQuantity(line.quantity);
-    if (!quantity.ok) return { ok: false, error: { kind: 'invalid_quantity', lineIndex } };
+    const checked = checkLine(name, variant, line.quantity, lineIndex);
+    if ('kind' in checked) return { ok: false, error: checked };
     const kept = line.id ? existing.get(line.id) : undefined;
     lines.push({
       id: kept ? kept.id : context.lineId(),
       orderId: details.order.id,
       name,
       variant: variant.length > 0 ? variant : null,
-      quantity: quantity.quantity,
+      quantity: checked.quantity,
       position: lines.length,
       dataOrigin: 'entered_by_user',
       createdAtDevice: kept ? kept.createdAtDevice : context.nowDevice,
     });
   }
-  const tracking = draft.trackingCode.trim();
-  return {
-    ok: true,
-    edit: { source: draft.source, trackingCode: tracking.length > 0 ? tracking : null, lines },
-  };
+  const tracking = validateTrackingCode(draft.trackingCode);
+  if (!tracking.ok) return { ok: false, error: { kind: 'invalid_tracking_code' } };
+  return { ok: true, edit: { source: draft.source, trackingCode: tracking.code, lines } };
 }
 
 /** Bản sửa có giống đơn hiện tại không (để tắt nút Lưu / không ghi gì khi không đổi). */

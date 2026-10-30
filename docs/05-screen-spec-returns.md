@@ -25,6 +25,7 @@ Luồng chuẩn: **B01** Danh sách hàng hoàn → **B02** Tìm đơn gốc / t
 | `RETURN_LIST_UNAVAILABLE` | Không tải được danh sách; nếu có dữ liệu cục bộ, hiển thị riêng và đánh dấu chưa đồng bộ |
 | `RETURN_SESSION_INTERRUPTED` | Hồ sơ trước chưa hoàn tất; cho tiếp tục hoặc xem trạng thái |
 | `RETURN_UPLOAD_PENDING` | Hồ sơ đã ghi nhận nhưng video chưa sao lưu lên máy chủ |
+| `UPLOAD_FILE_TOO_LARGE` | Ảnh/video hàng hoàn vượt giới hạn dung lượng (ảnh 25 MB, video 2 GB): "Tệp quá lớn nên không tải lên được. Tệp vẫn còn trên máy này." Cần xử lý, không tự thử lại, giữ tệp trên máy (như A07) |
 
 **Nghiệm thu:** hồ sơ dở dang không mất sau khi đóng app; phân biệt chưa đồng bộ với đã lưu máy chủ; mở hồ sơ không tạo bản ghi trùng.
 

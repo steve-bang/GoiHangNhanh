@@ -57,6 +57,56 @@ service cloud.firestore {
       return v in ['shopee', 'tiktok_shop', 'lazada', 'other_unknown'];
     }
 
+    // Trường văn bản tùy chọn: vắng mặt, hoặc chuỗi dài tối đa `max` (V1-04: giảm bề mặt ghi tùy ý).
+    function optionalText(data, key, max) {
+      return !(key in data) || (data[key] is string && data[key].size() <= max);
+    }
+
+    // Trường văn bản bắt buộc khi có mặt: chuỗi 1..max.
+    function optionalNonEmptyText(data, key, max) {
+      return !(key in data)
+        || (data[key] is string && data[key].size() > 0 && data[key].size() <= max);
+    }
+
+    // Mã đơn/vận đơn (khớp MAX_CODE_LENGTH = 64 của app). Bản chuẩn hóa là viết hoa (toUpperCase), có
+    // thể dài gấp tối đa 3 lần (ví dụ "ﬃ" -> "FFI"), nên trần 192 = 3 x 64.
+    function validOrderCodes(data) {
+      return data.orderCode is string
+        && data.orderCode.size() > 0
+        && data.orderCode.size() <= 64
+        && data.orderCodeNormalized is string
+        && data.orderCodeNormalized.size() > 0
+        && data.orderCodeNormalized.size() <= 192
+        && optionalNonEmptyText(data, 'trackingCode', 64)
+        && optionalNonEmptyText(data, 'trackingCodeNormalized', 192)
+        && optionalText(data, 'note', 500);
+    }
+
+    // Dòng sản phẩm: tên 1..200, variant <= 200, số lượng 1..99 999 (MAX_QUANTITY của app).
+    function validLineFields(data) {
+      return data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 200
+        && optionalText(data, 'variant', 200)
+        && data.quantity is int
+        && data.quantity >= 1
+        && data.quantity <= 99999;
+    }
+
+    // Loại, mime và trần dung lượng của MỌI bằng chứng (Q-24c, thống nhất Q-28b): ảnh <= 25 MB,
+    // video <= 2 GB. Khớp firebase/functions/src/limits.ts.
+    function withinEvidenceLimits(data) {
+      return (
+          (data.kind == 'photo'
+            && data.mimeType in ['image/jpeg', 'image/png']
+            && data.sizeBytes <= 25000000)
+          || (data.kind == 'original_video'
+            && data.mimeType in ['video/mp4', 'video/quicktime']
+            && data.sizeBytes <= 2000000000)
+        )
+        && (!('durationMs' in data) || (data.durationMs is int && data.durationMs >= 0));
+    }
+
     // Trường chỉ cho phép đổi đúng các khóa này (ngoài ra bất biến).
     function onlyChanges(allowedKeys) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedKeys);
@@ -99,10 +149,7 @@ service cloud.firestore {
             'updatedAt', 'updatedBy', 'rev'
           ])
           && request.resource.data.shopId == shopId
-          && request.resource.data.orderCode is string
-          && request.resource.data.orderCode.size() > 0
-          && request.resource.data.orderCode.size() <= 64
-          && request.resource.data.orderCodeNormalized is string
+          && validOrderCodes(request.resource.data)
           && isShopSource(request.resource.data.source)
           && request.resource.data.status == 'new'
           && request.resource.data.dataSource == 'user_entered'
@@ -111,12 +158,13 @@ service cloud.firestore {
           && request.resource.data.rev == 1;
 
         // Cập nhật: khóa lạc quan bằng rev (mỗi lần +1) để không "last write wins" âm thầm.
-        // Lịch sử thay đổi do trigger phía máy chủ ghi vào auditEvents.
+        // Lịch sử thay đổi do trigger phía máy chủ ghi vào auditEvents (functions/src/audit.ts).
         allow update: if canManageOrders(shopId)
           && onlyChanges([
             'orderCode', 'orderCodeNormalized', 'source', 'trackingCode',
             'trackingCodeNormalized', 'status', 'note', 'updatedAt', 'updatedBy', 'rev'
           ])
+          && validOrderCodes(request.resource.data)
           && isShopSource(request.resource.data.source)
           && request.resource.data.status in [
             'new', 'ready_to_pack', 'packing', 'packed', 'handed_over', 'completed', 'cancelled'
@@ -140,11 +188,7 @@ service cloud.firestore {
             ])
             && request.resource.data.shopId == shopId
             && request.resource.data.orderId == orderId
-            && request.resource.data.name is string
-            && request.resource.data.name.size() > 0
-            && request.resource.data.name.size() <= 200
-            && request.resource.data.quantity is int
-            && request.resource.data.quantity >= 1
+            && validLineFields(request.resource.data)
             && (!('position' in request.resource.data)
                 || (request.resource.data.position is int && request.resource.data.position >= 0))
             && request.resource.data.dataSource == 'user_entered'
@@ -152,8 +196,7 @@ service cloud.firestore {
             && request.resource.data.createdBy == request.auth.uid;
           allow update: if canManageOrders(shopId)
             && onlyChanges(['name', 'variant', 'quantity'])
-            && request.resource.data.quantity is int
-            && request.resource.data.quantity >= 1;
+            && validLineFields(request.resource.data);
           allow delete: if false;
         }
 
@@ -171,9 +214,12 @@ service cloud.firestore {
             && request.resource.data.orderId == orderId
             && request.resource.data.index is int
             && request.resource.data.index >= 1
+            && optionalText(request.resource.data, 'label', 100)
             && request.resource.data.createdAt == request.time
             && request.resource.data.createdBy == request.auth.uid;
-          allow update: if canManageOrders(shopId) && onlyChanges(['label']);
+          allow update: if canManageOrders(shopId)
+            && onlyChanges(['label'])
+            && optionalText(request.resource.data, 'label', 100);
           allow delete: if false;
         }
       }
@@ -206,11 +252,20 @@ service cloud.firestore {
           && getAfter(/databases/$(database)/documents/shops/$(shopId)/orders/$(request.resource.data.orderId)/packages/$(request.resource.data.packageId)).data.orderId
              == request.resource.data.orderId;
 
-        // Chỉ đổi trạng thái và ghi chú; orderId/packageId/orderSnapshot bất biến.
+        // Chỉ đổi trạng thái và ghi chú; orderId/packageId/orderSnapshot bất biến. KHÔNG ràng buộc thứ
+        // tự chuyển trạng thái ở đây: app đăng trạng thái MỚI NHẤT (có thể nhảy thẳng tới confirmed);
+        // bảng chuyển nằm ở app (Q-23j), lịch sử do trigger kiểm toán ghi. Giờ thiết bị chỉ là thông
+        // tin, không so với giờ máy chủ (bất biến 11).
         allow update: if canManageOrders(shopId)
           && onlyChanges(['status', 'endedAtDevice', 'interruptions', 'note'])
           && request.resource.data.status in
-            ['recording', 'ended', 'interrupted', 'confirmed', 'needs_attention'];
+            ['recording', 'ended', 'interrupted', 'confirmed', 'needs_attention']
+          && (!('endedAtDevice' in request.resource.data)
+              || request.resource.data.endedAtDevice is timestamp)
+          && (!('interruptions' in request.resource.data)
+              || (request.resource.data.interruptions is list
+                  && request.resource.data.interruptions.size() <= 100))
+          && optionalText(request.resource.data, 'note', 500);
 
         allow delete: if false;
       }
@@ -249,6 +304,11 @@ service cloud.firestore {
       // `ownerKind`) và bằng chứng HÀNG HOÀN (`ownerKind: 'return'` + `returnId`, không có phiên/đơn/kiện).
       // Tệp luôn ở shops/{shopId}/evidence/{evidenceId}/original, nên createUploadSession/verifyEvidence
       // dùng chung.
+      // KHÔNG chặn theo trạng thái phiên (V1-04): phiên được đăng với trạng thái mới nhất nên thường đã
+      // `confirmed` trên máy chủ TRƯỚC khi bằng chứng được khai báo (quay -> xác nhận -> tải sau). Chỉ
+      // dựa trên điều không phụ thuộc thứ tự đồng bộ: phiên/hồ sơ tồn tại trong cùng shop, người khai
+      // báo là chính người đăng nhập. `capturedAtDevice` là giờ thiết bị, chỉ là thông tin: KHÔNG so
+      // với request.time (đồng hồ máy chạy nhanh không được làm bằng chứng bị từ chối; bất biến 11).
 
       match /evidence/{evidenceId} {
         allow read: if isActiveMember(shopId);
@@ -265,6 +325,7 @@ service cloud.firestore {
           && request.resource.data.capturedAtDevice is timestamp
           && request.resource.data.createdAtServer == request.time
           && request.resource.data.createdBy == request.auth.uid
+          && withinEvidenceLimits(request.resource.data)
           && (
             // --- Bằng chứng đóng gói ---
             (
@@ -301,17 +362,6 @@ service cloud.firestore {
               && request.resource.data.ownerKind == 'return'
               && request.resource.data.returnId is string
               && exists(/databases/$(database)/documents/shops/$(shopId)/returns/$(request.resource.data.returnId))
-              && (
-                // Trần dung lượng (Q-28b): ảnh <= 25 MB; video <= 2 GB (quay tối đa 10 phút).
-                (request.resource.data.kind == 'photo'
-                  && request.resource.data.mimeType in ['image/jpeg', 'image/png']
-                  && request.resource.data.sizeBytes <= 25000000)
-                || (request.resource.data.kind == 'original_video'
-                  && request.resource.data.mimeType in ['video/mp4', 'video/quicktime']
-                  && request.resource.data.sizeBytes <= 2000000000)
-              )
-              && (!('durationMs' in request.resource.data)
-                  || (request.resource.data.durationMs is int && request.resource.data.durationMs >= 0))
             )
           );
 
@@ -321,13 +371,23 @@ service cloud.firestore {
           && onlyChanges(['clientFileState', 'lastError', 'retryCount'])
           && request.resource.data.clientFileState in [
             'queued', 'uploading', 'upload_failed', 'needs_attention', 'unrecoverable'
-          ];
+          ]
+          // lastError: mã lỗi ngắn (không phải thông điệp tự do); retryCount có trần.
+          && (!('lastError' in request.resource.data)
+              || request.resource.data.lastError == null
+              || (request.resource.data.lastError is string
+                  && request.resource.data.lastError.size() <= 200))
+          && (!('retryCount' in request.resource.data)
+              || (request.resource.data.retryCount is int
+                  && request.resource.data.retryCount >= 0
+                  && request.resource.data.retryCount <= 1000));
 
         allow delete: if false;
       }
 
       // ---------- Nhật ký kiểm toán ----------
-      // Chỉ máy chủ ghi (trigger/Function). Người dùng thường không sửa/xóa (bất biến #7).
+      // Chỉ máy chủ ghi (trigger functions/src/audit.ts cho orders/lines/packages/sessions/evidence/
+      // returns, và các Function). Người dùng thường không sửa/xóa (bất biến #7).
 
       match /auditEvents/{eventId} {
         allow read: if canReadAudit(shopId);

@@ -2,6 +2,7 @@ import type { EvidenceId, ShopId } from '@/core/ids';
 import { FILE_STATES, mayHaveReachedServer, type FileEvent } from '@/features/evidence';
 
 import { MAX_UPLOAD_ATTEMPTS, retryDelayMs } from './backoff';
+import { evidenceMaxBytes, UPLOAD_FILE_TOO_LARGE } from './limits';
 import type {
   LocalFileHasher,
   ServerFileState,
@@ -161,6 +162,16 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
   async function uploadOne(entry: Entry, summary: Counters): Promise<void> {
     const { localPath, sizeBytes, sha256Client } = entry.item;
     if (!localPath || sizeBytes === null || !sha256Client) return; // chưa đủ chi tiết: không tải
+    if (sizeBytes > evidenceMaxBytes(entry.item.kind)) {
+      // Vượt trần máy chủ (Rules + Function luôn từ chối): không băm, không gửi, báo cần xử lý ngay.
+      // Tệp cục bộ giữ nguyên (bất biến 4).
+      await apply(entry, device('NEEDS_ATTENTION'), {
+        lastErrorCode: UPLOAD_FILE_TOO_LARGE,
+        nextAttemptAtDevice: null,
+      });
+      summary.needsAttention += 1;
+      return;
+    }
     const hash = await hasher.sha256(localPath);
     if (!hash.ok || hash.sha256 !== sha256Client) {
       const code = hash.ok ? 'LOCAL_HASH_CHANGED' : hash.reason;

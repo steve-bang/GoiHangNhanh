@@ -1,5 +1,7 @@
 import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 
+import { isValidId } from './ids';
+
 /** Nguồn bán hợp lệ, theo thứ tự chuẩn (khớp src/core/orders/order-source.ts). */
 export const SELLING_SOURCES = ['shopee', 'tiktok_shop', 'lazada', 'other_unknown'] as const;
 export type SellingSource = (typeof SELLING_SOURCES)[number];
@@ -48,6 +50,13 @@ export function parseShopInput(data: unknown): ShopInput {
     name: trimmed,
     sellingSources: SELLING_SOURCES.filter((source) => sellingSources.includes(source)),
   };
+}
+
+/** Mã shop từ client: cùng mẫu ID với các callable khác (không ký tự đường dẫn). */
+export function parseShopId(data: unknown): string {
+  const { shopId } = (data ?? {}) as { shopId?: unknown };
+  if (!isValidId(shopId)) throw new ShopError('invalid-argument', 'Mã shop không hợp lệ.');
+  return shopId;
 }
 
 function toResult(id: string, data: FirebaseFirestore.DocumentData): ShopResult {
