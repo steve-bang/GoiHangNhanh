@@ -498,7 +498,8 @@
     },
     "capturedAt": "Ghi lúc {{time}} (giờ thiết bị)",
     "errorHint": "Tệp này cần xử lý.",
-    "openSync": "Mở trung tâm đồng bộ"
+    "openSync": "Mở trung tâm đồng bộ",
+    "openDetail": "Xem {{kind}}"
   },
   "orderMatch": {
     "title": "Tra cứu mã",

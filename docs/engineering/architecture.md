@@ -339,6 +339,17 @@ Ngày kiểm tra: **2026-10-26**. "Cập nhật" = thời điểm xuất bản g
 
 **Đề xuất (ADR-004b): `expo-sqlite`** (ít phụ thuộc, khớp SDK; hiệu năng thừa đủ cho hàng đợi vài trăm bản ghi). MMKV chỉ cho cờ nhỏ nếu cần.
 
+### 11.7b Phát lại video bằng chứng trên máy (V1-17, 2026-10-30)
+
+| | `expo-video` ~58.0.12 (npm 58.0.13) | `react-native-video` |
+|---|---|---|
+| Bảo trì | Module Expo chính chủ, đúng bản `bundledNativeModules.json` của SDK 58 | Bên thứ ba, cấu hình native riêng |
+| Nền tảng | iOS (AVPlayer), Android (Media3/ExoPlayer), web (`<video>`) | iOS, Android |
+| Phát `file://` | Có; lớp native đọc tệp, video không qua bộ nhớ JS | Có |
+| Cấu hình | Config plugin; đặt `supportsBackgroundPlayback`/`supportsPictureInPicture` = `false` (không thêm quyền/chế độ nền) | Thủ công |
+
+**Chọn `expo-video`** sau adapter `src/platform/video-player.tsx` (`LocalVideoPlayer`, `useCaching: false`, chỉ đọc). Chưa kiểm chứng trên thiết bị (video dài, tua, máy yếu: release-checklist G-6).
+
 ### 11.8 Quản lý state, điều hướng, form, i18n
 
 | Hạng mục | Ứng viên (phiên bản, cập nhật) | Đề xuất | Lý do |

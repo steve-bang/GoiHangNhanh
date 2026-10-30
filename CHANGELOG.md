@@ -13,6 +13,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 - Website: trang Chính sách quyền riêng tư, Điều khoản sử dụng, Hỗ trợ và Yêu cầu xóa tài khoản (bản chờ rà pháp lý; email, tên pháp nhân, tên miền còn giữ chỗ), liên kết ở chân trang và sitemap; trang chủ web không còn nói "tải lên chạy nền" (V1-19, #42).
 - Tài liệu nộp store: mô tả, khai báo quyền riêng tư, ghi chú duyệt (V1-20, #45).
 - Quên mật khẩu gửi thư đặt lại của Firebase Auth (thư tiếng Việt, trả lời trung tính) và màn mới "Kiểm tra hộp thư"; chưa kiểm chứng gửi thư thật trên thiết bị (V1-03, #47).
+- Xem lại video và ảnh bằng chứng ngay trên máy đã ghi (màn Chi tiết bằng chứng, mở từ Bằng chứng của đơn), chỉ xem, không sửa hay xóa tệp gốc; tệp không còn trên máy thì báo rõ, chưa xem được từ máy chủ. Chưa kiểm chứng trên thiết bị (V1-17).
 
 ### Security
 

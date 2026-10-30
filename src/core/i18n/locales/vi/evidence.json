@@ -18,5 +18,62 @@
   "capture": {
     "recording": "Đang ghi hình",
     "saving_local": "Đang lưu trên thiết bị"
+  },
+  "detail": {
+    "loading": "Đang mở bằng chứng…",
+    "loadError": "Chưa mở được bằng chứng này. Bạn thử lại nhé.",
+    "notFoundTitle": "Không tìm thấy bằng chứng này.",
+    "notFound": "Bằng chứng không có trong đơn này trên máy.",
+    "back": "Quay lại",
+    "unknown": "Chưa rõ",
+    "info": {
+      "kind": "Loại",
+      "capturedAt": "Ghi lúc (giờ trên máy)",
+      "duration": "Thời lượng",
+      "size": "Dung lượng",
+      "order": "Mã đơn",
+      "package": "Kiện",
+      "session": "Phiên quay",
+      "hash": "Mã băm"
+    },
+    "packageValue": "Kiện {{index}}",
+    "sessionValue": "{{status}}, bắt đầu {{time}} (mã {{id}})",
+    "sessionStatus": {
+      "created": "Chưa quay",
+      "recording": "Đang quay",
+      "ended": "Đã kết thúc",
+      "interrupted": "Bị gián đoạn",
+      "needs_attention": "Cần xử lý",
+      "confirmed": "Đã xác nhận"
+    },
+    "hashNote": "Mã băm chỉ chứng minh tệp không đổi kể từ lúc tính, không chứng minh thời điểm quay.",
+    "savedOnDeviceHint": {
+      "video": "Video đã lưu trên máy này. Chưa có bản trên máy chủ.",
+      "photo": "Ảnh đã lưu trên máy này. Chưa có bản trên máy chủ."
+    },
+    "readOnly": "Chỉ xem lại. Tệp gốc trên máy không bị sửa hay xóa.",
+    "media": {
+      "videoLabel": "Video bằng chứng trên máy này",
+      "photoLabel": "Ảnh bằng chứng trên máy này",
+      "capturingTitle": {
+        "video": "Video đang được lưu.",
+        "photo": "Ảnh đang được lưu."
+      },
+      "capturingMessage": "Lưu xong bạn mới xem lại được.",
+      "missingTitle": {
+        "video": "Video không còn trên máy này.",
+        "photo": "Ảnh không còn trên máy này."
+      },
+      "missingMessage": {
+        "server": "Ứng dụng chưa hỗ trợ xem lại tệp từ máy chủ.",
+        "lost": "Tệp không còn trên máy này và máy chủ chưa xác nhận có bản.",
+        "mismatch": "Bản trên máy chủ không khớp với tệp gốc, và tệp gốc trên máy đã mất."
+      },
+      "playFailedTitle": {
+        "video": "Không phát được video này.",
+        "photo": "Không mở được ảnh này."
+      },
+      "playFailedMessage": "Tệp gốc trên máy vẫn được giữ nguyên."
+    }
   }
 }

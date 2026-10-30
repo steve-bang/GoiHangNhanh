@@ -45,3 +45,11 @@ jest.mock(
   '@/platform/connectivity',
   () => jest.requireActual('@/test-utils/mock-connectivity').connectivityMock,
 );
+
+// Trình phát video cục bộ (expo-video là mô-đun native): thay bằng View ghi lại URI và `onError`.
+// Điều khiển qua `mockVideoPlayer` trong `src/test-utils/mock-video-player.tsx`; test của adapter
+// dùng `jest.unmock`.
+jest.mock(
+  '@/platform/video-player',
+  () => jest.requireActual('@/test-utils/mock-video-player').videoPlayerMock,
+);

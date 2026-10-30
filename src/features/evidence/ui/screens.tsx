@@ -1,4 +1,6 @@
-import { PlaceholderScreen } from '@/shared/ui';
-
-/** Chi tiết video (UI-E04); nằm trong tab Đơn hàng. Danh sách bằng chứng của đơn (UI-E03) ở `features/orders` (cần dữ liệu đơn; tránh phụ thuộc vòng). */
-export const EvidenceDetailScreen = () => <PlaceholderScreen uiCode="UI-E04" inTabs />;
+/**
+ * Giao diện dùng chung của feature evidence. Màn UI-E04 (Chi tiết bằng chứng) nằm ở `features/orders`
+ * (cần dữ liệu đơn/kiện/phiên; đặt ở đây sẽ tạo phụ thuộc vòng) và dùng `EvidenceDetailView` dưới đây.
+ */
+export { EvidenceDetailView } from './EvidenceDetailView';
+export type { EvidenceDetailRow, EvidenceDetailViewProps } from './EvidenceDetailView';
