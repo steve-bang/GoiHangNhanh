@@ -8,6 +8,9 @@ module.exports = {
       testMatch: ['<rootDir>/src/**/*.test.{ts,tsx}'],
       setupFiles: ['<rootDir>/jest.setup.ts'],
       moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
+      // Các suite giao diện nặng (Expo Router thật, nhiều màn) có thể vượt 5 giây mặc định khi máy
+      // CI/dev tải cao; 20 giây giữ test chậm thật vẫn bị bắt mà không đỏ chập chờn.
+      testTimeout: 20000,
     },
     {
       displayName: 'tooling',
