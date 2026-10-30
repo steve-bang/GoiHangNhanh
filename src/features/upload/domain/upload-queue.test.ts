@@ -2,8 +2,14 @@ import type { EvidenceId, OrderId, PackageId, SessionId, ShopId } from '@/core/i
 import type { EvidenceFile, EvidenceFileStore } from '@/features/evidence';
 import { createMemoryEvidenceFileStore } from '@/features/orders';
 
-import { MAX_UPLOAD_ATTEMPTS, retryDelayMs } from './backoff';
-import type { HashResult, ServerFileState, UploadGateway, UploadOutcome } from './ports';
+import { MAX_RETRY_DELAY_MS, MAX_UPLOAD_ATTEMPTS, retryDelayMs } from './backoff';
+import type {
+  HashResult,
+  ServerFileState,
+  UploadAttemptOptions,
+  UploadGateway,
+  UploadOutcome,
+} from './ports';
 import { createUploadQueue, mayBeKnownToServer } from './upload-queue';
 import { evidenceFileSource } from './upload-sources';
 
@@ -32,8 +38,18 @@ async function queuedFile(files: EvidenceFileStore, id: string, at = 1000): Prom
   return r.file;
 }
 
-function setup(options: { online?: boolean; hash?: HashResult } = {}) {
+function setup(
+  options: {
+    online?: boolean;
+    hash?: HashResult;
+    sessionPublished?: (sessionId: string) => boolean;
+  } = {},
+) {
   const files = createMemoryEvidenceFileStore();
+  const offlineListeners = new Set<() => void>();
+  const signals: (AbortSignal | undefined)[] = [];
+  /** Lần tải kế tiếp treo tới khi bị hủy (mô phỏng gửi tệp lớn lúc mất mạng). */
+  let hangNext = false;
   let clock = 10_000;
   let online = options.online ?? true;
   const uploads: string[] = [];
@@ -42,9 +58,19 @@ function setup(options: { online?: boolean; hash?: HashResult } = {}) {
   let throwOnUpload = false;
   let throwOnFetch = false;
   const gateway: UploadGateway = {
-    upload: async (req) => {
+    upload: async (req, attempt?: UploadAttemptOptions) => {
       uploads.push(req.evidenceId);
+      signals.push(attempt?.signal);
       if (throwOnUpload) throw new Error('boom');
+      if (hangNext) {
+        hangNext = false;
+        const signal = attempt?.signal;
+        return new Promise<UploadOutcome>((resolve) =>
+          signal?.addEventListener('abort', () =>
+            resolve({ kind: 'network', code: 'NETWORK_LOST' }),
+          ),
+        );
+      }
       return outcomes.shift() ?? { kind: 'received' };
     },
     fetchServerStates: async () => {
@@ -53,12 +79,24 @@ function setup(options: { online?: boolean; hash?: HashResult } = {}) {
     },
   };
   let hashResult: HashResult = options.hash ?? { ok: true, sha256: HASH };
+  const sessionPublished = options.sessionPublished;
   const queue = createUploadQueue({
-    sources: [evidenceFileSource(files)],
+    sources: [
+      evidenceFileSource(
+        files,
+        sessionPublished
+          ? { isSessionPublished: async (_shop, sessionId) => sessionPublished(sessionId) }
+          : undefined,
+      ),
+    ],
     gateway,
     hasher: { sha256: async () => hashResult },
     now: () => clock,
     isOnline: () => online,
+    subscribeOffline: (listener) => {
+      offlineListeners.add(listener);
+      return () => void offlineListeners.delete(listener);
+    },
   });
   return {
     files,
@@ -66,6 +104,13 @@ function setup(options: { online?: boolean; hash?: HashResult } = {}) {
     uploads,
     outcomes,
     serverStates,
+    signals,
+    offlineListeners,
+    hangNextUpload: () => void (hangNext = true),
+    goOffline: () => {
+      online = false;
+      for (const listener of [...offlineListeners]) listener();
+    },
     advance: (ms: number) => void (clock += ms),
     setOnline: (v: boolean) => void (online = v),
     setHash: (h: HashResult) => void (hashResult = h),
@@ -114,16 +159,16 @@ describe('hàng đợi tải lên', () => {
     expect(await t.state('a')).toBe('queued');
   });
 
-  it('lỗi tạm: upload_failed, ghi số lần + giờ thử lại; chưa tới giờ thì không thử', async () => {
+  it('máy chủ từ chối: upload_failed, ghi số lần + giờ thử lại; chưa tới giờ thì không thử', async () => {
     const t = setup();
     await queuedFile(t.files, 'a');
-    t.outcomes.push({ kind: 'retryable', code: 'NETWORK' });
+    t.outcomes.push({ kind: 'retryable', code: 'HTTP_500' });
     await t.queue.runOnce(SHOP);
     const failed = await t.files.get(SHOP, 'a' as EvidenceId);
     expect(failed).toMatchObject({
       state: 'upload_failed',
       attemptCount: 1,
-      lastErrorCode: 'NETWORK',
+      lastErrorCode: 'HTTP_500',
       nextAttemptAtDevice: 10_000 + retryDelayMs(1),
     });
     t.advance(retryDelayMs(1) - 1);
@@ -148,11 +193,12 @@ describe('hàng đợi tải lên', () => {
     expect(await t.state('a')).toBe('upload_failed');
   });
 
-  it('quá số lần thử tối đa thì needs_attention thay vì thử mãi', async () => {
+  it('máy chủ từ chối quá số lần thử tối đa (8) thì needs_attention thay vì thử mãi', async () => {
     const t = setup();
     await queuedFile(t.files, 'a');
+    expect(MAX_UPLOAD_ATTEMPTS).toBe(8);
     for (let i = 0; i < MAX_UPLOAD_ATTEMPTS; i += 1) {
-      t.outcomes.push({ kind: 'retryable', code: 'NETWORK' });
+      t.outcomes.push({ kind: 'retryable', code: 'UPLOAD_REJECTED_403' });
       await t.queue.runOnce(SHOP);
       t.advance(20 * 60_000);
     }
@@ -326,5 +372,165 @@ describe('đối soát chỉ hỏi máy chủ về tệp máy chủ có thể đ
     });
     await queue.runOnce(SHOP);
     expect(asked).toEqual([['inflight']]);
+  });
+});
+
+describe('lỗi mạng không tốn lượt (Q-24h, V1-02)', () => {
+  it('50 lỗi mạng liên tiếp: vẫn upload_failed, attemptCount 0, không bao giờ needs_attention', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    for (let i = 0; i < 50; i += 1) {
+      t.outcomes.push({ kind: 'network', code: 'UNAVAILABLE' });
+      const summary = await t.queue.runOnce(SHOP);
+      expect(summary.needsAttention).toBe(0);
+      t.advance(MAX_RETRY_DELAY_MS);
+    }
+    expect(t.uploads).toHaveLength(50);
+    expect(await t.files.get(SHOP, 'a' as EvidenceId)).toMatchObject({
+      state: 'upload_failed',
+      attemptCount: 0,
+      lastErrorCode: 'UNAVAILABLE',
+    });
+    await t.queue.runOnce(SHOP);
+    expect(await t.state('a')).toBe('uploaded');
+  });
+
+  it('mất mạng 30 phút (máy báo offline): không gọi máy chủ, không đổi trạng thái', async () => {
+    const t = setup({ online: false });
+    await queuedFile(t.files, 'a');
+    for (let minute = 0; minute < 30; minute += 1) {
+      expect((await t.queue.runOnce(SHOP)).skipped).toBe('offline');
+      t.advance(60_000);
+    }
+    expect(t.uploads).toEqual([]);
+    expect(await t.files.get(SHOP, 'a' as EvidenceId)).toMatchObject({
+      state: 'queued',
+      attemptCount: 0,
+    });
+    t.setOnline(true);
+    await t.queue.runOnce(SHOP, { networkRestored: true });
+    expect(await t.state('a')).toBe('uploaded');
+  });
+
+  it('giãn cách theo số lỗi mạng liên tiếp, trần 15 phút', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    const delays: number[] = [];
+    for (let i = 0; i < 12; i += 1) {
+      t.outcomes.push({ kind: 'network', code: 'TIMEOUT' });
+      const before = 10_000 + delays.reduce((sum, d) => sum + d, 0);
+      await t.queue.runOnce(SHOP);
+      const file = await t.files.get(SHOP, 'a' as EvidenceId);
+      const delay = (file?.nextAttemptAtDevice ?? 0) - before;
+      delays.push(delay);
+      t.advance(delay);
+    }
+    expect(delays.slice(0, 4)).toEqual([5000, 10_000, 20_000, 40_000]);
+    expect(Math.max(...delays)).toBe(MAX_RETRY_DELAY_MS);
+  });
+
+  it('có mạng lại: tệp lỗi mạng tới hạn ngay, không chờ hết giãn cách', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    for (let i = 0; i < 10; i += 1) {
+      t.outcomes.push({ kind: 'network', code: 'NETWORK' });
+      await t.queue.runOnce(SHOP);
+      t.advance(MAX_RETRY_DELAY_MS);
+    }
+    t.outcomes.push({ kind: 'network', code: 'NETWORK' });
+    await t.queue.runOnce(SHOP); // giãn cách hiện là 15 phút
+    t.advance(1000);
+    await t.queue.runOnce(SHOP);
+    expect(await t.state('a')).toBe('upload_failed'); // chưa tới hạn
+    await t.queue.runOnce(SHOP, { networkRestored: true });
+    expect(await t.state('a')).toBe('uploaded');
+  });
+
+  it('gặp lỗi mạng thì dừng lượt (tệp sau không bị gọi vô ích)', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a', 1000);
+    await queuedFile(t.files, 'b', 2000);
+    t.outcomes.push({ kind: 'network', code: 'NETWORK' });
+    const summary = await t.queue.runOnce(SHOP);
+    expect(summary).toMatchObject({ waitingNetwork: 1, failed: 0 });
+    expect(t.uploads).toEqual(['a']);
+    expect(await t.state('b')).toBe('queued');
+  });
+
+  it('lỗi mạng xen kẽ lỗi máy chủ: chỉ lỗi máy chủ được đếm', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    const sequence: UploadOutcome[] = [
+      { kind: 'network', code: 'NETWORK' },
+      { kind: 'retryable', code: 'HTTP_500' },
+      { kind: 'network', code: 'TIMEOUT' },
+      { kind: 'retryable', code: 'HTTP_500' },
+    ];
+    for (const outcome of sequence) {
+      t.outcomes.push(outcome);
+      await t.queue.runOnce(SHOP);
+      t.advance(MAX_RETRY_DELAY_MS);
+    }
+    expect((await t.files.get(SHOP, 'a' as EvidenceId))?.attemptCount).toBe(2);
+  });
+
+  it('mất mạng giữa lúc gửi tệp: lượt bị hủy (signal), lượt được giải phóng, không tốn lượt', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    t.hangNextUpload();
+    const run = t.queue.runOnce(SHOP);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(t.offlineListeners.size).toBe(1);
+    t.goOffline();
+    const summary = await run;
+    expect(summary.waitingNetwork).toBe(1);
+    expect(t.signals[0]?.aborted).toBe(true);
+    expect(t.offlineListeners.size).toBe(0); // đã hủy đăng ký
+    expect(await t.files.get(SHOP, 'a' as EvidenceId)).toMatchObject({
+      state: 'upload_failed',
+      attemptCount: 0,
+      lastErrorCode: 'NETWORK_LOST',
+    });
+    // Lượt mới không bị chặn `busy`.
+    t.setOnline(true);
+    expect((await t.queue.runOnce(SHOP, { networkRestored: true })).skipped).toBeUndefined();
+    expect(await t.state('a')).toBe('uploaded');
+  });
+
+  it('cổng treo rồi hết giờ (TIMEOUT từ cổng): cờ running hạ, lượt sau chạy được', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    t.outcomes.push({ kind: 'network', code: 'TIMEOUT' });
+    await t.queue.runOnce(SHOP);
+    t.advance(MAX_RETRY_DELAY_MS);
+    const next = await t.queue.runOnce(SHOP);
+    expect(next.skipped).toBeUndefined();
+    expect(await t.state('a')).toBe('uploaded');
+  });
+});
+
+describe('chỉ khai báo khi phiên đã đăng lên máy chủ', () => {
+  it('phiên chưa đăng: không băm, không gọi máy chủ, tệp giữ queued; đăng xong thì tải', async () => {
+    let published = false;
+    const t = setup({ sessionPublished: () => published });
+    await queuedFile(t.files, 'a');
+    for (let i = 0; i < 20; i += 1) await t.queue.runOnce(SHOP);
+    expect(t.uploads).toEqual([]);
+    expect(await t.files.get(SHOP, 'a' as EvidenceId)).toMatchObject({
+      state: 'queued',
+      attemptCount: 0,
+      lastErrorCode: null,
+    });
+    published = true;
+    await t.queue.runOnce(SHOP);
+    expect(await t.state('a')).toBe('uploaded');
+  });
+
+  it('một tệp chờ phiên không chặn tệp khác của phiên đã đăng', async () => {
+    const t = setup({ sessionPublished: (id) => id === 's-b' });
+    await queuedFile(t.files, 'a', 1000);
+    await queuedFile(t.files, 'b', 2000);
+    await t.queue.runOnce(SHOP);
+    expect(t.uploads).toEqual(['b']);
   });
 });

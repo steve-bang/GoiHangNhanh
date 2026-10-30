@@ -1,5 +1,9 @@
 import type { FirebaseServices } from './client';
-import { createFirestoreRemoteDocuments } from './remote-documents';
+import {
+  createFirestoreRemoteDocuments,
+  REMOTE_CALL_TIMEOUT_MS,
+  RemoteDeadlineError,
+} from './remote-documents';
 
 const mockExisting = new Set<string>();
 const mockBatchSets: { path: string; data: unknown }[] = [];
@@ -136,5 +140,32 @@ describe('createFirestoreRemoteDocuments', () => {
       status: 'ready',
     });
     expect(mockCall).toHaveBeenCalledWith('createUploadSession', { a: 1 });
+  });
+
+  it('lệnh treo (mất mạng: batch.commit chưa trả) hết giờ sau 30 giây với mã deadline-exceeded', async () => {
+    jest.useFakeTimers();
+    try {
+      mockCommit.mockImplementationOnce(() => new Promise<undefined>(() => undefined));
+      mockCall.mockImplementationOnce(() => new Promise(() => undefined));
+      const docs = createFirestoreRemoteDocuments(services);
+      const write = docs.createMissing([{ path: 'x', data: {} }]);
+      const call = docs.callFunction('createUploadSession', {});
+      const settled = Promise.allSettled([write, call]);
+      await jest.advanceTimersByTimeAsync(REMOTE_CALL_TIMEOUT_MS);
+      const [w, c] = await settled;
+      expect(w).toMatchObject({ status: 'rejected', reason: { code: 'deadline-exceeded' } });
+      expect(c).toMatchObject({ status: 'rejected' });
+      expect((c as PromiseRejectedResult).reason).toBeInstanceOf(RemoteDeadlineError);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('lỗi SDK giữ nguyên mã (không bị đổi thành hết giờ)', async () => {
+    mockCall.mockRejectedValueOnce({ code: 'functions/permission-denied' });
+    const docs = createFirestoreRemoteDocuments(services);
+    await expect(docs.callFunction('f', {})).rejects.toEqual({
+      code: 'functions/permission-denied',
+    });
   });
 });

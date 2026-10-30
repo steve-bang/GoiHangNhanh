@@ -220,6 +220,7 @@ Trong `app.json` hiện có:
 - Quyền camera có chuỗi mô tả tiếng Việt; micro **tắt** (`microphonePermission: false`, `recordAudioAndroid: false`)
 - `android.allowBackup: false` (Q-24d): video, CSDL và phiên đăng nhập không vào Android Auto Backup; đổi máy phải đăng nhập lại. Phần iOS (loại khỏi iCloud Backup) làm ở V1-12
 - `android.blockedPermissions`: gỡ `RECORD_AUDIO` (O-09, phòng thủ thêm), `SYSTEM_ALERT_WINDOW` (mẫu RN thêm vào, app không cần; bản debug vẫn giữ trong manifest `debug/`), `READ/WRITE_EXTERNAL_STORAGE` (`expo-file-system` thêm; app chỉ ghi trong thư mục riêng của app)
+- `@react-native-community/netinfo` (V1-02) tự thêm `ACCESS_NETWORK_STATE` và `ACCESS_WIFI_STATE` khi Gradle gộp manifest: quyền thường (không hỏi người dùng), chỉ để biết có mạng/loại mạng; app không đọc tên Wi‑Fi (SSID) hay vị trí qua NetInfo. iOS không thêm khóa `Info.plist` nào. Chưa kiểm manifest sau khi gộp (cần Android SDK)
 - `ios.config.usesNonExemptEncryption: false` -> `ITSAppUsesNonExemptEncryption = false` (app chỉ dùng HTTPS của hệ điều hành và SHA-256 để băm, không mã hóa riêng; thêm mã hóa riêng thì phải xem lại khai báo xuất khẩu)
 
 Cần cập nhật khi chuẩn bị phát hành:

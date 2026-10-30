@@ -1,9 +1,13 @@
 import { classifyUploadStatus, uploadFileResumable } from './resumable-upload';
 
 const mockUpload = jest.fn();
+const mockCancel = jest.fn(async (): Promise<void> => undefined);
 jest.mock('expo-file-system/legacy', () => ({
   FileSystemUploadType: { BINARY_CONTENT: 0 },
-  uploadAsync: (...args: unknown[]) => mockUpload(...args),
+  createUploadTask: (...args: unknown[]) => ({
+    uploadAsync: () => mockUpload(...args),
+    cancelAsync: () => mockCancel(),
+  }),
 }));
 
 const session = {
@@ -16,6 +20,7 @@ const realFetch = global.fetch;
 afterEach(() => {
   global.fetch = realFetch;
   mockUpload.mockReset();
+  mockCancel.mockClear();
 });
 
 const stubFetch = (response: Partial<Response> | Error) => {
@@ -26,11 +31,15 @@ const stubFetch = (response: Partial<Response> | Error) => {
 };
 
 describe('classifyUploadStatus', () => {
-  it('2xx thành công; 5xx/408/429/401/403 thử lại; 4xx khác cần xử lý', () => {
+  it('2xx thành công; 408/429/502/503/504 chờ mạng; 500/401/403/412 tính lượt; 4xx khác cần xử lý', () => {
     expect(classifyUploadStatus(200)).toEqual({ ok: true });
     expect(classifyUploadStatus(201)).toEqual({ ok: true });
-    for (const s of [408, 429, 500, 503])
+    for (const s of [408, 429, 502, 503, 504])
+      expect(classifyUploadStatus(s)).toEqual({ ok: false, kind: 'network', code: `HTTP_${s}` });
+    for (const s of [500, 501])
       expect(classifyUploadStatus(s)).toMatchObject({ kind: 'retryable' });
+    // Đối tượng đã có (URL tạo-một-lần): lượt sau đối soát, không bắt người dùng xử lý.
+    expect(classifyUploadStatus(412)).toEqual({ ok: false, kind: 'retryable', code: 'HTTP_412' });
     for (const s of [401, 403]) {
       expect(classifyUploadStatus(s)).toEqual({
         ok: false,
@@ -62,18 +71,43 @@ describe('uploadFileResumable', () => {
     });
   });
 
-  it('mất mạng ở bước mở phiên hoặc bước gửi: thử lại', async () => {
+  it('mất mạng ở bước mở phiên hoặc bước gửi: lỗi mạng (không tính lượt)', async () => {
     stubFetch(new Error('offline'));
     expect(await uploadFileResumable(session, 'f', 'video/mp4')).toEqual({
       ok: false,
-      kind: 'retryable',
+      kind: 'network',
       code: 'NETWORK',
     });
     stubFetch({ ok: true, status: 201, headers: new Headers({ location: 'https://s' }) });
     mockUpload.mockRejectedValue(new Error('reset'));
-    expect(await uploadFileResumable(session, 'f', 'video/mp4')).toMatchObject({
-      kind: 'retryable',
+    expect(await uploadFileResumable(session, 'f', 'video/mp4')).toEqual({
+      ok: false,
+      kind: 'network',
+      code: 'NETWORK',
     });
+  });
+
+  it('mất mạng giữa lúc gửi (signal): hủy lần gửi native, NETWORK_LOST', async () => {
+    stubFetch({ ok: true, status: 201, headers: new Headers({ location: 'https://s' }) });
+    const controller = new AbortController();
+    let finish: (value: unknown) => void = () => undefined;
+    mockUpload.mockImplementation(() => new Promise((resolve) => (finish = resolve)));
+    mockCancel.mockImplementation(async () => finish(undefined)); // native trả rỗng khi bị hủy
+    const pending = uploadFileResumable(session, 'f', 'video/mp4', controller.signal);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    controller.abort();
+    expect(await pending).toEqual({ ok: false, kind: 'network', code: 'NETWORK_LOST' });
+    expect(mockCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('đã mất mạng trước khi bắt đầu: không gọi gì', async () => {
+    stubFetch({ ok: true, status: 201, headers: new Headers({ location: 'https://s' }) });
+    const controller = new AbortController();
+    controller.abort();
+    expect(await uploadFileResumable(session, 'f', 'video/mp4', controller.signal)).toMatchObject({
+      code: 'NETWORK_LOST',
+    });
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it('thiếu Location hoặc phiên bị từ chối', async () => {

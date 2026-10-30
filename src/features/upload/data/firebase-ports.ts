@@ -19,24 +19,34 @@ const ATTENTION_CODES = [
   'invalid-argument',
 ];
 
+/**
+ * Mã lỗi SDK nghĩa là mất mạng/máy chủ tạm không sẵn sàng (gồm hết giờ của `RemoteDocuments`, mã
+ * `deadline-exceeded`): không tính lượt (Q-24h). Mã nào SDK thật trả khi mất mạng trên máy CHƯA đo
+ * (cổng thiết bị): mã khác (ví dụ `internal`) vẫn tính lượt, có giới hạn.
+ */
+const NETWORK_CODES = ['unavailable', 'deadline-exceeded'];
+
 /** Phân loại lỗi SDK theo `code` (bỏ tiền tố `functions/`). Không đọc `message` (có thể chứa dữ liệu). */
 export function toPortError(error: unknown): UploadPortError {
   if (error instanceof UploadPortError) return error;
   const raw = (error as { code?: unknown } | null)?.code;
   const code = typeof raw === 'string' ? raw.replace(/^(functions|firestore)\//, '') : 'unknown';
-  return new UploadPortError(
-    ATTENTION_CODES.includes(code) ? 'attention' : 'retryable',
-    code.toUpperCase().replace(/-/g, '_'),
-  );
+  const kind = ATTENTION_CODES.includes(code)
+    ? 'attention'
+    : NETWORK_CODES.includes(code)
+      ? 'network'
+      : 'retryable';
+  return new UploadPortError(kind, code.toUpperCase().replace(/-/g, '_'));
 }
 
 const SERVER_STATES: readonly string[] = ['uploaded', 'verified', 'hash_mismatch'];
 
 /**
  * Các cổng tải lên qua Firebase: khai báo bằng chứng (Firestore), xin URL ký (callable
- * `createUploadSession`), đọc `server.state` do Cloud Function ghi. Lỗi Firestore `permission-denied`
- * khi khai báo thường là phiên chưa kịp đăng lên máy chủ (đồng bộ đơn/phiên đang chờ) nên coi là lỗi
- * tạm; vẫn có giới hạn số lần thử của hàng đợi.
+ * `createUploadSession`), đọc `server.state` do Cloud Function ghi. Hàng đợi chỉ khai báo khi phiên/hồ
+ * sơ đã đăng (`UploadSource.isReadyToDeclare`), nên Firestore `permission-denied` khi khai báo là máy
+ * chủ TỪ CHỐI thật (hoặc đăng chậm hơn dấu cục bộ): tính lượt (`retryable`), không phải lỗi mạng, và
+ * không thành "cần xử lý" ngay (V1-02).
  */
 export function createFirebaseUploadPorts(docs: RemoteDocuments, appVersion?: string) {
   const declarer: EvidenceDeclarer = {

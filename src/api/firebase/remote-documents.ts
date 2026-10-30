@@ -14,6 +14,8 @@ import {
 
 import { httpsCallable } from '@react-native-firebase/functions';
 
+import { TimeoutError, withTimeout } from '@/core/async';
+
 import type { RemoteDocuments } from '../contract';
 
 import type { FirebaseServices } from './client';
@@ -21,8 +23,51 @@ import type { FirebaseServices } from './client';
 /** Firestore giới hạn số giá trị trong toán tử `in` (10 theo tài liệu giới hạn hiện hành). */
 export const FIRESTORE_IN_LIMIT = 10;
 
+/**
+ * Thời hạn cho MỖI lệnh tới máy chủ (R4). Khi mất mạng, `batch.commit()` chỉ trả khi máy chủ xác nhận
+ * và lệnh đọc có thể chờ lâu: không có hạn thì cờ `running` của hàng đợi/đồng bộ kẹt mãi.
+ */
+export const REMOTE_CALL_TIMEOUT_MS = 30_000;
+
+/** Lỗi hết giờ, cùng dạng `code` với lỗi SDK để bên gọi phân loại là lỗi mạng (không tốn lượt). */
+export class RemoteDeadlineError extends Error {
+  readonly code = 'deadline-exceeded';
+  constructor() {
+    super('deadline-exceeded');
+  }
+}
+
+/**
+ * Giới hạn thời gian một lệnh. Lệnh bên dưới KHÔNG bị hủy (lệnh ghi Firestore vẫn chờ trong SDK và có
+ * thể được gửi khi có mạng lại); mọi lệnh ở đây idempotent nên lượt sau thử lại vẫn an toàn.
+ */
+async function bounded<T>(task: () => Promise<T>, timeoutMs: number): Promise<T> {
+  try {
+    return await withTimeout(task(), timeoutMs);
+  } catch (error) {
+    throw error instanceof TimeoutError ? new RemoteDeadlineError() : error;
+  }
+}
+
 /** Cổng ghi Firestore cho đồng bộ đơn/phiên. Chưa chạy trên thiết bị (chỉ có test với SDK giả). */
-export function createFirestoreRemoteDocuments({
+export function createFirestoreRemoteDocuments(
+  { auth, db, functions }: FirebaseServices,
+  timeoutMs: number = REMOTE_CALL_TIMEOUT_MS,
+): RemoteDocuments {
+  const raw = createUnboundedRemoteDocuments({ auth, db, functions });
+  return {
+    values: raw.values,
+    currentUid: raw.currentUid,
+    createMissing: (writes) => bounded(() => raw.createMissing(writes), timeoutMs),
+    updateFields: (path, fields) => bounded(() => raw.updateFields(path, fields), timeoutMs),
+    getFields: (path) => bounded(() => raw.getFields(path), timeoutMs),
+    getManyFields: (paths) => bounded(() => raw.getManyFields(paths), timeoutMs),
+    callFunction: <T>(name: string, data: unknown) =>
+      bounded(() => raw.callFunction<T>(name, data), timeoutMs),
+  };
+}
+
+function createUnboundedRemoteDocuments({
   auth,
   db,
   functions,

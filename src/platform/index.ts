@@ -1,6 +1,12 @@
 export { getInputResetStyle, getKeyboardAvoidingBehavior, getMinTouchTarget } from './layout';
 export { getAppVersion } from './app-info';
-export { useIsOffline } from './connectivity';
+export {
+  getConnectivity,
+  subscribeConnectivity,
+  useConnectivity,
+  useIsOffline,
+} from './connectivity';
+export type { ConnectionType, Connectivity } from './connectivity';
 export {
   useAppNavigation,
   useConfirmBeforeLeave,

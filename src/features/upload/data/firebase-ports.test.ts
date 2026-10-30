@@ -47,7 +47,18 @@ describe('toPortError', () => {
       code: 'PERMISSION_DENIED',
     });
     expect(toPortError(sdkError('failed-precondition'))).toMatchObject({ kind: 'attention' });
-    expect(toPortError(sdkError('functions/unavailable'))).toMatchObject({ kind: 'retryable' });
+    expect(toPortError(sdkError('functions/unavailable'))).toMatchObject({
+      kind: 'network',
+      code: 'UNAVAILABLE',
+    });
+    expect(toPortError(sdkError('firestore/unavailable'))).toMatchObject({ kind: 'network' });
+    // Hết giờ của RemoteDocuments (R4) dùng cùng mã với SDK.
+    expect(toPortError(sdkError('deadline-exceeded'))).toMatchObject({
+      kind: 'network',
+      code: 'DEADLINE_EXCEEDED',
+    });
+    expect(toPortError(sdkError('functions/internal'))).toMatchObject({ kind: 'retryable' });
+    expect(toPortError(sdkError('not-found'))).toMatchObject({ kind: 'retryable' });
     expect(toPortError(new Error('?'))).toMatchObject({ kind: 'retryable', code: 'UNKNOWN' });
     const mine = new UploadPortError('attention', 'X');
     expect(toPortError(mine)).toBe(mine);
@@ -80,7 +91,7 @@ describe('createFirebaseUploadPorts', () => {
     expect(t.created).toEqual([]);
   });
 
-  it('khai báo bị Firestore từ chối quyền (phiên chưa đăng): coi là lỗi tạm', async () => {
+  it('khai báo bị Firestore từ chối quyền: tính lượt (retryable), không phải lỗi mạng', async () => {
     const t = fakeDocs({
       createMissing: async () => {
         throw sdkError('firestore/permission-denied');

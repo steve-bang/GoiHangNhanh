@@ -1,5 +1,6 @@
 import type { EvidenceId, OrderId, PackageId, ReturnCaseId, SessionId } from '@/core/ids';
 import type { EvidenceFile, EvidenceFileStore } from '@/features/evidence';
+import type { OrderStore } from '@/features/orders';
 import type { ReturnMedia, ReturnStore } from '@/features/returns';
 
 import type { UploadItem, UploadSource } from './ports';
@@ -25,9 +26,24 @@ const fromEvidenceFile = (f: EvidenceFile): UploadItem => ({
   createdAtDevice: f.createdAtDevice,
 });
 
-/** Nguồn tệp bằng chứng ĐÓNG GÓI (`EvidenceFileStore`). */
-export function evidenceFileSource(files: EvidenceFileStore): UploadSource {
+/**
+ * Nguồn tệp bằng chứng ĐÓNG GÓI (`EvidenceFileStore`). Có `sessions` thì chỉ khai báo tệp của phiên đã
+ * đăng lên máy chủ (Rules cần phiên tồn tại): phiên chưa đăng thì tệp chờ ở `queued`, không gọi máy chủ,
+ * không tốn lượt (V1-02). Không có `sessions` (test cũ) = luôn sẵn sàng.
+ */
+export function evidenceFileSource(
+  files: EvidenceFileStore,
+  sessions?: Pick<OrderStore, 'isSessionPublished'>,
+): UploadSource {
   return {
+    ...(sessions
+      ? {
+          isReadyToDeclare: (item: UploadItem) =>
+            item.owner.kind === 'packing'
+              ? sessions.isSessionPublished(item.shopId, item.owner.sessionId)
+              : Promise.resolve(false),
+        }
+      : {}),
     async listByStates(shopId, states) {
       return (await files.listByStates(shopId, states)).map(fromEvidenceFile);
     },
