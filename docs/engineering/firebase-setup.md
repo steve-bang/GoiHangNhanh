@@ -119,6 +119,8 @@ npx firebase deploy --config firebase/firebase.json --project ghn-test-67b39 \
 
 **Lưu ý khi deploy (R2b, Q-28):** Rules mới thêm `shops/{shopId}/returns/{returnId}` và hình dạng bằng chứng hàng hoàn (`ownerKind: 'return'`); `createUploadSession` ghi thêm `ownerKind`/`returnId` vào kiểm toán và kiểm hồ sơ neo tồn tại. Chưa deploy; deploy Rules và Functions CÙNG LÚC (app bản mới đăng bản neo trước khi khai báo bằng chứng, nên Rules cũ sẽ từ chối).
 
+**Lưu ý khi deploy (V1-04):** thêm 6 trigger Firestore `auditOrderWrite`, `auditOrderLineWrite`, `auditPackageWrite`, `auditSessionWrite`, `auditEvidenceWrite`, `auditReturnWrite` (`onDocumentWrittenWithAuthContext`, `asia-southeast1`, `retry: true`). Trigger Firestore thế hệ 2 cần Eventarc và **cơ sở dữ liệu Firestore cùng vùng** với trigger (dự án dùng Singapore, Q-08); nếu cơ sở dữ liệu ở vùng khác thì deploy báo lỗi vị trí, phải sửa vùng trigger cho khớp. Rules siết kiểu/độ dài và trần dung lượng mọi bằng chứng (ảnh ≤ 25 MB, video ≤ 2 GB): deploy Rules và Functions cùng commit. Trigger chỉ ghi kiểm toán cho các lần ghi SAU khi deploy (không ghi bù).
+
 **Kiểm tra sau deploy:**
 
 1. Terminal liệt kê `createShop` và `updateShop` ở `asia-southeast1`.

@@ -75,7 +75,7 @@ Mỗi Function có một "hợp đồng" kiểm thử bằng Emulator (Functions
 |---|---|---|
 | `createUploadSession` | Chỉ thành viên đúng shop và quyền ghi; bằng chứng phải tồn tại/chưa tải; đường dẫn đích cố định; gọi lại cùng `evidenceId` idempotent; shop khác bị từ chối; hết hạn mức → mã lỗi rõ, không cấp | 11, 05 |
 | `verifyEvidence` (khi tệp hoàn tất) | Hash khớp → `server.state = verified` + `verifiedAt` + audit; **không khớp → `hash_mismatch`, không bao giờ `verified`**; tệp thiếu/size lệch; chạy lặp không đổi kết quả; không tin `sha256Client` | 09, 05 |
-| Trigger audit | Mỗi thay đổi quan trọng sinh đúng một `auditEvents` (ai, gì, trước/sau); client không tạo được; chạy lại không nhân đôi | — |
+| Trigger audit | Mỗi thay đổi quan trọng sinh đúng một `auditEvents` (ai, gì, trước/sau); client không tạo được; chạy lại không nhân đôi | **Đã có (V1-04):** `firebase/tests/functions/audit.test.ts` (logic trigger trên Firestore Emulator, chưa kiểm phần nối trigger/auth context) và `firebase/tests/rules/audit-hardening.rules.test.ts` |
 | `createReadUrl` | URL có thời hạn; shop khác bị từ chối; ghi audit "đã xem"; không trả URL vĩnh viễn | 11 |
 | Dọn theo hạn lưu (lịch) | Hết hạn → xóa có audit; **bằng chứng có `retention.hold` không bị xóa**; gỡ cờ giữ thì tuân theo hạn; hạ cấp gói không xóa ngầm | 10 |
 | Cờ giữ tranh chấp | Mở/đóng tranh chấp đặt/gỡ cờ trên đúng bằng chứng; nhiều tranh chấp cùng giữ một bằng chứng | 10 |

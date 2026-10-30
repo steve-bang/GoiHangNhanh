@@ -3,6 +3,8 @@ import type { Readable } from 'node:stream';
 
 import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 
+import { isEventTooOld, maxBytesFor } from './limits';
+
 /** Đọc đối tượng Storage theo luồng. Tách ra để test không cần Storage Emulator. */
 export interface EvidenceObjectReader {
   /** Luồng nội dung đối tượng; ném lỗi nếu không đọc được. */
@@ -21,7 +23,8 @@ export type VerifyOutcome =
 export interface VerifyResult {
   readonly outcome: VerifyOutcome;
   /** Lý do khi `hash_mismatch` (không chứa nội dung tệp). */
-  readonly reason?: 'sha256_differs' | 'size_differs' | 'invalid_declaration';
+  readonly reason?:
+    'sha256_differs' | 'size_differs' | 'invalid_declaration' | 'size_exceeds_limit';
 }
 
 const ORIGINAL_PATH = /^shops\/([^/]+)\/evidence\/([^/]+)\/original$/;
@@ -77,6 +80,9 @@ function compareGeneration(a: string, b: string): number {
  * - Hai finalize chồng nhau khi chưa chốt: chỉ generation đang được ghi ở `server.generation` được
  *   chốt; bản đã băm mà generation lệch thì KHÔNG chốt (`superseded`).
  * - Không ghi nội dung tệp, đường dẫn hay mã băm vào log; mã băm chỉ nằm trong tài liệu bằng chứng.
+ * - Trần dung lượng (Q-24c): nếu kích thước đối tượng (từ sự kiện finalize) vượt trần của loại khai
+ *   báo thì chốt `hash_mismatch` lý do `size_exceeds_limit` mà KHÔNG băm (không tốn CPU cho tệp quá cỡ;
+ *   Rules đã giữ kích thước khai báo trong trần nên tệp quá cỡ chắc chắn lệch khai báo).
  * - Không đụng `retention` (cờ giữ do Function khác quản lý, O-06).
  */
 export async function verifyEvidenceObject(
@@ -85,6 +91,8 @@ export async function verifyEvidenceObject(
   storagePath: string,
   /** Generation của đối tượng trong sự kiện finalize (chuỗi/số); thiếu thì bỏ qua kiểm tra ghi đè. */
   generation?: string | number,
+  /** Kích thước đối tượng theo sự kiện finalize; thiếu thì chỉ dựa vào số byte đo khi băm. */
+  objectSizeBytes?: number,
 ): Promise<VerifyResult> {
   const generationText = generation === undefined ? undefined : String(generation);
   const parsed = parseEvidencePath(storagePath);
@@ -161,6 +169,7 @@ export async function verifyEvidenceObject(
       final: false as const,
       sha256Client: data.sha256Client as unknown,
       sizeBytes: data.sizeBytes as unknown,
+      kind: data.kind as unknown,
     };
   });
   if (!declared) return { outcome: 'no_evidence_document' };
@@ -170,13 +179,16 @@ export async function verifyEvidenceObject(
   }
 
   // Bước 2: tính lại từ bản gốc trong Storage. Lỗi đọc thì ném: trạng thái giữ `uploaded`, thử lại sau.
-  const measured = await hashStream(reader.open(storagePath));
+  // Tệp vượt trần của loại khai báo: không băm, chốt luôn `hash_mismatch`.
+  const oversized = objectSizeBytes !== undefined && objectSizeBytes > maxBytesFor(declared.kind);
+  const measured = oversized ? null : await hashStream(reader.open(storagePath));
 
   const declaredHash =
     typeof declared.sha256Client === 'string' ? declared.sha256Client.toLowerCase() : null;
   const declaredSize = typeof declared.sizeBytes === 'number' ? declared.sizeBytes : null;
   let reason: VerifyResult['reason'];
-  if (declaredHash === null || declaredSize === null) reason = 'invalid_declaration';
+  if (measured === null) reason = 'size_exceeds_limit';
+  else if (declaredHash === null || declaredSize === null) reason = 'invalid_declaration';
   else if (measured.sha256 !== declaredHash) reason = 'sha256_differs';
   else if (measured.sizeBytes !== declaredSize) reason = 'size_differs';
   const verified = reason === undefined;
@@ -205,8 +217,11 @@ export async function verifyEvidenceObject(
         ...((current.generation ?? generationText) !== undefined
           ? { generation: current.generation ?? generationText }
           : {}),
-        sha256Server: measured.sha256,
-        sizeBytesServer: measured.sizeBytes,
+        ...(measured
+          ? { sha256Server: measured.sha256, sizeBytesServer: measured.sizeBytes }
+          : objectSizeBytes !== undefined
+            ? { sizeBytesServer: objectSizeBytes }
+            : {}),
         ...(verified ? { verifiedAt: FieldValue.serverTimestamp() } : {}),
       },
     });
@@ -222,4 +237,76 @@ export async function verifyEvidenceObject(
       ? { outcome: 'verified' }
       : { outcome: 'hash_mismatch', ...(reason ? { reason } : {}) };
   }) as Promise<VerifyResult>;
+}
+
+/** Thông tin đối tượng trong sự kiện finalize của Storage cần cho việc xác minh. */
+export interface FinalizedObject {
+  readonly name: string;
+  readonly generation?: string | number;
+  readonly size?: number | string;
+}
+
+export type FinalizeOutcome =
+  VerifyResult | { readonly outcome: 'abandoned_too_old' } | { readonly outcome: 'object_missing' };
+
+/** Lỗi bền của Storage: đối tượng (generation đã ghim) không còn. Thử lại cũng không đổi. */
+function isObjectMissing(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code;
+  return code === 404 || code === '404';
+}
+
+/**
+ * Xử lý sự kiện finalize với chính sách thử lại CÓ TRẦN (Function chạy `retry: true`):
+ * - Sự kiện quá `MAX_EVENT_AGE_MS`: ghi kiểm toán `evidence.verify_abandoned` rồi kết thúc (không ném).
+ * - Đối tượng không còn (404): lỗi bền, ghi kiểm toán `evidence.verify_failed` rồi kết thúc.
+ * - Lỗi khác (đọc tạm, Firestore): ném để Cloud Functions thử lại.
+ * Cả hai trường hợp dừng đều KHÔNG đổi trạng thái máy chủ (không bao giờ `verified`); id kiểm toán cố
+ * định theo bằng chứng + generation nên giao lặp không nhân đôi. Không ghi đường dẫn/mã băm vào log.
+ */
+export async function handleEvidenceFinalized(
+  db: Firestore,
+  reader: EvidenceObjectReader,
+  object: FinalizedObject,
+  eventTime: string | undefined,
+  nowMs: number = Date.now(),
+): Promise<FinalizeOutcome> {
+  const parsed = parseEvidencePath(object.name);
+  if (!parsed) return { outcome: 'ignored_path' };
+  const generation = object.generation === undefined ? 'unknown' : String(object.generation);
+  const recordStop = async (type: string, reason: string) => {
+    const ref = db.doc(
+      `shops/${parsed.shopId}/auditEvents/evidence-${parsed.evidenceId}-${reason}-${generation}`,
+    );
+    try {
+      await ref.create({
+        type,
+        actorUid: null,
+        actor: 'system:verifyEvidence',
+        at: FieldValue.serverTimestamp(),
+        evidenceId: parsed.evidenceId,
+        reason,
+      });
+    } catch (error) {
+      // Đã ghi ở lần giao trước (ALREADY_EXISTS): không nhân đôi.
+      if ((error as { code?: unknown } | null)?.code !== 6) throw error;
+    }
+  };
+  if (isEventTooOld(eventTime, nowMs)) {
+    await recordStop('evidence.verify_abandoned', 'event_too_old');
+    return { outcome: 'abandoned_too_old' };
+  }
+  const size = object.size === undefined ? undefined : Number(object.size);
+  try {
+    return await verifyEvidenceObject(
+      db,
+      reader,
+      object.name,
+      object.generation,
+      size !== undefined && Number.isFinite(size) ? size : undefined,
+    );
+  } catch (error) {
+    if (!isObjectMissing(error)) throw error;
+    await recordStop('evidence.verify_failed', 'object_missing');
+    return { outcome: 'object_missing' };
+  }
 }

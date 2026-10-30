@@ -10,6 +10,10 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 - Kế hoạch tổng phát hành v1.0, checklist phát hành cho con người và nhật ký thay đổi này (tài liệu).
 
+### Security
+
+- Máy chủ tự ghi nhật ký kiểm toán cho mọi lần tạo/sửa đơn, dòng, kiện, phiên, bằng chứng và hồ sơ hàng hoàn; Rules kiểm kiểu/độ dài trường và trần dung lượng mọi bằng chứng (ảnh 25 MB, video 2 GB); chỉ người khai báo mới xin được URL tải lên; xác minh mã băm không thử lại vô hạn (V1-04; chưa deploy).
+
 ### Đã có trước khi mở nhật ký (đến commit `42f6a3c`, gom từ PR #13–#39)
 
 Tóm tắt một lần để bản `1.0.0` có mốc; không tách theo từng PR.
