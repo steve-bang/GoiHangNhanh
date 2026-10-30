@@ -16,6 +16,7 @@ export {
   runSerializedOnDb,
   useCurrentShopId,
   useCurrentUid,
+  useWritableShopId,
   useOrderStore,
 } from './data';
 export {

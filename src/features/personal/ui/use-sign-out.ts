@@ -14,6 +14,14 @@ import { useSession } from './SessionProvider';
 /** Bước của luồng đăng xuất: hộp xác nhận, hoặc cảnh báo chặn (UI-J15 chưa có mã/route: hộp thoại tại chỗ). */
 export type SignOutStep = 'closed' | 'confirm' | 'blocked_recording' | 'unsynced';
 
+export interface SignOutOptions {
+  /**
+   * Đăng xuất xong thì về Đăng nhập với email điền sẵn thay vì Chào mừng (nút "Đăng nhập lại" của Đổi
+   * mật khẩu khi máy chủ đòi đăng nhập lại, V1-05). Vẫn đi qua đủ các chặn của luồng an toàn.
+   */
+  readonly signInAgainEmail?: string;
+}
+
 /**
  * Luồng đăng xuất an toàn (PER-21): xác nhận -> kiểm tra (đang quay, chưa đồng bộ) -> cổng đăng xuất
  * -> về Chào mừng. Chỉ đăng xuất khi người dùng đã xác nhận VÀ điều kiện bảo vệ dữ liệu đáp ứng; lỗi
@@ -21,7 +29,8 @@ export type SignOutStep = 'closed' | 'confirm' | 'blocked_recording' | 'unsynced
  * Kiểm tra theo TOÀN THIẾT BỊ (mọi shop trên máy), vì đăng xuất rời cả tài khoản (Q-20o, bổ sung).
  * Chống bấm lặp bằng `busy`. Toast thành công chỉ hiện SAU khi cổng xác nhận và đã điều hướng.
  */
-export function useSignOut() {
+export function useSignOut(options: SignOutOptions = {}) {
+  const { signInAgainEmail } = options;
   const { t } = useTranslation();
   const navigation = useAppNavigation();
   const toast = useToast();
@@ -70,14 +79,19 @@ export function useSignOut() {
         return fail();
       }
       setStep('closed');
-      navigation.reset(ROUTES.welcome);
+      if (signInAgainEmail !== undefined) {
+        session.setSignInEmailHint(signInAgainEmail);
+        navigation.reset(ROUTES.signIn);
+      } else {
+        navigation.reset(ROUTES.welcome);
+      }
       // Đặt ở đầu màn: đáy Chào mừng có liên kết Điều khoản/Chính sách mà thông báo ở đáy sẽ che mất.
       toast.show(t('personal:signOut.success'), { tone: 'success', placement: 'top' });
     } finally {
       busyRef.current = false;
       setBusy(false);
     }
-  }, [store, session, navigation, toast, t, fail]);
+  }, [store, session, navigation, toast, t, fail, signInAgainEmail]);
 
   const openSyncCenter = useCallback(() => {
     setStep('closed');

@@ -291,7 +291,13 @@ describe('UI-A04 Tạo hồ sơ shop: xử lý và lỗi', () => {
     const fake = createFakeApi();
     const gateways: Gateways = {
       auth: fake.auth,
-      shop: { createShop, updateShop: jest.fn(), getShop: fake.shop.getShop.bind(fake.shop) },
+      shop: {
+        listMyShops: fake.shop.listMyShops.bind(fake.shop),
+        renameShop: fake.shop.renameShop.bind(fake.shop),
+        createShop,
+        updateShop: jest.fn(),
+        getShop: fake.shop.getShop.bind(fake.shop),
+      },
       session: fake.session,
     };
     await renderWithProviders(<CreateShopScreen />, { gateways });
@@ -499,6 +505,8 @@ describe('UI-A04 Tạo hồ sơ shop: quay lại sau khi đã tạo shop', () =>
       session: createFakeApi().session,
       auth: fake.auth,
       shop: {
+        listMyShops: fake.shop.listMyShops.bind(fake.shop),
+        renameShop: fake.shop.renameShop.bind(fake.shop),
         createShop,
         updateShop: fake.shop.updateShop.bind(fake.shop),
         getShop: fake.shop.getShop.bind(fake.shop),

@@ -41,23 +41,34 @@ export interface UploadRequest {
 }
 
 /**
- * Kết quả một lần tải lên.
+ * Kết quả một lần tải lên (chính sách thử lại Q-24h).
  * - `received`: máy chủ xác nhận đã nhận ĐỦ tệp (chưa kiểm tra mã băm).
- * - `retryable`: lỗi tạm (mạng, máy chủ bận); thử lại sau với giãn cách tăng dần.
- * - `attention`: cần người dùng xử lý (đăng nhập hết hạn, hết hạn mức, tệp bị từ chối...).
+ * - `network`: mất mạng, hết giờ, máy chủ tạm không sẵn sàng. KHÔNG tính lượt: thử lại mãi với giãn
+ *   cách tăng dần (trần 15 phút), không bao giờ thành "cần xử lý" chỉ vì mất mạng.
+ * - `retryable`: máy chủ từ chối hoặc lỗi không rõ; TÍNH lượt, quá `MAX_UPLOAD_ATTEMPTS` thì "cần xử lý".
+ * - `attention`: cần người dùng xử lý ngay (đăng nhập hết hạn, loại tệp, tệp bị từ chối...).
  */
 export type UploadOutcome =
   | { readonly kind: 'received' }
+  | { readonly kind: 'network'; readonly code: string }
   | { readonly kind: 'retryable'; readonly code: string }
   | { readonly kind: 'attention'; readonly code: string };
+
+/** Tùy chọn của một lần tải: `signal` hủy khi máy báo mất mạng (hàng đợi tự giải phóng lượt). */
+export interface UploadAttemptOptions {
+  readonly signal?: AbortSignal;
+}
 
 /** Trạng thái do MÁY CHỦ báo cho một tệp (map `server` trong Firestore, Cloud Function ghi). */
 export type ServerFileState = 'uploaded' | 'verified' | 'hash_mismatch';
 
 /** Cổng tới máy chủ. Hiện thực Firebase thật thuộc bước sau; hàng đợi chỉ phụ thuộc giao diện này. */
 export interface UploadGateway {
-  /** Tải một tệp. Phải idempotent theo `evidenceId`: gọi lại sau khi mất phản hồi không nhân đôi. */
-  upload(request: UploadRequest): Promise<UploadOutcome>;
+  /**
+   * Tải một tệp. Phải idempotent theo `evidenceId`: gọi lại sau khi mất phản hồi không nhân đôi. Bị
+   * hủy qua `options.signal` thì trả `network` (`NETWORK_LOST`), không ném.
+   */
+  upload(request: UploadRequest, options?: UploadAttemptOptions): Promise<UploadOutcome>;
   /** Hỏi máy chủ trạng thái các tệp; tệp máy chủ chưa biết thì không có trong map. */
   fetchServerStates(
     shopId: ShopId,
@@ -103,6 +114,12 @@ export type UploadItemResult =
  */
 export interface UploadSource {
   listByStates(shopId: ShopId, states: readonly FileState[]): Promise<readonly UploadItem[]>;
+  /**
+   * Chủ sở hữu của tệp đã có trên máy chủ chưa (phiên đóng gói đã đăng; hồ sơ hoàn đã đăng bản neo)?
+   * `false`: Rules sẽ từ chối khai báo, nên hàng đợi BỎ QUA tệp lượt này (không gọi máy chủ, không đổi
+   * trạng thái, không tốn lượt). Không có hàm này = luôn sẵn sàng (nguồn tự lọc trong `listByStates`).
+   */
+  isReadyToDeclare?(item: UploadItem): Promise<boolean>;
   applyEvent(
     shopId: ShopId,
     id: EvidenceId,

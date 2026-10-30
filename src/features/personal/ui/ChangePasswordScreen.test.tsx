@@ -2,6 +2,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { TextInput } from 'react-native';
 
 import { ROUTES } from '@/core/navigation';
+import { createMemoryOrderStore } from '@/features/orders';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
@@ -30,6 +31,11 @@ async function fill(current: string, next: string, confirm: string) {
 }
 
 const submit = () => fireEvent.press(screen.getByTestId('change-password-submit'));
+const confirmSignOut = async () => {
+  const confirm = screen.getAllByText('Đăng xuất').at(-1);
+  if (!confirm) throw new Error('Không thấy nút xác nhận');
+  await fireEvent.press(confirm);
+};
 
 describe('ChangePasswordScreen (route con của UI-I05)', () => {
   it('ba ô mật khẩu đều ẩn mặc định và có nút Hiện', async () => {
@@ -189,8 +195,46 @@ describe('ChangePasswordScreen (route con của UI-I05)', () => {
     expect(await screen.findByTestId('change-password-error')).toHaveTextContent(
       'Cần đăng nhập lại để xác nhận. Bạn đăng nhập lại rồi thử lại nhé.',
     );
+    // Đi qua luồng Đăng xuất an toàn: xác nhận, đăng xuất thật, rồi về Đăng nhập với email điền sẵn.
     await fireEvent.press(screen.getByTestId('change-password-sign-in'));
-    expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.signIn);
+    expect(mockNavigation.reset).not.toHaveBeenCalled();
+    await confirmSignOut();
+    await waitFor(() => expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.signIn));
+    expect(gateways.account.signOutCalls).toBe(1);
+  });
+
+  it('Đăng nhập lại khi đang quay: chặn, không đăng xuất, không rời màn (PER-21)', async () => {
+    const gateways = createFakePersonalGateways();
+    await renderWithProviders(<ChangePasswordScreen />, {
+      personalGateways: gateways,
+      orderStore: { ...createMemoryOrderStore(), hasRecordingOnDevice: async () => true },
+    });
+    await waitFor(() => expect(screen.getByTestId('change-password-current')).toBeOnTheScreen());
+    await fill(FAKE_ACCOUNT_PASSWORD, 'matkhau-moi-1', 'matkhau-moi-1');
+    gateways.account.failNext('AUTH_REQUIRES_RECENT_LOGIN');
+    await submit();
+    await fireEvent.press(await screen.findByTestId('change-password-sign-in'));
+    await confirmSignOut();
+    expect(await screen.findByTestId('sign-out-recording')).toBeOnTheScreen();
+    expect(gateways.account.signOutCalls).toBe(0);
+    expect(mockNavigation.reset).not.toHaveBeenCalled();
+  });
+
+  it('Đăng nhập lại khi còn tệp chưa đồng bộ: cảnh báo, không đăng xuất', async () => {
+    const gateways = createFakePersonalGateways();
+    await renderWithProviders(<ChangePasswordScreen />, {
+      personalGateways: gateways,
+      orderStore: { ...createMemoryOrderStore(), countUnsyncedOnDevice: async () => 2 },
+    });
+    await waitFor(() => expect(screen.getByTestId('change-password-current')).toBeOnTheScreen());
+    await fill(FAKE_ACCOUNT_PASSWORD, 'matkhau-moi-1', 'matkhau-moi-1');
+    gateways.account.failNext('AUTH_SESSION_EXPIRED');
+    await submit();
+    await fireEvent.press(await screen.findByTestId('change-password-sign-in'));
+    await confirmSignOut();
+    expect(await screen.findByTestId('sign-out-unsynced')).toBeOnTheScreen();
+    expect(gateways.account.signOutCalls).toBe(0);
+    expect(mockNavigation.reset).not.toHaveBeenCalled();
   });
 
   it('AUTH_SESSION_EXPIRED: báo hết phiên và có nút Đăng nhập lại', async () => {
@@ -200,7 +244,8 @@ describe('ChangePasswordScreen (route con của UI-I05)', () => {
     await submit();
     expect(await screen.findByText(/Phiên đăng nhập đã hết hạn/)).toBeOnTheScreen();
     await fireEvent.press(screen.getByTestId('change-password-sign-in'));
-    expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.signIn);
+    await confirmSignOut();
+    await waitFor(() => expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.signIn));
   });
 
   it('lỗi mạng: báo tại màn, không có nút đăng nhập lại, thử lại được và không báo thành công', async () => {

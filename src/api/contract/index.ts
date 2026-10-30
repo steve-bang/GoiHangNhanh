@@ -10,6 +10,7 @@ export type {
   AccountSignInMethod,
   AuthAccount,
   AuthApi,
+  ChangePasswordInput,
   ResetPasswordInput,
   SignedInAccount,
   SignInWithPasswordInput,

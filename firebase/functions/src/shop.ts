@@ -1,6 +1,12 @@
 import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 
-/** Nguồn bán hợp lệ, theo thứ tự chuẩn (khớp src/core/orders/order-source.ts). */
+import { accountDeletionPath, AccountError } from './account';
+import { isValidId } from './ids';
+
+/**
+ * Nguồn bán hợp lệ theo từ vựng MÁY CHỦ, thứ tự chuẩn. Khớp `REMOTE_ORDER_SOURCES` ở
+ * src/core/orders/remote-source.ts (app dùng `other`, ánh xạ sang `other_unknown` khi gửi lên).
+ */
 export const SELLING_SOURCES = ['shopee', 'tiktok_shop', 'lazada', 'other_unknown'] as const;
 export type SellingSource = (typeof SELLING_SOURCES)[number];
 
@@ -50,6 +56,13 @@ export function parseShopInput(data: unknown): ShopInput {
   };
 }
 
+/** Mã shop từ client: cùng mẫu ID với các callable khác (không ký tự đường dẫn). */
+export function parseShopId(data: unknown): string {
+  const { shopId } = (data ?? {}) as { shopId?: unknown };
+  if (!isValidId(shopId)) throw new ShopError('invalid-argument', 'Mã shop không hợp lệ.');
+  return shopId;
+}
+
 function toResult(id: string, data: FirebaseFirestore.DocumentData): ShopResult {
   return { id, name: data.name as string, sellingSources: data.sellingSources as SellingSource[] };
 }
@@ -65,8 +78,14 @@ export async function createShopForUser(
   input: ShopInput,
 ): Promise<ShopResult> {
   const indexRef = db.doc(`userShops/${uid}`);
+  const deletionRef = db.doc(accountDeletionPath(uid));
   return db.runTransaction(async (tx) => {
-    const index = await tx.get(indexRef);
+    const [index, deletion] = await Promise.all([tx.get(indexRef), tx.get(deletionRef)]);
+    // Tài khoản đã yêu cầu xóa (V1-14): ID token cũ còn hạn tới 1 giờ sau khi xóa Auth, không được dùng nó
+    // để tạo shop mới (shop mồ côi, không ai purge).
+    if (deletion.exists) {
+      throw new AccountError('permission-denied', 'Tài khoản đã bị xóa.', 'account_deleted');
+    }
     const existingId = index.data()?.shopId as string | undefined;
     if (existingId) {
       const existing = await tx.get(db.doc(`shops/${existingId}`));

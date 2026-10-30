@@ -57,9 +57,11 @@ async function seed(options: {
   if (options.evidence !== null) {
     await db.doc(`shops/${shopId}/evidence/${evidenceId}`).set({
       shopId,
+      kind: 'original_video',
       mimeType: 'video/mp4',
       sha256Client: 'a'.repeat(64),
       sizeBytes: 10,
+      createdBy: uid,
       ...options.evidence,
     });
   }
@@ -269,6 +271,47 @@ describe('createUploadSessionForUser', () => {
   it('loại tệp không nằm trong danh sách cho phép: failed-precondition, không ký', async () => {
     for (const mimeType of ['application/zip', null, 5]) {
       const s = await seed({ evidence: { mimeType } });
+      const { signer, signed } = fakeSigner();
+      await expect(createUploadSessionForUser(db, signer, s.uid, s)).rejects.toMatchObject({
+        code: 'failed-precondition',
+      });
+      expect(signed).toEqual([]);
+    }
+  });
+
+  it('bằng chứng do tài khoản khác khai báo (Q-24g): permission-denied, không ký, không kiểm toán', async () => {
+    for (const createdBy of ['u-khac', null, '']) {
+      const s = await seed({ evidence: { createdBy } });
+      const { signer, signed } = fakeSigner();
+      await expect(createUploadSessionForUser(db, signer, s.uid, s)).rejects.toMatchObject({
+        code: 'permission-denied',
+      });
+      expect(signed).toEqual([]);
+      expect(await audit(s.shopId)).toEqual([]);
+    }
+  });
+
+  it('trần dung lượng (Q-24c): ảnh 25 000 000 qua, 25 000 001 bị từ chối; video 2 000 000 000 qua, hơn thì từ chối', async () => {
+    const ok = [
+      { kind: 'photo', mimeType: 'image/jpeg', sizeBytes: 25_000_000 },
+      { kind: 'original_video', mimeType: 'video/mp4', sizeBytes: 2_000_000_000 },
+    ];
+    for (const evidence of ok) {
+      const s = await seed({ evidence });
+      expect((await createUploadSessionForUser(db, fakeSigner().signer, s.uid, s)).status).toBe(
+        'ready',
+      );
+    }
+    const bad = [
+      { kind: 'photo', mimeType: 'image/jpeg', sizeBytes: 25_000_001 },
+      { kind: 'original_video', mimeType: 'video/mp4', sizeBytes: 2_000_000_001 },
+      { sizeBytes: 0 },
+      { sizeBytes: 1.5 },
+      { sizeBytes: '10' },
+      { sizeBytes: null },
+    ];
+    for (const evidence of bad) {
+      const s = await seed({ evidence });
       const { signer, signed } = fakeSigner();
       await expect(createUploadSessionForUser(db, signer, s.uid, s)).rejects.toMatchObject({
         code: 'failed-precondition',

@@ -45,6 +45,8 @@ export function renderWithProviders(
     returnStore?: ReturnStore;
     disputeStore?: DisputeStore;
     personalGateways?: PersonalGateways;
+    /** Chế độ chặt của cổng phiên (bản Firebase, V1-06). Mặc định theo môi trường test = `false`. */
+    requireKnownShop?: boolean;
   } = {},
 ) {
   const orderStore = options.orderStore ?? createMemoryOrderStore();
@@ -58,7 +60,11 @@ export function renderWithProviders(
           <PersonalGatewaysProvider
             {...(options.personalGateways ? { gateways: options.personalGateways } : {})}
           >
-            <SessionProvider>
+            <SessionProvider
+              {...(options.requireKnownShop !== undefined
+                ? { requireKnownShop: options.requireKnownShop }
+                : {})}
+            >
               <ToastProvider>
                 <SessionShopProvider>
                   <OrderStoreProvider store={orderStore}>

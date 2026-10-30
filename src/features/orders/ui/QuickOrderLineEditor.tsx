@@ -5,6 +5,8 @@ import { getMinTouchTarget } from '@/platform';
 import { Icon, QuantityStepper, Text, TextField, useTheme } from '@/shared/ui';
 import { layout } from '@/core/theme';
 
+import { INPUT_LIMITS } from './draft-error-text';
+
 export interface LineInput {
   key: number;
   name: string;
@@ -17,6 +19,7 @@ interface QuickOrderLineEditorProps {
   total: number;
   line: LineInput;
   nameError?: string | undefined;
+  variantError?: string | undefined;
   quantityError?: string | undefined;
   /** Gợi ý TÊN sản phẩm từ lịch sử đã nhập (chỉ hiện ở dòng đang soạn). */
   nameSuggestions: readonly string[];
@@ -37,6 +40,7 @@ export function QuickOrderLineEditor({
   total,
   line,
   nameError,
+  variantError,
   quantityError,
   nameSuggestions,
   variantSuggestions,
@@ -80,6 +84,7 @@ export function QuickOrderLineEditor({
         onChangeText={(name) => onChange({ name })}
         onFocus={onActivate}
         autoCapitalize="sentences"
+        maxLength={INPUT_LIMITS.name}
         {...(nameError ? { error: nameError } : {})}
         trailing={<Icon name="forward" size={20} color={tokens.color.text.subtle} />}
       />
@@ -136,6 +141,8 @@ export function QuickOrderLineEditor({
         onChangeText={(variant) => onChange({ variant })}
         onFocus={onActivate}
         autoCapitalize="sentences"
+        maxLength={INPUT_LIMITS.variant}
+        {...(variantError ? { error: variantError } : {})}
         {...(line.variant.length > 0
           ? {
               trailing: (

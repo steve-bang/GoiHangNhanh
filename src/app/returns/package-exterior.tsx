@@ -1,1 +1,4 @@
-export { ReturnExteriorScreen as default } from '@/features/returns';
+import { ReturnExteriorScreen } from '@/features/returns';
+import { withSessionGate } from '@/features/personal';
+
+export default withSessionGate(ReturnExteriorScreen);

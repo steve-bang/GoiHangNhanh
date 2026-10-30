@@ -92,7 +92,7 @@ Feature dự kiến: `shop`, `orders`, `packing`, `returns`, `evidence`, `upload
 
 | Đối tượng (docs/02) | Đường dẫn | Client ghi? | Ghi chú |
 |---|---|---|---|
-| Shop | `shops/{shopId}` | Không (Function) | Gói dịch vụ/hạn mức: trường trong shop hoặc `plan` (chờ O-06) |
+| Shop | `shops/{shopId}` | Không (Function) | Gói dịch vụ/hạn mức: trường trong shop hoặc `plan` (chờ O-06). Xóa tài khoản (V1-14): `status: 'deleting'`, `deletionRequestedAt`, `purgeAfter`, `deletionRecordId`; `legalHold` chỉ Admin đặt. Shop `deleting` bị Rules khóa với mọi client |
 | Thành viên | `shops/{shopId}/members/{uid}` | Không (Function) | `roles[]`, `status` (`active`/`revoked`). Nguồn quyền cho Rules |
 | Đơn hàng | `shops/{shopId}/orders/{orderId}` | Có (Rules) | `orderCode`, `source`, `trackingCode?`, `status`, `dataSource`, `rev`… |
 | Dòng sản phẩm | `…/orders/{orderId}/lines/{lineId}` | Có | `name`, `variant?`, `quantity`; mỗi variant một dòng, không gộp |
@@ -106,6 +106,8 @@ Feature dự kiến: `shop`, `orders`, `packing`, `returns`, `evidence`, `upload
 | Vụ tranh chấp | `shops/{shopId}/disputes/{id}` | *(chưa có Rules)* | Tham chiếu bằng ID; đặt cờ giữ trên bằng chứng (Function) |
 | Bộ bằng chứng xuất | `shops/{shopId}/exports/{id}` | Không (Function) | Manifest + tệp trong Storage |
 | Sự kiện kiểm toán | `shops/{shopId}/auditEvents/{id}` | **Không bao giờ** | Chỉ Function/trigger ghi; đọc: chủ shop, quản lý, người xử lý tranh chấp |
+| Yêu cầu xác minh lại (V1-04) | `shops/{shopId}/evidenceReverify/{evidenceId}` | **Không** (đọc cũng không) | Chỉ `createUploadSession` ghi; trigger `reverifyEvidence` đọc |
+| Nhật ký xóa tài khoản (V1-14) | `accountDeletions/{uid}` (cấp gốc, id = uid) | **Không** (đọc cũng không) | `uid`, `shopIds`, `leftShopIds`, `requestedAt`, `purgeAfter`, `status` (`requested` → `pending_purge`/`completed` → `purged`), `reason`, `channel`, `counts`, `purgedShopIds`, `lastSkipReason`; không email/tên/mã đơn. Bản ghi duy nhất còn lại sau purge (R-1) |
 
 "Chưa có Rules" nghĩa là **bị từ chối mặc định** cho tới khi tính năng tương ứng được làm cùng Rules + test; không mở trước.
 
@@ -199,6 +201,14 @@ Bảo đảm (có unit test, xem [testing.md](testing.md)):
 5. Xong phía thiết bị chỉ nghĩa là "đã gửi hết"; **trạng thái `uploaded` đến từ máy chủ** (trigger khi đối tượng được tạo xong ghi `server.state`). Client chỉ lắng nghe tài liệu bằng chứng.
 6. Lỗi: mạng → quay `queued` có backoff, **không** đếm là lỗi; xác thực hết hạn / hết hạn mức / gói không cho lưu → `needs_attention` với mã rõ (giữ tệp, không báo đã sao lưu); lỗi khác lặp lại → `upload_failed` cho người dùng thử lại.
 
+**Hiện thực hôm nay (V1-02, Q-24h = A; chưa kiểm chứng trên thiết bị):**
+
+- Nguồn mạng duy nhất: `src/platform/connectivity.ts` (NetInfo 12.0.1). `online = false` chỉ khi hệ điều hành báo chắc chắn mất kết nối; chưa biết = có mạng; không dùng `isInternetReachable`. Loại: `wifi`/`cellular`/`other`/`none`.
+- Máy báo mất mạng: hàng đợi và đồng bộ đơn/hồ sơ hoàn không chạy (`skipped: 'offline'`), lần gửi tệp đang chạy bị hủy (`AbortSignal` → `UploadTask.cancelAsync`), tệp về `upload_failed` mã `NETWORK_LOST`. Có mạng lại: chạy ngay, tệp `upload_failed` do lỗi mạng tới hạn ngay (tệp lỗi máy chủ giữ lịch giãn cách).
+- Phân loại (`UploadOutcome`): `network` (mất mạng, hết giờ, Firebase `unavailable`/`deadline-exceeded`, `internal`/`unknown` không có `details` từ máy chủ (tối đa 24 lần liên tiếp, đếm bền trong `lastErrorCode` dạng `INTERNAL@n`; sau đó tính lượt), HTTP 408/429/502/503/504) **không tăng `attemptCount`**, giãn cách theo số lỗi mạng liên tiếp (bộ nhớ, 5 giây gấp đôi, trần 15 phút) và dừng lượt; `retryable` (máy chủ từ chối: HTTP 401/403/412/500, `permission-denied` khi khai báo, lỗi không rõ) tính lượt, 8 lần → `needs_attention`; `attention` → `needs_attention` ngay. Trạng thái tệp vẫn là `upload_failed` (không thêm trạng thái mới; bất biến 3).
+- Hết giờ (R4): mỗi lệnh `RemoteDocuments` (Firestore/Functions) tối đa 30 giây theo bảng hạn `RemoteCallTimeouts` (ghi đè được theo thao tác/callable), ném `deadline-exceeded`; mọi lệnh đọc dùng nguồn máy chủ (`getDocFromServer`), không bộ đệm, để bản ghi đang chờ sau khi hết giờ không bị coi là đã đăng; mở phiên tải (POST) có hạn riêng 30 giây; cổng tải lên cũng giới hạn khai báo/xin phiên/hỏi trạng thái 30 giây. Lệnh bên dưới không bị hủy (ghi Firestore vẫn chờ trong SDK) nhưng lượt được giải phóng; mọi lệnh idempotent. Bước gửi tệp **không** có hạn cứng.
+- Tệp đóng gói chỉ khai báo khi phiên đã đăng (`OrderStore.isSessionPublished`), media hàng hoàn khi bản neo đã đăng: phiên chưa đăng thì tệp đứng ở `queued`, không gọi máy chủ, không tốn lượt.
+
 **Idempotency**: khóa = `evidenceId` (cũng là đường dẫn đối tượng). Rules/Function chỉ cho tạo đối tượng một lần; tạo lại cùng ID không sinh bằng chứng thứ hai (A07: "thử lại không tạo nhiều bản ghi").
 
 **Giới hạn nền (phải nói thật trên UI, bất biến #11)**:
@@ -221,9 +231,10 @@ Không có Function nào được viết trong khung này; bảng dưới là h�
 | Tạo shop, mời/thu hồi/đổi vai trò thành viên | Function (callable) | Ghi `members`, audit | Tự nâng quyền; thu hồi phải có hiệu lực ngay | #7, #8 |
 | Cấp phiên tải (resumable) | Function (callable) | Kiểm tra quyền + bằng chứng hợp lệ → trả session URI | Storage từ chối client; kiểm soát đường dẫn đích | #4, #8 |
 | **Xác minh mã băm** | Function (khi đối tượng Storage hoàn tất) | Đọc streaming, tính SHA-256, so `sha256Client` → ghi `server.state`/`sha256Server`/`verifiedAt`; không khớp → `hash_mismatch` | Không tin giá trị client | #3 |
-| Ghi nhật ký kiểm toán | Function/trigger (Firestore `onWrite`, callable) | Ghi `auditEvents` (ai, làm gì, đối tượng, kết quả, giá trị trước/sau cho trường quan trọng) | Client không được tự ghi/sửa | #7 |
+| Ghi nhật ký kiểm toán | Function/trigger (Firestore `onDocumentWritten`, callable) | Ghi `auditEvents` (ai, làm gì, đối tượng, kết quả, giá trị trước/sau cho trường quan trọng). **Đã viết (V1-04, chưa deploy):** `functions/src/audit.ts` cho `orders`, `lines`, `packages`, `sessions`, `evidence`, `returns`; id sự kiện cố định theo (đường dẫn, `updateTime`); chỉ giá trị trường không nhạy cảm (decisions.md Q-29 / V1-04) | Client không được tự ghi/sửa | #7 |
 | URL đọc có thời hạn | Function (callable) | Kiểm tra quyền → signed URL ngắn hạn + audit "đã xem" | URL không hết hạn vi phạm bảo mật | #8 |
 | Thời gian máy chủ | Firestore `serverTimestamp()` / `request.time` | Rules ép bằng nhau | Giờ thiết bị có thể sai/bị đổi | docs/06 |
+| **Xóa tài khoản** (V1-14, đã viết, chưa deploy) | Callable `deleteAccount` + lịch `purgeDeletedShops` (hằng ngày) + script hỗ trợ `admin/delete-account-cli.ts` (`functions/src/account.ts`) | `deleteAccount`: `auth_time` ≤ 5 phút; một transaction khóa shop chủ sở hữu (`deleting`, `purgeAfter` = +30 ngày, giữ hạn cũ khi gọi lại), gỡ thành viên, xóa `userShops`, ghi `accountDeletions/{uid}`; rồi xóa người dùng Auth. Shop còn thành viên khác đang hoạt động: từ chối (`shop_has_members`). Purge: shop `deleting` quá hạn và không `legalHold` → Storage `shops/{id}/` theo trang → `recursiveDelete` mọi collection con (gồm `auditEvents`, `evidenceReverify`) → tài liệu shop SAU CÙNG (bị ngắt thì lần sau tìm lại); idempotent, dừng sớm trước giới hạn 540 giây. Trigger kiểm toán bỏ qua sự kiện xóa nên không hồi sinh dữ liệu. Xóa Auth lỗi sau bước 1: bản ghi `requested`, lịch hằng ngày gọi lại sau 1 giờ; `purged` chỉ khi đã có `authDeletedAt` | Xóa người khác/xóa bằng chứng bị giữ; client không có quyền xóa | #7, #8, #9 |
 | Dọn theo hạn lưu | Function (lịch) | Tính hạn từ chính sách; **bỏ qua bằng chứng có `retention.hold`**; xóa có audit; xử lý bản sao lưu theo chính sách | Không để client xóa/giữ | #9 |
 | Cờ giữ do tranh chấp | Trigger trên `disputes` | Đặt/gỡ `retention.hold.disputeIds` | Giữ phải nhất quán, không dựa vào client | #9 |
 | Xuất bộ hồ sơ | Function (callable/task) | Gom tệp + manifest (liệt kê tệp thiếu/lỗi, trạng thái) | Cần đọc Storage và ghi audit; chờ O-08 | #7 |
@@ -336,7 +347,7 @@ Ngày kiểm tra: **2026-10-26**. "Cập nhật" = thời điểm xuất bản g
 | Điều hướng | `expo-router` 58.0.26 vs `@react-navigation/native` 7.5.1 (2026-10-13) | Expo Router (xây trên React Navigation) | Chính thức theo SDK, typed routes, deep link cho lời mời/thông báo; route mỏng, màn hình nằm trong `features/*/ui`. Màn quay cần ẩn tab bar + chặn rời vô tình (docs/09 mục 2) — cả hai làm được. Khi dùng Expo Router, thư mục `src/app` dành cho route (vì vậy composition root đặt ở `src/bootstrap`). |
 | Form/validate | `react-hook-form` 7.91.0, `zod` 4.6.7 | `zod` để parse dữ liệu ở biên (Firestore → domain); **chưa** thêm react-hook-form | Form của app rất nhỏ (tạo đơn nhanh); thêm khi có form phức tạp |
 | i18n | `i18next` 26.5.11 + `react-i18next` 17.1.9 (đã cài trong khung) | Giữ | Trưởng thành, đủ cho tiếng Việt mặc định; `expo-localization` 58.0.5 thêm khi O-17 mở ngôn ngữ khác |
-| Mạng | `@react-native-community/netinfo` 12.0.1 | Dùng khi làm hàng đợi | Phát hiện offline/đổi Wi-Fi↔di động |
+| Mạng | `@react-native-community/netinfo` 12.0.1 | **Đã cài (V1-02, Q-24f)**, sau `platform/connectivity.ts`; chưa kiểm chứng trên thiết bị | Phát hiện offline/đổi Wi-Fi↔di động |
 | Công cụ | Jest 30 + `jest-expo` 58.0.12; ESLint 9.39 + `eslint-config-expo` 58.0.4; Prettier 3.9; TypeScript 6.0 (mẫu Expo dùng `~6.0.3`) | Đã cài | ESLint 10 và TypeScript 7.0 đã ra nhưng `eslint-plugin-react`/`import` chưa khai báo hỗ trợ ESLint 10 và mẫu Expo ghim TS 6.0 — chờ hệ sinh thái; nâng khi đồng bộ |
 
 ## 12. Kế hoạch spike trước khi khóa thư viện (cần thiết bị thật iOS + Android)
@@ -355,7 +366,9 @@ Ngày kiểm tra: **2026-10-26**. "Cập nhật" = thời điểm xuất bản g
 - **Đọc Firestore**: Rules `get()` thành viên tính vào chi phí đọc mỗi thao tác (mục 9); danh sách đồng bộ dùng truy vấn có giới hạn và listener có phạm vi (theo shop, trạng thái chưa `verified`), không nghe toàn bộ collection. Không ghi từng chuyển trạng thái cục bộ lên Firestore (mục 4.3).
 - **Ghi Firestore**: tài liệu bằng chứng tạo một lần, cập nhật chỉ khi cần cho thiết bị khác thấy; tiến độ tải (phần trăm) không ghi lên Firestore.
 - **Storage/băng thông video**: nén là *bản dẫn xuất*, không thay bản gốc (bất biến #4); lưu bản gốc là chi phí chính → gắn với hạn mức theo gói (O-06). Đo chi phí/ngày từ giai đoạn beta (docs/08 điều kiện phát hành "Vận hành").
-- **Functions**: băm theo luồng tốn CPU/thời gian theo kích thước tệp (S5).
+- **Functions**: băm theo luồng tốn CPU/thời gian theo kích thước tệp (S5). Tệp vượt trần theo loại (ảnh 25 MB, video 2 GB; V1-04) không được băm.
+- **Xóa tài khoản (V1-14):** Rules thêm một `get()` tài liệu shop vào mỗi yêu cầu client (kiểm `status != 'deleting'`; cùng tài liệu trong một yêu cầu chỉ tính một lần). Purge một shop: mỗi tài liệu = 1 lần xóa Firestore + 1 lần gọi trigger kiểm toán (thoát ngay, không ghi), mỗi đối tượng Storage = 1 lần xóa (thao tác lớp A/B miễn phí hoặc rất rẻ); một lần duy nhất cho mỗi tài khoản. Hàm lịch chạy mỗi ngày một truy vấn `shops where purgeAfter <= now` (chỉ mục một trường tự động). Bucket có Object Versioning: chi phí lưu phiên bản cũ đến khi quy tắc vòng đời xóa.
+- **Trigger kiểm toán (V1-04):** mỗi lần client/máy chủ ghi một tài liệu được theo dõi = 1 lần gọi Function + 1 lần ghi `auditEvents` (+ không đọc thêm). Ước tính một đơn một kiện một video quay xong và tải lên: tạo đơn (1) + dòng (n) + kiện (1) + phiên tạo (1) + đổi trạng thái phiên (1) + khai báo bằng chứng (1) + `uploaded` (1) + `verified` (1) ≈ **7 + n** sự kiện, cộng 2 sự kiện sẵn có của `createUploadSession`/`verifyEvidence`. Với 1 000 đơn/ngày, 2 dòng/đơn: ~9 000 lần gọi + ~11 000 lần ghi/ngày (~270 000 lần gọi, ~330 000 lần ghi/tháng); theo bảng giá công khai hiện hành ở mức vài USD/tháng, chủ yếu dưới hạn mức miễn phí của Functions. Số này phải đo lại ở beta; không đọc lại tài liệu trong trigger.
 
 ## 14. Hệ quả cần ghi vào docs nghiệp vụ
 

@@ -37,7 +37,9 @@ export function SignInScreen() {
   const session = useSession();
   const providers = getEnabledSocialProviders();
 
-  const [email, setEmail] = useState(recovery.signInEmail ?? '');
+  // Email điền sẵn: từ luồng khôi phục, hoặc từ "Đăng nhập lại" sau khi đăng xuất an toàn (V1-05, chỉ
+  // trong bộ nhớ của phiên; không đọc tham số route).
+  const [email, setEmail] = useState(recovery.signInEmail ?? session.signInEmailHint ?? '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
@@ -49,6 +51,7 @@ export function SignInScreen() {
   useEffect(() => {
     // Email điền sẵn và banner chỉ dùng MỘT lần: xóa khỏi trạng thái luồng sau khi đã lấy.
     if (recovery.signInEmail !== null) dispatchRecovery({ type: 'signin_email_consumed' });
+    if (session.signInEmailHint !== null) session.setSignInEmailHint(null);
     if (recovery.resetNotice) dispatchRecovery({ type: 'notice_consumed' });
     // chỉ chạy lúc mở màn
     // eslint-disable-next-line react-hooks/exhaustive-deps

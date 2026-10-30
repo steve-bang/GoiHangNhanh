@@ -1,19 +1,23 @@
 import { AppError } from '@/core/errors/app-error';
+import { fromRemoteSources, toRemoteSources } from '@/core/orders/remote-source';
 
 import type {
   AccountSignInMethod,
   ApiClient,
   AuthApi,
   CreatedShop,
+  CreateShopInput,
   SessionApi,
   SessionIdentity,
   SessionState,
   ShopApi,
+  ShopDetails,
+  UpdateShopInput,
 } from '../contract';
 
-import { guard } from './error-map';
+import { guard, NO_CURRENT_USER, type ErrorOverrides } from './error-map';
 import type { FirebaseServices } from './client';
-import { createFirebaseOps, type FirebaseOps } from './ops';
+import { createFirebaseOps, type FirebaseOps, type RemoteShopResult } from './ops';
 
 /** Nhà cung cấp Auth -> cách đăng nhập. Nhà cung cấp lạ/không có thì `null` (không đoán, O-15). */
 function signInMethodOf(providerIds: readonly string[]): AccountSignInMethod | null {
@@ -21,6 +25,23 @@ function signInMethodOf(providerIds: readonly string[]): AccountSignInMethod | n
   if (providerIds.includes('apple.com')) return 'apple';
   if (providerIds.includes('google.com')) return 'google';
   return null;
+}
+
+/**
+ * Ranh giới nguồn bán của callable shop (Q-29 / fix-other-source): app `other` -> máy chủ
+ * `other_unknown` khi gửi, ngược lại khi nhận. Function luôn trả giá trị hợp lệ; giá trị lạ (nếu có) bị
+ * bỏ khỏi KẾT QUẢ hiển thị, không ghi lại lên máy chủ từ đây.
+ */
+function toShopRequest(input: CreateShopInput | UpdateShopInput) {
+  return { ...input, sellingSources: toRemoteSources(input.sellingSources) };
+}
+
+function fromShopResult(result: RemoteShopResult): CreatedShop {
+  return {
+    id: result.id,
+    name: result.name,
+    sellingSources: fromRemoteSources(result.sellingSources),
+  };
 }
 
 const unavailable = () => Promise.reject(new AppError('AUTH_SERVICE_UNAVAILABLE'));
@@ -43,6 +64,25 @@ export const NEUTRAL_PASSWORD_RESET_ERRORS: readonly string[] = [
 const isAccountStateError = (error: unknown): boolean => {
   const code = (error as { code?: unknown } | null)?.code;
   return typeof code === 'string' && NEUTRAL_PASSWORD_RESET_ERRORS.includes(code);
+};
+
+/**
+ * Đổi mật khẩu: lỗi của bước xác thực lại mang nghĩa "mật khẩu hiện tại sai", không phải "sai thông
+ * tin đăng nhập" như ở màn Đăng nhập (V1-05). Người dùng khác/không còn tài khoản: phiên hết hạn.
+ */
+export const CHANGE_PASSWORD_ERRORS: ErrorOverrides = {
+  'auth/wrong-password': 'AUTH_WRONG_CURRENT_PASSWORD',
+  'auth/invalid-credential': 'AUTH_WRONG_CURRENT_PASSWORD',
+  'auth/user-mismatch': 'AUTH_SESSION_EXPIRED',
+  'auth/user-not-found': 'AUTH_SESSION_EXPIRED',
+  'auth/password-does-not-meet-requirements': 'AUTH_WEAK_PASSWORD',
+};
+
+/** Đổi tên shop qua Function `updateShop`: từ chối quyền và dữ liệu bị từ chối có mã riêng của màn Sửa tên. */
+export const RENAME_SHOP_ERRORS: ErrorOverrides = {
+  'functions/permission-denied': 'SHOP_PERMISSION_DENIED',
+  'functions/invalid-argument': 'SHOP_SAVE_FAILED',
+  'functions/not-found': 'SHOP_SAVE_FAILED',
 };
 
 /**
@@ -101,16 +141,59 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
     verifyRecoveryCode: unavailable,
     resetPassword: unavailable,
     signOut: () => guard(() => ops.signOut()),
+    changePassword: (input) =>
+      guard(
+        () => ops.changePassword(input.currentPassword, input.newPassword),
+        CHANGE_PASSWORD_ERRORS,
+      ),
+    updateDisplayName: (displayName) =>
+      guard(async () => {
+        await ops.updateDisplayName(displayName);
+        return { displayName };
+      }),
+  };
+
+  /** Người dùng đang đăng nhập hoặc lỗi phiên hết hạn (không coi "chưa đăng nhập" là "không có shop"). */
+  const requireUser = async () => {
+    const user = await ops.restoreUser();
+    if (!user) throw Object.assign(new Error(NO_CURRENT_USER), { code: NO_CURRENT_USER });
+    return user;
   };
 
   const shop: ShopApi = {
-    createShop: (input) => guard(() => ops.callShop('createShop', input)),
-    updateShop: (input) => guard(() => ops.callShop('updateShop', input)),
+    createShop: (input) =>
+      guard(async () => fromShopResult(await ops.callShop('createShop', toShopRequest(input)))),
+    updateShop: (input) =>
+      guard(async () => fromShopResult(await ops.callShop('updateShop', toShopRequest(input)))),
     getShop: (shopId) =>
       guard(async () => {
         const user = await ops.restoreUser();
         return user ? ops.readShopDetails(shopId, user.uid) : null;
       }),
+    // Máy chủ chỉ cho một shop mỗi tài khoản (`createShop` idempotent theo `userShops/{uid}`).
+    listMyShops: () =>
+      guard(async (): Promise<readonly ShopDetails[]> => {
+        const user = await requireUser();
+        const shopId = await ops.readShopId(user.uid);
+        if (shopId === null) return [];
+        const details = await ops.readShopDetails(shopId, user.uid);
+        return details ? [details] : [];
+      }),
+    // Function `updateShop` ghi đè cả tên và nguồn bán: đọc nguồn bán đang lưu để giữ nguyên. Không đọc
+    // được thì dừng (không gửi mảng rỗng xóa nguồn bán). Quyền thật do Function kiểm `members/{uid}`.
+    renameShop: (shopId, name) =>
+      guard(async (): Promise<ShopDetails> => {
+        const user = await requireUser();
+        const details = await ops.readShopDetails(shopId, user.uid);
+        if (!details) throw new AppError('SHOP_SAVE_FAILED');
+        if (!details.canEdit) throw new AppError('SHOP_PERMISSION_DENIED');
+        const stored = await ops.readShopSellingSources(shopId);
+        if (stored === null) throw new AppError('SHOP_SAVE_FAILED');
+        // Gửi lại NGUYÊN giá trị máy chủ đã lưu (đã là từ vựng máy chủ, ví dụ `other_unknown`): KHÔNG đi
+        // qua ánh xạ app -> máy chủ, không lọc, để không làm mất hay đổi nguồn bán. Function tự kiểm lại.
+        const saved = await ops.callShop('updateShop', { shopId, name, sellingSources: stored });
+        return { ...details, name: saved.name };
+      }, RENAME_SHOP_ERRORS),
   };
 
   const session: SessionApi = {

@@ -6,10 +6,12 @@ import {
   toCodeKey,
   useCurrentShopId,
   useOrderStore,
+  useWritableShopId,
   validateCode,
   type MatchReason,
   type OrderDetails,
 } from '@/features/orders';
+import { AppError } from '@/core/errors/app-error';
 import { newReturnCaseId, newReturnRecordId } from '@/platform';
 
 import { useReturnStore } from '../data';
@@ -111,6 +113,8 @@ export function useReturnOps() {
   const store = useReturnStore();
   const orderStore = useOrderStore();
   const shopId = useCurrentShopId();
+  // `null` = bản Firebase chưa biết shop thật: không tạo hồ sơ dưới shop tạm (V1-06).
+  const writableShopId = useWritableShopId();
 
   return useMemo(() => {
     const now = () => Date.now();
@@ -145,17 +149,19 @@ export function useReturnOps() {
       createReturn: (params: {
         observedCode: string | null;
         source: { details: OrderDetails; basis: Exclude<LinkBasis, 'linked_later'> } | null;
-      }) =>
-        store.createReturn(
+      }) => {
+        if (!writableShopId) return Promise.reject(new AppError('RETURN_SAVE_FAILED'));
+        return store.createReturn(
           buildNewReturn({
             id: newReturnCaseId(),
-            shopId,
+            shopId: writableShopId,
             atDevice: now(),
             observedCode: params.observedCode,
             source: params.source,
             newId: newReturnRecordId,
           }),
-        ),
+        );
+      },
       linkLater: (id: ReturnCaseId, details: OrderDetails) =>
         store.linkSourceOrder(shopId, id, {
           linkId: newReturnRecordId(),
@@ -209,5 +215,5 @@ export function useReturnOps() {
           eventId: newReturnRecordId(),
         }),
     };
-  }, [store, orderStore, shopId]);
+  }, [store, orderStore, shopId, writableShopId]);
 }

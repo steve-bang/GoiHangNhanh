@@ -6,6 +6,7 @@ import { normalizeSources } from '@/core/orders/selling-sources';
 import type {
   AuthAccount,
   AuthApi,
+  ChangePasswordInput,
   CreatedShop,
   CreateShopInput,
   ApiClient,
@@ -80,6 +81,7 @@ interface FakeAccount {
   readonly uid: string;
   password: string | null; // null: tài khoản có sẵn mà bản giả không biết mật khẩu
   readonly hasShop: boolean;
+  displayName: string | null;
 }
 
 interface PendingCode {
@@ -97,8 +99,13 @@ export class FakeAuthApi implements AuthApi {
   readonly verifyCalls: VerifyRecoveryCodeInput[] = [];
   readonly resetCalls: ResetPasswordInput[] = [];
   signOutCalls = 0;
+  /** Số lần đổi mật khẩu (không lưu nội dung mật khẩu). */
+  changePasswordCalls = 0;
+  readonly displayNameCalls: string[] = [];
   private readonly latencyMs: number;
   private readonly now: () => number;
+  /** Tài khoản đang đăng nhập (sau `signUp`/`signIn`, như Firebase Auth); `null` sau `signOut`. */
+  private currentKey: string | null = null;
   private readonly codeTtlMs: number;
   private readonly ticketTtlMs: number;
   private readonly accounts = new Map<string, FakeAccount>();
@@ -125,7 +132,12 @@ export class FakeAuthApi implements AuthApi {
 
   private seed(email: string, password: string | null, hasShop: boolean): void {
     this.counter += 1;
-    this.accounts.set(email.toLowerCase(), { uid: `fake-user-${this.counter}`, password, hasShop });
+    this.accounts.set(email.toLowerCase(), {
+      uid: `fake-user-${this.counter}`,
+      password,
+      hasShop,
+      displayName: null,
+    });
   }
 
   /** Lần gọi kế tiếp (bất kể loại) thất bại với mã này, rồi trở lại bình thường. */
@@ -160,7 +172,8 @@ export class FakeAuthApi implements AuthApi {
     this.counter += 1;
     const uid = `fake-user-${this.counter}`;
     // Tài khoản vừa tạo dùng được để đăng nhập trong cùng phiên chạy (chưa có shop).
-    this.accounts.set(key, { uid, password: input.password, hasShop: false });
+    this.accounts.set(key, { uid, password: input.password, hasShop: false, displayName: null });
+    this.currentKey = key;
     // Email chưa xác thực: không chặn người dùng (quyết định đã duyệt, decisions.md Q-13).
     return { uid, email, emailVerified: false };
   }
@@ -189,11 +202,12 @@ export class FakeAuthApi implements AuthApi {
       throw new AppError('AUTH_INVALID_CREDENTIALS');
     }
     this.failedSignIns.delete(key);
+    this.currentKey = key;
     return {
       uid: account.uid,
       email,
       emailVerified: false,
-      displayName: null,
+      displayName: account.displayName,
       hasShop: account.hasShop,
       shopId: account.hasShop ? `fake-shop-of-${account.uid}` : null,
     };
@@ -203,6 +217,33 @@ export class FakeAuthApi implements AuthApi {
     this.signOutCalls += 1;
     await delay(this.latencyMs);
     this.consumeFailure();
+    this.currentKey = null;
+  }
+
+  private currentAccount(): FakeAccount {
+    const account = this.currentKey ? this.accounts.get(this.currentKey) : undefined;
+    if (!account) throw new AppError('AUTH_SESSION_EXPIRED');
+    return account;
+  }
+
+  async changePassword(input: ChangePasswordInput): Promise<void> {
+    this.changePasswordCalls += 1;
+    await delay(this.latencyMs);
+    this.consumeFailure();
+    const account = this.currentAccount();
+    if (account.password === null || account.password !== input.currentPassword) {
+      throw new AppError('AUTH_WRONG_CURRENT_PASSWORD');
+    }
+    if (FAKE_WEAK_PASSWORDS.includes(input.newPassword)) throw new AppError('AUTH_WEAK_PASSWORD');
+    account.password = input.newPassword;
+  }
+
+  async updateDisplayName(displayName: string): Promise<{ readonly displayName: string }> {
+    this.displayNameCalls.push(displayName);
+    await delay(this.latencyMs);
+    this.consumeFailure();
+    this.currentAccount().displayName = displayName;
+    return { displayName };
   }
 
   /**
@@ -274,6 +315,7 @@ export class FakeAuthApi implements AuthApi {
 export class FakeShopApi implements ShopApi {
   readonly createCalls: CreateShopInput[] = [];
   readonly updateCalls: UpdateShopInput[] = [];
+  readonly renameCalls: { shopId: string; name: string }[] = [];
   private readonly latencyMs: number;
   private nextFailure: ErrorCode | null = null;
   private counter = 0;
@@ -314,6 +356,28 @@ export class FakeShopApi implements ShopApi {
     this.consumeFailure();
     const shop = this.shops.get(shopId);
     return shop ? { id: shop.id, name: shop.name, role: 'owner', canEdit: true } : null;
+  }
+
+  /** Bản giả không phân biệt tài khoản: mọi shop đã tạo trong tiến trình (thường là một). */
+  async listMyShops(): Promise<readonly ShopDetails[]> {
+    await delay(this.latencyMs);
+    this.consumeFailure();
+    return [...this.shops.values()].map((shop) => ({
+      id: shop.id,
+      name: shop.name,
+      role: 'owner',
+      canEdit: true,
+    }));
+  }
+
+  async renameShop(shopId: string, name: string): Promise<ShopDetails> {
+    this.renameCalls.push({ shopId, name });
+    await delay(this.latencyMs);
+    this.consumeFailure();
+    const shop = this.shops.get(shopId);
+    if (!shop) throw new AppError('SHOP_SAVE_FAILED');
+    this.shops.set(shopId, { ...shop, name });
+    return { id: shopId, name, role: 'owner', canEdit: true };
   }
 
   async updateShop(input: UpdateShopInput): Promise<CreatedShop> {

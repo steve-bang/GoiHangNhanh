@@ -75,6 +75,8 @@ Chỉ dùng mã có sẵn trong `src/core/errors/codes.ts`. Mã mới (ví dụ 
 
 ### 5.2 Cổng cá nhân và lớp `src/api` (sau khi gộp `main`, Q-19/Q-20t)
 
+> **Cập nhật V1-05 (2026-10-30):** ở bản Firebase, `listShops`, `updateShopName`, `updateProfile`, `changePassword` đã nối thật; `switchShop` chỉ nhận shop đang dùng (máy chủ một shop/tài khoản); Cài đặt thông báo ẩn ở menu (decisions.md `Q-29 / V1-05`). Các gạch đầu dòng dưới đây là hiện trạng cũ, giữ để tra lịch sử.
+
 - **Chọn chế độ**: `createPersonalGateways` dùng `resolveBackendMode`/`readBackendEnv` của `src/api/create-api.ts`; không có bản sao quy tắc. `fake` (dev, test, cờ giả) dùng `createFakePersonalGateways`; `firebase` và `unavailable` dùng `createUnavailablePersonalGateways`.
 - **Phần nối Firebase thật cho cổng cá nhân hôm nay: không có.** Hợp đồng `ApiClient` (`auth`, `shop.createShop/updateShop`, `session.restore`) thiếu: danh tính người dùng hiện tại + `shopId` phiên, đăng xuất, sửa họ tên, đổi mật khẩu, đọc/liệt kê/chuyển shop, cài đặt thông báo. `shop.updateShop` bắt buộc kèm `sellingSources` nên không dùng cho "Sửa tên cửa hàng" (sẽ ghi đè nguồn bán). Ở chế độ Firebase tab Cá nhân hiện "chưa kết nối" thay vì giả thành công.
 - **Thứ tự mở rộng hợp đồng đề xuất** (chờ duyệt, Q-20t): `session.currentUser()` + `auth.signOut()` (đóng Q-20m; `SessionHydrator` đổi sang `currentUser()`), `shop.getShop`, rồi `auth.updateProfile`/`auth.changePassword` (xử lý `AUTH_REQUIRES_RECENT_LOGIN`); liệt kê/chuyển shop chờ O-03/O-07. Mỗi mục thêm vào cả bản giả, `unavailable`, Firebase và `src/api/contract-tests`.

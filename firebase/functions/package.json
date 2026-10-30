@@ -1,13 +1,14 @@
 {
   "name": "don-chung-functions",
   "private": true,
-  "description": "Cloud Functions của Đơn Chứng (callable: createShop, updateShop)",
+  "description": "Cloud Functions của Đơn Chứng (callable, trigger, lịch; script hỗ trợ xóa tài khoản)",
   "main": "lib/index.js",
   "engines": {
     "node": "22"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "account:delete": "npm run build && node lib/admin/delete-account-cli.js"
   },
   "dependencies": {
     "firebase-admin": "^14.5.0",

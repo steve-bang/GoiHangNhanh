@@ -1,5 +1,5 @@
 import { AppError } from '@/core/errors/app-error';
-import { normalizeSources } from '@/core/orders/selling-sources';
+import { REMOTE_ORDER_SOURCES } from '@/core/orders/remote-source';
 
 import { describeApiContract } from '../contract-tests/api.contract';
 
@@ -16,11 +16,26 @@ function fakeOps(): FirebaseOps & {
   failReadShopId(error: unknown): void;
   patchCurrent(patch: Partial<FirebaseUser>): void;
   failPasswordReset(error: unknown): void;
+  /** Lần gọi kế tiếp của thao tác này ném `error` (mã SDK). */
+  failOnce(op: 'changePassword' | 'updateDisplayName' | 'callShop', error: unknown): void;
+  setRoles(roles: readonly string[]): void;
+  setStoredSources(shopId: string, sources: readonly string[] | null): void;
   readonly signOutCalls: () => number;
   readonly resetEmails: string[];
+  readonly shopCalls: { name: string; input: unknown }[];
 } {
   const accounts = new Map<string, { uid: string; password: string }>();
   const shops = new Map<string, string>();
+  const shopData = new Map<string, { name: string; sellingSources: readonly string[] | null }>();
+  const failures = new Map<string, unknown>();
+  const shopCalls: { name: string; input: unknown }[] = [];
+  let roles: readonly string[] = ['owner'];
+  const takeFailure = (op: string) => {
+    if (!failures.has(op)) return;
+    const error = failures.get(op);
+    failures.delete(op);
+    throw error;
+  };
   let current: FirebaseUser | null = null;
   let signOutError: unknown = null;
   let readShopIdError: unknown = null;
@@ -75,19 +90,61 @@ function fakeOps(): FirebaseOps & {
       if (passwordResetError) throw passwordResetError;
     },
     async readShopDetails(shopId, uid) {
-      return shops.get(uid) === shopId
-        ? { id: shopId, name: 'Shop thật', role: 'owner', canEdit: true }
-        : null;
+      const data = shopData.get(shopId);
+      if (shops.get(uid) !== shopId || !data) return null;
+      const isOwner = roles.includes('owner');
+      return {
+        id: shopId,
+        name: data.name,
+        role: isOwner ? 'owner' : 'member',
+        canEdit: isOwner || roles.includes('manager'),
+      };
+    },
+    async changePassword(currentPassword, newPassword) {
+      takeFailure('changePassword');
+      if (!current?.email) throw sdkError('auth/no-current-user');
+      const account = accounts.get(current.email.toLowerCase());
+      if (!account || account.password !== currentPassword) {
+        throw sdkError('auth/invalid-credential');
+      }
+      if (newPassword.length < 6) throw sdkError('auth/weak-password');
+      account.password = newPassword;
+    },
+    async updateDisplayName(displayName) {
+      takeFailure('updateDisplayName');
+      if (!current) throw sdkError('auth/no-current-user');
+      current = { ...current, displayName };
+    },
+    async readShopSellingSources(shopId) {
+      return shopData.get(shopId)?.sellingSources ?? null;
     },
     async callShop(name, input) {
+      shopCalls.push({ name, input });
+      takeFailure('callShop');
       if (!current) throw sdkError('functions/unauthenticated');
-      const sellingSources = normalizeSources(input.sellingSources);
+      // Như Function thật (`parseShopInput`): chỉ nhận từ vựng máy chủ, chuẩn hóa thứ tự.
+      if (
+        !input.sellingSources.every((v) => (REMOTE_ORDER_SOURCES as readonly string[]).includes(v))
+      ) {
+        throw sdkError('functions/invalid-argument');
+      }
+      const sellingSources = REMOTE_ORDER_SOURCES.filter((v) => input.sellingSources.includes(v));
       if (name === 'createShop') {
         const id = shops.get(current.uid) ?? `shop-${shops.size + 1}`;
         shops.set(current.uid, id);
+        shopData.set(id, { name: input.name, sellingSources });
         return { id, name: input.name, sellingSources };
       }
-      return { id: (input as { shopId: string }).shopId, name: input.name, sellingSources };
+      const { shopId } = input as { shopId: string };
+      if (
+        shops.get(current.uid) !== shopId ||
+        !roles.some((r) => r === 'owner' || r === 'manager')
+      ) {
+        throw sdkError('functions/permission-denied');
+      }
+      // Như Function thật: ghi đè cả tên và nguồn bán bằng giá trị gửi lên.
+      shopData.set(shopId, { name: input.name, sellingSources });
+      return { id: shopId, name: input.name, sellingSources };
     },
     signedOut() {
       current = null;
@@ -104,8 +161,19 @@ function fakeOps(): FirebaseOps & {
     failPasswordReset(error) {
       passwordResetError = error;
     },
+    failOnce(op, error) {
+      failures.set(op, error);
+    },
+    setRoles(next) {
+      roles = next;
+    },
+    setStoredSources(shopId, sources) {
+      const data = shopData.get(shopId);
+      if (data) shopData.set(shopId, { ...data, sellingSources: sources });
+    },
     signOutCalls: () => signOutCalls,
     resetEmails,
+    shopCalls,
   };
 }
 
@@ -299,5 +367,174 @@ describe('api/firebase: quên mật khẩu bằng thư của Firebase (D-14 v1)'
     const attempt = makeApi(ops).auth.requestPasswordRecovery('lan@example.com');
     await expect(attempt).rejects.toBeInstanceOf(AppError);
     await expect(attempt).rejects.toMatchObject({ code });
+  });
+});
+
+describe('api/firebase: tab Cá nhân (V1-05)', () => {
+  const sdk = (code: string) => Object.assign(new Error('chi tiết SDK'), { code });
+  async function signedUp(ops = fakeOps()) {
+    const api = makeApi(ops);
+    await api.auth.signUpWithEmail({ email: 'lan@example.com', password: 'Mat-khau-1' });
+    return { api, ops };
+  }
+
+  it('đổi mật khẩu: sai mật khẩu hiện tại là AUTH_WRONG_CURRENT_PASSWORD (không phải lỗi đăng nhập)', async () => {
+    const { api } = await signedUp();
+    await expect(
+      api.auth.changePassword({ currentPassword: 'sai-roi-1', newPassword: 'Moi-hon-2' }),
+    ).rejects.toMatchObject({ code: 'AUTH_WRONG_CURRENT_PASSWORD' });
+    await api.auth.changePassword({ currentPassword: 'Mat-khau-1', newPassword: 'Moi-hon-2' });
+    await expect(
+      api.auth.signInWithPassword({ email: 'lan@example.com', password: 'Moi-hon-2' }),
+    ).resolves.toMatchObject({ email: 'lan@example.com' });
+  });
+
+  it.each([
+    ['auth/wrong-password', 'AUTH_WRONG_CURRENT_PASSWORD'],
+    ['auth/invalid-credential', 'AUTH_WRONG_CURRENT_PASSWORD'],
+    ['auth/weak-password', 'AUTH_WEAK_PASSWORD'],
+    ['auth/password-does-not-meet-requirements', 'AUTH_WEAK_PASSWORD'],
+    ['auth/requires-recent-login', 'AUTH_REQUIRES_RECENT_LOGIN'],
+    ['auth/user-token-expired', 'AUTH_SESSION_EXPIRED'],
+    ['auth/user-mismatch', 'AUTH_SESSION_EXPIRED'],
+    ['auth/user-not-found', 'AUTH_SESSION_EXPIRED'],
+    ['auth/no-current-user', 'AUTH_SESSION_EXPIRED'],
+    ['auth/too-many-requests', 'AUTH_TOO_MANY_REQUESTS'],
+    ['auth/network-request-failed', 'AUTH_NETWORK_ERROR'],
+    ['auth/internal-error', 'AUTH_SERVICE_UNAVAILABLE'],
+  ])('đổi mật khẩu: lỗi SDK %s -> %s', async (sdkCode, code) => {
+    const { api, ops } = await signedUp();
+    ops.failOnce('changePassword', sdk(sdkCode));
+    const attempt = api.auth.changePassword({ currentPassword: 'Mat-khau-1', newPassword: 'X-2' });
+    await expect(attempt).rejects.toBeInstanceOf(AppError);
+    await expect(attempt).rejects.toMatchObject({ code });
+  });
+
+  it('sai mật khẩu ở màn Đăng nhập vẫn là AUTH_INVALID_CREDENTIALS (ánh xạ riêng chỉ cho đổi mật khẩu)', async () => {
+    const { api } = await signedUp();
+    await expect(
+      api.auth.signInWithPassword({ email: 'lan@example.com', password: 'sai-roi-1' }),
+    ).rejects.toMatchObject({ code: 'AUTH_INVALID_CREDENTIALS' });
+  });
+
+  it('đổi họ tên: resolve với tên máy chủ nhận; identity thấy tên mới; chưa đăng nhập là phiên hết hạn', async () => {
+    const { api, ops } = await signedUp();
+    await expect(api.auth.updateDisplayName('Chị Mai')).resolves.toEqual({
+      displayName: 'Chị Mai',
+    });
+    await expect(api.session.identity()).resolves.toMatchObject({ displayName: 'Chị Mai' });
+    ops.failOnce('updateDisplayName', sdk('auth/network-request-failed'));
+    await expect(api.auth.updateDisplayName('A')).rejects.toMatchObject({
+      code: 'AUTH_NETWORK_ERROR',
+    });
+    ops.signedOut();
+    await expect(api.auth.updateDisplayName('A')).rejects.toMatchObject({
+      code: 'AUTH_SESSION_EXPIRED',
+    });
+  });
+
+  it('danh sách shop: rỗng khi chưa có shop, một shop sau khi tạo; chưa đăng nhập là phiên hết hạn', async () => {
+    const { api, ops } = await signedUp();
+    await expect(api.shop.listMyShops()).resolves.toEqual([]);
+    const shop = await api.shop.createShop({ name: 'Shop Lan', sellingSources: ['shopee'] });
+    await expect(api.shop.listMyShops()).resolves.toEqual([
+      { id: shop.id, name: 'Shop Lan', role: 'owner', canEdit: true },
+    ]);
+    ops.signedOut();
+    await expect(api.shop.listMyShops()).rejects.toMatchObject({ code: 'AUTH_SESSION_EXPIRED' });
+  });
+
+  it('đổi tên shop: gọi updateShop với NGUYÊN nguồn bán máy chủ đang lưu', async () => {
+    const { api, ops } = await signedUp();
+    const shop = await api.shop.createShop({ name: 'Cũ', sellingSources: ['shopee', 'lazada'] });
+    // Giá trị máy chủ có thể khác tên ở app (Function dùng `other_unknown`): gửi lại nguyên văn.
+    ops.setStoredSources(shop.id, ['shopee', 'other_unknown']);
+    await expect(api.shop.renameShop(shop.id, 'Mới')).resolves.toEqual({
+      id: shop.id,
+      name: 'Mới',
+      role: 'owner',
+      canEdit: true,
+    });
+    expect(ops.shopCalls.at(-1)).toEqual({
+      name: 'updateShop',
+      input: { shopId: shop.id, name: 'Mới', sellingSources: ['shopee', 'other_unknown'] },
+    });
+  });
+
+  it('tạo/sửa shop có nguồn "Khác": gửi other_unknown lên Function, app nhận lại other', async () => {
+    const { api, ops } = await signedUp();
+    const created = await api.shop.createShop({ name: 'K', sellingSources: ['shopee', 'other'] });
+    expect(ops.shopCalls.at(-1)).toEqual({
+      name: 'createShop',
+      input: { name: 'K', sellingSources: ['shopee', 'other_unknown'] },
+    });
+    expect(created.sellingSources).toEqual(['shopee', 'other']);
+    const updated = await api.shop.updateShop({
+      shopId: created.id,
+      name: 'K2',
+      sellingSources: ['other'],
+    });
+    expect(ops.shopCalls.at(-1)).toEqual({
+      name: 'updateShop',
+      input: { shopId: created.id, name: 'K2', sellingSources: ['other_unknown'] },
+    });
+    expect(updated).toEqual({ id: created.id, name: 'K2', sellingSources: ['other'] });
+  });
+
+  it('đổi tên shop có nguồn "Khác" đã lưu: gửi lại nguyên other_unknown, không đổi thành other', async () => {
+    const { api, ops } = await signedUp();
+    const shop = await api.shop.createShop({ name: 'Cũ', sellingSources: ['other'] });
+    await api.shop.renameShop(shop.id, 'Mới');
+    expect(ops.shopCalls.at(-1)).toEqual({
+      name: 'updateShop',
+      input: { shopId: shop.id, name: 'Mới', sellingSources: ['other_unknown'] },
+    });
+  });
+
+  it('đổi tên shop: không có quyền thì SHOP_PERMISSION_DENIED và KHÔNG gọi Function', async () => {
+    const { api, ops } = await signedUp();
+    const shop = await api.shop.createShop({ name: 'S', sellingSources: [] });
+    ops.setRoles(['packer']);
+    const calls = ops.shopCalls.length;
+    await expect(api.shop.renameShop(shop.id, 'Mới')).rejects.toMatchObject({
+      code: 'SHOP_PERMISSION_DENIED',
+    });
+    expect(ops.shopCalls).toHaveLength(calls);
+  });
+
+  it('đổi tên shop: shop lạ hoặc nguồn bán không đọc được thì SHOP_SAVE_FAILED, không gửi mảng rỗng', async () => {
+    const { api, ops } = await signedUp();
+    const shop = await api.shop.createShop({ name: 'S', sellingSources: ['shopee'] });
+    const calls = ops.shopCalls.length;
+    await expect(api.shop.renameShop('shop-khac', 'Mới')).rejects.toMatchObject({
+      code: 'SHOP_SAVE_FAILED',
+    });
+    ops.setStoredSources(shop.id, null);
+    await expect(api.shop.renameShop(shop.id, 'Mới')).rejects.toMatchObject({
+      code: 'SHOP_SAVE_FAILED',
+    });
+    expect(ops.shopCalls).toHaveLength(calls);
+  });
+
+  it.each([
+    ['functions/permission-denied', 'SHOP_PERMISSION_DENIED'],
+    ['functions/invalid-argument', 'SHOP_SAVE_FAILED'],
+    ['functions/not-found', 'SHOP_SAVE_FAILED'],
+    ['functions/unavailable', 'AUTH_NETWORK_ERROR'],
+    ['functions/internal', 'AUTH_SERVICE_UNAVAILABLE'],
+  ])('đổi tên shop: lỗi Function %s -> %s', async (sdkCode, code) => {
+    const { api, ops } = await signedUp();
+    const shop = await api.shop.createShop({ name: 'S', sellingSources: [] });
+    ops.failOnce('callShop', sdk(sdkCode));
+    await expect(api.shop.renameShop(shop.id, 'Mới')).rejects.toMatchObject({ code });
+  });
+
+  it('luồng thiết lập shop giữ ánh xạ cũ: updateShop bị từ chối quyền vẫn là AUTH_SERVICE_UNAVAILABLE', async () => {
+    const { api, ops } = await signedUp();
+    const shop = await api.shop.createShop({ name: 'S', sellingSources: [] });
+    ops.failOnce('callShop', sdk('functions/permission-denied'));
+    await expect(
+      api.shop.updateShop({ shopId: shop.id, name: 'Mới', sellingSources: [] }),
+    ).rejects.toMatchObject({ code: 'AUTH_SERVICE_UNAVAILABLE' });
   });
 });
