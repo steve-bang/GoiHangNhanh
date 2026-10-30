@@ -1,5 +1,6 @@
 import {
   deleteRecording,
+  excludeEvidenceDirFromBackup,
   findPersistedRecording,
   getAvailableDiskBytes,
   persistRecording,
@@ -7,6 +8,14 @@ import {
   recordingExists,
   resolveRecordingUri,
 } from './recording-files';
+
+const mockExclude = jest.fn(async (_target: string, _uri: string) => 'excluded');
+let mockExclusionSupported = true;
+
+jest.mock('./backup-exclusion', () => ({
+  excludeFromBackup: (target: string, uri: string) => mockExclude(target, uri),
+  isBackupExclusionSupported: () => mockExclusionSupported,
+}));
 
 const mockFiles = new Map<string, number>();
 const mockDirs = new Set<string>();
@@ -84,6 +93,8 @@ jest.mock('expo-file-system', () => {
 });
 
 beforeEach(() => {
+  mockExclude.mockClear();
+  mockExclusionSupported = true;
   mockFiles.clear();
   mockDirs.clear();
   mockMoveError = null;
@@ -271,5 +282,57 @@ describe('deleteRecording (chỉ cho ngoại lệ xóa ảnh hàng hoàn, Q-26j)
     mockDeleteMode = 'noop';
     expect(deleteRecording('evidence/a.jpg')).toEqual({ ok: false });
     expect(mockFiles.has('file:///docs/evidence/a.jpg')).toBe(true);
+  });
+});
+
+describe('loại thư mục bằng chứng khỏi sao lưu (V1-12, Q-24d)', () => {
+  it('khi mở app: tạo thư mục nếu thiếu rồi đặt cờ cho đúng thư mục evidence', async () => {
+    await expect(excludeEvidenceDirFromBackup()).resolves.toBe('excluded');
+    expect(mockDirs.has('file:///docs/evidence')).toBe(true);
+    expect(mockExclude).toHaveBeenCalledWith('evidence', 'file:///docs/evidence');
+  });
+
+  it('thư mục đã có: vẫn đặt lại cờ (idempotent), không tạo lại', async () => {
+    mockDirs.add('file:///docs/evidence');
+    await excludeEvidenceDirFromBackup();
+    await excludeEvidenceDirFromBackup();
+    expect(mockExclude).toHaveBeenCalledTimes(2);
+  });
+
+  it('không có module (Android, web, Expo Go): không đụng hệ tệp, không gọi adapter', async () => {
+    mockExclusionSupported = false;
+    await expect(excludeEvidenceDirFromBackup()).resolves.toBe('unsupported');
+    expect(mockDirs.size).toBe(0);
+    expect(mockExclude).not.toHaveBeenCalled();
+  });
+
+  it('kết quả của adapter (lỗi đặt cờ) được trả nguyên, không ném', async () => {
+    mockExclude.mockResolvedValueOnce('failed');
+    await expect(excludeEvidenceDirFromBackup()).resolves.toBe('failed');
+  });
+
+  it('persistRecording tự tạo lại thư mục thì đặt lại cờ; thư mục đã có thì không gọi', () => {
+    mockFiles.set('file:///cache/a.mp4', 1);
+    expect(persistRecording('file:///cache/a.mp4', 'ev-a', 'mp4')).toMatchObject({ ok: true });
+    expect(mockExclude).toHaveBeenCalledTimes(1);
+    expect(mockExclude).toHaveBeenCalledWith('evidence', 'file:///docs/evidence');
+    mockFiles.set('file:///cache/b.mp4', 1);
+    expect(persistRecording('file:///cache/b.mp4', 'ev-b', 'mp4')).toMatchObject({ ok: true });
+    expect(mockExclude).toHaveBeenCalledTimes(1);
+  });
+
+  it('đặt cờ lỗi không làm hỏng việc lưu tệp', () => {
+    mockExclude.mockRejectedValueOnce(new Error('x'));
+    mockFiles.set('file:///cache/c.mp4', 5);
+    expect(persistRecording('file:///cache/c.mp4', 'ev-c', 'mp4')).toEqual({
+      ok: true,
+      uri: 'evidence/ev-c.mp4',
+      sizeBytes: 5,
+    });
+  });
+
+  it('probeEvidenceDirWritable tự tạo thư mục thì cũng đặt cờ', () => {
+    expect(probeEvidenceDirWritable()).toBe(true);
+    expect(mockExclude).toHaveBeenCalledWith('evidence', 'file:///docs/evidence');
   });
 });

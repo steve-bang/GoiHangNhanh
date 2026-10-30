@@ -269,6 +269,7 @@ Khu vực không đổi được sau khi tạo và liên quan độ trễ, chi p
 ### Q-09 — Bản gốc cục bộ có được sao lưu bởi iCloud/Android Auto Backup?
 Video lớn có thể làm đầy bộ nhớ đám mây cá nhân của người dùng; nhưng loại khỏi sao lưu nghĩa là đổi máy sẽ mất video chưa tải.
 - Khuyến nghị: loại khỏi sao lưu tự động của hệ điều hành (hàng đợi tải lên là cơ chế bảo vệ chính) — xác nhận sau spike và cân nhắc UX.
+- **Cập nhật 2026-10-30:** điều phối chọn A ở Q-24d; đã làm Android ở V1-01 (`allowBackup: false`) và iOS ở V1-12 (module cục bộ, xem `Q-29 / V1-12`). Chưa kiểm chứng trên máy.
 
 ### Q-10 — Ngưỡng cấu hình (chờ O-05)
 Dung lượng trống tối thiểu để bắt đầu quay (A04), thời lượng video ngắn cảnh báo (A06): khung không đặt số; cần O-05 hoặc giá trị mặc định tạm do BA đề xuất.
@@ -717,6 +718,19 @@ Theo quy trình tự động của điều phối; không đổi hành vi nghi�
 | a7 | Thêm `android.blockedPermissions`: `RECORD_AUDIO`, `SYSTEM_ALERT_WINDOW`, `READ/WRITE_EXTERNAL_STORAGE` | Thu thập tối thiểu; O-09 không thu tiếng; mẫu RN và `expo-file-system` tự thêm các quyền này dù app không dùng (prebuild 2026-10-30). Chưa kiểm manifest sau khi Gradle gộp (cần Android SDK) |
 | a8 | `ios.config.usesNonExemptEncryption: false` | App chỉ dùng HTTPS của hệ điều hành và SHA-256 để băm; không mã hóa riêng. Thêm mã hóa riêng thì phải xem lại |
 | a9 | Bản production không lấy tệp Firebase ở gốc repo (nơi đặt tệp dev): chỉ đường dẫn qua biến môi trường (EAS file secret) hoặc `firebase/config/prod/` (`npm run prod:*`); tệp tìm thấy phải có `BUNDLE_ID`/`package_name` đúng mã app production, lệch hoặc không đọc được thì build dừng | Review PR #43: tránh đóng gói nhầm tệp của dự án dev vào bản production. Giữ `firebase/config/prod/` vì là thư mục riêng của prod và vẫn bị đối chiếu mã app |
+
+#### Q-29 / V1-12 — backup-exclusion-ios
+
+Điểm nhỏ do dev tự chốt (2026-10-30), không đổi hành vi nghiệp vụ. Kế hoạch: [plans/v1-12-backup-exclusion-ios.md](plans/v1-12-backup-exclusion-ios.md).
+
+| # | Chốt | Lý do |
+|---|---|---|
+| a | Module Expo cục bộ `modules/backup-exclusion` **chỉ khai `apple`**, không có thư mục `android/` (kế hoạch v1 ghi "android/ no-op trả true") | Android đã loại toàn bộ dữ liệu app bằng `allowBackup: false` (V1-01); thêm module Gradle chỉ để trả `true` là thêm chỗ có thể hỏng build mà không bảo vệ thêm. Adapter thấy không có module thì no-op; cùng kết quả nghiệp vụ trên hai nền tảng (D-12) |
+| b | Đặt cờ lên **thư mục** `Documents/evidence` và `Documents/SQLite` (thư mục mặc định của `expo-sqlite`, gồm `-wal`/`-shm`), không lên từng tệp | Apple áp thuộc tính của thư mục cho nội dung bên trong, kể cả tệp tạo sau; ít lời gọi, không phải nhớ gọi sau mỗi lần quay |
+| c | Thời điểm: thư mục bằng chứng khi mở app (`AppProviders`, tạo thư mục nếu thiếu) và mỗi khi `persistRecording`/`probeEvidenceDirWritable` tự tạo lại thư mục; thư mục CSDL ngay sau lần mở CSDL đầu tiên mỗi tiến trình | Cờ gắn với thư mục: thư mục bị tạo lại thì mất cờ; thư mục CSDL chỉ chắc có sau khi mở |
+| d | Native trả mã `excluded`/`not_found`/`failed`, không ném; adapter không bao giờ ném, log `backup_exclusion.not_applied` chỉ với loại thư mục + kết quả, **không** đường dẫn | Cờ là gợi ý, không ảnh hưởng đọc/ghi: không được chặn quay hay mở CSDL; đường dẫn container chứa UUID máy và ID bằng chứng |
+| e | Tên native `DonChungBackupExclusion`; sàn iOS của podspec = 16.4 (sàn `ExpoModulesCore` SDK 58) | Tránh trùng tên module bên thứ ba; không tự nâng sàn (O-20) |
+| f | Phương án gỡ nếu build EAS iOS hỏng vì module: xóa thư mục `modules/backup-exclusion` (JS tự thành no-op), ghi rủi ro "video và CSDL có thể vào iCloud Backup trên iOS" vào chính sách quyền riêng tư; ghi trong release-checklist G-7 | Không để module phụ chặn phát hành v1 |
 
 **Mã lỗi/chuỗi mới chờ BA (bổ sung khi làm từng PR V1-xx, không thêm vào `codes.ts` khi chưa duyệt):** `UPLOAD_WAITING_NETWORK`, `UPLOAD_INTERRUPTED`, `UPLOAD_EXCEPTION` (V1-02), `ACCOUNT_DELETE_SHOP_HAS_MEMBERS` (V1-14); câu "Đang chờ Wi‑Fi" (V1-09), câu thời hạn lưu v1 (V1-18), câu giới hạn khi quay (V1-11), màn Kiểm tra hộp thư (V1-03), luồng Xóa tài khoản (V1-15).
 

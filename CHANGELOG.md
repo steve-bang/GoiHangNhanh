@@ -16,6 +16,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 ### Security
 
 - Bản production luôn dùng Firebase thật: build dừng nếu mang cờ cổng giả hoặc Firebase Emulator, app bỏ qua các cờ đó lúc chạy; mã app không còn `.dev`; Android không đưa dữ liệu vào sao lưu tự động và bỏ các quyền không dùng (micro, hiển thị trên ứng dụng khác, bộ nhớ ngoài). Chưa chạy build EAS thật (V1-01, #43).
+- iOS: video, ảnh bằng chứng và CSDL trên máy không vào sao lưu iCloud (module Expo cục bộ đầu tiên của app); đổi máy hoặc cài lại sẽ mất tệp chưa tải lên. Chưa build và chưa kiểm chứng trên thiết bị (V1-12, #46).
 
 ### Fixed
 

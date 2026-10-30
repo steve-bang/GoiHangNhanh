@@ -41,6 +41,7 @@ export { hashFile, HASH_CHUNK_BYTES } from './file-hasher';
 export type { HashFileResult } from './file-hasher';
 export {
   deleteRecording,
+  excludeEvidenceDirFromBackup,
   findPersistedRecording,
   getAvailableDiskBytes,
   persistRecording,
