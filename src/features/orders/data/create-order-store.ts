@@ -43,6 +43,7 @@ export function createLocalOrderStore(
     listSessionsOfOrder: async (shop, order) => (await get()).listSessionsOfOrder(shop, order),
     countUnsynced: async (shop) => (await get()).countUnsynced(shop),
     hasRecordingInProgress: async (shop) => (await get()).hasRecordingInProgress(shop),
+    countPackedOrders: async (shop, range) => (await get()).countPackedOrders(shop, range),
     countUnsyncedOnDevice: async () => (await get()).countUnsyncedOnDevice(),
     countUnsyncedByOwner: async (scope, uid) => (await get()).countUnsyncedByOwner(scope, uid),
     hasRecordingOnDevice: async () => (await get()).hasRecordingOnDevice(),

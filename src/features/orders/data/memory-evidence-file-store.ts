@@ -2,6 +2,7 @@ import type { EvidenceId, OrderId, SessionId, ShopId } from '@/core/ids';
 import { AppError } from '@/core/errors/app-error';
 import {
   applyEventToFile,
+  countStates,
   hasSameBinding,
   isUnsynced,
   type EvidenceFile,
@@ -101,5 +102,6 @@ export function createMemoryEvidenceFileStore(
     countUnsynced: async (shopId) => ofShop(shopId).filter((f) => isUnsynced(f.state)).length,
     countUnsyncedOnDevice: async () =>
       [...files.values()].filter((f) => isUnsynced(f.state)).length,
+    countByState: async (shopId, updatedIn) => countStates(ofShop(shopId), updatedIn),
   };
 }

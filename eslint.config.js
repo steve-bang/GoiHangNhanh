@@ -28,6 +28,12 @@ const COMMON_PATTERNS = [
     group: ['../../../*'],
     message: 'Dùng alias @/ thay cho đường dẫn tương đối nhiều cấp.',
   },
+  {
+    // V1-10: không dữ liệu minh họa trong app (tệp đã xóa; chặn tái phát ở MỌI tệp, kể cả test).
+    group: ['@/shared/fixtures/illustrative-data', '**/fixtures/illustrative-data'],
+    message:
+      'Không dùng dữ liệu minh họa: màn hình đọc dữ liệu thật từ kho/cổng (v1-release-plan mục 2.3).',
+  },
 ];
 
 // Lớp API (src/api): chỉ api/firebase được import SDK Firebase; feature chỉ thấy hợp đồng và

@@ -47,7 +47,7 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 | `/create-shop` | UI-A04 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `CreateShopScreen` | Màn thật theo mockup 5.1, cổng giả (xem mục 2.2) |
 | `/permissions` | UI-A05 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `PermissionsScreen` | Màn thật (ORD-02, Q-22u): ô tìm có nút quét, debounce 350 ms, bỏ kết quả cũ, chuỗi rỗng/dưới 2 ký tự không truy vấn, tối đa 20 kết quả; Enter = xác nhận (ghi lịch sử; đúng một khớp chính xác thì mở chi tiết; nhiều thì `OrderMatchSheet`); không thấy -> Tạo đơn với mã này; lịch sử tìm gần đây theo shop (SQLite `search_history`), có xóa từng mục/tất cả. Chưa kiểm chứng trên thiết bị |
 | `/setup-done` | UI-A06 | chưa có đặc tả (docs/09 mục 4) | ẩn | `shop`: `SetupDoneScreen` | Màn thật theo mockup 5.1, cổng giả (xem mục 2.2) |
-| `/home` | UI-B01 | A01 | hiện | `orders`: `HomeScreen` | Màn dựng theo mockup 02 (D-16, Q-16) + dữ liệu minh họa |
+| `/home` | UI-B01 | A01 | hiện | `home`: `HomeScreen` | Màn dựng theo mockup 02 (D-16, Q-16); số liệu thật trên máy, tên shop từ phiên (V1-10) |
 | `/scan` | UI-B02 | A02 | ẩn (route cấp gốc ngoài nhóm tab) | `orders`: `ScanScreen` | Màn thật theo mockup 02/03: camera thật (`expo-camera`, ADR-016), nhập tay, đèn pin (hàng dưới cạnh nút nhập tay), xử lý quyền (Q-16). Quét/nhập xong TRA CỨU rồi mở `OrderMatchSheet` (Q-22x): một đơn -> Xem chi tiết; không thấy -> Tạo đơn với mã này (mã điền sẵn, không tự tạo); nhiều đơn -> bắt chọn kèm nguồn bán/lý do khớp; lỗi -> giữ mã + Thử lại. Chống quét lặp + một mã một truy vấn; hộp mở thì bỏ mã mới |
 | `/home/search` | UI-B03 | A02 | hiện | `orders`: `SearchScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/quick-order` | UI-B04 | A02 | ẩn (route cấp gốc) | `orders`: `QuickOrderScreen` | Màn thật (ORD-05/06, PR4, Q-22): form *Tiếp tục* (chỉ kiểm tra) -> bước Xác nhận trong cùng màn -> *Tạo đơn hàng* lưu rồi `replace` sang chi tiết; lưu cục bộ SQLite (mục 2.5, Q-17) |
@@ -100,7 +100,7 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 | `/account/help/[articleId]` | UI-I06 (route con, `parent: help`) | chưa có đặc tả (Q-20k) | ẩn (`hideTabBar`, Q-20r) | `personal`: `HelpArticleScreen` | Một bài hướng dẫn (tóm tắt, các bước, bài tiếp theo); nội dung nói đúng hiện trạng bản này (chưa ghi video, đơn lưu trên máy); mã bài lạ thì hiện không tìm thấy; testID `screen-UI-I06-articleId` |
 | `/account/help/contact` | UI-I06 (route con, `parent: help`) | chưa có đặc tả (Q-20g, Q-20k) | ẩn (`hideTabBar`, Q-20r) | `personal`: `SupportContactScreen` | Khung 17: họ tên, chủ đề, mã đơn (tùy chọn, tối đa 64 ký tự), nội dung (tối đa 600); không có kênh gửi thật nên chỉ soạn email `mailto:` cho người dùng tự gửi, khóa khi chưa có địa chỉ nhận; không tự đính kèm video hay dữ liệu bằng chứng; testID `screen-UI-I06-contact` |
 | `/account/help/legal` | UI-I06 (route con, `parent: help`) | chưa có đặc tả (Q-20k) | ẩn (`hideTabBar`, Q-20r) | `personal`: `LegalScreen` | Hai hàng Điều khoản sử dụng và Chính sách quyền riêng tư; khóa vì chưa có địa chỉ công bố thật; testID `screen-UI-I06-legal` |
-| `/notifications` | UI-I07 | chưa có đặc tả (thêm theo O-26) | hiện | `shop`: `NotificationListScreen` | Placeholder, tab Thông báo |
+| `/notifications` | UI-I07 | chưa có đặc tả (thêm theo O-26) | hiện | `shop`: `NotificationListScreen` | Trạng thái rỗng trung thực (v1 không gửi thông báo) + nút mở UI-F01 (V1-10) |
 
 **Màn Cá nhân (UI-I01) kiểu iOS (PR 4b):** thẻ hồ sơ (bấm → Sửa họ tên) · thẻ cửa hàng · Dữ liệu bằng chứng (thẻ gói đã ẩn, Q-21ag), rồi nhóm `ListGroup` Tài khoản (Đổi mật khẩu cho tài khoản mật khẩu) · Cài đặt · Hỗ trợ và nhóm Đăng xuất riêng (từ PR-B; trước đó là Tài khoản · Cửa hàng và gói · Cài đặt · Hỗ trợ) kèm dòng "Đơn Chứng · phiên bản X" (từ `app.json` qua `getAppVersion`, bỏ dòng nếu không đọc được). Mục chưa làm cấu hình MỘT chỗ ở `features/personal/ui/account-menu.ts` (`availability`: `available` | `coming_soon` hàng khóa + nhãn "Sắp có" | `hidden`); `members` đang `hidden` (O-03, O-07); `plan` (Gói dịch vụ) cũng `hidden` (Q-21ag, bật lại bằng một dòng). Tab Cá nhân dùng chữ "cửa hàng" (Q-20q); màn đã khách xác nhận giữ "shop".
 
@@ -196,7 +196,7 @@ Token ở `src/core/theme` (màu, chữ, khoảng cách, bo góc, vùng chạm);
 
 | Component | Việc | Ghi chú đáng nhớ |
 |---|---|---|
-| `Screen` (+`ScreenHeader`) | Khung màn: vùng an toàn, tiêu đề, banner ngoại tuyến, nội dung cuộn, `footer` ghim đáy, tránh bàn phím | `inTabs` khi nằm trong thanh tab (không cộng vùng an toàn đáy lần nữa); `illustrative` hiện ghi chú dữ liệu minh họa |
+| `Screen` (+`ScreenHeader`) | Khung màn: vùng an toàn, tiêu đề, banner ngoại tuyến, nội dung cuộn, `footer` ghim đáy, tránh bàn phím | `inTabs` khi nằm trong thanh tab (không cộng vùng an toàn đáy lần nữa) |
 | `Text` | Chữ theo `typography`, tôn trọng font scale | Không khóa `allowFontScaling` |
 | `Button` | Chính / phụ / phá hủy | `minHeight` (44 iOS / 48 Android qua `@/platform`; chính ≥ 56) chứ không cố định chiều cao; đỏ chỉ cho phá hủy; nhãn cụ thể |
 | `ActionCard` | Hai nút lớn của Tổng quan | Một `primary`, một `secondary` |
@@ -215,7 +215,7 @@ Token ở `src/core/theme` (màu, chữ, khoảng cách, bo góc, vùng chạm);
 | `PlaceholderScreen` | Màn khung (route + tiêu đề + lối quay lại) | Mã `UI-xx` chỉ hiện ở bản dev |
 | `Icon` | Tên biểu tượng trừu tượng → glyph Ionicons | Đổi bộ icon chỉ sửa `Icon.tsx` |
 
-Dữ liệu minh họa nằm ở **một tệp** `src/shared/fixtures/illustrative-data.ts` (tiền tố `ILLUSTRATIVE_*`, mã đơn `DEMO-xxxx`); khi nối dữ liệu thật thay từng chỗ import bằng hook ở `data/` của feature rồi xóa tệp này.
+Không còn dữ liệu minh họa trong app: tệp `src/shared/fixtures/illustrative-data.ts` đã xóa ở V1-10 và ESLint chặn import lại. Màn chưa có dữ liệu thật dùng trạng thái rỗng trung thực hoặc `PlaceholderScreen`, không số giả.
 
 ### 2.3 Đăng nhập và khôi phục mật khẩu (UI-A03 đăng nhập, UI-A07, UI-A08, UI-A09)
 

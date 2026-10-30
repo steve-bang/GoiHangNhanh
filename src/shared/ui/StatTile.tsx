@@ -8,7 +8,8 @@ import { useTheme } from './theme';
 type StatTone = 'success' | 'info' | 'brand' | 'danger';
 
 interface StatTileProps {
-  value: number;
+  /** Số đếm; chuỗi (ví dụ "–") khi chưa có số: đang đọc hoặc đọc lỗi, không hiện 0 giả. */
+  value: number | string;
   /** Nhãn chữ luôn có: màu và biểu tượng chỉ hỗ trợ, không là tín hiệu duy nhất. */
   label: string;
   icon: IconName;

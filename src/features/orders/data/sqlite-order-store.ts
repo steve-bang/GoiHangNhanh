@@ -24,7 +24,7 @@ import {
 import { MAX_RECENT_SEARCHES } from '../domain/search';
 import { UNSYNCED_STATES } from '@/features/evidence';
 import type { CreatorUidProvider } from '../domain/creator';
-import { canChangeSessionStatus } from '../domain/session-status';
+import { canChangeSessionStatus, PACKED_SESSION_STATUSES } from '../domain/session-status';
 import { runSerialized } from './db-queue';
 import { LEGACY_EVIDENCE_FILE_COLUMNS, MIGRATIONS } from './sqlite-migrations';
 
@@ -757,6 +757,17 @@ export function createSqliteOrderStore(
     clearRecentSearches: (shopId) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
         await db.runAsync('DELETE FROM search_history WHERE shop_id = ?', [shopId]);
+      }),
+    countPackedOrders: (shopId, startedIn) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        const marks = PACKED_SESSION_STATUSES.map(() => '?').join(', ');
+        const row = await db.getFirstAsync<{ n: number }>(
+          `SELECT COUNT(DISTINCT order_id) AS n FROM packing_sessions
+           WHERE shop_id = ? AND session_status IN (${marks})
+             AND started_at_device >= ? AND started_at_device < ?`,
+          [shopId, ...PACKED_SESSION_STATUSES, startedIn.fromDevice, startedIn.toDevice],
+        );
+        return row?.n ?? 0;
       }),
     hasRecordingInProgress: (shopId) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {

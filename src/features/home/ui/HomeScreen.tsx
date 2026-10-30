@@ -1,13 +1,14 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { logger } from '@/core/logging/logger';
 import { ROUTES } from '@/core/navigation';
+import { useDeviceSetting } from '@/features/orders';
+import { useCurrentShopName } from '@/features/personal';
+import { useTodayEvidenceStats } from '@/features/upload';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import {
-  ILLUSTRATIVE_SHOP_NAME,
-  ILLUSTRATIVE_TODAY_STATS,
-} from '@/shared/fixtures/illustrative-data';
-import {
+  Button,
   Card,
   Icon,
   type IconName,
@@ -19,6 +20,8 @@ import {
 } from '@/shared/ui';
 import { layout } from '@/core/theme';
 
+import { HOME_DEVICE_DATA_NOTICE_DISMISSED } from '../domain';
+
 /**
  * UI-B01 Trang chủ (đặc tả A01; mockup docs/assets/ui/02-home-and-scan.png, D-16; làm gọn theo
  * design system v2). Thứ tự: đầu trang (tên shop, lời chào, chuông), MỘT hành động chính *Đóng gói
@@ -26,12 +29,36 @@ import { layout } from '@/core/theme';
  * còn banner/thẻ gradient trang trí; lối tắt Quét bỏ vì trùng nút Quét giữa thanh tab. Chữ đã sửa so với mẫu (docs/09 mục 5.5): không hứa quá
  * mức, nhãn thống kê dùng nhãn trạng thái chuẩn. KHÔNG biểu đồ doanh thu. Hàng hoàn và Đồng bộ
  * không còn là tab: vào từ đây. "Đơn gần đây"/"Việc cần xử lý" của docs/09 chưa có trên mẫu (Q-16).
+ *
+ * V1-10: tên shop từ phiên (`getShopSummary`), 3 ô đếm THẬT trên máy cho shop đang dùng
+ * (`useTodayEvidenceStats`: định nghĩa ở `upload/domain/evidence-stats.ts`), không còn dữ liệu minh họa.
+ * Đang đọc/đọc lỗi: ô hiện "–", không hiện 0 giả. Thẻ "Dữ liệu nằm trên máy này" (Q-24a) đóng được,
+ * nhớ theo máy (`device_settings`).
  */
 export function HomeScreen() {
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const touch = getMinTouchTarget();
+  const shopName = useCurrentShopName();
+  const { state: stats } = useTodayEvidenceStats();
+  const notice = useDeviceSetting(HOME_DEVICE_DATA_NOTICE_DISMISSED);
+  const showNotice = notice.loaded && !notice.value;
+  const statValue = (key: 'packed' | 'uploaded' | 'needsAction') =>
+    stats.kind === 'ready' ? stats.data[key] : t('screens:home.statUnknown');
+  const todayEmpty =
+    stats.kind === 'ready' &&
+    stats.data.packed === 0 &&
+    stats.data.uploaded === 0 &&
+    stats.data.needsAction === 0;
+  const dismissNotice = () => {
+    notice.setValue(true).catch((error: unknown) => {
+      // Ghi lỗi: thẻ vẫn hiện (giá trị giữ nguyên), lần sau bấm lại được.
+      logger.warn('home.notice_dismiss_failed', {
+        reason: error instanceof Error ? error.name : 'unknown',
+      });
+    });
+  };
 
   const header = (
     <View
@@ -48,8 +75,8 @@ export function HomeScreen() {
         <Icon name="store" size={26} color={tokens.color.brand.primary} />
       </View>
       <View style={styles.headerText}>
-        <Text variant="sectionTitle" numberOfLines={1}>
-          {ILLUSTRATIVE_SHOP_NAME}
+        <Text variant="sectionTitle" numberOfLines={1} testID="home-shop-name">
+          {shopName === undefined ? '' : (shopName ?? t('screens:home.shopFallback'))}
         </Text>
         <Text variant="caption" color="textMuted">
           {t('screens:home.greeting')}
@@ -73,13 +100,7 @@ export function HomeScreen() {
   );
 
   return (
-    <Screen
-      title={t('nav:titles.UI-B01')}
-      header={header}
-      inTabs
-      illustrative
-      testID="screen-UI-B01"
-    >
+    <Screen title={t('nav:titles.UI-B01')} header={header} inTabs testID="screen-UI-B01">
       <View style={{ gap: tokens.space.md }}>
         <HomeActionCard
           testID="home-pack-order"
@@ -151,7 +172,7 @@ export function HomeScreen() {
             testID="home-stat-packed"
             tone="success"
             icon="check-circle"
-            value={ILLUSTRATIVE_TODAY_STATS.packed}
+            value={statValue('packed')}
             label={t('screens:home.stat.packed')}
             onPress={() => navigation.push(ROUTES.orders)}
           />
@@ -159,7 +180,7 @@ export function HomeScreen() {
             testID="home-stat-uploaded"
             tone="info"
             icon="cloud-up"
-            value={ILLUSTRATIVE_TODAY_STATS.uploaded}
+            value={statValue('uploaded')}
             label={t('screens:home.stat.uploaded')}
             onPress={() => navigation.push(ROUTES.sync)}
           />
@@ -167,12 +188,45 @@ export function HomeScreen() {
             testID="home-stat-error"
             tone="danger"
             icon="alert"
-            value={ILLUSTRATIVE_TODAY_STATS.error}
+            value={statValue('needsAction')}
             label={t('screens:home.stat.error')}
-            onPress={() => navigation.push(ROUTES.sync)}
+            onPress={() => navigation.push(ROUTES.sync, { filter: 'error' })}
           />
         </View>
+        {todayEmpty ? (
+          <Text variant="caption" color="textMuted" testID="home-today-empty">
+            {t('screens:home.todayEmpty')}
+          </Text>
+        ) : null}
+        {stats.kind === 'error' ? (
+          <Text variant="caption" color="textMuted" testID="home-today-error">
+            {t('screens:home.todayLoadError')}
+          </Text>
+        ) : null}
       </View>
+
+      {showNotice ? (
+        <Card testID="home-device-notice">
+          <View style={{ gap: tokens.space.sm }}>
+            <View style={[styles.helpRow, { gap: tokens.space.md }]}>
+              <Icon name="info" size={tokens.icon.lg} color={tokens.color.brand.primary} />
+              <Text variant="cardTitle" accessibilityRole="header" style={styles.flex}>
+                {t('screens:home.deviceNotice.title')}
+              </Text>
+            </View>
+            <Text variant="caption" color="textMuted">
+              {t('screens:home.deviceNotice.body')}
+            </Text>
+            <Button
+              variant="secondary"
+              size="slim"
+              label={t('screens:home.deviceNotice.dismiss')}
+              onPress={dismissNotice}
+              testID="home-device-notice-dismiss"
+            />
+          </View>
+        </Card>
+      ) : null}
 
       <Card
         testID="home-tip-guide"

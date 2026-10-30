@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
-import { useAppNavigation, useConnectivity } from '@/platform';
+import { useAppNavigation, useConnectivity, useRouteParams } from '@/platform';
 import {
   Button,
   EmptyState,
@@ -51,7 +51,11 @@ export function SyncCenterScreen() {
   const navigation = useAppNavigation();
   const { online } = useConnectivity();
   const waitingWifi = useUploadNetworkGate() === 'waiting_wifi';
-  const [filter, setFilter] = useState<SyncFilter>('uploading');
+  // Tham số `filter` (ô "Lỗi – cần xử lý" ở Trang chủ mở thẳng bộ lọc Lỗi, V1-10); giá trị lạ bị bỏ qua.
+  const requested = useRouteParams().filter;
+  const [filter, setFilter] = useState<SyncFilter>(
+    SYNC_FILTERS.find((key) => key === requested) ?? 'uploading',
+  );
   const stores = useSyncJobStores();
   const { state, reload } = useSyncJobs(filter === 'uploaded');
   const { retry, recheck, busy } = useSyncActions(stores, reload);

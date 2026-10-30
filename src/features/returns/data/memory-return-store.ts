@@ -1,5 +1,6 @@
 import { AppError } from '@/core/errors/app-error';
 import type { OrderId, ReturnCaseId, ShopId } from '@/core/ids';
+import { countStates } from '@/features/evidence';
 import { stampCreator, type CreatorUidProvider } from '@/features/orders';
 
 import {
@@ -409,6 +410,12 @@ export function createMemoryReturnStore(
         .filter((m) => m.shopId === shopId && states.includes(m.state))
         .sort((a, b) => a.createdAtDevice - b.createdAtDevice)
         .map(copy);
+    },
+    async countMediaByState(shopId, updatedIn) {
+      return countStates(
+        [...media.values()].filter((m) => m.shopId === shopId),
+        updatedIn,
+      );
     },
     async listMedia(shopId, returnId) {
       return [...media.values()]

@@ -13,6 +13,7 @@ export { PaymentHistoryScreen } from './ui/PaymentHistoryScreen';
 export { PlanDetailScreen } from './ui/PlanDetailScreen';
 export { PlanScreen } from './ui/PlanScreen';
 export { ProfileScreen } from './ui/ProfileScreen';
+export { useCurrentShopName } from './ui/use-current-shop-name';
 export { RetentionDetailScreen } from './ui/RetentionDetailScreen';
 export { SecurityScreen } from './ui/SecurityScreen';
 export { ShopEditScreen } from './ui/ShopEditScreen';

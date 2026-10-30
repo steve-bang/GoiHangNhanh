@@ -1,4 +1,5 @@
 import type { OrderId, OrderLineId, PackageId, SessionId, ShopId } from '@/core/ids';
+import type { DeviceTimeRange } from '@/features/evidence';
 
 import type { OrderListPage, OrderListPageRequest, OrderListQuery } from './order-list';
 import type { Order, OrderDetails, OrderLine, OrderPackage, PackingSession } from './types';
@@ -84,6 +85,12 @@ export interface OrderStore {
    * `LOCAL_SAVE_UNAVAILABLE`: bên gọi KHÔNG được coi lỗi là "không quay" (chặn theo hướng bảo thủ).
    */
   hasRecordingInProgress(shopId: ShopId): Promise<boolean>;
+  /**
+   * Số ĐƠN khác nhau của shop có ít nhất một phiên BẮT ĐẦU trong `startedIn` (giờ thiết bị) và đã dừng
+   * ghi bình thường (`PACKED_SESSION_STATUSES`: có video đã lưu). Phiên `created` (chưa ghi), đang ghi,
+   * bị gián đoạn hay cần xử lý không tính (Trang chủ, V1-10; bất biến 6, 11).
+   */
+  countPackedOrders(shopId: ShopId, startedIn: DeviceTimeRange): Promise<number>;
   /**
    * Như `countUnsynced` nhưng cho MỌI shop có dữ liệu trên máy này. CHỈ để bảo vệ dữ liệu khi đăng xuất
    * (đăng xuất rời cả tài khoản, không chỉ shop đang dùng; Q-20o). Không dùng để hiển thị dữ liệu của

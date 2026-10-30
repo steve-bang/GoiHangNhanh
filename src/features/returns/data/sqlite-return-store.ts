@@ -1,6 +1,7 @@
 import { AppError, isAppError } from '@/core/errors/app-error';
 import type { OrderId, ReturnCaseId, ShopId } from '@/core/ids';
 import { logger } from '@/core/logging/logger';
+import { toStateCounts } from '@/features/evidence';
 import {
   migrateOrderDatabase,
   runSerializedOnDb,
@@ -842,6 +843,16 @@ export function createSqliteReturnStore(
           [shopId, ...states],
         );
         return rows.map(toMedia);
+      }),
+
+    countMediaByState: (shopId, updatedIn) =>
+      guarded(async () => {
+        const range = updatedIn ? ' AND updated_at_device >= ? AND updated_at_device < ?' : '';
+        const rows = await db.getAllAsync<{ state: string; n: number }>(
+          `SELECT state, COUNT(*) AS n FROM return_media WHERE shop_id = ?${range} GROUP BY state`,
+          updatedIn ? [shopId, updatedIn.fromDevice, updatedIn.toDevice] : [shopId],
+        );
+        return toStateCounts(rows);
       }),
 
     listMedia: (shopId, returnId) =>

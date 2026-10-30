@@ -396,6 +396,43 @@ export function runOrderStoreContract(name: string, create: () => Promise<OrderS
       ).toBeNull();
     });
 
+    it('countPackedOrders: đơn khác nhau có phiên bắt đầu trong [from, to) và đã dừng ghi bình thường', async () => {
+      const store = await create();
+      const day = { fromDevice: 5000, toDevice: 6000 };
+      const finish = async (session: PackingSession, to: 'ended' | 'confirmed' | 'interrupted') => {
+        await store.updateSessionStatus(LOCAL_SHOP_ID, session.id, 'recording');
+        if (to === 'confirmed') await store.updateSessionStatus(LOCAL_SHOP_ID, session.id, 'ended');
+        await store.updateSessionStatus(LOCAL_SHOP_ID, session.id, to);
+      };
+      expect(await store.countPackedOrders(LOCAL_SHOP_ID, day)).toBe(0);
+      // Hai phiên cùng một đơn (quay lại sau khi kết thúc): vẫn là MỘT đơn.
+      const a = makeOrder('PK-A');
+      await finish(await startSession(store, a, 'sess-pk-a1', undefined, true, 5000), 'ended');
+      await finish(await startSession(store, a, 'sess-pk-a2', undefined, false, 5500), 'confirmed');
+      expect(await store.countPackedOrders(LOCAL_SHOP_ID, day)).toBe(1);
+      // Phiên chưa ghi (created), đang ghi, bị gián đoạn: không tính.
+      await startSession(store, makeOrder('PK-B'), 'sess-pk-b', undefined, true, 5100);
+      const c = await startSession(store, makeOrder('PK-C'), 'sess-pk-c', undefined, true, 5200);
+      await store.updateSessionStatus(LOCAL_SHOP_ID, c.id, 'recording');
+      await finish(
+        await startSession(store, makeOrder('PK-D'), 'sess-pk-d', undefined, true, 5300),
+        'interrupted',
+      );
+      // Ngoài khoảng: đúng mốc `toDevice` không tính.
+      await finish(
+        await startSession(store, makeOrder('PK-E'), 'sess-pk-e', undefined, true, 6000),
+        'ended',
+      );
+      expect(await store.countPackedOrders(LOCAL_SHOP_ID, day)).toBe(1);
+      await finish(
+        await startSession(store, makeOrder('PK-F'), 'sess-pk-f', undefined, true, 5999),
+        'ended',
+      );
+      expect(await store.countPackedOrders(LOCAL_SHOP_ID, day)).toBe(2);
+      // Shop khác không thấy (bất biến 8).
+      expect(await store.countPackedOrders('shop-khac' as ShopId, day)).toBe(0);
+    });
+
     it('toàn thiết bị: thấy phiên đang quay của MỌI shop và chưa đồng bộ là 0; phiên created không tính', async () => {
       const store = await create();
       const other = 'shop-khac' as ShopId;
