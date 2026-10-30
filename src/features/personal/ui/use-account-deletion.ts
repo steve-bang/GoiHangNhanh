@@ -95,6 +95,7 @@ export function useDeleteAccountAction(options: { readonly withOwnership?: boole
   const navigation = useAppNavigation();
   const { account } = usePersonalGateways();
   const wipe = useLocalWipe();
+  const session = useSession();
   const read = useDeleteFactsReader();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ErrorCode | 'conditions_changed' | null>(null);
@@ -112,11 +113,26 @@ export function useDeleteAccountAction(options: { readonly withOwnership?: boole
           setError('conditions_changed');
           return;
         }
+        let outcome: 'deleted' | 'already_deleted';
         try {
-          await account.deleteAccount(password);
+          outcome = await account.deleteAccount(password);
         } catch (caught) {
-          setError(isAppError(caught) ? caught.code : 'AUTH_SERVICE_UNAVAILABLE');
+          // Lỗi lạ (không phải AppError) không chứng minh được là chưa gửi: coi như chưa rõ.
+          setError(isAppError(caught) ? caught.code : 'ACCOUNT_DELETE_UNCONFIRMED');
           return;
+        }
+        if (outcome === 'already_deleted') {
+          // Tài khoản đã không còn (lần trước máy chủ xóa xong mà app không nhận được xác nhận, hoặc app bị
+          // tắt trước khi đặt dấu). Đọc LẠI điều kiện máy: chỉ xóa khi vẫn đạt (không tranh chấp mở, không dữ
+          // liệu tài khoản khác); không thì giữ nguyên dữ liệu, chỉ thoát phiên và báo.
+          const again = await read(options);
+          if (!canSubmitDelete(evaluateDeleteGate(evaluateDeleteConditions(again)), consent)) {
+            await account.signOut().catch(() => undefined);
+            session.endSessionAfterAccountDeletion();
+            navigation.reset(ROUTES.welcome);
+            toast.show(t('personal:deleteAccount.keptData'), { tone: 'info', placement: 'top' });
+            return;
+          }
         }
         // Máy chủ đã xác nhận: từ đây không còn đường lui; lỗi xóa trên máy hiện ở lớp phủ (có Thử lại).
         if (await wipe.wipeAfterAccountDeletion()) {
@@ -130,7 +146,7 @@ export function useDeleteAccountAction(options: { readonly withOwnership?: boole
     },
     // `options` chỉ là cờ hằng của màn.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [read, account, wipe, navigation, toast, t],
+    [read, account, wipe, navigation, toast, t, session],
   );
 
   return { busy, error, submit, clearError: () => setError(null) };

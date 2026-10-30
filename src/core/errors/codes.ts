@@ -81,6 +81,9 @@ export const ERROR_CODES = {
   // xảy ra ở v1); yêu cầu xóa đã ghi nhận nhưng chưa xong (`details.reason: 'account_deleted'`, V1-14 l).
   ACCOUNT_DELETE_SHOP_HAS_MEMBERS: 'ACCOUNT_DELETE_SHOP_HAS_MEMBERS',
   ACCOUNT_DELETION_PENDING: 'ACCOUNT_DELETION_PENDING',
+  // Lời gọi xóa đã gửi đi nhưng không có xác nhận rõ (lỗi mạng/máy chủ không lý do): KHÔNG được nói
+  // "chưa có gì bị xóa" (review PR #61).
+  ACCOUNT_DELETE_UNCONFIRMED: 'ACCOUNT_DELETE_UNCONFIRMED',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

@@ -52,6 +52,13 @@ export interface DeleteAccountInput {
   readonly password: string;
 }
 
+/**
+ * Kết quả xóa tài khoản: `deleted` = máy chủ vừa xác nhận; `already_deleted` = tài khoản Auth không còn
+ * (lần gọi trước đã xóa xong nhưng app không nhận được xác nhận, hoặc máy chủ tự hoàn tất). Cả hai đều cho
+ * phép xóa dữ liệu trên máy (sau khi đọc lại điều kiện).
+ */
+export type DeleteAccountOutcome = 'deleted' | 'already_deleted';
+
 export interface SignUpWithEmailInput {
   readonly email: string;
   readonly password: string;
@@ -103,10 +110,12 @@ export interface AuthApi {
    * Xóa tài khoản đang đăng nhập (V1-15; máy chủ V1-14): xác thực lại bằng mật khẩu, lấy ID token mới
    * (máy chủ đòi `auth_time` trong 5 phút) rồi gọi Function `deleteAccount`. CHỈ resolve khi máy chủ xác
    * nhận đã ghi nhận yêu cầu (tài khoản bị khóa ngay, dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30
-   * ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở). Lỗi: `AUTH_WRONG_CURRENT_PASSWORD`,
-   * `AUTH_REQUIRES_RECENT_LOGIN`, `AUTH_SESSION_EXPIRED`, `AUTH_TOO_MANY_REQUESTS`, `AUTH_NETWORK_ERROR`,
-   * `ACCOUNT_DELETE_SHOP_HAS_MEMBERS`, `ACCOUNT_DELETION_PENDING`, `AUTH_SERVICE_UNAVAILABLE`. Hàm này
-   * KHÔNG xóa gì trên máy; bên gọi chỉ xóa dữ liệu cục bộ sau khi hàm resolve.
+   * ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở), hoặc khi tài khoản đã không còn
+   * (`already_deleted`). Lỗi TRƯỚC khi gửi lời gọi xóa (chắc chắn chưa xóa gì): `AUTH_WRONG_CURRENT_PASSWORD`,
+   * `AUTH_SESSION_EXPIRED`, `AUTH_TOO_MANY_REQUESTS`, `AUTH_NETWORK_ERROR`, `AUTH_SERVICE_UNAVAILABLE`.
+   * Máy chủ từ chối có lý do (không đổi gì): `AUTH_REQUIRES_RECENT_LOGIN`, `ACCOUNT_DELETE_SHOP_HAS_MEMBERS`.
+   * Đã gửi mà không có xác nhận rõ: `ACCOUNT_DELETE_UNCONFIRMED` (có thể đã xóa; thử lại sẽ ra
+   * `already_deleted`). Hàm này KHÔNG xóa gì trên máy.
    */
-  deleteAccount(input: DeleteAccountInput): Promise<void>;
+  deleteAccount(input: DeleteAccountInput): Promise<DeleteAccountOutcome>;
 }

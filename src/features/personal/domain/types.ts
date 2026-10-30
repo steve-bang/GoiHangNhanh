@@ -92,10 +92,11 @@ export interface AccountGateway {
   /** Tài khoản không đăng nhập bằng mật khẩu: bản thật phải từ chối; UI vốn đã ẩn mục này. */
   changePassword(input: ChangePasswordInput): Promise<void>;
   /**
-   * Xóa tài khoản (PER-22, V1-15): xác thực lại bằng mật khẩu rồi gọi máy chủ. Sai mật khẩu:
+   * Xóa tài khoản (PER-22, V1-15): xác thực lại bằng mật khẩu rồi gọi máy chủ. `already_deleted` = tài
+   * khoản đã không còn (lần trước máy chủ đã xóa mà app không nhận được xác nhận). Sai mật khẩu:
    * `AUTH_WRONG_CURRENT_PASSWORD`; các lỗi khác xem `AuthApi.deleteAccount`. Không log mật khẩu.
    */
-  deleteAccount(password: string): Promise<void>;
+  deleteAccount(password: string): Promise<'deleted' | 'already_deleted'>;
   /**
    * Thu hồi phiên trên máy chủ/SDK. Lỗi thì ném, bên gọi KHÔNG được xả state như đã đăng xuất.
    * Không xóa dữ liệu cục bộ (decisions.md Q-20h).

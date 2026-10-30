@@ -26,6 +26,21 @@ import {
   type DeleteConditionStatus,
 } from '../domain/delete-account-conditions';
 
+/**
+ * Lỗi mà CHẮC CHẮN chưa có gì bị xóa: xảy ra trước khi gửi lời gọi xóa (xác thực lại, token, kiểm điều
+ * kiện) hoặc máy chủ từ chối có lý do trước khi đổi gì. Chỉ những lỗi này mới kèm câu "Chưa có gì bị
+ * xóa"; `ACCOUNT_DELETE_UNCONFIRMED` (đã gửi, không rõ kết quả) thì không (review PR #61).
+ */
+const NOTHING_DELETED_ERRORS: readonly (ErrorCode | 'conditions_changed')[] = [
+  'conditions_changed',
+  'AUTH_NETWORK_ERROR',
+  'AUTH_TOO_MANY_REQUESTS',
+  'AUTH_SESSION_EXPIRED',
+  'AUTH_SERVICE_UNAVAILABLE',
+  'AUTH_REQUIRES_RECENT_LOGIN',
+  'ACCOUNT_DELETE_SHOP_HAS_MEMBERS',
+];
+
 const STATUS_ICON: Record<DeleteConditionStatus | 'checking', IconName> = {
   met: 'check-circle',
   attention: 'alert-triangle',
@@ -37,15 +52,26 @@ const STATUS_ICON: Record<DeleteConditionStatus | 'checking', IconName> = {
 export function DeleteConditionList({
   conditions,
   hide = [],
+  pending = false,
 }: {
   conditions: readonly DeleteCondition[] | null;
   hide?: readonly DeleteConditionId[];
+  /**
+   * Màn "Đang hoàn tất xóa tài khoản": người dùng không vào được hồ sơ (không còn cửa hàng), nên câu của mục
+   * chặn nói dữ liệu được giữ lại thay vì bảo "đóng hồ sơ" (review PR #61).
+   */
+  pending?: boolean;
 }) {
   const { t } = useTranslation();
   return (
     <ListGroup title={t('personal:deleteAccount.conditionsTitle')} testID="delete-conditions">
       {DELETE_CONDITION_IDS.filter((id) => !hide.includes(id)).map((id) => (
-        <ConditionRow key={id} id={id} condition={conditions?.find((c) => c.id === id) ?? null} />
+        <ConditionRow
+          key={id}
+          id={id}
+          condition={conditions?.find((c) => c.id === id) ?? null}
+          pending={pending}
+        />
       ))}
     </ListGroup>
   );
@@ -55,9 +81,11 @@ export function DeleteConditionList({
 function ConditionRow({
   id,
   condition,
+  pending,
 }: {
   id: DeleteConditionId;
   condition: DeleteCondition | null;
+  pending: boolean;
 }) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
@@ -69,10 +97,15 @@ function ConditionRow({
   const word = condition
     ? t(`personal:deleteAccount.status.${wordKey}`)
     : t('personal:deleteAccount.checking');
+  const pendingCopy =
+    pending && condition?.status === 'attention' && (id === 'disputes' || id === 'foreign');
   const detail = condition
-    ? t(`personal:deleteAccount.conditions.${id}.${condition.status}`, {
-        count: condition.count ?? 0,
-      })
+    ? t(
+        pendingCopy
+          ? `personal:deleteAccount.pending.conditions.${id}`
+          : `personal:deleteAccount.conditions.${id}.${condition.status}`,
+        { count: condition.count ?? 0 },
+      )
     : null;
   const color =
     status === 'met'
@@ -237,9 +270,11 @@ export function DeletePasswordForm({
             <Text bold accessibilityRole="alert">
               {banner}
             </Text>
-            <Text variant="caption" testID="delete-nothing-deleted">
-              {t('personal:deleteAccount.password.nothingDeleted')}
-            </Text>
+            {error !== null && NOTHING_DELETED_ERRORS.includes(error) ? (
+              <Text variant="caption" testID="delete-nothing-deleted">
+                {t('personal:deleteAccount.password.nothingDeleted')}
+              </Text>
+            ) : null}
           </View>
         </Card>
       ) : null}

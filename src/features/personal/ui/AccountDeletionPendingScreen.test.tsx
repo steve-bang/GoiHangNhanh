@@ -71,9 +71,11 @@ describe('Đang hoàn tất xóa tài khoản (V1-15, xóa dở dang V1-14 l)', 
     await setup();
     expect(screen.getByTestId('screen-UI-A04-deletion-pending')).toBeOnTheScreen();
     expect(screen.getByTestId('pending-intro')).toHaveTextContent(/đã bắt đầu nhưng chưa xong/);
-    expect(screen.getByTestId('delete-data-server')).toHaveTextContent(
-      /bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở/,
+    expect(screen.getByTestId('pending-server-status')).toHaveTextContent(
+      /đang trong quá trình xóa trên máy chủ\..*dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở/,
     );
+    // Không dùng câu "Tài khoản bị xóa ngay" của màn Xóa tài khoản.
+    expect(screen.queryByText(/Tài khoản bị xóa ngay/)).toBeNull();
     expect(screen.queryByTestId('delete-condition-ownership')).toBeNull();
     expect(await screen.findByTestId('delete-password')).toBeOnTheScreen();
     expect(screen.getByTestId('pending-sign-out')).toBeOnTheScreen();
@@ -96,7 +98,14 @@ describe('Đang hoàn tất xóa tài khoản (V1-15, xóa dở dang V1-14 l)', 
 
   it('còn tranh chấp mở trên máy: không cho xóa dữ liệu trên máy, vẫn đăng xuất được', async () => {
     const { gateways } = await setup({ openDisputes: 1 });
-    expect(await screen.findByTestId('delete-blocked-hint')).toBeOnTheScreen();
+    expect(await screen.findByTestId('delete-blocked-hint')).toHaveTextContent(
+      /được giữ lại\..*liên hệ hỗ trợ\..*vẫn có thể đăng xuất/,
+    );
+    // Người dùng không vào được hồ sơ: không bảo "đóng hồ sơ".
+    expect(screen.getByTestId('delete-condition-disputes')).not.toHaveTextContent(/Hãy đóng hồ sơ/);
+    expect(screen.getByTestId('delete-condition-disputes')).toHaveTextContent(
+      /Còn 1 hồ sơ tranh chấp đang mở trên máy, nên dữ liệu trên máy được giữ lại\./,
+    );
     expect(screen.queryByTestId('delete-password')).toBeNull();
     await fireEvent.press(screen.getByTestId('pending-sign-out'));
     const dialogConfirm = screen.getAllByText('Đăng xuất').at(-1);

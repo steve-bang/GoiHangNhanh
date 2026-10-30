@@ -40,7 +40,8 @@ export interface SessionContextValue {
   /**
    * Kết thúc phiên trong bộ nhớ sau khi tài khoản ĐÃ bị xóa ở máy chủ và dữ liệu trên máy đã được xóa
    * (V1-15, `LocalWipeProvider`). Không gọi cổng: phiên Auth trên máy đã được thoát trong lúc xóa (lỗi
-   * thoát bị bỏ qua vì tài khoản không còn). Chỉ `LocalWipeProvider` gọi.
+   * thoát bị bỏ qua vì tài khoản không còn). Chỉ `LocalWipeProvider` gọi, và luồng xóa tài khoản khi tài
+   * khoản đã không còn mà dữ liệu trên máy phải giữ lại (`use-account-deletion.ts`).
    */
   endSessionAfterAccountDeletion(): void;
   /**

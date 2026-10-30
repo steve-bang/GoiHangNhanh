@@ -229,7 +229,10 @@ const APPROVED_PROTECT_KEYS = [
  */
 const RETENTION_SENTENCE =
   'dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở';
-const RETENTION_SENTENCE_KEYS = ['vi.personal.deleteAccount.dataServer'];
+const RETENTION_SENTENCE_KEYS = [
+  'vi.personal.deleteAccount.dataServer',
+  'vi.personal.deleteAccount.pending.serverStatus',
+];
 
 describe('quét toàn bộ chuỗi giao diện', () => {
   it('có chuỗi để quét (đủ nhiều namespace)', () => {

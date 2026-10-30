@@ -48,6 +48,11 @@ export const FAKE_ACCOUNT_PASSWORD = 'demo-matkhau-1';
  * cần mạng thật). Không phải bí mật.
  */
 export const FAKE_DELETE_OFFLINE_PASSWORD = 'demo-matmang-1';
+/**
+ * Mật khẩu mô phỏng "máy chủ đã xóa nhưng app mất phản hồi" (CHỈ bản giả): lần này báo
+ * `ACCOUNT_DELETE_UNCONFIRMED`, lần thử lại trả `already_deleted`. Không phải bí mật.
+ */
+export const FAKE_DELETE_UNCONFIRMED_PASSWORD = 'demo-chuaro-1';
 /** Mật khẩu coi là quá yếu (chỉ bản giả): độ dài tối thiểu do màn hình kiểm tra riêng. */
 export const FAKE_ACCOUNT_WEAK_PASSWORDS: readonly string[] = ['12345678', '11111111', 'password'];
 
@@ -238,14 +243,20 @@ export class FakeAccountGateway implements AccountGateway {
     if (generation === this.generation) this.password = input.newPassword;
   }
 
-  async deleteAccount(password: string): Promise<void> {
+  async deleteAccount(password: string): Promise<'deleted' | 'already_deleted'> {
     this.deleteAccountCalls += 1;
     await delay(this.latencyMs);
     this.failure.consume();
+    // Như Firebase không bật chống dò email: tài khoản không còn thì xác thực lại báo "không còn".
+    if (this.deleted) return 'already_deleted';
     if (password === FAKE_DELETE_OFFLINE_PASSWORD) throw new AppError('AUTH_NETWORK_ERROR');
-    if (this.deleted) throw new AppError('AUTH_SESSION_EXPIRED');
+    if (password === FAKE_DELETE_UNCONFIRMED_PASSWORD) {
+      this.deleted = true;
+      throw new AppError('ACCOUNT_DELETE_UNCONFIRMED');
+    }
     if (password !== this.password) throw new AppError('AUTH_WRONG_CURRENT_PASSWORD');
     this.deleted = true;
+    return 'deleted';
   }
 
   async signOut(): Promise<void> {

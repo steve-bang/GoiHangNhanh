@@ -55,11 +55,11 @@ export function AccountDeletionPendingScreen() {
       </View>
       <Card>
         <View style={{ gap: tokens.space.sm }}>
-          <Text variant="caption" color="textMuted" testID="delete-data-server">
-            {t('personal:deleteAccount.dataServer')}
+          <Text variant="caption" color="textMuted" testID="pending-server-status">
+            {t('personal:deleteAccount.pending.serverStatus')}
           </Text>
           <Text variant="caption" color="textMuted">
-            {t('personal:deleteAccount.dataDevice')}
+            {t('personal:deleteAccount.pending.dataDevice')}
           </Text>
           <Text variant="caption" color="textMuted">
             {t('personal:deleteAccount.pending.autoComplete')}
@@ -67,7 +67,7 @@ export function AccountDeletionPendingScreen() {
         </View>
       </Card>
 
-      <DeleteConditionList conditions={conditions} hide={['ownership']} />
+      <DeleteConditionList conditions={conditions} hide={['ownership']} pending />
       {gate && gate.allowed && gate.unsyncedToLose > 0 ? (
         <UnsyncedLossNotice
           count={gate.unsyncedToLose}

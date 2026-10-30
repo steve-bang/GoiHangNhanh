@@ -8,6 +8,7 @@ import type {
   AuthApi,
   ChangePasswordInput,
   DeleteAccountInput,
+  DeleteAccountOutcome,
   CreatedShop,
   CreateShopInput,
   ApiClient,
@@ -112,6 +113,8 @@ export class FakeAuthApi implements AuthApi {
   private readonly codeTtlMs: number;
   private readonly ticketTtlMs: number;
   private readonly accounts = new Map<string, FakeAccount>();
+  /** Tài khoản đã bị "máy chủ" xóa (phiên trên máy vẫn còn tới khi đăng xuất, như SDK thật). */
+  private readonly deletedKeys = new Set<string>();
   private readonly failedSignIns = new Map<string, number>();
   private readonly codeRequests = new Map<string, number>();
   private readonly pending = new Map<string, PendingCode>();
@@ -253,16 +256,21 @@ export class FakeAuthApi implements AuthApi {
    * Như máy chủ V1-14: sai mật khẩu thì không đổi gì; đúng thì tài khoản biến mất (không đăng nhập lại
    * được) và phiên trên máy kết thúc. Bản giả không có cửa hàng theo tài khoản để khóa.
    */
-  async deleteAccount(input: DeleteAccountInput): Promise<void> {
+  async deleteAccount(input: DeleteAccountInput): Promise<DeleteAccountOutcome> {
     this.deleteAccountCalls += 1;
     await delay(this.latencyMs);
     this.consumeFailure();
+    // Như Firebase không bật chống dò email: người dùng đã bị xóa thì xác thực lại báo "không còn".
+    if (this.currentKey && this.deletedKeys.has(this.currentKey)) return 'already_deleted';
     const account = this.currentAccount();
     if (account.password === null || account.password !== input.password) {
       throw new AppError('AUTH_WRONG_CURRENT_PASSWORD');
     }
-    if (this.currentKey) this.accounts.delete(this.currentKey);
-    this.currentKey = null;
+    if (this.currentKey) {
+      this.accounts.delete(this.currentKey);
+      this.deletedKeys.add(this.currentKey);
+    }
+    return 'deleted';
   }
 
   /**

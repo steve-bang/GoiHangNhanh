@@ -99,5 +99,9 @@
     "hint": "Bạn nhập mật khẩu để hoàn tất nhé."
   },
   "BATTERY_LOW": "Pin còn quá thấp để quay an toàn. Hãy cắm sạc rồi kiểm tra lại.",
-  "DEVICE_OVERHEATED": "Máy đang quá nóng để quay an toàn. Hãy để máy nguội rồi kiểm tra lại."
+  "DEVICE_OVERHEATED": "Máy đang quá nóng để quay an toàn. Hãy để máy nguội rồi kiểm tra lại.",
+  "ACCOUNT_DELETE_UNCONFIRMED": {
+    "title": "Chưa rõ tài khoản đã xóa xong chưa.",
+    "hint": "Bạn thử lại nhé."
+  }
 }

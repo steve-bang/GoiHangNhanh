@@ -478,11 +478,18 @@
     "pending": {
       "title": "Đang hoàn tất xóa tài khoản",
       "intro": "Việc xóa tài khoản này đã bắt đầu nhưng chưa xong. Nhập mật khẩu để hoàn tất, hoặc đăng xuất.",
+      "serverStatus": "Tài khoản này đang trong quá trình xóa trên máy chủ. Cửa hàng đã bị khóa; dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở.",
+      "dataDevice": "Nếu hoàn tất ở đây, video, ảnh và dữ liệu trên máy này bị xóa, kể cả tệp chưa tải lên.",
       "autoComplete": "Nếu bạn đăng xuất, máy chủ sẽ tự hoàn tất việc xóa trong lần xử lý hằng ngày.",
-      "blockedHint": "Dữ liệu trên máy này chỉ được xóa khi các mục ở trên đạt. Bạn vẫn có thể đăng xuất.",
+      "blockedHint": "Dữ liệu trên máy này được giữ lại. Muốn xóa dữ liệu này, bạn liên hệ hỗ trợ. Bạn vẫn có thể đăng xuất.",
       "confirm": "Hoàn tất xóa tài khoản",
-      "signOut": "Đăng xuất"
+      "signOut": "Đăng xuất",
+      "conditions": {
+        "disputes": "Còn {{count}} hồ sơ tranh chấp đang mở trên máy, nên dữ liệu trên máy được giữ lại.",
+        "foreign": "Máy này còn dữ liệu do tài khoản khác tạo, nên dữ liệu trên máy được giữ lại."
+      }
     },
-    "conditionsChanged": "Tình trạng trên máy vừa thay đổi. Bạn xem lại các điều kiện nhé."
+    "conditionsChanged": "Tình trạng trên máy vừa thay đổi. Bạn xem lại các điều kiện nhé.",
+    "keptData": "Tài khoản đã được xóa. Dữ liệu trên máy này được giữ lại; bạn liên hệ hỗ trợ nếu muốn xóa."
   }
 }

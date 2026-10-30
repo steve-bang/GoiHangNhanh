@@ -165,7 +165,7 @@ export function describeApiContract(name: string, makeApi: () => ApiClient): voi
       await expect(
         api.auth.signInWithPassword({ email, password: PASSWORD }),
       ).resolves.toMatchObject({ email: expect.any(String) });
-      await expect(api.auth.deleteAccount({ password: PASSWORD })).resolves.toBeUndefined();
+      await expect(api.auth.deleteAccount({ password: PASSWORD })).resolves.toBe('deleted');
       await expect(
         api.auth.signInWithPassword({ email, password: PASSWORD }),
       ).rejects.toMatchObject({ code: 'AUTH_INVALID_CREDENTIALS' });

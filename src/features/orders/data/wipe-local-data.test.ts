@@ -1,3 +1,8 @@
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import type { SqlDatabase } from '@/platform';
 import { createNodeSqliteDatabase } from '@/test-utils/node-sqlite';
 
 import { MIGRATIONS } from './sqlite-migrations';
@@ -116,6 +121,70 @@ describe('wipeLocalDatabase (V1-15)', () => {
     const db = createNodeSqliteDatabase();
     await expect(wipeLocalDatabase(db)).resolves.toBeUndefined();
     expect((await userTables(db)).length).toBe(WIPED_TABLES.length + KEPT_TABLES.length);
+  });
+});
+
+describe('wipeLocalDatabase: không để dữ liệu đã xóa còn trên đĩa (review PR #61)', () => {
+  it('tệp CSDL thật (WAL): sau khi xóa, chuỗi đã lưu không còn trong tệp chính lẫn tệp -wal', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'v1-15-wipe-'));
+    const file = join(dir, 'doncung.db');
+    try {
+      const db = createNodeSqliteDatabase(file);
+      await db.execAsync('PRAGMA journal_mode = WAL');
+      await migrateLocalDatabase(db);
+      await seed(db);
+      await db.runAsync("UPDATE orders SET order_code = 'BI-MAT-DH-424242' WHERE id = 'o1'");
+      await wipeLocalDatabase(db);
+      const contains = (path: string) =>
+        existsSync(path) && readFileSync(path).includes(Buffer.from('BI-MAT-DH-424242'));
+      expect(contains(file)).toBe(false);
+      expect(contains(`${file}-wal`)).toBe(false);
+      const secure = await db.getFirstAsync<{ secure_delete: number }>('PRAGMA secure_delete');
+      expect(secure?.secure_delete).toBe(1);
+      db.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('thứ tự: secure_delete trước DELETE; checkpoint và VACUUM sau giao dịch; hai bước này lỗi thì vẫn xong', async () => {
+    const real = createNodeSqliteDatabase();
+    await migrateLocalDatabase(real);
+    await seed(real);
+    const log: string[] = [];
+    const db: SqlDatabase = {
+      ...real,
+      execAsync: async (sql) => {
+        log.push(sql.trim().split('\n')[0] ?? '');
+        if (sql === 'VACUUM') throw new Error('busy');
+        return real.execAsync(sql);
+      },
+      runAsync: async (sql, params) => {
+        if (sql.startsWith('DELETE')) log.push('DELETE');
+        return real.runAsync(sql, params);
+      },
+      getFirstAsync: async <T>(sql: string, params?: readonly (string | number | null)[]) => {
+        if (sql.startsWith('PRAGMA wal_checkpoint')) {
+          log.push('checkpoint');
+          throw new Error('locked');
+        }
+        return real.getFirstAsync<T>(sql, params);
+      },
+      withTransactionAsync: async (task) => {
+        log.push('BEGIN');
+        await real.withTransactionAsync(task);
+        log.push('COMMIT');
+      },
+    };
+    await expect(wipeLocalDatabase(db)).resolves.toBeUndefined();
+    const at = (entry: string) => log.indexOf(entry);
+    expect(at('PRAGMA secure_delete = ON')).toBeGreaterThanOrEqual(0);
+    expect(at('PRAGMA secure_delete = ON')).toBeLessThan(at('BEGIN'));
+    expect(at('DELETE')).toBeGreaterThan(at('BEGIN'));
+    expect(at('checkpoint')).toBeGreaterThan(at('COMMIT'));
+    expect(at('VACUUM')).toBeGreaterThan(at('checkpoint'));
+    const row = await real.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM orders');
+    expect(row?.n).toBe(0);
   });
 });
 

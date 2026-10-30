@@ -125,9 +125,9 @@ describe('cổng cá nhân giả: xóa tài khoản (V1-15)', () => {
       'AUTH_NETWORK_ERROR',
     );
     expect(account.deleted).toBe(false);
-    await account.deleteAccount(FAKE_ACCOUNT_PASSWORD);
+    await expect(account.deleteAccount(FAKE_ACCOUNT_PASSWORD)).resolves.toBe('deleted');
     expect(account.deleted).toBe(true);
-    expect(await codeOf(account.deleteAccount(FAKE_ACCOUNT_PASSWORD))).toBe('AUTH_SESSION_EXPIRED');
+    await expect(account.deleteAccount(FAKE_ACCOUNT_PASSWORD)).resolves.toBe('already_deleted');
     await account.signOut();
     expect(account.deleted).toBe(false);
   });

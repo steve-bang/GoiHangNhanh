@@ -12,6 +12,7 @@ export type {
   AuthApi,
   ChangePasswordInput,
   DeleteAccountInput,
+  DeleteAccountOutcome,
   ResetPasswordInput,
   SignedInAccount,
   SignInWithPasswordInput,

@@ -81,11 +81,14 @@ export interface FirebaseOps {
   readShopSellingSources(shopId: string): Promise<readonly string[] | null>;
   callShop(name: 'createShop' | 'updateShop', input: RemoteShopInput): Promise<RemoteShopResult>;
   /**
-   * Xác thực lại người dùng đang đăng nhập bằng email + mật khẩu, rồi BẮT BUỘC lấy ID token mới
-   * (`getIdToken(true)`): token cũ mang `auth_time` cũ, máy chủ `deleteAccount` sẽ từ chối (V1-14 b).
-   * Không còn người dùng: lỗi `NO_CURRENT_USER`.
+   * Xác thực lại người dùng đang đăng nhập bằng email + mật khẩu. Không còn người dùng: lỗi `NO_CURRENT_USER`.
    */
-  reauthenticateForSensitiveAction(password: string): Promise<void>;
+  reauthenticate(password: string): Promise<void>;
+  /**
+   * BẮT BUỘC lấy ID token mới (`getIdToken(true)`) sau khi xác thực lại: token cũ mang `auth_time` cũ, máy
+   * chủ `deleteAccount` sẽ từ chối (V1-14 b). Không còn người dùng: lỗi `NO_CURRENT_USER`.
+   */
+  forceRefreshIdToken(): Promise<void>;
   /** Callable `deleteAccount` (không tham số; uid lấy từ token ở máy chủ). Trả nguyên `data`. */
   callDeleteAccount(): Promise<{ readonly status?: unknown }>;
 }
@@ -222,10 +225,14 @@ export function createFirebaseOps({ auth, db, functions }: FirebaseServices): Fi
         ? sources
         : null;
     },
-    async reauthenticateForSensitiveAction(password) {
+    async reauthenticate(password) {
       const user = auth.currentUser;
       if (!user?.email) throw Object.assign(new Error(NO_CURRENT_USER), { code: NO_CURRENT_USER });
       await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+    },
+    async forceRefreshIdToken() {
+      const user = auth.currentUser;
+      if (!user) throw Object.assign(new Error(NO_CURRENT_USER), { code: NO_CURRENT_USER });
       await getIdToken(user, true);
     },
     async callDeleteAccount() {

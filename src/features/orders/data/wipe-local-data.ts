@@ -35,14 +35,31 @@ export const KEPT_TABLES: readonly string[] = ['device_settings'];
 /**
  * `DELETE` mọi bảng nghiệp vụ trong MỘT giao dịch, trên hàng đợi chung của kết nối (không chồng giao
  * dịch của kho khác). Giữ schema và `user_version`. Gọi lại được (bảng rỗng thì không làm gì).
+ *
+ * Không để dữ liệu đã xóa còn nằm trên đĩa (review PR #61): bật `secure_delete` TRƯỚC khi xóa (SQLite ghi
+ * đè trang/ô đã giải phóng bằng 0), sau giao dịch ép ghi WAL vào tệp chính và cắt WAL
+ * (`wal_checkpoint(TRUNCATE)`, bản sao cũ của trang nằm trong WAL), rồi `VACUUM` ngoài giao dịch để dựng
+ * lại tệp. Hai bước sau chỉ là dọn thêm: lỗi chỉ ghi log, không làm hỏng việc xóa (dữ liệu đã bị xóa khỏi
+ * bảng). Tất cả nằm TRƯỚC bước gỡ dấu của `createLocalDataWiper`.
  */
 export function wipeLocalDatabase(db: SqlDatabase): Promise<void> {
   return runSerialized(db, async () => {
     // CSDL có thể chưa được kho nào mở trong lần chạy này (khởi động thấy dấu): đưa về schema mới nhất.
     await migrateLocalDatabase(db);
+    await db.execAsync('PRAGMA secure_delete = ON');
     await db.withTransactionAsync(async () => {
       for (const table of WIPED_TABLES) await db.runAsync(`DELETE FROM ${table}`);
     });
+    try {
+      await db.getFirstAsync('PRAGMA wal_checkpoint(TRUNCATE)');
+    } catch {
+      logger.warn('local_wipe.checkpoint_failed');
+    }
+    try {
+      await db.execAsync('VACUUM');
+    } catch {
+      logger.warn('local_wipe.vacuum_failed');
+    }
   });
 }
 

@@ -18,6 +18,7 @@ import {
   createFakePersonalGateways,
   FAKE_ACCOUNT_PASSWORD,
   FAKE_DELETE_OFFLINE_PASSWORD,
+  FAKE_DELETE_UNCONFIRMED_PASSWORD,
 } from '../data/fake-personal-gateways';
 import { createUnavailablePersonalGateways } from '../data/unavailable-personal-gateways';
 import { DeleteAccountScreen } from './DeleteAccountScreen';
@@ -252,6 +253,67 @@ describe('Xóa tài khoản (UI-I05 route con, khung 20; luồng thật V1-15)',
         'Chưa có gì bị xóa. Tài khoản và dữ liệu vẫn còn nguyên.',
       );
       expect(localWipe.state.log).toEqual([]);
+    });
+
+    it('đã gửi mà không rõ kết quả (internal/deadline-exceeded): câu "chưa rõ", KHÔNG nói chưa xóa gì, không xóa trên máy', async () => {
+      const { localWipe } = await setup();
+      await goToPassword();
+      await fireEvent.changeText(
+        screen.getByTestId('delete-password'),
+        FAKE_DELETE_UNCONFIRMED_PASSWORD,
+      );
+      await fireEvent.press(screen.getByTestId('delete-confirm'));
+      expect(await screen.findByTestId('delete-error')).toHaveTextContent(
+        /Chưa rõ tài khoản đã xóa xong chưa\./,
+      );
+      expect(screen.queryByTestId('delete-nothing-deleted')).toBeNull();
+      expect(localWipe.state.log).toEqual([]);
+      expect(mockNavigation.reset).not.toHaveBeenCalled();
+    });
+
+    it('thử lại sau "chưa rõ": tài khoản đã không còn -> xóa trên máy như thường, về Chào mừng', async () => {
+      const { gateways, localWipe } = await setup();
+      await goToPassword();
+      await fireEvent.changeText(
+        screen.getByTestId('delete-password'),
+        FAKE_DELETE_UNCONFIRMED_PASSWORD,
+      );
+      await fireEvent.press(screen.getByTestId('delete-confirm'));
+      await screen.findByTestId('delete-error');
+      await fireEvent.press(screen.getByTestId('delete-confirm'));
+      await waitFor(() => expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.welcome));
+      expect(gateways.account.deleteAccountCalls).toBe(2);
+      expect(localWipe.state.log).toEqual([
+        'setMarker',
+        'deleteEvidenceFiles',
+        'wipeDatabase',
+        'clearMarker',
+      ]);
+    });
+
+    it('tài khoản đã không còn nhưng đọc lại thấy dữ liệu tài khoản khác: KHÔNG xóa trên máy, thoát phiên và báo', async () => {
+      const gateways = createFakePersonalGateways({ shop: { role: 'member' } });
+      gateways.account.deleted = true; // máy chủ đã xóa ở lần trước, app không nhận được xác nhận
+      const localWipe = createMemoryLocalWipe();
+      const reads: number[] = [];
+      localWipe.device.countForeignRecords = async () => {
+        reads.push(reads.length);
+        // Lần đọc của màn và lần đọc trước khi gửi: 0; lần đọc lại sau khi biết đã xóa: 2.
+        return reads.length >= 3 ? 2 : 0;
+      };
+      await setup({ gateways, localWipe });
+      await goToPassword();
+      await fireEvent.changeText(screen.getByTestId('delete-password'), FAKE_ACCOUNT_PASSWORD);
+      await fireEvent.press(screen.getByTestId('delete-confirm'));
+      await waitFor(() => expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.welcome));
+      expect(reads.length).toBeGreaterThanOrEqual(3);
+      expect(localWipe.state.log).toEqual([]);
+      expect(gateways.account.signOutCalls).toBe(1);
+      expect(
+        await screen.findByText(
+          'Tài khoản đã được xóa. Dữ liệu trên máy này được giữ lại; bạn liên hệ hỗ trợ nếu muốn xóa.',
+        ),
+      ).toBeOnTheScreen();
     });
 
     it('ô trống: nhắc nhập mật khẩu, không gọi máy chủ', async () => {
