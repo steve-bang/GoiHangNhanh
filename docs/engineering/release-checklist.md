@@ -53,6 +53,7 @@ Ma trận tối thiểu: 1 iPhone đời cũ ở sàn D-2 + 1 iPhone mới; 1 An
 - [ ] **G-10. Truy cập chéo shop** (QA-11) bằng hai tài khoản thật trên dự án dev.
 - [ ] **G-11.** Chữ lớn hệ thống, VoiceOver/TalkBack ở UI-F01, UI-E04, màn quay; nút Back phần cứng Android.
 - [ ] **G-12. Ảnh không mang vị trí:** chụp ảnh kiện hàng hoàn khi đã cho phép vị trí, đợi tải lên, tải bản trên Storage về (bằng tài khoản quản trị dự án dev) và đọc EXIF: **không** có thẻ GPS (iOS + Android). Nếu có: dừng phát hành, sửa khai báo "vị trí: không thu thập" ở [`privacy-declarations.md`](../store/privacy-declarations.md) và trang chính sách.
+- [ ] **G-13. Mã lỗi mạng thật (V1-02):** trên iOS + Android, với chế độ máy bay, Wi‑Fi không ra Internet và Function chậm, ghi lại `code` (và có `details` hay không) mà SDK Firebase trả cho Firestore (`createMissing`, `getDocFromServer`) và callable `createUploadSession`, cùng `lastErrorCode` của tệp. Kỳ vọng: mất mạng ra `unavailable`/`deadline-exceeded` hoặc `internal`/`unknown` **không** `details` (không tốn lượt); lỗi do Function ném có `details`. Lệch thì sửa `firebase-ports.ts` (`NETWORK_CODES`/`AMBIGUOUS_CODES`) và `NETWORK_ERROR_CODES` trước khi phát hành. Kèm: sau một lần ghi hết giờ rồi có mạng lại, đơn/phiên không bị đăng hai lần và chỉ được đánh dấu "đã đăng" sau khi máy chủ xác nhận.
 
 ## C. Duyệt câu chữ và pháp lý
 

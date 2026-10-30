@@ -534,3 +534,68 @@ describe('chỉ khai báo khi phiên đã đăng lên máy chủ', () => {
     expect(t.uploads).toEqual(['b']);
   });
 });
+
+describe('có mạng lại chỉ rút ngắn chờ cho lỗi mạng (review PR #48)', () => {
+  it('tệp lỗi máy chủ giữ lịch giãn cách; tệp lỗi mạng tới hạn ngay', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'srv', 1000);
+    await queuedFile(t.files, 'net', 2000);
+    t.outcomes.push({ kind: 'retryable', code: 'HTTP_500' }); // srv: lỗi máy chủ, chờ 5 giây
+    t.outcomes.push({ kind: 'network', code: 'NETWORK' }); // net: lỗi mạng, dừng lượt
+    await t.queue.runOnce(SHOP);
+    expect(await t.state('srv')).toBe('upload_failed');
+    expect(await t.state('net')).toBe('upload_failed');
+    t.advance(1000); // chưa tới hạn của cả hai
+    await t.queue.runOnce(SHOP, { networkRestored: true });
+    expect(await t.state('net')).toBe('uploaded');
+    expect(await t.files.get(SHOP, 'srv' as EvidenceId)).toMatchObject({
+      state: 'upload_failed',
+      attemptCount: 1,
+      lastErrorCode: 'HTTP_500',
+    });
+  });
+
+  it('sau khi app khởi động lại (mất bộ đếm), mã lỗi mạng đã lưu vẫn được nhận ra', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    for (let i = 0; i < 10; i += 1) {
+      t.outcomes.push({ kind: 'network', code: 'TIMEOUT' });
+      await t.queue.runOnce(SHOP);
+      t.advance(MAX_RETRY_DELAY_MS);
+    }
+    const restarted = createUploadQueue({
+      sources: [evidenceFileSource(t.files)],
+      gateway: {
+        upload: async () => ({ kind: 'received' }),
+        fetchServerStates: async () => new Map(),
+      },
+      hasher: { sha256: async () => ({ ok: true, sha256: HASH }) },
+      now: () => 10_000 + 9 * MAX_RETRY_DELAY_MS + 1000, // chưa hết 15 phút chờ
+      isOnline: () => true,
+    });
+    await restarted.runOnce(SHOP);
+    expect(await t.state('a')).toBe('upload_failed'); // chưa tới hạn
+    await restarted.runOnce(SHOP, { networkRestored: true });
+    expect(await t.state('a')).toBe('uploaded');
+  });
+
+  it('có mạng lại trong lúc lượt đang chạy: cờ được nhớ cho lượt sau', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a', 1000);
+    await queuedFile(t.files, 'b', 2000);
+    t.outcomes.push({ kind: 'received' });
+    t.outcomes.push({ kind: 'network', code: 'NETWORK' });
+    await t.queue.runOnce(SHOP); // a nhận, b lỗi mạng (chờ 5 giây)
+    t.hangNextUpload();
+    await queuedFile(t.files, 'c', 3000);
+    // Lượt treo ở b? Không: b chưa tới hạn; lượt này tải c và treo.
+    const running = t.queue.runOnce(SHOP);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect((await t.queue.runOnce(SHOP, { networkRestored: true })).skipped).toBe('busy');
+    t.goOffline(); // hủy lần gửi đang treo
+    await running;
+    t.setOnline(true);
+    await t.queue.runOnce(SHOP);
+    expect(await t.state('b')).toBe('uploaded');
+  });
+});

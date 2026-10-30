@@ -57,9 +57,18 @@ describe('toPortError', () => {
       kind: 'network',
       code: 'DEADLINE_EXCEEDED',
     });
-    expect(toPortError(sdkError('functions/internal'))).toMatchObject({ kind: 'retryable' });
+    // `internal`/`unknown` không có details từ máy chủ (không tới được máy chủ) -> lỗi mạng.
+    expect(toPortError(sdkError('functions/internal'))).toMatchObject({
+      kind: 'network',
+      code: 'INTERNAL',
+    });
+    expect(toPortError(sdkError('firestore/unknown'))).toMatchObject({ kind: 'network' });
+    // Có details (Function trả lỗi có nội dung) -> lỗi máy chủ, tính lượt.
+    expect(
+      toPortError(Object.assign(sdkError('functions/internal'), { details: { reason: 'x' } })),
+    ).toMatchObject({ kind: 'retryable', code: 'INTERNAL' });
     expect(toPortError(sdkError('not-found'))).toMatchObject({ kind: 'retryable' });
-    expect(toPortError(new Error('?'))).toMatchObject({ kind: 'retryable', code: 'UNKNOWN' });
+    expect(toPortError(new Error('?'))).toMatchObject({ kind: 'network', code: 'UNKNOWN' });
     const mine = new UploadPortError('attention', 'X');
     expect(toPortError(mine)).toBe(mine);
   });

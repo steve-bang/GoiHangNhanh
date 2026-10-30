@@ -63,6 +63,7 @@ describe('uploadFileResumable', () => {
     expect(global.fetch).toHaveBeenCalledWith('https://signed', {
       method: 'POST',
       headers: { 'x-goog-resumable': 'start' },
+      signal: expect.any(AbortSignal),
     });
     expect(mockUpload).toHaveBeenCalledWith('https://session/1', 'file:///a.mp4', {
       httpMethod: 'PUT',
@@ -130,5 +131,33 @@ describe('uploadFileResumable', () => {
       kind: 'attention',
       code: 'UPLOAD_REJECTED_400',
     });
+  });
+
+  it('mở phiên treo quá hạn riêng: hủy POST, lỗi mạng TIMEOUT (không tính lượt), không PUT', async () => {
+    global.fetch = jest.fn(
+      (_url: unknown, init?: { signal?: AbortSignal }) =>
+        new Promise((_resolve, reject) =>
+          init?.signal?.addEventListener('abort', () => reject(new Error('aborted'))),
+        ),
+    ) as unknown as typeof fetch;
+    expect(await uploadFileResumable(session, 'f', 'video/mp4', undefined, 20)).toEqual({
+      ok: false,
+      kind: 'network',
+      code: 'TIMEOUT',
+    });
+    expect(mockUpload).not.toHaveBeenCalled();
+  });
+
+  it('mất mạng trong lúc mở phiên: NETWORK_LOST', async () => {
+    global.fetch = jest.fn(
+      (_url: unknown, init?: { signal?: AbortSignal }) =>
+        new Promise((_resolve, reject) =>
+          init?.signal?.addEventListener('abort', () => reject(new Error('aborted'))),
+        ),
+    ) as unknown as typeof fetch;
+    const controller = new AbortController();
+    const pending = uploadFileResumable(session, 'f', 'video/mp4', controller.signal, 60_000);
+    controller.abort();
+    expect(await pending).toMatchObject({ kind: 'network', code: 'NETWORK_LOST' });
   });
 });

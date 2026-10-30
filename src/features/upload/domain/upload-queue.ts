@@ -30,9 +30,31 @@ export interface UploadQueueDeps {
 }
 
 export interface UploadRunOptions {
-  /** Vừa có mạng lại: mọi tệp `upload_failed` tới hạn ngay (không chờ hết giãn cách 15 phút). */
+  /**
+   * Vừa có mạng lại: tệp `upload_failed` do LỖI MẠNG tới hạn ngay (không chờ hết giãn cách 15 phút).
+   * Tệp lỗi máy chủ giữ nguyên lịch giãn cách. Lượt đang chạy (`busy`) thì cờ được nhớ cho lượt sau.
+   */
   readonly networkRestored?: boolean;
 }
+
+/**
+ * Mã `lastErrorCode` của lỗi mạng (do `create-upload-gateway`, `firebase-ports`, `resumable-upload`
+ * tạo). Dùng khi có mạng lại sau khi app khởi động lại (bộ đếm trong bộ nhớ đã mất). Mã mơ hồ
+ * `INTERNAL`/`UNKNOWN` không có ở đây: trong phiên chạy, tệp lỗi mạng loại này vẫn được nhận ra qua bộ
+ * đếm; sau khi khởi động lại thì chờ hết giãn cách (tối đa 15 phút).
+ */
+export const NETWORK_ERROR_CODES: readonly string[] = [
+  'NETWORK',
+  'NETWORK_LOST',
+  'TIMEOUT',
+  'UNAVAILABLE',
+  'DEADLINE_EXCEEDED',
+  'HTTP_408',
+  'HTTP_429',
+  'HTTP_502',
+  'HTTP_503',
+  'HTTP_504',
+];
 
 export interface UploadRunSummary {
   /** `offline`/`busy`: không làm gì lượt này. */
@@ -88,6 +110,8 @@ interface Entry {
 export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
   const { sources, gateway, hasher, now, isOnline, subscribeOffline } = deps;
   let running = false;
+  /** Có mạng lại trong lúc một lượt đang chạy: áp cho lượt kế tiếp. */
+  let restoredPending = false;
   /** Số lỗi mạng liên tiếp theo tệp (chỉ để tính giãn cách; mất khi app khởi động lại: chấp nhận). */
   const networkStreak = new Map<EvidenceId, number>();
 
@@ -264,15 +288,23 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
         needsAttention: 0,
         verified: 0,
       };
-      if (running) return { ...summary, skipped: 'busy' };
+      if (running) {
+        if (options?.networkRestored) restoredPending = true;
+        return { ...summary, skipped: 'busy' };
+      }
       if (!isOnline()) return { ...summary, skipped: 'offline' };
       running = true;
+      const restored = Boolean(options?.networkRestored) || restoredPending;
+      restoredPending = false;
       try {
-        if (options?.networkRestored) networkStreak.clear();
         await reconcile(shopId, summary);
+        const failedByNetwork = (e: Entry) =>
+          networkStreak.has(e.item.id) ||
+          (e.item.lastErrorCode !== null && NETWORK_ERROR_CODES.includes(e.item.lastErrorCode));
         const due = (await list(shopId, [S.UPLOAD_FAILED])).filter(
-          (e) => options?.networkRestored || (e.item.nextAttemptAtDevice ?? 0) <= now(),
+          (e) => (e.item.nextAttemptAtDevice ?? 0) <= now() || (restored && failedByNetwork(e)),
         );
+        if (restored) networkStreak.clear();
         for (const entry of due) {
           await apply(entry, device('RETRY_UPLOAD'), { nextAttemptAtDevice: null });
         }

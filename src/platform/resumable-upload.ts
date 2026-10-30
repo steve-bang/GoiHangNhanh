@@ -19,6 +19,12 @@ export type UploadFileResult =
 const network = (code: string): UploadFileResult => ({ ok: false, kind: 'network', code });
 const retryable = (code: string): UploadFileResult => ({ ok: false, kind: 'retryable', code });
 
+/**
+ * Hạn cho bước MỞ PHIÊN (POST tới URL ký, không có thân): quá hạn = lỗi mạng `TIMEOUT`, không tốn lượt.
+ * Bước PUT tệp không có hạn cứng (tệp lớn trên mạng yếu); chỉ dừng khi `signal` hủy hoặc lớp mạng lỗi.
+ */
+export const SESSION_OPEN_TIMEOUT_MS = 30_000;
+
 /** Máy chủ/đường truyền tạm không sẵn sàng: người dùng không làm gì được, không tính lượt (Q-24h). */
 const TRANSIENT_STATUSES = [408, 429, 502, 503, 504];
 
@@ -51,20 +57,34 @@ export async function uploadFileResumable(
   localUri: string,
   contentType: string,
   signal?: AbortSignal,
+  openTimeoutMs: number = SESSION_OPEN_TIMEOUT_MS,
 ): Promise<UploadFileResult> {
   const lost = network('NETWORK_LOST');
   if (signal?.aborted) return lost;
   let location: string | null;
+  // Bước mở phiên có hạn riêng: một AbortController hủy khi hết giờ HOẶC khi `signal` báo mất mạng.
+  const open = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    open.abort();
+  }, openTimeoutMs);
+  const forward = () => open.abort();
+  signal?.addEventListener('abort', forward);
   try {
     const start = await fetch(session.url, {
       method: session.method,
       headers: { ...session.headers },
-      ...(signal ? { signal } : {}),
+      signal: open.signal,
     });
     if (!start.ok) return classifyUploadStatus(start.status);
     location = start.headers.get('location');
   } catch {
-    return signal?.aborted ? lost : network('NETWORK');
+    if (signal?.aborted) return lost;
+    return timedOut ? network('TIMEOUT') : network('NETWORK');
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', forward);
   }
   if (!location) return retryable('NO_SESSION_LOCATION');
   if (signal?.aborted) return lost;

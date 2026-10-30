@@ -75,3 +75,7 @@ Vòng 1 (theo bất biến 1–11, dữ liệu, kích thước):
 Vòng 2: kiểm phụ thuộc với V1-07/V1-08/V1-09/V1-13 (cùng sửa `upload-queue.ts`): giữ API `runOnce(shopId)` tương thích (tham số thứ hai tùy chọn), `getConnectivity().type` sẵn cho V1-09. Không thấy rủi ro mới.
 
 **Tự review: đã chấp nhận** (điểm đã sửa: phân loại `permission-denied`, bỏ hết giờ cứng bước gửi tệp, thêm `networkRestored`).
+
+## Sửa theo review PR #48
+
+Đọc tồn tại từ máy chủ (`getDocFromServer`) để bản ghi chờ sau khi hết giờ không bị coi là đã đăng; `internal`/`unknown` không `details` là lỗi mạng; POST mở phiên hạn 30 giây; có mạng lại chỉ rút ngắn chờ cho tệp lỗi mạng; bảng hạn theo lệnh. Chi tiết: `decisions.md` Q-29 / V1-02 điểm 8–12; đo mã thật: release-checklist G-13.

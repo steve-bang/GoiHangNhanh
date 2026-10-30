@@ -21,10 +21,21 @@ const ATTENTION_CODES = [
 
 /**
  * Mã lỗi SDK nghĩa là mất mạng/máy chủ tạm không sẵn sàng (gồm hết giờ của `RemoteDocuments`, mã
- * `deadline-exceeded`): không tính lượt (Q-24h). Mã nào SDK thật trả khi mất mạng trên máy CHƯA đo
- * (cổng thiết bị): mã khác (ví dụ `internal`) vẫn tính lượt, có giới hạn.
+ * `deadline-exceeded`): không tính lượt (Q-24h).
  */
 const NETWORK_CODES = ['unavailable', 'deadline-exceeded'];
+
+/**
+ * Mã mơ hồ: SDK callable trả `internal`/`unknown` cả khi KHÔNG tới được máy chủ (mất mạng, lỗi tầng
+ * HTTP). Không có `details` (máy chủ không gửi gì) -> lỗi mạng; có `details` (Function ném lỗi có nội
+ * dung) -> lỗi máy chủ, tính lượt. Mã thật trên thiết bị chưa đo (release-checklist G, V1-02).
+ */
+const AMBIGUOUS_CODES = ['internal', 'unknown'];
+
+function hasServerDetails(error: unknown): boolean {
+  const details = (error as { details?: unknown } | null)?.details;
+  return details !== undefined && details !== null;
+}
 
 /** Phân loại lỗi SDK theo `code` (bỏ tiền tố `functions/`). Không đọc `message` (có thể chứa dữ liệu). */
 export function toPortError(error: unknown): UploadPortError {
@@ -33,7 +44,7 @@ export function toPortError(error: unknown): UploadPortError {
   const code = typeof raw === 'string' ? raw.replace(/^(functions|firestore)\//, '') : 'unknown';
   const kind = ATTENTION_CODES.includes(code)
     ? 'attention'
-    : NETWORK_CODES.includes(code)
+    : NETWORK_CODES.includes(code) || (AMBIGUOUS_CODES.includes(code) && !hasServerDetails(error))
       ? 'network'
       : 'retryable';
   return new UploadPortError(kind, code.toUpperCase().replace(/-/g, '_'));
