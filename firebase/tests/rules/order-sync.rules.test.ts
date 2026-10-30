@@ -44,6 +44,27 @@ describe('đăng đơn và phiên đúng hình dạng Rules yêu cầu', () => {
     await assertSucceeds(batch.commit());
   });
 
+  it('đơn nguồn "Khác" (app `other`) đăng được qua ánh xạ thật, phiên đăng tiếp được', async () => {
+    const { details, session } = makeOrderFixture(SHOP_A, 'sync-order-other', 'other');
+    expect(details.order.source).toBe('other');
+    const db = as(USERS.packerA);
+    const batch = writeBatch(db);
+    const writes = orderWrites(details, USERS.packerA, values);
+    expect(writes[0]?.data.source).toBe('other_unknown');
+    for (const w of writes) batch.set(doc(db, w.path), w.data);
+    await assertSucceeds(batch.commit());
+    const write = sessionWrite(session, USERS.packerA, values);
+    await assertSucceeds(setDoc(doc(db, write.path), write.data));
+  });
+
+  it('giá trị `other` của app gửi thẳng (bỏ qua ánh xạ) vẫn bị Rules từ chối', async () => {
+    const { details } = makeOrderFixture(SHOP_A, 'sync-order-raw', 'other');
+    const db = as(USERS.packerA);
+    const [orderDoc] = orderWrites(details, USERS.packerA, values);
+    if (!orderDoc) throw new Error('fixture');
+    await assertFails(setDoc(doc(db, orderDoc.path), { ...orderDoc.data, source: 'other' }));
+  });
+
   it('createdBy khác uid đang đăng nhập bị từ chối (đơn, kiện, phiên): không đăng thay người khác', async () => {
     const { details, session } = makeOrderFixture(SHOP_A, 'sync-order-7');
     const db = as(USERS.packerA);

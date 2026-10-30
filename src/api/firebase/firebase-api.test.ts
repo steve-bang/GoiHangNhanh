@@ -1,5 +1,5 @@
 import { AppError } from '@/core/errors/app-error';
-import { normalizeSources } from '@/core/orders/selling-sources';
+import { REMOTE_ORDER_SOURCES } from '@/core/orders/remote-source';
 
 import { describeApiContract } from '../contract-tests/api.contract';
 
@@ -122,7 +122,13 @@ function fakeOps(): FirebaseOps & {
       shopCalls.push({ name, input });
       takeFailure('callShop');
       if (!current) throw sdkError('functions/unauthenticated');
-      const sellingSources = normalizeSources(input.sellingSources);
+      // Như Function thật (`parseShopInput`): chỉ nhận từ vựng máy chủ, chuẩn hóa thứ tự.
+      if (
+        !input.sellingSources.every((v) => (REMOTE_ORDER_SOURCES as readonly string[]).includes(v))
+      ) {
+        throw sdkError('functions/invalid-argument');
+      }
+      const sellingSources = REMOTE_ORDER_SOURCES.filter((v) => input.sellingSources.includes(v));
       if (name === 'createShop') {
         const id = shops.get(current.uid) ?? `shop-${shops.size + 1}`;
         shops.set(current.uid, id);
@@ -137,8 +143,8 @@ function fakeOps(): FirebaseOps & {
         throw sdkError('functions/permission-denied');
       }
       // Như Function thật: ghi đè cả tên và nguồn bán bằng giá trị gửi lên.
-      shopData.set(shopId, { name: input.name, sellingSources: input.sellingSources });
-      return { id: shopId, name: input.name, sellingSources: input.sellingSources };
+      shopData.set(shopId, { name: input.name, sellingSources });
+      return { id: shopId, name: input.name, sellingSources };
     },
     signedOut() {
       current = null;
@@ -452,6 +458,36 @@ describe('api/firebase: tab Cá nhân (V1-05)', () => {
     expect(ops.shopCalls.at(-1)).toEqual({
       name: 'updateShop',
       input: { shopId: shop.id, name: 'Mới', sellingSources: ['shopee', 'other_unknown'] },
+    });
+  });
+
+  it('tạo/sửa shop có nguồn "Khác": gửi other_unknown lên Function, app nhận lại other', async () => {
+    const { api, ops } = await signedUp();
+    const created = await api.shop.createShop({ name: 'K', sellingSources: ['shopee', 'other'] });
+    expect(ops.shopCalls.at(-1)).toEqual({
+      name: 'createShop',
+      input: { name: 'K', sellingSources: ['shopee', 'other_unknown'] },
+    });
+    expect(created.sellingSources).toEqual(['shopee', 'other']);
+    const updated = await api.shop.updateShop({
+      shopId: created.id,
+      name: 'K2',
+      sellingSources: ['other'],
+    });
+    expect(ops.shopCalls.at(-1)).toEqual({
+      name: 'updateShop',
+      input: { shopId: created.id, name: 'K2', sellingSources: ['other_unknown'] },
+    });
+    expect(updated).toEqual({ id: created.id, name: 'K2', sellingSources: ['other'] });
+  });
+
+  it('đổi tên shop có nguồn "Khác" đã lưu: gửi lại nguyên other_unknown, không đổi thành other', async () => {
+    const { api, ops } = await signedUp();
+    const shop = await api.shop.createShop({ name: 'Cũ', sellingSources: ['other'] });
+    await api.shop.renameShop(shop.id, 'Mới');
+    expect(ops.shopCalls.at(-1)).toEqual({
+      name: 'updateShop',
+      input: { shopId: shop.id, name: 'Mới', sellingSources: ['other_unknown'] },
     });
   });
 

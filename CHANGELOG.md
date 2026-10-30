@@ -28,6 +28,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Fixed
 
+- Bản Firebase: đơn có nguồn bán "Khác" nay đăng được lên máy chủ (trước đây bị từ chối nên phiên và bằng chứng của đơn đó không bao giờ tải lên), tạo/sửa cửa hàng chọn "Khác" không còn bị từ chối; dữ liệu trên máy không đổi. Chưa deploy, chưa kiểm chứng trên thiết bị (fix-other-source).
 - Test giao diện nặng không còn đỏ chập chờn khi máy tải cao: hạn mỗi test Jest đặt ở gốc cấu hình là 30 giây (giá trị đặt trong từng project trước đây bị Jest bỏ qua) (#50).
 
 ### Fixed

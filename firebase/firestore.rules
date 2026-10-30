@@ -53,6 +53,8 @@ service cloud.firestore {
       return hasAnyRole(shopId, ['owner', 'manager', 'dispute_handler']);
     }
 
+    // Từ vựng máy chủ: app lưu "Khác" là `other` và đổi sang `other_unknown` khi ghi
+    // (src/core/orders/remote-source.ts).
     function isShopSource(v) {
       return v in ['shopee', 'tiktok_shop', 'lazada', 'other_unknown'];
     }

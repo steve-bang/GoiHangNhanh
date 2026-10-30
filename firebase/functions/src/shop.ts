@@ -2,7 +2,10 @@ import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 
 import { isValidId } from './ids';
 
-/** Nguồn bán hợp lệ, theo thứ tự chuẩn (khớp src/core/orders/order-source.ts). */
+/**
+ * Nguồn bán hợp lệ theo từ vựng MÁY CHỦ, thứ tự chuẩn. Khớp `REMOTE_ORDER_SOURCES` ở
+ * src/core/orders/remote-source.ts (app dùng `other`, ánh xạ sang `other_unknown` khi gửi lên).
+ */
 export const SELLING_SOURCES = ['shopee', 'tiktok_shop', 'lazada', 'other_unknown'] as const;
 export type SellingSource = (typeof SELLING_SOURCES)[number];
 

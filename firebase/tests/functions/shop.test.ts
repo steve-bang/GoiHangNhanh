@@ -5,9 +5,12 @@ import {
   createShopForUser,
   parseShopId,
   parseShopInput,
+  SELLING_SOURCES,
   ShopError,
   updateShopForUser,
 } from '../../functions/src/shop';
+import { ORDER_SOURCES } from '@/core/orders/order-source';
+import { REMOTE_ORDER_SOURCES, toRemoteSources } from '@/core/orders/remote-source';
 
 // Chạy trên Firestore Emulator (FIRESTORE_EMULATOR_HOST do `firebase emulators:exec` đặt).
 let app: App;
@@ -38,10 +41,25 @@ describe('parseShopInput', () => {
     [{ name: '   ', sellingSources: [] }],
     [{ name: 'x'.repeat(51), sellingSources: [] }],
     [{ name: 'A', sellingSources: ['tiki'] }],
+    // Giá trị app chưa qua ánh xạ: Function không nhận (app phải gửi `other_unknown`).
+    [{ name: 'A', sellingSources: ['other'] }],
     [{ name: 'A', sellingSources: 'shopee' }],
     [{ name: 5, sellingSources: [] }],
   ])('từ chối đầu vào sai %j', (input) => {
     expect(() => parseShopInput(input)).toThrow(ShopError);
+  });
+});
+
+describe('từ vựng nguồn bán app <-> Function', () => {
+  it('Function dùng đúng từ vựng máy chủ của app (REMOTE_ORDER_SOURCES)', () => {
+    expect([...SELLING_SOURCES]).toEqual([...REMOTE_ORDER_SOURCES]);
+  });
+
+  it('mọi nguồn bán của app sau ánh xạ đều được parseShopInput nhận, gồm "Khác"', () => {
+    expect(parseShopInput({ name: 'A', sellingSources: toRemoteSources(ORDER_SOURCES) })).toEqual({
+      name: 'A',
+      sellingSources: ['shopee', 'tiktok_shop', 'lazada', 'other_unknown'],
+    });
   });
 });
 
@@ -99,6 +117,31 @@ describe('updateShopForUser', () => {
     const change = events.find((e) => e.type === 'shop.updated');
     expect(change?.before).toEqual({ name: 'Shop A', sellingSources: ['shopee'] });
     expect(change?.after).toEqual({ name: 'Shop B', sellingSources: [] });
+  });
+
+  it('tạo và sửa shop có nguồn "Khác" (other_unknown) được lưu nguyên', async () => {
+    const uid = newUid();
+    const shop = await createShopForUser(
+      db,
+      uid,
+      parseShopInput({ name: 'Shop K', sellingSources: ['other_unknown'] }),
+    );
+    expect(shop.sellingSources).toEqual(['other_unknown']);
+    const updated = await updateShopForUser(
+      db,
+      uid,
+      shop.id,
+      parseShopInput({ name: 'Shop K2', sellingSources: ['other_unknown', 'shopee'] }),
+    );
+    expect(updated).toEqual({
+      id: shop.id,
+      name: 'Shop K2',
+      sellingSources: ['shopee', 'other_unknown'],
+    });
+    expect((await db.doc(`shops/${shop.id}`).get()).data()?.sellingSources).toEqual([
+      'shopee',
+      'other_unknown',
+    ]);
   });
 
   it('người ngoài shop và shop không tồn tại cùng bị từ chối (không lộ ID)', async () => {
