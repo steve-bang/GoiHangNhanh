@@ -10,7 +10,12 @@ import type {
   UploadGateway,
   UploadOutcome,
 } from './ports';
-import { createUploadQueue, mayBeKnownToServer } from './upload-queue';
+import {
+  ambiguousStreakOf,
+  createUploadQueue,
+  MAX_AMBIGUOUS_NETWORK_FAILURES,
+  mayBeKnownToServer,
+} from './upload-queue';
 import { evidenceFileSource } from './upload-sources';
 
 const SHOP = 'shop-1' as ShopId;
@@ -597,5 +602,93 @@ describe('có mạng lại chỉ rút ngắn chờ cho lỗi mạng (review PR #
     t.setOnline(true);
     await t.queue.runOnce(SHOP);
     expect(await t.state('b')).toBe('uploaded');
+  });
+});
+
+describe('internal/unknown không details liên tiếp (review PR #48 vòng 2)', () => {
+  it('đọc bộ đếm từ lastErrorCode', () => {
+    expect(ambiguousStreakOf('INTERNAL@7')).toBe(7);
+    expect(ambiguousStreakOf('UNKNOWN@24')).toBe(24);
+    expect(ambiguousStreakOf('INTERNAL')).toBe(0);
+    expect(ambiguousStreakOf('NETWORK')).toBe(0);
+    expect(ambiguousStreakOf(null)).toBe(0);
+  });
+
+  it('24 lần đầu không tính lượt; sau đó tính lượt và tới needs_attention theo trần 8', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    expect(MAX_AMBIGUOUS_NETWORK_FAILURES).toBe(24);
+    for (let i = 1; i <= MAX_AMBIGUOUS_NETWORK_FAILURES; i += 1) {
+      t.outcomes.push({ kind: 'network', code: i % 2 ? 'INTERNAL' : 'UNKNOWN' });
+      await t.queue.runOnce(SHOP);
+      t.advance(MAX_RETRY_DELAY_MS);
+    }
+    expect(await t.files.get(SHOP, 'a' as EvidenceId)).toMatchObject({
+      state: 'upload_failed',
+      attemptCount: 0,
+      lastErrorCode: 'UNKNOWN@24',
+    });
+    for (let i = 1; i <= MAX_UPLOAD_ATTEMPTS; i += 1) {
+      t.outcomes.push({ kind: 'network', code: 'INTERNAL' });
+      await t.queue.runOnce(SHOP);
+      t.advance(MAX_RETRY_DELAY_MS);
+    }
+    expect(await t.files.get(SHOP, 'a' as EvidenceId)).toMatchObject({
+      state: 'needs_attention',
+      lastErrorCode: `INTERNAL@${MAX_AMBIGUOUS_NETWORK_FAILURES + MAX_UPLOAD_ATTEMPTS}`,
+    });
+  });
+
+  it('bộ đếm bền: hàng đợi mới (app khởi động lại) đọc tiếp từ lastErrorCode', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    for (let i = 0; i < MAX_AMBIGUOUS_NETWORK_FAILURES; i += 1) {
+      t.outcomes.push({ kind: 'network', code: 'INTERNAL' });
+      await t.queue.runOnce(SHOP);
+      t.advance(MAX_RETRY_DELAY_MS);
+    }
+    const clock = 10_000 + 100 * MAX_RETRY_DELAY_MS;
+    const restarted = createUploadQueue({
+      sources: [evidenceFileSource(t.files)],
+      gateway: {
+        upload: async () => ({ kind: 'network', code: 'INTERNAL' }),
+        fetchServerStates: async () => new Map(),
+      },
+      hasher: { sha256: async () => ({ ok: true, sha256: HASH }) },
+      now: () => clock,
+      isOnline: () => true,
+    });
+    await restarted.runOnce(SHOP);
+    expect(await t.files.get(SHOP, 'a' as EvidenceId)).toMatchObject({
+      attemptCount: 1,
+      lastErrorCode: 'INTERNAL@25',
+    });
+  });
+
+  it('lỗi mạng chắc chắn (TIMEOUT, NETWORK_LOST, HTTP_503) không bao giờ tính lượt và xóa chuỗi mơ hồ', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    const codes = ['INTERNAL', 'TIMEOUT', 'NETWORK_LOST', 'HTTP_503'];
+    for (let i = 0; i < 60; i += 1) {
+      t.outcomes.push({ kind: 'network', code: codes[i % codes.length] ?? 'NETWORK' });
+      await t.queue.runOnce(SHOP);
+      t.advance(MAX_RETRY_DELAY_MS);
+    }
+    const file = await t.files.get(SHOP, 'a' as EvidenceId);
+    expect(file).toMatchObject({ state: 'upload_failed', attemptCount: 0 });
+  });
+
+  it('tải được thì xóa bộ đếm', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    t.outcomes.push({ kind: 'network', code: 'INTERNAL' });
+    await t.queue.runOnce(SHOP);
+    expect((await t.files.get(SHOP, 'a' as EvidenceId))?.lastErrorCode).toBe('INTERNAL@1');
+    t.advance(MAX_RETRY_DELAY_MS);
+    await t.queue.runOnce(SHOP);
+    expect(await t.files.get(SHOP, 'a' as EvidenceId)).toMatchObject({
+      state: 'uploaded',
+      lastErrorCode: null,
+    });
   });
 });

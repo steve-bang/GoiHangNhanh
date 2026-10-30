@@ -43,6 +43,28 @@ export interface UploadRunOptions {
  * `INTERNAL`/`UNKNOWN` không có ở đây: trong phiên chạy, tệp lỗi mạng loại này vẫn được nhận ra qua bộ
  * đếm; sau khi khởi động lại thì chờ hết giãn cách (tối đa 15 phút).
  */
+/**
+ * Mã MƠ HỒ (kết quả `network` nhưng có thể là lỗi máy chủ): SDK callable trả `internal`/`unknown` không
+ * `details` cả khi mất mạng lẫn khi Function lỗi bất ngờ (`toHttpsError` nhánh cuối, ví dụ thiếu quyền
+ * IAM ký URL). Đếm riêng số lần liên tiếp của một tệp; quá `MAX_AMBIGUOUS_NETWORK_FAILURES` thì xử lý
+ * như lỗi máy chủ (tính lượt, rồi "cần xử lý" theo trần 8) để lỗi máy chủ kéo dài không thử mãi.
+ */
+export const AMBIGUOUS_NETWORK_CODES: readonly string[] = ['INTERNAL', 'UNKNOWN'];
+
+/** 24 lần liên tiếp (khoảng 6 giờ với giãn cách trần 15 phút). */
+export const MAX_AMBIGUOUS_NETWORK_FAILURES = 24;
+
+const AMBIGUOUS_STREAK = /^(INTERNAL|UNKNOWN)@(\d+)$/;
+
+/**
+ * Bộ đếm lưu BỀN ngay trong `lastErrorCode` dạng `<MÃ>@<số lần>` (ví dụ `INTERNAL@7`), không cần
+ * migration: mã này là mã nội bộ, không hiển thị. Mã khác (lần trước không phải lỗi mơ hồ) = 0.
+ */
+export function ambiguousStreakOf(lastErrorCode: string | null): number {
+  const match = lastErrorCode ? AMBIGUOUS_STREAK.exec(lastErrorCode) : null;
+  return match ? Number(match[2]) : 0;
+}
+
 export const NETWORK_ERROR_CODES: readonly string[] = [
   'NETWORK',
   'NETWORK_LOST',
@@ -264,6 +286,17 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
         lastErrorCode: null,
       });
       if (done.ok) summary.received += 1;
+    } else if (outcome.kind === 'network' && AMBIGUOUS_NETWORK_CODES.includes(outcome.code)) {
+      const streak = ambiguousStreakOf(current.item.lastErrorCode) + 1;
+      const code = `${outcome.code}@${streak}`;
+      if (streak > MAX_AMBIGUOUS_NETWORK_FAILURES) {
+        // Quá lâu để còn là mất mạng: coi là lỗi máy chủ, tính lượt (vẫn giữ bộ đếm trong mã).
+        networkStreak.delete(current.item.id);
+        await failAttempt(current, code, summary);
+        return 'next';
+      }
+      await waitForNetwork(current, code, summary);
+      return 'stop';
     } else if (outcome.kind === 'network') {
       await waitForNetwork(current, outcome.code, summary);
       return 'stop';
