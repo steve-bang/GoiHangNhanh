@@ -39,7 +39,7 @@ beforeEach(async () => {
         dataSource: 'user_entered',
         createdAtDevice: Timestamp.now(),
         createdAt: Timestamp.now(),
-        createdBy: 'seed',
+        createdBy: USERS.packerA, // V1-07b: chỉ người tạo bản neo khai báo bằng chứng
       });
     }
   });

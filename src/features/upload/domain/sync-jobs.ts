@@ -114,6 +114,7 @@ export type SyncReason =
   | 'fileMissing'
   | 'fileUnreadable'
   | 'unsupportedType'
+  | 'notCreator'
   | 'unknownAttention'
   | 'hashMismatch'
   | 'localSaveFailed'
@@ -150,6 +151,8 @@ const ATTENTION_REASON: Readonly<Record<string, SyncReason>> = {
   FILE_MISSING: 'fileMissing',
   FILE_UNREADABLE: 'fileUnreadable',
   UNSUPPORTED_FILE_TYPE: 'unsupportedType',
+  // V1-07b: máy chủ từ chối vì phiên/hồ sơ/bằng chứng do tài khoản khác tạo.
+  NOT_EVIDENCE_CREATOR: 'notCreator',
 };
 
 /** Tệp `upload_failed` vì mạng (không tính lượt, Q-24h) hay vì máy chủ từ chối. */

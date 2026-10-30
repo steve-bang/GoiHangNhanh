@@ -42,10 +42,18 @@ export type UploadSessionResult =
   /** Máy chủ đã có bản gốc của bằng chứng này: không cấp URL (bản gốc tạo đúng một lần). */
   | { readonly status: 'already_received'; readonly storagePath: string };
 
+/**
+ * Lý do có cấu trúc (`details.reason`, V1-07b) để app phân loại mà không đọc câu chữ: bằng chứng/phiên/
+ * bản neo do tài khoản khác tạo (thử lại không đổi được) hoặc phiên/bản neo chưa có trên máy chủ.
+ */
+export type UploadErrorReason =
+  'not_evidence_declarer' | 'not_session_creator' | 'session_missing' | 'return_missing';
+
 export class UploadError extends Error {
   constructor(
     readonly code: 'invalid-argument' | 'permission-denied' | 'not-found' | 'failed-precondition',
     message: string,
+    readonly reason?: UploadErrorReason,
   ) {
     super(message);
   }
@@ -92,7 +100,8 @@ export function parseUploadSessionInput(data: unknown): UploadSessionInput {
  *   Đường dẫn, băm và tạo-một-lần GIỐNG NHAU cho cả hai (chỉ cần shopId + evidenceId); với hàng hoàn
  *   còn kiểm hồ sơ `returns/{returnId}` đã đăng cùng shop (Rules đã kiểm lúc khai báo, đây là lớp thứ hai).
  * - Chỉ người đã khai báo (`createdBy`) mới xin được URL (Q-24g: không tải hộ tệp do tài khoản khác
- *   tạo). Kích thước khai báo phải trong trần theo loại (Q-24c: ảnh 25 MB, video 2 GB; `limits.ts`).
+ *   tạo); với bằng chứng đóng gói người đó còn phải là người tạo phiên (V1-07b; hàng hoàn: từng media là
+ *   đơn vị sở hữu, bản neo chỉ cần tồn tại); lỗi kèm `reason` (`details.reason` cho client). Kích thước khai báo phải trong trần theo loại (Q-24c: ảnh 25 MB, video 2 GB; `limits.ts`).
  * - Bản gốc đã có mà máy chủ chưa chốt (`uploaded` quá 15 phút hoặc chưa có trạng thái): chỉ ĐẶT YÊU CẦU
  *   xác minh lại (`reverify.ts`, giữ chỗ 30 phút, không băm ở đây) rồi trả `already_received` ngay;
  *   trigger `reverifyEvidence` băm lại. Gọi lặp/đồng thời không sinh thêm lần băm.
@@ -120,7 +129,11 @@ export async function createUploadSessionForUser(
   const data = evidence.data() ?? {};
   const storagePath = `shops/${shopId}/evidence/${evidenceId}/original`;
   if (data.createdBy !== uid) {
-    throw new UploadError('permission-denied', 'Bằng chứng này do tài khoản khác khai báo.');
+    throw new UploadError(
+      'permission-denied',
+      'Bằng chứng này do tài khoản khác khai báo.',
+      'not_evidence_declarer',
+    );
   }
 
   const serverState = (data.server as { state?: unknown } | undefined)?.state;
@@ -137,13 +150,42 @@ export async function createUploadSessionForUser(
   }
   const ownerKind = data.ownerKind === 'return' ? 'return' : 'packing';
   const returnId = ownerKind === 'return' ? (data.returnId as unknown) : undefined;
+  // Đóng gói: người khai báo phải là người tạo PHIÊN (V1-07b). Hàng hoàn: đơn vị sở hữu là từng media,
+  // đã ép bằng `evidence.createdBy == uid` ở trên; bản neo chỉ cần còn trong shop (review PR #64: B chụp
+  // thêm ảnh vào hồ sơ của A vẫn tải được ảnh của B). Kiểm SAU nhánh `already_received`: bằng chứng đã có
+  // bản gốc vẫn được chính người khai báo nhờ xác minh lại, nhưng không ai xin được URL mới cho phiên của
+  // người khác.
   if (ownerKind === 'return') {
     const anchor =
       typeof returnId === 'string' && ID_PATTERN.test(returnId)
         ? await db.doc(`shops/${shopId}/returns/${returnId}`).get()
         : null;
     if (!anchor?.exists) {
-      throw new UploadError('failed-precondition', 'Chưa có hồ sơ hàng hoàn của bằng chứng này.');
+      throw new UploadError(
+        'failed-precondition',
+        'Chưa có hồ sơ hàng hoàn của bằng chứng này.',
+        'return_missing',
+      );
+    }
+  } else {
+    const sessionId = data.sessionId as unknown;
+    const session =
+      typeof sessionId === 'string' && ID_PATTERN.test(sessionId)
+        ? await db.doc(`shops/${shopId}/sessions/${sessionId}`).get()
+        : null;
+    if (!session?.exists) {
+      throw new UploadError(
+        'failed-precondition',
+        'Chưa có phiên ghi nhận của bằng chứng này.',
+        'session_missing',
+      );
+    }
+    if (session.data()?.createdBy !== uid) {
+      throw new UploadError(
+        'permission-denied',
+        'Phiên ghi nhận này do tài khoản khác tạo.',
+        'not_session_creator',
+      );
     }
   }
   const contentType = data.mimeType;

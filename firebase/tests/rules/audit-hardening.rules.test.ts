@@ -37,7 +37,8 @@ beforeEach(async () => {
         dataSource: 'user_entered',
         createdAtDevice: Timestamp.now(),
         createdAt: Timestamp.now(),
-        createdBy: 'seed',
+        // V1-07b: chỉ người tạo bản neo khai báo bằng chứng của hồ sơ.
+        createdBy: USERS.packerA,
       });
     }
   });

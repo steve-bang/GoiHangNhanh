@@ -27,6 +27,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 - Máy chủ tự ghi nhật ký kiểm toán cho mọi lần tạo/sửa đơn, dòng, kiện, phiên, bằng chứng và hồ sơ hàng hoàn; Rules kiểm kiểu/độ dài trường và trần dung lượng mọi bằng chứng (ảnh 25 MB, video 2 GB); chỉ người khai báo mới xin được URL tải lên; xác minh mã băm không thử lại vô hạn và xác minh lại bằng chứng kẹt khi app thử tải lại tệp đó; ô nhập đơn giới hạn độ dài khớp máy chủ (V1-04, #44; chưa deploy).
 - Bản Firebase không mở màn nghiệp vụ khi chưa đăng nhập hoặc chưa có cửa hàng (kể cả mở bằng liên kết sâu) và không tạo đơn, phiên quay, hồ sơ hàng hoàn khi chưa nạp được cửa hàng thật; offline lần đầu hiện "Chưa kết nối được cửa hàng" kèm Thử lại; màn đang quay không bị cắt ngang. Chưa kiểm chứng trên thiết bị (V1-06, #49).
 - Máy chủ xóa tài khoản theo yêu cầu: Function `deleteAccount` (phải vừa đăng nhập lại) gỡ quyền vào cửa hàng và xóa tài khoản ngay, khóa dữ liệu cửa hàng và xóa hẳn sau 30 ngày bằng hàm chạy hằng ngày (kể cả nhật ký kiểm toán), trừ khi bị giữ vì lý do pháp lý; chỉ giữ bản ghi xóa tối thiểu không email/tên; script cho nhân viên xử lý yêu cầu xóa qua email. Chưa deploy, app chưa nối (V1-14).
+- Máy chủ chỉ nhận khai báo và cấp URL tải bằng chứng cho chính người tạo phiên quay (đóng gói) hoặc người chụp/quay ảnh, video hàng hoàn (Rules + `createUploadSession`); ứng dụng báo "cần xử lý" ngay khi máy chủ từ chối vì tài khoản khác tạo, không thử lại mãi. Chưa deploy, chưa kiểm chứng trên thiết bị (V1-07b).
 
 ### Changed
 
