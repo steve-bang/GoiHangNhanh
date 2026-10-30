@@ -127,7 +127,7 @@ describe('Kiểm tra hộp thư: gửi lại', () => {
     await fireEvent.press(screen.getByTestId('recovery-sent-resend'));
     expect(fake.auth.recoveryRequests).toEqual([FAKE_DEMO_EMAIL]);
     expect(screen.getByTestId('recovery-sent-resent')).toHaveTextContent(
-      /Đã gửi lại\. Bạn kiểm tra hộp thư nhé!$/,
+      /Đã gửi lại\. Nếu email đã đăng ký, thư sẽ đến trong vài phút\.$/,
     );
     expect(screen.getByTestId('recovery-sent-countdown')).toHaveTextContent(
       `Gửi lại email sau 00:${String(FAKE_RESEND_SECONDS).padStart(2, '0')}`,

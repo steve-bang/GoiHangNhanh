@@ -139,8 +139,16 @@ export interface ForgotLayout extends OnboardingLayoutBase {
   };
 }
 
+/** Số ký tự mô tả mặc định của UI-A07 (câu "gửi mã xác minh" của chế độ `otp`). */
+export const FORGOT_DESCRIPTION_CHARS = 62;
+
 export interface ForgotOptions extends AuthLayoutOptions {
   errors?: { email?: FieldErrorSpec; banner?: BannerErrorSpec };
+  /**
+   * Độ dài câu mô tả đang hiện (khác theo `PASSWORD_RECOVERY_MODE`, V1-03); mặc định
+   * `FORGOT_DESCRIPTION_CHARS`. Câu dài hơn thì hình nhường chỗ trước.
+   */
+  descriptionChars?: number;
 }
 
 export function computeForgotLayout(
@@ -161,7 +169,11 @@ export function computeForgotLayout(
     b.contentWidth,
     b.scale,
   );
-  const descLines = estimateLines({ chars: 62, fontSize: 15 }, b.contentWidth, b.scale);
+  const descLines = estimateLines(
+    { chars: options.descriptionChars ?? FORGOT_DESCRIPTION_CHARS, fontSize: 15 },
+    b.contentWidth,
+    b.scale,
+  );
   const fixed =
     BACK_ROW_HEIGHT +
     gaps.afterHeader +

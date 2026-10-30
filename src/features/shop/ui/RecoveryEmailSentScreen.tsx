@@ -60,9 +60,13 @@ export function RecoveryEmailSentScreen() {
     : null;
 
   const touch = getMinTouchTarget();
+  const description = t('screens:recoverySent.description', {
+    email: maskEmail(requestedEmail ?? ''),
+  });
+  // Màn này không có ô nhập; hai đoạn mô tả thay chỗ, nên ước tính theo tổng độ dài hai đoạn.
   const layout = computeForgotLayout(
     { width, height, insetTop: insets.top, insetBottom: insets.bottom, fontScale },
-    { touch },
+    { touch, descriptionChars: description.length + t('screens:recoverySent.nextStep').length },
   );
   const { gaps, title } = layout;
 
@@ -112,7 +116,7 @@ export function RecoveryEmailSentScreen() {
           color="inkMuted"
           style={[styles.center, { marginTop: gaps.titleToDescription }]}
         >
-          {t('screens:recoverySent.description', { email: maskEmail(requestedEmail) })}
+          {description}
         </Text>
         <Text color="inkMuted" style={[styles.center, { marginTop: tokens.space.sm }]}>
           {t('screens:recoverySent.nextStep')}

@@ -79,11 +79,15 @@ export function ForgotPasswordScreen() {
     ? (override(formError) ?? resolveErrorMessage(t, formError))
     : null;
 
+  const description = t(
+    emailLink ? 'screens:forgot.emailLink.description' : 'screens:forgot.description',
+  );
   const touch = getMinTouchTarget();
   const layout = computeForgotLayout(
     { width, height, insetTop: insets.top, insetBottom: insets.bottom, fontScale },
     {
       touch,
+      descriptionChars: description.length,
       errors: {
         ...(emailError ? { email: { chars: emailError.length } } : {}),
         ...(bannerMessage
@@ -147,7 +151,7 @@ export function ForgotPasswordScreen() {
         <Text
           style={[styles.center, { color: colors.inkMuted, marginTop: gaps.titleToDescription }]}
         >
-          {t(emailLink ? 'screens:forgot.emailLink.description' : 'screens:forgot.description')}
+          {description}
         </Text>
       </View>
 

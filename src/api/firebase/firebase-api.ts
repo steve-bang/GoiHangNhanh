@@ -31,9 +31,19 @@ const unavailable = () => Promise.reject(new AppError('AUTH_SERVICE_UNAVAILABLE'
  */
 export const PASSWORD_RESET_RESEND_SECONDS = 60;
 
-/** `auth/user-not-found`: chỉ có khi dự án TẮT chống dò email của Firebase. App vẫn trả trung tính. */
-const isUserNotFound = (error: unknown): boolean =>
-  (error as { code?: unknown } | null)?.code === 'auth/user-not-found';
+/**
+ * Lỗi của `sendPasswordResetEmail` phụ thuộc TRẠNG THÁI TÀI KHOẢN: trả kết quả như email có tài khoản
+ * để không lộ email đã đăng ký hay tài khoản bị khóa (decisions.md Q-29 / V1-03). `user-not-found` chỉ
+ * có khi dự án TẮT chống dò email của Firebase; `user-disabled` khi tài khoản bị vô hiệu hóa.
+ */
+export const NEUTRAL_PASSWORD_RESET_ERRORS: readonly string[] = [
+  'auth/user-not-found',
+  'auth/user-disabled',
+];
+const isAccountStateError = (error: unknown): boolean => {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === 'string' && NEUTRAL_PASSWORD_RESET_ERRORS.includes(code);
+};
 
 /**
  * Hiện thực `ApiClient` bằng Firebase: Auth cho tài khoản, Cloud Function callable cho shop,
@@ -84,7 +94,7 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
         try {
           await ops.sendPasswordReset(email.trim());
         } catch (error) {
-          if (!isUserNotFound(error)) throw error;
+          if (!isAccountStateError(error)) throw error;
         }
         return { retryAfterSeconds: PASSWORD_RESET_RESEND_SECONDS };
       }),

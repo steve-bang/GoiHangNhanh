@@ -401,7 +401,7 @@
     "backToSignIn": "Quay lại đăng nhập",
     "resend": "Gửi lại email",
     "resendIn": "Gửi lại email sau {{time}}",
-    "resent": "Đã gửi lại. Bạn kiểm tra hộp thư nhé!",
+    "resent": "Đã gửi lại. Nếu email đã đăng ký, thư sẽ đến trong vài phút.",
     "tipTitle": "Không thấy thư?",
     "tipBody": "Xem mục Thư rác hoặc Quảng cáo. Vẫn chưa có thì bấm Gửi lại email."
   },

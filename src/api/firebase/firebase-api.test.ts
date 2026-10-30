@@ -275,13 +275,18 @@ describe('api/firebase: quên mật khẩu bằng thư của Firebase (D-14 v1)'
     expect(result).toEqual({ retryAfterSeconds: PASSWORD_RESET_RESEND_SECONDS });
   });
 
-  it('email không có tài khoản (auth/user-not-found): trung tính, cùng kết quả như email có tài khoản', async () => {
-    const ops = fakeOps();
-    ops.failPasswordReset({ code: 'auth/user-not-found' });
-    await expect(
-      makeApi(ops).auth.requestPasswordRecovery('khong.co@example.com'),
-    ).resolves.toEqual({ retryAfterSeconds: PASSWORD_RESET_RESEND_SECONDS });
-  });
+  it.each(['auth/user-not-found', 'auth/user-disabled'])(
+    'lỗi theo trạng thái tài khoản (%s): trung tính, cùng kết quả như email có tài khoản',
+    async (sdkCode) => {
+      const normal = await makeApi(fakeOps()).auth.requestPasswordRecovery('co@example.com');
+      const ops = fakeOps();
+      ops.failPasswordReset(Object.assign(new Error('chi tiết SDK'), { code: sdkCode }));
+      await expect(makeApi(ops).auth.requestPasswordRecovery('x@example.com')).resolves.toEqual(
+        normal,
+      );
+      expect(normal).toEqual({ retryAfterSeconds: PASSWORD_RESET_RESEND_SECONDS });
+    },
+  );
 
   it.each([
     ['auth/invalid-email', 'AUTH_INVALID_CREDENTIALS'],
