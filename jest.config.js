@@ -12,7 +12,7 @@ module.exports = {
     {
       displayName: 'tooling',
       testEnvironment: 'node',
-      testMatch: ['<rootDir>/eslint-rules/**/*.test.js'],
+      testMatch: ['<rootDir>/eslint-rules/**/*.test.js', '<rootDir>/scripts/**/*.test.cjs'],
     },
     {
       displayName: 'rules',

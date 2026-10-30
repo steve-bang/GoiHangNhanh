@@ -4,14 +4,18 @@
 // bản giả vẫn chạy); bản build thật thiếu tệp sẽ rơi về "chưa kết nối" (src/api/create-api.ts).
 const fs = require('node:fs');
 
+const { resolveAppEnv, validateReleaseEnv } = require('./scripts/env/validate-release-env.cjs');
+
 function existing(path) {
   return path && fs.existsSync(path) ? path : undefined;
 }
 
-// APP_ENV=dev|prod (đặt bởi `npm run dev:*` / `prod:*`, scripts/env/*.env) chọn tệp trong
-// firebase/config/<env>/ trước, rồi mới tới gốc repo. prod bỏ hậu tố `.dev` của mã app (giá trị giữ chỗ, O-11).
+// APP_ENV=dev|prod (bí danh production; đặt bởi `npm run dev:*` / `prod:*`, scripts/env/*.env, hoặc
+// profile trong eas.json) chọn tệp trong firebase/config/<env>/ trước, rồi mới tới gốc repo. prod bỏ hậu
+// tố `.dev` của mã app (giá trị giữ chỗ, O-11). Bản production mang cờ cổng giả/emulator thì
+// `validateReleaseEnv` ném lỗi và build dừng (V1-01).
 module.exports = ({ config }) => {
-  const env = process.env.APP_ENV === 'prod' ? 'prod' : 'dev';
+  const env = resolveAppEnv(process.env);
   const iosFile = existing(
     process.env.GOOGLE_SERVICES_INFO_PLIST ??
       process.env.GOOGLE_SERVICE_INFO_PLIST ??
@@ -23,6 +27,7 @@ module.exports = ({ config }) => {
       existing(`./firebase/config/${env}/google-services.json`) ??
       './google-services.json',
   );
+  validateReleaseEnv(process.env, { iosFile, androidFile });
   const appId = (id) => (env === 'prod' && id ? id.replace(/\.dev$/, '') : id);
   return {
     ...config,
