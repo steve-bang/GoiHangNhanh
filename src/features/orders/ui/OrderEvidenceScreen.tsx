@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { OrderId } from '@/core/ids';
 import { ROUTES } from '@/core/navigation';
-import { useAppNavigation, useRouteParams } from '@/platform';
+import { getMinTouchTarget, useAppNavigation, useRouteParams } from '@/platform';
 import {
   Button,
   Card,
   EmptyState,
   ErrorState,
   FilterChips,
+  Icon,
   IconTile,
   Screen,
   SkeletonCard,
@@ -213,6 +214,9 @@ function EvidenceReady({
             <EvidenceRow
               key={item.id}
               item={item}
+              onOpen={() =>
+                navigation.push(ROUTES.evidenceDetail, { orderId: order.id, evidenceId: item.id })
+              }
               onOpenSync={() => navigation.push(ROUTES.sync)}
             />
           ))}
@@ -223,17 +227,41 @@ function EvidenceReady({
   );
 }
 
-function EvidenceRow({ item, onOpenSync }: { item: OrderEvidenceItem; onOpenSync: () => void }) {
+/**
+ * Một tệp: phần trên (loại, giờ, nhãn) là vùng chạm mở UI-E04 Chi tiết bằng chứng theo ID tệp (V1-17);
+ * nút "Mở trung tâm đồng bộ" của tệp lỗi nằm NGOÀI vùng chạm đó (không lồng nút trong nút).
+ */
+function EvidenceRow({
+  item,
+  onOpen,
+  onOpenSync,
+}: {
+  item: OrderEvidenceItem;
+  onOpen: () => void;
+  onOpenSync: () => void;
+}) {
   const { t } = useTranslation();
+  const { tokens } = useTheme();
   const summary = summarizeOrderEvidence([item.state]);
   const failed = summary.kind === 'label' && summary.label === 'error';
+  const kindLabel = t(`screens:orderEvidence.kind.${item.group}.${item.kind}`);
   return (
     <Card compact testID={`evidence-item-${item.id}`}>
-      <View style={styles.row}>
+      <Pressable
+        testID={`evidence-open-${item.id}`}
+        accessibilityRole="button"
+        accessibilityLabel={t('screens:orderEvidence.openDetail', { kind: kindLabel })}
+        onPress={onOpen}
+        style={({ pressed }) => [
+          styles.row,
+          { minHeight: getMinTouchTarget() },
+          pressed ? { opacity: tokens.opacity.pressed } : null,
+        ]}
+      >
         <IconTile icon={item.kind === 'video' ? 'camera' : 'package'} tone="neutral" />
         <View style={styles.flex}>
           <Text variant="formButton" color="ink">
-            {t(`screens:orderEvidence.kind.${item.group}.${item.kind}`)}
+            {kindLabel}
           </Text>
           <Text variant="caption" color="textMuted">
             {t('screens:orderEvidence.capturedAt', {
@@ -242,7 +270,8 @@ function EvidenceRow({ item, onOpenSync }: { item: OrderEvidenceItem; onOpenSync
           </Text>
           <OrderEvidenceBadge summary={summary} testID={`evidence-status-${item.id}`} />
         </View>
-      </View>
+        <Icon name="forward" size={tokens.icon.md} color={tokens.color.text.secondary} />
+      </Pressable>
       {failed ? (
         <View>
           <Text variant="formBody" color="ink">

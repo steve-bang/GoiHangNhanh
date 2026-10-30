@@ -62,6 +62,13 @@
         }
       ],
       [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": false,
+          "supportsPictureInPicture": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#F7FAF8",

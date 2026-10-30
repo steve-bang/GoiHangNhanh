@@ -131,6 +131,26 @@ describe('UI-E03 Bằng chứng của đơn', () => {
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.sync);
   });
 
+  it('chạm một tệp mở UI-E04 theo ID tệp và ID đơn (V1-17); nút đồng bộ của tệp lỗi vẫn riêng', async () => {
+    const store = createMemoryOrderStore();
+    const d = makeOrder('DH-EV-OPEN', { at: AT });
+    await store.saveNewOrder(d);
+    item('ev-a', 'queued');
+    item('ev-b', 'upload_failed');
+    await open(store, d.order.id);
+    await fireEvent.press(await screen.findByTestId('evidence-open-ev-a'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.evidenceDetail, {
+      orderId: d.order.id,
+      evidenceId: 'ev-a',
+    });
+    expect(screen.getByTestId('evidence-open-ev-a')).toHaveProp(
+      'accessibilityLabel',
+      'Xem Video đóng gói',
+    );
+    await fireEvent.press(screen.getByTestId('evidence-open-sync-ev-b'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.sync);
+  });
+
   it('nhãn "Đã lưu trên máy" không bị hiện thành đã đồng bộ', async () => {
     const store = createMemoryOrderStore();
     const d = makeOrder('DH-EV-6', { at: AT });
