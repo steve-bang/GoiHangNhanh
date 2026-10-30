@@ -149,6 +149,7 @@ describe('UI-E04 Chi tiết bằng chứng (xem lại trên máy)', () => {
       expect(screen.queryByText('Đã lưu trên máy')).toBeNull();
       expect(screen.queryByText(/Đã xác minh|Đã tải lên/)).toBeNull();
       expect(screen.queryByTestId('evidence-video-player')).toBeNull();
+      expect(screen.queryByTestId('evidence-detail-readonly')).toBeNull();
       // Thông tin tệp vẫn còn để đối chiếu.
       expect(screen.getByText('DH-PLAY-1')).toBeOnTheScreen();
     },

@@ -153,9 +153,12 @@ export function EvidenceDetailView({
           ) : null}
         </View>
       </Card>
-      <Text variant="caption" color="textMuted" testID="evidence-detail-readonly">
-        {t('evidence:detail.readOnly')}
-      </Text>
+      {/* Tệp đã mất thì không nói "tệp gốc không bị xóa". */}
+      {playback === 'missing' ? null : (
+        <Text variant="caption" color="textMuted" testID="evidence-detail-readonly">
+          {t('evidence:detail.readOnly')}
+        </Text>
+      )}
     </>
   );
 }
