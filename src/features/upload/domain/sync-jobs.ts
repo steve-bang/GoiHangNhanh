@@ -234,12 +234,14 @@ export function describeSyncJob(
 
 /**
  * Sự kiện tệp khi người dùng bấm Thử lại (`origin: 'device'`, chỉ tới `queued`). `needs_attention`: đặt
- * lại số lượt (8 lượt mới) nhưng GIỮ `lastErrorCode` để vẫn biết tệp từng được đưa cho máy chủ
+ * lại số lượt (8 lượt mới) nhưng GIỮ mã lỗi để vẫn biết tệp từng được đưa cho máy chủ
  * (`mayHaveReachedServer`): hàng đợi đối soát trước khi gửi lại, ảnh hàng hoàn không xóa được (Q-26j).
+ * Mã mơ hồ có bộ đếm (`INTERNAL@30`) được bỏ hậu tố (`INTERNAL`) để bộ đếm lỗi mơ hồ bắt đầu lại.
  * Trạng thái khác: `null`.
  */
 export function userRetryEvent(
   state: FileState,
+  lastErrorCode: string | null = null,
 ): { readonly event: FileEvent; readonly patch: UploadItemPatch } | null {
   if (state === FILE_STATES.UPLOAD_FAILED) {
     return {
@@ -248,10 +250,40 @@ export function userRetryEvent(
     };
   }
   if (state === FILE_STATES.NEEDS_ATTENTION) {
+    const base = lastErrorCode?.replace(/@\d+$/, '') ?? null;
     return {
       event: { type: 'USER_RETRY_ATTENTION', origin: 'device' },
-      patch: { attemptCount: 0, nextAttemptAtDevice: null },
+      patch: {
+        attemptCount: 0,
+        nextAttemptAtDevice: null,
+        ...(base !== null && base !== lastErrorCode ? { lastErrorCode: base } : {}),
+      },
     };
   }
   return null;
+}
+
+/** Lỗi cuối không thử lại được bởi bất kỳ ai (không phải chuyện "ai tải lên"). */
+const FINAL_ERROR_STATES: readonly FileState[] = [
+  FILE_STATES.HASH_MISMATCH,
+  FILE_STATES.LOCAL_SAVE_FAILED,
+  FILE_STATES.UNRECOVERABLE,
+];
+
+/**
+ * Tệp do tài khoản khác/không rõ tạo (theo `job.uploader`, không theo trạng thái) ở các bộ lọc chưa xong:
+ * hiện trong nhóm "Do tài khoản khác tạo trên máy này", không bao giờ có nút (review PR #56).
+ */
+export function inForeignGroup(job: SyncJob, view: SyncJobView): boolean {
+  return job.uploader !== 'current' && view.filter !== 'uploaded';
+}
+
+/**
+ * Câu giải thích khi KHÔNG có nút ở UI-F02: tệp của tài khoản khác còn chờ máy chủ -> chỉ người tạo tải
+ * được (không nói "ứng dụng không thử lại được"); lỗi khác -> không thử lại được; còn lại không cần câu.
+ */
+export function noActionNote(job: SyncJob, view: SyncJobView): 'foreign' | 'cannotRetry' | null {
+  if (view.action) return null;
+  if (inForeignGroup(job, view) && !FINAL_ERROR_STATES.includes(job.state)) return 'foreign';
+  return view.filter === 'error' ? 'cannotRetry' : null;
 }

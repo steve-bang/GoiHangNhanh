@@ -282,9 +282,15 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
     const hash = await hasher.sha256(localPath);
     if (!hash.ok || hash.sha256 !== sha256Client) {
       const code = hash.ok ? 'LOCAL_HASH_CHANGED' : hash.reason;
+      // Mã lỗi cục bộ ghi đè mã cũ: tệp ĐÃ TỪNG được đưa cho máy chủ (lỗi mạng, Thử lại sau khi bị từ
+      // chối...) phải giữ dấu `attemptCount >= 1` để vẫn bị coi là có thể đã tới máy chủ (ảnh hàng hoàn
+      // không xóa được, Q-26j, bất biến 4).
       await apply(entry, device('NEEDS_ATTENTION'), {
         lastErrorCode: code,
         nextAttemptAtDevice: null,
+        ...(mayHaveReachedServer(entry.item)
+          ? { attemptCount: Math.max(entry.item.attemptCount, 1) }
+          : {}),
       });
       summary.needsAttention += 1;
       return 'next';

@@ -18,6 +18,7 @@ import {
 
 import {
   describeSyncJob,
+  inForeignGroup,
   DONE_LIST_LIMIT,
   SYNC_FILTERS,
   type SyncFilter,
@@ -74,8 +75,8 @@ export function SyncCenterScreen() {
   const doneLoading = filter === 'uploaded' && rows !== null && rows.done === null;
   const source = filter === 'uploaded' ? (rows?.done ?? []) : (rows?.pending ?? []);
   const visible = source.filter((r) => r.view.filter === filter);
-  const own = visible.filter((r) => !r.view.foreign);
-  const foreign = visible.filter((r) => r.view.foreign);
+  const own = visible.filter((r) => !inForeignGroup(r.job, r.view));
+  const foreign = visible.filter((r) => inForeignGroup(r.job, r.view));
   const retryable = own.filter((r) => r.view.action === 'retry').map((r) => r.job);
 
   const card = ({ job, view }: Row) => (

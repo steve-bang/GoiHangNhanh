@@ -151,8 +151,19 @@ describe('tình huống gián đoạn và lỗi (docs/04 A05/A07, QA-04/05/09/12
     expect(allowedEvents(state)).toEqual([]);
   });
 
-  it('cần xử lý rồi được giải quyết thì quay lại hàng đợi', () => {
-    expect(run('uploading', ['NEEDS_ATTENTION', 'ATTENTION_RESOLVED'])).toBe('queued');
+  it('cần xử lý rồi được giải quyết thì quay lại hàng đợi, chỉ khi lỗi không phải lỗi tệp cục bộ', () => {
+    const resolved = device('ATTENTION_RESOLVED');
+    expect(transition('needs_attention', resolved, { lastErrorCode: 'HTTP_403' })).toEqual({
+      ok: true,
+      state: 'queued',
+    });
+    for (const code of [...NON_RETRYABLE_ATTENTION_CODES, null]) {
+      expect(transition('needs_attention', resolved, { lastErrorCode: code })).toMatchObject({
+        ok: false,
+        error: 'NOT_USER_RETRYABLE',
+      });
+    }
+    expect(transition('needs_attention', resolved)).toMatchObject({ ok: false });
   });
 
   it('tệp mất/hỏng không còn bản nào -> không thể khôi phục (trạng thái cuối)', () => {

@@ -12,6 +12,7 @@ import { useScreenFocused } from '@/platform';
 import {
   DONE_LIST_LIMIT,
   DONE_SYNC_STATES,
+  loadRecentSyncJobs,
   loadSyncJobs,
   PENDING_SYNC_STATES,
   type SyncJob,
@@ -64,9 +65,15 @@ export function useSyncJobs(includeDone: boolean) {
       let done: SyncJob[] | null = null;
       let doneTotal = 0;
       if (includeDone) {
-        const all = await loadSyncJobs(stores, shopId, uid, DONE_SYNC_STATES);
-        doneTotal = all.length;
-        done = all.sort((a, b) => b.updatedAtDevice - a.updatedAtDevice).slice(0, DONE_LIST_LIMIT);
+        const recent = await loadRecentSyncJobs(
+          stores,
+          shopId,
+          uid,
+          DONE_SYNC_STATES,
+          DONE_LIST_LIMIT,
+        );
+        done = recent.jobs;
+        doneTotal = recent.total;
       }
       if (ticket !== request.current) return;
       setState({ kind: 'ready', pending, done, doneTotal, loadedAt: Date.now() });

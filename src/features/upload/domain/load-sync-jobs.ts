@@ -138,6 +138,33 @@ export async function loadSyncJobs(
   return jobs.sort((a, b) => a.createdAtDevice - b.createdAtDevice);
 }
 
+/**
+ * Như `loadSyncJobs` nhưng chỉ `limit` tệp đổi trạng thái gần nhất (`updatedAtDevice` giảm dần), cắt trên
+ * bản ghi THÔ trước khi tra phiên/đơn/hồ sơ: nhóm "Đã tải lên" lớn dần theo thời gian, chỉ làm giàu đúng
+ * số tệp hiển thị (review PR #56). Kho chưa có truy vấn có giới hạn nên vẫn đọc mọi dòng thô của các trạng
+ * thái này (chỉ trên máy). `total` = tổng số tệp.
+ */
+export async function loadRecentSyncJobs(
+  stores: SyncJobStores,
+  shopId: ShopId,
+  uid: string | null,
+  states: readonly FileState[],
+  limit: number,
+): Promise<{ readonly jobs: SyncJob[]; readonly total: number }> {
+  const read = readers(stores, shopId);
+  const [files, media] = await Promise.all([
+    stores.files.listByStates(shopId, states),
+    stores.returns.listMediaByStates(shopId, states),
+  ]);
+  type Raw = { readonly at: number; readonly make: () => Promise<SyncJob> };
+  const raw: Raw[] = [
+    ...files.map((f) => ({ at: f.updatedAtDevice, make: () => fromEvidenceFile(f, read, uid) })),
+    ...media.map((m) => ({ at: m.updatedAtDevice, make: () => fromReturnMedia(m, read, uid) })),
+  ];
+  const recent = [...raw].sort((a, b) => b.at - a.at).slice(0, Math.max(0, limit));
+  return { jobs: await Promise.all(recent.map((r) => r.make())), total: raw.length };
+}
+
 /** Đọc MỘT tệp theo khóa route của UI-F02 (`pack:<id>` / `return:<id>`); không có thì `null`. */
 export async function loadSyncJob(
   stores: SyncJobStores,

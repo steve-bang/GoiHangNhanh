@@ -12,7 +12,7 @@ type RetryOutcome = 'queued' | 'changed' | 'failed';
 
 /** Đưa MỘT tệp về hàng chờ qua máy trạng thái (`origin: 'device'`, chỉ tới `queued`). Không ném. */
 async function retryOne(stores: SyncJobStores, job: SyncJob, now: number): Promise<RetryOutcome> {
-  const step = userRetryEvent(job.state);
+  const step = userRetryEvent(job.state, job.lastErrorCode);
   if (!step) return 'changed';
   try {
     const result =

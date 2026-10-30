@@ -92,6 +92,7 @@ interface Rule {
  *   mất/đổi/không đọc được, quá lớn, sai loại); thử lại những lỗi đó không bao giờ thành công. Chỉ tới
  *   QUEUED; `hash_mismatch` không có lối ra. Thiếu ngữ cảnh mã lỗi = từ chối (bảo thủ).
  * - ATTENTION_RESOLVED: giữ cho luồng "đã khắc phục nguyên nhân" sau này; hiện không mã nào phát ra.
+ *   Cùng điều kiện với USER_RETRY_ATTENTION (review PR #56): không có lối vòng đưa tệp lỗi cục bộ về QUEUED.
  */
 const RULES: Readonly<Record<FileEventType, Rule>> = {
   STOP_RECORDING: { origin: 'device', from: [S.RECORDING], to: S.SAVING_LOCAL },
@@ -136,7 +137,7 @@ export type TransitionResult =
   | { readonly ok: true; readonly state: FileState }
   | { readonly ok: false; readonly error: TransitionError; readonly state: FileState };
 
-/** Dữ liệu của bản ghi mà một số chuyển có điều kiện cần (hiện chỉ `USER_RETRY_ATTENTION`). */
+/** Dữ liệu của bản ghi mà chuyển có điều kiện cần (`USER_RETRY_ATTENTION`, `ATTENTION_RESOLVED`). */
 export interface TransitionContext {
   /** Mã lỗi gần nhất của tệp (`lastErrorCode` của kho). */
   readonly lastErrorCode?: string | null;
@@ -163,6 +164,12 @@ export function isUserRetryableAttention(lastErrorCode: string | null | undefine
   return !!lastErrorCode && !NON_RETRYABLE_ATTENTION_CODES.includes(lastErrorCode);
 }
 
+/** Mọi lối ra `needs_attention -> queued` đều cần lỗi KHÔNG phải lỗi tệp cục bộ. */
+const CONDITIONAL_ATTENTION_EXITS: readonly FileEventType[] = [
+  'USER_RETRY_ATTENTION',
+  'ATTENTION_RESOLVED',
+];
+
 export function transition(
   state: FileState,
   event: FileEvent,
@@ -175,7 +182,10 @@ export function transition(
   if (!rule.from.includes(state)) {
     return { ok: false, error: 'ILLEGAL_TRANSITION', state };
   }
-  if (event.type === 'USER_RETRY_ATTENTION' && !isUserRetryableAttention(context.lastErrorCode)) {
+  if (
+    CONDITIONAL_ATTENTION_EXITS.includes(event.type) &&
+    !isUserRetryableAttention(context.lastErrorCode)
+  ) {
     return { ok: false, error: 'NOT_USER_RETRYABLE', state };
   }
   return { ok: true, state: rule.to };

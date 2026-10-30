@@ -10,6 +10,8 @@ import {
   parseSyncJobKey,
   RECHECK_AFTER_MS,
   syncJobKey,
+  inForeignGroup,
+  noActionNote,
   userRetryEvent,
   type SyncJob,
 } from './sync-jobs';
@@ -174,6 +176,17 @@ describe('userRetryEvent', () => {
     expect(step?.patch).not.toHaveProperty('lastErrorCode');
   });
 
+  it('mã mơ hồ có bộ đếm: bỏ hậu tố để bộ đếm bắt đầu lại; mã thường giữ nguyên (không có trong patch)', () => {
+    expect(userRetryEvent('needs_attention', 'INTERNAL@30')?.patch).toEqual({
+      attemptCount: 0,
+      nextAttemptAtDevice: null,
+      lastErrorCode: 'INTERNAL',
+    });
+    expect(userRetryEvent('needs_attention', 'HTTP_403')?.patch).not.toHaveProperty(
+      'lastErrorCode',
+    );
+  });
+
   it('trạng thái khác: không có', () => {
     for (const state of ALL_FILE_STATES.filter(
       (s) => s !== 'upload_failed' && s !== 'needs_attention',
@@ -189,5 +202,37 @@ describe('khóa route', () => {
     expect(parseSyncJobKey('return:m:2')).toEqual({ source: 'return', id: 'm:2' });
     expect(parseSyncJobKey('x:1')).toBeNull();
     expect(parseSyncJobKey(undefined)).toBeNull();
+  });
+});
+
+describe('nhóm tài khoản khác và câu khi không có nút (review PR #56)', () => {
+  it('theo người tạo, không theo trạng thái: lỗi cuối của tài khoản khác vẫn ở nhóm riêng', () => {
+    for (const state of ['needs_attention', 'hash_mismatch', 'queued'] as const) {
+      const j = job(state, { uploader: 'other', lastErrorCode: 'FILE_MISSING' });
+      const view = describeSyncJob(j, online);
+      if (!view) throw new Error('fixture');
+      expect(inForeignGroup(j, view)).toBe(true);
+    }
+    const done = job('verified', { uploader: 'other' });
+    const doneView = describeSyncJob(done, online);
+    if (!doneView) throw new Error('fixture');
+    expect(inForeignGroup(done, doneView)).toBe(false);
+  });
+
+  it('cần xử lý của tài khoản khác: không nói "ứng dụng không thử lại được"', () => {
+    for (const code of ['FILE_MISSING', 'PERMISSION_DENIED']) {
+      const j = job('needs_attention', { uploader: 'other', lastErrorCode: code });
+      const view = describeSyncJob(j, online);
+      if (!view) throw new Error('fixture');
+      expect(noActionNote(j, view)).toBe('foreign');
+    }
+    const mine = job('needs_attention', { lastErrorCode: 'FILE_MISSING' });
+    expect(noActionNote(mine, describeSyncJob(mine, online) as never)).toBe('cannotRetry');
+    const theirsMismatch = job('hash_mismatch', { uploader: 'other' });
+    expect(noActionNote(theirsMismatch, describeSyncJob(theirsMismatch, online) as never)).toBe(
+      'cannotRetry',
+    );
+    const retryable = job('needs_attention', { lastErrorCode: 'HTTP_403' });
+    expect(noActionNote(retryable, describeSyncJob(retryable, online) as never)).toBeNull();
   });
 });

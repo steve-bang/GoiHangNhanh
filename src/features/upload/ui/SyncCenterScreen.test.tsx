@@ -266,6 +266,14 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
     expect(screen.queryByText('Thử lại')).toBeNull();
   });
 
+  it('lỗi cuối (lệch mã băm) của tài khoản khác vẫn nằm trong nhóm tài khoản khác', async () => {
+    await open(setup([file('mm', 'hash_mismatch', { sessionId: 's-theirs' as SessionId })]));
+    await fireEvent.press(await screen.findByText('Lỗi (1)'));
+    const group = await screen.findByTestId('sync-foreign-group');
+    expect(group).toHaveTextContent(/DH-SYNC-1/);
+    expect(screen.queryByText('Thử lại')).toBeNull();
+  });
+
   it('mất mạng: câu nói rõ; Thử lại vẫn đưa vào hàng chờ và nói sẽ chạy khi có mạng', async () => {
     setMockConnectivity({ online: false });
     const t = setup([file('a', 'upload_failed', { lastErrorCode: 'TIMEOUT' })]);
@@ -335,6 +343,24 @@ describe('UI-F02 Chi tiết lỗi đồng bộ (V1-08)', () => {
     );
     expect(screen.queryByTestId('sync-detail-retry')).toBeNull();
     expect(screen.getByTestId('sync-detail-no-action')).toBeOnTheScreen();
+  });
+
+  it('cần xử lý của tài khoản khác: nói chỉ người tạo tải được, không nói "không thử lại được"', async () => {
+    mockNavigation.params = { jobId: 'pack:x' };
+    await open(
+      setup([
+        file('x', 'needs_attention', {
+          sessionId: 's-theirs' as SessionId,
+          lastErrorCode: 'FILE_MISSING',
+        }),
+      ]),
+      <SyncErrorScreen />,
+    );
+    expect(await screen.findByTestId('sync-detail-no-action')).toHaveTextContent(
+      'Chỉ tài khoản đã tạo tệp mới tải lên được.',
+    );
+    expect(screen.queryByText('Ứng dụng không thử lại được lỗi này.')).toBeNull();
+    expect(screen.queryByTestId('sync-detail-retry')).toBeNull();
   });
 
   it('tệp đã xác minh hoặc khóa lạ: báo không còn cần xử lý', async () => {

@@ -21,6 +21,7 @@ import {
 import {
   describeSyncJob,
   loadSyncJob,
+  noActionNote,
   parseSyncJobKey,
   PENDING_SYNC_STATES,
   type SyncJob,
@@ -165,11 +166,13 @@ function SyncErrorBody({
   const navigation = useAppNavigation();
   const { recordLabel, size, reason } = useSyncJobText(job, view);
   const open = openSyncRecord(navigation, job);
-  const noActionKey = view.foreign
-    ? 'screens:sync.detail.foreignNoAction'
-    : view.filter === 'error'
-      ? 'screens:sync.detail.noAction'
-      : null;
+  const note = noActionNote(job, view);
+  const noActionKey =
+    note === 'foreign'
+      ? 'screens:sync.detail.foreignNoAction'
+      : note === 'cannotRetry'
+        ? 'screens:sync.detail.noAction'
+        : null;
   return (
     <Screen title={t('nav:titles.UI-F02')} onBack={navigation.back} testID="screen-UI-F02">
       <Card>
@@ -221,7 +224,7 @@ function SyncErrorBody({
           testID="sync-detail-recheck"
         />
       ) : null}
-      {!view.action && noActionKey ? (
+      {noActionKey ? (
         <Text color="textMuted" testID="sync-detail-no-action">
           {t(noActionKey)}
         </Text>

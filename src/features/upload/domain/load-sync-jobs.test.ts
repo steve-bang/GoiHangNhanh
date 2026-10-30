@@ -3,7 +3,12 @@ import type { EvidenceFile, FileState } from '@/features/evidence';
 import type { OrderDetails, PackingSession } from '@/features/orders';
 import type { ReturnCase, ReturnDetails, ReturnMedia } from '@/features/returns';
 
-import { loadSyncJob, loadSyncJobs, type SyncJobStores } from './load-sync-jobs';
+import {
+  loadRecentSyncJobs,
+  loadSyncJob,
+  loadSyncJobs,
+  type SyncJobStores,
+} from './load-sync-jobs';
 
 const SHOP = 'shop-1' as ShopId;
 const OTHER = 'shop-2' as ShopId;
@@ -192,5 +197,20 @@ describe('loadSyncJob (UI-F02)', () => {
     expect(await loadSyncJob(s, OTHER, null, { source: 'pack', id: 'e1' }, states)).toBeNull();
     expect(await loadSyncJob(s, SHOP, null, { source: 'pack', id: 'e1' }, ['queued'])).toBeNull();
     expect(await loadSyncJob(s, SHOP, null, { source: 'return', id: 'e1' }, states)).toBeNull();
+  });
+});
+
+describe('loadRecentSyncJobs (bộ lọc "Đã tải lên")', () => {
+  it('cắt theo updatedAtDevice mới nhất TRƯỚC khi tra phiên/đơn/hồ sơ; trả tổng số', async () => {
+    const files = Array.from({ length: 5 }, (_, i) =>
+      file(`e${i}`, 'verified', { updatedAtDevice: 100 + i, sessionId: `s${i}` as SessionId }),
+    );
+    const { s, reads } = stores(files, [media('m1', 'uploaded', { updatedAtDevice: 103.5 })]);
+    const result = await loadRecentSyncJobs(s, SHOP, null, ['uploaded', 'verified'], 3);
+    expect(result.total).toBe(6);
+    expect(result.jobs.map((j) => j.key)).toEqual(['pack:e4', 'return:m1', 'pack:e3']);
+    // Chỉ tra phiên cho 2 tệp đóng gói được hiển thị (mỗi tệp một phiên khác nhau), hồ sơ hoàn 1 lần.
+    expect(reads.session).toBe(2);
+    expect(reads.returnCase).toBe(1);
   });
 });
