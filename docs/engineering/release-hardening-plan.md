@@ -3,6 +3,8 @@
 > **Đề xuất của đội kỹ thuật, chờ người dùng duyệt.** Nguồn: báo cáo review "người dùng thật" (HEAD `2f5a43a`, 2026-10-29, người dùng đã duyệt báo cáo). Phạm vi: 2 mục *Chặn phát hành* và 8 mục *Cao*. Mục *Trung bình/Thấp* của báo cáo nằm ngoài tài liệu này (xem "Việc để sau" cuối tệp). Câu hỏi cần quyết: [Q-24 trong decisions.md](decisions.md#q-24--gia-cố-trước-phát-hành-phạm-vi-phát-hành-và-các-lựa-chọn-chờ-quyết-định). Điều kiện phát hành tổng thể: `DEPLOYMENT.md` mục 1.
 >
 > Mã trong tài liệu này CHƯA được sửa. Các số dòng là của HEAD `2f5a43a` và có thể lệch sau khi có PR khác hợp nhất.
+>
+> **Cập nhật 2026-10-30:** PR1 và PR3 đã hợp nhất (`1097a3c`, `89584ce`). Thứ tự thực hiện các việc còn lại và phạm vi v1 nay theo [v1-release-plan.md](v1-release-plan.md) (V1-00…V1-21); tài liệu này vẫn là nguồn phân tích nguyên nhân gốc.
 
 ## 1. Tổng quan
 
