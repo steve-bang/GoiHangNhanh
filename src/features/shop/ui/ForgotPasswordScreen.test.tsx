@@ -15,6 +15,17 @@ jest.mock(
   '@/platform/navigation',
   () => jest.requireActual('@/test-utils/mock-navigation').navigationMock,
 );
+// Chế độ mã 6 số (O-22 hướng B, để sau v1): giữ kiểm thử giao diện đã có. v1 chạy `email_link`
+// (decisions.md Q-29 / V1-03): xem nhóm "chế độ thư đặt lại" cuối tệp.
+let mockRecoveryMode: 'email_link' | 'otp' = 'otp';
+// Thuộc tính đọc lúc dùng (getter), không chép giá trị lúc nạp module (biến lúc đó chưa gán).
+jest.mock('@/core/config/feature-flags', () =>
+  Object.defineProperty(
+    { ...jest.requireActual<object>('@/core/config/feature-flags') },
+    'PASSWORD_RECOVERY_MODE',
+    { get: () => mockRecoveryMode, enumerable: true },
+  ),
+);
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
   __esModule: true,
   default: jest.fn(),
@@ -263,5 +274,68 @@ describe('UI-A07 Quên mật khẩu: điều hướng', () => {
     expect(screen.getByTestId('probe-requested')).toHaveTextContent(FAKE_DEMO_EMAIL);
     await fireEvent.changeText(email(), 'khac@example.com');
     expect(screen.getByTestId('probe-requested')).toHaveTextContent('(không)');
+  });
+});
+
+describe('UI-A07 Quên mật khẩu: chế độ thư đặt lại (v1, D-14)', () => {
+  beforeEach(() => {
+    mockRecoveryMode = 'email_link';
+  });
+  afterEach(() => {
+    mockRecoveryMode = 'otp';
+  });
+
+  it('câu chữ nói "email đặt lại", không hứa "mã xác minh"; bố cục giữ nguyên', async () => {
+    await renderWithProviders(<ForgotPasswordScreen />);
+    expect(
+      screen.getByText(
+        'Nhập email đã đăng ký. Đơn Chứng sẽ gửi thư có đường dẫn để bạn đặt lại mật khẩu.',
+      ),
+    ).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Gửi email đặt lại' })).toBeOnTheScreen();
+    expect(screen.queryByText(/mã xác minh/i)).toBeNull();
+    expect(screen.getByTestId('forgot-tip')).toBeOnTheScreen();
+  });
+
+  it('gửi thành công: sang /forgot-password/sent (không sang /verify-otp)', async () => {
+    const fake = createFakeApi();
+    await renderWithProviders(
+      <>
+        <ForgotPasswordScreen />
+        <RecoveryProbe />
+      </>,
+      { gateways: fake },
+    );
+    await fireEvent.changeText(email(), ` ${FAKE_DEMO_EMAIL} `);
+    await fireEvent.press(submit());
+    expect(fake.auth.recoveryRequests).toEqual([FAKE_DEMO_EMAIL]);
+    expect(mockNavigation.push).toHaveBeenCalledTimes(1);
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.recoveryEmailSent);
+    expect(screen.getByTestId('probe-requested')).toHaveTextContent(FAKE_DEMO_EMAIL);
+  });
+
+  it('TRUNG TÍNH: email chưa có tài khoản cũng sang Kiểm tra hộp thư, không báo gì khác', async () => {
+    await renderWithProviders(<ForgotPasswordScreen />, { gateways: createFakeApi() });
+    await fireEvent.changeText(email(), 'khong.co@example.com');
+    await fireEvent.press(submit());
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.recoveryEmailSent);
+    expect(screen.queryByTestId('form-error')).toBeNull();
+  });
+
+  it.each([
+    ['AUTH_SERVICE_UNAVAILABLE', 'Chưa gửi được email. Bạn thử lại sau ít phút nhé!', true],
+    ['AUTH_TOO_MANY_REQUESTS', 'Bạn đã gửi nhiều lần. Hãy thử lại sau ít phút.', false],
+    ['AUTH_INVALID_CREDENTIALS', 'Email chưa đúng. Ví dụ: ten@cuahang.com', false],
+  ] as const)('lỗi %s: câu theo ngữ cảnh email, không chuyển màn', async (code, text, retry) => {
+    const fake = createFakeApi();
+    await renderWithProviders(<ForgotPasswordScreen />, { gateways: fake });
+    await fireEvent.changeText(email(), FAKE_DEMO_EMAIL);
+    fake.auth.failNext(code);
+    await fireEvent.press(submit());
+    const banner = screen.getByTestId('form-error');
+    expect(within(banner).getByText(text)).toBeOnTheScreen();
+    expect(within(banner).queryByRole('button', { name: 'Thử lại' }) !== null).toBe(retry);
+    expect(screen.queryByText(/mật khẩu chưa chính xác/)).toBeNull();
+    expect(mockNavigation.push).not.toHaveBeenCalled();
   });
 });

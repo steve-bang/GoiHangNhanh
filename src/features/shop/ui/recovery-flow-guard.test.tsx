@@ -16,6 +16,17 @@ jest.mock(
   '@/platform/navigation',
   () => jest.requireActual('@/test-utils/mock-navigation').navigationMock,
 );
+// Chế độ mã 6 số (O-22 hướng B, để sau v1): giữ kiểm thử giao diện đã có. v1 chạy `email_link`
+// (decisions.md Q-29 / V1-03).
+const mockRecoveryMode = 'otp';
+// Thuộc tính đọc lúc dùng (getter), không chép giá trị lúc nạp module (biến lúc đó chưa gán).
+jest.mock('@/core/config/feature-flags', () =>
+  Object.defineProperty(
+    { ...jest.requireActual<object>('@/core/config/feature-flags') },
+    'PASSWORD_RECOVERY_MODE',
+    { get: () => mockRecoveryMode, enumerable: true },
+  ),
+);
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
   __esModule: true,
   default: jest.fn(),

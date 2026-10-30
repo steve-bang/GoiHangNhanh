@@ -88,6 +88,19 @@ describe('bố cục bốn màn đăng nhập và khôi phục mật khẩu', ()
     expect(computeForgotLayout(SE).scrollNeeded).toBe(false);
   });
 
+  it('quên mật khẩu: câu mô tả dài hơn (chế độ thư đặt lại, V1-03) thì hình nhường chỗ, không cắt nội dung', () => {
+    for (const size of [SE, IPHONE]) {
+      const short = computeForgotLayout(size);
+      const long = computeForgotLayout(size, { descriptionChars: 86 });
+      expect(long.estimatedContentHeight).toBeGreaterThanOrEqual(short.estimatedContentHeight);
+      expect(long.illustrationHeight).toBeLessThanOrEqual(short.illustrationHeight);
+      if (long.illustrationHeight > 0) {
+        expect(long.estimatedContentHeight).toBeLessThanOrEqual(long.availableHeight);
+      }
+    }
+    expect(computeForgotLayout(SE, { descriptionChars: 62 })).toEqual(computeForgotLayout(SE));
+  });
+
   it('lỗi hiện thêm làm hình nhường chỗ trước (đăng nhập có banner + lỗi ô)', () => {
     const clean = computeSignInLayout(SE, { showSocial: true });
     const withErrors = computeSignInLayout(SE, {

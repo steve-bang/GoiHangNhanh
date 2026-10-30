@@ -53,6 +53,16 @@ export function describeApiContract(name: string, makeApi: () => ApiClient): voi
       ).rejects.toMatchObject({ code: 'AUTH_INVALID_CREDENTIALS' });
     });
 
+    it('quên mật khẩu TRUNG TÍNH: email có và không có tài khoản cùng resolve, cùng dạng kết quả', async () => {
+      const api = makeApi();
+      const registered = newEmail();
+      await api.auth.signUpWithEmail({ email: registered, password: PASSWORD });
+      const known = await api.auth.requestPasswordRecovery(registered);
+      const unknown = await api.auth.requestPasswordRecovery(newEmail());
+      expect(Object.keys(unknown).sort()).toEqual(Object.keys(known).sort());
+      expect(unknown.retryAfterSeconds).toBe(known.retryAfterSeconds);
+    });
+
     it('tạo shop: có id, giữ tên, nguồn bán bỏ trùng và theo thứ tự chuẩn', async () => {
       const api = makeApi();
       await api.auth.signUpWithEmail({ email: newEmail(), password: PASSWORD });
