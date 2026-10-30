@@ -21,7 +21,7 @@
 - [ ] **F-6.** Mẫu thư **đặt lại mật khẩu**: ngôn ngữ tiếng Việt, tên người gửi, kiểm tra thư không vào Thư rác (Gmail, Outlook) ở G-2.
 - [ ] **F-7.** Đăng ký app iOS (bundle id D-1) và Android (package D-1, thêm SHA-1/SHA-256 của khóa ký Google Play sau S-5); tải `GoogleService-Info.plist`, `google-services.json` lên **EAS file secret** môi trường `production` (`DEPLOYMENT.md` mục 4.5). Không commit.
 - [ ] **F-8.** Bật **Crashlytics** trong Console (nếu V1-16 có trong v1).
-- [ ] **F-9.** Tạo **tài khoản demo** cho người duyệt store (email/mật khẩu riêng, đã tạo cửa hàng); ghi vào App Review/Play App access, không ghi vào repo. **Không hứa "có sẵn đơn mẫu":** đơn và bằng chứng chỉ nằm trên máy tạo ra chúng (Q-24a), máy của người duyệt sẽ trống. Ghi chú cho người duyệt: cách tự tạo đơn bằng Tạo đơn nhanh hoặc quét **mã vạch mẫu đính kèm** (ảnh Code 128 của mã giả, ví dụ `DH-DEMO-0001`, in hoặc mở trên màn khác), rồi quay video đóng gói; nội dung ghi chú ở `docs/engineering/store-listing.md` (V1-20).
+- [ ] **F-9.** Tạo **tài khoản demo** cho người duyệt store (email/mật khẩu riêng, đã tạo cửa hàng); ghi vào App Review/Play App access, không ghi vào repo. **Không hứa "có sẵn đơn mẫu":** đơn và bằng chứng chỉ nằm trên máy tạo ra chúng (Q-24a), máy của người duyệt sẽ trống. Ghi chú cho người duyệt: cách tự tạo đơn bằng Tạo đơn nhanh hoặc quét **mã vạch mẫu đính kèm** (ảnh Code 128 của mã giả, ví dụ `DH-DEMO-0001`, in hoặc mở trên màn khác), rồi quay video đóng gói; nội dung ghi chú ở [`docs/store/review-notes.md`](../store/review-notes.md) (V1-20; tạo và quét thử ảnh mã vạch theo mục 3 của tệp đó).
 - [ ] **F-10.** Kiểm `accountDeletions` và `auditEvents` không đọc được từ client (thử bằng tài khoản demo).
 
 ## S. Tài khoản store và build
@@ -32,7 +32,8 @@
 - [ ] **S-4.** Build `production` sau V1-21: kiểm `npx expo config` của profile (bundle id không `.dev`, `EXPO_PUBLIC_APP_ENV=prod`), app mở được, đăng nhập vào **dự án production**.
 - [ ] **S-5.** Play App Signing; sao lưu thông tin khóa ký EAS ngoài repo; thêm SHA vào Firebase (F-7).
 - [ ] **S-6.** App Store Connect: tạo app, `ascAppId` vào `eas.json` `submit.production.ios`; khóa App Store Connect API.
-- [ ] **S-7.** Kiểm `PrivacyInfo.xcprivacy` được tổng hợp trong bản build iOS (Expo + RNFirebase) và lý do API bắt buộc (dung lượng đĩa, thời gian tệp, UserDefaults) đủ; App Store Connect không báo thiếu.
+- [ ] **S-7.** Kiểm `PrivacyInfo.xcprivacy` được tổng hợp trong bản build iOS (Expo + RNFirebase) và lý do API bắt buộc (dung lượng đĩa, thời gian tệp, UserDefaults, thời gian khởi động) đủ; App Store Connect không báo thiếu. Danh sách mã lý do và cấu hình đề xuất: [`docs/store/privacy-declarations.md`](../store/privacy-declarations.md) mục 6.
+- [ ] **S-8.** Trước khi điền App Privacy (Apple) và Data safety (Google): đọc trang công bố dữ liệu của Firebase cho từng SDK đang dùng, tạo **Privacy Report** từ archive iOS trong Xcode Organizer, kiểm không có `GoogleAppMeasurement`/Analytics; sửa [`privacy-declarations.md`](../store/privacy-declarations.md) và trang chính sách nếu khác (mục 6.3, 7 của tệp đó). Điền đúng bảng 3.1 và 4.2.
 
 ## G. Cổng thiết bị (iOS + Android thật, bản `staging`)
 
@@ -51,19 +52,20 @@ Ma trận tối thiểu: 1 iPhone đời cũ ở sàn D-2 + 1 iPhone mới; 1 An
 - [ ] **G-9. Crashlytics:** gây lỗi thử ở bản staging, thấy báo cáo trong Console, **không** chứa mã đơn/mã vận đơn/email; tắt công tắc thì không gửi.
 - [ ] **G-10. Truy cập chéo shop** (QA-11) bằng hai tài khoản thật trên dự án dev.
 - [ ] **G-11.** Chữ lớn hệ thống, VoiceOver/TalkBack ở UI-F01, UI-E04, màn quay; nút Back phần cứng Android.
+- [ ] **G-12. Ảnh không mang vị trí:** chụp ảnh kiện hàng hoàn khi đã cho phép vị trí, đợi tải lên, tải bản trên Storage về (bằng tài khoản quản trị dự án dev) và đọc EXIF: **không** có thẻ GPS (iOS + Android). Nếu có: dừng phát hành, sửa khai báo "vị trí: không thu thập" ở [`privacy-declarations.md`](../store/privacy-declarations.md) và trang chính sách.
 
 ## C. Duyệt câu chữ và pháp lý
 
 - [ ] **C-1.** BA/khách duyệt chuỗi mới (Q-29 trong `decisions.md` và các PR V1-xx): thông báo lỗi tải, "Đang chờ Wi‑Fi", câu thời hạn lưu, câu giới hạn khi quay, Kiểm tra hộp thư, Xóa tài khoản, Trợ giúp; xác nhận lệch có chủ đích (ẩn Apple/Google, 4 màn khôi phục mật khẩu thành 2).
 - [ ] **C-2.** Luật sư rà **Chính sách quyền riêng tư**, **Điều khoản**, trang **Xóa tài khoản** theo pháp luật bảo vệ dữ liệu cá nhân Việt Nam; R-1 (lưu uid sau xóa), R-8 (báo lỗi mặc định bật).
 - [ ] **C-3.** Kiểm tra thương hiệu/pháp lý Splash (D-15: logo sàn, câu "Bảo vệ quyền lợi") và slogan Chào mừng (Q-24e) trước khi công khai.
-- [ ] **C-4.** Duyệt mô tả store và khai báo Privacy Labels/Data safety ở `docs/engineering/store-listing.md` (V1-20) khớp app thật.
+- [ ] **C-4.** Duyệt mô tả store, từ khóa, phân loại độ tuổi ([`docs/store/listing.md`](../store/listing.md)), khai báo App Privacy/Data safety ([`docs/store/privacy-declarations.md`](../store/privacy-declarations.md)) và ghi chú cho người duyệt ([`docs/store/review-notes.md`](../store/review-notes.md)) (V1-20) khớp **bản build sẽ nộp**: mọi dòng đánh dấu "[theo V1-xx]" đã đối chiếu (bảng `listing.md` mục 9).
 - [ ] **C-5.** Icon/ảnh splash chính thức (O-23, O-24): icon 1024×1024 không trong suốt (App Store), 512×512 (Play).
 
 ## P. Phát hành
 
 - [ ] **P-1.** Commit phát hành: `npm run check`, `npm run test:rules`, CI xanh; thẻ `v1.0.0`.
-- [ ] **P-2.** Google Play: Internal testing (tải AAB thủ công lần đầu) -> Closed testing (nếu tài khoản yêu cầu) -> Production với tỷ lệ triển khai 5–20%; điền App content (chính sách URL, Data safety, App access, xếp loại nội dung, **URL yêu cầu xóa tài khoản**).
-- [ ] **P-3.** App Store: TestFlight nội bộ -> gửi duyệt với tài khoản demo và ghi chú (không có mua trong app; xóa tài khoản ở Cá nhân > Quyền riêng tư và bảo mật > Xóa tài khoản); phased release.
+- [ ] **P-2.** Google Play: Internal testing (tải AAB thủ công lần đầu) -> Closed testing (nếu tài khoản yêu cầu) -> Production với tỷ lệ triển khai 5–20%; điền App content (chính sách URL, Data safety, App access, xếp loại nội dung, đối tượng mục tiêu 18+, **URL yêu cầu xóa tài khoản**) theo [`docs/store/`](../store/listing.md).
+- [ ] **P-3.** App Store: TestFlight nội bộ -> gửi duyệt với tài khoản demo và ghi chú ([`docs/store/review-notes.md`](../store/review-notes.md) mục 2: không có mua trong app; xóa tài khoản ở Cá nhân > Quyền riêng tư và bảo mật > Xóa tài khoản); phased release.
 - [ ] **P-4.** Theo dõi 7 ngày đầu: Crashlytics, chi phí Firebase so với cảnh báo ngân sách, lỗi `verifyEvidence`, phản hồi người dùng; ghi vào `CHANGELOG.md` bản vá nếu có.
 - [ ] **P-5.** Cập nhật `CLAUDE.md` mục "Trạng thái dự án" và `DEPLOYMENT.md` theo những gì đã chạy thật.

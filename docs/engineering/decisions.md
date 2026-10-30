@@ -683,3 +683,26 @@ Mã lỗi/thông báo mới phát sinh từ PR2/PR4/PR5 (mất mạng, tệp tha
 Nguồn: [v1-release-plan.md](v1-release-plan.md) (2026-10-30). Các lựa chọn Q-24a–h, O-09, O-15 (v1), D-14 (cách làm tạm cho v1), xóa tài khoản, gói/thanh toán v1, crash reporting và quy trình build được **agent điều phối chốt thay người dùng** theo ủy quyền mà điều phối báo lại; **chưa có xác nhận trực tiếp của người dùng** và không phải D-xx. Bảng đầy đủ: kế hoạch mục 1.2. Câu hỏi R-1…R-8 (kế hoạch mục 7.3) **đã được điều phối chốt** ở kế hoạch mục 7.5; kèm chốt sau review PR #40: purge xóa cả shop gồm `auditEvents` theo yêu cầu xóa của chủ (sau 30 ngày, trừ khi có `legalHold`/tranh chấp), chỉ giữ `accountDeletions` (uid, thời điểm, `shopIds`, lý do kỹ thuật; không email/tên). **Q-24g:** A (một máy một tài khoản) + lọc theo `created_by` như Q-23g. Checklist con người: [release-checklist.md](release-checklist.md).
 
 **Mã lỗi/chuỗi mới chờ BA (bổ sung khi làm từng PR V1-xx, không thêm vào `codes.ts` khi chưa duyệt):** `UPLOAD_WAITING_NETWORK`, `UPLOAD_INTERRUPTED`, `UPLOAD_EXCEPTION` (V1-02), `ACCOUNT_DELETE_SHOP_HAS_MEMBERS` (V1-14); câu "Đang chờ Wi‑Fi" (V1-09), câu thời hạn lưu v1 (V1-18), câu giới hạn khi quay (V1-11), màn Kiểm tra hộp thư (V1-03), luồng Xóa tài khoản (V1-15).
+
+#### Q-29 / V1-20 — store-listing-docs
+
+Tài liệu: [docs/store/listing.md](../store/listing.md), [privacy-declarations.md](../store/privacy-declarations.md), [review-notes.md](../store/review-notes.md); kế hoạch PR [plans/v1-20-store-listing-docs.md](plans/v1-20-store-listing-docs.md). Agent tự chốt theo ủy quyền (chưa có xác nhận trực tiếp của người dùng; khách/BA duyệt ở release-checklist C-4):
+
+1. **Ba tệp ở `docs/store/`** thay cho một tệp `docs/engineering/store-listing.md` của kế hoạch: theo yêu cầu điều phối; tham chiếu trong release-checklist và kế hoạch đã cập nhật.
+2. **Tên/phụ đề:** App Store `Đơn Chứng` + phụ đề `Video đóng gói và hàng hoàn`; Google Play `Đơn Chứng – Video đóng hàng`. Tên vẫn là tên làm việc (O-11 mở). Không tên sàn trong tên, phụ đề, từ khóa (App Review 2.3.7; app không tích hợp sàn).
+3. **Khu vực: chỉ Việt Nam**, trang tiếng Việt, miễn phí, không mua trong app. Lý do: giao diện chỉ tiếng Việt, chính sách chờ rà theo pháp luật Việt Nam; mở khu vực khác kéo theo nghĩa vụ khác.
+4. **Vị trí: "không thu thập"** ở cả hai store (chỉ xử lý trên máy, mã không gửi vị trí; định nghĩa "thu thập" của Apple/Google). Điều kiện: G-12 xác nhận tệp ảnh tải lên không mang GPS.
+5. **Crash Data và Device ID (Apple): "không gắn danh tính"**, có ba điều kiện (privacy-declarations mục 3.2); một điều kiện sai thì khai "gắn". **Other Diagnostic Data: "gắn"** vì phiên bản app đi kèm bản ghi có uid (khai thận trọng).
+6. **Ảnh/video (Google): "Bắt buộc"** vì đã quay thì app tự tải lên, công tắc Wi‑Fi chỉ hoãn; crash/ID cài đặt: "Tùy chọn" (có công tắc, R-8).
+7. **Phân loại:** Apple dự kiến 4+ (không UGC phát tán, không trình duyệt trong app); Google đối tượng **18+**, IARC dự kiến mức thấp nhất.
+8. **Ghi chú người duyệt bằng tiếng Anh** (trường Notes của Apple giới hạn 4000 byte; chữ có dấu tốn 2–3 byte), nhãn nút giữ tiếng Việt.
+9. **Không commit ảnh mã vạch** `DH-DEMO-0001`: tạo lúc nộp bằng công cụ chuẩn và quét thử bằng bản staging; người duyệt Google nhập tay.
+10. **Không sửa `app.json`** (PR chỉ tài liệu): cấu hình `ios.privacyManifests` đề xuất ở privacy-declarations mục 6.2 cho một PR mã sau (chưa có PR V1-xx nào sở hữu; điều phối chọn, gợi ý gộp với V1-16 hoặc làm trước S-7).
+
+**Lỗ hổng phát hiện khi đối chiếu (chưa sửa, ngoài phạm vi PR tài liệu):**
+
+- `src/core/i18n/locales/vi/common.json` `syncBar.hint`: "Tải nền có thể tạm dừng khi hệ điều hành giới hạn…" nói như có tải nền, trong khi v1 chỉ tải khi app mở (mục 1.1; bất biến 11). Đề xuất V1-18 đổi câu.
+- `app.json` chuỗi quyền camera chưa nói tới quay video/chụp ảnh (App Review 5.1.1(ii)): đã có trong V1-18; không nộp khi chưa đổi.
+- Báo lỗi bật sẵn (R-8) có thể vướng 5.1.1(ii) "must secure user consent": đưa vào rà pháp lý C-2 (review-notes mục 6).
+- Trang chính sách còn `operatorName`/`operatorAddress`/`supportEmail` = `null`: Google yêu cầu trang xóa tài khoản nêu tên nhà phát triển như trên trang store; điền ở D-4.
+- Không đọc được trang trợ giúp Google Play và trang công bố dữ liệu Firebase trong môi trường soạn (tên miền bị chặn): các số liệu Google và ánh xạ SDK Firebase ghi "chưa đọc trực tiếp", kiểm ở release-checklist S-8.

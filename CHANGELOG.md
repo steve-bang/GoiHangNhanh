@@ -9,6 +9,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 ### Added
 
 - Kế hoạch tổng phát hành v1.0, checklist phát hành cho con người và nhật ký thay đổi này (tài liệu).
+- Tài liệu nộp store: mô tả, khai báo quyền riêng tư, ghi chú duyệt (V1-20).
 
 ### Đã có trước khi mở nhật ký (đến commit `42f6a3c`, gom từ PR #13–#39)
 
