@@ -3,6 +3,7 @@ import type { EvidenceFile, EvidenceFileStore } from '@/features/evidence';
 import { createMemoryEvidenceFileStore } from '@/features/orders';
 
 import { MAX_RETRY_DELAY_MS, MAX_UPLOAD_ATTEMPTS, retryDelayMs } from './backoff';
+import { UPLOAD_FILE_TOO_LARGE, VIDEO_MAX_BYTES } from './limits';
 import type {
   HashResult,
   ServerFileState,
@@ -21,7 +22,12 @@ import { evidenceFileSource } from './upload-sources';
 const SHOP = 'shop-1' as ShopId;
 const HASH = 'ab'.repeat(32);
 
-async function queuedFile(files: EvidenceFileStore, id: string, at = 1000): Promise<EvidenceFile> {
+async function queuedFile(
+  files: EvidenceFileStore,
+  id: string,
+  at = 1000,
+  sizeBytes = 100,
+): Promise<EvidenceFile> {
   await files.create({
     id: id as EvidenceId,
     shopId: SHOP,
@@ -36,7 +42,7 @@ async function queuedFile(files: EvidenceFileStore, id: string, at = 1000): Prom
   await files.applyEvent(SHOP, id as EvidenceId, d('STOP_RECORDING'), at);
   const r = await files.applyEvent(SHOP, id as EvidenceId, d('LOCAL_FILE_READABLE'), at, {
     localPath: `file:///v/${id}.mp4`,
-    sizeBytes: 100,
+    sizeBytes,
     sha256Client: HASH,
   });
   if (!r.ok) throw new Error('fixture');
@@ -690,5 +696,20 @@ describe('internal/unknown không details liên tiếp (review PR #48 vòng 2)',
       state: 'uploaded',
       lastErrorCode: null,
     });
+  });
+});
+
+describe('trần dung lượng (V1-04, khớp Rules)', () => {
+  it('video vượt 2 000 000 000 byte: cần xử lý ngay, không gửi, giữ tệp; đúng trần vẫn tải', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'big', 1000, VIDEO_MAX_BYTES + 1);
+    await queuedFile(t.files, 'edge', 1000, VIDEO_MAX_BYTES);
+    const summary = await t.queue.runOnce(SHOP);
+    expect(summary.needsAttention).toBe(1);
+    expect(t.uploads).toEqual(['edge']);
+    expect(await t.state('big')).toBe('needs_attention');
+    const big = await t.files.get(SHOP, 'big' as EvidenceId);
+    expect(big?.lastErrorCode).toBe(UPLOAD_FILE_TOO_LARGE);
+    expect(big?.localPath).toBe('file:///v/big.mp4');
   });
 });

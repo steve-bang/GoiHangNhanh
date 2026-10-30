@@ -62,9 +62,10 @@ export interface AuthApi {
   /** Chỉ resolve khi máy chủ xác nhận đúng email + mật khẩu. Sai thông tin: `AUTH_INVALID_CREDENTIALS`. */
   signInWithPassword(input: SignInWithPasswordInput): Promise<SignedInAccount>;
   /**
-   * Xin mã đặt lại mật khẩu. TRUNG TÍNH: resolve như nhau dù email có tài khoản hay không (không tiết
-   * lộ email đã đăng ký). `retryAfterSeconds`: bao lâu nữa được xin lại. Cách gửi mã thật chưa
-   * chốt (O-22, decisions.md Q-14); giới hạn số lần xin phải nằm ở phía máy chủ.
+   * Xin đặt lại mật khẩu cho email. TRUNG TÍNH: resolve như nhau dù email có tài khoản hay không (không
+   * tiết lộ email đã đăng ký). `retryAfterSeconds`: bao lâu nữa được xin lại. v1 (`PASSWORD_RECOVERY_MODE
+   * = 'email_link'`, D-14): Firebase gửi thư có đường dẫn đặt lại; chế độ `otp` (mã 6 số, O-22 hướng
+   * B) để sau. Giới hạn số lần xin phải nằm ở phía máy chủ (decisions.md Q-14, Q-29 / V1-03).
    */
   requestPasswordRecovery(email: string): Promise<{ retryAfterSeconds?: number }>;
   /** Mã sai/hết hạn/quá số lần: `AUTH_OTP_INVALID` / `AUTH_OTP_EXPIRED` / `AUTH_TOO_MANY_REQUESTS`. */

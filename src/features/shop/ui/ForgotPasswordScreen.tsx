@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PASSWORD_RECOVERY_MODE } from '@/core/config/feature-flags';
 import type { ErrorCode } from '@/core/errors/codes';
 import { resolveErrorMessage, type ErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
@@ -20,8 +21,10 @@ import { FormErrorBanner, IconField, type TextInputHandle } from './onboarding/O
 import { isRetryable, useGatewayTask } from './onboarding/useGatewayTask';
 
 /**
- * UI-A07 Quên mật khẩu (mockup 05, màn thứ hai). TRUNG TÍNH: gửi xong luôn sang màn Nhập mã, không
- * nói email có tài khoản hay không. Email giữ trong luồng khi lỗi và khi quay lại từ màn Nhập mã.
+ * UI-A07 Quên mật khẩu (mockup 05, màn thứ hai). TRUNG TÍNH: gửi xong luôn sang màn kế tiếp, không
+ * nói email có tài khoản hay không. Email giữ trong luồng khi lỗi và khi quay lại từ màn kế tiếp.
+ * Màn kế tiếp theo `PASSWORD_RECOVERY_MODE`: `email_link` (v1, D-14) -> Kiểm tra hộp thư; `otp` ->
+ * Nhập mã. Bố cục không đổi; chỉ câu chữ "mã"/"email" theo chế độ (decisions.md Q-29 / V1-03).
  */
 export function ForgotPasswordScreen() {
   const { t } = useTranslation();
@@ -34,6 +37,7 @@ export function ForgotPasswordScreen() {
   const { busy, busyRef, formError, setFormError, run, retry } = useGatewayTask();
   const emailRef = useRef<TextInputHandle>(null);
   const email = recovery.email;
+  const emailLink = PASSWORD_RECOVERY_MODE === 'email_link';
   // Rời màn này (Back, về Đăng nhập) là rời luồng khôi phục: xóa điều kiện vào Nhập mã/Mật khẩu mới.
   // Màn Nhập mã/Mật khẩu mới nằm TRÊN màn này trong ngăn xếp nên không làm chạy đoạn này.
   useEffect(
@@ -52,22 +56,38 @@ export function ForgotPasswordScreen() {
             : 'screens:signUp.errors.emailInvalid',
         )
       : undefined;
-  /** Cùng mã lỗi, lời riêng theo ngữ cảnh "xin mã". */
+  /** Cùng mã lỗi, lời riêng theo ngữ cảnh "xin mã" / "gửi email đặt lại". */
   const override = (code: ErrorCode): ErrorMessage | undefined => {
-    if (code === 'AUTH_TOO_MANY_REQUESTS') return { title: t('screens:forgot.errors.tooMany') };
+    if (code === 'AUTH_TOO_MANY_REQUESTS')
+      return {
+        title: t(
+          emailLink ? 'screens:forgot.errors.emailTooMany' : 'screens:forgot.errors.tooMany',
+        ),
+      };
     if (code === 'AUTH_SERVICE_UNAVAILABLE')
-      return { title: t('screens:forgot.errors.sendFailed') };
+      return {
+        title: t(
+          emailLink ? 'screens:forgot.errors.emailSendFailed' : 'screens:forgot.errors.sendFailed',
+        ),
+      };
+    // Firebase từ chối định dạng email (`auth/invalid-email`): không nói "email hoặc mật khẩu".
+    if (code === 'AUTH_INVALID_CREDENTIALS')
+      return { title: t('screens:signUp.errors.emailInvalid') };
     return undefined;
   };
   const bannerMessage = formError
     ? (override(formError) ?? resolveErrorMessage(t, formError))
     : null;
 
+  const description = t(
+    emailLink ? 'screens:forgot.emailLink.description' : 'screens:forgot.description',
+  );
   const touch = getMinTouchTarget();
   const layout = computeForgotLayout(
     { width, height, insetTop: insets.top, insetBottom: insets.bottom, fontScale },
     {
       touch,
+      descriptionChars: description.length,
       errors: {
         ...(emailError ? { email: { chars: emailError.length } } : {}),
         ...(bannerMessage
@@ -100,7 +120,7 @@ export function ForgotPasswordScreen() {
         email: normalized,
         resendAvailableAt: Date.now() + (result.retryAfterSeconds ?? DEFAULT_RESEND_SECONDS) * 1000,
       });
-      navigation.push(ROUTES.verifyOtp);
+      navigation.push(emailLink ? ROUTES.recoveryEmailSent : ROUTES.verifyOtp);
     });
   };
 
@@ -131,7 +151,7 @@ export function ForgotPasswordScreen() {
         <Text
           style={[styles.center, { color: colors.inkMuted, marginTop: gaps.titleToDescription }]}
         >
-          {t('screens:forgot.description')}
+          {description}
         </Text>
       </View>
 
@@ -175,7 +195,7 @@ export function ForgotPasswordScreen() {
       <View style={{ marginTop: gaps.toButton }}>
         <Button
           testID="forgot-submit"
-          label={t('screens:forgot.submit')}
+          label={t(emailLink ? 'screens:forgot.emailLink.submit' : 'screens:forgot.submit')}
           loading={busy}
           onPress={submit}
         />

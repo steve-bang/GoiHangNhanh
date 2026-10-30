@@ -27,9 +27,9 @@ function listFiles(dir: string): string[] {
 const routeFiles = listFiles(APP_DIR)
   .filter((file) => file.endsWith('.tsx'))
   .filter((file) => !/_layout\.tsx$/.test(file))
-  // Hai màn có chặn vào khi chưa qua bước trước (render rỗng rồi chuyển về bước đầu): có test riêng
-  // ở VerifyOtpScreen.test.tsx và NewPasswordScreen.test.tsx.
-  .filter((file) => !/(verify-otp|new-password)\.tsx$/.test(file))
+  // Các màn có chặn vào khi chưa qua bước trước (render rỗng rồi chuyển về bước đầu): có test riêng
+  // ở VerifyOtpScreen.test.tsx, NewPasswordScreen.test.tsx và RecoveryEmailSentScreen.test.tsx.
+  .filter((file) => !/(verify-otp|new-password|forgot-password[\\/]sent)\.tsx$/.test(file))
   // Chỗ giữ của nút Quét giữa thanh tab: chỉ chuyển hướng, không có màn riêng (xem tab-config.ts).
   .filter((file) => !/scan-tab\.tsx$/.test(file));
 

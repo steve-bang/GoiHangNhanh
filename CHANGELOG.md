@@ -12,15 +12,25 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 - Công cụ chụp ảnh màn hình bản web với cổng giả cho PR (`scripts/screens`, không đổi phụ thuộc, không chạy ở CI) và bộ ảnh mốc các màn chính (V1-00, #41).
 - Website: trang Chính sách quyền riêng tư, Điều khoản sử dụng, Hỗ trợ và Yêu cầu xóa tài khoản (bản chờ rà pháp lý; email, tên pháp nhân, tên miền còn giữ chỗ), liên kết ở chân trang và sitemap; trang chủ web không còn nói "tải lên chạy nền" (V1-19, #42).
 - Tài liệu nộp store: mô tả, khai báo quyền riêng tư, ghi chú duyệt (V1-20, #45).
+- Quên mật khẩu gửi thư đặt lại của Firebase Auth (thư tiếng Việt, trả lời trung tính) và màn mới "Kiểm tra hộp thư"; chưa kiểm chứng gửi thư thật trên thiết bị (V1-03, #47).
 
 ### Security
 
 - Bản production luôn dùng Firebase thật: build dừng nếu mang cờ cổng giả hoặc Firebase Emulator, app bỏ qua các cờ đó lúc chạy; mã app không còn `.dev`; Android không đưa dữ liệu vào sao lưu tự động và bỏ các quyền không dùng (micro, hiển thị trên ứng dụng khác, bộ nhớ ngoài). Chưa chạy build EAS thật (V1-01, #43).
 - iOS: video, ảnh bằng chứng và CSDL trên máy không vào sao lưu iCloud (module Expo cục bộ đầu tiên của app); đổi máy hoặc cài lại sẽ mất tệp chưa tải lên. Chưa build và chưa kiểm chứng trên thiết bị (V1-12, #46).
+- Máy chủ tự ghi nhật ký kiểm toán cho mọi lần tạo/sửa đơn, dòng, kiện, phiên, bằng chứng và hồ sơ hàng hoàn; Rules kiểm kiểu/độ dài trường và trần dung lượng mọi bằng chứng (ảnh 25 MB, video 2 GB); chỉ người khai báo mới xin được URL tải lên; xác minh mã băm không thử lại vô hạn và xác minh lại bằng chứng kẹt khi app thử tải lại tệp đó; ô nhập đơn giới hạn độ dài khớp máy chủ (V1-04, #44; chưa deploy).
+
+### Changed
+
+- Ẩn nút đăng nhập Apple/Google ở Chào mừng, Đăng nhập, Đăng ký: bản v1 chỉ có email + mật khẩu (V1-03, #47).
 
 ### Fixed
 
-- Tải lên bằng chứng theo trạng thái mạng thật: mất mạng không còn làm tệp thành "cần xử lý" (chỉ lỗi máy chủ từ chối mới tính lượt, tối đa 8), lệnh tới máy chủ có hạn 30 giây để hàng đợi không treo, hàng đợi dừng khi mất mạng và chạy lại ngay khi có mạng; dải "ngoại tuyến" hiện thật (chưa kiểm chứng trên thiết bị) (V1-02).
+- Test giao diện nặng không còn đỏ chập chờn khi máy tải cao: hạn mỗi test Jest đặt ở gốc cấu hình là 30 giây (giá trị đặt trong từng project trước đây bị Jest bỏ qua) (#50).
+
+### Fixed
+
+- Tải lên bằng chứng theo trạng thái mạng thật: mất mạng không còn làm tệp thành "cần xử lý" (chỉ lỗi máy chủ từ chối mới tính lượt, tối đa 8), lệnh tới máy chủ có hạn 30 giây để hàng đợi không treo, hàng đợi dừng khi mất mạng và chạy lại ngay khi có mạng; dải "ngoại tuyến" hiện thật (chưa kiểm chứng trên thiết bị) (V1-02, #48).
 
 ### Đã có trước khi mở nhật ký (đến commit `42f6a3c`, gom từ PR #13–#39)
 

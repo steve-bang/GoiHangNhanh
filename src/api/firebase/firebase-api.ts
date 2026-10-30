@@ -26,6 +26,26 @@ function signInMethodOf(providerIds: readonly string[]): AccountSignInMethod | n
 const unavailable = () => Promise.reject(new AppError('AUTH_SERVICE_UNAVAILABLE'));
 
 /**
+ * Chờ bao lâu mới cho gửi lại thư đặt lại mật khẩu (giây). Firebase không báo; giới hạn thật nằm ở
+ * Firebase (`auth/too-many-requests`), con số này chỉ để người dùng không bấm liên tục.
+ */
+export const PASSWORD_RESET_RESEND_SECONDS = 60;
+
+/**
+ * Lỗi của `sendPasswordResetEmail` phụ thuộc TRẠNG THÁI TÀI KHOẢN: trả kết quả như email có tài khoản
+ * để không lộ email đã đăng ký hay tài khoản bị khóa (decisions.md Q-29 / V1-03). `user-not-found` chỉ
+ * có khi dự án TẮT chống dò email của Firebase; `user-disabled` khi tài khoản bị vô hiệu hóa.
+ */
+export const NEUTRAL_PASSWORD_RESET_ERRORS: readonly string[] = [
+  'auth/user-not-found',
+  'auth/user-disabled',
+];
+const isAccountStateError = (error: unknown): boolean => {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === 'string' && NEUTRAL_PASSWORD_RESET_ERRORS.includes(code);
+};
+
+/**
  * Hiện thực `ApiClient` bằng Firebase: Auth cho tài khoản, Cloud Function callable cho shop,
  * Firestore (`userShops/{uid}`) để biết đã có shop chưa. Mọi lỗi SDK được đổi thành `AppError`.
  */
@@ -64,9 +84,20 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
           shopId,
         };
       }),
-    // Đăng nhập Apple/Google chưa làm (O-15); khôi phục mật khẩu chờ O-22 (hướng B): không giả vờ thành công.
+    // Đăng nhập Apple/Google chưa làm (O-15): không giả vờ thành công.
     signInWithProvider: unavailable,
-    requestPasswordRecovery: unavailable,
+    // D-14 v1: thư đặt lại của Firebase (PASSWORD_RECOVERY_MODE = 'email_link'). TRUNG TÍNH: email
+    // không có tài khoản cũng resolve như nhau. Mã 6 số (hướng B của O-22) để sau: hai hàm dưới vẫn
+    // `AUTH_SERVICE_UNAVAILABLE` và không có lối vào ở chế độ email.
+    requestPasswordRecovery: (email) =>
+      guard(async () => {
+        try {
+          await ops.sendPasswordReset(email.trim());
+        } catch (error) {
+          if (!isAccountStateError(error)) throw error;
+        }
+        return { retryAfterSeconds: PASSWORD_RESET_RESEND_SECONDS };
+      }),
     verifyRecoveryCode: unavailable,
     resetPassword: unavailable,
     signOut: () => guard(() => ops.signOut()),

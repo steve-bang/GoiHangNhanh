@@ -229,7 +229,7 @@ Không có Function nào được viết trong khung này; bảng dưới là h�
 | Tạo shop, mời/thu hồi/đổi vai trò thành viên | Function (callable) | Ghi `members`, audit | Tự nâng quyền; thu hồi phải có hiệu lực ngay | #7, #8 |
 | Cấp phiên tải (resumable) | Function (callable) | Kiểm tra quyền + bằng chứng hợp lệ → trả session URI | Storage từ chối client; kiểm soát đường dẫn đích | #4, #8 |
 | **Xác minh mã băm** | Function (khi đối tượng Storage hoàn tất) | Đọc streaming, tính SHA-256, so `sha256Client` → ghi `server.state`/`sha256Server`/`verifiedAt`; không khớp → `hash_mismatch` | Không tin giá trị client | #3 |
-| Ghi nhật ký kiểm toán | Function/trigger (Firestore `onWrite`, callable) | Ghi `auditEvents` (ai, làm gì, đối tượng, kết quả, giá trị trước/sau cho trường quan trọng) | Client không được tự ghi/sửa | #7 |
+| Ghi nhật ký kiểm toán | Function/trigger (Firestore `onDocumentWritten`, callable) | Ghi `auditEvents` (ai, làm gì, đối tượng, kết quả, giá trị trước/sau cho trường quan trọng). **Đã viết (V1-04, chưa deploy):** `functions/src/audit.ts` cho `orders`, `lines`, `packages`, `sessions`, `evidence`, `returns`; id sự kiện cố định theo (đường dẫn, `updateTime`); chỉ giá trị trường không nhạy cảm (decisions.md Q-29 / V1-04) | Client không được tự ghi/sửa | #7 |
 | URL đọc có thời hạn | Function (callable) | Kiểm tra quyền → signed URL ngắn hạn + audit "đã xem" | URL không hết hạn vi phạm bảo mật | #8 |
 | Thời gian máy chủ | Firestore `serverTimestamp()` / `request.time` | Rules ép bằng nhau | Giờ thiết bị có thể sai/bị đổi | docs/06 |
 | Dọn theo hạn lưu | Function (lịch) | Tính hạn từ chính sách; **bỏ qua bằng chứng có `retention.hold`**; xóa có audit; xử lý bản sao lưu theo chính sách | Không để client xóa/giữ | #9 |
@@ -363,7 +363,8 @@ Ngày kiểm tra: **2026-10-26**. "Cập nhật" = thời điểm xuất bản g
 - **Đọc Firestore**: Rules `get()` thành viên tính vào chi phí đọc mỗi thao tác (mục 9); danh sách đồng bộ dùng truy vấn có giới hạn và listener có phạm vi (theo shop, trạng thái chưa `verified`), không nghe toàn bộ collection. Không ghi từng chuyển trạng thái cục bộ lên Firestore (mục 4.3).
 - **Ghi Firestore**: tài liệu bằng chứng tạo một lần, cập nhật chỉ khi cần cho thiết bị khác thấy; tiến độ tải (phần trăm) không ghi lên Firestore.
 - **Storage/băng thông video**: nén là *bản dẫn xuất*, không thay bản gốc (bất biến #4); lưu bản gốc là chi phí chính → gắn với hạn mức theo gói (O-06). Đo chi phí/ngày từ giai đoạn beta (docs/08 điều kiện phát hành "Vận hành").
-- **Functions**: băm theo luồng tốn CPU/thời gian theo kích thước tệp (S5).
+- **Functions**: băm theo luồng tốn CPU/thời gian theo kích thước tệp (S5). Tệp vượt trần theo loại (ảnh 25 MB, video 2 GB; V1-04) không được băm.
+- **Trigger kiểm toán (V1-04):** mỗi lần client/máy chủ ghi một tài liệu được theo dõi = 1 lần gọi Function + 1 lần ghi `auditEvents` (+ không đọc thêm). Ước tính một đơn một kiện một video quay xong và tải lên: tạo đơn (1) + dòng (n) + kiện (1) + phiên tạo (1) + đổi trạng thái phiên (1) + khai báo bằng chứng (1) + `uploaded` (1) + `verified` (1) ≈ **7 + n** sự kiện, cộng 2 sự kiện sẵn có của `createUploadSession`/`verifyEvidence`. Với 1 000 đơn/ngày, 2 dòng/đơn: ~9 000 lần gọi + ~11 000 lần ghi/ngày (~270 000 lần gọi, ~330 000 lần ghi/tháng); theo bảng giá công khai hiện hành ở mức vài USD/tháng, chủ yếu dưới hạn mức miễn phí của Functions. Số này phải đo lại ở beta; không đọc lại tài liệu trong trigger.
 
 ## 14. Hệ quả cần ghi vào docs nghiệp vụ
 

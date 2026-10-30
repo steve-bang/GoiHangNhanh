@@ -41,7 +41,9 @@ Trên https://console.firebase.google.com:
 1. **Create a project**, đặt mã dự án (hiện tại `ghn-test-67b39`; không đổi được sau khi tạo). Google Analytics có thể tắt.
 2. **Gói Blaze** (Upgrade ở góc dưới cột trái): bắt buộc cho Cloud Functions. Nên đặt cảnh báo ngân sách.
 3. **Authentication → Get started → Sign-in method:** bật **Email/Password** (không bật "Email link").
-4. **Authentication → Settings → User actions:** tắt **Email enumeration protection** cho dự án dev. Thông báo "email đã dùng" (Q-13 g2) cần Firebase trả đúng `auth/email-already-in-use`; nếu để bật, lỗi này có thể không bao giờ được trả về.
+4. **Authentication → Settings → User actions:** tắt **Email enumeration protection** cho dự án dev. Thông báo "email đã dùng" (Q-13 g2) cần Firebase trả đúng `auth/email-already-in-use`; nếu để bật, lỗi này có thể không bao giờ được trả về. (Quên mật khẩu không phụ thuộc cài đặt này: app nuốt `auth/user-not-found` để luôn trung tính, V1-03. Bản phát hành bật lại theo checklist G-0.)
+
+   **Authentication → Templates → Password reset** (V1-03, D-14 v1): chọn ngôn ngữ mẫu **Tiếng Việt** (app cũng đặt `languageCode = 'vi'` trước khi gửi), sửa tên người gửi/chủ đề cho dễ nhận ra; thư gửi từ `noreply@<dự án>.firebaseapp.com` dễ vào Thư rác (checklist F-6). Trang đặt mật khẩu mới là trang mặc định của Firebase (không theo thương hiệu); app không dùng `actionCodeSettings`/liên kết vào app.
 5. **Firestore Database → Create database:** chọn **Standard edition**, vị trí **`asia-southeast1`** (không đổi được), **Production mode** (Rules của repo ghi đè khi deploy).
 6. **Project settings → General → Your apps → Add app:** đăng ký hai app.
 
@@ -120,6 +122,8 @@ npx firebase deploy --config firebase/firebase.json --project ghn-test-67b39 \
 
 **Lưu ý khi deploy (R2b, Q-28):** Rules mới thêm `shops/{shopId}/returns/{returnId}` và hình dạng bằng chứng hàng hoàn (`ownerKind: 'return'`); `createUploadSession` ghi thêm `ownerKind`/`returnId` vào kiểm toán và kiểm hồ sơ neo tồn tại. Chưa deploy; deploy Rules và Functions CÙNG LÚC (app bản mới đăng bản neo trước khi khai báo bằng chứng, nên Rules cũ sẽ từ chối).
 
+**Lưu ý khi deploy (V1-04):** thêm 6 trigger Firestore `auditOrderWrite`, `auditOrderLineWrite`, `auditPackageWrite`, `auditSessionWrite`, `auditEvidenceWrite`, `auditReturnWrite` (`onDocumentWrittenWithAuthContext`, `asia-southeast1`, `retry: true`). Trigger Firestore thế hệ 2 cần Eventarc và **cơ sở dữ liệu Firestore cùng vùng** với trigger (dự án dùng Singapore, Q-08); nếu cơ sở dữ liệu ở vùng khác thì deploy báo lỗi vị trí, phải sửa vùng trigger cho khớp. Rules siết kiểu/độ dài và trần dung lượng mọi bằng chứng (ảnh ≤ 25 MB, video ≤ 2 GB): deploy Rules và Functions cùng commit. Trigger chỉ ghi kiểm toán cho các lần ghi SAU khi deploy (không ghi bù). Thêm trigger `reverifyEvidence` (`onDocumentWritten` trên `shops/{shopId}/evidenceReverify/{evidenceId}`, 540 giây, 1 GiB, không tự thử lại) để xác minh lại bằng chứng kẹt khi `createUploadSession` đặt yêu cầu; cần quyền đọc bucket như `verifyEvidence`. `createUploadSession` giữ cấu hình thường (không băm).
+
 **Kiểm tra sau deploy:**
 
 1. Terminal liệt kê `createShop` và `updateShop` ở `asia-southeast1`.
@@ -141,6 +145,8 @@ Làm sau khi deploy và có dev build (EAS hoặc `expo prebuild` + Xcode/Androi
 3. Đăng ký lại cùng email → thông báo "email đã dùng" (cần mục 2.4); sai mật khẩu → "sai thông tin".
 4. Bật chế độ máy bay rồi mở app (đã từng đăng nhập) → xem có vào được không. **Giới hạn đã biết:** nếu `userShops` chưa có trong bộ nhớ đệm và đang offline, `restore` lỗi và Splash đưa về Chào mừng (Q-19 e).
 5. Bấm tạo shop hai lần liên tiếp/ngắt mạng giữa chừng → chỉ có một shop (idempotent).
+
+   Quên mật khẩu (V1-03): email có tài khoản → nhận thư tiếng Việt (kiểm tra cả Thư rác), mở đường dẫn trên điện thoại, đặt mật khẩu mới trên trang Firebase, quay lại app đăng nhập bằng mật khẩu mới; email không có tài khoản → cùng màn "Kiểm tra hộp thư", không có thư; bấm Gửi lại nhiều lần → "Bạn đã gửi nhiều lần" (`auth/too-many-requests`).
 6. Ghi lại phiên bản máy/hệ điều hành và kết quả vào [platform-support.md](platform-support.md) và cập nhật "Trạng thái" ở đầu tài liệu này.
 
 ## 7. Lỗi thường gặp
@@ -163,4 +169,4 @@ Phía app: thêm `src/api/<backend>/` hiện thực `ApiClient`, cho chạy qua 
 
 ## 9. Việc còn lại
 
-Triển khai khôi phục mật khẩu qua OTP (D-14, chờ chọn nhà cung cấp email), đăng nhập Apple/Google (O-15), App Check (ADR-009), môi trường staging/prod, đồng bộ đơn/phiên lên Firestore thay `LOCAL_SHOP_ID` (Q-17d), Storage và tải lên nền. Spike S4 (RNFirebase trên Expo 58/RN 0.88) và S6 (ghi chờ khi offline) quyết định ADR-002.
+Khôi phục mật khẩu qua OTP tự xây (D-14 hướng B, để sau v1; v1 dùng thư đặt lại của Firebase, V1-03), đăng nhập Apple/Google (O-15; v1 ẩn nút), App Check (ADR-009), môi trường staging/prod, đồng bộ đơn/phiên lên Firestore thay `LOCAL_SHOP_ID` (Q-17d), Storage và tải lên nền. Spike S4 (RNFirebase trên Expo 58/RN 0.88) và S6 (ghi chờ khi offline) quyết định ADR-002.

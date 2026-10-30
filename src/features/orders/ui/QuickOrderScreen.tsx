@@ -48,6 +48,7 @@ import {
 import { HeaderHelpButton } from './HeaderHelpButton';
 import { OrderMatchSheet } from './OrderMatchSheet';
 import { OrderSourcePicker } from './OrderSourcePicker';
+import { INPUT_LIMITS, lineErrorText, trackingErrorText } from './draft-error-text';
 import { QuickOrderLineEditor, type LineInput } from './QuickOrderLineEditor';
 import { useOrderLookup } from './use-order-lookup';
 
@@ -272,14 +273,7 @@ export function QuickOrderScreen() {
   };
 
   const activeLine = lines.find((l) => l.key === activeKey) ?? null;
-  const errorFor = (lineIndex: number, kind: 'name_required' | 'invalid_quantity') =>
-    fieldError && fieldError.kind === kind && fieldError.lineIndex === lineIndex
-      ? t(
-          kind === 'name_required'
-            ? 'screens:quickOrder.nameRequired'
-            : 'screens:quickOrder.quantityInvalid',
-        )
-      : undefined;
+  const trackingError = trackingErrorText(t, fieldError);
   const codeErrorText =
     fieldError?.kind === 'code_required'
       ? t('screens:quickOrder.codeRequired')
@@ -454,6 +448,7 @@ export function QuickOrderScreen() {
           setOrderCode(value);
         }}
         autoCapitalize="characters"
+        maxLength={INPUT_LIMITS.code}
         {...(codeErrorText ? { error: codeErrorText } : {})}
         trailing={
           <Pressable
@@ -506,8 +501,9 @@ export function QuickOrderScreen() {
           index={index}
           total={lines.length}
           line={line}
-          nameError={errorFor(index, 'name_required')}
-          quantityError={errorFor(index, 'invalid_quantity')}
+          nameError={lineErrorText(t, fieldError, index, 'name')}
+          variantError={lineErrorText(t, fieldError, index, 'variant')}
+          quantityError={lineErrorText(t, fieldError, index, 'quantity')}
           nameSuggestions={
             activeLine?.key === line.key ? suggestProductNames(history, line.name) : []
           }
@@ -546,8 +542,13 @@ export function QuickOrderScreen() {
           compact
           label={t('screens:quickOrder.trackingCode')}
           value={tracking}
-          onChangeText={setTracking}
+          onChangeText={(value) => {
+            setFieldError(null);
+            setTracking(value);
+          }}
           autoCapitalize="characters"
+          maxLength={INPUT_LIMITS.tracking}
+          {...(trackingError ? { error: trackingError } : {})}
         />
       ) : (
         <Pressable
