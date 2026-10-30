@@ -303,7 +303,7 @@ describe('createUploadSessionForUser', () => {
     }
   });
 
-  describe('người khai báo phải là người tạo phiên/bản neo (V1-07b)', () => {
+  describe('người khai báo: người tạo phiên (đóng gói) hoặc người tạo media (hàng hoàn) (V1-07b)', () => {
     it('phiên do tài khoản khác cùng shop tạo (hoặc không rõ người tạo): permission-denied + not_session_creator, không ký, không kiểm toán', async () => {
       for (const createdBy of ['u-khac', null, '']) {
         const s = await seed({ session: { createdBy } });
@@ -333,7 +333,7 @@ describe('createUploadSessionForUser', () => {
       }
     });
 
-    it('bản neo hàng hoàn do tài khoản khác tạo: permission-denied + not_return_creator, không ký, không kiểm toán', async () => {
+    it('hàng hoàn: media của chính người gọi trong hồ sơ có bản neo do tài khoản khác tạo vẫn được ký (review PR #64)', async () => {
       for (const createdBy of ['u-khac', null]) {
         const s = await seed({
           session: null,
@@ -341,13 +341,32 @@ describe('createUploadSessionForUser', () => {
         });
         await db.doc(`shops/${s.shopId}/returns/ret-x`).set({ shopId: s.shopId, createdBy });
         const { signer, signed } = fakeSigner();
-        await expect(createUploadSessionForUser(db, signer, s.uid, s)).rejects.toMatchObject({
-          code: 'permission-denied',
-          reason: 'not_return_creator',
-        });
-        expect(signed).toEqual([]);
-        expect(await audit(s.shopId)).toEqual([]);
+        expect((await createUploadSessionForUser(db, signer, s.uid, s)).status).toBe('ready');
+        expect(signed).toHaveLength(1);
       }
+    });
+
+    it('hàng hoàn: media do tài khoản khác khai báo bị từ chối (not_evidence_declarer); bản neo mất: return_missing', async () => {
+      const foreign = await seed({
+        session: null,
+        evidence: {
+          ownerKind: 'return',
+          returnId: 'ret-y',
+          mimeType: 'image/jpeg',
+          createdBy: 'u-khac',
+        },
+      });
+      await db.doc(`shops/${foreign.shopId}/returns/ret-y`).set({ createdBy: foreign.uid });
+      await expect(
+        createUploadSessionForUser(db, fakeSigner().signer, foreign.uid, foreign),
+      ).rejects.toMatchObject({ code: 'permission-denied', reason: 'not_evidence_declarer' });
+      const missing = await seed({
+        session: null,
+        evidence: { ownerKind: 'return', returnId: 'ret-mat', mimeType: 'image/jpeg' },
+      });
+      await expect(
+        createUploadSessionForUser(db, fakeSigner().signer, missing.uid, missing),
+      ).rejects.toMatchObject({ code: 'failed-precondition', reason: 'return_missing' });
     });
 
     it('bằng chứng do tài khoản khác khai báo mang lý do not_evidence_declarer', async () => {

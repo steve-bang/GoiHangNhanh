@@ -144,15 +144,15 @@ export interface TransitionContext {
 }
 
 /**
- * Mã nội bộ (`lastErrorCode`, không phải mã lỗi nghiệp vụ) khi máy chủ từ chối vì bằng chứng, phiên hoặc
- * hồ sơ hàng hoàn do tài khoản KHÁC tạo (V1-07b, `details.reason` của `createUploadSession`).
+ * Mã nội bộ (`lastErrorCode`, không phải mã lỗi nghiệp vụ) khi máy chủ từ chối vì bằng chứng hoặc phiên
+ * đóng gói do tài khoản KHÁC tạo (V1-07b, `details.reason` của `createUploadSession`).
  */
 export const NOT_EVIDENCE_CREATOR = 'NOT_EVIDENCE_CREATOR';
 
 /**
  * Mã lỗi "cần xử lý" mà người dùng KHÔNG thử lại được (V1-08, R-3): lỗi của chính tệp trên máy, phát hiện
  * trước khi gửi gì (tệp đổi/mất/không đọc được, vượt trần dung lượng, loại tệp không nhận), và máy chủ
- * từ chối vì người tạo khác (V1-07b: người tạo phiên/hồ sơ không đổi). Thử lại không đổi được kết quả;
+ * từ chối vì người tạo khác (V1-07b: người tạo phiên/tệp không đổi). Thử lại không đổi được kết quả;
  * tệp gốc vẫn giữ nguyên (bất biến 4).
  */
 export const NON_RETRYABLE_ATTENTION_CODES: readonly string[] = [

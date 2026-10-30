@@ -323,8 +323,9 @@ service cloud.firestore {
       // KHÔNG chặn theo trạng thái phiên (V1-04): phiên được đăng với trạng thái mới nhất nên thường đã
       // `confirmed` trên máy chủ TRƯỚC khi bằng chứng được khai báo (quay -> xác nhận -> tải sau). Chỉ
       // dựa trên điều không phụ thuộc thứ tự đồng bộ: phiên/hồ sơ tồn tại trong cùng shop, người khai
-      // báo là chính người đăng nhập VÀ là người tạo phiên/bản neo (V1-07b; v1 một máy một tài khoản,
-      // Q-24g; đa thành viên O-03 phải nới có chủ đích). `capturedAtDevice` là giờ thiết bị, chỉ là thông tin: KHÔNG so
+      // báo là chính người đăng nhập; với đóng gói còn phải là người tạo PHIÊN (V1-07b; v1 một máy một
+      // tài khoản, Q-24g; đa thành viên O-03 phải nới có chủ đích). Hàng hoàn: đơn vị sở hữu là từng media,
+      // nên chỉ ép người khai báo, không ép người tạo bản neo. `capturedAtDevice` là giờ thiết bị, chỉ là thông tin: KHÔNG so
       // với request.time (đồng hồ máy chạy nhanh không được làm bằng chứng bị từ chối; bất biến 11).
 
       match /evidence/{evidenceId} {
@@ -381,10 +382,10 @@ service cloud.firestore {
               ])
               && request.resource.data.ownerKind == 'return'
               && request.resource.data.returnId is string
-              // Bản neo phải có (get trên tài liệu không tồn tại = từ chối) VÀ do chính người khai báo tạo
-              // (V1-07b, Q-24g: không tải hộ).
-              && get(/databases/$(database)/documents/shops/$(shopId)/returns/$(request.resource.data.returnId)).data.createdBy
-                 == request.auth.uid
+              // Bản neo phải có trong cùng shop. KHÔNG ép người tạo bản neo (V1-07b, review PR #64): đơn vị
+              // sở hữu của hàng hoàn là TỪNG MEDIA (như phiên với đóng gói); B chụp thêm ảnh vào hồ sơ của A
+              // thì B khai báo ảnh của B (`createdBy == request.auth.uid` ở trên đã ép người khai báo).
+              && exists(/databases/$(database)/documents/shops/$(shopId)/returns/$(request.resource.data.returnId))
             )
           );
 

@@ -158,7 +158,7 @@ describe('khai báo bằng chứng HÀNG HOÀN đúng hình dạng Rules yêu c�
 });
 
 // V1-07b (Q-24g, v1 một máy một tài khoản): chỉ người tạo phiên/bản neo khai báo bằng chứng của nó.
-describe('người khai báo phải là người tạo phiên hoặc bản neo (V1-07b)', () => {
+describe('người khai báo: người tạo phiên (đóng gói) hoặc người tạo media (hàng hoàn) (V1-07b)', () => {
   const returnRequest = (shopId: string, overrides: Record<string, unknown> = {}) =>
     request(shopId, {
       owner: { kind: 'return', returnId: 'ret-v7b' },
@@ -258,10 +258,41 @@ describe('người khai báo phải là người tạo phiên hoặc bản neo (
     }
   });
 
-  it('hàng hoàn: người tạo bản neo khai báo được; thành viên khác cùng shop bị từ chối', async () => {
+  it('hàng hoàn: media là đơn vị sở hữu; thành viên khác cùng shop khai báo được media CỦA MÌNH trong hồ sơ có bản neo do người khác tạo (review PR #64)', async () => {
+    // Bản neo ret-v7b do packerA tạo; chủ shop/quản lý chụp thêm ảnh rồi khai báo ảnh của chính họ.
     await assertSucceeds(declare(USERS.packerA, returnRequest(SHOP_A)));
     for (const uid of [USERS.ownerA, USERS.managerA]) {
-      await assertFails(declare(uid, returnRequest(SHOP_A, { evidenceId: `ev-${uid}` })));
+      await assertSucceeds(declare(uid, returnRequest(SHOP_A, { evidenceId: `ev-${uid}` })));
+    }
+  });
+
+  it('khai báo thay người khác (createdBy = tài khoản khác) bị từ chối, cả hàng hoàn và đóng gói', async () => {
+    const forReturn = evidenceWrite(
+      returnRequest(SHOP_A, { evidenceId: 'ev-mao-danh' }),
+      USERS.packerA,
+      values,
+    );
+    await assertFails(setDoc(doc(as(USERS.ownerA), forReturn.path), forReturn.data));
+    const forPacking = evidenceWrite(
+      request(SHOP_A, { evidenceId: 'ev-mao-danh-2' }),
+      USERS.packerA,
+      values,
+    );
+    await assertFails(setDoc(doc(as(USERS.ownerA), forPacking.path), forPacking.data));
+  });
+
+  it('hàng hoàn: media của người khác không cập nhật được, kể cả người tạo bản neo', async () => {
+    const w = evidenceWrite(
+      returnRequest(SHOP_A, { evidenceId: 'ev-cua-owner' }),
+      USERS.ownerA,
+      values,
+    );
+    await assertSucceeds(setDoc(doc(as(USERS.ownerA), w.path), w.data));
+    await assertSucceeds(
+      updateDoc(doc(as(USERS.ownerA), w.path), { clientFileState: 'uploading' }),
+    );
+    for (const uid of [USERS.packerA, USERS.managerA, USERS.ownerB]) {
+      await assertFails(updateDoc(doc(as(uid), w.path), { clientFileState: 'upload_failed' }));
     }
   });
 

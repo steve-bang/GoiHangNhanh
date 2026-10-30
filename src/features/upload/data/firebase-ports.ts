@@ -39,11 +39,11 @@ function hasServerDetails(error: unknown): boolean {
 }
 
 /**
- * `details.reason` của `createUploadSession` khi bằng chứng/phiên/bản neo do tài khoản khác tạo (V1-07b,
- * `firebase/functions/src/uploads.ts`). Người tạo không đổi nên thử lại vô ích: cần xử lý ngay, không cho
- * bấm Thử lại (`NON_RETRYABLE_ATTENTION_CODES`).
+ * `details.reason` của `createUploadSession` khi bằng chứng hoặc phiên đóng gói do tài khoản khác tạo
+ * (V1-07b, `firebase/functions/src/uploads.ts`). Người tạo không đổi nên thử lại vô ích: cần xử lý ngay,
+ * không cho bấm Thử lại (`NON_RETRYABLE_ATTENTION_CODES`). Hàng hoàn không ép người tạo bản neo.
  */
-const NOT_CREATOR_REASONS = ['not_evidence_declarer', 'not_session_creator', 'not_return_creator'];
+const NOT_CREATOR_REASONS = ['not_evidence_declarer', 'not_session_creator'];
 
 function serverReason(error: unknown): string | undefined {
   const details = (error as { details?: unknown } | null)?.details;
@@ -76,7 +76,7 @@ const SERVER_STATES: readonly string[] = ['uploaded', 'verified', 'hash_mismatch
  * `createUploadSession`), đọc `server.state` do Cloud Function ghi. Hàng đợi chỉ khai báo khi phiên/hồ
  * sơ đã đăng (`UploadSource.isReadyToDeclare`), nên Firestore `permission-denied` khi khai báo là máy
  * chủ TỪ CHỐI thật (hoặc đăng chậm hơn dấu cục bộ): tính lượt (`retryable`), không phải lỗi mạng, và
- * không thành "cần xử lý" ngay (V1-02). Rules cũng từ chối khi phiên/bản neo do tài khoản khác tạo
+ * không thành "cần xử lý" ngay (V1-02). Rules cũng từ chối khi phiên đóng gói do tài khoản khác tạo
  * (V1-07b) nhưng không kèm lý do; hàng đợi đã chỉ khai báo tệp của chính tài khoản nên hiếm, và vẫn dừng
  * sau 8 lượt. Callable thì có `details.reason` -> `NOT_EVIDENCE_CREATOR` ngay.
  */

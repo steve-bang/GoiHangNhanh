@@ -79,7 +79,7 @@ describe('toPortError: máy chủ từ chối vì người tạo khác (V1-07b)'
   const withReason = (code: string, reason: unknown) =>
     Object.assign(sdkError(code), { details: { reason } });
 
-  it.each(['not_evidence_declarer', 'not_session_creator', 'not_return_creator'])(
+  it.each(['not_evidence_declarer', 'not_session_creator'])(
     'permission-denied + %s -> cần xử lý ngay, mã NOT_EVIDENCE_CREATOR, không cho bấm Thử lại',
     (reason) => {
       const mapped = toPortError(withReason('functions/permission-denied', reason));
@@ -91,6 +91,12 @@ describe('toPortError: máy chủ từ chối vì người tạo khác (V1-07b)'
   it('lý do khác, thiếu lý do hoặc mã khác giữ phân loại cũ', () => {
     expect(toPortError(withReason('functions/permission-denied', 'x'))).toMatchObject({
       kind: 'attention',
+      code: 'PERMISSION_DENIED',
+    });
+    // Máy chủ không còn ép người tạo bản neo (review PR #64): lý do này không phải lỗi vĩnh viễn riêng.
+    expect(
+      toPortError(withReason('functions/permission-denied', 'not_return_creator')),
+    ).toMatchObject({
       code: 'PERMISSION_DENIED',
     });
     expect(toPortError(withReason('functions/permission-denied', 5))).toMatchObject({
