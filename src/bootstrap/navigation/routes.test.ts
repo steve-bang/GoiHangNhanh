@@ -67,11 +67,13 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     const children = Object.entries(ROUTES).filter(([, r]) => 'parent' in r && r.parent);
     // Chỉ các route con đã duyệt (PR2: hồ sơ, mật khẩu; PR4: sửa và chuyển cửa hàng, cùng mã UI-I02; PR-E: chi tiết gói và lịch sử thanh toán, cùng mã UI-H01; PR-F: dữ liệu bằng chứng và thời hạn lưu, cùng mã UI-I01; PR-H: danh mục, bài, liên hệ, điều khoản của Trợ giúp, cùng mã UI-I06; PR-I: màn thông tin Xóa tài khoản, cùng mã UI-I05; V1-03: Kiểm tra hộp thư của luồng quên mật khẩu, cùng mã UI-A07, kế hoạch v1 mục 1.2 D-14);
     // V1-15: Đang hoàn tất xóa tài khoản, con của Tạo cửa hàng (cùng mã UI-A04; decisions.md Q-29 / V1-15);
+    // V1-17b: xem ảnh/video hàng hoàn và tệp của tranh chấp, con của UI-E04 (decisions.md Q-29 / V1-17b);
     // thêm route con mới phải được người dùng duyệt và sửa danh sách này.
     expect(children.map(([name]) => name).sort()).toEqual([
       'accountDeletionPending',
       'changePassword',
       'deleteAccount',
+      'disputeEvidenceDetail',
       'editProfile',
       'evidenceData',
       'helpArticle',
@@ -83,14 +85,28 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
       'planDetail',
       'recoveryEmailSent',
       'retentionDetail',
+      'returnMediaDetail',
       'shopEdit',
       'shopSwitch',
     ]);
+    // Ngoại lệ có tên (V1-17b): nội dung UI-E04 mở trong luồng hàng hoàn/tranh chấp, nằm ngoài nhóm tab nên
+    // khác cờ tabBar với gốc UI-E04 (trong tab Đơn hàng) và đường dẫn nằm dưới luồng của nó.
+    const crossFlowViewers: Record<string, string> = {
+      returnMediaDetail: '/returns/[returnId]/',
+      disputeEvidenceDetail: '/disputes/[disputeId]/',
+    };
     for (const [name, child] of children) {
       const parent = (ROUTES as Record<string, RouteDef | undefined>)[child.parent ?? ''];
       expect(parent).toBeDefined();
       expect(parent?.parent).toBeUndefined();
       expect(parent?.code).toBe(child.code);
+      const crossFlow = crossFlowViewers[name];
+      if (crossFlow) {
+        expect(child).toMatchObject({ parent: 'evidenceDetail', code: 'UI-E04', tabBar: false });
+        expect(child.path.startsWith(crossFlow)).toBe(true);
+        expect(name).not.toBe(child.parent);
+        continue;
+      }
       expect(parent?.tabBar).toBe(child.tabBar);
       expect(
         child.path.startsWith('/account/') ||
@@ -183,6 +199,8 @@ describe('bảng route <-> mã UI-xx (docs/09 mục 4)', () => {
     expect(nav.subTitles.helpContact).toBeTruthy();
     expect(nav.subTitles.helpLegal).toBeTruthy();
     expect(nav.subTitles.orderEdit).toBeTruthy();
+    expect(nav.subTitles.returnMediaDetail).toBeTruthy();
+    expect(nav.subTitles.disputeEvidenceDetail).toBeTruthy();
   });
 
   it('mỗi mã UI-xx có tiêu đề i18n', () => {

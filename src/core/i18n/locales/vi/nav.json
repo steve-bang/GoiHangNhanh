@@ -87,6 +87,8 @@
     "deleteAccount": "Xóa tài khoản",
     "orderEdit": "Sửa thông tin đơn",
     "recoveryEmailSent": "Kiểm tra hộp thư",
-    "accountDeletionPending": "Đang hoàn tất xóa tài khoản"
+    "accountDeletionPending": "Đang hoàn tất xóa tài khoản",
+    "returnMediaDetail": "Chi tiết bằng chứng",
+    "disputeEvidenceDetail": "Chi tiết bằng chứng"
   }
 }

@@ -39,7 +39,9 @@
       "order": "Mã đơn",
       "package": "Kiện",
       "session": "Phiên quay",
-      "hash": "Mã băm"
+      "hash": "Mã băm",
+      "returnCase": "Hồ sơ hàng hoàn",
+      "sourceOrder": "Đơn gốc"
     },
     "packageValue": "Kiện {{index}}",
     "sessionValue": "{{status}}, bắt đầu {{time}} (mã {{id}})",
@@ -79,6 +81,13 @@
         "photo": "Không mở được ảnh này."
       },
       "playFailedMessage": "Tệp gốc trên máy vẫn được giữ nguyên."
+    },
+    "notFoundInReturn": "Bằng chứng không có trong hồ sơ hàng hoàn này trên máy.",
+    "notFoundInDispute": "Bằng chứng không có trong hồ sơ tranh chấp này trên máy.",
+    "notLinked": "Chưa liên kết",
+    "returnKind": {
+      "photo": "Ảnh kiện hàng hoàn",
+      "video": "Video mở kiện hàng hoàn"
     }
   }
 }

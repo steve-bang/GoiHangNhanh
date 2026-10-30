@@ -209,7 +209,9 @@
       "retrying": "{{count}} chưa tải được, app sẽ thử lại",
       "attention": "{{count}} cần xử lý"
     },
-    "photosLocation": "Có vị trí máy cho {{withLocation}}/{{count}} ảnh. Đây là số đọc của máy, không chứng minh nơi chụp."
+    "photosLocation": "Có vị trí máy cho {{withLocation}}/{{count}} ảnh. Đây là số đọc của máy, không chứng minh nơi chụp.",
+    "openPhoto": "Xem ảnh {{index}}",
+    "openVideo": "Xem video mở kiện"
   },
   "done": {
     "title": "Đã xác nhận hồ sơ",
@@ -279,6 +281,7 @@
         "unavailable": "máy không đọc được",
         "unknown": "chưa ghi được"
       }
-    }
+    },
+    "open": "Xem ảnh"
   }
 }

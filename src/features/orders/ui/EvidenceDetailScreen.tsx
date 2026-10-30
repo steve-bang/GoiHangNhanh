@@ -1,15 +1,14 @@
-import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { EvidenceId, OrderId } from '@/core/ids';
 import {
+  EvidenceDetailShell,
   EvidenceDetailView,
   shortId,
   uploaderRelation,
   type EvidenceDetailRow,
 } from '@/features/evidence';
-import { useAppNavigation, useRouteParams } from '@/platform';
-import { EmptyState, ErrorState, Screen, SkeletonCard, Text, useTheme } from '@/shared/ui';
+import { useRouteParams } from '@/platform';
 
 import { useCurrentUid } from '../data';
 import { formatDeviceDateTime, isSessionStatus } from '../domain';
@@ -22,64 +21,53 @@ import { useEvidenceDetail, type EvidenceDetailState } from './use-evidence-deta
  */
 export function EvidenceDetailScreen() {
   const { t } = useTranslation();
-  const { tokens } = useTheme();
-  const navigation = useAppNavigation();
   const params = useRouteParams();
-  const uid = useCurrentUid();
-  const { state, reload } = useEvidenceDetail(
-    params.orderId as OrderId | undefined,
-    params.evidenceId as EvidenceId | undefined,
+  return (
+    <PackingEvidenceDetail
+      orderId={params.orderId as OrderId | undefined}
+      evidenceId={params.evidenceId as EvidenceId | undefined}
+      title={t('nav:titles.UI-E04')}
+      inTabs
+    />
   );
-  const header = {
-    form: true,
-    contentGap: tokens.space.md,
-    title: t('nav:titles.UI-E04'),
-    onBack: navigation.back,
-    inTabs: true,
-    testID: 'screen-UI-E04',
+}
+
+export interface PackingEvidenceDetailProps {
+  readonly orderId: OrderId | undefined;
+  readonly evidenceId: EvidenceId | undefined;
+  readonly title: string;
+  /** Route nằm trong nhóm tab (UI-E04 gốc) hay ngoài (mở từ tranh chấp, V1-17b). */
+  readonly inTabs: boolean;
+  /** testID của màn (route con mở từ tranh chấp có testID riêng). */
+  readonly testID?: string;
+}
+
+/**
+ * Nội dung UI-E04 của MỘT tệp đóng gói theo `evidenceId` thuộc `orderId` (đơn phải khớp, cùng shop). Dùng
+ * cho route UI-E04 trong tab Đơn hàng và route xem bằng chứng mở từ tranh chấp (V1-17b).
+ */
+export function PackingEvidenceDetail({
+  orderId,
+  evidenceId,
+  title,
+  inTabs,
+  testID,
+}: PackingEvidenceDetailProps) {
+  const { t } = useTranslation();
+  const uid = useCurrentUid();
+  const { state, reload } = useEvidenceDetail(orderId, evidenceId);
+  const shell = {
+    title,
+    inTabs,
+    notFoundMessage: t('evidence:detail.notFound'),
+    ...(testID ? { testID } : {}),
   } as const;
 
-  if (state.kind === 'loading') {
-    return (
-      <Screen {...header}>
-        <Text variant="formBody" accessibilityLiveRegion="polite" color="inkMuted">
-          {t('evidence:detail.loading')}
-        </Text>
-        <SkeletonCard />
-      </Screen>
-    );
-  }
-  if (state.kind === 'notFound') {
-    return (
-      <Screen {...header}>
-        <View testID="evidence-detail-not-found">
-          <EmptyState
-            compact
-            iconCircle
-            title={t('evidence:detail.notFoundTitle')}
-            message={t('evidence:detail.notFound')}
-            actionLabel={t('evidence:detail.back')}
-            onAction={navigation.back}
-          />
-        </View>
-      </Screen>
-    );
-  }
-  if (state.kind === 'error') {
-    return (
-      <Screen {...header}>
-        <ErrorState
-          variant="card"
-          testID="evidence-detail-error"
-          title={t('evidence:detail.loadError')}
-          retryLabel={t('common:actions.retry')}
-          onRetry={reload}
-        />
-      </Screen>
-    );
+  if (state.kind !== 'ready') {
+    return <EvidenceDetailShell {...shell} pending={state.kind} onRetry={reload} />;
   }
   return (
-    <Screen {...header}>
+    <EvidenceDetailShell {...shell}>
       <EvidenceDetailView
         file={state.file}
         kindLabel={t(`screens:orderEvidence.kind.${state.file.group}.${state.file.kind}`)}
@@ -88,7 +76,7 @@ export function EvidenceDetailScreen() {
         // Người tạo tệp đóng gói = người tạo PHIÊN; không còn phiên = không rõ (không đoán, V1-07).
         uploader={uploaderRelation(state.session?.createdBy, uid)}
       />
-    </Screen>
+    </EvidenceDetailShell>
   );
 }
 

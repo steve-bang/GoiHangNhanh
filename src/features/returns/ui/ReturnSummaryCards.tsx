@@ -1,8 +1,11 @@
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+
+import { ROUTES } from '@/core/navigation';
 
 import { toCodeKey, useCurrentUid } from '@/features/orders';
 import { foreignUploadNote, toDisplayStatus } from '@/features/evidence';
+import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Card, EvidenceStatusBadge, Icon, Text, useTheme } from '@/shared/ui';
 
 import {
@@ -52,6 +55,44 @@ function Section({
 }
 
 /**
+ * Hàng bấm được mở UI-E04 của một ảnh/video hàng hoàn (V1-17b; mẫu hàng của UI-E03: chữ + mũi tên).
+ * Chỉ đọc; chỉ hiện cho tệp đã lưu bền trên máy.
+ */
+function MediaOpenRow({
+  label,
+  testID,
+  onPress,
+}: {
+  label: string;
+  testID: string;
+  onPress: () => void;
+}) {
+  const { tokens } = useTheme();
+  return (
+    <Pressable
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [
+        {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: tokens.space.sm,
+          minHeight: getMinTouchTarget(),
+        },
+        pressed ? { opacity: tokens.opacity.pressed } : null,
+      ]}
+    >
+      <Text variant="formBody" color="ink" style={{ flex: 1 }}>
+        {label}
+      </Text>
+      <Icon name="forward" size={tokens.icon.md} color={tokens.color.text.secondary} />
+    </Pressable>
+  );
+}
+
+/**
  * Tóm tắt hồ sơ hàng hoàn: đơn gốc, tình trạng bên ngoài, video mở kiện, hàng thực nhận (so với bản sao
  * dự kiến), sai lệch đã ghi nhận và HẠN CHẾ BẰNG CHỨNG. Chỉ nêu điều đã ghi nhận, không kết luận nguyên
  * nhân hay bên chịu trách nhiệm (CLAUDE.md #5). Không bao giờ có dòng "đầy đủ bằng chứng" (#11).
@@ -65,7 +106,10 @@ export function ReturnSummaryCards({
 }) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
+  const navigation = useAppNavigation();
   const { returnCase, lines, discrepancies } = details;
+  const openMedia = (mediaId: string) =>
+    navigation.push(ROUTES.returnMediaDetail, { returnId: returnCase.id, mediaId });
   const { photos, videos } = useReturnMedia(returnCase.id);
   const savedPhotos = photos === null ? [] : photos.filter(isMediaSavedLocally);
   const photoCount = photos === null ? null : savedPhotos.length;
@@ -137,6 +181,14 @@ export function ReturnSummaryCards({
             {t(`evidence:uploaderNote.${photoNote}`)}
           </Text>
         ) : null}
+        {savedPhotos.map((photo, index) => (
+          <MediaOpenRow
+            key={photo.id}
+            testID={`return-summary-open-photo-${photo.id}`}
+            label={t('returns:review.openPhoto', { index: index + 1 })}
+            onPress={() => openMedia(photo.id)}
+          />
+        ))}
       </Section>
 
       <Section title={t('returns:review.video')} testID="return-summary-video">
@@ -146,6 +198,7 @@ export function ReturnSummaryCards({
             openedBefore={returnCase.openedBefore !== null}
             returnCase={returnCase}
             video={videos?.find((m) => m.id === recordedId) ?? null}
+            onOpen={openMedia}
           />
         ) : (
           <>
@@ -245,11 +298,13 @@ function OpeningVideoStatus({
   openedBefore,
   returnCase,
   video,
+  onOpen,
 }: {
   interrupted: boolean;
   openedBefore: boolean;
   returnCase: Pick<ReturnCase, 'createdBy' | 'anchorPublishedAtDevice'>;
   video: ReturnMedia | null;
+  onOpen: (mediaId: string) => void;
 }) {
   const { t } = useTranslation();
   // Video do tài khoản khác quay, hoặc trong hồ sơ chưa gửi của người khác: máy này chưa tải được dưới
@@ -274,6 +329,13 @@ function OpeningVideoStatus({
         <Text variant="caption" color="textMuted" testID="return-video-opened-before">
           {t('returns:review.videoOpenedBefore')}
         </Text>
+      ) : null}
+      {video && isMediaSavedLocally(video) ? (
+        <MediaOpenRow
+          testID="return-summary-open-video"
+          label={t('returns:review.openVideo')}
+          onPress={() => onOpen(video.id)}
+        />
       ) : null}
     </>
   );
