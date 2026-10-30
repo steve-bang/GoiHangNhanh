@@ -89,7 +89,9 @@ export function useSyncActions(stores: SyncJobStores, reload: () => Promise<void
       const result = await control.requestServerCheck(job.id);
       const message =
         result === 'requested'
-          ? 'recheckRequested'
+          ? waitingWifi
+            ? 'recheckRequestedWaitingWifi'
+            : 'recheckRequested'
           : result === 'offline'
             ? 'recheckOffline'
             : result === 'unsupported'
@@ -103,7 +105,7 @@ export function useSyncActions(stores: SyncJobStores, reload: () => Promise<void
       release(keys);
       await reload();
     },
-    [control, reload, t, toast],
+    [control, waitingWifi, reload, t, toast],
   );
 
   return { retry, recheck, busy };

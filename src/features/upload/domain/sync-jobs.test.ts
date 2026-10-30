@@ -257,10 +257,34 @@ describe('describeSyncJob: chờ Wi‑Fi (V1-09) là LÝ DO, không đổi nhãn
     expect(
       describeSyncJob(job('needs_attention', { lastErrorCode: 'FILE_MISSING' }), waiting)?.reason,
     ).toBe('fileMissing');
-    expect(describeSyncJob(job('uploaded'), waiting)?.reason).toBe('verifying');
+    // Tệp của tài khoản khác: máy này không đối soát dù có Wi‑Fi, nên giữ lý do cũ.
+    expect(describeSyncJob(job('uploaded', { uploader: 'other' }), waiting)?.reason).toBe(
+      'verifying',
+    );
   });
 
   it('tệp của tài khoản khác: không thêm lý do chờ Wi‑Fi (máy này không tải hộ)', () => {
     expect(describeSyncJob(job('queued', { uploader: 'other' }), waiting)?.reason).toBeNull();
+  });
+});
+
+describe('describeSyncJob: tệp Đã tải lên khi chờ Wi‑Fi (review PR #57)', () => {
+  const waiting = { online: true, now: NOW, waitingWifi: true };
+  it('lý do "chờ Wi‑Fi" thay cho đang kiểm tra/chưa kiểm tra xong; nhãn, bộ lọc, nút Kiểm tra lại giữ nguyên', () => {
+    const fresh = job('uploaded');
+    const stuck = job('uploaded', { updatedAtDevice: NOW - RECHECK_AFTER_MS });
+    expect(describeSyncJob(fresh, waiting)).toMatchObject({
+      label: 'uploaded',
+      filter: 'uploaded',
+      reason: 'waitingWifi',
+      action: null,
+    });
+    expect(describeSyncJob(stuck, waiting)).toMatchObject({
+      label: 'uploaded',
+      reason: 'waitingWifi',
+      action: 'recheck',
+    });
+    expect(describeSyncJob(stuck, online)?.reason).toBe('verifyStuck');
+    expect(describeSyncJob(fresh, { ...waiting, online: false })?.reason).toBe('verifying');
   });
 });

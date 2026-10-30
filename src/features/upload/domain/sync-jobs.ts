@@ -200,6 +200,9 @@ function ownReason(job: SyncJob, context: SyncContext, stuck: boolean): SyncReas
     case FILE_STATES.UNRECOVERABLE:
       return 'unrecoverable';
     case FILE_STATES.UPLOADED:
+      // Chờ Wi‑Fi thì không đối soát: kết quả xác minh chưa về được tới khi có Wi‑Fi (review PR #57).
+      // Chỉ tệp của chính tài khoản (hàng đợi không đối soát tệp của tài khoản khác dù có Wi‑Fi).
+      if (online && waitingWifi && job.uploader === 'current') return 'waitingWifi';
       return stuck ? 'verifyStuck' : 'verifying';
     default:
       return null;

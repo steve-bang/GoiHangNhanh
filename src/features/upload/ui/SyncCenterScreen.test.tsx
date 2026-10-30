@@ -434,6 +434,26 @@ describe('UI-F01: Chỉ tải khi có Wi‑Fi (V1-09)', () => {
     expect(t.records.get('bad')?.state).toBe('queued');
   });
 
+  it('Đã tải lên khi chờ Wi‑Fi: lý do "Đang chờ Wi‑Fi.", Kiểm tra lại báo kết quả hiện khi có Wi‑Fi (review PR #57)', async () => {
+    setMockConnectivity({ online: true, type: 'cellular' });
+    const store = createMemoryDeviceSettingsStore();
+    await store.write('upload.wifi_only', 'true', 1);
+    const t = setup([
+      file('old', 'uploaded', { updatedAtDevice: NOW - RECHECK_AFTER_MS - 60_000 }),
+    ]);
+    await open(t, <SyncCenterScreen />, store);
+    await fireEvent.press(await screen.findByText('Đã tải lên'));
+    const status = await screen.findByTestId('sync-job-status-pack:old');
+    await waitFor(() => expect(status).toHaveTextContent(/Đang chờ Wi‑Fi\./));
+    expect(status).not.toHaveTextContent(/chưa kiểm tra xong/);
+    await act(async () => fireEvent.press(screen.getByTestId('sync-job-recheck-pack:old')));
+    await waitFor(() => expect(t.control.requestServerCheck).toHaveBeenCalledWith('old'));
+    expect(
+      await screen.findByText('Đã nhờ máy chủ kiểm tra lại. Kết quả sẽ hiện khi có Wi‑Fi.'),
+    ).toBeOnTheScreen();
+    expect(t.records.get('old')?.state).toBe('uploaded');
+  });
+
   it('ghi cài đặt lỗi: báo lỗi, công tắc giữ nguyên', async () => {
     const store: DeviceSettingsStore = {
       read: async () => undefined,

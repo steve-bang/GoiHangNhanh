@@ -312,6 +312,7 @@
       "retryChanged": "Trạng thái tệp vừa đổi. Danh sách đã được cập nhật.",
       "retryFailed": "Chưa đưa tệp vào hàng chờ được. Bạn thử lại nhé.",
       "recheckRequested": "Đã nhờ máy chủ kiểm tra lại. Kết quả sẽ hiện ở đây.",
+      "recheckRequestedWaitingWifi": "Đã nhờ máy chủ kiểm tra lại. Kết quả sẽ hiện khi có Wi‑Fi.",
       "recheckOffline": "Cần có mạng để kiểm tra lại.",
       "recheckFailed": "Chưa nhờ máy chủ kiểm tra lại được. Bạn thử lại sau nhé.",
       "recheckUnavailable": "Chưa kết nối máy chủ nên chưa kiểm tra lại được."
