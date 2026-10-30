@@ -88,6 +88,8 @@ export const ICON_GLYPHS = {
   receipt: 'receipt-outline',
   // khối "Dữ liệu bằng chứng" của tab Cá nhân (PR-B): đám mây trung tính, không hàm ý đã tải xong
   cloud: 'cloud-outline',
+  // công tắc "Chỉ tải khi có Wi‑Fi" (V1-09)
+  wifi: 'wifi-outline',
 } as const satisfies Record<string, GlyphName>;
 
 export type IconName = keyof typeof ICON_GLYPHS;

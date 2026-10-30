@@ -5,10 +5,13 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initI18n } from '@/core/i18n';
 import {
+  DeviceSettingsProvider,
   EvidenceFileStoreProvider,
   OrderStoreProvider,
+  createMemoryDeviceSettingsStore,
   createMemoryEvidenceFileStore,
   createMemoryOrderStore,
+  type DeviceSettingsStore,
   type OrderStore,
 } from '@/features/orders';
 import type { EvidenceFileStore } from '@/features/evidence';
@@ -44,6 +47,8 @@ export function renderWithProviders(
     evidenceFileStore?: EvidenceFileStore;
     returnStore?: ReturnStore;
     disputeStore?: DisputeStore;
+    /** Kho cài đặt máy (V1-09); mặc định kho bộ nhớ mới cho mỗi lần render. */
+    deviceSettingsStore?: DeviceSettingsStore;
     personalGateways?: PersonalGateways;
     /** Chế độ chặt của cổng phiên (bản Firebase, V1-06). Mặc định theo môi trường test = `false`. */
     requireKnownShop?: boolean;
@@ -53,6 +58,7 @@ export function renderWithProviders(
   const evidenceFileStore = options.evidenceFileStore ?? createMemoryEvidenceFileStore();
   const returnStore = options.returnStore ?? createMemoryReturnStore();
   const disputeStore = options.disputeStore ?? createMemoryDisputeStore();
+  const deviceSettingsStore = options.deviceSettingsStore ?? createMemoryDeviceSettingsStore();
   return render(
     <SafeAreaProvider initialMetrics={METRICS}>
       <I18nextProvider i18n={initI18n()}>
@@ -70,7 +76,11 @@ export function renderWithProviders(
                   <OrderStoreProvider store={orderStore}>
                     <EvidenceFileStoreProvider store={evidenceFileStore}>
                       <ReturnStoreProvider store={returnStore}>
-                        <DisputeStoreProvider store={disputeStore}>{ui}</DisputeStoreProvider>
+                        <DisputeStoreProvider store={disputeStore}>
+                          <DeviceSettingsProvider store={deviceSettingsStore}>
+                            {ui}
+                          </DeviceSettingsProvider>
+                        </DisputeStoreProvider>
                       </ReturnStoreProvider>
                     </EvidenceFileStoreProvider>
                   </OrderStoreProvider>

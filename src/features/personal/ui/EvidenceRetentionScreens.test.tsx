@@ -1,4 +1,6 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
+
+import { createMemoryDeviceSettingsStore } from '@/features/orders';
 
 import { ROUTES } from '@/core/navigation';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
@@ -49,6 +51,17 @@ describe('EvidenceDataScreen (UI-I01 route con, khung 11)', () => {
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.sync);
     await fireEvent.press(screen.getByTestId('evidence-retention-link'));
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.retentionDetail);
+  });
+  it('V1-09: công tắc "Chỉ tải khi có Wi‑Fi" mặc định tắt, bật thì lưu vào cài đặt máy', async () => {
+    const store = createMemoryDeviceSettingsStore();
+    await renderWithProviders(<EvidenceDataScreen />, { deviceSettingsStore: store });
+    const toggle = await screen.findByRole('switch', { name: 'Chỉ tải khi có Wi‑Fi' });
+    expect(toggle.props.accessibilityState).toMatchObject({ checked: false });
+    await act(async () => fireEvent.press(toggle));
+    expect(await store.read('upload.wifi_only')).toBe('true');
+    expect(
+      screen.getByRole('switch', { name: 'Chỉ tải khi có Wi‑Fi' }).props.accessibilityState,
+    ).toMatchObject({ checked: true });
   });
 });
 

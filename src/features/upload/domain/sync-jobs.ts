@@ -104,6 +104,7 @@ export const RECHECK_AFTER_MS = 15 * 60_000;
 export type SyncReason =
   | 'queued'
   | 'offline'
+  | 'waitingWifi'
   | 'waitingNetwork'
   | 'willRetry'
   | 'serverRejected'
@@ -165,12 +166,30 @@ function attentionReason(code: string | null): SyncReason {
   return ATTENTION_REASON[code] ?? 'serverRejected';
 }
 
-function ownReason(job: SyncJob, online: boolean, stuck: boolean): SyncReason | null {
+/** Ngữ cảnh hiển thị của Trung tâm đồng bộ (giờ truyền vào, không đọc đồng hồ). */
+export interface SyncContext {
+  readonly online: boolean;
+  readonly now: number;
+  /**
+   * Đã bật "Chỉ tải khi có Wi‑Fi" mà mạng hiện tại không phải Wi‑Fi (V1-09): hàng đợi không chạy, nên tệp
+   * còn chờ gửi hiện lý do "Đang chờ Wi‑Fi." (lý do hiển thị, KHÔNG phải trạng thái tệp mới).
+   */
+  readonly waitingWifi?: boolean;
+}
+
+function ownReason(job: SyncJob, context: SyncContext, stuck: boolean): SyncReason | null {
+  const { online, waitingWifi = false } = context;
   switch (job.state) {
     case FILE_STATES.QUEUED:
-      return online ? 'queued' : 'offline';
+      if (!online) return 'offline';
+      return waitingWifi ? 'waitingWifi' : 'queued';
+    case FILE_STATES.UPLOADING:
+      // Chờ Wi‑Fi thì không có lần gửi nào chạy (tệp `uploading` còn lại từ lần tắt app trước chờ đối
+      // soát khi có Wi‑Fi): nói đúng là đang chờ, không để người dùng tưởng đang tải.
+      return online && waitingWifi ? 'waitingWifi' : null;
     case FILE_STATES.UPLOAD_FAILED:
       if (!online) return 'offline';
+      if (waitingWifi) return 'waitingWifi';
       return failedByNetwork(job.lastErrorCode) ? 'waitingNetwork' : 'willRetry';
     case FILE_STATES.NEEDS_ATTENTION:
       return attentionReason(job.lastErrorCode);
@@ -181,6 +200,9 @@ function ownReason(job: SyncJob, online: boolean, stuck: boolean): SyncReason | 
     case FILE_STATES.UNRECOVERABLE:
       return 'unrecoverable';
     case FILE_STATES.UPLOADED:
+      // Chờ Wi‑Fi thì không đối soát: kết quả xác minh chưa về được tới khi có Wi‑Fi (review PR #57).
+      // Chỉ tệp của chính tài khoản (hàng đợi không đối soát tệp của tài khoản khác dù có Wi‑Fi).
+      if (online && waitingWifi && job.uploader === 'current') return 'waitingWifi';
       return stuck ? 'verifyStuck' : 'verifying';
     default:
       return null;
@@ -193,10 +215,7 @@ function ownReason(job: SyncJob, online: boolean, stuck: boolean): SyncReason | 
  * - `retry`: `upload_failed` (mọi lỗi), `needs_attention` với lỗi không phải lỗi tệp cục bộ (R-3).
  * - `recheck`: `uploaded` đã quá `RECHECK_AFTER_MS` mà máy chủ chưa xác minh.
  */
-export function describeSyncJob(
-  job: SyncJob,
-  context: { readonly online: boolean; readonly now: number },
-): SyncJobView | null {
+export function describeSyncJob(job: SyncJob, context: SyncContext): SyncJobView | null {
   const display = toDisplayStatus(job.state, {
     uploader: job.uploader,
     ...(job.state === FILE_STATES.QUEUED ? { waitingReason: 'queue' } : {}),
@@ -227,7 +246,7 @@ export function describeSyncJob(
     filter,
     label: display.label,
     foreign: null,
-    reason: ownReason(job, context.online, stuck),
+    reason: ownReason(job, context, stuck),
     action,
   };
 }

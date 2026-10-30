@@ -4,7 +4,12 @@ import { StatusBar } from 'expo-status-bar';
 
 import { getDefaultRemoteDocuments } from '@/api/create-remote-documents';
 import { initI18n } from '@/core/i18n';
-import { EvidenceFileStoreProvider, OrderStoreProvider, OrderSyncRunner } from '@/features/orders';
+import {
+  DeviceSettingsProvider,
+  EvidenceFileStoreProvider,
+  OrderStoreProvider,
+  OrderSyncRunner,
+} from '@/features/orders';
 import { RecordingRecovery } from '@/features/packing';
 import { DisputeStoreProvider } from '@/features/disputes';
 import { ReturnMediaRecovery, ReturnStoreProvider, ReturnSyncRunner } from '@/features/returns';
@@ -45,12 +50,14 @@ export function AppProviders({ children }: { children: ReactNode }) {
                   <EvidenceFileStoreProvider>
                     <ReturnStoreProvider>
                       <DisputeStoreProvider>
-                        <RecordingRecovery />
-                        <ReturnMediaRecovery />
-                        <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
-                        <ReturnSyncRunner docs={getDefaultRemoteDocuments()} />
-                        {/* Bọc màn hình: Trung tâm đồng bộ gọi hàng đợi qua `useUploadQueueControl` (V1-08). */}
-                        <UploadRunner docs={getDefaultRemoteDocuments()}>{children}</UploadRunner>
+                        <DeviceSettingsProvider>
+                          <RecordingRecovery />
+                          <ReturnMediaRecovery />
+                          <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
+                          <ReturnSyncRunner docs={getDefaultRemoteDocuments()} />
+                          {/* Bọc màn hình: Trung tâm đồng bộ gọi hàng đợi qua `useUploadQueueControl` (V1-08). */}
+                          <UploadRunner docs={getDefaultRemoteDocuments()}>{children}</UploadRunner>
+                        </DeviceSettingsProvider>
                       </DisputeStoreProvider>
                     </ReturnStoreProvider>
                   </EvidenceFileStoreProvider>

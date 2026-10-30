@@ -14,6 +14,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 - Tài liệu nộp store: mô tả, khai báo quyền riêng tư, ghi chú duyệt (V1-20, #45).
 - Quên mật khẩu gửi thư đặt lại của Firebase Auth (thư tiếng Việt, trả lời trung tính) và màn mới "Kiểm tra hộp thư"; chưa kiểm chứng gửi thư thật trên thiết bị (V1-03, #47).
 - Xem lại video và ảnh bằng chứng ngay trên máy đã ghi (màn Chi tiết bằng chứng, mở từ Bằng chứng của đơn), chỉ xem, không sửa hay xóa tệp gốc; tệp không còn trên máy thì báo rõ, chưa xem được từ máy chủ. Chưa kiểm chứng trên thiết bị (V1-17).
+- Công tắc "Chỉ tải khi có Wi‑Fi" ở Trung tâm đồng bộ và màn Dữ liệu bằng chứng (mặc định tắt: luôn tải kể cả 4G/5G); khi bật mà máy không dùng Wi‑Fi thì ảnh/video chờ, tệp hiện "Đang chờ Wi‑Fi.", có Wi‑Fi lại thì tải tiếp khi ứng dụng đang mở. Lưu cài đặt trên máy (CSDL cục bộ phiên bản 15). Chưa kiểm chứng trên thiết bị (V1-09).
 
 ### Security
 

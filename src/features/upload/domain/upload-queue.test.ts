@@ -64,11 +64,16 @@ function setup(
   let hangNext = false;
   let clock = 10_000;
   let online = options.online ?? true;
+  /** "Chỉ tải khi có Wi‑Fi" bật mà mạng không phải Wi‑Fi (V1-09). */
+  let waitingWifi = false;
+  /** Gọi trong lúc băm (mô phỏng mạng đổi giữa lúc băm video dài). */
+  let duringHash: (() => void) | null = null;
   const uploads: string[] = [];
   const outcomes: UploadOutcome[] = [];
   const serverStates = new Map<EvidenceId, ServerFileState>();
   let throwOnUpload = false;
   let throwOnFetch = false;
+  let fetchCount = 0;
   let throwOnCheck = false;
   const checks: string[] = [];
   const gateway: UploadGateway = {
@@ -92,6 +97,7 @@ function setup(
       return outcomes.shift() ?? { kind: 'received' };
     },
     fetchServerStates: async () => {
+      fetchCount += 1;
       if (throwOnFetch) throw new Error('offline');
       return serverStates;
     },
@@ -108,9 +114,15 @@ function setup(
       ),
     ],
     gateway,
-    hasher: { sha256: async () => hashResult },
+    hasher: {
+      sha256: async () => {
+        duringHash?.();
+        return hashResult;
+      },
+    },
     now: () => clock,
     isOnline: () => online,
+    isWaitingForWifi: () => waitingWifi,
     subscribeOffline: (listener) => {
       offlineListeners.add(listener);
       return () => void offlineListeners.delete(listener);
@@ -134,6 +146,9 @@ function setup(
     },
     advance: (ms: number) => void (clock += ms),
     setOnline: (v: boolean) => void (online = v),
+    setWaitingWifi: (v: boolean) => void (waitingWifi = v),
+    onHash: (fn: (() => void) | null) => void (duringHash = fn),
+    fetches: () => fetchCount,
     setHash: (h: HashResult) => void (hashResult = h),
     failUploads: (v: boolean) => void (throwOnUpload = v),
     failFetch: (v: boolean) => void (throwOnFetch = v),
@@ -804,5 +819,82 @@ describe('Trung tâm đồng bộ: Thử lại và Kiểm tra lại (V1-08)', ()
       isOnline: () => true,
     });
     expect(await bare.requestServerCheck(SHOP, 'q' as EvidenceId)).toBe('unsupported');
+  });
+});
+
+describe('Chỉ tải khi có Wi‑Fi (V1-09)', () => {
+  it('chờ Wi‑Fi: không đối soát, không gửi, trạng thái + số lượt + giờ thử lại không đổi', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    await queuedFile(t.files, 'b', 2000);
+    // b đang `uploading` từ lần tắt app trước: bình thường sẽ hỏi máy chủ (đối soát).
+    await t.files.applyEvent(
+      SHOP,
+      'b' as EvidenceId,
+      { type: 'UPLOAD_STARTED', origin: 'device' },
+      1,
+    );
+    const before = await Promise.all(['a', 'b'].map((id) => t.files.get(SHOP, id as EvidenceId)));
+    t.setWaitingWifi(true);
+    expect((await t.queue.runOnce(SHOP)).skipped).toBe('waiting_wifi');
+    expect(t.uploads).toEqual([]);
+    expect(t.fetches()).toBe(0);
+    const after = await Promise.all(['a', 'b'].map((id) => t.files.get(SHOP, id as EvidenceId)));
+    expect(after).toEqual(before);
+  });
+
+  it('có Wi‑Fi lại (hoặc tắt công tắc): lượt sau chạy bình thường', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    t.setWaitingWifi(true);
+    await t.queue.runOnce(SHOP);
+    t.setWaitingWifi(false);
+    expect((await t.queue.runOnce(SHOP)).received).toBe(1);
+    expect(await t.state('a')).toBe('uploaded');
+  });
+
+  it('mạng đổi trong lúc băm: dừng TRƯỚC khi bắt đầu gửi, tệp giữ queued, không tốn lượt', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    t.onHash(() => t.setWaitingWifi(true));
+    await t.queue.runOnce(SHOP);
+    expect(t.uploads).toEqual([]);
+    expect(await t.files.get(SHOP, 'a' as EvidenceId)).toMatchObject({
+      state: 'queued',
+      attemptCount: 0,
+    });
+  });
+
+  it('chuyển sang mạng di động giữa lần gửi: hủy, lỗi mạng KHÔNG tốn lượt, không gửi tệp tiếp theo', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    await queuedFile(t.files, 'b', 2000);
+    t.hangNextUpload();
+    const run = t.queue.runOnce(SHOP);
+    await new Promise((r) => setTimeout(r, 0));
+    t.setWaitingWifi(true);
+    for (const listener of [...t.offlineListeners]) listener();
+    const summary = await run;
+    expect(summary.waitingNetwork).toBe(1);
+    expect(t.uploads).toEqual(['a']);
+    expect(await t.files.get(SHOP, 'a' as EvidenceId)).toMatchObject({
+      state: 'upload_failed',
+      attemptCount: 0,
+      lastErrorCode: 'NETWORK_LOST',
+    });
+    expect(await t.state('b')).toBe('queued');
+  });
+
+  it('lượt bị bỏ vì chờ Wi‑Fi vẫn nhớ "có mạng lại": tệp lỗi mạng tới hạn ngay khi có Wi‑Fi', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    t.outcomes.push({ kind: 'network', code: 'NETWORK' });
+    await t.queue.runOnce(SHOP);
+    expect(await t.state('a')).toBe('upload_failed');
+    t.setWaitingWifi(true);
+    await t.queue.runOnce(SHOP, { networkRestored: true });
+    t.setWaitingWifi(false);
+    await t.queue.runOnce(SHOP);
+    expect(await t.state('a')).toBe('uploaded');
   });
 });

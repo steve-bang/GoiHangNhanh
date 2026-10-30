@@ -24,7 +24,14 @@ export interface UploadQueueDeps {
   readonly now: () => number;
   readonly isOnline: () => boolean;
   /**
-   * Báo khi máy MẤT mạng (nguồn: NetInfo qua `platform/connectivity`). Lần gửi tệp đang chạy bị hủy để
+   * `true` khi người dùng bật "Chỉ tải khi có Wi‑Fi" mà mạng hiện tại không phải Wi‑Fi (V1-09,
+   * `uploadNetworkGate`). Khi đó hàng đợi KHÔNG chạy lượt: không gọi máy chủ, không tính lượt, không đổi
+   * trạng thái tệp. Không truyền = luôn được dùng mạng.
+   */
+  readonly isWaitingForWifi?: () => boolean;
+  /**
+   * Báo khi KHÔNG còn được gửi: máy MẤT mạng (NetInfo qua `platform/connectivity`) hoặc chuyển sang chờ
+   * Wi‑Fi (đổi mạng hoặc vừa bật công tắc). Lần gửi tệp đang chạy bị hủy (lỗi mạng, không tốn lượt) để
    * lượt được giải phóng ngay thay vì chờ lớp mạng native báo lỗi. Trả hàm hủy đăng ký.
    */
   readonly subscribeOffline?: (onOffline: () => void) => () => void;
@@ -80,8 +87,8 @@ export const NETWORK_ERROR_CODES: readonly string[] = [
 ];
 
 export interface UploadRunSummary {
-  /** `offline`/`busy`: không làm gì lượt này. */
-  readonly skipped?: 'offline' | 'busy';
+  /** `offline`/`waiting_wifi`/`busy`: không làm gì lượt này (không gọi máy chủ). */
+  readonly skipped?: 'offline' | 'waiting_wifi' | 'busy';
   readonly received: number;
   /** Lỗi máy chủ từ chối/không rõ (tính lượt). */
   readonly failed: number;
@@ -142,9 +149,15 @@ interface Entry {
  *   `needs_attention`.
  * - Tệp có chủ sở hữu chưa đăng lên máy chủ (`isReadyToDeclare`): bỏ qua lượt này, không gọi máy chủ.
  * - Nhiều nguồn (Q-28): một nguồn lỗi kho không chặn nguồn khác trong cùng lượt.
+ * - "Chỉ tải khi có Wi‑Fi" (V1-09): đang chờ Wi‑Fi thì không chạy lượt (kể cả đối soát); lần gửi đang
+ *   chạy bị hủy như mất mạng. Riêng "Kiểm tra lại" (`requestServerCheck`, người dùng bấm, không gửi tệp)
+ *   vẫn được gọi.
  */
 export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
   const { sources, gateway, hasher, now, isOnline, subscribeOffline } = deps;
+  const waitingWifi = deps.isWaitingForWifi ?? (() => false);
+  /** Được dùng mạng hiện tại để gửi tệp (có mạng và không chờ Wi‑Fi). */
+  const mayUseNetwork = () => isOnline() && !waitingWifi();
   let running = false;
   /** Có mạng lại trong lúc một lượt đang chạy: áp cho lượt kế tiếp. */
   let restoredPending = false;
@@ -252,7 +265,7 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
     const controller = new AbortController();
     const unsubscribe = subscribeOffline?.(() => controller.abort());
     try {
-      if (!isOnline()) controller.abort();
+      if (!mayUseNetwork()) controller.abort();
       return await gateway.upload(request, { signal: controller.signal });
     } catch {
       return { kind: 'retryable', code: 'UPLOAD_EXCEPTION' } as const;
@@ -295,6 +308,9 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
       summary.needsAttention += 1;
       return 'next';
     }
+    // Băm video dài mất thời gian: mạng có thể vừa đổi (mất mạng, sang 4G khi bật chỉ Wi‑Fi). Dừng TRƯỚC
+    // khi đổi trạng thái để tệp giữ nguyên `queued` (không tốn lượt).
+    if (!mayUseNetwork()) return 'stop';
     const started = await apply(entry, device('UPLOAD_STARTED'));
     if (!started.ok) return 'next';
     const current: Entry = { source: entry.source, item: started.item };
@@ -368,6 +384,12 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
         return { ...summary, skipped: 'busy' };
       }
       if (!isOnline()) return { ...summary, skipped: 'offline' };
+      // Chờ Wi‑Fi: bỏ CẢ đối soát (không gọi máy chủ trên mạng người dùng không cho phép). Có lượt dồn
+      // từ lúc có mạng lại thì giữ cho lượt sau (lúc có Wi‑Fi).
+      if (waitingWifi()) {
+        if (options?.networkRestored) restoredPending = true;
+        return { ...summary, skipped: 'waiting_wifi' };
+      }
       running = true;
       const restored = Boolean(options?.networkRestored) || restoredPending;
       restoredPending = false;
@@ -384,7 +406,7 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
           await apply(entry, device('RETRY_UPLOAD'), { nextAttemptAtDevice: null });
         }
         for (const entry of await list(shopId, [S.QUEUED])) {
-          if (!isOnline()) break;
+          if (!mayUseNetwork()) break;
           if ((await uploadOne(entry, summary)) === 'stop') break;
         }
       } catch {

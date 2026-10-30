@@ -236,3 +236,55 @@ describe('nhóm tài khoản khác và câu khi không có nút (review PR #56)'
     expect(noActionNote(retryable, describeSyncJob(retryable, online) as never)).toBeNull();
   });
 });
+
+describe('describeSyncJob: chờ Wi‑Fi (V1-09) là LÝ DO, không đổi nhãn/bộ lọc', () => {
+  const waiting = { online: true, now: NOW, waitingWifi: true };
+  it.each<[FileState, Partial<SyncJob>, string]>([
+    ['queued', {}, 'waiting_upload'],
+    ['uploading', {}, 'uploading'],
+    ['upload_failed', { lastErrorCode: 'NETWORK' }, 'error'],
+    ['upload_failed', { lastErrorCode: 'HTTP_500', attemptCount: 1 }, 'error'],
+  ])('%s %j -> lý do waitingWifi, nhãn giữ nguyên', (state, extra, label) => {
+    const plain = describeSyncJob(job(state, extra), online);
+    const view = describeSyncJob(job(state, extra), waiting);
+    expect(view).toMatchObject({ label, filter: plain?.filter, reason: 'waitingWifi' });
+    expect(view?.action).toBe(plain?.action);
+  });
+
+  it('mất mạng vẫn là "Đang chờ mạng."; lỗi cục bộ/máy chủ đã chốt giữ lý do riêng', () => {
+    expect(describeSyncJob(job('queued'), { ...waiting, online: false })?.reason).toBe('offline');
+    expect(describeSyncJob(job('hash_mismatch'), waiting)?.reason).toBe('hashMismatch');
+    expect(
+      describeSyncJob(job('needs_attention', { lastErrorCode: 'FILE_MISSING' }), waiting)?.reason,
+    ).toBe('fileMissing');
+    // Tệp của tài khoản khác: máy này không đối soát dù có Wi‑Fi, nên giữ lý do cũ.
+    expect(describeSyncJob(job('uploaded', { uploader: 'other' }), waiting)?.reason).toBe(
+      'verifying',
+    );
+  });
+
+  it('tệp của tài khoản khác: không thêm lý do chờ Wi‑Fi (máy này không tải hộ)', () => {
+    expect(describeSyncJob(job('queued', { uploader: 'other' }), waiting)?.reason).toBeNull();
+  });
+});
+
+describe('describeSyncJob: tệp Đã tải lên khi chờ Wi‑Fi (review PR #57)', () => {
+  const waiting = { online: true, now: NOW, waitingWifi: true };
+  it('lý do "chờ Wi‑Fi" thay cho đang kiểm tra/chưa kiểm tra xong; nhãn, bộ lọc, nút Kiểm tra lại giữ nguyên', () => {
+    const fresh = job('uploaded');
+    const stuck = job('uploaded', { updatedAtDevice: NOW - RECHECK_AFTER_MS });
+    expect(describeSyncJob(fresh, waiting)).toMatchObject({
+      label: 'uploaded',
+      filter: 'uploaded',
+      reason: 'waitingWifi',
+      action: null,
+    });
+    expect(describeSyncJob(stuck, waiting)).toMatchObject({
+      label: 'uploaded',
+      reason: 'waitingWifi',
+      action: 'recheck',
+    });
+    expect(describeSyncJob(stuck, online)?.reason).toBe('verifyStuck');
+    expect(describeSyncJob(fresh, { ...waiting, online: false })?.reason).toBe('verifying');
+  });
+});

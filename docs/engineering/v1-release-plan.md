@@ -250,6 +250,7 @@ Mỗi PR liệt kê: **Mục tiêu · Tệp chính · Thư viện · Migration �
 - **Test:** migration v14 -> v15 (dữ liệu cũ nguyên, chạy lại idempotent); hàng đợi: bật Wi‑Fi‑only + di động -> không gọi `declare`; tắt -> chạy; chuyển mạng giữa lượt -> hủy không tốn lượt; giá trị mặc định = tắt (luôn tải).
 - **Ảnh:** UI-F01 có công tắc (bật/tắt), tệp "Đang chờ Wi‑Fi", màn Dữ liệu bằng chứng.
 - **Rủi ro:** `type` NetInfo `other`/`unknown` (Ethernet, VPN): coi như không phải di động (tải); điểm phát Wi‑Fi từ điện thoại khác vẫn là Wi‑Fi (không phát hiện được gói cước, ghi trong Trợ giúp). **Phụ thuộc:** V1-02, V1-08.
+- *Đã làm (2026-10-30): xem [plans/v1-09-wifi-only.md](plans/v1-09-wifi-only.md) và decisions.md Q-29 / V1-09. Lệch so với dòng trên: (1) `other` (Ethernet, VPN, Bluetooth, chưa rõ) khi đã bật công tắc thì **chờ Wi‑Fi**, không tải (an toàn với cước; người dùng tắt công tắc được); (2) kho cài đặt máy đặt ở `features/orders/data/device-settings-store.ts` (chủ CSDL; tránh vòng `orders -> upload` khi V1-10 dùng ở Trang chủ), xuất qua `@/features/orders` (`DeviceSettingsProvider`, `useDeviceSetting`, `booleanSetting`). Câu Trợ giúp về điểm phát Wi‑Fi để V1-18.*
 
 #### V1-10 home-real-data
 - **Mục tiêu:** không còn dữ liệu minh họa ở Trang chủ và thẻ Dữ liệu bằng chứng; Thông báo nói đúng sự thật.
