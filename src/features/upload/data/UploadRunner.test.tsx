@@ -6,10 +6,15 @@ import {
   CurrentShopProvider,
   EvidenceFileStoreProvider,
   LOCAL_SHOP_ID,
+  OrderStoreProvider,
   createMemoryEvidenceFileStore,
+  createMemoryOrderStore,
+  type OrderStore,
 } from '@/features/orders';
 
 import { ReturnStoreProvider, createMemoryReturnStore, type ReturnStore } from '@/features/returns';
+
+import { resetMockConnectivity, setMockConnectivity } from '@/test-utils/mock-connectivity';
 
 import type { UploadGateway } from '../domain/ports';
 import { UploadRunner } from './UploadRunner';
@@ -26,12 +31,20 @@ jest.mock('@/platform/app-state', () => ({
   },
 }));
 
-let mockOffline = false;
-jest.mock('@/platform/connectivity', () => ({ useIsOffline: () => mockOffline }));
+/** Kho đơn của bài test: mặc định coi mọi phiên đã đăng lên máy chủ (đổi qua `sessionPublished`). */
+let sessionPublished = true;
+const orderStore: OrderStore = {
+  ...createMemoryOrderStore(),
+  isSessionPublished: async () => sessionPublished,
+};
+
+const goOnline = (online: boolean) => act(async () => setMockConnectivity({ online }));
 
 beforeEach(() => {
-  mockOffline = false;
+  sessionPublished = true;
 });
+
+afterEach(() => resetMockConnectivity());
 
 async function storeWithQueuedFile(shopId: string) {
   const files = createMemoryEvidenceFileStore();
@@ -79,15 +92,17 @@ const element = (
   returns: ReturnStore = createMemoryReturnStore(),
 ) => (
   <CurrentShopProvider shopId={shopId}>
-    <EvidenceFileStoreProvider store={files}>
-      <ReturnStoreProvider store={returns}>
-        <UploadRunner
-          docs={props.docs}
-          hasher={hasher}
-          {...(props.gateway ? { gateway: props.gateway } : {})}
-        />
-      </ReturnStoreProvider>
-    </EvidenceFileStoreProvider>
+    <OrderStoreProvider store={orderStore}>
+      <EvidenceFileStoreProvider store={files}>
+        <ReturnStoreProvider store={returns}>
+          <UploadRunner
+            docs={props.docs}
+            hasher={hasher}
+            {...(props.gateway ? { gateway: props.gateway } : {})}
+          />
+        </ReturnStoreProvider>
+      </EvidenceFileStoreProvider>
+    </OrderStoreProvider>
   </CurrentShopProvider>
 );
 
@@ -225,8 +240,8 @@ describe('UploadRunner', () => {
     const view = await mount(files, REAL_SHOP, props, returns);
     await flush();
     expect(uploads).toEqual(['ev-1']); // lượt đầu đang tải dở
-    for (const offline of [true, false, true, false]) {
-      mockOffline = offline;
+    for (const online of [false, true, false, true]) {
+      await goOnline(online);
       await view.rerender(element(files, REAL_SHOP, props, returns));
       await flush();
     }
@@ -237,17 +252,59 @@ describe('UploadRunner', () => {
   });
 
   it('ngoại tuyến thì không tải; có mạng lại thì tải ngay (không đợi chu kỳ 60 giây)', async () => {
-    mockOffline = true;
+    setMockConnectivity({ online: false });
     const files = await storeWithQueuedFile(REAL_SHOP);
     const t = fakeGateway();
     const props = { docs, gateway: t.gateway };
     const returns = createMemoryReturnStore();
-    const view = await mount(files, REAL_SHOP, props, returns);
+    await mount(files, REAL_SHOP, props, returns);
     await flush();
     expect(t.uploads).toEqual([]);
-    mockOffline = false;
-    await view.rerender(element(files, REAL_SHOP, props, returns));
+    await goOnline(true);
     await flush();
     expect(t.uploads).toEqual(['ev-1']);
+  });
+
+  it('mất mạng giữa lúc gửi: lần gửi bị hủy, không tốn lượt; có mạng lại thì tải tiếp ngay', async () => {
+    const files = await storeWithQueuedFile(REAL_SHOP);
+    const uploads: string[] = [];
+    let hang = true;
+    const gateway: UploadGateway = {
+      upload: async (request, options) => {
+        uploads.push(request.evidenceId);
+        if (!hang) return { kind: 'received' };
+        hang = false;
+        return new Promise((resolve) =>
+          options?.signal?.addEventListener('abort', () =>
+            resolve({ kind: 'network', code: 'NETWORK_LOST' }),
+          ),
+        );
+      },
+      fetchServerStates: async () => new Map(),
+    };
+    await mount(files, REAL_SHOP, { docs, gateway });
+    await flush();
+    expect(uploads).toEqual(['ev-1']);
+    await goOnline(false);
+    await flush();
+    expect(await files.get(REAL_SHOP as never, 'ev-1' as EvidenceId)).toMatchObject({
+      state: 'upload_failed',
+      attemptCount: 0,
+      lastErrorCode: 'NETWORK_LOST',
+    });
+    await goOnline(true);
+    await flush();
+    expect(uploads).toEqual(['ev-1', 'ev-1']);
+    expect((await files.get(REAL_SHOP as never, 'ev-1' as EvidenceId))?.state).toBe('uploaded');
+  });
+
+  it('phiên chưa đăng lên máy chủ: không khai báo bằng chứng, tệp giữ queued', async () => {
+    sessionPublished = false;
+    const files = await storeWithQueuedFile(REAL_SHOP);
+    const t = fakeGateway();
+    await mount(files, REAL_SHOP, { docs, gateway: t.gateway });
+    await flush();
+    expect(t.uploads).toEqual([]);
+    expect((await files.get(REAL_SHOP as never, 'ev-1' as EvidenceId))?.state).toBe('queued');
   });
 });

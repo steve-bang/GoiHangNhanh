@@ -113,6 +113,21 @@ export function runPendingRemoteContract(
       ]);
     });
 
+    it('isSessionPublished: chỉ đúng sau khi phiên đã đăng (mọi trạng thái), cô lập shop', async () => {
+      const h = await create();
+      const a = await orderWithSession(h, 'PUB', 1000);
+      await setStatus(h, a.session.id, 'recording');
+      expect(await h.store.isSessionPublished(LOCAL_SHOP_ID, a.session.id)).toBe(false);
+      await h.store.markOrderPublished(LOCAL_SHOP_ID, a.details.order.id, 5, U, ids(a.details));
+      await h.store.markSessionPublished(LOCAL_SHOP_ID, a.session.id, 'recording');
+      expect(await h.store.isSessionPublished(LOCAL_SHOP_ID, a.session.id)).toBe(true);
+      // Đổi trạng thái sau khi đăng: phiên vẫn có trên máy chủ (chỉ chờ cập nhật trạng thái).
+      await setStatus(h, a.session.id, 'ended');
+      expect(await h.store.isSessionPublished(LOCAL_SHOP_ID, a.session.id)).toBe(true);
+      expect(await h.store.isSessionPublished('shop-khac' as ShopId, a.session.id)).toBe(false);
+      expect(await h.store.isSessionPublished(LOCAL_SHOP_ID, 'khong-co' as SessionId)).toBe(false);
+    });
+
     it('cô lập shop với phiên', async () => {
       const h = await create();
       const a = await orderWithSession(h, 'SI', 1000);

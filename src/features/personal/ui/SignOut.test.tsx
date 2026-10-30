@@ -23,7 +23,7 @@ jest.mock(
   '@/platform/navigation',
   () => jest.requireActual('@/test-utils/mock-navigation').navigationMock,
 );
-jest.mock('@/platform/connectivity', () => ({ useIsOffline: () => false }));
+// Trạng thái mạng: mock mặc định của jest.setup.ts (có mạng).
 
 beforeEach(() => resetMockNavigation());
 

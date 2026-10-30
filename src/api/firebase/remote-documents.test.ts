@@ -1,7 +1,13 @@
 import type { FirebaseServices } from './client';
-import { createFirestoreRemoteDocuments } from './remote-documents';
+import {
+  createFirestoreRemoteDocuments,
+  REMOTE_CALL_TIMEOUT_MS,
+  RemoteDeadlineError,
+} from './remote-documents';
 
 const mockExisting = new Set<string>();
+/** Bộ đệm SDK: tài liệu đang chờ ghi (pending write) hiện "đã có" ở đây dù máy chủ chưa nhận. */
+const mockCached = new Set<string>();
 const mockBatchSets: { path: string; data: unknown }[] = [];
 const mockCommit = jest.fn(async () => undefined);
 const mockUpdateDoc = jest.fn(async () => undefined);
@@ -16,7 +22,14 @@ jest.mock('@react-native-firebase/firestore', () => ({
     parent: ref.collectionPath,
     ids: filter.ids,
   }),
-  getDocs: async (q: { parent: string; ids: string[] }) => {
+  // Đọc từ bộ đệm: KHÔNG được dùng (pending write trông như đã có). Ném để test bắt nếu lỡ dùng.
+  getDoc: async () => {
+    throw new Error('không được đọc bộ đệm');
+  },
+  getDocs: async () => {
+    throw new Error('không được đọc bộ đệm');
+  },
+  getDocsFromServer: async (q: { parent: string; ids: string[] }) => {
     mockQueries.push(q);
     return {
       docs: q.ids
@@ -25,18 +38,27 @@ jest.mock('@react-native-firebase/firestore', () => ({
     };
   },
   doc: (_db: unknown, path: string) => ({ path }),
-  getDoc: async (ref: { path: string }) => ({
+  getDocFromServer: async (ref: { path: string }) => ({
     exists: () => mockExisting.has(ref.path),
     data: () => ({}),
   }),
   serverTimestamp: () => 'SERVER_TS',
   Timestamp: { fromMillis: (ms: number) => ({ ms }) },
   updateDoc: (...args: unknown[]) => (mockUpdateDoc as (...a: unknown[]) => Promise<void>)(...args),
-  writeBatch: () => ({
-    set: (ref: { path: string }, data: unknown) =>
-      void mockBatchSets.push({ path: ref.path, data }),
-    commit: mockCommit,
-  }),
+  writeBatch: () => {
+    const paths: string[] = [];
+    return {
+      set: (ref: { path: string }, data: unknown) => {
+        paths.push(ref.path);
+        mockBatchSets.push({ path: ref.path, data });
+      },
+      commit: () => {
+        // SDK ghi vào bộ đệm ngay (pending), máy chủ chỉ có khi commit được xác nhận.
+        paths.forEach((p) => mockCached.add(p));
+        return mockCommit();
+      },
+    };
+  },
 }));
 
 const mockCall = jest.fn();
@@ -52,6 +74,7 @@ const services = {
 
 beforeEach(() => {
   mockExisting.clear();
+  mockCached.clear();
   mockQueries.length = 0;
   mockBatchSets.length = 0;
   mockCommit.mockClear();
@@ -136,5 +159,80 @@ describe('createFirestoreRemoteDocuments', () => {
       status: 'ready',
     });
     expect(mockCall).toHaveBeenCalledWith('createUploadSession', { a: 1 });
+  });
+
+  it('lệnh treo (mất mạng: batch.commit chưa trả) hết giờ sau 30 giây với mã deadline-exceeded', async () => {
+    jest.useFakeTimers();
+    try {
+      mockCommit.mockImplementationOnce(() => new Promise<undefined>(() => undefined));
+      mockCall.mockImplementationOnce(() => new Promise(() => undefined));
+      const docs = createFirestoreRemoteDocuments(services);
+      const write = docs.createMissing([{ path: 'x', data: {} }]);
+      const call = docs.callFunction('createUploadSession', {});
+      const settled = Promise.allSettled([write, call]);
+      await jest.advanceTimersByTimeAsync(REMOTE_CALL_TIMEOUT_MS);
+      const [w, c] = await settled;
+      expect(w).toMatchObject({ status: 'rejected', reason: { code: 'deadline-exceeded' } });
+      expect(c).toMatchObject({ status: 'rejected' });
+      expect((c as PromiseRejectedResult).reason).toBeInstanceOf(RemoteDeadlineError);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('lỗi SDK giữ nguyên mã (không bị đổi thành hết giờ)', async () => {
+    mockCall.mockRejectedValueOnce({ code: 'functions/permission-denied' });
+    const docs = createFirestoreRemoteDocuments(services);
+    await expect(docs.callFunction('f', {})).rejects.toEqual({
+      code: 'functions/permission-denied',
+    });
+  });
+
+  it('ghi hết giờ (lệnh còn chờ trong SDK): lượt sau hỏi MÁY CHỦ, không coi bản đang chờ là đã có', async () => {
+    jest.useFakeTimers();
+    try {
+      mockCommit.mockImplementationOnce(() => new Promise<undefined>(() => undefined));
+      const docs = createFirestoreRemoteDocuments(services);
+      const first = docs.createMissing([{ path: 'shops/s/orders/o1', data: {} }]);
+      const settled = first.catch((e: unknown) => e);
+      await jest.advanceTimersByTimeAsync(REMOTE_CALL_TIMEOUT_MS);
+      expect(await settled).toMatchObject({ code: 'deadline-exceeded' });
+      // Bộ đệm có bản đang chờ, máy chủ chưa có: lượt sau phải ghi lại (chưa được báo "đã đăng").
+      expect(mockCached.has('shops/s/orders/o1')).toBe(true);
+      mockBatchSets.length = 0;
+      await docs.createMissing([{ path: 'shops/s/orders/o1', data: {} }]);
+      expect(mockBatchSets.map((w) => w.path)).toEqual(['shops/s/orders/o1']);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('bảng hạn: ghi đè theo thao tác và theo tên callable, còn lại dùng mặc định', async () => {
+    jest.useFakeTimers();
+    try {
+      const docs = createFirestoreRemoteDocuments(services, {
+        defaultMs: 1000,
+        operations: { createMissing: 5000 },
+        callables: { cham: 9000 },
+      });
+      const hang = () => new Promise(() => undefined);
+      mockCommit.mockImplementationOnce(hang as () => Promise<undefined>);
+      mockCall.mockImplementation(hang);
+      const results: Record<string, string> = {};
+      const track = (name: string, p: Promise<unknown>) =>
+        void p.catch(() => (results[name] = 'timeout'));
+      track('write', docs.createMissing([{ path: 'x', data: {} }]));
+      track('nhanh', docs.callFunction('nhanh', {}));
+      track('cham', docs.callFunction('cham', {}));
+      await jest.advanceTimersByTimeAsync(1000);
+      expect(results).toEqual({ nhanh: 'timeout' });
+      await jest.advanceTimersByTimeAsync(4000);
+      expect(results).toEqual({ nhanh: 'timeout', write: 'timeout' });
+      await jest.advanceTimersByTimeAsync(4000);
+      expect(results).toEqual({ nhanh: 'timeout', write: 'timeout', cham: 'timeout' });
+    } finally {
+      mockCall.mockReset();
+      jest.useRealTimers();
+    }
   });
 });

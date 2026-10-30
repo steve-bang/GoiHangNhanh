@@ -199,6 +199,14 @@ Bảo đảm (có unit test, xem [testing.md](testing.md)):
 5. Xong phía thiết bị chỉ nghĩa là "đã gửi hết"; **trạng thái `uploaded` đến từ máy chủ** (trigger khi đối tượng được tạo xong ghi `server.state`). Client chỉ lắng nghe tài liệu bằng chứng.
 6. Lỗi: mạng → quay `queued` có backoff, **không** đếm là lỗi; xác thực hết hạn / hết hạn mức / gói không cho lưu → `needs_attention` với mã rõ (giữ tệp, không báo đã sao lưu); lỗi khác lặp lại → `upload_failed` cho người dùng thử lại.
 
+**Hiện thực hôm nay (V1-02, Q-24h = A; chưa kiểm chứng trên thiết bị):**
+
+- Nguồn mạng duy nhất: `src/platform/connectivity.ts` (NetInfo 12.0.1). `online = false` chỉ khi hệ điều hành báo chắc chắn mất kết nối; chưa biết = có mạng; không dùng `isInternetReachable`. Loại: `wifi`/`cellular`/`other`/`none`.
+- Máy báo mất mạng: hàng đợi và đồng bộ đơn/hồ sơ hoàn không chạy (`skipped: 'offline'`), lần gửi tệp đang chạy bị hủy (`AbortSignal` → `UploadTask.cancelAsync`), tệp về `upload_failed` mã `NETWORK_LOST`. Có mạng lại: chạy ngay, tệp `upload_failed` do lỗi mạng tới hạn ngay (tệp lỗi máy chủ giữ lịch giãn cách).
+- Phân loại (`UploadOutcome`): `network` (mất mạng, hết giờ, Firebase `unavailable`/`deadline-exceeded`, `internal`/`unknown` không có `details` từ máy chủ (tối đa 24 lần liên tiếp, đếm bền trong `lastErrorCode` dạng `INTERNAL@n`; sau đó tính lượt), HTTP 408/429/502/503/504) **không tăng `attemptCount`**, giãn cách theo số lỗi mạng liên tiếp (bộ nhớ, 5 giây gấp đôi, trần 15 phút) và dừng lượt; `retryable` (máy chủ từ chối: HTTP 401/403/412/500, `permission-denied` khi khai báo, lỗi không rõ) tính lượt, 8 lần → `needs_attention`; `attention` → `needs_attention` ngay. Trạng thái tệp vẫn là `upload_failed` (không thêm trạng thái mới; bất biến 3).
+- Hết giờ (R4): mỗi lệnh `RemoteDocuments` (Firestore/Functions) tối đa 30 giây theo bảng hạn `RemoteCallTimeouts` (ghi đè được theo thao tác/callable), ném `deadline-exceeded`; mọi lệnh đọc dùng nguồn máy chủ (`getDocFromServer`), không bộ đệm, để bản ghi đang chờ sau khi hết giờ không bị coi là đã đăng; mở phiên tải (POST) có hạn riêng 30 giây; cổng tải lên cũng giới hạn khai báo/xin phiên/hỏi trạng thái 30 giây. Lệnh bên dưới không bị hủy (ghi Firestore vẫn chờ trong SDK) nhưng lượt được giải phóng; mọi lệnh idempotent. Bước gửi tệp **không** có hạn cứng.
+- Tệp đóng gói chỉ khai báo khi phiên đã đăng (`OrderStore.isSessionPublished`), media hàng hoàn khi bản neo đã đăng: phiên chưa đăng thì tệp đứng ở `queued`, không gọi máy chủ, không tốn lượt.
+
 **Idempotency**: khóa = `evidenceId` (cũng là đường dẫn đối tượng). Rules/Function chỉ cho tạo đối tượng một lần; tạo lại cùng ID không sinh bằng chứng thứ hai (A07: "thử lại không tạo nhiều bản ghi").
 
 **Giới hạn nền (phải nói thật trên UI, bất biến #11)**:
@@ -336,7 +344,7 @@ Ngày kiểm tra: **2026-10-26**. "Cập nhật" = thời điểm xuất bản g
 | Điều hướng | `expo-router` 58.0.26 vs `@react-navigation/native` 7.5.1 (2026-10-13) | Expo Router (xây trên React Navigation) | Chính thức theo SDK, typed routes, deep link cho lời mời/thông báo; route mỏng, màn hình nằm trong `features/*/ui`. Màn quay cần ẩn tab bar + chặn rời vô tình (docs/09 mục 2) — cả hai làm được. Khi dùng Expo Router, thư mục `src/app` dành cho route (vì vậy composition root đặt ở `src/bootstrap`). |
 | Form/validate | `react-hook-form` 7.91.0, `zod` 4.6.7 | `zod` để parse dữ liệu ở biên (Firestore → domain); **chưa** thêm react-hook-form | Form của app rất nhỏ (tạo đơn nhanh); thêm khi có form phức tạp |
 | i18n | `i18next` 26.5.11 + `react-i18next` 17.1.9 (đã cài trong khung) | Giữ | Trưởng thành, đủ cho tiếng Việt mặc định; `expo-localization` 58.0.5 thêm khi O-17 mở ngôn ngữ khác |
-| Mạng | `@react-native-community/netinfo` 12.0.1 | Dùng khi làm hàng đợi | Phát hiện offline/đổi Wi-Fi↔di động |
+| Mạng | `@react-native-community/netinfo` 12.0.1 | **Đã cài (V1-02, Q-24f)**, sau `platform/connectivity.ts`; chưa kiểm chứng trên thiết bị | Phát hiện offline/đổi Wi-Fi↔di động |
 | Công cụ | Jest 30 + `jest-expo` 58.0.12; ESLint 9.39 + `eslint-config-expo` 58.0.4; Prettier 3.9; TypeScript 6.0 (mẫu Expo dùng `~6.0.3`) | Đã cài | ESLint 10 và TypeScript 7.0 đã ra nhưng `eslint-plugin-react`/`import` chưa khai báo hỗ trợ ESLint 10 và mẫu Expo ghim TS 6.0 — chờ hệ sinh thái; nâng khi đồng bộ |
 
 ## 12. Kế hoạch spike trước khi khóa thư viện (cần thiết bị thật iOS + Android)

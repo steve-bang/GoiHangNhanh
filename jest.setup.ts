@@ -35,3 +35,13 @@ jest.mock(
   '@/platform/location',
   () => jest.requireActual('@/test-utils/mock-location').locationMock,
 );
+
+// Trạng thái mạng (NetInfo là mô-đun native): mặc định có mạng Wi‑Fi. Điều khiển qua
+// `setMockConnectivity` trong `src/test-utils/mock-connectivity.ts`; test của adapter dùng `jest.unmock`.
+jest.mock('@react-native-community/netinfo', () =>
+  jest.requireActual('@react-native-community/netinfo/jest/netinfo-mock.js'),
+);
+jest.mock(
+  '@/platform/connectivity',
+  () => jest.requireActual('@/test-utils/mock-connectivity').connectivityMock,
+);

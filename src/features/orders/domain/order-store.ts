@@ -136,6 +136,12 @@ export interface OrderStore {
   ): Promise<PendingSession[]>;
   /** Ghi nhận phiên đã đăng với `status` (idempotent). */
   markSessionPublished(shopId: ShopId, sessionId: SessionId, status: string): Promise<void>;
+  /**
+   * Phiên đã có trên máy chủ chưa (đã đăng ít nhất một lần, với bất kỳ trạng thái nào)? Hàng đợi tải
+   * lên chỉ khai báo bằng chứng của phiên đã đăng (Rules cần phiên tồn tại), thay vì gọi rồi chờ bị từ
+   * chối. Cô lập theo shop: phiên của shop khác trả `false`.
+   */
+  isSessionPublished(shopId: ShopId, sessionId: SessionId): Promise<boolean>;
 }
 
 /**
