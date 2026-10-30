@@ -34,13 +34,14 @@ import { useSyncJobStores } from './use-sync-jobs';
 /** UI-F02 mở cho tệp còn việc đồng bộ hoặc đã nhận mà chưa xác minh; `verified` = không còn cần xử lý. */
 const DETAIL_STATES = [...PENDING_SYNC_STATES, FILE_STATES.UPLOADED];
 
-type WhereKey = 'local' | 'localUnreadable' | 'missing' | 'partial' | 'server';
+type WhereKey = 'local' | 'localUnreadable' | 'changed' | 'missing' | 'partial' | 'server';
 
 /** Dữ liệu còn ở đâu (UI-F02: "nêu dữ liệu còn ở đâu"). */
 function whereOf(job: SyncJob, view: SyncJobView): WhereKey {
   if (job.state === FILE_STATES.UPLOADED) return 'server';
   if (view.reason === 'fileMissing' || view.reason === 'unrecoverable') return 'missing';
   if (view.reason === 'fileUnreadable') return 'localUnreadable';
+  if (view.reason === 'fileChanged') return 'changed';
   if (view.reason === 'localSaveFailed') return 'partial';
   return 'local';
 }

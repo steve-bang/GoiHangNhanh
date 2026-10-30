@@ -319,13 +319,14 @@
         "localUnreadable": "Tệp vẫn ở trên máy này nhưng không đọc được.",
         "missing": "Tệp gốc không còn trên máy này.",
         "partial": "Tệp có thể chưa được lưu đầy đủ trên máy này.",
-        "server": "Máy chủ đã nhận tệp. Tệp gốc vẫn còn trên máy này."
+        "server": "Máy chủ đã nhận tệp. Tệp gốc vẫn còn trên máy này.",
+        "changed": "Tệp trên máy đã khác bản lúc lưu."
       },
       "info": {
         "attempts": "Số lần đã thử: {{count}}",
         "updated": "Cập nhật lúc {{time}} (giờ trên máy)"
       },
-      "noAction": "Ứng dụng không thử lại được lỗi này. Tệp vẫn được giữ, không bị xóa.",
+      "noAction": "Ứng dụng không thử lại được lỗi này.",
       "foreignNoAction": "Chỉ tài khoản đã tạo tệp mới tải lên được.",
       "notFoundTitle": "Tệp này không còn cần xử lý.",
       "notFoundMessage": "Có thể tệp đã tải lên xong. Xem lại ở Trung tâm đồng bộ.",
