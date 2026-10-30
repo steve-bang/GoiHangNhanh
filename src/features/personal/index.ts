@@ -26,6 +26,13 @@ export type { SessionGateOptions } from './ui/SessionGate';
 export { evaluateSessionGate } from './domain/session-gate';
 export type { SessionGate as SessionGateState, SessionHydration } from './domain/session-gate';
 export { SessionShopProvider } from './ui/SessionShopProvider';
+export { LocalWipeProvider, useLocalWipe } from './ui/LocalWipeProvider';
+export type {
+  LocalWipeContextValue,
+  LocalWipeFileSteps,
+  LocalWipePhase,
+} from './ui/LocalWipeProvider';
+export { AccountDeletionPendingScreen } from './ui/AccountDeletionPendingScreen';
 export { SessionProvider, useSession } from './ui/SessionProvider';
 export type { SessionContextValue } from './ui/SessionProvider';
 export { INITIAL_SESSION, sessionKey } from './domain/session-state';

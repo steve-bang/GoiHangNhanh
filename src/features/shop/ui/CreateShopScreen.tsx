@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, TextInput, View, useWindowDimensions } from 'rea
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import type { ErrorCode } from '@/core/errors/codes';
 import { ROUTES } from '@/core/navigation';
 import type { OrderSource } from '@/core/orders/order-source';
 import { useSession } from '@/features/personal';
@@ -154,6 +155,14 @@ export function CreateShopScreen() {
         )
       : undefined;
 
+  // Tài khoản đang được xóa dở (V1-14 l, máy chủ trả `account_deleted`): không phải lỗi của form, mà là
+  // màn "Đang hoàn tất xóa tài khoản" (V1-15). Chỉ đổi điều hướng; giao diện màn này giữ nguyên.
+  const onCreateFailed = (code: ErrorCode): boolean => {
+    if (code !== 'ACCOUNT_DELETION_PENDING') return false;
+    navigation.reset(ROUTES.accountDeletionPending);
+    return true;
+  };
+
   const create = (sources: readonly OrderSource[]) => {
     if (busyRef.current) return;
     if (nameIssue) {
@@ -202,7 +211,7 @@ export function CreateShopScreen() {
       }
       if (!isActive()) return;
       navigation.push(ROUTES.setupDone);
-    });
+    }, onCreateFailed);
   };
 
   const skip = () => {

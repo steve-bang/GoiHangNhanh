@@ -31,3 +31,5 @@ export {
   createMemoryDeviceSettingsStore,
   createSqliteDeviceSettingsStore,
 } from './device-settings-store';
+export { createLocalDataWiper, createLocalDeviceData, LocalWipeError } from './wipe-local-data';
+export type { LocalDataWiper, LocalDeviceData, LocalWipeSteps } from './wipe-local-data';

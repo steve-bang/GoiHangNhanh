@@ -36,5 +36,6 @@ export function createLocalDisputeStore(
     addNote: async (s, id, t, n) => (await get()).addNote(s, id, t, n),
     closeDispute: async (s, id, t, n) => (await get()).closeDispute(s, id, t, n),
     listHeldEvidenceIds: async (s) => (await get()).listHeldEvidenceIds(s),
+    countOpenOnDevice: async () => (await get()).countOpenOnDevice(),
   };
 }

@@ -15,7 +15,13 @@ import type {
   UpdateShopInput,
 } from '../contract';
 
-import { guard, NO_CURRENT_USER, type ErrorOverrides } from './error-map';
+import {
+  guard,
+  mapCallableReason,
+  mapFirebaseError,
+  NO_CURRENT_USER,
+  type ErrorOverrides,
+} from './error-map';
 import type { FirebaseServices } from './client';
 import { createFirebaseOps, type FirebaseOps, type RemoteShopResult } from './ops';
 
@@ -77,6 +83,43 @@ export const CHANGE_PASSWORD_ERRORS: ErrorOverrides = {
   'auth/user-not-found': 'AUTH_SESSION_EXPIRED',
   'auth/password-does-not-meet-requirements': 'AUTH_WEAK_PASSWORD',
 };
+
+/**
+ * Xóa tài khoản (V1-15): bước xác thực lại mang nghĩa như đổi mật khẩu (sai = mật khẩu hiện tại sai).
+ * Lỗi mạng của callable có thể đến ở cả hai dạng mã (có/không tiền tố `functions/`, chưa kiểm chứng trên
+ * thiết bị): cả hai là mất mạng, không phải "hệ thống bận". `details.reason` đã ưu tiên ở `mapFirebaseError`.
+ */
+export const DELETE_ACCOUNT_ERRORS: ErrorOverrides = {
+  ...CHANGE_PASSWORD_ERRORS,
+  'auth/user-disabled': 'ACCOUNT_DISABLED',
+  unavailable: 'AUTH_NETWORK_ERROR',
+  'deadline-exceeded': 'AUTH_NETWORK_ERROR',
+};
+
+/**
+ * Lỗi Auth nghĩa là "tài khoản không còn" (máy chủ đã xóa người dùng Auth ở lần gọi trước). Chỉ tin ở
+ * bước xác thực lại: `user-not-found`; ở bước lấy token mới NGAY SAU khi xác thực lại thành công: thêm
+ * `user-token-expired` (token bị thu hồi). `user-disabled` là tài khoản BỊ KHÓA, máy chủ vẫn còn tài
+ * khoản: KHÔNG phải đã xóa (`ACCOUNT_DISABLED`, không gọi Function, không xóa gì trên máy). Sai mật khẩu (`wrong-password`,
+ * `invalid-credential`) KHÔNG BAO GIỜ được coi là đã xóa. Hạn chế: dự án bật chống dò email thì Firebase
+ * trả `invalid-credential` cả khi người dùng không còn, nên đường này không xảy ra (decisions Q-29 / V1-15 o).
+ */
+export const ACCOUNT_GONE_ON_REAUTH: readonly string[] = ['auth/user-not-found'];
+export const ACCOUNT_GONE_ON_TOKEN: readonly string[] = [
+  ...ACCOUNT_GONE_ON_REAUTH,
+  'auth/user-token-expired',
+];
+const sdkCodeOf = (error: unknown): string | undefined => {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === 'string' ? code : undefined;
+};
+
+/** Trạng thái hợp lệ của kết quả `deleteAccount` (firebase/functions/src/account.ts `DeleteAccountResult`). */
+export const DELETE_ACCOUNT_OK_STATUSES: readonly string[] = [
+  'pending_purge',
+  'completed',
+  'purged',
+];
 
 /** Đổi tên shop qua Function `updateShop`: từ chối quyền và dữ liệu bị từ chối có mã riêng của màn Sửa tên. */
 export const RENAME_SHOP_ERRORS: ErrorOverrides = {
@@ -151,6 +194,41 @@ export function createFirebaseApi(services: FirebaseServices): ApiClient {
         await ops.updateDisplayName(displayName);
         return { displayName };
       }),
+    // Hai pha (review PR #61): lỗi TRƯỚC khi gửi lời gọi xóa (xác thực lại, token mới) chắc chắn chưa xóa
+    // gì; lỗi của chính lời gọi mà không có lý do rõ thì KHÔNG biết máy chủ đã xóa chưa
+    // (`ACCOUNT_DELETE_UNCONFIRMED`). Kết quả lạ (thiếu `status`) cũng là chưa xác nhận.
+    deleteAccount: async ({ password }) => {
+      try {
+        await ops.reauthenticate(password);
+      } catch (error) {
+        if (ACCOUNT_GONE_ON_REAUTH.includes(sdkCodeOf(error) ?? '')) return 'already_deleted';
+        throw mapFirebaseError(error, DELETE_ACCOUNT_ERRORS);
+      }
+      try {
+        await ops.forceRefreshIdToken();
+      } catch (error) {
+        if (ACCOUNT_GONE_ON_TOKEN.includes(sdkCodeOf(error) ?? '')) return 'already_deleted';
+        throw mapFirebaseError(error, DELETE_ACCOUNT_ERRORS);
+      }
+      let result: { readonly status?: unknown };
+      try {
+        result = await ops.callDeleteAccount();
+      } catch (error) {
+        const byReason = mapCallableReason(error);
+        if (byReason) throw byReason;
+        const sdkCode = sdkCodeOf(error);
+        throw new AppError('ACCOUNT_DELETE_UNCONFIRMED', sdkCode ? { sdkCode } : {}, {
+          cause: error,
+        });
+      }
+      if (
+        typeof result.status !== 'string' ||
+        !DELETE_ACCOUNT_OK_STATUSES.includes(result.status)
+      ) {
+        throw new AppError('ACCOUNT_DELETE_UNCONFIRMED');
+      }
+      return 'deleted';
+    },
   };
 
   /** Người dùng đang đăng nhập hoặc lỗi phiên hết hạn (không coi "chưa đăng nhập" là "không có shop"). */

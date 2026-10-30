@@ -7,10 +7,13 @@ import type { SqlDatabase, SqlParam } from '@/platform';
  * migration của kho cục bộ trong Jest. Đây KHÔNG phải expo-sqlite trên iOS/Android: không chứng
  * minh chạy được trên thiết bị (phiên bản SQLite có thể khác).
  */
-export function createNodeSqliteDatabase(): SqlDatabase & { close: () => void } {
+export function createNodeSqliteDatabase(
+  /** Mặc định CSDL trong bộ nhớ; truyền đường dẫn tệp khi test cần đọc nội dung tệp trên đĩa. */
+  path = ':memory:',
+): SqlDatabase & { close: () => void } {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- mô-đun chỉ có trong Node
   const { DatabaseSync } = require('node:sqlite') as typeof NodeSqlite;
-  const db = new DatabaseSync(':memory:', { enableForeignKeyConstraints: false });
+  const db = new DatabaseSync(path, { enableForeignKeyConstraints: false });
   // Node bật khóa ngoại mặc định; expo-sqlite thì không. Tắt để giống thiết bị: kho phải tự bật qua
   // `applyConnectionSettings` (sql-database.ts), và test chứng minh điều đó.
   const bind = (params: readonly SqlParam[] | undefined) => [...(params ?? [])];

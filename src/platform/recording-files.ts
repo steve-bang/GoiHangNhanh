@@ -141,6 +141,30 @@ export function deleteRecording(stored: string): DeleteRecordingResult {
   }
 }
 
+/**
+ * Xóa MỌI tệp trong thư mục `evidence/` (video, ảnh, tệp thăm dò) — CHỈ dùng sau khi máy chủ đã xác nhận
+ * xóa tài khoản (V1-15, ngoại lệ có chủ đích với bất biến 4, R-2 A; `features/orders/data/wipe-local-data`).
+ * Giữ lại chính thư mục (cờ loại khỏi sao lưu gắn với thư mục, V1-12). Idempotent: thư mục không có hoặc
+ * đã rỗng thì `true`. Không ném lỗi: `false` khi còn sót tệp (bên gọi giữ dấu và chạy lại sau). Không
+ * đụng tệp ngoài `evidence/` (tệp tạm của camera do hệ điều hành dọn). Chưa kiểm chứng trên thiết bị.
+ */
+export function deleteAllEvidenceFiles(): boolean {
+  try {
+    const directory = new Directory(Paths.document, EVIDENCE_DIR);
+    if (!directory.exists) return true;
+    for (const entry of directory.list()) {
+      try {
+        entry.delete();
+      } catch {
+        // Xóa tiếp tệp khác; kết quả cuối do lần liệt kê lại quyết định.
+      }
+    }
+    return directory.list().length === 0;
+  } catch {
+    return false;
+  }
+}
+
 /** Tệp bằng chứng còn tồn tại không (dùng khi khôi phục sau khi app bị kill). */
 export function recordingExists(stored: string): boolean {
   try {

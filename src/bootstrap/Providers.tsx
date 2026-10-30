@@ -14,10 +14,12 @@ import { RecordingRecovery } from '@/features/packing';
 import { DisputeStoreProvider } from '@/features/disputes';
 import { ReturnMediaRecovery, ReturnStoreProvider, ReturnSyncRunner } from '@/features/returns';
 import {
+  LocalWipeProvider,
   PersonalGatewaysProvider,
   SessionHydrator,
   SessionProvider,
   SessionShopProvider,
+  useLocalWipe,
 } from '@/features/personal';
 import { OnboardingFlowProvider } from '@/features/shop';
 import { UploadRunner } from '@/features/upload';
@@ -25,6 +27,30 @@ import { excludeEvidenceDirFromBackup } from '@/platform';
 import { ToastProvider } from '@/shared/ui';
 
 const i18n = initI18n();
+
+/**
+ * Tiến trình nền (khôi phục quay dở, đồng bộ, tải lên). Chỉ chạy khi không đang xóa dữ liệu trên máy
+ * (V1-15): đang xóa thì gỡ khôi phục/đồng bộ và tắt hàng đợi, nhưng vẫn bọc màn hình bằng `UploadRunner`.
+ */
+function BackgroundRunners({ children }: { children: ReactNode }) {
+  const { ready } = useLocalWipe();
+  return (
+    <>
+      {ready ? (
+        <>
+          <RecordingRecovery />
+          <ReturnMediaRecovery />
+          <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
+          <ReturnSyncRunner docs={getDefaultRemoteDocuments()} />
+        </>
+      ) : null}
+      {/* Bọc màn hình: Trung tâm đồng bộ gọi hàng đợi qua `useUploadQueueControl` (V1-08). */}
+      <UploadRunner docs={getDefaultRemoteDocuments()} enabled={ready}>
+        {children}
+      </UploadRunner>
+    </>
+  );
+}
 
 /**
  * Composition root (ADR-012). Điều hướng do Expo Router quản lý (`src/app`); provider Firebase,
@@ -42,28 +68,26 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <OnboardingFlowProvider>
         <PersonalGatewaysProvider>
           <SessionProvider>
-            {/* Nạp phiên ở gốc (V1-06): liên kết sâu tới màn ngoài nhóm tab cũng được nạp. */}
-            <SessionHydrator />
-            <ToastProvider>
-              <SessionShopProvider>
-                <OrderStoreProvider>
-                  <EvidenceFileStoreProvider>
-                    <ReturnStoreProvider>
-                      <DisputeStoreProvider>
-                        <DeviceSettingsProvider>
-                          <RecordingRecovery />
-                          <ReturnMediaRecovery />
-                          <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
-                          <ReturnSyncRunner docs={getDefaultRemoteDocuments()} />
-                          {/* Bọc màn hình: Trung tâm đồng bộ gọi hàng đợi qua `useUploadQueueControl` (V1-08). */}
-                          <UploadRunner docs={getDefaultRemoteDocuments()}>{children}</UploadRunner>
-                        </DeviceSettingsProvider>
-                      </DisputeStoreProvider>
-                    </ReturnStoreProvider>
-                  </EvidenceFileStoreProvider>
-                </OrderStoreProvider>
-              </SessionShopProvider>
-            </ToastProvider>
+            {/* V1-15: thấy dấu xóa dở thì xóa xong TRƯỚC khi nạp phiên, dựng kho/tiến trình nền/màn hình. */}
+            <LocalWipeProvider>
+              {/* Nạp phiên ở gốc (V1-06): liên kết sâu tới màn ngoài nhóm tab cũng được nạp. */}
+              <SessionHydrator />
+              <ToastProvider>
+                <SessionShopProvider>
+                  <OrderStoreProvider>
+                    <EvidenceFileStoreProvider>
+                      <ReturnStoreProvider>
+                        <DisputeStoreProvider>
+                          <DeviceSettingsProvider>
+                            <BackgroundRunners>{children}</BackgroundRunners>
+                          </DeviceSettingsProvider>
+                        </DisputeStoreProvider>
+                      </ReturnStoreProvider>
+                    </EvidenceFileStoreProvider>
+                  </OrderStoreProvider>
+                </SessionShopProvider>
+              </ToastProvider>
+            </LocalWipeProvider>
           </SessionProvider>
         </PersonalGatewaysProvider>
       </OnboardingFlowProvider>

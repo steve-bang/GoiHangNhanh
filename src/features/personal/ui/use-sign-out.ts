@@ -20,6 +20,12 @@ export interface SignOutOptions {
    * mật khẩu khi máy chủ đòi đăng nhập lại, V1-05). Vẫn đi qua đủ các chặn của luồng an toàn.
    */
   readonly signInAgainEmail?: string;
+  /**
+   * Không chặn vì tệp chưa đồng bộ (vẫn chặn khi đang quay). CHỈ cho màn "Đang hoàn tất xóa tài khoản"
+   * (V1-15): cửa hàng đã bị khóa nên tệp không bao giờ tải lên được nữa; chặn thì người dùng kẹt. Đăng
+   * xuất không xóa gì (Q-20h): tệp vẫn nằm trên máy.
+   */
+  readonly allowUnsynced?: boolean;
 }
 
 /**
@@ -31,7 +37,7 @@ export interface SignOutOptions {
  * Chống bấm lặp bằng `busy`. Toast thành công chỉ hiện SAU khi cổng xác nhận và đã điều hướng.
  */
 export function useSignOut(options: SignOutOptions = {}) {
-  const { signInAgainEmail } = options;
+  const { signInAgainEmail, allowUnsynced = false } = options;
   const { t } = useTranslation();
   const navigation = useAppNavigation();
   const toast = useToast();
@@ -67,7 +73,7 @@ export function useSignOut(options: SignOutOptions = {}) {
         guard = { kind: 'unknown' };
       }
       if (guard.kind === 'blocked_recording') return setStep('blocked_recording');
-      if (guard.kind === 'unsynced') {
+      if (guard.kind === 'unsynced' && !allowUnsynced) {
         setUnsyncedCount(guard.count);
         return setStep('unsynced');
       }
@@ -94,7 +100,7 @@ export function useSignOut(options: SignOutOptions = {}) {
       busyRef.current = false;
       setBusy(false);
     }
-  }, [store, uid, session, navigation, toast, t, fail, signInAgainEmail]);
+  }, [store, uid, session, navigation, toast, t, fail, signInAgainEmail, allowUnsynced]);
 
   const openSyncCenter = useCallback(() => {
     setStep('closed');

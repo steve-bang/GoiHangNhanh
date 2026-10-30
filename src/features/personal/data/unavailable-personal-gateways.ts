@@ -20,6 +20,7 @@ export function createUnavailablePersonalGateways(): PersonalGateways {
       switchShop: unavailable,
       updateProfile: unavailable,
       changePassword: unavailable,
+      deleteAccount: unavailable,
       signOut: unavailable,
     },
     settings: {

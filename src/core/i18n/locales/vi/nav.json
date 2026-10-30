@@ -86,6 +86,7 @@
     "helpLegal": "Điều khoản và chính sách",
     "deleteAccount": "Xóa tài khoản",
     "orderEdit": "Sửa thông tin đơn",
-    "recoveryEmailSent": "Kiểm tra hộp thư"
+    "recoveryEmailSent": "Kiểm tra hộp thư",
+    "accountDeletionPending": "Đang hoàn tất xóa tài khoản"
   }
 }

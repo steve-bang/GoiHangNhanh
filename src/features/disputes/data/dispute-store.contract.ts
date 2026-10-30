@@ -133,6 +133,16 @@ export function runDisputeStoreContract(name: string, make: () => Promise<Disput
       expect(await store.listHeldEvidenceIds(SHOP)).toEqual(['e2']);
     });
 
+    it('đếm hồ sơ đang mở trên CẢ MÁY (mọi shop), hồ sơ đã đóng không tính (V1-15)', async () => {
+      const store = await make();
+      expect(await store.countOpenOnDevice()).toBe(0);
+      const a = await store.createDispute(makeNewDispute());
+      await store.createDispute(makeNewDispute({ shopId: OTHER }));
+      expect(await store.countOpenOnDevice()).toBe(2);
+      await store.closeDispute(SHOP, a.dispute.id, '', 3000);
+      expect(await store.countOpenOnDevice()).toBe(1);
+    });
+
     it('ghi chú bổ sung vào lịch sử và cập nhật thời gian', async () => {
       const store = await make();
       const a = await store.createDispute(makeNewDispute());

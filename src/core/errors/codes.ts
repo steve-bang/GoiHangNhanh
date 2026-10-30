@@ -77,6 +77,15 @@ export const ERROR_CODES = {
   SETTINGS_SAVE_FAILED: 'SETTINGS_SAVE_FAILED',
   // Đề xuất (chờ BA, Q-21ae): không mở được ứng dụng email để soạn yêu cầu hỗ trợ (UI-I06)
   SUPPORT_MAIL_UNAVAILABLE: 'SUPPORT_MAIL_UNAVAILABLE',
+  // Đề xuất (chờ BA, Q-29 / V1-15): xóa tài khoản. Cửa hàng còn thành viên khác (máy chủ từ chối, không
+  // xảy ra ở v1); yêu cầu xóa đã ghi nhận nhưng chưa xong (`details.reason: 'account_deleted'`, V1-14 l).
+  ACCOUNT_DELETE_SHOP_HAS_MEMBERS: 'ACCOUNT_DELETE_SHOP_HAS_MEMBERS',
+  ACCOUNT_DELETION_PENDING: 'ACCOUNT_DELETION_PENDING',
+  // Lời gọi xóa đã gửi đi nhưng không có xác nhận rõ (lỗi mạng/máy chủ không lý do): KHÔNG được nói
+  // "chưa có gì bị xóa" (review PR #61).
+  ACCOUNT_DELETE_UNCONFIRMED: 'ACCOUNT_DELETE_UNCONFIRMED',
+  // Tài khoản bị khóa (`auth/user-disabled`) khi xóa tài khoản: KHÔNG phải đã xóa; không gọi máy chủ.
+  ACCOUNT_DISABLED: 'ACCOUNT_DISABLED',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

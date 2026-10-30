@@ -222,15 +222,37 @@ const APPROVED_PROTECT_KEYS = [
   'vi.screens.splash.slogan',
 ];
 
+/**
+ * Câu chung app/web/store về hạn xóa dữ liệu máy chủ khi xóa tài khoản (decisions.md Q-29 / V1-20 điểm 11,
+ * dùng nguyên văn ở V1-15). "lý do pháp lý" ở đây nói về NGHĨA VỤ GIỮ dữ liệu, không hứa giá trị pháp lý:
+ * chỉ đúng cụm này được bỏ qua khi quét "pháp lý", và chỉ ở các khóa đã duyệt.
+ */
+const RETENTION_SENTENCE =
+  'dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở';
+const RETENTION_SENTENCE_KEYS = [
+  'vi.personal.deleteAccount.dataServer',
+  'vi.personal.deleteAccount.pending.serverStatus',
+];
+
 describe('quét toàn bộ chuỗi giao diện', () => {
   it('có chuỗi để quét (đủ nhiều namespace)', () => {
     expect(EVERY_UI_STRING.length).toBeGreaterThan(300);
   });
 
-  it.each(EVERY_UI_STRING)('%s: không có từ cấm', (_key, value) => {
-    const text = value.toLowerCase();
+  it.each(EVERY_UI_STRING)('%s: không có từ cấm', (key, value) => {
+    const lowered = value.toLowerCase();
+    const text = RETENTION_SENTENCE_KEYS.includes(key)
+      ? lowered.replace(RETENTION_SENTENCE, '')
+      : lowered;
     for (const word of FORBIDDEN) expect(text).not.toContain(word);
     for (const word of FORBIDDEN_PROMISES) expect(text).not.toContain(word);
+  });
+
+  it('câu chung 30 ngày có mặt nguyên văn ở các khóa đã duyệt (V1-15)', () => {
+    for (const key of RETENTION_SENTENCE_KEYS) {
+      const entry = EVERY_UI_STRING.find(([k]) => k === key);
+      expect(entry?.[1].toLowerCase()).toContain(RETENTION_SENTENCE);
+    }
   });
 
   it('"bảo vệ" chỉ xuất hiện ở các câu thương hiệu đã duyệt', () => {

@@ -36,6 +36,35 @@ const CODE_MAP: Readonly<Record<string, ErrorCode>> = {
   'firestore/unavailable': 'AUTH_NETWORK_ERROR',
 };
 
+/**
+ * Lý do có cấu trúc của callable xóa tài khoản (`details.reason`, V1-14 b/l). Ưu tiên hơn mã HttpsError:
+ * client phân loại theo lý do, không theo câu chữ hay mã chung (`failed-precondition`, `permission-denied`).
+ * Áp dụng cho MỌI callable (ví dụ `createShop` trả `account_deleted` khi tài khoản đang được xóa).
+ */
+const REASON_MAP: Readonly<Record<string, ErrorCode>> = {
+  requires_recent_login: 'AUTH_REQUIRES_RECENT_LOGIN',
+  shop_has_members: 'ACCOUNT_DELETE_SHOP_HAS_MEMBERS',
+  account_deleted: 'ACCOUNT_DELETION_PENDING',
+};
+
+/** `details.reason` (chuỗi) của lỗi callable nếu có. */
+export function readCallableReason(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const details = (error as { details?: unknown }).details;
+  if (typeof details !== 'object' || details === null) return undefined;
+  const reason = (details as { reason?: unknown }).reason;
+  return typeof reason === 'string' ? reason : undefined;
+}
+
+/** Lỗi callable có `details.reason` đã biết -> `AppError` theo lý do; không có -> `null`. */
+export function mapCallableReason(error: unknown): AppError | null {
+  const reason = readCallableReason(error);
+  const code = reason ? REASON_MAP[reason] : undefined;
+  if (!reason || !code) return null;
+  const raw = readCode(error);
+  return new AppError(code, raw ? { sdkCode: raw, reason } : { reason }, { cause: error });
+}
+
 function readCode(error: unknown): string | undefined {
   if (typeof error !== 'object' || error === null) return undefined;
   const { code } = error as { code?: unknown };
@@ -44,6 +73,8 @@ function readCode(error: unknown): string | undefined {
 
 export function mapFirebaseError(error: unknown, overrides: ErrorOverrides = {}): AppError {
   if (error instanceof AppError) return error;
+  const byReason = mapCallableReason(error);
+  if (byReason) return byReason;
   const raw = readCode(error);
   // Chỉ giữ mã SDK (không nhạy cảm) trong context để tra lỗi; không giữ message.
   const code = raw ? (overrides[raw] ?? CODE_MAP[raw]) : undefined;

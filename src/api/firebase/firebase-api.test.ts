@@ -17,7 +17,21 @@ function fakeOps(): FirebaseOps & {
   patchCurrent(patch: Partial<FirebaseUser>): void;
   failPasswordReset(error: unknown): void;
   /** Lần gọi kế tiếp của thao tác này ném `error` (mã SDK). */
-  failOnce(op: 'changePassword' | 'updateDisplayName' | 'callShop', error: unknown): void;
+  failOnce(
+    op:
+      | 'changePassword'
+      | 'updateDisplayName'
+      | 'callShop'
+      | 'reauth'
+      | 'refreshToken'
+      | 'callDeleteAccount',
+    error: unknown,
+  ): void;
+  /** `true` = mô phỏng dự án bật chống dò email: người dùng không còn -> `invalid-credential`. */
+  setEnumerationProtection(on: boolean): void;
+  /** Kết quả `deleteAccount` giả trả về (mặc định `{ status: 'completed' }`). */
+  setDeleteResult(result: { status?: unknown }): void;
+  readonly calls: string[];
   setRoles(roles: readonly string[]): void;
   setStoredSources(shopId: string, sources: readonly string[] | null): void;
   readonly signOutCalls: () => number;
@@ -30,6 +44,11 @@ function fakeOps(): FirebaseOps & {
   const failures = new Map<string, unknown>();
   const shopCalls: { name: string; input: unknown }[] = [];
   let roles: readonly string[] = ['owner'];
+  const calls: string[] = [];
+  let reauthed = false;
+  let enumerationProtection = false;
+  const deletedEmails = new Set<string>();
+  let deleteResult: { status?: unknown } = { status: 'completed' };
   const takeFailure = (op: string) => {
     if (!failures.has(op)) return;
     const error = failures.get(op);
@@ -115,6 +134,42 @@ function fakeOps(): FirebaseOps & {
       if (!current) throw sdkError('auth/no-current-user');
       current = { ...current, displayName };
     },
+    async reauthenticate(password) {
+      calls.push('reauth');
+      takeFailure('reauth');
+      if (!current?.email) throw sdkError('auth/no-current-user');
+      const key = current.email.toLowerCase();
+      if (deletedEmails.has(key)) {
+        throw sdkError(enumerationProtection ? 'auth/invalid-credential' : 'auth/user-not-found');
+      }
+      const account = accounts.get(key);
+      if (!account || account.password !== password) throw sdkError('auth/invalid-credential');
+      reauthed = true;
+    },
+    async forceRefreshIdToken() {
+      calls.push('refreshToken');
+      takeFailure('refreshToken');
+      if (!current) throw sdkError('auth/no-current-user');
+    },
+    async callDeleteAccount() {
+      calls.push('callDeleteAccount');
+      // Từ chối có lý do (`details.reason`): máy chủ từ chối TRƯỚC khi đổi gì.
+      const pending = failures.get('callDeleteAccount') as { details?: unknown } | undefined;
+      if (pending?.details) takeFailure('callDeleteAccount');
+      if (!current?.email) throw sdkError('functions/unauthenticated');
+      // Như máy chủ: không có token mới sau xác thực lại thì từ chối.
+      if (!reauthed) {
+        throw Object.assign(sdkError('functions/failed-precondition'), {
+          details: { reason: 'requires_recent_login' },
+        });
+      }
+      // Máy chủ xóa TRƯỚC khi trả lời: lỗi tiêm sau đó (`failOnce`) mô phỏng mất phản hồi.
+      accounts.delete(current.email.toLowerCase());
+      deletedEmails.add(current.email.toLowerCase());
+      shops.delete(current.uid);
+      takeFailure('callDeleteAccount');
+      return deleteResult;
+    },
     async readShopSellingSources(shopId) {
       return shopData.get(shopId)?.sellingSources ?? null;
     },
@@ -164,6 +219,13 @@ function fakeOps(): FirebaseOps & {
     failOnce(op, error) {
       failures.set(op, error);
     },
+    setEnumerationProtection(on) {
+      enumerationProtection = on;
+    },
+    setDeleteResult(result) {
+      deleteResult = result;
+    },
+    calls,
     setRoles(next) {
       roles = next;
     },
@@ -536,5 +598,155 @@ describe('api/firebase: tab Cá nhân (V1-05)', () => {
     await expect(
       api.shop.updateShop({ shopId: shop.id, name: 'Mới', sellingSources: [] }),
     ).rejects.toMatchObject({ code: 'AUTH_SERVICE_UNAVAILABLE' });
+  });
+});
+
+describe('api/firebase: xóa tài khoản (V1-15)', () => {
+  const sdk = (code: string, reason?: string) =>
+    Object.assign(new Error('chi tiết SDK'), { code }, reason ? { details: { reason } } : {});
+  async function signedUp(ops = fakeOps()) {
+    const api = makeApi(ops);
+    await api.auth.signUpWithEmail({ email: 'lan@example.com', password: 'Mat-khau-1' });
+    return { api, ops };
+  }
+
+  it('xác thực lại (kèm token mới) TRƯỚC, rồi mới gọi Function; sai mật khẩu thì không gọi Function', async () => {
+    const { api, ops } = await signedUp();
+    await expect(api.auth.deleteAccount({ password: 'sai' })).rejects.toMatchObject({
+      code: 'AUTH_WRONG_CURRENT_PASSWORD',
+    });
+    expect(ops.calls).toEqual(['reauth']);
+    await expect(api.auth.deleteAccount({ password: 'Mat-khau-1' })).resolves.toBe('deleted');
+    expect(ops.calls).toEqual(['reauth', 'reauth', 'refreshToken', 'callDeleteAccount']);
+  });
+
+  it.each([
+    ['functions/failed-precondition', 'requires_recent_login', 'AUTH_REQUIRES_RECENT_LOGIN'],
+    ['functions/failed-precondition', 'shop_has_members', 'ACCOUNT_DELETE_SHOP_HAS_MEMBERS'],
+    ['functions/permission-denied', 'account_deleted', 'ACCOUNT_DELETION_PENDING'],
+    ['permission-denied', 'account_deleted', 'ACCOUNT_DELETION_PENDING'],
+  ])('lỗi %s + details.reason %s -> %s', async (sdkCode, reason, code) => {
+    const { api, ops } = await signedUp();
+    ops.failOnce('callDeleteAccount', sdk(sdkCode, reason));
+    await expect(api.auth.deleteAccount({ password: 'Mat-khau-1' })).rejects.toMatchObject({
+      code,
+    });
+  });
+
+  it.each([
+    ['functions/internal'],
+    ['functions/deadline-exceeded'],
+    ['deadline-exceeded'],
+    ['functions/unavailable'],
+    ['unknown'],
+  ])(
+    'lời gọi xóa lỗi %s không có lý do: ACCOUNT_DELETE_UNCONFIRMED (KHÔNG nói chưa xóa gì)',
+    async (sdkCode) => {
+      const { api, ops } = await signedUp();
+      ops.failOnce('callDeleteAccount', sdk(sdkCode));
+      await expect(api.auth.deleteAccount({ password: 'Mat-khau-1' })).rejects.toMatchObject({
+        code: 'ACCOUNT_DELETE_UNCONFIRMED',
+      });
+    },
+  );
+
+  it.each([
+    ['auth/network-request-failed', 'AUTH_NETWORK_ERROR'],
+    ['auth/too-many-requests', 'AUTH_TOO_MANY_REQUESTS'],
+    ['auth/internal-error', 'AUTH_SERVICE_UNAVAILABLE'],
+  ])(
+    'lỗi %s ở bước xác thực lại (trước khi gửi): %s, không gọi Function',
+    async (sdkCode, code) => {
+      const { api, ops } = await signedUp();
+      ops.failOnce('reauth', sdk(sdkCode));
+      await expect(api.auth.deleteAccount({ password: 'Mat-khau-1' })).rejects.toMatchObject({
+        code,
+      });
+      expect(ops.calls).not.toContain('callDeleteAccount');
+    },
+  );
+
+  it('kết quả máy chủ không đúng dạng thì ACCOUNT_DELETE_UNCONFIRMED, không coi là thành công', async () => {
+    const { api, ops } = await signedUp();
+    ops.setDeleteResult({});
+    await expect(api.auth.deleteAccount({ password: 'Mat-khau-1' })).rejects.toMatchObject({
+      code: 'ACCOUNT_DELETE_UNCONFIRMED',
+    });
+    const other = await signedUp();
+    other.ops.setDeleteResult({ status: 'pending_purge' });
+    await expect(other.api.auth.deleteAccount({ password: 'Mat-khau-1' })).resolves.toBe('deleted');
+  });
+
+  it('mất phản hồi rồi thử lại: xác thực lại báo user-not-found -> already_deleted (không gọi Function lần hai)', async () => {
+    const { api, ops } = await signedUp();
+    ops.failOnce('callDeleteAccount', sdk('functions/internal'));
+    await expect(api.auth.deleteAccount({ password: 'Mat-khau-1' })).rejects.toMatchObject({
+      code: 'ACCOUNT_DELETE_UNCONFIRMED',
+    });
+    await expect(api.auth.deleteAccount({ password: 'Mat-khau-1' })).resolves.toBe(
+      'already_deleted',
+    );
+    expect(ops.calls.filter((c) => c === 'callDeleteAccount')).toHaveLength(1);
+  });
+
+  it('dự án bật chống dò email: người dùng không còn ra invalid-credential = sai mật khẩu, KHÔNG coi là đã xóa', async () => {
+    const { api, ops } = await signedUp();
+    ops.setEnumerationProtection(true);
+    ops.failOnce('callDeleteAccount', sdk('functions/internal'));
+    await api.auth.deleteAccount({ password: 'Mat-khau-1' }).catch(() => undefined);
+    await expect(api.auth.deleteAccount({ password: 'Mat-khau-1' })).rejects.toMatchObject({
+      code: 'AUTH_WRONG_CURRENT_PASSWORD',
+    });
+  });
+
+  it('xác thực lại báo auth/user-not-found -> already_deleted', async () => {
+    const { api, ops } = await signedUp();
+    ops.failOnce('reauth', sdk('auth/user-not-found'));
+    await expect(api.auth.deleteAccount({ password: 'sai-cung-vay' })).resolves.toBe(
+      'already_deleted',
+    );
+  });
+
+  it.each([['reauth'], ['refreshToken']] as const)(
+    'auth/user-disabled ở bước %s: tài khoản BỊ KHÓA, không phải đã xóa -> ACCOUNT_DISABLED, không gọi Function',
+    async (step) => {
+      const { api, ops } = await signedUp();
+      ops.failOnce(step, sdk('auth/user-disabled'));
+      await expect(api.auth.deleteAccount({ password: 'Mat-khau-1' })).rejects.toMatchObject({
+        code: 'ACCOUNT_DISABLED',
+      });
+      expect(ops.calls).not.toContain('callDeleteAccount');
+    },
+  );
+
+  it('token mới bị thu hồi ngay sau khi xác thực lại (user-token-expired) -> already_deleted; lỗi mạng ở đó -> AUTH_NETWORK_ERROR', async () => {
+    const { api, ops } = await signedUp();
+    ops.failOnce('refreshToken', sdk('auth/user-token-expired'));
+    await expect(api.auth.deleteAccount({ password: 'Mat-khau-1' })).resolves.toBe(
+      'already_deleted',
+    );
+    const other = await signedUp();
+    other.ops.failOnce('refreshToken', sdk('auth/network-request-failed'));
+    await expect(other.api.auth.deleteAccount({ password: 'Mat-khau-1' })).rejects.toMatchObject({
+      code: 'AUTH_NETWORK_ERROR',
+    });
+  });
+
+  it('sai mật khẩu (wrong-password / invalid-credential) KHÔNG BAO GIỜ là đã xóa', async () => {
+    for (const code of ['auth/wrong-password', 'auth/invalid-credential']) {
+      const { api, ops } = await signedUp();
+      ops.failOnce('reauth', sdk(code));
+      await expect(api.auth.deleteAccount({ password: 'x' })).rejects.toMatchObject({
+        code: 'AUTH_WRONG_CURRENT_PASSWORD',
+      });
+    }
+  });
+
+  it('createShop bị từ chối vì tài khoản đang được xóa -> ACCOUNT_DELETION_PENDING', async () => {
+    const { api, ops } = await signedUp();
+    ops.failOnce('callShop', sdk('functions/permission-denied', 'account_deleted'));
+    await expect(api.shop.createShop({ name: 'S', sellingSources: [] })).rejects.toMatchObject({
+      code: 'ACCOUNT_DELETION_PENDING',
+    });
   });
 });
