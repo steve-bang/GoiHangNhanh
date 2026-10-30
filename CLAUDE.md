@@ -76,6 +76,7 @@ Build native (`npx expo run:ios`) **chưa chạy được trên máy có Xcode 1
 - `docs/engineering/layout.md` — khung giao diện: cấu trúc điều hướng, bảng route ↔ mã `UI-xx`, component dùng chung, quy tắc bố cục iOS/Android, cách thêm màn hình, cách đổi thanh tab (O-18).
 - `docs/engineering/testing.md` — chiến lược test, ánh xạ QA-01…14, phần chưa tự động hóa được.
 - `docs/engineering/release-hardening-plan.md` — kế hoạch gia cố trước phát hành (PR1…PR9) cho các rủi ro Chặn phát hành/Cao từ review 2026-10-29; câu hỏi chờ quyết định ở `decisions.md` Q-24. Đọc trước khi bật cờ ghi video hay phát hành.
+- `docs/engineering/v1-release-plan.md` — **kế hoạch tổng phát hành v1.0** (PR V1-00…V1-21, quyết định Q-29 do điều phối chốt thay người dùng 2026-10-30); `docs/engineering/release-checklist.md` — việc con người phải làm (Firebase production, store, EAS, cổng thiết bị). Mỗi PR cập nhật `CHANGELOG.md` (gốc repo) và kèm ảnh màn hình ở `docs/assets/screens/<pr>/`.
 - `docs/engineering/personal-tab-plan.md` — kế hoạch triển khai tab Cá nhân (PER-01…24): ánh xạ PER ↔ UI, chia PR, tiêu chí xong (đề xuất, chờ duyệt; Q-20, O-29).
 - `docs/engineering/personal-tab-redesign-plan.md` — kế hoạch làm lại giao diện tab Cá nhân theo design board `docs/assets/ui/07-personal-tab-redesign-board.png`: mô tả 21 khung, gap, token mới tối thiểu, điểm lệch D1–D29, PR A–I, quy trình kiểm tra "giống design" (Q-21).
 - `docs/engineering/decisions.md` — ADR đề xuất + câu hỏi cần duyệt (Q-xx).

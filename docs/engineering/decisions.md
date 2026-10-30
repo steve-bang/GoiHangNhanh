@@ -564,7 +564,7 @@ Kế hoạch ở [orders-tab-ui-plan.md](orders-tab-ui-plan.md). Tên Q-22 vì Q
 
 ### Q-24 — Gia cố trước phát hành: phạm vi phát hành và các lựa chọn chờ quyết định
 
-Nguồn: báo cáo review "người dùng thật" (2026-10-29) và kế hoạch [release-hardening-plan.md](release-hardening-plan.md). **Tất cả đều CHỜ người dùng/BA quyết; kỹ thuật không tự chốt.** Mỗi câu ghi PR bị chặn.
+Nguồn: báo cáo review "người dùng thật" (2026-10-29) và kế hoạch [release-hardening-plan.md](release-hardening-plan.md). **Tất cả đều CHỜ người dùng/BA quyết; kỹ thuật không tự chốt.** Mỗi câu ghi PR bị chặn. **Cập nhật 2026-10-30:** điều phối đã chọn phương án cho cả tám câu (chưa có xác nhận trực tiếp của người dùng), xem [Q-29](#q-29--kế-hoạch-phát-hành-v10-quyết-định-do-điều-phối-chốt-và-câu-hỏi-còn-lại) và [v1-release-plan.md](v1-release-plan.md) mục 1.2.
 
 | # | Câu hỏi | Phương án | Khuyến nghị | Chặn |
 |---|---|---|---|---|
@@ -677,3 +677,9 @@ Mã lỗi/thông báo mới phát sinh từ PR2/PR4/PR5 (mất mạng, tệp tha
 - **Chuỗi mới chờ BA rà:** `returns:record.live.*`, `returns:review.sync.*`, `returns:review.video*`, `returns:recovery.notice`, `errors:RETURN_PHOTO_IN_USE`, `RETURN_PHOTO_DELETE_FAILED`, `RETURN_PHOTO_FAILED`, `RETURN_PHOTO_STORAGE_FULL`, `RETURN_CAMERA_UNAVAILABLE`. Dùng tạm trong app.
 - **Thời gian chờ vị trí khi chụp (Q-26k):** giữ 3 giây; nếu đo trên máy thật thấy vướng thì tách ghi vị trí ra nền, không khóa nút chụp.
 - **Vẫn KHÔNG tự chốt:** bật cờ ghi video cho người dùng thật (chờ release-hardening-plan và QA-01…14 trên thiết bị), deploy Firebase, chính sách quyền riêng tư và khai báo cửa hàng ứng dụng.
+
+### Q-29 — Kế hoạch phát hành v1.0: quyết định do điều phối chốt và câu hỏi còn lại
+
+Nguồn: [v1-release-plan.md](v1-release-plan.md) (2026-10-30). Các lựa chọn Q-24a–h, O-09, O-15 (v1), D-14 (cách làm tạm cho v1), xóa tài khoản, gói/thanh toán v1, crash reporting và quy trình build được **agent điều phối chốt thay người dùng** theo ủy quyền mà điều phối báo lại; **chưa có xác nhận trực tiếp của người dùng** và không phải D-xx. Bảng đầy đủ: kế hoạch mục 1.2. Câu hỏi còn mở R-1…R-8: kế hoạch mục 7.3. Checklist con người: [release-checklist.md](release-checklist.md).
+
+**Mã lỗi/chuỗi mới chờ BA (bổ sung khi làm từng PR V1-xx, không thêm vào `codes.ts` khi chưa duyệt):** `UPLOAD_WAITING_NETWORK`, `UPLOAD_INTERRUPTED`, `UPLOAD_EXCEPTION` (V1-02), `ACCOUNT_DELETE_SHOP_HAS_MEMBERS` (V1-14); câu "Đang chờ Wi‑Fi" (V1-09), câu thời hạn lưu v1 (V1-18), câu giới hạn khi quay (V1-11), màn Kiểm tra hộp thư (V1-03), luồng Xóa tài khoản (V1-15).
