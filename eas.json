@@ -5,6 +5,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "environment": "development",
+      "env": { "APP_ENV": "dev", "EXPO_PUBLIC_APP_ENV": "dev" },
       "ios": { "simulator": false },
       "android": { "buildType": "apk" }
     },
@@ -15,12 +16,29 @@
     "staging": {
       "distribution": "internal",
       "environment": "preview",
+      "env": {
+        "APP_ENV": "dev",
+        "EXPO_PUBLIC_APP_ENV": "dev",
+        "EXPO_PUBLIC_BACKEND": "firebase",
+        "EXPO_PUBLIC_RECORDER_ENABLED": "1"
+      },
       "android": { "buildType": "apk" }
     },
     "production": {
       "environment": "production",
       "autoIncrement": true,
+      "env": {
+        "APP_ENV": "prod",
+        "EXPO_PUBLIC_APP_ENV": "prod",
+        "EXPO_PUBLIC_BACKEND": "firebase"
+      },
       "android": { "buildType": "app-bundle" }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": { "track": "internal", "releaseStatus": "draft" },
+      "ios": { "ascAppId": "<ID app trên App Store Connect>" }
     }
   }
 }

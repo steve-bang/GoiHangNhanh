@@ -700,6 +700,23 @@ Agent tự chốt theo ủy quyền, 2026-10-30; chờ rà pháp lý C-2.
 | j | `check-seo` thêm: bốn trang có mặt và trong sitemap, chân trang mọi trang liên kết đủ bốn trang, danh sách cụm từ cấm trên trang pháp lý ("pháp lý tuyệt đối", "đảm bảo thắng", "tải nền", "sao lưu an toàn", "bản nháp"…) | Kiểm tự động thay cho đọc tay |
 | k | Thêm `npm --prefix web run check:release` (`check-seo.mjs --release`): giữ chỗ là lỗi dù `indexable=false`; bắt buộc trước khi khai URL cho store (C-7) | Sửa sau review PR #42: store đọc trang dù không index |
 | l | Bảng dữ liệu máy chủ đối chiếu với mã (`remote-documents.ts`, Rules `evidence`/`returns`, `shop.ts`): bỏ "ghi chú" (không gửi), thêm mã tài khoản người tạo, phiên bản ứng dụng, vai trò, bản chụp đơn của phiên, mã băm máy chủ; mục báo lỗi nêu nhật ký thao tác kỹ thuật và trạng thái máy, cam kết V1-16 không đưa mã đơn/mã vận đơn/email/đường dẫn tệp vào báo cáo | Sửa sau review PR #42 |
+#### Q-29 / V1-01 — env-guard
+
+Điểm nhỏ do dev tự chốt (2026-10-30).
+
+Theo quy trình tự động của điều phối; không đổi hành vi nghiệp vụ. Kế hoạch: [plans/v1-01-env-guard.md](plans/v1-01-env-guard.md).
+
+| # | Chốt | Lý do |
+|---|---|---|
+| a1 | `APP_ENV` chỉ nhận `dev`, `prod`, `production` (hoặc không đặt = dev); giá trị khác làm build dừng | Gõ nhầm `prd` không được lặng lẽ ra bản dev mang Firebase dev |
+| a2 | Bản production bắt buộc `EXPO_PUBLIC_APP_ENV=prod`; `EXPO_PUBLIC_APP_ENV=prod` mà `APP_ENV` không prod cũng dừng | Lớp chặn lúc chạy chỉ hoạt động khi biến này được nhúng; hai lớp phải khớp |
+| a3 | Ở production chặn `EXPO_PUBLIC_USE_FAKE_BACKEND` với **mọi** giá trị và `EXPO_PUBLIC_BACKEND` khác `firebase` | Chặt hơn lúc chạy (chỉ `1`/`fake` mới là cổng giả) để không có giá trị mơ hồ trong bản phát hành |
+| a4 | Đòi tệp cấu hình Firebase chỉ trên máy build EAS (`EAS_BUILD=true`) và theo `EAS_BUILD_PLATFORM` | Máy dev vẫn chạy `expo config`/`prod:*` để kiểm cấu hình; build một nền tảng không đòi tệp của nền tảng kia |
+| a5 | Kiểm production đặt **trước** `isTest` trong `resolveBackendMode` | Gói production không bao giờ thành cổng giả, kể cả khi `NODE_ENV` lạ |
+| a6 | Không chặn `EXPO_PUBLIC_RECORDER_ENABLED` ở production; `eas.json` production chưa đặt | V1-21 sẽ bật sau cổng thiết bị; chặn bằng mã sẽ phải gỡ lại |
+| a7 | Thêm `android.blockedPermissions`: `RECORD_AUDIO`, `SYSTEM_ALERT_WINDOW`, `READ/WRITE_EXTERNAL_STORAGE` | Thu thập tối thiểu; O-09 không thu tiếng; mẫu RN và `expo-file-system` tự thêm các quyền này dù app không dùng (prebuild 2026-10-30). Chưa kiểm manifest sau khi Gradle gộp (cần Android SDK) |
+| a8 | `ios.config.usesNonExemptEncryption: false` | App chỉ dùng HTTPS của hệ điều hành và SHA-256 để băm; không mã hóa riêng. Thêm mã hóa riêng thì phải xem lại |
+| a9 | Bản production không lấy tệp Firebase ở gốc repo (nơi đặt tệp dev): chỉ đường dẫn qua biến môi trường (EAS file secret) hoặc `firebase/config/prod/` (`npm run prod:*`); tệp tìm thấy phải có `BUNDLE_ID`/`package_name` đúng mã app production, lệch hoặc không đọc được thì build dừng | Review PR #43: tránh đóng gói nhầm tệp của dự án dev vào bản production. Giữ `firebase/config/prod/` vì là thư mục riêng của prod và vẫn bị đối chiếu mã app |
 
 **Mã lỗi/chuỗi mới chờ BA (bổ sung khi làm từng PR V1-xx, không thêm vào `codes.ts` khi chưa duyệt):** `UPLOAD_WAITING_NETWORK`, `UPLOAD_INTERRUPTED`, `UPLOAD_EXCEPTION` (V1-02), `ACCOUNT_DELETE_SHOP_HAS_MEMBERS` (V1-14); câu "Đang chờ Wi‑Fi" (V1-09), câu thời hạn lưu v1 (V1-18), câu giới hạn khi quay (V1-11), màn Kiểm tra hộp thư (V1-03), luồng Xóa tài khoản (V1-15).
 

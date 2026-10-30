@@ -1,7 +1,13 @@
 import { AppError } from '@/core/errors/app-error';
 
 import { createFakeApi, FAKE_OFFLINE_EMAIL } from './fake';
-import { createApi, resolveBackendMode, resolveFakeSession } from './create-api';
+import {
+  createApi,
+  firebaseEmulatorHost,
+  isProductionAppEnv,
+  resolveBackendMode,
+  resolveFakeSession,
+} from './create-api';
 import { createUnavailableApi } from './unavailable';
 
 describe('chọn cổng theo môi trường', () => {
@@ -52,6 +58,54 @@ describe('chọn cổng theo môi trường', () => {
     await expect(
       gateways.shop.createShop({ name: 'Shop', sellingSources: [] }),
     ).rejects.toMatchObject({ code: 'AUTH_SERVICE_UNAVAILABLE' });
+  });
+});
+
+describe('bản production (EXPO_PUBLIC_APP_ENV=prod): chốt chặn lúc chạy (V1-01)', () => {
+  const prod = { isDev: false, isTest: false, fakeFlag: undefined, appEnv: 'prod' };
+
+  it('nhận prod và bí danh production, không nhận giá trị khác', () => {
+    expect(isProductionAppEnv('prod')).toBe(true);
+    expect(isProductionAppEnv('production')).toBe(true);
+    expect(isProductionAppEnv(' prod ')).toBe(true);
+    for (const v of [undefined, '', 'dev', 'fake', 'Prod', 'staging']) {
+      expect(isProductionAppEnv(v)).toBe(false);
+    }
+  });
+
+  it.each([
+    { fakeFlag: '1' },
+    { backend: 'fake' },
+    { isDev: true },
+    { isTest: true },
+    { fakeSession: 'signed_in', fakeFlag: '1' },
+    { emulatorHost: '10.0.2.2' },
+  ])('bỏ qua cờ %p: luôn Firebase', (flags) => {
+    expect(resolveBackendMode({ ...prod, ...flags })).toBe('firebase');
+    expect(resolveBackendMode({ ...prod, ...flags, appEnv: 'production' })).toBe('firebase');
+  });
+
+  it('không bao giờ nối Firebase Emulator', () => {
+    expect(firebaseEmulatorHost({ ...prod, emulatorHost: '10.0.2.2' })).toBeUndefined();
+    expect(
+      firebaseEmulatorHost({ ...prod, appEnv: 'production', emulatorHost: 'localhost' }),
+    ).toBeUndefined();
+    expect(firebaseEmulatorHost({ ...prod, appEnv: 'dev', emulatorHost: '10.0.2.2' })).toBe(
+      '10.0.2.2',
+    );
+    expect(firebaseEmulatorHost({ ...prod, appEnv: undefined, emulatorHost: '' })).toBeUndefined();
+  });
+
+  it('createApi dùng Firebase dù có cờ giả; thiếu cấu hình thì "chưa kết nối", không rơi về cổng giả', async () => {
+    const firebaseApi = createFakeApi();
+    const factory = jest.fn(() => firebaseApi);
+    expect(createApi({ ...prod, fakeFlag: '1', backend: 'fake', isDev: true }, factory)).toBe(
+      firebaseApi,
+    );
+    expect(factory).toHaveBeenCalledTimes(1);
+
+    const api = createApi({ ...prod, fakeFlag: '1', fakeSession: 'signed_in' }, () => null);
+    await expect(api.session.restore()).rejects.toMatchObject({ code: 'AUTH_SERVICE_UNAVAILABLE' });
   });
 });
 
