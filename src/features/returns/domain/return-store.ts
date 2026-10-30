@@ -207,6 +207,12 @@ export interface ReturnStore {
    * `EvidenceFileStore.listShopsWithStates`); không dùng để hiển thị.
    */
   listUnfinishedMedia(): Promise<readonly ReturnMedia[]>;
+  /**
+   * Ảnh/video của shop ở một trong `states`, của MỌI người tạo trên máy này, cũ nhất trước. Chỉ để HIỂN
+   * THỊ ở Trung tâm đồng bộ (V1-08; tệp của tài khoản khác hiện riêng, không tải hộ). Hàng đợi tải lên
+   * dùng `listMediaForUpload`. Shop khác không bao giờ xuất hiện.
+   */
+  listMediaByStates(shopId: ShopId, states: readonly FileState[]): Promise<readonly ReturnMedia[]>;
   /** Ảnh/video của hồ sơ, cũ nhất trước. */
   listMedia(shopId: ShopId, returnId: ReturnCaseId): Promise<readonly ReturnMedia[]>;
 }

@@ -1108,6 +1108,20 @@ export function runReturnStoreContract(
         ).toEqual(['m-saving']);
       });
 
+      it('listMediaByStates: mọi người tạo, đúng trạng thái và shop, cũ nhất trước (V1-08)', async () => {
+        const mine = await withUid('u-1');
+        const made = await mine.createReturn(makeNewReturn({ atDevice: 100 }));
+        await addMedia(mine, made.returnCase.id, 'm-a', 'queued');
+        await addMedia(mine, made.returnCase.id, 'm-b', 'saving_local');
+        // Hồ sơ chưa đăng neo vẫn hiện (chỉ để hiển thị, không tải).
+        expect((await mine.listMediaByStates(SHOP, ['queued'])).map((m) => m.id)).toEqual(['m-a']);
+        expect(
+          (await mine.listMediaByStates(SHOP, ['queued', 'saving_local'])).map((m) => m.id),
+        ).toEqual(['m-a', 'm-b']);
+        expect(await mine.listMediaByStates(OTHER, ['queued'])).toEqual([]);
+        expect(await mine.listMediaByStates(SHOP, [])).toEqual([]);
+      });
+
       it('giới hạn số lượng một lượt, cũ nhất trước', async () => {
         const store = await withUid('u-1');
         const ids: ReturnCaseId[] = [];

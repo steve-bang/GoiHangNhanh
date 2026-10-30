@@ -19,7 +19,7 @@ const S = FILE_STATES;
  * nhận một phần hoặc nhận đủ mà app mất phản hồi (QA-05).
  *
  * Đúng khi: đang tải/đã tải/đã xác minh/lệch mã băm, tải lỗi (có thể máy chủ nhận mà app mất phản
- * hồi), cần xử lý trừ khi lỗi là kiểm tra cục bộ, hoặc đang chờ lại sau một lần thử (đã có lần thử hoặc
+ * hồi), cần xử lý trừ khi lỗi là kiểm tra cục bộ trên tệp CHƯA từng thử (`attemptCount` 0), hoặc đang chờ lại sau một lần thử (đã có lần thử hoặc
  * mã lỗi). Tệp `queued` chưa từng thử thì chưa khai báo, máy chủ chắc chắn chưa có.
  */
 export function mayHaveReachedServer(file: {
@@ -35,7 +35,14 @@ export function mayHaveReachedServer(file: {
     case S.UPLOAD_FAILED:
       return true;
     case S.NEEDS_ATTENTION:
-      return !file.lastErrorCode || !LOCAL_ONLY_ERROR_CODES.includes(file.lastErrorCode);
+      // Đã có lần thử tính lượt thì có thể đã tới máy chủ, kể cả khi lỗi mới nhất là lỗi cục bộ (gửi
+      // lên rồi tệp mất/đổi; review PR #56). Hàng đợi đặt `attemptCount >= 1` khi kiểm tra cục bộ thất
+      // bại trên tệp đã từng được đưa cho máy chủ (lỗi mạng không tính lượt nhưng vẫn để lại dấu này).
+      return (
+        file.attemptCount > 0 ||
+        !file.lastErrorCode ||
+        !LOCAL_ONLY_ERROR_CODES.includes(file.lastErrorCode)
+      );
     case S.QUEUED:
       return file.attemptCount > 0 || file.lastErrorCode !== null;
     default:

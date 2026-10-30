@@ -78,6 +78,7 @@ export interface ReturnMediaPatch {
 export type MediaEventError =
   | 'ILLEGAL_TRANSITION'
   | 'ORIGIN_NOT_ALLOWED'
+  | 'NOT_USER_RETRYABLE'
   | 'MISSING_FILE_DETAILS'
   | 'IMMUTABLE_FIELD'
   | 'MEDIA_NOT_FOUND'
@@ -98,7 +99,7 @@ export function applyMediaEvent(
   atDevice: number,
   patch: ReturnMediaPatch = {},
 ): MediaEventResult {
-  const result = transition(media.state, event);
+  const result = transition(media.state, event, { lastErrorCode: media.lastErrorCode });
   if (!result.ok) return { ok: false, error: result.error };
   const frozen =
     (patch.sha256Client !== undefined &&

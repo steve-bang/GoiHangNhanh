@@ -158,6 +158,7 @@ shops/{shopId}/exports/{exportId}/…                      bộ hồ sơ xuất
      │                    │                                  ▲  ▲                         │
      │ RECOVERY_FOUND_FILE│(đọc lại kiểm tra)               │  └──RETRY_UPLOAD── upload_failed ◄─UPLOAD_FAILED
      └──────────►─────────┘                                  └─ATTENTION_RESOLVED─ needs_attention
+                                                             └─USER_RETRY_ATTENTION (có điều kiện)─ needs_attention
                                                                                          
  [server] queued|uploading|upload_failed|needs_attention ──SERVER_RECEIVED──► uploaded
  [server] uploaded ──SERVER_VERIFIED──► verified           [server] uploaded ──SERVER_HASH_MISMATCH──► hash_mismatch
@@ -171,8 +172,9 @@ Bảo đảm (có unit test, xem [testing.md](testing.md)):
 1. **Client không tự tới `uploaded`/`verified`/`hash_mismatch`**: các chuyển này đòi `origin: 'server'`; sự kiện thiết bị giả danh bị từ chối (`ORIGIN_NOT_ALLOWED`). Chỉ lớp `data` mới tạo sự kiện server, và chỉ từ dữ liệu `server.*` đọc về. Lớp phòng thủ thứ nhất là Security Rules (cấm client ghi `server` và đặt `clientFileState` ngoài tập cho phép). *Mã trong app chỉ là kỷ luật; Rules mới là ranh giới tin cậy.*
 2. **Khôi phục sau khi app bị kill khi đang quay** đi qua `saving_local` (kiểm tra lại tệp), không vào hàng đợi trực tiếp (A05: "không tự nhận là video đầy đủ"). Cờ "phiên bị gián đoạn" nằm ở *trạng thái phiên*, không ở trạng thái tệp.
 3. **Đối soát QA-05**: máy chủ đã nhận nhưng app mất phản hồi → `SERVER_RECEIVED` được chấp nhận từ `queued`/`uploading`/`upload_failed`/`needs_attention`, nên đối soát đưa tệp lên `uploaded` mà không phải tải lại.
-4. **`hash_mismatch` và `unrecoverable` là trạng thái cuối** (không có lối ra bằng sự kiện thường; cách xử lý do người dùng/hỗ trợ, ghi audit).
-5. **`isLocalCopyReleasable`**: chỉ `verified` mới đủ *điều kiện cần* để giải phóng bản cục bộ (còn chính sách an toàn và thông báo người dùng). `uploaded` và `hash_mismatch` thì không (bản cục bộ có thể là bản đúng duy nhất).
+4. **Người dùng thử lại tệp `needs_attention` (V1-08, R-3):** `USER_RETRY_ATTENTION` (`origin: 'device'`, chỉ tới `queued`) cần ngữ cảnh `lastErrorCode` và bị từ chối (`NOT_USER_RETRYABLE`) với lỗi tệp cục bộ (`NON_RETRYABLE_ATTENTION_CODES`) hoặc khi không có mã. Patch giữ `lastErrorCode` (đối soát trước khi gửi lại).
+5. **`hash_mismatch` và `unrecoverable` là trạng thái cuối** (không có lối ra bằng sự kiện thường; cách xử lý do người dùng/hỗ trợ, ghi audit).
+6. **`isLocalCopyReleasable`**: chỉ `verified` mới đủ *điều kiện cần* để giải phóng bản cục bộ (còn chính sách an toàn và thông báo người dùng). `uploaded` và `hash_mismatch` thì không (bản cục bộ có thể là bản đúng duy nhất).
 
 **Nhãn hiển thị** (`toDisplayStatus` + `core/theme/evidence-status.ts`, docs/09 mục 3): sáu nhãn *Đã lưu trên máy / Chờ tải lên / Đang tải lên / Đã tải lên / Đã xác minh / Lỗi – cần xử lý*; hai pha ghi hình dùng trạng thái riêng của màn quay. Mọi trạng thái lỗi → *Lỗi – cần xử lý*. Cụm "Đã lưu an toàn trên máy chủ" chỉ gắn với `verified` (test i18n kiểm tra). **Điểm mơ hồ cần BA xác nhận** (Q-02): docs/09 ánh xạ cả *Đã lưu trên máy* và *Chờ tải lên* vào trạng thái nghiệp vụ "Chờ tải lên"; khung hiện phân biệt bằng "có lý do chờ" hay không.
 

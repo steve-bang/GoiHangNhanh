@@ -69,6 +69,13 @@ export interface UploadGateway {
    * hủy qua `options.signal` thì trả `network` (`NETWORK_LOST`), không ném.
    */
   upload(request: UploadRequest, options?: UploadAttemptOptions): Promise<UploadOutcome>;
+  /**
+   * Nhờ máy chủ kiểm tra lại một tệp nó đã nhận mà chưa xác minh (V1-08): gọi lại `createUploadSession`,
+   * máy chủ chỉ ĐẶT YÊU CẦU xác minh lại khi đã nhận quá 15 phút (`reverify.ts`). Không gửi tệp, không
+   * đổi trạng thái tệp phía máy; kết quả đến qua đối soát (`fetchServerStates`). Lỗi ném như `upload`.
+   * Không có hàm này = cổng không hỗ trợ.
+   */
+  requestServerCheck?(shopId: ShopId, evidenceId: EvidenceId): Promise<void>;
   /** Hỏi máy chủ trạng thái các tệp; tệp máy chủ chưa biết thì không có trong map. */
   fetchServerStates(
     shopId: ShopId,

@@ -91,9 +91,22 @@ export interface UploadRunSummary {
   readonly verified: number;
 }
 
+/**
+ * Kết quả nhờ máy chủ kiểm tra lại (V1-08): `requested` đã gửi yêu cầu; `not_eligible` tệp không thuộc
+ * hàng đợi của tài khoản này hoặc không ở `uploaded`; `offline` máy đang mất mạng; `failed` gọi máy chủ
+ * lỗi; `unsupported` cổng không hỗ trợ.
+ */
+export type ServerCheckResult = 'requested' | 'not_eligible' | 'offline' | 'failed' | 'unsupported';
+
 export interface UploadQueue {
   /** Một lượt xử lý tuần tự theo shop. Lượt chồng lên nhau bị bỏ qua (`busy`). Không ném lỗi. */
   runOnce(shopId: ShopId, options?: UploadRunOptions): Promise<UploadRunSummary>;
+  /**
+   * Nhờ máy chủ xác minh lại MỘT tệp đang `uploaded` của chính tài khoản (nguồn đã lọc uid). Không đổi
+   * trạng thái tệp ở đây: trạng thái chỉ đổi khi lượt sau đối soát thấy máy chủ báo (`origin: 'server'`).
+   * Không ném lỗi.
+   */
+  requestServerCheck(shopId: ShopId, id: EvidenceId): Promise<ServerCheckResult>;
 }
 
 const S = FILE_STATES;
@@ -269,9 +282,15 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
     const hash = await hasher.sha256(localPath);
     if (!hash.ok || hash.sha256 !== sha256Client) {
       const code = hash.ok ? 'LOCAL_HASH_CHANGED' : hash.reason;
+      // Mã lỗi cục bộ ghi đè mã cũ: tệp ĐÃ TỪNG được đưa cho máy chủ (lỗi mạng, Thử lại sau khi bị từ
+      // chối...) phải giữ dấu `attemptCount >= 1` để vẫn bị coi là có thể đã tới máy chủ (ảnh hàng hoàn
+      // không xóa được, Q-26j, bất biến 4).
       await apply(entry, device('NEEDS_ATTENTION'), {
         lastErrorCode: code,
         nextAttemptAtDevice: null,
+        ...(mayHaveReachedServer(entry.item)
+          ? { attemptCount: Math.max(entry.item.attemptCount, 1) }
+          : {}),
       });
       summary.needsAttention += 1;
       return 'next';
@@ -324,6 +343,18 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
   }
 
   return {
+    async requestServerCheck(shopId, id) {
+      if (!gateway.requestServerCheck) return 'unsupported';
+      if (!isOnline()) return 'offline';
+      const uploaded = await list(shopId, [S.UPLOADED]);
+      if (!uploaded.some((e) => e.item.id === id)) return 'not_eligible';
+      try {
+        await gateway.requestServerCheck(shopId, id);
+        return 'requested';
+      } catch {
+        return 'failed';
+      }
+    },
     async runOnce(shopId, options) {
       const summary: Counters = {
         received: 0,

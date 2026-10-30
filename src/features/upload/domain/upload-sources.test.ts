@@ -16,6 +16,7 @@ import { createUploadGateway } from './create-upload-gateway';
 import { evidenceWrite } from './evidence-document';
 import { createUploadQueue } from './upload-queue';
 import { evidenceFileSource, returnMediaSource } from './upload-sources';
+import { userRetryEvent } from './sync-jobs';
 
 const SHOP = 'shop-1' as ShopId;
 const HASH = 'ab'.repeat(32);
@@ -228,6 +229,46 @@ describe('hàng đợi tải lên với nguồn media hàng hoàn (Q-28)', () =>
     t.setHash({ ok: true, sha256: 'ff'.repeat(32) });
     await t.queue.runOnce(SHOP);
     expect((await t.returns.checkMediaDeletable(SHOP, 'ph-3')).ok).toBe(true);
+  });
+
+  it('ảnh đã gửi lên (lỗi mạng) rồi băm lại báo FILE_MISSING: vẫn KHÔNG xóa được (review PR #56)', async () => {
+    const t = setup();
+    const returnId = await returnWithPhoto(t.returns, 'ph-1');
+    t.outcomes.push({ kind: 'network', code: 'NETWORK_LOST' });
+    await t.queue.runOnce(SHOP);
+    t.advance(20 * 60_000);
+    t.setHash({ ok: false, reason: 'FILE_MISSING' });
+    await t.queue.runOnce(SHOP);
+    const m = await t.media('ph-1', returnId);
+    expect(m).toMatchObject({ state: 'needs_attention', lastErrorCode: 'FILE_MISSING' });
+    expect(m && mayHaveReachedServer(m)).toBe(true);
+    await expect(t.returns.checkMediaDeletable(SHOP, 'ph-1')).rejects.toMatchObject({
+      code: 'RETURN_PHOTO_IN_USE',
+    });
+  });
+
+  it('máy chủ từ chối 8 lần -> Thử lại -> băm thất bại: vẫn KHÔNG xóa được (review PR #56)', async () => {
+    const t = setup();
+    const returnId = await returnWithPhoto(t.returns, 'ph-1');
+    for (let i = 0; i < MAX_UPLOAD_ATTEMPTS; i += 1) {
+      t.outcomes.push({ kind: 'retryable', code: 'HTTP_403' });
+      await t.queue.runOnce(SHOP);
+      t.advance(20 * 60_000);
+    }
+    expect((await t.media('ph-1', returnId))?.state).toBe('needs_attention');
+    const step = userRetryEvent('needs_attention', 'HTTP_403');
+    if (!step) throw new Error('fixture');
+    expect((await t.returns.applyMediaEvent(SHOP, 'ph-1', step.event, 1, step.patch)).ok).toBe(
+      true,
+    );
+    t.setHash({ ok: false, reason: 'FILE_UNREADABLE' });
+    await t.queue.runOnce(SHOP);
+    const m = await t.media('ph-1', returnId);
+    expect(m).toMatchObject({ state: 'needs_attention', lastErrorCode: 'FILE_UNREADABLE' });
+    expect(m?.attemptCount).toBeGreaterThanOrEqual(1);
+    await expect(t.returns.checkMediaDeletable(SHOP, 'ph-1')).rejects.toMatchObject({
+      code: 'RETURN_PHOTO_IN_USE',
+    });
   });
 
   it('video hàng hoàn: giữ kind video, đi hết cổng thật (mime video, khai báo original_video) và tới uploaded', async () => {

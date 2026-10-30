@@ -70,7 +70,7 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 | `/orders/[orderId]/evidence` | UI-E03 | chưa có đặc tả (docs/09 mục 4) | hiện | `evidence`: `OrderEvidenceScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/orders/[orderId]/evidence/[evidenceId]` | UI-E04 | docs/09 mục 4 (UI-E04) | hiện | `orders`: `EvidenceDetailScreen` (nội dung `evidence`: `EvidenceDetailView`) | Thật (V1-17): phát video/hiện ảnh từ tệp trên máy, chỉ đọc; tệp mất -> "không còn trên máy này" |
 | `/orders/[orderId]/history` | UI-E05 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `OrderHistoryScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/sync` | UI-F01 | chưa có đặc tả (docs/09 mục 4) | ẩn | `upload`: `SyncCenterScreen` | Khung có bố cục + dữ liệu minh họa |
+| `/sync` | UI-F01 | A07 | ẩn | `upload`: `SyncCenterScreen` | Tệp thật trên máy (bằng chứng đóng gói + ảnh/video hàng hoàn), bốn bộ lọc, Thử lại / Kiểm tra lại, nhóm tài khoản khác (V1-08) |
 | `/sync/[jobId]` | UI-F02 | chưa có đặc tả (docs/09 mục 4) | ẩn | `upload`: `SyncErrorScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/sync/storage` | UI-F03 | chưa có đặc tả (docs/09 mục 4) | ẩn | `upload`: `StorageScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/disputes` | UI-G01 | chưa có đặc tả (docs/09 mục 4) | ẩn | `disputes`: `DisputesScreen` | Placeholder (route + tiêu đề + lối quay lại) |
@@ -106,7 +106,7 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 
 **Route con (Q-20k):** một mã `UI-xx` chỉ có nhiều route khi route con khai báo `parent` trong `ROUTES` (`subRoute`), trỏ tới route gốc cùng mã và cùng cờ thanh tab; ngoại lệ duy nhất còn lại là UI-A03 (đăng nhập/đăng ký). `routes.test.ts` bắt lệch bảng ↔ tệp `src/app` và giới hạn danh sách route con (hiện: `editProfile`, `changePassword`, `shopEdit`, `shopSwitch`, `helpCategory`, `helpArticle`, `helpContact`, `helpLegal`). Route con có testID `screen-<mã>-<đoạn cuối đường dẫn>` và tiêu đề ở `nav:subTitles`. Thêm route con mới phải được người dùng duyệt. **Ẩn thanh tab trên form (Q-20r):** route con form khai báo `hideTabBar` (`subRoute(..., tabBar, hideTabBar)`); tệp vẫn ở `(tabs)/account/` nên Back và trạng thái cuộn của màn gốc được giữ, chỉ `isTabBarHiddenAt(pathname)` ẩn thanh tab. Không đổi `tab-config.ts`. `routes.test.ts` và `app-navigation.test.tsx` kiểm tra thanh tab ẩn trên form và hiện lại khi Back.
 
-Màn có bố cục + dữ liệu minh họa: Tổng quan, Xác nhận video, Hoàn tất đóng gói, Danh sách hàng hoàn, Màn quay mở kiện (khung), Danh sách đơn, Trung tâm đồng bộ.
+Màn có bố cục + dữ liệu minh họa: Tổng quan, Xác nhận video, Hoàn tất đóng gói, Danh sách hàng hoàn, Màn quay mở kiện (khung), Danh sách đơn. Trung tâm đồng bộ (UI-F01) và Chi tiết lỗi đồng bộ (UI-F02) dùng tệp thật từ V1-08.
 
 ### 2.1 Màn Chào mừng (UI-A02)
 
@@ -270,7 +270,7 @@ Thêm/bớt tab: sửa `TAB_CONFIG`, tạo/xóa tệp hoặc thư mục tương 
 - Phần lớn màn vẫn là dữ liệu minh họa (tìm/lọc chạy trên dữ liệu giả cục bộ). Riêng Danh sách đơn, Chi tiết đơn, Tạo đơn nhanh, Xác nhận đơn và màn quay (mục 2.5, 2.6) đọc/ghi SQLite cục bộ; tham số route là ID nội bộ.
 - `useIsOffline()` (`src/platform/connectivity.ts`) là **stub luôn trả `false`** (chưa chọn thư viện theo dõi mạng); `OfflineBanner` đã sẵn.
 - Camera **quét mã** (UI-B02) đã có thật (`expo-camera`, ADR-016) nhưng chưa kiểm chứng trên thiết bị; camera **quay video** chưa ghi được: màn quay (UI-C03) chỉ xem trước (Q-17b), nút *Xem lại video*, *Ghi thêm đoạn riêng* đang tắt.
-- Danh sách đơn (UI-E01) và chi tiết đơn (UI-E02) đã dùng dữ liệu thật cục bộ (Q-18); lọc theo trạng thái bằng chứng, khoảng ngày tự chọn, sửa đơn chưa làm. Thử lại tệp (UI-F01) chưa làm vì cần dữ liệu/hàng đợi thật. Gợi ý sản phẩm (UI-B04) đã làm trên lịch sử cục bộ (Q-17).
+- Danh sách đơn (UI-E01) và chi tiết đơn (UI-E02) đã dùng dữ liệu thật cục bộ (Q-18); lọc theo trạng thái bằng chứng, khoảng ngày tự chọn, sửa đơn chưa làm. Thử lại tệp ở UI-F01/F02 đã làm (V1-08). Gợi ý sản phẩm (UI-B04) đã làm trên lịch sử cục bộ (Q-17).
 - Splash (UI-A01, mục 2.4) chạy bằng cổng phiên giả ở dev/test. Cổng phiên `SessionGate` (mục 2.4a) chỉ chặn ở bản Firebase/"chưa kết nối"; cổng giả không chặn. Bản build thường dùng Firebase thật (chưa kiểm chứng trên thiết bị, chưa deploy); thiếu cấu hình thì vào Chào mừng (cổng "chưa kết nối"). Ba màn thiết lập (mục 2.2) ở dev/test chạy bằng cổng giả; ở bản Firebase tạo tài khoản/shop thật. Splash hệ điều hành, icon (tạm), tải ảnh 3D, WebP alpha, tràn viền Android và vùng an toàn thật **chưa kiểm chứng trên thiết bị**; ảnh chụp đối chiếu thiết kế là render web.
 - Chào mừng: liên kết Điều khoản/Quyền riêng tư là chữ trong câu nên vùng chạm nhỏ hơn 44/48 (Text lồng không có `hitSlop`); cần đánh giá trên thiết bị.
 - Font icon tải bất đồng bộ lần đầu: icon có thể hiện trễ một nhịp.

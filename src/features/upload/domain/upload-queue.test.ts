@@ -18,6 +18,7 @@ import {
   mayBeKnownToServer,
 } from './upload-queue';
 import { evidenceFileSource } from './upload-sources';
+import { userRetryEvent } from './sync-jobs';
 
 const SHOP = 'shop-1' as ShopId;
 const HASH = 'ab'.repeat(32);
@@ -68,7 +69,13 @@ function setup(
   const serverStates = new Map<EvidenceId, ServerFileState>();
   let throwOnUpload = false;
   let throwOnFetch = false;
+  let throwOnCheck = false;
+  const checks: string[] = [];
   const gateway: UploadGateway = {
+    requestServerCheck: async (_shop, id) => {
+      checks.push(id);
+      if (throwOnCheck) throw new Error('boom');
+    },
     upload: async (req, attempt?: UploadAttemptOptions) => {
       uploads.push(req.evidenceId);
       signals.push(attempt?.signal);
@@ -112,6 +119,9 @@ function setup(
   return {
     files,
     queue,
+    gateway,
+    checks,
+    failChecks: (v: boolean) => void (throwOnCheck = v),
     uploads,
     outcomes,
     serverStates,
@@ -711,5 +721,88 @@ describe('trần dung lượng (V1-04, khớp Rules)', () => {
     const big = await t.files.get(SHOP, 'big' as EvidenceId);
     expect(big?.lastErrorCode).toBe(UPLOAD_FILE_TOO_LARGE);
     expect(big?.localPath).toBe('file:///v/big.mp4');
+  });
+});
+
+describe('Trung tâm đồng bộ: Thử lại và Kiểm tra lại (V1-08)', () => {
+  async function toAttention(t: ReturnType<typeof setup>, id: string) {
+    await queuedFile(t.files, id);
+    for (let i = 0; i < MAX_UPLOAD_ATTEMPTS; i += 1) {
+      t.outcomes.push({ kind: 'retryable', code: 'HTTP_403' });
+      await t.queue.runOnce(SHOP);
+      t.advance(MAX_RETRY_DELAY_MS);
+    }
+    expect(await t.state(id)).toBe('needs_attention');
+  }
+
+  it('Thử lại tệp cần xử lý do máy chủ từ chối: về hàng chờ, 8 lượt mới, vẫn đối soát trước khi gửi', async () => {
+    const t = setup();
+    await toAttention(t, 'a');
+    const step = userRetryEvent('needs_attention');
+    if (!step) throw new Error('fixture');
+    const r = await t.files.applyEvent(SHOP, 'a' as EvidenceId, step.event, 1, step.patch);
+    expect(r).toMatchObject({
+      ok: true,
+      file: { state: 'queued', attemptCount: 0, lastErrorCode: 'HTTP_403' },
+    });
+    // Giữ mã lỗi: tệp đã từng gửi máy chủ nên lượt sau hỏi máy chủ trước (QA-05).
+    if (r.ok) expect(mayBeKnownToServer(r.file)).toBe(true);
+    t.serverStates.set('a' as EvidenceId, 'uploaded');
+    const uploadsBefore = t.uploads.length;
+    await t.queue.runOnce(SHOP);
+    expect(await t.state('a')).toBe('uploaded');
+    expect(t.uploads.length).toBe(uploadsBefore);
+  });
+
+  it('Thử lại bị từ chối với lỗi tệp cục bộ (tệp đổi nội dung): không đổi gì', async () => {
+    const t = setup({ hash: { ok: true, sha256: 'cd'.repeat(32) } });
+    await queuedFile(t.files, 'a');
+    await t.queue.runOnce(SHOP);
+    expect(await t.files.get(SHOP, 'a' as EvidenceId)).toMatchObject({
+      state: 'needs_attention',
+      lastErrorCode: 'LOCAL_HASH_CHANGED',
+    });
+    const step = userRetryEvent('needs_attention');
+    if (!step) throw new Error('fixture');
+    expect(await t.files.applyEvent(SHOP, 'a' as EvidenceId, step.event, 1, step.patch)).toEqual({
+      ok: false,
+      error: 'NOT_USER_RETRYABLE',
+    });
+    expect(await t.state('a')).toBe('needs_attention');
+  });
+
+  it('Kiểm tra lại tệp uploaded: gọi máy chủ, KHÔNG tự đổi trạng thái; lượt sau đối soát', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    await t.queue.runOnce(SHOP);
+    expect(await t.state('a')).toBe('uploaded');
+    expect(await t.queue.requestServerCheck(SHOP, 'a' as EvidenceId)).toBe('requested');
+    expect(t.checks).toEqual(['a']);
+    expect(await t.state('a')).toBe('uploaded');
+    t.serverStates.set('a' as EvidenceId, 'verified');
+    await t.queue.runOnce(SHOP);
+    expect(await t.state('a')).toBe('verified');
+  });
+
+  it('Kiểm tra lại: tệp không ở uploaded, mất mạng, lỗi máy chủ, cổng không hỗ trợ', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'q');
+    expect(await t.queue.requestServerCheck(SHOP, 'q' as EvidenceId)).toBe('not_eligible');
+    expect(await t.queue.requestServerCheck(SHOP, 'nope' as EvidenceId)).toBe('not_eligible');
+    await t.queue.runOnce(SHOP);
+    t.setOnline(false);
+    expect(await t.queue.requestServerCheck(SHOP, 'q' as EvidenceId)).toBe('offline');
+    t.setOnline(true);
+    t.failChecks(true);
+    expect(await t.queue.requestServerCheck(SHOP, 'q' as EvidenceId)).toBe('failed');
+    expect(await t.state('q')).toBe('uploaded');
+    const bare = createUploadQueue({
+      sources: [evidenceFileSource(t.files)],
+      gateway: { upload: t.gateway.upload, fetchServerStates: t.gateway.fetchServerStates },
+      hasher: { sha256: async () => ({ ok: true, sha256: HASH }) },
+      now: () => 1,
+      isOnline: () => true,
+    });
+    expect(await bare.requestServerCheck(SHOP, 'q' as EvidenceId)).toBe('unsupported');
   });
 });

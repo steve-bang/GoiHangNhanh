@@ -165,7 +165,7 @@ export function applyEventToFile(
   nowDevice: number,
   patch: EvidenceFilePatch = {},
 ): ApplyEventResult {
-  const result = transition(file.state, event);
+  const result = transition(file.state, event, { lastErrorCode: file.lastErrorCode });
   if (!result.ok) return { ok: false, error: result.error };
   if (violatesImmutability(file, event, patch)) return { ok: false, error: 'IMMUTABLE_FIELD' };
   const next: EvidenceFile = {

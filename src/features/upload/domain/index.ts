@@ -5,3 +5,5 @@ export * from './create-upload-gateway';
 export * from './evidence-document';
 export * from './upload-sources';
 export * from './limits';
+export * from './sync-jobs';
+export * from './load-sync-jobs';

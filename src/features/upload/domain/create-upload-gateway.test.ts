@@ -185,3 +185,25 @@ describe('createUploadGateway', () => {
     });
   });
 });
+
+describe('requestServerCheck (V1-08 Kiểm tra lại)', () => {
+  it('chỉ xin phiên (máy chủ đặt yêu cầu xác minh lại), không khai báo, không gửi tệp', async () => {
+    const { gateway, calls } = setup({ status: 'already_received' });
+    await gateway.requestServerCheck?.('s1' as ShopId, 'e1' as EvidenceId);
+    expect(calls).toEqual(['session']);
+  });
+
+  it('máy chủ (bất thường) cấp URL thì vẫn KHÔNG gửi tệp', async () => {
+    const { gateway, calls } = setup();
+    await gateway.requestServerCheck?.('s1' as ShopId, 'e1' as EvidenceId);
+    expect(calls).toEqual(['session']);
+  });
+
+  it('lỗi giữ đúng phân loại', async () => {
+    const { gateway, fail } = setup();
+    fail.session = new UploadPortError('attention', 'PERMISSION_DENIED');
+    await expect(
+      gateway.requestServerCheck?.('s1' as ShopId, 'e1' as EvidenceId),
+    ).rejects.toMatchObject({ kind: 'attention', code: 'PERMISSION_DENIED' });
+  });
+});
