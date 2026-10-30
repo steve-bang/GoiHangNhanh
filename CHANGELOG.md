@@ -30,9 +30,6 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 - Bản Firebase: đơn có nguồn bán "Khác" nay đăng được lên máy chủ (trước đây bị từ chối nên phiên và bằng chứng của đơn đó không bao giờ tải lên), tạo/sửa cửa hàng chọn "Khác" không còn bị từ chối; dữ liệu trên máy không đổi. Chưa deploy, chưa kiểm chứng trên thiết bị (fix-other-source).
 - Test giao diện nặng không còn đỏ chập chờn khi máy tải cao: hạn mỗi test Jest đặt ở gốc cấu hình là 30 giây (giá trị đặt trong từng project trước đây bị Jest bỏ qua) (#50).
-
-### Fixed
-
 - Tải lên bằng chứng theo trạng thái mạng thật: mất mạng không còn làm tệp thành "cần xử lý" (chỉ lỗi máy chủ từ chối mới tính lượt, tối đa 8), lệnh tới máy chủ có hạn 30 giây để hàng đợi không treo, hàng đợi dừng khi mất mạng và chạy lại ngay khi có mạng; dải "ngoại tuyến" hiện thật (chưa kiểm chứng trên thiết bị) (V1-02, #48).
 
 ### Đã có trước khi mở nhật ký (đến commit `42f6a3c`, gom từ PR #13–#39)
