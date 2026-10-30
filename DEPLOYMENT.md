@@ -215,9 +215,12 @@ rồi tham chiếu trong cấu hình động (mục 5.2). Tên và cờ lệnh `
 
 Trong `app.json` hiện có:
 
-- `ios.bundleIdentifier` / `android.package` = `vn.doncung.app.dev` (**giữ chỗ**; đặt giá trị chính thức trước bản build gửi cửa hàng đầu tiên)
+- `ios.bundleIdentifier` / `android.package` = `vn.doncung.app.dev` (**giữ chỗ**; đặt giá trị chính thức trước bản build gửi cửa hàng đầu tiên). `app.config.js` bỏ hậu tố `.dev` khi `APP_ENV=prod` (hoặc bí danh `production`): profile `production` của `eas.json` ra `vn.doncung.app`
 - `version` = `0.0.0`
 - Quyền camera có chuỗi mô tả tiếng Việt; micro **tắt** (`microphonePermission: false`, `recordAudioAndroid: false`)
+- `android.allowBackup: false` (Q-24d): video, CSDL và phiên đăng nhập không vào Android Auto Backup; đổi máy phải đăng nhập lại. Phần iOS (loại khỏi iCloud Backup) làm ở V1-12: module Expo cục bộ `modules/backup-exclusion` (Swift, tự liên kết, chỉ có ở bản build native, không có trong Expo Go)
+- `android.blockedPermissions`: gỡ `RECORD_AUDIO` (O-09, phòng thủ thêm), `SYSTEM_ALERT_WINDOW` (mẫu RN thêm vào, app không cần; bản debug vẫn giữ trong manifest `debug/`), `READ/WRITE_EXTERNAL_STORAGE` (`expo-file-system` thêm; app chỉ ghi trong thư mục riêng của app)
+- `ios.config.usesNonExemptEncryption: false` -> `ITSAppUsesNonExemptEncryption = false` (app chỉ dùng HTTPS của hệ điều hành và SHA-256 để băm, không mã hóa riêng; thêm mã hóa riêng thì phải xem lại khai báo xuất khẩu)
 
 Cần cập nhật khi chuẩn bị phát hành:
 
@@ -251,54 +254,42 @@ Plugin của `@react-native-firebase/*` sẽ được thêm vào `plugins` khi t
 
 ### 5.3 Biến môi trường
 
-Biến `EXPO_PUBLIC_*` được **nhúng vào gói JS và ai cũng đọc được**. Tuyệt đối không đặt bí mật trong đó. Bản production **không** được đặt `EXPO_PUBLIC_USE_FAKE_BACKEND` hay `EXPO_PUBLIC_FAKE_SESSION`: khi Firebase thật được nối, kiểm tra cổng giả không còn trong bản phát hành.
+Biến `EXPO_PUBLIC_*` được **nhúng vào gói JS và ai cũng đọc được**. Tuyệt đối không đặt bí mật trong đó.
+
+| Biến                           | Ý nghĩa                                                                                                                                   | Giá trị theo profile `eas.json`                                           |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `APP_ENV`                      | Chọn mã app (`.dev` hay không) và thư mục `firebase/config/<env>/`. Nhận `dev`, `prod`, bí danh `production`; giá trị khác làm build dừng | `development`/`staging`: `dev`; `production`: `prod`                      |
+| `EXPO_PUBLIC_APP_ENV`          | Nhúng vào gói JS: `prod`/`production` thì app **luôn** dùng Firebase thật, bỏ qua mọi cờ cổng giả và emulator (`src/api/create-api.ts`)   | `development`/`staging`: `dev`; `production`: `prod`                      |
+| `EXPO_PUBLIC_BACKEND`          | `firebase` \| `fake` (ép chọn backend)                                                                                                    | `staging`, `production`: `firebase`                                       |
+| `EXPO_PUBLIC_RECORDER_ENABLED` | `1` bật ghi video thật (ADR-020)                                                                                                          | chỉ `staging` (cổng thiết bị); `production` bật ở V1-21 sau cổng thiết bị |
+
+**Chốt chặn bản production (V1-01), hai lớp:**
+
+1. **Lúc build:** `app.config.js` gọi `validateReleaseEnv` (`scripts/env/validate-release-env.cjs`). Khi `APP_ENV` là `prod`/`production`, mọi lệnh đọc cấu hình (`npx expo config`, `expo prebuild`, `eas build`) **dừng với lỗi** nếu: thiếu `EXPO_PUBLIC_APP_ENV=prod`; có `EXPO_PUBLIC_USE_FAKE_BACKEND` (mọi giá trị); `EXPO_PUBLIC_BACKEND` khác `firebase`; có `EXPO_PUBLIC_FAKE_SESSION`; có `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST`; trên máy build EAS (`EAS_BUILD=true`) thiếu tệp cấu hình Firebase của nền tảng đang build. Bản production **không** lấy tệp ở gốc repo (nơi đặt tệp dev): chỉ đường dẫn qua `GOOGLE_SERVICE_INFO_PLIST`/`GOOGLE_SERVICES_INFO_PLIST`/`GOOGLE_SERVICES_JSON` (EAS file secret) hoặc `firebase/config/prod/`; tệp tìm thấy phải có `BUNDLE_ID` (plist) và `package_name` (json) đúng mã app production (`vn.doncung.app`), lệch thì build dừng. Ngược lại, `EXPO_PUBLIC_APP_ENV=prod` mà `APP_ENV` không phải prod cũng bị từ chối (gói JS và mã app lệch môi trường). Kiểm cả biến đặt trên trang EAS (environment `production`), không chỉ `eas.json`.
+2. **Lúc chạy:** gói JS có `EXPO_PUBLIC_APP_ENV=prod` thì `resolveBackendMode` trả Firebase trước mọi cờ, không nối emulator; thiếu tệp cấu hình thì "chưa kết nối", không rơi về cổng giả.
+
+Tự kiểm trên máy dev (không cần tài khoản EAS):
+
+```bash
+APP_ENV=prod EXPO_PUBLIC_APP_ENV=prod npx expo config --type public | grep -E 'bundleIdentifier|package'   # vn.doncung.app
+APP_ENV=prod EXPO_PUBLIC_APP_ENV=prod EXPO_PUBLIC_BACKEND=fake npx expo config                              # phải lỗi
+```
 
 ## 6. Build bằng EAS
 
 ### 6.1 Khởi tạo và `eas.json` **[Đã có `eas.json`, chưa chạy build]**
 
-`eas.json` ở gốc repo có 4 profile: `development` (dev client; Android APK, iOS thiết bị thật), `development-simulator` (iOS simulator), `staging` (APK nội bộ), `production` (AAB, tự tăng số bản). Chưa có khối `submit` vì chưa có ID app trên App Store Connect. Bước còn lại là `eas init` (liên kết dự án với tài khoản Expo) và tạo EAS file secret cho hai tệp Firebase (mục 4.5). Với dev client, JS do Metro trên máy bạn đóng gói nên chọn Firebase thật bằng `EXPO_PUBLIC_BACKEND=firebase npm start`; với `staging`/`production`, JS đóng gói lúc build và mặc định là Firebase.
+`eas.json` ở gốc repo có 4 profile, mỗi profile đặt `env` (bảng mục 5.3): `development` (dev client; Android APK, iOS thiết bị thật; `APP_ENV=dev`), `development-simulator` (iOS simulator), `staging` (APK nội bộ, EAS environment `preview`, Firebase dev, mã app `.dev`, **bật ghi video** cho cổng thiết bị), `production` (AAB, tự tăng số bản, `APP_ENV=prod`, mã app không `.dev`, Firebase production, chưa bật ghi video). Khối `submit.production` có Android `track: internal`, `releaseStatus: draft` và iOS `ascAppId` **giữ chỗ** (`<ID app trên App Store Connect>`): `eas submit` iOS báo lỗi cho tới khi điền ID thật (release-checklist S-6). Bước còn lại là `eas init` (liên kết dự án với tài khoản Expo) và tạo EAS file secret cho hai tệp Firebase (mục 4.5; tên biến `GOOGLE_SERVICE_INFO_PLIST` hoặc `GOOGLE_SERVICES_INFO_PLIST`, `GOOGLE_SERVICES_JSON`): bản `production` trên máy build EAS **dừng** nếu thiếu tệp. Với dev client, JS do Metro trên máy bạn đóng gói nên chọn Firebase thật bằng `EXPO_PUBLIC_BACKEND=firebase npm start`; với `staging`/`production`, JS đóng gói lúc build theo `env` của profile.
 
 ```bash
 npx eas-cli login
 npx eas-cli init                 # liên kết dự án với tài khoản Expo, ghi projectId vào cấu hình
-npx eas-cli build:configure      # sinh eas.json
+# Không chạy `eas-cli build:configure`: eas.json đã có trong repo, nguồn duy nhất của cấu hình profile.
 ```
 
-Mẫu `eas.json` (điều chỉnh sau khi có `.firebaserc` và các môi trường):
+Cấu hình profile xem trực tiếp `eas.json` (không chép mẫu vào đây để khỏi lệch).
 
-```json
-{
-  "cli": { "version": ">= 16.0.0", "appVersionSource": "remote" },
-  "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "environment": "development",
-      "ios": { "simulator": false },
-      "android": { "buildType": "apk" }
-    },
-    "staging": {
-      "distribution": "internal",
-      "environment": "preview",
-      "android": { "buildType": "apk" }
-    },
-    "production": {
-      "environment": "production",
-      "autoIncrement": true,
-      "android": { "buildType": "app-bundle" }
-    }
-  },
-  "submit": {
-    "production": {
-      "android": { "track": "internal", "releaseStatus": "draft" },
-      "ios": { "ascAppId": "<ID app trên App Store Connect>" }
-    }
-  }
-}
-```
-
-Lưu ý: Google Play chỉ nhận **AAB** (`app-bundle`) cho app mới; APK dùng để cài thử trực tiếp. Nếu `staging` dùng bundle id khác bản production (để cài song song), tách bằng biến môi trường trong `app.config.ts`.
+Lưu ý: Google Play chỉ nhận **AAB** (`app-bundle`) cho app mới; APK dùng để cài thử trực tiếp. Nếu `staging` dùng bundle id khác bản production (để cài song song), tách bằng biến môi trường trong `app.config.js` (hôm nay `staging` dùng `APP_ENV=dev` nên mang `.dev`, cài song song được với bản production).
 
 ### 6.2 Chạy kiểm tra trước khi build
 

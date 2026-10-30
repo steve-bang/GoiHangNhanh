@@ -10,6 +10,7 @@
 | Security Rules | Cô lập theo shop (QA-11), bất biến bằng chứng/phiên, trường chỉ-máy-chủ, audit | `@firebase/rules-unit-testing` 6 + Firebase Emulator (Firestore, Storage) + Jest (project `rules`) | Máy dev, CI (cần Java 21) | `npm run test:rules` |
 | Hợp đồng API (`src/api`) | Cùng một bộ test (`api/contract-tests`) cho mọi hiện thực: bản giả, bản Firebase với SDK mô phỏng; ánh xạ lỗi SDK→`AppError` | Jest project `unit` | Máy dev, CI | `npm test` |
 | Hợp đồng Cloud Functions | Đầu vào/đầu ra, quyền, idempotency, audit, hành vi theo cờ giữ. **Đã có** cho `createShop`/`updateShop` (gọi thẳng hàm logic trên Firestore Emulator, `firebase/tests/functions`); `verifyEvidence` (`evidence.ts`, gọi thẳng hàm logic với bộ đọc Storage giả); chưa kiểm lớp callable/Auth, chưa kiểm trigger Storage thật (chưa deploy, chưa chạy với Storage Emulator), chưa có `createUploadSession`/`createReadUrl` | Functions + Firestore + Storage Emulator, `firebase-functions-test` | Máy dev, CI | *(thêm cùng Function đầu tiên)* |
+| Công cụ và cấu hình build | Rule ESLint `design-tokens` (`eslint-rules/*.test.js`); chốt chặn môi trường build `validateReleaseEnv` (`scripts/env/validate-release-env.test.cjs`, V1-01: bản production + cờ cổng giả/emulator thì build dừng) | Jest project `tooling` (Node) | Máy dev, CI | `npm test` |
 | Component/tích hợp UI | Trạng thái màn hình (loading/empty/offline/error/retry/success), nhãn đúng, điều hướng và thanh tab (router thật trong bộ nhớ) | `@testing-library/react-native` (14.1.0, 2026-10-08) + `expo-router/testing-library` + `jest-expo` | Máy dev, CI | `npm test` (đã có cho khung giao diện, xem `layout.md` mục 8) |
 | Ảnh màn hình bản web (cho PR) | Giao diện trên react-native-web + cổng giả, 0 lỗi trang khi mở route; **không** thay kiểm tra trên thiết bị | `scripts/screens` (Node + Playwright/Chromium cài ngoài repo, `expo export --platform web` trên bản sao) | Máy dev (không chạy ở CI) | `node scripts/screens/capture.cjs …` ([README](../../scripts/screens/README.md)) |
 | Thiết bị thật | Camera, ghi file, gián đoạn, tải nền, mạng, bộ nhớ, nhiệt, pin | Thủ công theo kịch bản; (tùy chọn) Maestro/Detox cho phần điều hướng | iPhone + Android thật | mục 5 |
@@ -122,6 +123,7 @@ Ma trận thiết bị **đề xuất** — xem thêm các lớp phiên bản/h�
 8. **Khôi phục dữ liệu (sao lưu/RTO/RPO)** — kiểm thử vận hành, không phải test mã.
 9. **Ngôn ngữ trung thực trong UI** chỉ được quét tự động cho chuỗi i18n đã biết cụm cấm; người review vẫn phải đọc nội dung mới (kể cả ảnh/biểu ngữ).
 10. **Phê duyệt App Store/Google Play** (quyền, thanh toán trong ứng dụng O-16, đăng nhập bên thứ ba O-15).
+11. **Loại khỏi sao lưu iCloud (V1-12)** — Jest chỉ kiểm adapter `src/platform/backup-exclusion.ts` và điểm gọi (thư mục `evidence`, thư mục CSDL; lỗi không chặn, log không đường dẫn); `npx expo-modules-autolinking resolve --platform apple` xác nhận module được liên kết. Biên dịch Swift, `pod install` và việc iOS thật sự bỏ thư mục khỏi bản sao lưu chỉ kiểm được trên bản build thật (release-checklist G-7).
 
 ## 7. Trạng thái kiểm chứng của khung (ngày 2026-10-26, Node 22.22, npm 10.9)
 

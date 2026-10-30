@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { StatusBar } from 'expo-status-bar';
 
@@ -15,6 +15,7 @@ import {
 } from '@/features/personal';
 import { OnboardingFlowProvider } from '@/features/shop';
 import { UploadRunner } from '@/features/upload';
+import { excludeEvidenceDirFromBackup } from '@/platform';
 import { ToastProvider } from '@/shared/ui';
 
 const i18n = initI18n();
@@ -24,6 +25,11 @@ const i18n = initI18n();
  * state... được thêm cùng tính năng đầu tiên cần đến. SafeAreaProvider đã do Expo Router cung cấp.
  */
 export function AppProviders({ children }: { children: ReactNode }) {
+  // V1-12 (Q-24d A): thư mục bằng chứng không vào iCloud Backup; gọi lại mỗi lần mở app (idempotent),
+  // không chờ, không chặn. Thư mục CSDL do `openLocalDatabase` tự đặt cờ sau khi mở.
+  useEffect(() => {
+    excludeEvidenceDirFromBackup().catch(() => undefined);
+  }, []);
   return (
     <I18nextProvider i18n={i18n}>
       <StatusBar style="dark" />

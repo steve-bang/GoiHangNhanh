@@ -1,0 +1,171 @@
+---
+/**
+ * Khung chung cho trang pháp lý/hỗ trợ: đường dẫn (khớp BreadcrumbList), h1, ngày hiệu lực, mục lục.
+ * Không hiện chữ "nháp" cho người đọc; trạng thái "chờ rà pháp lý" chỉ ghi trong chú thích mã của từng trang
+ * và ở release-checklist mục C.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { site } from '../config/site';
+import { breadcrumbLd, type JsonLd } from '../lib/jsonld';
+
+export interface TocItem {
+  id: string;
+  label: string;
+}
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  heading: string;
+  /** Tên ngắn trong đường dẫn điều hướng. */
+  crumb: string;
+  toc?: TocItem[];
+  jsonLd?: JsonLd[];
+  /** Ẩn ngày hiệu lực (trang Hỗ trợ không phải văn bản pháp lý). */
+  hideEffectiveDate?: boolean;
+}
+
+const {
+  title,
+  description,
+  path,
+  heading,
+  crumb,
+  toc = [],
+  jsonLd = [],
+  hideEffectiveDate = false,
+} = Astro.props;
+
+const [y, m, d] = site.legal.effectiveDate.split('-').map(Number);
+const effective = `${d} tháng ${m} năm ${y}`;
+const ld = [
+  breadcrumbLd([
+    { name: 'Trang chủ', path: '/' },
+    { name: crumb, path },
+  ]),
+  ...jsonLd,
+];
+---
+
+<BaseLayout title={title} description={description} path={path} jsonLd={ld}>
+  <article class="section legal">
+    <div class="container">
+      <nav aria-label="Đường dẫn" class="crumbs">
+        <ol>
+          <li><a href="/">Trang chủ</a></li>
+          <li aria-current="page">{crumb}</li>
+        </ol>
+      </nav>
+      <h1>{heading}</h1>
+      {
+        !hideEffectiveDate && (
+          <p class="legal__meta">
+            Ngày hiệu lực: <time datetime={site.legal.effectiveDate}>{effective}</time>
+          </p>
+        )
+      }
+      {
+        toc.length > 0 && (
+          <nav aria-label="Mục lục" class="card toc">
+            <p class="toc__title">Nội dung chính</p>
+            <ol>
+              {toc.map((t) => (
+                <li>
+                  <a href={`#${t.id}`}>{t.label}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )
+      }
+      <slot />
+    </div>
+  </article>
+</BaseLayout>
+
+<style is:global>
+  .legal h2 {
+    margin-top: var(--space-32);
+    scroll-margin-top: var(--space-16);
+  }
+  .legal h3 {
+    margin-top: var(--space-24);
+  }
+  .legal__meta {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+  }
+  .crumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4) var(--space-8);
+    list-style: none;
+    margin: 0 0 var(--space-16);
+    padding: 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+  .crumbs li {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+  }
+  .crumbs li + li::before {
+    content: '›';
+    margin-right: var(--space-8);
+  }
+  .crumbs a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-touch);
+  }
+  .toc {
+    margin-block: var(--space-16) var(--space-24);
+  }
+  .toc__title {
+    font-weight: 600;
+    margin-bottom: var(--space-8);
+  }
+  .toc ol {
+    margin: 0;
+    padding-left: var(--space-24);
+  }
+  .toc a {
+    display: inline-block;
+    padding-block: var(--space-6);
+  }
+  .legal li {
+    margin-bottom: var(--space-6);
+  }
+  .note {
+    background: var(--feedback-info-bg);
+    border-left: var(--border-emphasis) solid var(--action-primary);
+    padding: var(--space-12) var(--space-16);
+    border-radius: var(--radius-8);
+    max-width: var(--measure);
+  }
+  .table-wrap {
+    overflow-x: auto;
+    max-width: 100%;
+    margin-bottom: var(--space-16);
+  }
+  .legal table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 18rem;
+    background: var(--surface-raised);
+    font-size: var(--text-sm);
+  }
+  .legal th,
+  .legal td {
+    text-align: left;
+    vertical-align: top;
+    padding: var(--space-8) var(--space-12);
+    border: var(--border-thin) solid var(--border-default);
+  }
+  .legal th {
+    background: var(--surface-muted);
+  }
+</style>

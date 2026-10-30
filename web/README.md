@@ -15,8 +15,9 @@ Cần Node >= 22.12 (đã thử với Node 22.22, npm 10.9). Chạy trong thư m
 | `npm run build` | Build tĩnh ra `dist/` |
 | `npm run preview` | Xem bản build |
 | `npm run typecheck` | `astro check` (TypeScript + Astro) |
-| `npm run check:seo` | Kiểm tra `dist/`: độ dài title/description, trùng lặp, canonical, `lang`, một `h1`, OG/Twitter, JSON-LD hợp lệ (và FAQ khớp nội dung hiển thị), link/anchor hỏng, ảnh có `alt` + `width/height`, `sitemap`, `robots.txt` |
+| `npm run check:seo` | Kiểm tra `dist/`: độ dài title/description, trùng lặp, canonical, `lang`, một `h1`, OG/Twitter, JSON-LD hợp lệ (và FAQ khớp nội dung hiển thị), link/anchor hỏng, ảnh có `alt` + `width/height`, `sitemap`, `robots.txt`; trang pháp lý có mặt, trong sitemap, liên kết ở chân trang, không cụm từ cấm; chặn `indexable` khi còn giữ chỗ |
 | `npm run check` | typecheck + build + check:seo (chạy trước khi báo xong) |
+| `npm run check:release` | Như `check` nhưng **báo lỗi khi còn bất kỳ giữ chỗ nào** (`site.legal.*` là `null`, tên miền `.invalid`/`.example`) dù `indexable=false`. Phải đạt trước khi khai URL cho store (release-checklist C-7) |
 | `node scripts/make-og.mjs` | Tạo lại `public/og-default.png` (giữ chỗ) khi đổi tên thương hiệu |
 
 Astro gửi số liệu ẩn danh khi chạy lệnh. Tắt bằng `npx astro telemetry disable` hoặc biến môi trường `ASTRO_TELEMETRY_DISABLED=1`.
@@ -34,8 +35,9 @@ web/
     styles/global.css     Nền tảng CSS (mobile-first từ 360px)
     layouts/BaseLayout    Head SEO (title, description, canonical, robots, OG, Twitter, JSON-LD), header/nav/main/footer
     lib/jsonld.ts         Hàm tạo JSON-LD: Organization, WebSite, BreadcrumbList, FAQPage, Article, MobileApplication
-    components/           StoreButtons (nút tải app)
-    pages/                index.astro (landing), 404.astro, robots.txt.ts
+    components/           StoreButtons, LegalPage (khung trang pháp lý), Contact (liên hệ/giữ chỗ)
+    pages/                index.astro (landing), 404.astro, robots.txt.ts,
+                          chinh-sach-quyen-rieng-tu, dieu-khoan, ho-tro, xoa-tai-khoan (V1-19)
 ```
 
 ## Quy tắc khi thêm trang
@@ -48,7 +50,20 @@ web/
 
 ## Giữ chỗ (chưa chốt, phải thay trước khi lên production)
 
-- `site.url` = `https://doncung.example` (tên miền chưa chốt).
+- `site.url` = `https://don-chung.invalid` (tên miền chưa chốt; cùng giá trị giữ chỗ với app `public-links.ts`).
+- `site.legal.supportEmail`, `operatorName`, `operatorAddress` = `null`: **cần điền trước khi phát hành** (release-checklist D-4, C-2). Trang hiện câu "sẽ được công bố"; `check:seo` báo lỗi nếu `indexable = true` khi còn `null`.
+- `site.legal.effectiveDate`, `emailRequestDays` (7 ngày làm việc, đề xuất): cập nhật sau khi luật sư rà.
+
+## Trang pháp lý và hỗ trợ (V1-19)
+
+| Trang | Đường dẫn | Dùng cho |
+|---|---|---|
+| Chính sách quyền riêng tư | `/chinh-sach-quyen-rieng-tu/` | App (Chào mừng, Cá nhân), App Store, Google Play |
+| Điều khoản sử dụng | `/dieu-khoan/` | App, App Store |
+| Hỗ trợ | `/ho-tro/` | App Store Support URL, app |
+| Yêu cầu xóa tài khoản | `/xoa-tai-khoan/` | Google Play Data deletion URL, app |
+
+Đường dẫn ở `site.legalPages`, URL tuyệt đối từ `publicLinks()`; không đổi sau khi đã khai báo với store. Nội dung mô tả bản v1 (sau V1-12/14/15/16) và là bản chờ luật sư rà: ghi chú nội bộ ở đầu mỗi tệp, không hiện chữ "nháp" cho người đọc. Trước khi mở trang: đối chiếu với app thật (release-checklist C-6).
 - `site.indexable = false`: mọi trang `noindex`, `robots.txt` chặn toàn site. Đặt `true` khi đã chốt tên miền, nội dung và hosting.
 - `site.stores.*.url = null`: nút "App Store/Google Play: sắp có" không có liên kết.
 - `public/og-default.png` và ảnh app dùng chung icon của app; chờ designer.

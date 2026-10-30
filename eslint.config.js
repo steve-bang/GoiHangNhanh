@@ -249,6 +249,13 @@ module.exports = [
     },
     rules: { 'no-console': 'off' },
   },
+  {
+    // Test Jest (project `tooling`) cho script Node, ví dụ scripts/env/validate-release-env.test.cjs.
+    files: ['scripts/**/*.test.cjs'],
+    languageOptions: {
+      globals: { describe: 'readonly', it: 'readonly', expect: 'readonly' },
+    },
+  },
   // Design Token: chặn giá trị thiết kế viết thẳng trong giao diện (phạm vi: scripts/design-token-scope.cjs).
   {
     files: ['src/**/*.{ts,tsx}'],

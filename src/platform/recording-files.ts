@@ -1,7 +1,48 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
+import { logger } from '@/core/logging/logger';
+
+import {
+  excludeFromBackup,
+  isBackupExclusionSupported,
+  type BackupExclusionResult,
+} from './backup-exclusion';
+
 const EVIDENCE_DIR = 'evidence';
 const EVIDENCE_MARKER = `/${EVIDENCE_DIR}/`;
+
+/**
+ * Thư mục bền `evidence/`, tạo nếu thiếu. Vừa tạo mới thì đặt lại cờ loại khỏi sao lưu (V1-12, không chờ,
+ * không chặn): cờ gắn với thư mục, thư mục bị xóa và tạo lại thì mất cờ.
+ */
+function ensureEvidenceDirectory(): Directory {
+  const directory = new Directory(Paths.document, EVIDENCE_DIR);
+  if (!directory.exists) {
+    directory.create({ intermediates: true });
+    // Adapter không từ chối promise; `catch` chỉ phòng thủ để không thành lỗi chưa xử lý.
+    excludeFromBackup('evidence', directory.uri).catch(() => undefined);
+  }
+  return directory;
+}
+
+/**
+ * Loại thư mục bằng chứng (video, ảnh hàng hoàn) khỏi iCloud Backup (V1-12, Q-24d A); gọi khi mở app.
+ * Tạo thư mục nếu thiếu để cờ có chỗ gắn (chỉ khi có module: Android/web/Expo Go trả `unsupported`, không
+ * đụng hệ tệp). Không ném lỗi.
+ */
+export async function excludeEvidenceDirFromBackup(): Promise<BackupExclusionResult> {
+  if (!isBackupExclusionSupported()) return 'unsupported';
+  let uri: string;
+  try {
+    const directory = new Directory(Paths.document, EVIDENCE_DIR);
+    if (!directory.exists) directory.create({ intermediates: true });
+    uri = directory.uri;
+  } catch {
+    logger.warn('backup_exclusion.not_applied', { target: 'evidence', result: 'failed' });
+    return 'failed';
+  }
+  return excludeFromBackup('evidence', uri);
+}
 
 export type PersistResult =
   | { readonly ok: true; readonly uri: string; readonly sizeBytes: number }
@@ -65,8 +106,7 @@ export function persistRecording(
   try {
     const source = new File(tempUri);
     if (!source.exists) return { ok: false, reason: 'FILE_MISSING' };
-    const directory = new Directory(Paths.document, EVIDENCE_DIR);
-    if (!directory.exists) directory.create({ intermediates: true });
+    const directory = ensureEvidenceDirectory();
     const name = `${evidenceId}.${extension.replace(/^\./, '')}`;
     const target = new File(directory, name);
     if (target.exists) return { ok: false, reason: 'FAILED' };
@@ -166,8 +206,7 @@ function removeStaleProbes(directory: Directory): void {
 export function probeEvidenceDirWritable(): boolean {
   let probe: File | null = null;
   try {
-    const directory = new Directory(Paths.document, EVIDENCE_DIR);
-    if (!directory.exists) directory.create({ intermediates: true });
+    const directory = ensureEvidenceDirectory();
     removeStaleProbes(directory);
     probe = new File(directory, `${PROBE_PREFIX}${Date.now()}`);
     probe.create();

@@ -9,11 +9,15 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 ### Added
 
 - Kế hoạch tổng phát hành v1.0, checklist phát hành cho con người và nhật ký thay đổi này (tài liệu).
-- Công cụ chụp ảnh màn hình bản web với cổng giả cho PR (`scripts/screens`, không đổi phụ thuộc, không chạy ở CI) và bộ ảnh mốc các màn chính (V1-00).
+- Công cụ chụp ảnh màn hình bản web với cổng giả cho PR (`scripts/screens`, không đổi phụ thuộc, không chạy ở CI) và bộ ảnh mốc các màn chính (V1-00, #41).
+- Website: trang Chính sách quyền riêng tư, Điều khoản sử dụng, Hỗ trợ và Yêu cầu xóa tài khoản (bản chờ rà pháp lý; email, tên pháp nhân, tên miền còn giữ chỗ), liên kết ở chân trang và sitemap; trang chủ web không còn nói "tải lên chạy nền" (V1-19, #42).
+- Tài liệu nộp store: mô tả, khai báo quyền riêng tư, ghi chú duyệt (V1-20, #45).
 
 ### Security
 
-- Máy chủ tự ghi nhật ký kiểm toán cho mọi lần tạo/sửa đơn, dòng, kiện, phiên, bằng chứng và hồ sơ hàng hoàn; Rules kiểm kiểu/độ dài trường và trần dung lượng mọi bằng chứng (ảnh 25 MB, video 2 GB); chỉ người khai báo mới xin được URL tải lên; xác minh mã băm không thử lại vô hạn và tự gỡ bằng chứng kẹt khi app thử tải lại; ô nhập đơn giới hạn độ dài khớp máy chủ (V1-04; chưa deploy).
+- Bản production luôn dùng Firebase thật: build dừng nếu mang cờ cổng giả hoặc Firebase Emulator, app bỏ qua các cờ đó lúc chạy; mã app không còn `.dev`; Android không đưa dữ liệu vào sao lưu tự động và bỏ các quyền không dùng (micro, hiển thị trên ứng dụng khác, bộ nhớ ngoài). Chưa chạy build EAS thật (V1-01, #43).
+- iOS: video, ảnh bằng chứng và CSDL trên máy không vào sao lưu iCloud (module Expo cục bộ đầu tiên của app); đổi máy hoặc cài lại sẽ mất tệp chưa tải lên. Chưa build và chưa kiểm chứng trên thiết bị (V1-12, #46).
+- Máy chủ tự ghi nhật ký kiểm toán cho mọi lần tạo/sửa đơn, dòng, kiện, phiên, bằng chứng và hồ sơ hàng hoàn; Rules kiểm kiểu/độ dài trường và trần dung lượng mọi bằng chứng (ảnh 25 MB, video 2 GB); chỉ người khai báo mới xin được URL tải lên; xác minh mã băm không thử lại vô hạn và tự gỡ bằng chứng kẹt khi app thử tải lại; ô nhập đơn giới hạn độ dài khớp máy chủ (V1-04, #44; chưa deploy).
 
 ### Đã có trước khi mở nhật ký (đến commit `42f6a3c`, gom từ PR #13–#39)
 
