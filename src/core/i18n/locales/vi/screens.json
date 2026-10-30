@@ -291,7 +291,7 @@
       "verifyStuck": "Máy chủ đã nhận tệp nhưng chưa kiểm tra xong."
     },
     "foreignTitle": "Do tài khoản khác tạo trên máy này",
-    "foreignHint": "Máy này không tải các tệp này lên. Tệp vẫn được giữ trên máy.",
+    "foreignHint": "Máy này không tải các tệp này lên. Chỉ tài khoản đã tạo tệp mới tải lên được.",
     "retry": "Thử lại",
     "retryAll": "Thử lại tất cả ({{count}})",
     "recheck": "Kiểm tra lại",
