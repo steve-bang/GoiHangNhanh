@@ -12,7 +12,7 @@ app (src/features/*) → hợp đồng ApiClient (src/api/contract)
                           ├─ src/api/firebase   ← nơi DUY NHẤT gọi SDK Firebase
                           ├─ src/api/fake       (dev/test)
                           └─ src/api/unavailable (thiếu cấu hình: lỗi trung thực)
-Phía máy chủ (chỉ Firebase): firebase/functions (createShop, updateShop), firebase/firestore.rules
+Phía máy chủ (chỉ Firebase): firebase/functions (createShop, updateShop, createUploadSession, verifyEvidence, trigger kiểm toán, deleteAccount, purgeDeletedShops), firebase/firestore.rules
 ```
 
 | Chức năng | Cách làm |
@@ -21,6 +21,7 @@ Phía máy chủ (chỉ Firebase): firebase/functions (createShop, updateShop), 
 | Tạo/sửa shop | Cloud Function callable `createShop` / `updateShop` (client không tự ghi `shops`, `members`) |
 | Biết tài khoản đã có shop chưa | Tài liệu `userShops/{uid}` (Function ghi, chủ tài khoản chỉ đọc) |
 | Khôi phục phiên khi mở app | `onAuthStateChanged` + `userShops` từ bộ nhớ đệm, không chờ mạng |
+| Xóa tài khoản (V1-14, chưa deploy; app nối ở V1-15) | Callable `deleteAccount` (xác thực trong 5 phút), lịch `purgeDeletedShops` xóa hẳn sau 30 ngày, bản ghi `accountDeletions/{uid}` |
 | Quên mật khẩu (OTP), Apple/Google | **Chưa làm** (O-22, O-15): trả `AUTH_SERVICE_UNAVAILABLE` |
 
 Chọn backend lúc chạy (`src/api/create-api.ts`):
@@ -123,6 +124,18 @@ npx firebase deploy --config firebase/firebase.json --project ghn-test-67b39 \
 **Lưu ý khi deploy (R2b, Q-28):** Rules mới thêm `shops/{shopId}/returns/{returnId}` và hình dạng bằng chứng hàng hoàn (`ownerKind: 'return'`); `createUploadSession` ghi thêm `ownerKind`/`returnId` vào kiểm toán và kiểm hồ sơ neo tồn tại. Chưa deploy; deploy Rules và Functions CÙNG LÚC (app bản mới đăng bản neo trước khi khai báo bằng chứng, nên Rules cũ sẽ từ chối).
 
 **Lưu ý khi deploy (V1-04):** thêm 6 trigger Firestore `auditOrderWrite`, `auditOrderLineWrite`, `auditPackageWrite`, `auditSessionWrite`, `auditEvidenceWrite`, `auditReturnWrite` (`onDocumentWrittenWithAuthContext`, `asia-southeast1`, `retry: true`). Trigger Firestore thế hệ 2 cần Eventarc và **cơ sở dữ liệu Firestore cùng vùng** với trigger (dự án dùng Singapore, Q-08); nếu cơ sở dữ liệu ở vùng khác thì deploy báo lỗi vị trí, phải sửa vùng trigger cho khớp. Rules siết kiểu/độ dài và trần dung lượng mọi bằng chứng (ảnh ≤ 25 MB, video ≤ 2 GB): deploy Rules và Functions cùng commit. Trigger chỉ ghi kiểm toán cho các lần ghi SAU khi deploy (không ghi bù). Thêm trigger `reverifyEvidence` (`onDocumentWritten` trên `shops/{shopId}/evidenceReverify/{evidenceId}`, 540 giây, 1 GiB, không tự thử lại) để xác minh lại bằng chứng kẹt khi `createUploadSession` đặt yêu cầu; cần quyền đọc bucket như `verifyEvidence`. `createUploadSession` giữ cấu hình thường (không băm).
+
+**Lưu ý khi deploy (V1-14, xóa tài khoản):** thêm callable `deleteAccount` và hàm lịch `purgeDeletedShops` (`onSchedule`, `every day 03:00` giờ `Asia/Ho_Chi_Minh`, 540 giây, 512 MiB, không tự thử lại; lần sau chạy tiếp phần còn lại). Rules thêm `accountDeletions/{uid}` (từ chối client) và khóa mọi đọc/ghi client vào shop có `status: 'deleting'`: deploy Rules và Functions cùng commit.
+
+- **API:** lần đầu CLI hỏi bật **Cloud Scheduler** (`cloudscheduler.googleapis.com`) cho hàm lịch: trả lời `y`. Hàm lịch thế hệ 2 tạo một job Cloud Scheduler cùng vùng (`asia-southeast1`); kiểm ở Console → Cloud Scheduler sau deploy.
+- **IAM (tài khoản dịch vụ chạy Functions, mặc định `<số dự án>-compute@developer.gserviceaccount.com`):** `deleteAccount` xóa người dùng Auth bằng Admin SDK (cần vai trò có `firebaseauth.users.delete`, ví dụ **Firebase Authentication Admin** `roles/firebaseauth.admin`); `purgeDeletedShops` liệt kê và xóa đối tượng Storage (`storage.objects.list`, `storage.objects.delete`, ví dụ **Storage Object Admin** trên bucket bằng chứng) và xóa Firestore (`roles/datastore.user`). Tài khoản mặc định thường đã có quyền Editor; nếu dự án đã thu hẹp quyền thì cấp các vai trò này. Bucket bật Object Versioning (mục trên): `delete` chỉ tạo phiên bản cũ (noncurrent), nên **phải có quy tắc vòng đời xóa phiên bản cũ** (ví dụ sau 7 ngày: `gcloud storage buckets update gs://<bucket> --lifecycle-file=<tệp>` với điều kiện `isLive: false`, `daysSinceNoncurrentTime: 7`) thì dữ liệu mới thật sự mất; nếu không, bản cũ còn trong bucket dù app và Firestore không còn trỏ tới (ghi ở checklist F-4b).
+- **Dừng dọn một shop vì pháp lý/tranh chấp (bất biến 9):** đặt `shops/{shopId}.legalHold = true` bằng Console hoặc Admin SDK (client không ghi được). Hàm lịch bỏ qua shop đó và ghi `lastSkipReason: 'legal_hold_skip'` vào `accountDeletions/{uid}`. Gỡ cờ thì lần chạy kế tiếp xóa. Chưa có giao diện.
+- **Yêu cầu xóa qua email (nhân viên hỗ trợ):** sau khi đã xác minh người gửi là chủ tài khoản (trang web `/xoa-tai-khoan/`), chạy `gcloud auth application-default login` bằng tài khoản có quyền như trên, rồi
+  ```bash
+  GOOGLE_CLOUD_PROJECT=<dự án> npm --prefix firebase/functions run account:delete -- --email <email>            # chạy thử: chỉ in kế hoạch
+  GOOGLE_CLOUD_PROJECT=<dự án> npm --prefix firebase/functions run account:delete -- --email <email> --execute  # xóa thật
+  ```
+  (hoặc `--uid <uid>`). Script dùng chung hàm với `deleteAccount` (`firebase/functions/src/admin/delete-account-cli.ts`), không cần đăng nhập lại của người dùng, không in email; bản ghi có `channel: 'support'`. Mã thoát 0 = xong/chạy thử, 1 = không tìm thấy hoặc shop còn thành viên khác, 2 = sai cách dùng.
 
 **Kiểm tra sau deploy:**
 
