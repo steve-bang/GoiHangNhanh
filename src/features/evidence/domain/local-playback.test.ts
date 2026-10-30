@@ -2,6 +2,7 @@ import { FILE_STATES, type FileState } from './file-state';
 import {
   formatDuration,
   formatFileSize,
+  isServerConfirmed,
   localPlaybackOf,
   shortHash,
   shortId,
@@ -71,5 +72,22 @@ describe('định dạng thông tin tệp', () => {
     expect(shortHash('abc')).toBe('abc');
     expect(shortId('sess-play-123456')).toBe('123456');
     expect(shortId('abc')).toBe('abc');
+  });
+});
+
+describe('isServerConfirmed', () => {
+  it('chỉ uploaded/verified (do máy chủ xác nhận); hash_mismatch và trạng thái máy khác thì không', () => {
+    expect(isServerConfirmed(FILE_STATES.UPLOADED)).toBe(true);
+    expect(isServerConfirmed(FILE_STATES.VERIFIED)).toBe(true);
+    for (const s of [
+      FILE_STATES.QUEUED,
+      FILE_STATES.UPLOADING,
+      FILE_STATES.UPLOAD_FAILED,
+      FILE_STATES.HASH_MISMATCH,
+      FILE_STATES.NEEDS_ATTENTION,
+      FILE_STATES.UNRECOVERABLE,
+    ]) {
+      expect(isServerConfirmed(s)).toBe(false);
+    }
   });
 });

@@ -8,6 +8,7 @@ import { Card, EmptyState, EvidenceStatusBadge, Text, useTheme } from '@/shared/
 import {
   formatDuration,
   formatFileSize,
+  isServerConfirmed,
   localPlaybackOf,
   shortHash,
   toDisplayStatus,
@@ -54,11 +55,13 @@ export function EvidenceDetailView({
     () => localPlaybackOf({ state, localPath }, recordingExists),
     [state, localPath],
   );
-  // Câu giải thích của nhãn nói "bản trên thiết bị vẫn được giữ"; tệp đã mất thì chỉ giữ câu của
-  // trạng thái do máy chủ xác nhận, không nói điều sai về tệp trên máy.
-  const showHint =
-    display.kind === 'label' &&
-    (playback === 'available' || display.label === 'uploaded' || display.label === 'verified');
+  const serverHas = isServerConfirmed(state);
+  // Tệp không còn trên máy và máy chủ CHƯA xác nhận có bản: bằng chứng đã mất. Không hiện nhãn trạng thái
+  // (ví dụ "Đã lưu trên máy" sẽ sai), chỉ hiện câu mất ở khung xem.
+  const lost = playback === 'missing' && !serverHas;
+  // Câu giải thích của nhãn nói về tệp trên máy; tệp đã mất thì chỉ giữ câu của trạng thái máy chủ.
+  const showHint = display.kind === 'label' && (playback === 'available' || serverHas);
+  const noun = file.kind === 'video' ? 'video' : 'photo';
   const info: EvidenceDetailRow[] = [
     { key: 'kind', label: t('evidence:detail.info.kind'), value: kindLabel },
     { key: 'capturedAt', label: t('evidence:detail.info.capturedAt'), value: capturedAtLabel },
@@ -85,25 +88,33 @@ export function EvidenceDetailView({
 
   return (
     <>
-      <EvidenceMedia file={file} playback={playback} />
-      <Card compact testID="evidence-detail-status">
-        <View style={{ gap: tokens.space.xs }}>
-          {display.kind === 'label' ? (
-            <>
-              <EvidenceStatusBadge compact status={display.label} testID="evidence-detail-badge" />
-              {showHint ? (
-                <Text variant="formBody" color="inkMuted" testID="evidence-detail-hint">
-                  {t(`evidence:statusHint.${display.label}`)}
-                </Text>
-              ) : null}
-            </>
-          ) : (
-            <Text variant="formButton" color="ink" testID="evidence-detail-capture">
-              {t(`evidence:capture.${display.phase}`)}
-            </Text>
-          )}
-        </View>
-      </Card>
+      <EvidenceMedia file={file} playback={playback} serverHas={serverHas} />
+      {lost ? null : (
+        <Card compact testID="evidence-detail-status">
+          <View style={{ gap: tokens.space.xs }}>
+            {display.kind === 'label' ? (
+              <>
+                <EvidenceStatusBadge
+                  compact
+                  status={display.label}
+                  testID="evidence-detail-badge"
+                />
+                {showHint ? (
+                  <Text variant="formBody" color="inkMuted" testID="evidence-detail-hint">
+                    {display.label === 'saved_on_device'
+                      ? t(`evidence:detail.savedOnDeviceHint.${noun}`)
+                      : t(`evidence:statusHint.${display.label}`)}
+                  </Text>
+                ) : null}
+              </>
+            ) : (
+              <Text variant="formButton" color="ink" testID="evidence-detail-capture">
+                {t(`evidence:capture.${display.phase}`)}
+              </Text>
+            )}
+          </View>
+        </Card>
+      )}
       <Card compact testID="evidence-detail-info">
         <View style={{ gap: tokens.space.sm }}>
           {info.map((row) => (
@@ -153,9 +164,12 @@ export function EvidenceDetailView({
 function EvidenceMedia({
   file,
   playback,
+  serverHas,
 }: {
   file: EvidenceDetailViewProps['file'];
   playback: LocalPlayback;
+  /** Máy chủ đã xác nhận có bản: chỉ khi đó câu "tệp mất" mới nói tới máy chủ. */
+  serverHas: boolean;
 }) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
@@ -172,7 +186,11 @@ function EvidenceMedia({
           iconCircle
           icon={variant === 'capturing' ? 'clock' : 'alert-triangle'}
           title={t(`evidence:detail.media.${variant}Title.${noun}`)}
-          message={t(`evidence:detail.media.${variant}Message`)}
+          message={
+            variant === 'missing'
+              ? t(`evidence:detail.media.missingMessage.${serverHas ? 'server' : 'lost'}`)
+              : t(`evidence:detail.media.${variant}Message`)
+          }
         />
       </Card>
     );

@@ -135,23 +135,55 @@ describe('UI-E04 Chi tiết bằng chứng (xem lại trên máy)', () => {
     }
   });
 
-  it('tệp không còn trên máy: nói thẳng, không trình phát, không hứa xem từ máy chủ', async () => {
-    const { store, d, file } = await seed();
-    await open(store, [file('queued')], { orderId: d.order.id, evidenceId: 'ev-1' });
-    expect(await screen.findByText('Video không còn trên máy này.')).toBeOnTheScreen();
-    expect(screen.getByText('Ứng dụng chưa hỗ trợ xem lại tệp từ máy chủ.')).toBeOnTheScreen();
-    expect(screen.queryByTestId('evidence-video-player')).toBeNull();
-    // Nhãn vẫn là trạng thái tệp thật, nhưng không nói "đã lưu trên thiết bị" khi tệp đã mất.
-    expect(screen.getByText('Đã lưu trên máy')).toBeOnTheScreen();
-    expect(screen.queryByTestId('evidence-detail-hint')).toBeNull();
-  });
+  it.each<FileState>(['queued', 'needs_attention', 'upload_failed', 'unrecoverable'])(
+    'tệp %s không còn trên máy: nói bằng chứng đã mất, không nhãn "Đã lưu trên máy", không trình phát',
+    async (state) => {
+      const { store, d, file } = await seed();
+      await open(store, [file(state)], { orderId: d.order.id, evidenceId: 'ev-1' });
+      expect(await screen.findByText('Video không còn trên máy này.')).toBeOnTheScreen();
+      expect(
+        screen.getByText('Tệp chưa được tải lên máy chủ, nên bằng chứng này đã mất.'),
+      ).toBeOnTheScreen();
+      expect(screen.queryByText(/từ máy chủ\./)).toBeNull();
+      expect(screen.queryByTestId('evidence-detail-status')).toBeNull();
+      expect(screen.queryByText('Đã lưu trên máy')).toBeNull();
+      expect(screen.queryByText(/Đã xác minh|Đã tải lên/)).toBeNull();
+      expect(screen.queryByTestId('evidence-video-player')).toBeNull();
+      // Thông tin tệp vẫn còn để đối chiếu.
+      expect(screen.getByText('DH-PLAY-1')).toBeOnTheScreen();
+    },
+  );
 
-  it('tệp đã mất nhưng máy chủ đã xác minh: vẫn giữ câu của máy chủ, không trình phát', async () => {
+  it.each<[FileState, string]>([
+    ['verified', 'Đã xác minh'],
+    ['uploaded', 'Đã tải lên'],
+  ])(
+    'tệp %s không còn trên máy: máy chủ có bản, giữ nhãn + câu máy chủ, không trình phát',
+    async (state, label) => {
+      const { store, d, file } = await seed();
+      await open(store, [file(state)], { orderId: d.order.id, evidenceId: 'ev-1' });
+      expect(await screen.findByText('Video không còn trên máy này.')).toBeOnTheScreen();
+      expect(screen.getByText('Ứng dụng chưa hỗ trợ xem lại tệp từ máy chủ.')).toBeOnTheScreen();
+      expect(screen.queryByText(/bằng chứng này đã mất/)).toBeNull();
+      expect(screen.getByText(label)).toBeOnTheScreen();
+      expect(screen.getByTestId('evidence-detail-hint')).toHaveTextContent(/máy chủ/i);
+      expect(screen.queryByTestId('evidence-video-player')).toBeNull();
+    },
+  );
+
+  it.each<['video' | 'photo', string, RegExp]>([
+    ['video', 'Video đã lưu trên máy này. Chưa có bản trên máy chủ.', /Ảnh đã lưu/],
+    ['photo', 'Ảnh đã lưu trên máy này. Chưa có bản trên máy chủ.', /Video đã lưu/],
+  ])('câu giải thích "Đã lưu trên máy" theo loại tệp (%s)', async (kind, hint, wrong) => {
     const { store, d, file } = await seed();
-    await open(store, [file('verified')], { orderId: d.order.id, evidenceId: 'ev-1' });
-    expect(await screen.findByText('Video không còn trên máy này.')).toBeOnTheScreen();
-    expect(screen.getByTestId('evidence-detail-hint')).toHaveTextContent(/máy chủ/);
-    expect(screen.queryByTestId('evidence-video-player')).toBeNull();
+    const path = kind === 'video' ? PATH : 'evidence/ev-1.jpg';
+    mockExisting.add(path);
+    await open(store, [file('queued', { kind, localPath: path })], {
+      orderId: d.order.id,
+      evidenceId: 'ev-1',
+    });
+    expect(await screen.findByTestId('evidence-detail-hint')).toHaveTextContent(hint);
+    expect(screen.queryByText(wrong)).toBeNull();
   });
 
   it('tệp đang ghi/đang lưu: không mở tệp chưa đóng', async () => {

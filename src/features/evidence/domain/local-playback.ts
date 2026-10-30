@@ -22,6 +22,13 @@ export function localPlaybackOf(
   return exists(file.localPath) ? 'available' : 'missing';
 }
 
+/**
+ * Máy chủ đã xác nhận nhận đủ tệp (`uploaded`/`verified`, chỉ đạt được bằng sự kiện `origin: 'server'`).
+ * Dùng để chọn câu khi tệp không còn trên máy: chỉ khi đó mới được nói máy chủ còn bản.
+ */
+export const isServerConfirmed = (state: FileState): boolean =>
+  state === FILE_STATES.UPLOADED || state === FILE_STATES.VERIFIED;
+
 const MB = 1024 * 1024;
 const GB = 1024 * MB;
 
