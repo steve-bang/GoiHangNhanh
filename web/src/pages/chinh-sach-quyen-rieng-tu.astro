@@ -67,26 +67,29 @@ const toc = [
       </thead>
       <tbody>
         <tr>
-          <td>Email, mật khẩu (chúng tôi không xem được mật khẩu), họ tên nếu bạn nhập</td>
+          <td>Email, mật khẩu (chúng tôi không xem được mật khẩu), họ tên nếu bạn nhập; mã tài khoản nội bộ do hệ thống tạo</td>
           <td>Khi đăng ký hoặc sửa hồ sơ</td>
           <td>Đăng nhập, đặt lại mật khẩu, hiện tên của bạn</td>
         </tr>
         <tr>
-          <td>Tên cửa hàng, nguồn bán</td>
+          <td>Tên cửa hàng, nguồn bán, vai trò của bạn trong cửa hàng</td>
           <td>Khi tạo hoặc sửa cửa hàng</td>
-          <td>Tách dữ liệu theo cửa hàng</td>
+          <td>Tách dữ liệu theo cửa hàng, phân quyền</td>
         </tr>
         <tr>
-          <td>
-            Mã đơn, mã vận đơn, tên sản phẩm, phân loại, số lượng, ghi chú do bạn nhập hoặc quét
-          </td>
+          <td>Mã đơn, nguồn bán, mã vận đơn (nếu có), tên sản phẩm, phân loại, số lượng do bạn nhập hoặc quét; số thứ tự kiện hàng</td>
           <td>Khi đơn đã có phiên quay</td>
-          <td>Gắn bằng chứng đúng đơn, tìm lại đơn</td>
+          <td>Gắn bằng chứng đúng đơn và kiện, tìm lại đơn</td>
         </tr>
         <tr>
-          <td>Phiên quay, kiện hàng và thông tin tệp: loại tệp, dung lượng, thời lượng, mã băm</td>
-          <td>Khi đồng bộ đơn và khi tải tệp lên</td>
-          <td>Biết tệp thuộc đơn, kiện, phiên nào và kiểm tra tệp còn nguyên</td>
+          <td>Phiên quay: đơn và kiện liên quan, bản chụp thông tin đơn lúc bắt đầu quay, trạng thái phiên</td>
+          <td>Khi đồng bộ đơn</td>
+          <td>Biết video thuộc phiên nào và thông tin đơn lúc quay</td>
+        </tr>
+        <tr>
+          <td>Thông tin tệp: loại tệp, dung lượng, thời lượng, mã băm tính trên máy và mã băm máy chủ tính lại</td>
+          <td>Khi tải tệp lên</td>
+          <td>Kiểm tra tệp còn nguyên</td>
         </tr>
         <tr>
           <td>Video đóng gói, video mở kiện, ảnh kiện hàng hoàn</td>
@@ -94,9 +97,14 @@ const toc = [
           <td>Giữ bản bằng chứng ngoài điện thoại</td>
         </tr>
         <tr>
-          <td>Mã hồ sơ hàng hoàn (chỉ mã định danh, không có nội dung hồ sơ)</td>
+          <td>Hồ sơ hàng hoàn: chỉ mã định danh và nhãn hiển thị (ví dụ RH-00001), không có nội dung hồ sơ</td>
           <td>Khi tải ảnh hoặc video hàng hoàn</td>
           <td>Gắn ảnh, video với đúng hồ sơ</td>
+        </tr>
+        <tr>
+          <td>Mã tài khoản nội bộ của người tạo và phiên bản ứng dụng, đi kèm mỗi bản ghi</td>
+          <td>Khi tạo bản ghi trên máy chủ</td>
+          <td>Biết ai tạo bản ghi, kiểm quyền, tìm lỗi theo phiên bản</td>
         </tr>
         <tr>
           <td>Thời gian theo đồng hồ điện thoại và thời gian của máy chủ, lưu riêng</td>
@@ -104,7 +112,7 @@ const toc = [
           <td>Ghi rõ mốc nào do máy bạn báo, mốc nào do máy chủ ghi</td>
         </tr>
         <tr>
-          <td>Nhật ký thao tác của cửa hàng (ai làm gì, lúc nào)</td>
+          <td>Nhật ký thao tác của cửa hàng: loại thao tác, mã tài khoản nội bộ của người làm, thời điểm, giá trị trước và sau (ví dụ tên cửa hàng)</td>
           <td>Khi máy chủ ghi nhận thay đổi</td>
           <td>Giữ lịch sử, không cho sửa lặng lẽ</td>
         </tr>
@@ -148,13 +156,15 @@ const toc = [
   <ul>
     <li>Khi ứng dụng gặp lỗi, điện thoại có thể gửi một báo cáo lỗi để chúng tôi sửa.</li>
     <li>
-      Báo cáo gồm mã lỗi, phần mã bị lỗi, đời máy, phiên bản hệ điều hành và phiên bản ứng dụng.
+      Báo cáo gồm: mã lỗi và phần mã bị lỗi; nhật ký thao tác kỹ thuật ngay trước khi lỗi (ví dụ màn nào
+      đang mở); trạng thái máy như đời máy, phiên bản hệ điều hành, bộ nhớ còn trống, pin, hướng màn hình;
+      phiên bản ứng dụng.
     </li>
     <li>
       Báo cáo dùng một mã cài đặt ngẫu nhiên do dịch vụ báo lỗi tạo. Chúng tôi không gắn báo cáo với tài
       khoản của bạn.
     </li>
-    <li>Ứng dụng che mã đơn, mã vận đơn, email và đường dẫn tệp trước khi gửi.</li>
+    <li>Ứng dụng không đưa mã đơn, mã vận đơn, email hay đường dẫn tệp vào báo cáo lỗi.</li>
     <li>
       Tính năng này <strong>bật sẵn</strong>. Bạn tắt được ở Cá nhân &gt; Quyền riêng tư và bảo mật.
     </li>
@@ -198,8 +208,9 @@ const toc = [
   <ul>
     <li>Mỗi tài khoản dùng trên một điện thoại.</li>
     <li>
-      Video, ảnh và dữ liệu của ứng dụng không đưa vào sao lưu iCloud hay sao lưu Android. Việc này tránh
-      đầy bộ nhớ đám mây của bạn.
+      Video, ảnh bằng chứng và cơ sở dữ liệu đơn được đánh dấu để không sao lưu lên iCloud hay Google.
+      Bản ngoài điện thoại là bản ứng dụng tải lên máy chủ của mình, không phải bản sao lưu của hệ điều
+      hành.
     </li>
     <li>
       Vì vậy, nếu gỡ ứng dụng, đổi máy hoặc mất máy, tệp chưa tải lên sẽ mất. Dữ liệu chỉ nằm trên máy
@@ -227,8 +238,13 @@ const toc = [
     </li>
     <li>Nếu có yêu cầu giữ lại vì pháp luật hoặc tranh chấp, phần liên quan được giữ đến khi hết lý do.</li>
     <li>
-      Sau đó chỉ còn một bản ghi nhỏ: mã tài khoản nội bộ, mã cửa hàng, thời điểm và lý do kỹ thuật. Bản
-      ghi này không có email hay tên. Nó dùng để chứng minh yêu cầu xóa đã được xử lý.
+      Sau đó chỉ còn một bản ghi xóa tài khoản: mã tài khoản nội bộ, mã cửa hàng, thời điểm yêu cầu và xóa
+      xong, lý do kỹ thuật, số lượng mục đã xóa. Bản ghi này không có email, tên hay mã đơn. Nó dùng để
+      chứng minh yêu cầu xóa đã được xử lý và hiện được giữ không thời hạn.
+    </li>
+    <li>
+      Báo cáo lỗi không gắn với tài khoản nên không xóa theo tài khoản được. Chúng tự xóa theo thời hạn
+      của dịch vụ báo lỗi.
     </li>
   </ul>
   <p>

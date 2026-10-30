@@ -7,6 +7,8 @@ import { join, relative, sep } from 'node:path';
 import { site } from '../src/config/site.ts';
 
 const DIST = new URL('../dist/', import.meta.url).pathname;
+// `--release` (npm run check:release): kiểm trước khi khai URL cho store; giữ chỗ là LỖI dù indexable=false.
+const RELEASE = process.argv.includes('--release');
 const TITLE = [50, 60];
 const DESC = [120, 160];
 
@@ -252,11 +254,14 @@ for (const [url, html] of pages)
 const placeholders = Object.entries(site.legal).filter(([, v]) => v === null);
 if (placeholders.length) {
   const names = placeholders.map(([k]) => k).join(', ');
-  if (site.indexable) err('site.legal', `còn giữ chỗ khi indexable=true: ${names}`);
+  if (site.indexable || RELEASE)
+    err('site.legal', `còn giữ chỗ (${RELEASE ? '--release' : 'indexable=true'}): ${names}`);
   else warn('site.legal', `còn giữ chỗ (cần điền trước khi phát hành): ${names}`);
 }
-if (site.indexable && /\.(invalid|example)$/i.test(new URL(site.url).hostname))
-  err('site.url', `tên miền giữ chỗ khi indexable=true: ${site.url}`);
+if ((site.indexable || RELEASE) && /\.(invalid|example)$/i.test(new URL(site.url).hostname))
+  err('site.url', `tên miền giữ chỗ: ${site.url}`);
+if (RELEASE && !site.indexable)
+  warn('site.indexable', 'đang false: store đọc được trang nhưng công cụ tìm kiếm thì không');
 
 console.log(`Đã kiểm ${pages.size} trang HTML.`);
 for (const w of warns) console.log('WARN ', w);

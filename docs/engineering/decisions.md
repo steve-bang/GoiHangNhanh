@@ -682,7 +682,9 @@ Mã lỗi/thông báo mới phát sinh từ PR2/PR4/PR5 (mất mạng, tệp tha
 
 Nguồn: [v1-release-plan.md](v1-release-plan.md) (2026-10-30). Các lựa chọn Q-24a–h, O-09, O-15 (v1), D-14 (cách làm tạm cho v1), xóa tài khoản, gói/thanh toán v1, crash reporting và quy trình build được **agent điều phối chốt thay người dùng** theo ủy quyền mà điều phối báo lại; **chưa có xác nhận trực tiếp của người dùng** và không phải D-xx. Bảng đầy đủ: kế hoạch mục 1.2. Câu hỏi R-1…R-8 (kế hoạch mục 7.3) **đã được điều phối chốt** ở kế hoạch mục 7.5; kèm chốt sau review PR #40: purge xóa cả shop gồm `auditEvents` theo yêu cầu xóa của chủ (sau 30 ngày, trừ khi có `legalHold`/tranh chấp), chỉ giữ `accountDeletions` (uid, thời điểm, `shopIds`, lý do kỹ thuật; không email/tên). **Q-24g:** A (một máy một tài khoản) + lọc theo `created_by` như Q-23g. Checklist con người: [release-checklist.md](release-checklist.md).
 
-**Q-29a — V1-19 trang web pháp lý (agent tự chốt theo ủy quyền, 2026-10-30; chờ rà pháp lý C-2):**
+#### Q-29 / V1-19 — web-legal-pages
+
+Agent tự chốt theo ủy quyền, 2026-10-30; chờ rà pháp lý C-2.
 
 | # | Chốt | Lý do |
 |---|---|---|
@@ -696,5 +698,7 @@ Nguồn: [v1-release-plan.md](v1-release-plan.md) (2026-10-30). Các lựa chọ
 | h | Nêu rõ Firebase Auth và Crashlytics không chọn khu vực nên có thể xử lý ở nước khác; Firestore/Storage/Functions ở Singapore | Trung thực về chuyển dữ liệu ra nước ngoài |
 | i | Trang chủ web: bỏ câu "Tải lên chạy nền" (2 chỗ), thay bằng "tải lên khi ứng dụng đang mở" | Bất biến 11; v1 không có tải nền |
 | j | `check-seo` thêm: bốn trang có mặt và trong sitemap, chân trang mọi trang liên kết đủ bốn trang, danh sách cụm từ cấm trên trang pháp lý ("pháp lý tuyệt đối", "đảm bảo thắng", "tải nền", "sao lưu an toàn", "bản nháp"…) | Kiểm tự động thay cho đọc tay |
+| k | Thêm `npm --prefix web run check:release` (`check-seo.mjs --release`): giữ chỗ là lỗi dù `indexable=false`; bắt buộc trước khi khai URL cho store (C-7) | Sửa sau review PR #42: store đọc trang dù không index |
+| l | Bảng dữ liệu máy chủ đối chiếu với mã (`remote-documents.ts`, Rules `evidence`/`returns`, `shop.ts`): bỏ "ghi chú" (không gửi), thêm mã tài khoản người tạo, phiên bản ứng dụng, vai trò, bản chụp đơn của phiên, mã băm máy chủ; mục báo lỗi nêu nhật ký thao tác kỹ thuật và trạng thái máy, cam kết V1-16 không đưa mã đơn/mã vận đơn/email/đường dẫn tệp vào báo cáo | Sửa sau review PR #42 |
 
 **Mã lỗi/chuỗi mới chờ BA (bổ sung khi làm từng PR V1-xx, không thêm vào `codes.ts` khi chưa duyệt):** `UPLOAD_WAITING_NETWORK`, `UPLOAD_INTERRUPTED`, `UPLOAD_EXCEPTION` (V1-02), `ACCOUNT_DELETE_SHOP_HAS_MEMBERS` (V1-14); câu "Đang chờ Wi‑Fi" (V1-09), câu thời hạn lưu v1 (V1-18), câu giới hạn khi quay (V1-11), màn Kiểm tra hộp thư (V1-03), luồng Xóa tài khoản (V1-15).

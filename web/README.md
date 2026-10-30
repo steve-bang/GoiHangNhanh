@@ -17,6 +17,7 @@ Cần Node >= 22.12 (đã thử với Node 22.22, npm 10.9). Chạy trong thư m
 | `npm run typecheck` | `astro check` (TypeScript + Astro) |
 | `npm run check:seo` | Kiểm tra `dist/`: độ dài title/description, trùng lặp, canonical, `lang`, một `h1`, OG/Twitter, JSON-LD hợp lệ (và FAQ khớp nội dung hiển thị), link/anchor hỏng, ảnh có `alt` + `width/height`, `sitemap`, `robots.txt`; trang pháp lý có mặt, trong sitemap, liên kết ở chân trang, không cụm từ cấm; chặn `indexable` khi còn giữ chỗ |
 | `npm run check` | typecheck + build + check:seo (chạy trước khi báo xong) |
+| `npm run check:release` | Như `check` nhưng **báo lỗi khi còn bất kỳ giữ chỗ nào** (`site.legal.*` là `null`, tên miền `.invalid`/`.example`) dù `indexable=false`. Phải đạt trước khi khai URL cho store (release-checklist C-7) |
 | `node scripts/make-og.mjs` | Tạo lại `public/og-default.png` (giữ chỗ) khi đổi tên thương hiệu |
 
 Astro gửi số liệu ẩn danh khi chạy lệnh. Tắt bằng `npx astro telemetry disable` hoặc biến môi trường `ASTRO_TELEMETRY_DISABLED=1`.

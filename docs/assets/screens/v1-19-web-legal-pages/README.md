@@ -16,4 +16,4 @@ Giới hạn:
 
 - Email hỗ trợ, tên và địa chỉ bên vận hành còn **giữ chỗ** (`web/src/config/site.ts`), nên trang hiện câu "sẽ được công bố tại đây trước khi phát hành".
 - Nội dung là bản chờ luật sư rà (release-checklist C-2) và mô tả hành vi bản v1 sau các PR V1-12/14/15/16; chưa đối chiếu với app thật (C-6).
-- Chưa kiểm trên trình duyệt điện thoại thật; chưa chạy Lighthouse.
+- Chưa kiểm trên trình duyệt điện thoại thật. Lighthouse 12 đã chạy cục bộ trên bốn trang (Chromium headless, không phải số đo thực tế p75): Accessibility, Best Practices, Performance 1.0; SEO 0.69 chỉ vì `noindex` có chủ đích.
