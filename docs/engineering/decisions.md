@@ -269,6 +269,7 @@ Khu vực không đổi được sau khi tạo và liên quan độ trễ, chi p
 ### Q-09 — Bản gốc cục bộ có được sao lưu bởi iCloud/Android Auto Backup?
 Video lớn có thể làm đầy bộ nhớ đám mây cá nhân của người dùng; nhưng loại khỏi sao lưu nghĩa là đổi máy sẽ mất video chưa tải.
 - Khuyến nghị: loại khỏi sao lưu tự động của hệ điều hành (hàng đợi tải lên là cơ chế bảo vệ chính) — xác nhận sau spike và cân nhắc UX.
+- **Cập nhật 2026-10-30:** điều phối chọn A ở Q-24d; đã làm Android ở V1-01 (`allowBackup: false`) và iOS ở V1-12 (module cục bộ, xem `Q-29 / V1-12`). Chưa kiểm chứng trên máy.
 
 ### Q-10 — Ngưỡng cấu hình (chờ O-05)
 Dung lượng trống tối thiểu để bắt đầu quay (A04), thời lượng video ngắn cảnh báo (A06): khung không đặt số; cần O-05 hoặc giá trị mặc định tạm do BA đề xuất.
@@ -684,9 +685,83 @@ Mã lỗi/thông báo mới phát sinh từ PR2/PR4/PR5 (mất mạng, tệp tha
 
 Nguồn: [v1-release-plan.md](v1-release-plan.md) (2026-10-30). Các lựa chọn Q-24a–h, O-09, O-15 (v1), D-14 (cách làm tạm cho v1), xóa tài khoản, gói/thanh toán v1, crash reporting và quy trình build được **agent điều phối chốt thay người dùng** theo ủy quyền mà điều phối báo lại; **chưa có xác nhận trực tiếp của người dùng** và không phải D-xx. Bảng đầy đủ: kế hoạch mục 1.2. Câu hỏi R-1…R-8 (kế hoạch mục 7.3) **đã được điều phối chốt** ở kế hoạch mục 7.5; kèm chốt sau review PR #40: purge xóa cả shop gồm `auditEvents` theo yêu cầu xóa của chủ (sau 30 ngày, trừ khi có `legalHold`/tranh chấp), chỉ giữ `accountDeletions` (uid, thời điểm, `shopIds`, lý do kỹ thuật; không email/tên). **Q-24g:** A (một máy một tài khoản) + lọc theo `created_by` như Q-23g. Checklist con người: [release-checklist.md](release-checklist.md).
 
+#### Q-29 / V1-19 — web-legal-pages
+
+Agent tự chốt theo ủy quyền, 2026-10-30; chờ rà pháp lý C-2.
+
+| # | Chốt | Lý do |
+|---|---|---|
+| a | URL tiếng Việt không dấu, ổn định: `/chinh-sach-quyen-rieng-tu/`, `/dieu-khoan/`, `/ho-tro/`, `/xoa-tai-khoan/`; một nơi `site.legalPages` + `publicLinks()` trong `web/src/config/site.ts` | Theo kế hoạch V1-19; URL khai báo với store không được đổi sau phát hành |
+| b | `site.url` đổi `https://doncung.example` -> `https://don-chung.invalid` | Cùng tên miền giữ chỗ với app (`legal-links.ts`); `isPlaceholderLink` của app chỉ coi `.invalid` là giữ chỗ, nên V1-18 dùng chung giá trị mà liên kết vẫn khóa |
+| c | Email hỗ trợ, tên và địa chỉ bên vận hành để `null`; trang hiện "sẽ được công bố tại đây trước khi phát hành", không in email giả, không `mailto` hỏng; `check-seo` báo lỗi nếu bật `indexable` khi còn `null` hoặc tên miền `.invalid`/`.example` | Không bịa liên hệ; chặn phát hành nhầm |
+| d | Không hiện chữ "nháp" cho người đọc: hiện "Ngày hiệu lực" (`site.legal.effectiveDate`, tạm 2026-10-30); trạng thái chờ rà ghi trong chú thích mã mỗi trang và checklist C-2, C-6 | Theo yêu cầu điều phối |
+| e | Số ngày trả lời yêu cầu xóa qua email: **7 ngày làm việc** (`site.legal.emailRequestDays`), đề xuất | Google Play cần quy trình rõ; con số chờ người dùng/luật sư duyệt (C-2) |
+| f | Bản ghi `accountDeletions` ghi "hiện được giữ không thời hạn" | Thiết kế V1-14 không có bước xóa bản ghi này; nói đúng thực tế, R-1 để luật sư xem lại |
+| g | Không ghi số ngày lưu báo cáo lỗi của Crashlytics; không trích điều luật Việt Nam cụ thể; không viết luật áp dụng/giới hạn trách nhiệm ở Điều khoản | Chưa có nguồn chính thức hiện hành/chưa rà pháp lý (C-2, C-6) |
+| h | Nêu rõ Firebase Auth và Crashlytics không chọn khu vực nên có thể xử lý ở nước khác; Firestore/Storage/Functions ở Singapore | Trung thực về chuyển dữ liệu ra nước ngoài |
+| i | Trang chủ web: bỏ câu "Tải lên chạy nền" (2 chỗ), thay bằng "tải lên khi ứng dụng đang mở" | Bất biến 11; v1 không có tải nền |
+| j | `check-seo` thêm: bốn trang có mặt và trong sitemap, chân trang mọi trang liên kết đủ bốn trang, danh sách cụm từ cấm trên trang pháp lý ("pháp lý tuyệt đối", "đảm bảo thắng", "tải nền", "sao lưu an toàn", "bản nháp"…) | Kiểm tự động thay cho đọc tay |
+| k | Thêm `npm --prefix web run check:release` (`check-seo.mjs --release`): giữ chỗ là lỗi dù `indexable=false`; bắt buộc trước khi khai URL cho store (C-7) | Sửa sau review PR #42: store đọc trang dù không index |
+| l | Bảng dữ liệu máy chủ đối chiếu với mã (`remote-documents.ts`, Rules `evidence`/`returns`, `shop.ts`): bỏ "ghi chú" (không gửi), thêm mã tài khoản người tạo, phiên bản ứng dụng, vai trò, bản chụp đơn của phiên, mã băm máy chủ; mục báo lỗi nêu nhật ký thao tác kỹ thuật và trạng thái máy, cam kết V1-16 không đưa mã đơn/mã vận đơn/email/đường dẫn tệp vào báo cáo | Sửa sau review PR #42 |
+#### Q-29 / V1-01 — env-guard
+
+Điểm nhỏ do dev tự chốt (2026-10-30).
+
+Theo quy trình tự động của điều phối; không đổi hành vi nghiệp vụ. Kế hoạch: [plans/v1-01-env-guard.md](plans/v1-01-env-guard.md).
+
+| # | Chốt | Lý do |
+|---|---|---|
+| a1 | `APP_ENV` chỉ nhận `dev`, `prod`, `production` (hoặc không đặt = dev); giá trị khác làm build dừng | Gõ nhầm `prd` không được lặng lẽ ra bản dev mang Firebase dev |
+| a2 | Bản production bắt buộc `EXPO_PUBLIC_APP_ENV=prod`; `EXPO_PUBLIC_APP_ENV=prod` mà `APP_ENV` không prod cũng dừng | Lớp chặn lúc chạy chỉ hoạt động khi biến này được nhúng; hai lớp phải khớp |
+| a3 | Ở production chặn `EXPO_PUBLIC_USE_FAKE_BACKEND` với **mọi** giá trị và `EXPO_PUBLIC_BACKEND` khác `firebase` | Chặt hơn lúc chạy (chỉ `1`/`fake` mới là cổng giả) để không có giá trị mơ hồ trong bản phát hành |
+| a4 | Đòi tệp cấu hình Firebase chỉ trên máy build EAS (`EAS_BUILD=true`) và theo `EAS_BUILD_PLATFORM` | Máy dev vẫn chạy `expo config`/`prod:*` để kiểm cấu hình; build một nền tảng không đòi tệp của nền tảng kia |
+| a5 | Kiểm production đặt **trước** `isTest` trong `resolveBackendMode` | Gói production không bao giờ thành cổng giả, kể cả khi `NODE_ENV` lạ |
+| a6 | Không chặn `EXPO_PUBLIC_RECORDER_ENABLED` ở production; `eas.json` production chưa đặt | V1-21 sẽ bật sau cổng thiết bị; chặn bằng mã sẽ phải gỡ lại |
+| a7 | Thêm `android.blockedPermissions`: `RECORD_AUDIO`, `SYSTEM_ALERT_WINDOW`, `READ/WRITE_EXTERNAL_STORAGE` | Thu thập tối thiểu; O-09 không thu tiếng; mẫu RN và `expo-file-system` tự thêm các quyền này dù app không dùng (prebuild 2026-10-30). Chưa kiểm manifest sau khi Gradle gộp (cần Android SDK) |
+| a8 | `ios.config.usesNonExemptEncryption: false` | App chỉ dùng HTTPS của hệ điều hành và SHA-256 để băm; không mã hóa riêng. Thêm mã hóa riêng thì phải xem lại |
+| a9 | Bản production không lấy tệp Firebase ở gốc repo (nơi đặt tệp dev): chỉ đường dẫn qua biến môi trường (EAS file secret) hoặc `firebase/config/prod/` (`npm run prod:*`); tệp tìm thấy phải có `BUNDLE_ID`/`package_name` đúng mã app production, lệch hoặc không đọc được thì build dừng | Review PR #43: tránh đóng gói nhầm tệp của dự án dev vào bản production. Giữ `firebase/config/prod/` vì là thư mục riêng của prod và vẫn bị đối chiếu mã app |
+
+#### Q-29 / V1-12 — backup-exclusion-ios
+
+Điểm nhỏ do dev tự chốt (2026-10-30), không đổi hành vi nghiệp vụ. Kế hoạch: [plans/v1-12-backup-exclusion-ios.md](plans/v1-12-backup-exclusion-ios.md).
+
+| # | Chốt | Lý do |
+|---|---|---|
+| a | Module Expo cục bộ `modules/backup-exclusion` **chỉ khai `apple`**, không có thư mục `android/` (kế hoạch v1 ghi "android/ no-op trả true") | Android đã loại toàn bộ dữ liệu app bằng `allowBackup: false` (V1-01); thêm module Gradle chỉ để trả `true` là thêm chỗ có thể hỏng build mà không bảo vệ thêm. Adapter thấy không có module thì no-op; cùng kết quả nghiệp vụ trên hai nền tảng (D-12) |
+| b | Đặt cờ lên **thư mục** `Documents/evidence` và `Documents/SQLite` (thư mục mặc định của `expo-sqlite`, gồm `-wal`/`-shm`), không lên từng tệp | Apple áp thuộc tính của thư mục cho nội dung bên trong, kể cả tệp tạo sau; ít lời gọi, không phải nhớ gọi sau mỗi lần quay |
+| c | Thời điểm: thư mục bằng chứng khi mở app (`AppProviders`, tạo thư mục nếu thiếu) và mỗi khi `persistRecording`/`probeEvidenceDirWritable` tự tạo lại thư mục; thư mục CSDL ngay sau lần mở CSDL đầu tiên mỗi tiến trình | Cờ gắn với thư mục: thư mục bị tạo lại thì mất cờ; thư mục CSDL chỉ chắc có sau khi mở |
+| d | Native trả mã `excluded`/`not_found`/`failed`, không ném; adapter không bao giờ ném, log `backup_exclusion.not_applied` chỉ với loại thư mục + kết quả, **không** đường dẫn | Cờ là gợi ý, không ảnh hưởng đọc/ghi: không được chặn quay hay mở CSDL; đường dẫn container chứa UUID máy và ID bằng chứng |
+| e | Tên native `DonChungBackupExclusion`; sàn iOS của podspec = 16.4 (sàn `ExpoModulesCore` SDK 58) | Tránh trùng tên module bên thứ ba; không tự nâng sàn (O-20) |
+| f | Phương án gỡ nếu build EAS iOS hỏng vì module: xóa thư mục `modules/backup-exclusion` (JS tự thành no-op), ghi rủi ro "video và CSDL có thể vào iCloud Backup trên iOS" vào chính sách quyền riêng tư; ghi trong release-checklist G-7 | Không để module phụ chặn phát hành v1 |
+
 **Mã lỗi/chuỗi mới chờ BA (bổ sung khi làm từng PR V1-xx, không thêm vào `codes.ts` khi chưa duyệt):** `UPLOAD_WAITING_NETWORK`, `UPLOAD_INTERRUPTED`, `UPLOAD_EXCEPTION` (V1-02), `ACCOUNT_DELETE_SHOP_HAS_MEMBERS` (V1-14); câu "Đang chờ Wi‑Fi" (V1-09), câu thời hạn lưu v1 (V1-18), câu giới hạn khi quay (V1-11), màn Kiểm tra hộp thư (V1-03), luồng Xóa tài khoản (V1-15).
 
 **V1-00 (công cụ chụp ảnh, tự chốt khi làm PR, không ảnh hưởng nghiệp vụ):** (1) Viết bằng Node `scripts/screens/capture.cjs` thay `capture.sh` của kế hoạch để qua ESLint/Prettier và test phần thuần bằng Jest (project `tooling`). (2) **Không** thêm `react-native-web`/`@expo/metro-runtime`/Playwright vào `package.json`: cài `--no-save` trong bản sao ngoài repo, Playwright nạp từ bản cài toàn cục; lý do: CI không dùng web, tránh đụng `package.json`/lockfile đang "nóng" (V1-02/11/16/17) và tránh kéo `react-dom` + trình duyệt vào `npm ci` của CI. Nếu sau này cần chụp ảnh ở CI thì mới thêm devDependency đúng bản SDK. (3) Cỡ mặc định 390x844 (`--sizes all` cho ba cỡ). (4) Máy chủ tĩnh Node nội bộ thay `npx serve` (không cần mạng, báo cổng bận rõ ràng). Chi tiết: [plans/v1-00-screens-tooling.md](plans/v1-00-screens-tooling.md).
+
+#### Q-29 / V1-20 — store-listing-docs
+
+Tài liệu: [docs/store/listing.md](../store/listing.md), [privacy-declarations.md](../store/privacy-declarations.md), [review-notes.md](../store/review-notes.md); kế hoạch PR [plans/v1-20-store-listing-docs.md](plans/v1-20-store-listing-docs.md). Agent tự chốt theo ủy quyền (chưa có xác nhận trực tiếp của người dùng; khách/BA duyệt ở release-checklist C-4):
+
+1. **Ba tệp ở `docs/store/`** thay cho một tệp `docs/engineering/store-listing.md` của kế hoạch: theo yêu cầu điều phối; tham chiếu trong release-checklist và kế hoạch đã cập nhật.
+2. **Tên/phụ đề:** App Store `Đơn Chứng` + phụ đề `Video đóng gói và hàng hoàn`; Google Play `Đơn Chứng – Video đóng hàng`. Tên vẫn là tên làm việc (O-11 mở). Không tên sàn trong tên, phụ đề, từ khóa (App Review 2.3.7; app không tích hợp sàn).
+3. **Khu vực: chỉ Việt Nam**, trang tiếng Việt, miễn phí, không mua trong app. Lý do: giao diện chỉ tiếng Việt, chính sách chờ rà theo pháp luật Việt Nam; mở khu vực khác kéo theo nghĩa vụ khác.
+4. **Vị trí: "không thu thập"** ở cả hai store (chỉ xử lý trên máy, mã không gửi vị trí; định nghĩa "thu thập" của Apple/Google). Điều kiện: G-12 xác nhận tệp ảnh tải lên không mang GPS.
+5. **Crash Data và Device ID (Apple): "không gắn danh tính"**, có ba điều kiện (privacy-declarations mục 3.2); một điều kiện sai thì khai "gắn". **Other Diagnostic Data: "gắn"** vì phiên bản app đi kèm bản ghi có uid (khai thận trọng).
+6. **Ảnh/video (Google): "Bắt buộc"** vì đã quay thì app tự tải lên, công tắc Wi‑Fi chỉ hoãn; crash/ID cài đặt: "Tùy chọn" (có công tắc, R-8).
+7. **Phân loại:** Apple dự kiến 4+ (không UGC phát tán, không trình duyệt trong app); Google đối tượng **18+**, IARC dự kiến mức thấp nhất.
+8. **Ghi chú người duyệt bằng tiếng Anh** (trường Notes của Apple giới hạn 4000 byte; chữ có dấu tốn 2–3 byte), nhãn nút giữ tiếng Việt.
+9. **Không commit ảnh mã vạch** `DH-DEMO-0001`: tạo lúc nộp bằng công cụ chuẩn và quét thử bằng bản staging; người duyệt Google nhập tay.
+10. **Nhật ký thao tác trước lỗi (breadcrumb, V1-16) khai là thu thập** (điều phối chốt sau review PR #45): Google "App activity > App interactions" = Có, Tùy chọn, mục đích phân tích/chẩn đoán lỗi; Apple "Product Interaction" = Có, không gắn danh tính; Privacy Manifest thêm `NSPrivacyCollectedDataTypeProductInteraction`. Khớp trang chính sách mục "Báo lỗi ứng dụng". Bỏ cả hai nếu V1-16 bị tách.
+11. **Cách nói thời hạn xóa dữ liệu máy chủ khi xóa tài khoản, dùng chung cho app (V1-15), web và store** (điều phối chốt sau review PR #45): tiếng Việt "**dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở**"; tiếng Anh "**deleted after 30 days, unless kept for a legal reason or an open dispute**". Không dùng "trong vòng 30 ngày"/"within 30 days" (purge chạy sau `purgeAfter`, không sớm hơn).
+12. **Không sửa `app.json`** (PR chỉ tài liệu): cấu hình `ios.privacyManifests` đề xuất ở privacy-declarations mục 6.2 cho một PR mã sau (chưa có PR V1-xx nào sở hữu; điều phối chọn, gợi ý gộp với V1-16 hoặc làm trước S-7).
+
+**Lỗ hổng phát hiện khi đối chiếu (chưa sửa, ngoài phạm vi PR tài liệu):**
+
+- `src/core/i18n/locales/vi/common.json` `syncBar.hint`: "Tải nền có thể tạm dừng khi hệ điều hành giới hạn…" nói như có tải nền, trong khi v1 chỉ tải khi app mở (mục 1.1; bất biến 11). Đề xuất V1-18 đổi câu.
+- `app.json` chuỗi quyền camera chưa nói tới quay video/chụp ảnh (App Review 5.1.1(ii)): đã có trong V1-18; không nộp khi chưa đổi.
+- Báo lỗi bật sẵn (R-8) có thể vướng 5.1.1(ii) "must secure user consent": đưa vào rà pháp lý C-2 (review-notes mục 6).
+- Trang chính sách còn `operatorName`/`operatorAddress`/`supportEmail` = `null`: Google yêu cầu trang xóa tài khoản nêu tên nhà phát triển như trên trang store; điền ở D-4.
+- Không đọc được trang trợ giúp Google Play và trang công bố dữ liệu Firebase trong môi trường soạn (tên miền bị chặn): các số liệu Google và ánh xạ SDK Firebase ghi "chưa đọc trực tiếp", kiểm ở release-checklist S-8.
 
 #### Q-29 / V1-03 — auth-email-reset
 

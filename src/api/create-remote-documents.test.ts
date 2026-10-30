@@ -32,6 +32,16 @@ describe('createRemoteDocuments', () => {
     expect(build).toHaveBeenCalledTimes(2);
   });
 
+  it('bản production (EXPO_PUBLIC_APP_ENV=prod): bỏ qua cờ giả, vẫn dùng cổng Firebase (V1-01)', () => {
+    expect(
+      createRemoteDocuments(
+        { isDev: true, isTest: false, fakeFlag: '1', backend: 'fake', appEnv: 'prod' },
+        build,
+      ),
+    ).toBe(docs);
+    expect(build).toHaveBeenCalledTimes(1);
+  });
+
   it('thiếu cấu hình Firebase: null (không giả vờ đã đồng bộ)', () => {
     expect(
       createRemoteDocuments({ isDev: false, isTest: false, fakeFlag: undefined }, () => null),

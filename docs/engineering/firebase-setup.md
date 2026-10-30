@@ -27,6 +27,7 @@ Chọn backend lúc chạy (`src/api/create-api.ts`):
 
 | Điều kiện | Backend |
 |---|---|
+| `EXPO_PUBLIC_APP_ENV=prod` (hoặc `production`; bản production, V1-01) | Firebase, **bỏ qua mọi dòng dưới** và không nối emulator; thiếu cấu hình → "chưa kết nối" |
 | Chạy test | giả |
 | `EXPO_PUBLIC_USE_FAKE_BACKEND=1` hoặc `EXPO_PUBLIC_BACKEND=fake` | giả |
 | `EXPO_PUBLIC_BACKEND=firebase` hoặc có `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` | Firebase |
@@ -57,10 +58,10 @@ Giá trị `vn.doncung.app.dev` lấy từ `app.json`; đổi ở một nơi th�
 
 Hai tệp ở mục 2.6 chứa khóa API phía client (không phải bí mật tuyệt đối) nhưng **không commit** (ADR-009; đã có trong `.gitignore`). Cách đưa vào build (`app.config.js`):
 
-- Đặt ở **gốc repo** với đúng tên `GoogleService-Info.plist`, `google-services.json`; hoặc
+- Đặt ở **gốc repo** với đúng tên `GoogleService-Info.plist`, `google-services.json` (**chỉ bản dev**; bản production bỏ qua tệp ở gốc repo); hoặc
 - Trỏ bằng biến môi trường `GOOGLE_SERVICES_INFO_PLIST`, `GOOGLE_SERVICES_JSON` (với EAS: tạo **file secret** rồi dùng đường dẫn mà EAS cấp).
 
-Không có tệp thì `expo export`, test và bản giả vẫn chạy; bản build thật thiếu tệp sẽ rơi về "chưa kết nối" (không báo thành công giả).
+Không có tệp thì `expo export`, test và bản giả vẫn chạy; bản build thật thiếu tệp sẽ rơi về "chưa kết nối" (không báo thành công giả). Riêng bản `production` build trên EAS (`APP_ENV=prod`, `EAS_BUILD=true`) thiếu tệp của nền tảng đang build thì **build dừng**; `APP_ENV=prod` kèm bất kỳ cờ cổng giả/emulator nào cũng dừng; tệp production phải có `BUNDLE_ID`/`package_name` đúng `vn.doncung.app` (`scripts/env/validate-release-env.cjs`, `DEPLOYMENT.md` mục 5.3).
 
 **Không bao giờ** đưa vào repo, chat hay log: mật khẩu tài khoản Google, tệp service account (`private_key`), token của `firebase login`.
 
