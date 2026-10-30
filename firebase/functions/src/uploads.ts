@@ -1,8 +1,8 @@
 import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 
-import { verifyEvidenceObject, type EvidenceObjectReader } from './evidence';
 import { ID_PATTERN } from './ids';
 import { isDeclaredSizeAllowed } from './limits';
+import { requestReverify } from './reverify';
 
 /** Ký URL tải lên và kiểm tra đối tượng Storage. Tách ra để test không cần Storage thật. */
 export interface UploadUrlSigner {
@@ -24,27 +24,6 @@ export interface UploadUrlSigner {
 export const CREATE_ONLY_HEADERS: Readonly<Record<string, string>> = {
   'x-goog-if-generation-match': '0',
 };
-
-/**
- * Xác minh lại bản gốc đã nhận mà chưa chốt (review PR #44): khi trigger finalize đã bỏ cuộc (quá
- * tuổi, lỗi kéo dài) bằng chứng kẹt ở `uploaded`. Tách ra để test không cần Storage thật.
- */
-export interface EvidenceReverifier {
-  /** Thông tin đối tượng hiện tại; `null` nếu không có. */
-  objectInfo(storagePath: string): Promise<{
-    readonly generation?: string;
-    readonly sizeBytes?: number;
-    /** Giờ máy chủ Storage ghi đối tượng (ms). */
-    readonly updatedAtMs?: number;
-  } | null>;
-  readonly reader: EvidenceObjectReader;
-}
-
-/**
- * Chỉ xác minh lại khi đã nhận xong ít nhất chừng này mà vẫn chưa chốt: tránh băm chồng với trigger
- * finalize đang chạy bình thường (trigger chạy tối đa 9 phút).
- */
-export const REVERIFY_AFTER_MS = 15 * 60_000;
 
 export interface UploadSessionInput {
   readonly shopId: string;
@@ -114,10 +93,9 @@ export function parseUploadSessionInput(data: unknown): UploadSessionInput {
  *   còn kiểm hồ sơ `returns/{returnId}` đã đăng cùng shop (Rules đã kiểm lúc khai báo, đây là lớp thứ hai).
  * - Chỉ người đã khai báo (`createdBy`) mới xin được URL (Q-24g: không tải hộ tệp do tài khoản khác
  *   tạo). Kích thước khai báo phải trong trần theo loại (Q-24c: ảnh 25 MB, video 2 GB; `limits.ts`).
- * - Bản gốc đã có mà máy chủ chưa chốt (`uploaded` hoặc chưa có trạng thái) quá `REVERIFY_AFTER_MS`:
- *   chạy lại ĐÚNG hàm xác minh của trigger (`verifyEvidenceObject`, idempotent, chỉ máy chủ ghi
- *   `verified`/`hash_mismatch`), để client thử lại là gỡ được kẹt khi trigger đã bỏ cuộc. Lỗi khi xác
- *   minh lại không làm hỏng phản hồi (`already_received`); lần thử sau làm lại.
+ * - Bản gốc đã có mà máy chủ chưa chốt (`uploaded` quá 15 phút hoặc chưa có trạng thái): chỉ ĐẶT YÊU CẦU
+ *   xác minh lại (`reverify.ts`, giữ chỗ 30 phút, không băm ở đây) rồi trả `already_received` ngay;
+ *   trigger `reverifyEvidence` băm lại. Gọi lặp/đồng thời không sinh thêm lần băm.
  * - Mỗi lần cấp có một sự kiện kiểm toán (kèm chủ sở hữu); URL không được ghi vào kiểm toán hay log.
  */
 export async function createUploadSessionForUser(
@@ -126,8 +104,6 @@ export async function createUploadSessionForUser(
   uid: string,
   input: UploadSessionInput,
   nowMs: number = Date.now(),
-  /** Có thì gỡ bằng chứng kẹt ở `uploaded` bằng cách xác minh lại (đường thử lại của client). */
-  reverifier?: EvidenceReverifier,
 ): Promise<UploadSessionResult> {
   const { shopId, evidenceId } = input;
   const member = await db.doc(`shops/${shopId}/members/${uid}`).get();
@@ -152,7 +128,11 @@ export async function createUploadSessionForUser(
     return { status: 'already_received', storagePath };
   }
   if (serverState || (await signer.objectExists(storagePath))) {
-    if (reverifier) await reverifyStuck(db, reverifier, storagePath, data, nowMs);
+    try {
+      await requestReverify(db, shopId, evidenceId, uid, nowMs);
+    } catch {
+      // Không đặt được yêu cầu (lỗi tạm): phản hồi vẫn đúng, lần gọi sau thử lại.
+    }
     return { status: 'already_received', storagePath };
   }
   const ownerKind = data.ownerKind === 'return' ? 'return' : 'packing';
@@ -200,25 +180,4 @@ export async function createUploadSessionForUser(
     },
     expiresAtMs,
   };
-}
-
-async function reverifyStuck(
-  db: Firestore,
-  reverifier: EvidenceReverifier,
-  storagePath: string,
-  data: FirebaseFirestore.DocumentData,
-  nowMs: number,
-): Promise<void> {
-  try {
-    const info = await reverifier.objectInfo(storagePath);
-    if (!info) return; // chưa có đối tượng (hoặc đã mất): không có gì để băm
-    const receivedAt = (data.server as { receivedAt?: { toMillis?: () => number } } | undefined)
-      ?.receivedAt;
-    const since =
-      typeof receivedAt?.toMillis === 'function' ? receivedAt.toMillis() : info.updatedAtMs;
-    if (since === undefined || nowMs - since < REVERIFY_AFTER_MS) return;
-    await verifyEvidenceObject(db, reverifier.reader, storagePath, info.generation, info.sizeBytes);
-  } catch {
-    // Lỗi đọc/ghi tạm: giữ nguyên trạng thái (không bao giờ `verified`), lần thử sau làm lại.
-  }
 }

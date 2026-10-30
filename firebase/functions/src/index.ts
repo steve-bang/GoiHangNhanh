@@ -2,7 +2,10 @@ import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { logger } from 'firebase-functions';
-import { onDocumentWrittenWithAuthContext } from 'firebase-functions/v2/firestore';
+import {
+  onDocumentWritten,
+  onDocumentWrittenWithAuthContext,
+} from 'firebase-functions/v2/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { onObjectFinalized } from 'firebase-functions/v2/storage';
 
@@ -10,9 +13,14 @@ import { AUDITED_ENTITIES, entityLocation, recordAuditForWrite, type AuditedEnti
 import { handleEvidenceFinalized } from './evidence';
 import { isEventTooOld } from './limits';
 import {
+  handleReverifyRequest,
+  isNewReverifyRequest,
+  reverifyRequestPath,
+  type EvidenceReverifier,
+} from './reverify';
+import {
   createUploadSessionForUser,
   parseUploadSessionInput,
-  type EvidenceReverifier,
   UploadError,
   type UploadUrlSigner,
 } from './uploads';
@@ -161,31 +169,54 @@ const storageReverifier = (): EvidenceReverifier => {
         throw error;
       }
     },
-    reader: {
-      open: (path) => bucket.file(path).createReadStream(),
-    },
+    // Ghim đúng generation đã đọc metadata: đối tượng bị thay giữa chừng thì lỗi, không băm nhầm bản.
+    open: (path, generation) =>
+      bucket.file(path, generation ? { generation } : undefined).createReadStream(),
   };
 };
 
 /**
- * Cấp URL ký để tải bản gốc bằng chứng (uploads.ts). Client không có quyền Storage trực tiếp. Thời
- * gian chạy và bộ nhớ như `verifyEvidence` vì có thể xác minh lại bản gốc đang kẹt (băm theo luồng).
+ * Xác minh lại bằng chứng kẹt (reverify.ts): chạy khi `createUploadSession` đặt yêu cầu mới. Thời gian
+ * và bộ nhớ đủ để băm theo luồng video 2 GB. Không thử lại tự động: yêu cầu hết hạn sau 30 phút và app
+ * gọi lại được; nhờ vậy không có nhiều lần băm song song cùng một tệp.
  */
-export const createUploadSession = onCall(
-  { region: REGION, timeoutSeconds: 540, memory: '512MiB' },
-  async (request) => {
-    const uid = requireUid(request.auth);
-    try {
-      return await createUploadSessionForUser(
-        getFirestore(),
-        storageSigner(),
-        uid,
-        parseUploadSessionInput(request.data),
-        Date.now(),
-        storageReverifier(),
-      );
-    } catch (error) {
-      return toHttpsError(error);
-    }
+export const reverifyEvidence = onDocumentWritten(
+  {
+    document: reverifyRequestPath('{shopId}', '{evidenceId}'),
+    region: REGION,
+    timeoutSeconds: 540,
+    memory: '1GiB',
+    retry: false,
+  },
+  async (event) => {
+    const { shopId, evidenceId } = event.params as Record<string, string>;
+    if (!shopId || !evidenceId) return;
+    if (!isNewReverifyRequest(event.data?.before?.data(), event.data?.after?.data())) return;
+    const result = await handleReverifyRequest(
+      getFirestore(),
+      storageReverifier(),
+      shopId,
+      evidenceId,
+      Date.now(),
+    );
+    logger.info('reverifyEvidence done', { outcome: result.outcome });
   },
 );
+
+/**
+ * Cấp URL ký để tải bản gốc bằng chứng (uploads.ts). Client không có quyền Storage trực tiếp. Bằng
+ * chứng kẹt chỉ được ĐẶT YÊU CẦU xác minh lại ở đây (không băm), nên cấu hình thường là đủ.
+ */
+export const createUploadSession = onCall({ region: REGION }, async (request) => {
+  const uid = requireUid(request.auth);
+  try {
+    return await createUploadSessionForUser(
+      getFirestore(),
+      storageSigner(),
+      uid,
+      parseUploadSessionInput(request.data),
+    );
+  } catch (error) {
+    return toHttpsError(error);
+  }
+});

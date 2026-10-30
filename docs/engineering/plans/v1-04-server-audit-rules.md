@@ -92,3 +92,11 @@ Vòng 2: kiểm lại test cũ bị ảnh hưởng: `evidence-declare.rules.test
 4. 🟡 Tiêu đề decisions `#### Q-29 / V1-04 — server-audit-rules`.
 
 Màn đổi hiển thị (lời nhắc lỗi mới ở UI-B04 Tạo đơn nhanh và Sửa đơn): chụp ảnh ở `docs/assets/screens/v1-04-server-audit-rules/`.
+
+## Cập nhật sau review vòng 2
+
+1. Xác minh lại không còn chạy trong callable: `createUploadSession` chỉ đặt yêu cầu có giữ chỗ 30 phút (`reverify.ts`, `shops/{s}/evidenceReverify/{e}`) rồi trả ngay; trigger `reverifyEvidence` (540 giây, 1 GiB) băm bằng `verifyEvidenceObject`, ghim generation. Test `firebase/tests/functions/reverify.test.ts`.
+2. Comment `limits.ts`: gỡ kẹt chỉ một phần.
+3. Mô tả PR: sửa mục Rủi ro.
+4. `UPLOAD_FILE_TOO_LARGE` vào docs/04 A07, docs/05 B01, `codes.ts`, `errors.json`; rà 3 chuỗi mới theo docs/09 mục 5.1.
+

@@ -24,7 +24,9 @@ export function isDeclaredSizeAllowed(kind: unknown, sizeBytes: unknown): boolea
  * Tuổi tối đa của sự kiện trigger còn được xử lý (Function chạy với `retry: true`). Quá trần thì ghi
  * nhận rồi dừng, không thử lại vô hạn khi lỗi kéo dài. 24 giờ = cửa sổ thử lại của hàm sự kiện thế hệ 2
  * (Cloud Run functions "Enable event-driven function retries": retry window hết hạn sau 24 giờ; Eventarc
- * giữ thông điệp mặc định 24 giờ). Bằng chứng kẹt sau đó được gỡ ở `createUploadSession` (xác minh lại).
+ * giữ thông điệp mặc định 24 giờ). Bằng chứng kẹt sau đó chỉ được gỡ MỘT PHẦN: khi app gọi lại
+ * `createUploadSession` (tệp còn ở hàng đợi/tải lỗi/Thử lại), máy chủ đặt yêu cầu xác minh lại
+ * (`reverify.ts`); tệp mà app đã thấy là "Đã tải lên" thì app chưa gọi lại nên vẫn kẹt.
  */
 export const MAX_EVENT_AGE_MS = 24 * 60 * 60_000;
 
