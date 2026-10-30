@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
+import { PUBLIC_LINKS, supportContactUrl } from '@/core/config/public-links';
+import { getSupportEmail } from '@/core/config/support-contact';
+import { openExternalLink } from '@/platform';
 import { Button, Card, IconTile, Screen, Text, useTheme } from '@/shared/ui';
 
 import { canSubmitDelete } from '../domain/delete-account-conditions';
@@ -31,6 +34,9 @@ export function AccountDeletionPendingScreen() {
   // Đồng ý xóa đã có từ lần yêu cầu trước (trong app hoặc qua hỗ trợ); chỉ còn tích riêng cho tệp chưa tải.
   const consent = { agreed: true, unsyncedAcknowledged };
   const allowed = gate !== null && canSubmitDelete(gate, consent);
+  // Không vào được màn Liên hệ hỗ trợ trong tab (không còn cửa hàng): mở trang Hỗ trợ trên web hoặc email.
+  // Còn giữ chỗ thì không có nút (V1-18; cùng mẫu nút ở điều kiện "dữ liệu tài khoản khác").
+  const supportUrl = supportContactUrl(PUBLIC_LINKS.support, getSupportEmail());
 
   const confirm = () => {
     setSubmitted(true);
@@ -77,9 +83,20 @@ export function AccountDeletionPendingScreen() {
       ) : null}
 
       {gate && !gate.allowed ? (
-        <Text variant="caption" color="textMuted" testID="delete-blocked-hint">
-          {t('personal:deleteAccount.pending.blockedHint')}
-        </Text>
+        <View style={{ gap: tokens.space.sm }}>
+          <Text variant="caption" color="textMuted" testID="delete-blocked-hint">
+            {t('personal:deleteAccount.pending.blockedHint')}
+          </Text>
+          {supportUrl ? (
+            <Button
+              label={t('personal:deleteAccount.supportLink')}
+              variant="secondary"
+              size="slim"
+              onPress={() => void openExternalLink(supportUrl)}
+              testID="pending-support-link"
+            />
+          ) : null}
+        </View>
       ) : (
         <DeletePasswordForm
           password={password}

@@ -233,11 +233,19 @@ describe('Chi tiết bài hướng dẫn (khung 16)', () => {
     expect(await summaryOf('retention')).toHaveTextContent(
       'Hiện ứng dụng chưa tự động xóa bằng chứng đã tải lên và chưa áp dụng thời hạn lưu. Nếu có thay đổi, bạn sẽ được báo trước trong ứng dụng. Tệp trên máy này sẽ mất nếu bạn gỡ ứng dụng.',
     );
-    expect(await summaryOf('deleteAccount')).toHaveTextContent(/xóa hẳn sau 30 ngày/);
+    expect(await summaryOf('deleteAccount')).toHaveTextContent(
+      /xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở/,
+    );
     const hash = await summaryOf('hashMeaning');
     expect(hash).toHaveTextContent(/tệp không đổi kể từ lúc tính/);
     expect(hash).toHaveTextContent(/không cho biết video quay lúc nào hay có chân thực không/);
-    expect(await summaryOf('whereData')).toHaveTextContent(/một tài khoản trên một máy/);
+    const where = await summaryOf('whereData');
+    expect(where).toHaveTextContent(/một tài khoản trên một máy/);
+    // Không nói máy chủ "chỉ" giữ tệp: liệt kê đủ (review PR #63).
+    expect(where).not.toHaveTextContent(/Máy chủ chỉ/);
+    expect(where).toHaveTextContent(
+      /tài khoản và cửa hàng, thông tin cơ bản của đơn và phiên quay, tệp bằng chứng đã tải lên, mã định danh hồ sơ hàng hoàn và báo lỗi ứng dụng nếu bạn bật/,
+    );
   });
 
   it('bài tìm đơn nói đúng giới hạn sửa đơn (R-6, QA-13 một phần): đơn đã quay chưa sửa được sản phẩm', async () => {
@@ -479,8 +487,25 @@ describe('câu chữ Trợ giúp (bất biến 6, 11)', () => {
       ? [value]
       : Object.values(value as Record<string, unknown>).flatMap(flatten);
 
+  /**
+   * Ngoại lệ hẹp (V1-18, review PR #63): bài Xóa tài khoản dùng NGUYÊN VĂN câu chung 30 ngày (decisions.md
+   * Q-29 / V1-20 điểm 11, V1-15 l). "lý do pháp lý" nói về nghĩa vụ giữ dữ liệu, không hứa giá trị pháp lý:
+   * chỉ bỏ đúng cụm này, chỉ ở đúng khóa này; phần còn lại của câu vẫn bị quét.
+   */
+  const RETENTION_SENTENCE =
+    'dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở';
+
   it('không có cụm hứa quá mức hay cụm cấm trong nội dung trợ giúp', () => {
-    for (const text of flatten(help)) expect(text).not.toMatch(FORBIDDEN);
+    const { deleteAccount, ...otherArticles } = help.articles;
+    const rest = { ...help, articles: otherArticles };
+    for (const text of flatten(rest)) expect(text).not.toMatch(FORBIDDEN);
+    for (const text of flatten(deleteAccount)) {
+      expect(text.replace(RETENTION_SENTENCE, '')).not.toMatch(FORBIDDEN);
+    }
+  });
+
+  it('bài Xóa tài khoản chứa nguyên văn câu chung 30 ngày', () => {
+    expect(help.articles.deleteAccount.summary).toContain(RETENTION_SENTENCE);
   });
 
   it('mỗi bài có tiêu đề, tóm tắt, từ khóa, đủ số bước khai báo; câu thông báo ngắn', () => {

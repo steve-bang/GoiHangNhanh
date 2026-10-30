@@ -232,6 +232,8 @@ const RETENTION_SENTENCE =
 const RETENTION_SENTENCE_KEYS = [
   'vi.personal.deleteAccount.dataServer',
   'vi.personal.deleteAccount.pending.serverStatus',
+  // Bài Trợ giúp "Xóa tài khoản thì dữ liệu ra sao?" (V1-18): cùng câu chung, nguyên văn.
+  'vi.personal.help.articles.deleteAccount.summary',
 ];
 
 describe('quét toàn bộ chuỗi giao diện', () => {

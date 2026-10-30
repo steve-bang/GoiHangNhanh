@@ -361,7 +361,7 @@
       },
       "whereData": {
         "title": "Dữ liệu của tôi được lưu ở đâu?",
-        "summary": "Đơn, hồ sơ hàng hoàn, tranh chấp, video và ảnh được lưu trên chính điện thoại này. Máy chủ chỉ giữ tệp đã tải lên và thông tin cơ bản của đơn đã quay. Bản này dùng một tài khoản trên một máy: máy khác không thấy dữ liệu này.",
+        "summary": "Đơn, hồ sơ hàng hoàn, tranh chấp, video và ảnh được lưu trên chính điện thoại này. Máy chủ giữ tài khoản và cửa hàng, thông tin cơ bản của đơn và phiên quay, tệp bằng chứng đã tải lên, mã định danh hồ sơ hàng hoàn và báo lỗi ứng dụng nếu bạn bật. Bản này dùng một tài khoản trên một máy: máy khác không thấy dữ liệu trên máy này.",
         "keywords": "dữ liệu lưu trữ điện thoại máy chủ một máy nhiều máy đăng nhập máy khác"
       },
       "uploadWhenOpen": {
@@ -391,7 +391,7 @@
       },
       "deleteAccount": {
         "title": "Xóa tài khoản thì dữ liệu ra sao?",
-        "summary": "Vào Cá nhân, Quyền riêng tư và bảo mật, rồi Xóa tài khoản. Tài khoản bị xóa ngay. Dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại theo quy định của pháp luật hoặc vì tranh chấp đang mở. Dữ liệu trên máy này cũng bị xóa, kể cả tệp chưa tải lên.",
+        "summary": "Vào Cá nhân, Quyền riêng tư và bảo mật, rồi Xóa tài khoản. Tài khoản bị xóa ngay. Sau đó, dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau 30 ngày, trừ khi phải giữ lại vì lý do pháp lý hoặc tranh chấp đang mở. Dữ liệu trên máy này cũng bị xóa, kể cả tệp chưa tải lên.",
         "keywords": "xóa tài khoản hủy tài khoản dữ liệu 30 ngày"
       }
     },

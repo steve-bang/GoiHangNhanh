@@ -57,3 +57,17 @@ export function getSupportEmail(raw: string | null = PUBLIC_LINKS.supportEmail):
   const email = raw?.trim() ?? '';
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 }
+
+/**
+ * Đích của nút "Liên hệ hỗ trợ" khi người dùng KHÔNG vào được màn Liên hệ hỗ trợ trong app (ví dụ màn "Đang
+ * hoàn tất xóa tài khoản": không còn cửa hàng nên không vào tab): trang Hỗ trợ trên web nếu không phải giữ
+ * chỗ, nếu không thì `mailto:` email hỗ trợ hợp lệ, nếu không có cả hai thì `null` (ẩn nút).
+ */
+export function supportContactUrl(
+  supportPage: string = PUBLIC_LINKS.support,
+  supportEmail: string | null = getSupportEmail(),
+): string | null {
+  if (!isPlaceholderLink(supportPage)) return supportPage;
+  const email = getSupportEmail(supportEmail);
+  return email ? `mailto:${email}` : null;
+}

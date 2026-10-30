@@ -142,7 +142,8 @@
     "startRecording": "Kiểm tra camera và bắt đầu",
     "loading": "Đang mở đơn…",
     "notFound": "Không tìm thấy đơn này trong máy.",
-    "permissionReason": "Ứng dụng cần camera để xem trước khi quay. Phiên bản này chưa ghi video.",
+    "permissionReason": "Ứng dụng dùng camera để quay video đóng gói. Ứng dụng không ghi âm.",
+    "permissionReasonPreview": "Ứng dụng cần camera để xem trước khi quay. Phiên bản này chưa ghi video.",
     "help": "Trợ giúp"
   },
   "record": {

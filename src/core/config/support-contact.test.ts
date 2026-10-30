@@ -1,5 +1,5 @@
 import { isPlaceholderLink, LEGAL_LINKS } from './legal-links';
-import { PUBLIC_LINKS } from './public-links';
+import { PUBLIC_LINKS, supportContactUrl } from './public-links';
 import { getSupportEmail, SUPPORT_EMAIL } from './support-contact';
 
 describe('địa chỉ hỗ trợ (Q-21ae)', () => {
@@ -48,5 +48,21 @@ describe('liên kết pháp lý giữ chỗ', () => {
     ['không phải url', true],
   ])('isPlaceholderLink(%j) = %s', (url, expected) => {
     expect(isPlaceholderLink(url)).toBe(expected);
+  });
+});
+
+describe('đích nút Liên hệ hỗ trợ ngoài app (V1-18)', () => {
+  it('hôm nay còn giữ chỗ: null (ẩn nút)', () => {
+    expect(supportContactUrl()).toBeNull();
+  });
+
+  it.each([
+    ['https://doncung.vn/ho-tro/', null, 'https://doncung.vn/ho-tro/'],
+    ['https://doncung.vn/ho-tro/', 'ho-tro@doncung.vn', 'https://doncung.vn/ho-tro/'],
+    ['https://don-chung.invalid/ho-tro/', 'ho-tro@doncung.vn', 'mailto:ho-tro@doncung.vn'],
+    ['https://don-chung.invalid/ho-tro/', 'sai dạng', null],
+    ['https://don-chung.invalid/ho-tro/', null, null],
+  ])('trang %s, email %s -> %s', (page, email, expected) => {
+    expect(supportContactUrl(page, email)).toBe(expected);
   });
 });
