@@ -1,6 +1,6 @@
 # Ảnh V1-06 session-guard (cổng phiên)
 
-**Ảnh bản web (react-native-web trong Chromium) với cổng giả, không phải iOS/Android; chưa kiểm chứng trên thiết bị.** Chụp 2026-10-30 bằng `node scripts/screens/capture.cjs --sizes all --source tmp/v1-06-shots` (Playwright, hệ số 2). Font, vùng an toàn, Back phần cứng, chữ lớn hệ thống khác thiết bị thật. 0 lỗi trang.
+**Ảnh bản web (react-native-web trong Chromium) với cổng giả, không phải iOS/Android; chưa kiểm chứng trên thiết bị.** Chụp 2026-10-30 bằng `node scripts/screens/capture.cjs --sizes all --source tmp/v1-06-shots` (ảnh 01 chụp lại sau review PR #49, nhánh nháp `tmp/v1-06-shots2` cùng thay đổi tạm) (Playwright, hệ số 2). Font, vùng an toàn, Back phần cứng, chữ lớn hệ thống khác thiết bị thật. 0 lỗi trang.
 
 **Thay đổi tạm (nhánh nháp cục bộ `tmp/v1-06-shots`, không commit vào PR, không đẩy):**
 
@@ -11,7 +11,7 @@ Trạng thái "chưa đăng nhập -> Chào mừng" và "chưa có cửa hàng -
 
 ## 1. Chưa kết nối được cửa hàng (offline lần đầu), mở `/quick-order`
 
-Không hiện Tạo đơn nhanh, không lưu được đơn dưới cửa hàng tạm. `/home` (nhóm tab) hiện **y hệt** ảnh này (không có thanh tab), nên không chụp riêng.
+Không hiện Tạo đơn nhanh, không lưu được đơn dưới cửa hàng tạm. Có **Thử lại** và **Đăng xuất** (sau review PR #49: luồng đăng xuất an toàn PER-21, vẫn hỏi xác nhận và chặn khi đang quay/còn tệp chưa đồng bộ; hộp thoại không chụp được bằng công cụ vì cần bấm, đã kiểm bằng test). Cũng hiện khi "Đang nạp" quá 15 giây. `/home` (nhóm tab) hiện **y hệt** ảnh này (không có thanh tab), nên không chụp riêng.
 
 | 320x568 | 360x800 | 390x844 |
 |---|---|---|
