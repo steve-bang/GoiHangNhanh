@@ -41,7 +41,7 @@ Không có thay đổi giao diện.
 
 ## Rủi ro
 
-- Thêm giá trị nguồn bán sau này phải sửa ba nơi (app, `REMOTE_ORDER_SOURCES`, Rules/Function); test Functions so `SELLING_SOURCES` với `REMOTE_ORDER_SOURCES` và test Rules đăng mọi nguồn qua ánh xạ sẽ báo lệch.
+- Thêm giá trị nguồn bán sau này phải sửa ba nơi (app, `REMOTE_ORDER_SOURCES`, Rules/Function); test Functions so `SELLING_SOURCES` với `REMOTE_ORDER_SOURCES` và test Rules đăng MỌI nguồn của app (`it.each(ORDER_SOURCES)`) qua ánh xạ sẽ báo lệch.
 - Đơn nguồn "Khác" tạo trước bản sửa vẫn ở SQLite với `other`: OrderSync lần sau sẽ đăng được (ánh xạ lúc ghi), không cần migration: OrderSync không có trần lượt thử, mục lỗi được thử lại ở lượt sau (`order-sync.ts`).
 - Chưa deploy, chưa chạy trên thiết bị.
 
