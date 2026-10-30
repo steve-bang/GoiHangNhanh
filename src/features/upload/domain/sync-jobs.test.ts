@@ -115,6 +115,12 @@ describe('describeSyncJob: lý do và hành động', () => {
     ).toBe('tooLarge');
   });
 
+  it('máy chủ từ chối vì người tạo khác (V1-07b): lý do riêng, không có nút Thử lại', () => {
+    expect(
+      describeSyncJob(job('needs_attention', { lastErrorCode: 'NOT_EVIDENCE_CREATOR' }), online),
+    ).toMatchObject({ reason: 'notCreator', action: null });
+  });
+
   it('cần xử lý không rõ mã, lệch mã băm, không khôi phục được: không có nút', () => {
     expect(describeSyncJob(job('needs_attention'), online)).toMatchObject({
       reason: 'unknownAttention',

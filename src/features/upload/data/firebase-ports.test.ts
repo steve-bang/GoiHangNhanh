@@ -1,5 +1,6 @@
 import type { RemoteDocuments, RemoteWriteSpec } from '@/api/contract';
 import type { EvidenceId, OrderId, PackageId, SessionId, ShopId } from '@/core/ids';
+import { isUserRetryableAttention, NOT_EVIDENCE_CREATOR } from '@/features/evidence';
 
 import { UploadPortError } from '../domain/create-upload-gateway';
 import type { UploadRequest } from '../domain/ports';
@@ -71,6 +72,48 @@ describe('toPortError', () => {
     expect(toPortError(new Error('?'))).toMatchObject({ kind: 'network', code: 'UNKNOWN' });
     const mine = new UploadPortError('attention', 'X');
     expect(toPortError(mine)).toBe(mine);
+  });
+});
+
+describe('toPortError: máy chủ từ chối vì người tạo khác (V1-07b)', () => {
+  const withReason = (code: string, reason: unknown) =>
+    Object.assign(sdkError(code), { details: { reason } });
+
+  it.each(['not_evidence_declarer', 'not_session_creator', 'not_return_creator'])(
+    'permission-denied + %s -> cần xử lý ngay, mã NOT_EVIDENCE_CREATOR, không cho bấm Thử lại',
+    (reason) => {
+      const mapped = toPortError(withReason('functions/permission-denied', reason));
+      expect(mapped).toMatchObject({ kind: 'attention', code: NOT_EVIDENCE_CREATOR });
+      expect(isUserRetryableAttention(mapped.code)).toBe(false);
+    },
+  );
+
+  it('lý do khác, thiếu lý do hoặc mã khác giữ phân loại cũ', () => {
+    expect(toPortError(withReason('functions/permission-denied', 'x'))).toMatchObject({
+      kind: 'attention',
+      code: 'PERMISSION_DENIED',
+    });
+    expect(toPortError(withReason('functions/permission-denied', 5))).toMatchObject({
+      code: 'PERMISSION_DENIED',
+    });
+    expect(
+      toPortError(withReason('functions/failed-precondition', 'session_missing')),
+    ).toMatchObject({ kind: 'attention', code: 'FAILED_PRECONDITION' });
+    expect(toPortError(withReason('functions/internal', 'not_session_creator'))).toMatchObject({
+      kind: 'retryable',
+      code: 'INTERNAL',
+    });
+  });
+
+  it('xin phiên tải bị từ chối vì phiên của tài khoản khác: lỗi vĩnh viễn', async () => {
+    const t = fakeDocs({
+      callFunction: async () => {
+        throw withReason('functions/permission-denied', 'not_session_creator');
+      },
+    });
+    await expect(
+      createFirebaseUploadPorts(t.docs).sessions.create('s1' as ShopId, 'e1' as EvidenceId),
+    ).rejects.toMatchObject({ kind: 'attention', code: NOT_EVIDENCE_CREATOR });
   });
 });
 

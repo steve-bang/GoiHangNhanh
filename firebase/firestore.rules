@@ -323,7 +323,8 @@ service cloud.firestore {
       // KHÔNG chặn theo trạng thái phiên (V1-04): phiên được đăng với trạng thái mới nhất nên thường đã
       // `confirmed` trên máy chủ TRƯỚC khi bằng chứng được khai báo (quay -> xác nhận -> tải sau). Chỉ
       // dựa trên điều không phụ thuộc thứ tự đồng bộ: phiên/hồ sơ tồn tại trong cùng shop, người khai
-      // báo là chính người đăng nhập. `capturedAtDevice` là giờ thiết bị, chỉ là thông tin: KHÔNG so
+      // báo là chính người đăng nhập VÀ là người tạo phiên/bản neo (V1-07b; v1 một máy một tài khoản,
+      // Q-24g; đa thành viên O-03 phải nới có chủ đích). `capturedAtDevice` là giờ thiết bị, chỉ là thông tin: KHÔNG so
       // với request.time (đồng hồ máy chạy nhanh không được làm bằng chứng bị từ chối; bất biến 11).
 
       match /evidence/{evidenceId} {
@@ -361,6 +362,9 @@ service cloud.firestore {
                  == request.resource.data.orderId
               && get(/databases/$(database)/documents/shops/$(shopId)/sessions/$(request.resource.data.sessionId)).data.packageId
                  == request.resource.data.packageId
+              // Chỉ người tạo phiên khai báo bằng chứng của phiên (V1-07b, Q-24g: không tải hộ).
+              && get(/databases/$(database)/documents/shops/$(shopId)/sessions/$(request.resource.data.sessionId)).data.createdBy
+                 == request.auth.uid
             )
             ||
             // --- Bằng chứng hàng hoàn (Q-28): hồ sơ phải có sẵn; hồ sơ chưa liên kết đơn vẫn hợp lệ ---
@@ -377,13 +381,17 @@ service cloud.firestore {
               ])
               && request.resource.data.ownerKind == 'return'
               && request.resource.data.returnId is string
-              && exists(/databases/$(database)/documents/shops/$(shopId)/returns/$(request.resource.data.returnId))
+              // Bản neo phải có (get trên tài liệu không tồn tại = từ chối) VÀ do chính người khai báo tạo
+              // (V1-07b, Q-24g: không tải hộ).
+              && get(/databases/$(database)/documents/shops/$(shopId)/returns/$(request.resource.data.returnId)).data.createdBy
+                 == request.auth.uid
             )
           );
 
         // Client chỉ cập nhật trạng thái phía thiết bị. KHÔNG được đặt uploaded/verified/
-        // hash_mismatch và không đụng `server`, `sha256Client`, liên kết.
+        // hash_mismatch và không đụng `server`, `sha256Client`, liên kết. Chỉ người đã khai báo (V1-07b).
         allow update: if canManageOrders(shopId)
+          && resource.data.createdBy == request.auth.uid
           && onlyChanges(['clientFileState', 'lastError', 'retryCount'])
           && request.resource.data.clientFileState in [
             'queued', 'uploading', 'upload_failed', 'needs_attention', 'unrecoverable'

@@ -1,5 +1,6 @@
 import type { RemoteDocuments } from '@/api/contract';
 import type { EvidenceId, ShopId } from '@/core/ids';
+import { NOT_EVIDENCE_CREATOR } from '@/features/evidence';
 
 import { evidenceWrite } from '../domain/evidence-document';
 import {
@@ -37,11 +38,29 @@ function hasServerDetails(error: unknown): boolean {
   return details !== undefined && details !== null;
 }
 
+/**
+ * `details.reason` của `createUploadSession` khi bằng chứng/phiên/bản neo do tài khoản khác tạo (V1-07b,
+ * `firebase/functions/src/uploads.ts`). Người tạo không đổi nên thử lại vô ích: cần xử lý ngay, không cho
+ * bấm Thử lại (`NON_RETRYABLE_ATTENTION_CODES`).
+ */
+const NOT_CREATOR_REASONS = ['not_evidence_declarer', 'not_session_creator', 'not_return_creator'];
+
+function serverReason(error: unknown): string | undefined {
+  const details = (error as { details?: unknown } | null)?.details;
+  if (typeof details !== 'object' || details === null) return undefined;
+  const reason = (details as { reason?: unknown }).reason;
+  return typeof reason === 'string' ? reason : undefined;
+}
+
 /** Phân loại lỗi SDK theo `code` (bỏ tiền tố `functions/`). Không đọc `message` (có thể chứa dữ liệu). */
 export function toPortError(error: unknown): UploadPortError {
   if (error instanceof UploadPortError) return error;
   const raw = (error as { code?: unknown } | null)?.code;
   const code = typeof raw === 'string' ? raw.replace(/^(functions|firestore)\//, '') : 'unknown';
+  const reason = serverReason(error);
+  if (code === 'permission-denied' && reason && NOT_CREATOR_REASONS.includes(reason)) {
+    return new UploadPortError('attention', NOT_EVIDENCE_CREATOR);
+  }
   const kind = ATTENTION_CODES.includes(code)
     ? 'attention'
     : NETWORK_CODES.includes(code) || (AMBIGUOUS_CODES.includes(code) && !hasServerDetails(error))
@@ -57,7 +76,9 @@ const SERVER_STATES: readonly string[] = ['uploaded', 'verified', 'hash_mismatch
  * `createUploadSession`), đọc `server.state` do Cloud Function ghi. Hàng đợi chỉ khai báo khi phiên/hồ
  * sơ đã đăng (`UploadSource.isReadyToDeclare`), nên Firestore `permission-denied` khi khai báo là máy
  * chủ TỪ CHỐI thật (hoặc đăng chậm hơn dấu cục bộ): tính lượt (`retryable`), không phải lỗi mạng, và
- * không thành "cần xử lý" ngay (V1-02).
+ * không thành "cần xử lý" ngay (V1-02). Rules cũng từ chối khi phiên/bản neo do tài khoản khác tạo
+ * (V1-07b) nhưng không kèm lý do; hàng đợi đã chỉ khai báo tệp của chính tài khoản nên hiếm, và vẫn dừng
+ * sau 8 lượt. Callable thì có `details.reason` -> `NOT_EVIDENCE_CREATOR` ngay.
  */
 export function createFirebaseUploadPorts(docs: RemoteDocuments, appVersion?: string) {
   const declarer: EvidenceDeclarer = {

@@ -1,6 +1,6 @@
 import { AccountError, type AccountErrorReason } from './account';
 import { ShopError } from './shop';
-import { UploadError } from './uploads';
+import { UploadError, type UploadErrorReason } from './uploads';
 
 /**
  * Chi tiết của lỗi máy chủ bất ngờ (V1-04): client (V1-02) phân biệt "máy chủ lỗi" với "mất mạng" nhờ
@@ -11,7 +11,9 @@ export const SERVER_UNEXPECTED_DETAILS = { reason: 'server_unexpected' } as cons
 export interface CallableErrorShape {
   readonly code: ShopError['code'] | UploadError['code'] | AccountError['code'] | 'internal';
   readonly message: string;
-  readonly details?: { readonly reason: 'server_unexpected' | AccountErrorReason };
+  readonly details?: {
+    readonly reason: 'server_unexpected' | AccountErrorReason | UploadErrorReason;
+  };
 }
 
 /**
@@ -21,6 +23,10 @@ export interface CallableErrorShape {
  */
 export function describeCallableError(error: unknown): CallableErrorShape {
   if (error instanceof AccountError) {
+    return { code: error.code, message: error.message, details: { reason: error.reason } };
+  }
+  if (error instanceof UploadError && error.reason) {
+    // V1-07b: lý do có cấu trúc (ví dụ `not_session_creator`) để app coi là lỗi vĩnh viễn.
     return { code: error.code, message: error.message, details: { reason: error.reason } };
   }
   if (error instanceof ShopError || error instanceof UploadError) {

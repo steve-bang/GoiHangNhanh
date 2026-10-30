@@ -309,6 +309,7 @@
       "fileMissing": "Không tìm thấy tệp trên máy này.",
       "fileUnreadable": "Không đọc được tệp trên máy này.",
       "unsupportedType": "Loại tệp này không tải lên được.",
+      "notCreator": "Chỉ tài khoản tạo phiên quay hoặc hồ sơ này mới tải lên được. Tệp vẫn còn trên máy.",
       "unknownAttention": "Tệp cần được kiểm tra.",
       "hashMismatch": "Bản trên máy chủ không khớp tệp gốc nên không được tính là đã xác minh.",
       "localSaveFailed": "Lưu tệp trên máy bị lỗi.",

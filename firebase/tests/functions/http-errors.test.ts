@@ -30,4 +30,14 @@ describe('describeCallableError (V1-04)', () => {
       message: 'y',
     });
   });
+
+  it('lỗi tải lên có lý do (V1-07b) gắn details.reason, không lộ gì thêm', () => {
+    expect(
+      describeCallableError(new UploadError('permission-denied', 'z', 'not_session_creator')),
+    ).toEqual({
+      code: 'permission-denied',
+      message: 'z',
+      details: { reason: 'not_session_creator' },
+    });
+  });
 });

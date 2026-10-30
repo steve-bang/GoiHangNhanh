@@ -116,7 +116,7 @@ describe('khai báo bằng chứng HÀNG HOÀN đúng hình dạng Rules yêu c�
           dataSource: 'user_entered',
           createdAtDevice: Timestamp.now(),
           createdAt: Timestamp.now(),
-          createdBy: 'seed',
+          createdBy: USERS.packerA,
         });
       }
     });
@@ -154,5 +154,131 @@ describe('khai báo bằng chứng HÀNG HOÀN đúng hình dạng Rules yêu c�
     await assertFails(setDoc(doc(as(USERS.viewerA), a.path), a.data));
     const b = evidenceWrite(returnRequest(SHOP_A), USERS.ownerB, values);
     await assertFails(setDoc(doc(as(USERS.ownerB), b.path), b.data));
+  });
+});
+
+// V1-07b (Q-24g, v1 một máy một tài khoản): chỉ người tạo phiên/bản neo khai báo bằng chứng của nó.
+describe('người khai báo phải là người tạo phiên hoặc bản neo (V1-07b)', () => {
+  const returnRequest = (shopId: string, overrides: Record<string, unknown> = {}) =>
+    request(shopId, {
+      owner: { kind: 'return', returnId: 'ret-v7b' },
+      kind: 'photo',
+      mimeType: 'image/jpeg',
+      durationMs: null,
+      ...overrides,
+    });
+
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      // Bản neo do packerA tạo; phiên session-ownerA do ownerA tạo (cùng đơn/kiện nền).
+      await setDoc(doc(db, `shops/${SHOP_A}/returns/ret-v7b`), {
+        shopId: SHOP_A,
+        code: 'RH-00002',
+        dataSource: 'user_entered',
+        createdAtDevice: Timestamp.now(),
+        createdAt: Timestamp.now(),
+        createdBy: USERS.packerA,
+      });
+      await setDoc(doc(db, `shops/${SHOP_A}/sessions/session-ownerA`), {
+        shopId: SHOP_A,
+        kind: 'packing',
+        orderId: 'order-1',
+        packageId: 'pkg-1',
+        orderSnapshot: { orderCode: 'DH001', source: 'shopee', lines: [] },
+        status: 'confirmed',
+        startedAtDevice: Timestamp.now(),
+        startedAtServer: Timestamp.now(),
+        createdBy: USERS.ownerA,
+      });
+      // Phiên không rõ người tạo (dữ liệu lỗi): không ai khai báo được.
+      await setDoc(doc(db, `shops/${SHOP_A}/sessions/session-no-creator`), {
+        shopId: SHOP_A,
+        kind: 'packing',
+        orderId: 'order-1',
+        packageId: 'pkg-1',
+        orderSnapshot: { orderCode: 'DH001', source: 'shopee', lines: [] },
+        status: 'confirmed',
+        startedAtDevice: Timestamp.now(),
+        startedAtServer: Timestamp.now(),
+      });
+    });
+  });
+
+  const declare = (uid: string, req: never) => {
+    const w = evidenceWrite(req, uid, values);
+    return setDoc(doc(as(uid), w.path), w.data);
+  };
+
+  it('đúng người tạo phiên khai báo được (packer và cả chủ shop với phiên của chính mình)', async () => {
+    await assertSucceeds(declare(USERS.packerA, request(SHOP_A)));
+    await assertSucceeds(
+      declare(
+        USERS.ownerA,
+        request(SHOP_A, {
+          evidenceId: 'ev-owner',
+          owner: packingOwner({ sessionId: 'session-ownerA' }),
+        }),
+      ),
+    );
+  });
+
+  it('thành viên khác cùng shop (chủ, quản lý) không khai báo được cho phiên của packer', async () => {
+    for (const uid of [USERS.ownerA, USERS.managerA]) {
+      await assertFails(declare(uid, request(SHOP_A)));
+    }
+  });
+
+  it('packer không khai báo được cho phiên do chủ shop tạo, hay phiên không rõ người tạo', async () => {
+    await assertFails(
+      declare(
+        USERS.packerA,
+        request(SHOP_A, { owner: packingOwner({ sessionId: 'session-ownerA' }) }),
+      ),
+    );
+    for (const uid of [USERS.packerA, USERS.ownerA]) {
+      await assertFails(
+        declare(uid, request(SHOP_A, { owner: packingOwner({ sessionId: 'session-no-creator' }) })),
+      );
+    }
+  });
+
+  it('người ngoài shop (chủ shop B, tài khoản không thuộc shop nào) không khai báo được', async () => {
+    for (const uid of [USERS.ownerB, USERS.stranger]) {
+      await assertFails(declare(uid, request(SHOP_A)));
+      await assertFails(declare(uid, returnRequest(SHOP_A)));
+    }
+  });
+
+  it('phiên không tồn tại bị từ chối với mọi người', async () => {
+    for (const uid of [USERS.packerA, USERS.ownerA]) {
+      await assertFails(
+        declare(uid, request(SHOP_A, { owner: packingOwner({ sessionId: 'khong-co' }) })),
+      );
+    }
+  });
+
+  it('hàng hoàn: người tạo bản neo khai báo được; thành viên khác cùng shop bị từ chối', async () => {
+    await assertSucceeds(declare(USERS.packerA, returnRequest(SHOP_A)));
+    for (const uid of [USERS.ownerA, USERS.managerA]) {
+      await assertFails(declare(uid, returnRequest(SHOP_A, { evidenceId: `ev-${uid}` })));
+    }
+  });
+
+  it('hàng hoàn: bản neo không tồn tại bị từ chối', async () => {
+    await assertFails(
+      declare(
+        USERS.packerA,
+        returnRequest(SHOP_A, { owner: { kind: 'return', returnId: 'khong-co' } }),
+      ),
+    );
+  });
+
+  it('cập nhật trạng thái phía thiết bị chỉ người đã khai báo; thành viên khác cùng shop bị từ chối', async () => {
+    const path = `shops/${SHOP_A}/evidence/evidence-1`; // nền: packerA khai báo
+    await assertSucceeds(updateDoc(doc(as(USERS.packerA), path), { clientFileState: 'uploading' }));
+    for (const uid of [USERS.ownerA, USERS.managerA, USERS.ownerB, USERS.stranger]) {
+      await assertFails(updateDoc(doc(as(uid), path), { clientFileState: 'upload_failed' }));
+    }
   });
 });
