@@ -7,11 +7,12 @@ import { getEnabledSocialProviders } from '@/core/config/feature-flags';
 import { resolveErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
 import { useSession } from '@/features/personal';
+import { layout as themeLayout } from '@/core/theme';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Text, useTheme } from '@/shared/ui';
 
 import { normalizeEmail, validateEmail } from '../domain/validation';
-import { computeSignInLayout } from './auth-layout';
+import { AUTH_TITLE_VARIANT, computeSignInLayout } from './auth-layout';
 import { LINK_ROW_HEIGHT, SOCIAL_BUTTON_HEIGHT } from './onboarding-layout';
 import { StackedBrandLogo } from './BrandLogo';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
@@ -29,7 +30,7 @@ import { WelcomeIllustration } from './WelcomeIllustration';
  */
 export function SignInScreen() {
   const { t } = useTranslation();
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
@@ -93,7 +94,7 @@ export function SignInScreen() {
       successChars: showSuccess ? successMessage.length : undefined,
     },
   );
-  const { gaps, title } = layout;
+  const { gaps } = layout;
 
   const submit = () => {
     if (busyRef.current) return;
@@ -142,10 +143,19 @@ export function SignInScreen() {
         <StackedBrandLogo compact={layout.compact} />
       </View>
       <View style={{ marginTop: gaps.logoToTitle }}>
-        <Text accessibilityRole="header" bold style={[title, styles.center, { color: colors.ink }]}>
+        <Text
+          accessibilityRole="header"
+          variant={AUTH_TITLE_VARIANT}
+          style={[styles.center, { color: tokens.color.text.strong }]}
+        >
           {t('screens:signIn.title')}
         </Text>
-        <Text style={[styles.center, { color: colors.inkMuted, marginTop: gaps.titleToSubtitle }]}>
+        <Text
+          style={[
+            styles.center,
+            { color: tokens.color.text.subtle, marginTop: gaps.titleToSubtitle },
+          ]}
+        >
           {t('screens:signIn.subtitle')}
         </Text>
       </View>
@@ -229,13 +239,13 @@ export function SignInScreen() {
         hitSlop={8}
         style={[styles.forgot, { minHeight: Math.max(touch, LINK_ROW_HEIGHT) }]}
       >
-        <Text bold style={{ color: colors.brand }}>
+        <Text bold style={{ color: tokens.color.action.link }}>
           {t('screens:signIn.forgot')}
         </Text>
       </Pressable>
 
       {formError ? (
-        <View style={{ marginBottom: spacing.md }}>
+        <View style={{ marginBottom: tokens.space.md }}>
           <FormErrorBanner
             code={formError}
             {...(isRetryable(formError) ? { onRetry: retry } : {})}
@@ -251,15 +261,15 @@ export function SignInScreen() {
       />
 
       {providers.length > 0 ? (
-        <View testID="signin-social-group" style={{ marginTop: 16 }}>
-          <View style={[styles.dividerRow, { gap: spacing.md }]}>
-            <View style={[styles.line, { backgroundColor: colors.fieldBorder }]} />
-            <Text variant="caption" style={{ color: colors.inkMuted }}>
+        <View testID="signin-social-group" style={{ marginTop: tokens.space.lg }}>
+          <View style={[styles.dividerRow, { gap: tokens.space.md }]}>
+            <View style={[styles.line, { backgroundColor: tokens.color.border.field }]} />
+            <Text variant="caption" style={{ color: tokens.color.text.subtle }}>
               {t('screens:signIn.orSignInWith')}
             </Text>
-            <View style={[styles.line, { backgroundColor: colors.fieldBorder }]} />
+            <View style={[styles.line, { backgroundColor: tokens.color.border.field }]} />
           </View>
-          <View style={{ marginTop: 12 }}>
+          <View style={{ marginTop: tokens.space.md }}>
             <SocialIconRow
               providers={providers}
               disabled={busy}
@@ -277,8 +287,8 @@ export function SignInScreen() {
         </View>
       ) : null}
 
-      <View style={[styles.linkRow, { minHeight: LINK_ROW_HEIGHT, marginTop: 8 }]}>
-        <Text style={{ color: colors.inkMuted }}>{t('screens:signIn.noAccount')}</Text>
+      <View style={[styles.linkRow, { minHeight: LINK_ROW_HEIGHT, marginTop: tokens.space.sm }]}>
+        <Text style={{ color: tokens.color.text.subtle }}>{t('screens:signIn.noAccount')}</Text>
         <Pressable
           testID="signin-to-sign-up"
           accessibilityRole="link"
@@ -287,7 +297,7 @@ export function SignInScreen() {
           hitSlop={8}
           style={{ minHeight: touch, justifyContent: 'center' }}
         >
-          <Text bold style={{ color: colors.brand }}>
+          <Text bold style={{ color: tokens.color.action.link }}>
             {t('screens:signIn.createAccount')}
           </Text>
         </Pressable>
@@ -298,7 +308,7 @@ export function SignInScreen() {
 
 const styles = StyleSheet.create({
   center: { textAlign: 'center' },
-  illustrationSlot: { paddingTop: 8 },
+  illustrationSlot: { paddingTop: themeLayout.space.sm },
   forgot: { alignSelf: 'flex-end', justifyContent: 'center' },
   dividerRow: { flexDirection: 'row', alignItems: 'center' },
   line: { flex: 1, height: StyleSheet.hairlineWidth },

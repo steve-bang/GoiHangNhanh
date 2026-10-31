@@ -1,4 +1,4 @@
-import { layout as themeLayout, typography } from '@/core/theme';
+import { layout as themeLayout } from '@/core/theme';
 
 import {
   computeCreateShopLayout,
@@ -179,15 +179,6 @@ describe('bố cục ba màn thiết lập', () => {
           estimateFieldErrorHeight(spec, 300, 1, 48),
         );
       });
-    });
-
-    it('tiêu đề theo variant `screenTitle` ở mọi cỡ màn (cỡ chữ không do bố cục quyết)', () => {
-      for (const i of [SMALL, IPHONE]) {
-        expect(computeSignUpLayout(i).title).toEqual({
-          fontSize: typography.screenTitle.fontSize,
-          lineHeight: typography.screenTitle.lineHeight,
-        });
-      }
     });
   });
 

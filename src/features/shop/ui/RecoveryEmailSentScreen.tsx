@@ -11,7 +11,7 @@ import { Button, Text, useTheme } from '@/shared/ui';
 
 import { maskEmail } from '../domain/mask-email';
 import { DEFAULT_RESEND_SECONDS, formatCountdown } from '../domain/otp';
-import { computeForgotLayout } from './auth-layout';
+import { AUTH_TITLE_VARIANT, computeForgotLayout } from './auth-layout';
 import { SuccessBanner, TipCard, useCountdown } from './onboarding/AuthParts';
 import { LockIllustration } from './onboarding/AuthIllustrations';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
@@ -25,8 +25,8 @@ import { isRetryable, useGatewayTask } from './onboarding/useGatewayTask';
  * TRUNG TÍNH: "Nếu email này đã đăng ký..."; email luôn được che. Nằm TRÊN màn Quên mật khẩu trong
  * ngăn xếp (Back/Đổi email về đó, giữ email). Vào thẳng khi chưa gửi thì về Quên mật khẩu.
  * Không hứa thư chắc chắn tới; mật khẩu mới đặt trên trang của Firebase, không phải trong app.
- * Màu chữ theo vai trò của `Text` (`ink`/`inkMuted`/`brand`) để cùng bảng màu với các màn trước/sau
- * trong luồng (khung ngoài `Screen`); khoảng cách theo token, không viết số thiết kế.
+ * Chữ theo vai trò của `Text` (`ink`/`inkMuted`, trong `AppThemeScope` của khung = `text.strong`/
+ * `text.subtle`); liên kết `action.link` như các màn trước/sau trong luồng; khoảng cách theo token.
  */
 export function RecoveryEmailSentScreen() {
   const { t } = useTranslation();
@@ -68,7 +68,7 @@ export function RecoveryEmailSentScreen() {
     { width, height, insetTop: insets.top, insetBottom: insets.bottom, fontScale },
     { touch, descriptionChars: description.length + t('screens:recoverySent.nextStep').length },
   );
-  const { gaps, title } = layout;
+  const { gaps } = layout;
 
   const resend = () => {
     if (!requestedEmail || busyRef.current) return;
@@ -108,7 +108,12 @@ export function RecoveryEmailSentScreen() {
         </View>
       ) : null}
       <View style={{ marginTop: gaps.illustrationToTitle }}>
-        <Text accessibilityRole="header" bold color="ink" style={[title, styles.center]}>
+        <Text
+          accessibilityRole="header"
+          variant={AUTH_TITLE_VARIANT}
+          color="ink"
+          style={styles.center}
+        >
           {t('screens:recoverySent.title')}
         </Text>
         <Text
@@ -132,7 +137,7 @@ export function RecoveryEmailSentScreen() {
           hitSlop={tokens.space.sm}
           style={[styles.pressable, { minHeight: touch }]}
         >
-          <Text bold color="brand">
+          <Text bold style={{ color: tokens.color.action.link }}>
             {t('screens:recoverySent.changeEmail')}
           </Text>
         </Pressable>
@@ -177,7 +182,7 @@ export function RecoveryEmailSentScreen() {
             hitSlop={tokens.space.sm}
             style={[styles.pressable, { minHeight: touch }]}
           >
-            <Text bold color="brand">
+            <Text bold style={{ color: tokens.color.action.link }}>
               {t('screens:recoverySent.resend')}
             </Text>
           </Pressable>

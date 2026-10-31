@@ -2,11 +2,12 @@ import { useEffect, useReducer, useRef, useState, type ComponentRef, type RefObj
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import type { SocialProvider } from '@/core/config/feature-flags';
+import { layout } from '@/core/theme';
 import { getInputResetStyle, getMinTouchTarget } from '@/platform';
 import { Icon, Text, useTheme, type IconName } from '@/shared/ui';
 
 import { OTP_LENGTH, remainingSeconds } from '../../domain/otp';
-import { TIP_CARD_PADDING, RULES_CARD_PADDING } from '../auth-layout';
+import { TIP_BODY_VARIANT, TIP_CARD_PADDING, RULES_CARD_PADDING } from '../auth-layout';
 import { useScrollIntoView } from './OnboardingScaffold';
 import type { TextInputHandle } from './OnboardingParts';
 
@@ -24,7 +25,7 @@ export function PasswordToggle({
   showLabel: string;
   hideLabel: string;
 }) {
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
   const touch = getMinTouchTarget();
   return (
     <Pressable
@@ -35,12 +36,16 @@ export function PasswordToggle({
       hitSlop={6}
       style={[styles.eye, { minWidth: touch, minHeight: touch }]}
     >
-      <Icon name={shown ? 'eye-off' : 'eye'} size={22} color={colors.inkMuted} />
+      <Icon
+        name={shown ? 'eye-off' : 'eye'}
+        size={tokens.icon.lg}
+        color={tokens.color.text.subtle}
+      />
     </Pressable>
   );
 }
 
-/** Thẻ "Mẹo" nền xanh nhạt: biểu tượng, tiêu đề, nội dung và trái tim nhỏ góc dưới (theo thiết kế). */
+/** Thẻ "Mẹo" nền cam nhạt: biểu tượng, tiêu đề, nội dung và trái tim nhỏ góc dưới (theo thiết kế). */
 export function TipCard({
   icon,
   title,
@@ -52,37 +57,42 @@ export function TipCard({
   body: string;
   testID: string;
 }) {
-  const { colors, radius, spacing } = useTheme();
+  const { tokens } = useTheme();
   return (
     <View
       testID={testID}
       style={[
         styles.tip,
         {
-          backgroundColor: colors.brandSoft,
-          borderRadius: radius.lg,
+          backgroundColor: tokens.color.brand.soft,
+          borderRadius: tokens.radius.lg,
           padding: TIP_CARD_PADDING,
-          gap: spacing.md,
+          gap: tokens.space.md,
         },
       ]}
     >
       <View style={styles.tipIcon}>
-        <Icon name={icon} size={26} color={colors.brand} />
+        <Icon name={icon} size={tokens.icon.lg} color={tokens.color.brand.primary} />
       </View>
       <View style={styles.tipText}>
-        <Text bold style={{ color: colors.brand }}>
+        <Text bold style={{ color: tokens.color.brand.onSoft }}>
           {title}
         </Text>
-        <Text style={{ color: colors.inkMuted, fontSize: 13, lineHeight: 18 }}>{body}</Text>
+        <Text variant={TIP_BODY_VARIANT} style={{ color: tokens.color.text.subtle }}>
+          {body}
+        </Text>
       </View>
       <View style={styles.tipHeart}>
-        <Icon name="heart" size={14} color={colors.brand} />
+        <Icon name="heart" size={tokens.icon.sm} color={tokens.color.brand.primary} />
       </View>
     </View>
   );
 }
 
-/** Khối "Mật khẩu nên có": một dòng "Ít nhất 8 ký tự", tích xanh khi đạt (theo thời gian thực). */
+/**
+ * Khối "Mật khẩu nên có": một dòng "Ít nhất 8 ký tự", tích màu thành công khi đạt (theo thời gian
+ * thực); chưa đạt thì tích viền xám. Màu không là tín hiệu duy nhất: chữ đổi đậm/nhạt và có nhãn truy cập.
+ */
 export function RequirementCard({
   title,
   label,
@@ -96,7 +106,7 @@ export function RequirementCard({
   met: boolean;
   testID: string;
 }) {
-  const { colors, radius } = useTheme();
+  const { tokens } = useTheme();
   return (
     <View
       testID={testID}
@@ -104,17 +114,25 @@ export function RequirementCard({
       accessibilityLabel={accessibilityLabel}
       style={[
         styles.rules,
-        { backgroundColor: colors.brandSoft, borderRadius: radius.md, padding: RULES_CARD_PADDING },
+        {
+          backgroundColor: tokens.color.brand.soft,
+          borderRadius: tokens.radius.md,
+          padding: RULES_CARD_PADDING,
+        },
       ]}
     >
-      <Text variant="caption" style={{ color: colors.inkMuted }}>
+      <Text variant="caption" style={{ color: tokens.color.text.subtle }}>
         {title}
       </Text>
       <View style={styles.ruleRow}>
-        <Icon name="check-circle" size={18} color={met ? colors.brand : colors.fieldBorder} />
+        <Icon
+          name="check-circle"
+          size={tokens.icon.md}
+          color={met ? tokens.color.feedback.success.fg : tokens.color.border.strong}
+        />
         <Text
           testID={`${testID}-length-${met ? 'met' : 'unmet'}`}
-          style={{ color: met ? colors.ink : colors.inkMuted }}
+          style={{ color: met ? tokens.color.text.strong : tokens.color.text.subtle }}
         >
           {label}
         </Text>
@@ -123,9 +141,9 @@ export function RequirementCard({
   );
 }
 
-/** Banner thành công nhẹ (nền xanh nhạt, tích xanh); chữ tối. `role=alert` để đọc khi hiện. */
+/** Banner thành công nhẹ (nền xanh lá nhạt, tích xanh lá); chữ tối. `role=alert` để đọc khi hiện. */
 export function SuccessBanner({ message, testID }: { message: string; testID: string }) {
-  const { colors, radius, spacing } = useTheme();
+  const { tokens } = useTheme();
   return (
     <View
       testID={testID}
@@ -134,16 +152,16 @@ export function SuccessBanner({ message, testID }: { message: string; testID: st
       style={[
         styles.success,
         {
-          backgroundColor: colors.successSoft,
-          borderColor: colors.success,
-          borderRadius: radius.md,
-          padding: spacing.md,
-          gap: spacing.sm,
+          backgroundColor: tokens.color.feedback.success.bg,
+          borderColor: tokens.color.feedback.success.fg,
+          borderRadius: tokens.radius.md,
+          padding: tokens.space.md,
+          gap: tokens.space.sm,
         },
       ]}
     >
-      <Icon name="check-circle" size={20} color={colors.success} />
-      <Text style={styles.successText}>{message}</Text>
+      <Icon name="check-circle" size={tokens.icon.md} color={tokens.color.feedback.success.fg} />
+      <Text style={[styles.successText, { color: tokens.color.text.strong }]}>{message}</Text>
     </View>
   );
 }
@@ -162,9 +180,9 @@ export function SocialIconRow({
   labelOf: (provider: SocialProvider) => string;
   minHeight: number;
 }) {
-  const { colors, radius, spacing } = useTheme();
+  const { tokens } = useTheme();
   return (
-    <View style={[styles.socialRow, { gap: spacing.md }]}>
+    <View style={[styles.socialRow, { gap: tokens.space.md }]}>
       {providers.map((provider) => (
         <Pressable
           key={provider}
@@ -178,14 +196,14 @@ export function SocialIconRow({
             styles.social,
             {
               minHeight: Math.max(getMinTouchTarget(), minHeight),
-              backgroundColor: colors.surface,
-              borderColor: colors.fieldBorder,
-              borderRadius: radius.md,
-              opacity: disabled ? 0.6 : pressed ? 0.85 : 1,
+              backgroundColor: tokens.color.surface.raised,
+              borderColor: tokens.color.border.field,
+              borderRadius: tokens.radius.md,
+              opacity: disabled ? tokens.opacity.disabled : pressed ? tokens.opacity.pressed : 1,
             },
           ]}
         >
-          <Icon name={provider} size={22} color={colors.ink} />
+          <Icon name={provider} size={tokens.icon.lg} color={tokens.color.text.strong} />
         </Pressable>
       ))}
     </View>
@@ -198,7 +216,7 @@ interface OtpBoxesProps {
   label: string;
   hasError: boolean;
   editable: boolean;
-  box: { width: number; height: number; gap: number; fontSize: number };
+  box: { width: number; height: number; gap: number };
   inputRef: RefObject<TextInputHandle | null>;
   testID: string;
   /** Rời ô (để báo thiếu số). */
@@ -209,7 +227,7 @@ interface OtpBoxesProps {
 
 /**
  * Một ô nhập THẬT (trong suốt, phủ kín) được vẽ thành 6 ô số: bàn phím số, dán được, gợi ý mã tự
- * điền của hệ điều hành. Ô hiện tại có viền nhấn; ô lỗi viền đỏ. Việc lọc chữ số và giới hạn 6 số do
+ * điền của hệ điều hành. Chữ số dùng biến thể `numeric` (cùng bề rộng). Ô hiện tại có viền nhấn; ô lỗi viền đỏ. Việc lọc chữ số và giới hạn 6 số do
  * `onChangeText` của màn hình làm (hàm `sanitizeOtp`); ô này cố ý không có `maxLength`.
  */
 export function OtpBoxes({
@@ -224,7 +242,7 @@ export function OtpBoxes({
   onBlur,
   onSubmitEditing,
 }: OtpBoxesProps) {
-  const { colors, radius } = useTheme();
+  const { tokens } = useTheme();
   const scrollIntoView = useScrollIntoView();
   const wrapperRef = useRef<ComponentRef<typeof View>>(null);
   const [focused, setFocused] = useState(false);
@@ -253,21 +271,19 @@ export function OtpBoxes({
                 {
                   width: box.width,
                   height: box.height,
-                  borderRadius: radius.md,
-                  backgroundColor: colors.surface,
-                  borderWidth: isCurrent || hasError ? 2 : 1,
+                  borderRadius: tokens.radius.md,
+                  backgroundColor: tokens.color.surface.raised,
+                  borderWidth:
+                    isCurrent || hasError ? tokens.borderWidth.emphasis : tokens.borderWidth.thin,
                   borderColor: hasError
-                    ? colors.danger
+                    ? tokens.color.feedback.danger.fg
                     : isCurrent
-                      ? colors.brand
-                      : colors.fieldBorder,
+                      ? tokens.color.brand.primary
+                      : tokens.color.border.field,
                 },
               ]}
             >
-              <Text
-                bold
-                style={{ color: colors.ink, fontSize: box.fontSize, lineHeight: box.fontSize + 6 }}
-              >
+              <Text variant="numeric" style={{ color: tokens.color.text.strong }}>
                 {value[i] ?? ''}
               </Text>
             </View>
@@ -329,18 +345,28 @@ export function useCountdown(deadline: number | null): number {
 }
 
 const styles = StyleSheet.create({
-  eye: { alignItems: 'center', justifyContent: 'center', marginRight: -8 },
+  // Kéo nút mắt sát mép phải ô nhập (bù đệm ngang của ô), vùng chạm vẫn đủ lớn.
+  eye: { alignItems: 'center', justifyContent: 'center', marginRight: -layout.space.sm },
   tip: { flexDirection: 'row', alignItems: 'flex-start' },
-  tipIcon: { paddingTop: 2 },
-  tipText: { flex: 1, gap: 2 },
+  tipIcon: { paddingTop: layout.space.xxs },
+  tipText: { flex: 1, gap: layout.space.xxs },
   tipHeart: { alignSelf: 'flex-end' },
-  rules: { gap: 6 },
-  ruleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  success: { flexDirection: 'row', alignItems: 'flex-start', borderWidth: 1 },
+  rules: { gap: layout.space.tight },
+  ruleRow: { flexDirection: 'row', alignItems: 'center', gap: layout.space.sm },
+  success: { flexDirection: 'row', alignItems: 'flex-start', borderWidth: layout.borderWidth.thin },
   successText: { flex: 1 },
   socialRow: { flexDirection: 'row' },
-  social: { flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  social: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: layout.borderWidth.thin,
+  },
   boxRow: { flexDirection: 'row', justifyContent: 'center' },
   cell: { alignItems: 'center', justifyContent: 'center' },
-  hiddenInput: { opacity: 0.02, color: 'transparent' },
+  hiddenInput: {
+    // token-exception: ô nhập thật gần như trong suốt (không phải 0) để hệ điều hành vẫn cho focus, dán và tự điền mã
+    opacity: 0.02,
+    color: 'transparent',
+  },
 });

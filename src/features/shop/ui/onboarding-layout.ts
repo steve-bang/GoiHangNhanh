@@ -141,11 +141,6 @@ function finish(
 /* ------------------------------------------------------------------ UI-A03 đăng ký */
 
 export interface SignUpLayout extends OnboardingLayoutBase {
-  /**
-   * Cỡ tiêu đề = variant `screenTitle` (cùng mọi cỡ màn). Giữ trường này để màn đăng ký cũ không vỡ;
-   * màn nên dùng `<Text variant="screenTitle">` thay vì đọc trường này.
-   */
-  title: { fontSize: number; lineHeight: number };
   fieldHeight: number;
   gaps: {
     afterBack: number;
@@ -235,7 +230,6 @@ export function computeSignUpLayout(
   const b = base(input);
   const touch = options.touch ?? 48;
   const errors = options.errors ?? {};
-  const title = { fontSize: TITLE.fontSize, lineHeight: TITLE.lineHeight };
   const { space } = layout;
   const gaps = b.compact
     ? {
@@ -260,7 +254,7 @@ export function computeSignUpLayout(
       };
   const fieldHeight = ICON_FIELD_CONTENT_HEIGHT + (b.compact ? space.xs : space.sm);
   const titleLines = estimateLines(
-    { chars: SIGN_UP_TITLE_CHARS, fontSize: title.fontSize, bold: true },
+    { chars: SIGN_UP_TITLE_CHARS, fontSize: TITLE.fontSize, bold: true },
     b.contentWidth,
     b.scale,
   );
@@ -272,7 +266,7 @@ export function computeSignUpLayout(
   const fixed =
     BACK_ROW_HEIGHT +
     gaps.afterBack +
-    titleLines * title.lineHeight * b.scale +
+    titleLines * TITLE.lineHeight * b.scale +
     gaps.titleToSubtitle +
     subtitleLines * BODY_LINE_HEIGHT * b.scale +
     gaps.subtitleToFields +
@@ -298,7 +292,7 @@ export function computeSignUpLayout(
       b.scale,
     );
   const fin = finish(b, fixed, { maxHeight: SIGN_UP_ILLUSTRATION_MAX_HEIGHT, chrome: space.lg });
-  return { ...b, ...fin, title, fieldHeight, gaps };
+  return { ...b, ...fin, fieldHeight, gaps };
 }
 
 /** Hình khiên + bảng ghi ở đáy màn đăng ký: một tham số (chiều cao), khung rộng = 1,7 x cao. */

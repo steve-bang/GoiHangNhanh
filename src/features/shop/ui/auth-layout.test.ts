@@ -1,3 +1,5 @@
+import { layout } from '@/core/theme';
+
 import {
   computeForgotLayout,
   computeNewPasswordLayout,
@@ -74,10 +76,10 @@ describe('bố cục bốn màn đăng nhập và khôi phục mật khẩu', ()
       expect(layout.scrollNeeded).toBe(true);
     });
 
-    it('màn hẹp 320 dùng lề 20; vùng an toàn đáy luôn được chừa', () => {
+    it('màn hẹp 320 dùng lề hẹp (space.lg); vùng an toàn đáy luôn được chừa', () => {
       expect(compute(SMALL).narrow).toBe(true);
-      expect(compute(SMALL).padX).toBe(20);
-      expect(compute(SE).bottomPad).toBeGreaterThanOrEqual(12);
+      expect(compute(SMALL).padX).toBe(layout.space.lg);
+      expect(compute(SE).bottomPad).toBeGreaterThanOrEqual(layout.space.md);
       expect(compute(IPHONE).bottomPad).toBe(34);
     });
   });

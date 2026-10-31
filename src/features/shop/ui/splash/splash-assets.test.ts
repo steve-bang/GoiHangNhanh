@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { colors } from '@/core/theme';
+import { colors, semantic } from '@/core/theme';
 
 import { HERO_IMAGE } from './splash-layout';
 
@@ -68,7 +68,8 @@ describe('cấu hình splash hệ điều hành và icon (app.json)', () => {
       dark?: unknown;
       android: { image: string; imageWidth: number; dark?: unknown };
     };
-    expect(options.backgroundColor.toUpperCase()).toBe(colors.splashBackground.toUpperCase());
+    // Splash hệ điều hành cùng nền với Splash trong app (D-20) để không lóe màu khi chuyển.
+    expect(options.backgroundColor.toUpperCase()).toBe(semantic.color.surface.screen.toUpperCase());
     // userInterfaceStyle "light": không cấu hình splash tối (expo prebuild cảnh báo nếu có cả hai).
     expect(options.dark).toBeUndefined();
     expect(options.android.dark).toBeUndefined();
@@ -88,6 +89,7 @@ describe('cấu hình splash hệ điều hành và icon (app.json)', () => {
       width: 1024,
       height: 1024,
     });
+    // Icon (ảnh tĩnh jade) chưa thiết kế lại theo Bright Orange: nền icon giữ màu cũ.
     expect(android.adaptiveIcon.backgroundColor.toUpperCase()).toBe(
       colors.splashBackground.toUpperCase(),
     );

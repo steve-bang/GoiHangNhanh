@@ -7,7 +7,7 @@ const plugin = require('./design-tokens.cjs');
 const rule = plugin.rules['no-raw-design-values'];
 const ROOT = path.resolve(__dirname, '..');
 const inScope = path.join(ROOT, 'src/features/orders/ui/Example.tsx');
-const outOfScope = path.join(ROOT, 'src/features/shop/ui/SignInScreen.tsx');
+const outOfScope = path.join(ROOT, 'src/core/theme/colors.ts');
 const frozenShared = path.join(ROOT, 'src/shared/ui/Button.tsx');
 
 const tester = new RuleTester({
