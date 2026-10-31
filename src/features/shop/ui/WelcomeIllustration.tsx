@@ -17,7 +17,7 @@ interface WelcomeIllustrationProps {
  */
 export function WelcomeIllustration({ height }: WelcomeIllustrationProps) {
   const { tokens } = useTheme();
-  const { brand, border, text } = tokens.color;
+  const { brand, text } = tokens.color;
   const g = getIllustrationGeometry(Math.min(height, ILLUSTRATION_MAX_HEIGHT));
   return (
     <View
@@ -44,10 +44,18 @@ export function WelcomeIllustration({ height }: WelcomeIllustrationProps) {
         <Icon name="leaf" size={g.leafRight.size} color={brand.softStrong} />
       </View>
       <View style={{ position: 'absolute', left: g.boxLarge.left, bottom: g.boxLarge.bottom }}>
-        <Icon name="package-solid" size={g.boxLarge.size} color={border.field} />
+        <Icon
+          name="package-solid"
+          size={g.boxLarge.size}
+          color={tokens.color.illustration.carton}
+        />
       </View>
       <View style={{ position: 'absolute', left: g.boxSmall.left, bottom: g.boxSmall.bottom }}>
-        <Icon name="package-solid" size={g.boxSmall.size} color={border.strong} />
+        <Icon
+          name="package-solid"
+          size={g.boxSmall.size}
+          color={tokens.color.illustration.cartonShade}
+        />
       </View>
       <View style={{ position: 'absolute', right: g.shield.right, top: g.shield.top }}>
         <Icon name="brand-shield" size={g.shield.size} color={brand.primary} />

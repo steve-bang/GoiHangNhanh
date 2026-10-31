@@ -17,8 +17,8 @@ type ThemeColor = Theme['tokens']['color'];
 function illustrationPalette(color: ThemeColor) {
   return {
     ground: color.brand.soft,
-    box: color.border.field,
-    boxDark: color.border.strong,
+    box: color.illustration.carton,
+    boxDark: color.illustration.cartonShade,
     leafA: color.brand.hover,
     leafB: color.brand.softStrong,
     paper: color.surface.raised,

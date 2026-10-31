@@ -51,6 +51,8 @@ export const palette = {
   },
   slate: { 900: '#0E2B3F', 500: '#566B7C' },
   mint: { 200: '#D3E3DE' },
+  /** Màu bìa carton của hình minh họa (hộp hàng): chỉ đồ họa trang trí, không làm nền chữ. */
+  kraft: { 300: '#D9A566', 500: '#C48A47' },
   camera: { 900: '#16201A' },
   scan: { 400: '#35E0A1' },
   black: '#000000',

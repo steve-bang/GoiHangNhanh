@@ -75,6 +75,7 @@ const styles = StyleSheet.create({
 | Ranh giới điều khiển (hộp kiểm, nút chọn) · đường kẻ phân nhóm | `color.border.strong` (≥ 3:1) · `color.border.subtle` |
 | Nút đang nhấn · nền vô hiệu hóa (component mới) | `color.action.primaryPressed` · `color.action.disabled` |
 | Lớp nổi (sheet, hộp thoại) | `color.surface.elevated` |
+| Hộp carton trong hình minh họa | `color.illustration.carton` / `.cartonShade` (chỉ đồ họa trang trí) |
 | Trạng thái quay/đồng bộ: đang ghi, gián đoạn, đang thử lại, mất mạng, chờ/xong đồng bộ | `status.recording / interrupted / retrying / offline / syncPending / synced` (luôn kèm chữ + biểu tượng riêng) |
 | Cỡ biểu tượng | `tokens.icon.sm/md/lg/xl` (16/20/24/32) |
 | Vùng chạm tối thiểu | `getMinTouchTarget()` từ `@/platform` (44 iOS / 48 Android) — không nhân bản |

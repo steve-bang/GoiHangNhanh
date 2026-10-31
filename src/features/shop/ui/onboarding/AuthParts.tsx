@@ -64,7 +64,10 @@ export function TipCard({
       style={[
         styles.tip,
         {
-          backgroundColor: tokens.color.brand.soft,
+          // Nền trắng + viền: thẻ nằm trên đốm trang trí `brand.soft` nên không dùng cùng màu nền đó.
+          backgroundColor: tokens.color.surface.raised,
+          borderColor: tokens.color.border.default,
+          borderWidth: tokens.borderWidth.thin,
           borderRadius: tokens.radius.lg,
           padding: TIP_CARD_PADDING,
           gap: tokens.space.md,
@@ -75,7 +78,7 @@ export function TipCard({
         <Icon name={icon} size={tokens.icon.lg} color={tokens.color.brand.primary} />
       </View>
       <View style={styles.tipText}>
-        <Text bold style={{ color: tokens.color.brand.onSoft }}>
+        <Text bold style={{ color: tokens.color.action.link }}>
           {title}
         </Text>
         <Text variant={TIP_BODY_VARIANT} style={{ color: tokens.color.text.subtle }}>

@@ -179,6 +179,7 @@ Bảng màu thương hiệu của màn trong app (khách duyệt 2026-10-29). Pr
 | `feedback.warning` | `#B45309` trên `#FDF3E7` | 4.58:1 |
 | `feedback.danger` / `action.destructive` | `#B91C1C` trên `#FEE2E2` | 5.30:1. Gần sắc với cam thương hiệu (tương phản giữa hai màu 1.42:1) nên lỗi LUÔN kèm biểu tượng cảnh báo + chữ và nền hồng nhạt |
 | `feedback.info` | `#0369A1` trên `#F0F9FF` | 5.57:1 |
+| `illustration.carton` / `cartonShade` | `#D9A566` / `#C48A47` (primitive `kraft.300/500`) | (D-20) Màu bìa hộp carton trong hình minh họa Chào mừng, Đăng nhập, Thiết lập xong. Chỉ đồ họa trang trí, không làm chữ, viền điều khiển hay trạng thái |
 
 **Quy tắc phân vai màu:** cam chỉ cho hành động chính, biểu tượng quan trọng và điều hướng đang chọn. Trạng thái nghiệp vụ không dùng cam: đã tải/đã xác minh = xanh lá; **đang tải = xanh dương** (trước đây xanh thương hiệu); chờ tải/ngoại tuyến/gián đoạn = vàng cam `amber`; lỗi = đỏ. Test `theme.test.ts` (nhóm "Bright Orange (v3)") khóa giá trị, tương phản và việc màu thương hiệu không bị dùng cho `status`.
 
@@ -248,7 +249,7 @@ Danh sách tệp ngoài phạm vi nằm ở **một nguồn** (`scripts/design-t
 - **Chế độ tối:** khai báo một đối tượng semantic thứ hai cùng kiểu (`satisfies` kiểu của bảng sáng) và để `useTheme()` chọn theo `useColorScheme`; component không phải sửa vì chỉ đọc `tokens`. Token `camera.*` không đổi theo sáng/tối. Chỉ làm khi O-17 được chốt; cần bỏ `userInterfaceStyle: light`.
 - **Chuyển động:** thêm `motion.duration/easing` khi xuất hiện animation đầu tiên trong phạm vi.
 - **Hợp nhất `text`/`ink` (TD-1):** sau duyệt trực quan, đổi `text.strong/subtle` thành alias của `text.primary/secondary` (một dòng đổi, không sửa component).
-- **Đưa màn ngoài phạm vi vào:** khi khách hàng đồng ý, đổi `scripts/design-token-scope.cjs`, chuyển từng màn, gỡ khóa `@frozen`.
+- **Đưa màn ngoài phạm vi vào:** đã làm cho toàn bộ Splash, đăng nhập/đăng ký, khôi phục mật khẩu và luồng thiết lập (D-20, 2026-10-31). Còn lại: gỡ khóa `@frozen` của `colors.ts` (chỉ `splashBackground` còn được test so với nền icon Android) khi icon/ảnh tĩnh được thiết kế lại theo Bright Orange.
 
 ## 9. Giá trị bị thay thế hoặc loại bỏ trong phạm vi
 
