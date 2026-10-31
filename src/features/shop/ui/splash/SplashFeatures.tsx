@@ -2,15 +2,27 @@ import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Svg, { Circle, Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
+import { layout as tokenLayout } from '@/core/theme';
 import { Text, useTheme } from '@/shared/ui';
 
-import { FEATURE_LABEL_FONT_SIZE, FONT_CAPS, type SplashLayout } from './splash-layout';
+import { FONT_CAPS, SPLASH_TEXT_VARIANTS, type SplashLayout } from './splash-layout';
 
 type FeatureKey = 'record' | 'cloud' | 'orders' | 'protect';
 const FEATURES: readonly FeatureKey[] = ['record', 'cloud', 'orders', 'protect'];
 
 /** Biểu tượng của từng tính năng (khung 24 x 24), vẽ bằng SVG theo ảnh thiết kế. */
-function FeatureGlyph({ kind, color, hole }: { kind: FeatureKey; color: string; hole: string }) {
+function FeatureGlyph({
+  kind,
+  color,
+  hole,
+  mark,
+}: {
+  kind: FeatureKey;
+  color: string;
+  hole: string;
+  /** Dấu tích trên khiên. */
+  mark: string;
+}) {
   switch (kind) {
     case 'record':
       return (
@@ -43,7 +55,7 @@ function FeatureGlyph({ kind, color, hole }: { kind: FeatureKey; color: string; 
           <Path
             d="M8.6 11.8 L11 14.2 L15.6 9.4"
             fill="none"
-            stroke="#FFFFFF"
+            stroke={mark}
             strokeWidth={1.9}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -54,16 +66,16 @@ function FeatureGlyph({ kind, color, hole }: { kind: FeatureKey; color: string; 
 }
 
 function FeatureDisc({ kind, size }: { kind: FeatureKey; size: number }) {
-  const { colors } = useTheme();
+  const { color } = useTheme().tokens;
   const glyph = size * 0.5;
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size} viewBox="0 0 100 100">
         <Defs>
           <RadialGradient id={`disc-${kind}`} cx="50%" cy="38%" r="62%">
-            <Stop offset="0" stopColor="#FFFFFF" />
-            <Stop offset="0.55" stopColor={colors.splashFeatureDisc} />
-            <Stop offset="1" stopColor="#D2EEDF" />
+            <Stop offset="0" stopColor={color.surface.raised} />
+            <Stop offset="0.55" stopColor={color.brand.soft} />
+            <Stop offset="1" stopColor={color.brand.softStrong} />
           </RadialGradient>
         </Defs>
         <Circle cx={50} cy={50} r={49} fill={`url(#disc-${kind})`} />
@@ -72,8 +84,9 @@ function FeatureDisc({ kind, size }: { kind: FeatureKey; size: number }) {
         <Svg width={glyph} height={glyph} viewBox="0 0 24 24">
           <FeatureGlyph
             kind={kind}
-            color={colors.splashFeatureIcon}
-            hole={colors.splashFeatureDisc}
+            color={color.brand.primary}
+            hole={color.brand.soft}
+            mark={color.text.onAction}
           />
         </Svg>
       </View>
@@ -84,36 +97,31 @@ function FeatureDisc({ kind, size }: { kind: FeatureKey; size: number }) {
 /**
  * Hàng 4 tính năng của Splash (Quay video đóng gói, Lưu trữ đám mây, Quản lý đơn hàng, Bảo vệ
  * quyền lợi): chữ theo thiết kế (người dùng duyệt, decisions.md Q-15). Biểu tượng là trang trí, ẩn
- * khỏi trình đọc màn hình. Nhãn >= 12dp và phóng theo cỡ chữ hệ thống (tới `FONT_CAPS.feature`).
+ * khỏi trình đọc màn hình. Nhãn variant `caption` (12dp) và phóng theo cỡ chữ hệ thống (tới
+ * `FONT_CAPS.feature`).
  */
 export function SplashFeatures({ layout }: { layout: SplashLayout['header'] }) {
   const { t } = useTranslation();
-  const { colors, spacing } = useTheme();
-  const { disc, gap, lineHeight } = layout.feature;
+  const { color } = useTheme().tokens;
+  const { disc, gap } = layout.feature;
   return (
-    <View testID="splash-features" style={[styles.row, { paddingHorizontal: spacing.lg }]}>
+    <View testID="splash-features" style={styles.row}>
       {FEATURES.map((key, index) => (
         <View key={key} style={styles.cell}>
           {index > 0 ? (
             <View
               style={[
                 styles.divider,
-                { height: disc * 1.3, top: disc * 0.1, backgroundColor: colors.splashDivider },
+                { height: disc * 1.3, top: disc * 0.1, backgroundColor: color.border.subtle },
               ]}
             />
           ) : null}
           <FeatureDisc kind={key} size={disc} />
           <Text
             testID={`splash-feature-${key}`}
+            variant={SPLASH_TEXT_VARIANTS.feature}
             maxFontSizeMultiplier={FONT_CAPS.feature}
-            style={{
-              marginTop: gap,
-              fontSize: FEATURE_LABEL_FONT_SIZE,
-              lineHeight,
-              textAlign: 'center',
-              fontWeight: '500',
-              color: colors.splashFeatureLabel,
-            }}
+            style={[styles.label, { marginTop: gap, color: color.text.primary }]}
           >
             {t(`screens:splash.features.${key}`)}
           </Text>
@@ -124,8 +132,13 @@ export function SplashFeatures({ layout }: { layout: SplashLayout['header'] }) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignSelf: 'stretch' },
-  cell: { flex: 1, alignItems: 'center', paddingHorizontal: 2 },
+  row: {
+    flexDirection: 'row',
+    alignSelf: 'stretch',
+    paddingHorizontal: tokenLayout.space.lg,
+  },
+  cell: { flex: 1, alignItems: 'center', paddingHorizontal: tokenLayout.space.xxs },
+  label: { textAlign: 'center' },
   center: { alignItems: 'center', justifyContent: 'center' },
   divider: { position: 'absolute', left: 0, width: StyleSheet.hairlineWidth * 2 },
 });

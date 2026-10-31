@@ -23,7 +23,7 @@ interface SplashHeroProps {
 }
 
 export function SplashHero({ width, height, scale, bottomOffset, onSettled }: SplashHeroProps) {
-  const { colors } = useTheme();
+  const { color } = useTheme().tokens;
   const fade = scale < 1 ? Math.round(width * 0.14) : 0;
   return (
     <View
@@ -46,12 +46,12 @@ export function SplashHero({ width, height, scale, bottomOffset, onSettled }: Sp
         <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
           <Defs>
             <LinearGradient id="fadeLeft" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor={colors.splashBackground} stopOpacity={1} />
-              <Stop offset="1" stopColor={colors.splashBackground} stopOpacity={0} />
+              <Stop offset="0" stopColor={color.surface.screen} stopOpacity={1} />
+              <Stop offset="1" stopColor={color.surface.screen} stopOpacity={0} />
             </LinearGradient>
             <LinearGradient id="fadeRight" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor={colors.splashBackground} stopOpacity={0} />
-              <Stop offset="1" stopColor={colors.splashBackground} stopOpacity={1} />
+              <Stop offset="0" stopColor={color.surface.screen} stopOpacity={0} />
+              <Stop offset="1" stopColor={color.surface.screen} stopOpacity={1} />
             </LinearGradient>
           </Defs>
           <Rect x={0} y={0} width={fade} height={height} fill="url(#fadeLeft)" />
