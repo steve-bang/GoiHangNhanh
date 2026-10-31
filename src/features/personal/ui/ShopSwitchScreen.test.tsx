@@ -259,7 +259,9 @@ describe('ShopSwitchScreen (UI-I02 route con, PER-07)', () => {
 
   it('còn tệp chưa đồng bộ: cảnh báo kèm số lượng, có lối tới trung tâm đồng bộ; không tự chuyển', async () => {
     const gateways = await setup({
-      store: withStore({ countUnsynced: jest.fn().mockResolvedValue(3) }),
+      store: withStore({
+        countUnsyncedByOwner: jest.fn().mockResolvedValue({ own: 3, foreign: 0 }),
+      }),
     });
     await pick('shop-b');
     await waitFor(() => expect(screen.getByTestId('switch-shop-unsynced')).toBeOnTheScreen());
@@ -272,7 +274,9 @@ describe('ShopSwitchScreen (UI-I02 route con, PER-07)', () => {
 
   it('còn tệp chưa đồng bộ: "Vẫn chuyển cửa hàng" thì chuyển (dữ liệu cục bộ giữ nguyên, Q-20o)', async () => {
     const gateways = await setup({
-      store: withStore({ countUnsynced: jest.fn().mockResolvedValue(2) }),
+      store: withStore({
+        countUnsyncedByOwner: jest.fn().mockResolvedValue({ own: 2, foreign: 0 }),
+      }),
     });
     await pick('shop-b');
     await waitFor(() => expect(screen.getByTestId('switch-shop-continue')).toBeOnTheScreen());
@@ -280,6 +284,15 @@ describe('ShopSwitchScreen (UI-I02 route con, PER-07)', () => {
     await waitFor(() => expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.home));
     expect(gateways.account.switchShopCalls).toEqual(['shop-b']);
     expect(screen.getByTestId('probe-key')).toHaveTextContent('fake-user-1:shop-b');
+  });
+
+  it('V1-07: chỉ đếm tệp của CHÍNH tài khoản ở shop đang dùng; tệp của tài khoản khác không cảnh báo', async () => {
+    const countUnsyncedByOwner = jest.fn().mockResolvedValue({ own: 0, foreign: 3 });
+    await setup({ store: withStore({ countUnsyncedByOwner }) });
+    await pick('shop-b');
+    expect(await screen.findByText(DIALOG_TITLE)).toBeOnTheScreen();
+    expect(screen.queryByTestId('switch-shop-unsynced')).toBeNull();
+    expect(countUnsyncedByOwner).toHaveBeenCalledWith('shop-a', 'fake-user-1');
   });
 
   it('không đọc được kho cục bộ: chặn bảo thủ, báo lỗi, không gọi cổng', async () => {

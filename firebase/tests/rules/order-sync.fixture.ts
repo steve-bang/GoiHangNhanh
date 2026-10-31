@@ -1,14 +1,15 @@
 import type { SessionId } from '@/core/ids';
+import type { OrderSource } from '@/core/orders/order-source';
 import { buildOrder } from '@/features/orders/domain/build-order';
 import { buildPackingSession } from '@/features/orders/domain/start-session';
 
 /** Đơn + phiên mẫu do chính mã ứng dụng dựng (khác dữ liệu nền viết tay của helpers.ts). */
-export function makeOrderFixture(shopId: string, orderId: string) {
+export function makeOrderFixture(shopId: string, orderId: string, source: OrderSource = 'shopee') {
   let n = 0;
   const result = buildOrder(
     {
       orderCode: 'SYNC-01',
-      source: 'shopee',
+      source,
       trackingCode: 'SPX123',
       lines: [
         { name: 'Áo', variant: 'Đen / XL', quantity: 2 },

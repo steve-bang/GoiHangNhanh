@@ -11,7 +11,13 @@ import { createSqliteOrderStore } from './sqlite-order-store';
 // tệp dùng CHUNG một kết nối, như khi chạy app.
 const harness = async () => {
   const db = createNodeSqliteDatabase();
-  return { files: createSqliteEvidenceFileStore(db), orders: createSqliteOrderStore(db), db };
+  let uid: string | null = null;
+  return {
+    files: createSqliteEvidenceFileStore(db),
+    orders: createSqliteOrderStore(db, { creatorUid: () => uid }),
+    db,
+    signInAs: (next: string | null) => void (uid = next),
+  };
 };
 runEvidenceFileStoreContract('SQLite (node:sqlite)', harness);
 

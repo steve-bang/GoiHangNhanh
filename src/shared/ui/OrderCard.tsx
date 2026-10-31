@@ -183,10 +183,10 @@ export function OrderCard({
             { opacity: pressed ? 0.7 : 1 },
           ]}
         >
-          <Text variant="formButtonSmall" style={{ color: tokens.color.action.primary }}>
+          <Text variant="formButtonSmall" style={{ color: tokens.color.action.link }}>
             {actionLabel}
           </Text>
-          <Icon name="forward" size={16} color={tokens.color.action.primary} />
+          <Icon name="forward" size={16} color={tokens.color.brand.primary} />
         </Pressable>
       </View>
     </View>

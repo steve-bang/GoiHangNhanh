@@ -9,7 +9,7 @@ import { ROUTES } from '@/core/navigation';
 import { newSessionId, openAppSettings, useAppNavigation, useScannerPermission } from '@/platform';
 import { CameraPermissionSheet } from '@/shared/ui';
 
-import { useCurrentShopId, useOrderStore } from '../data';
+import { useOrderStore, useWritableShopId } from '../data';
 import { buildPackingSession, findActiveSession, findBlockingSession } from '../domain';
 
 /**
@@ -50,7 +50,8 @@ export function useStartPacking(options: { navigate?: 'push' | 'replace' } = {})
   // khi gọi từ danh sách/chi tiết đơn để Back không làm mất màn đó.
   const go = options.navigate === 'push' ? navigation.push : navigation.replace;
   const store = useOrderStore();
-  const shopId = useCurrentShopId();
+  // `null` = bản Firebase chưa biết shop thật: không tạo phiên, không mở màn quay (V1-06, bất biến 2).
+  const shopId = useWritableShopId();
   const permission = useScannerPermission();
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false);
@@ -64,6 +65,11 @@ export function useStartPacking(options: { navigate?: 'push' | 'replace' } = {})
       setBusy(true);
       setError(null);
       try {
+        if (!shopId) {
+          setPending(null);
+          setError('ORDER_SAVE_FAILED');
+          return;
+        }
         const details = await store.getOrder(shopId, target.orderId);
         if (!details) {
           setError('ORDER_SAVE_FAILED');
@@ -131,7 +137,13 @@ export function useStartPacking(options: { navigate?: 'push' | 'replace' } = {})
     <CameraPermissionSheet
       visible={pending !== null && sheetStatus !== null}
       status={sheetStatus ?? 'askable'}
-      reason={t('screens:preview.permissionReason')}
+      // Câu giải thích theo cờ ghi video (V1-18): bật cờ thì nói thật là quay video, không ghi âm (O-09);
+      // tắt cờ thì nói bản này chưa ghi video.
+      reason={t(
+        RECORDER_ENABLED
+          ? 'screens:preview.permissionReason'
+          : 'screens:preview.permissionReasonPreview',
+      )}
       onClose={() => setPending(null)}
       onRequest={() => void permission.request()}
       onOpenSettings={() => void openAppSettings()}

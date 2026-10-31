@@ -6,6 +6,9 @@ import { normalizeSources } from '@/core/orders/selling-sources';
 import type {
   AuthAccount,
   AuthApi,
+  ChangePasswordInput,
+  DeleteAccountInput,
+  DeleteAccountOutcome,
   CreatedShop,
   CreateShopInput,
   ApiClient,
@@ -80,6 +83,7 @@ interface FakeAccount {
   readonly uid: string;
   password: string | null; // null: tài khoản có sẵn mà bản giả không biết mật khẩu
   readonly hasShop: boolean;
+  displayName: string | null;
 }
 
 interface PendingCode {
@@ -97,11 +101,20 @@ export class FakeAuthApi implements AuthApi {
   readonly verifyCalls: VerifyRecoveryCodeInput[] = [];
   readonly resetCalls: ResetPasswordInput[] = [];
   signOutCalls = 0;
+  /** Số lần đổi mật khẩu (không lưu nội dung mật khẩu). */
+  changePasswordCalls = 0;
+  readonly displayNameCalls: string[] = [];
+  /** Số lần xóa tài khoản được gọi (không lưu mật khẩu). */
+  deleteAccountCalls = 0;
   private readonly latencyMs: number;
   private readonly now: () => number;
+  /** Tài khoản đang đăng nhập (sau `signUp`/`signIn`, như Firebase Auth); `null` sau `signOut`. */
+  private currentKey: string | null = null;
   private readonly codeTtlMs: number;
   private readonly ticketTtlMs: number;
   private readonly accounts = new Map<string, FakeAccount>();
+  /** Tài khoản đã bị "máy chủ" xóa (phiên trên máy vẫn còn tới khi đăng xuất, như SDK thật). */
+  private readonly deletedKeys = new Set<string>();
   private readonly failedSignIns = new Map<string, number>();
   private readonly codeRequests = new Map<string, number>();
   private readonly pending = new Map<string, PendingCode>();
@@ -125,7 +138,12 @@ export class FakeAuthApi implements AuthApi {
 
   private seed(email: string, password: string | null, hasShop: boolean): void {
     this.counter += 1;
-    this.accounts.set(email.toLowerCase(), { uid: `fake-user-${this.counter}`, password, hasShop });
+    this.accounts.set(email.toLowerCase(), {
+      uid: `fake-user-${this.counter}`,
+      password,
+      hasShop,
+      displayName: null,
+    });
   }
 
   /** Lần gọi kế tiếp (bất kể loại) thất bại với mã này, rồi trở lại bình thường. */
@@ -160,7 +178,8 @@ export class FakeAuthApi implements AuthApi {
     this.counter += 1;
     const uid = `fake-user-${this.counter}`;
     // Tài khoản vừa tạo dùng được để đăng nhập trong cùng phiên chạy (chưa có shop).
-    this.accounts.set(key, { uid, password: input.password, hasShop: false });
+    this.accounts.set(key, { uid, password: input.password, hasShop: false, displayName: null });
+    this.currentKey = key;
     // Email chưa xác thực: không chặn người dùng (quyết định đã duyệt, decisions.md Q-13).
     return { uid, email, emailVerified: false };
   }
@@ -189,11 +208,12 @@ export class FakeAuthApi implements AuthApi {
       throw new AppError('AUTH_INVALID_CREDENTIALS');
     }
     this.failedSignIns.delete(key);
+    this.currentKey = key;
     return {
       uid: account.uid,
       email,
       emailVerified: false,
-      displayName: null,
+      displayName: account.displayName,
       hasShop: account.hasShop,
       shopId: account.hasShop ? `fake-shop-of-${account.uid}` : null,
     };
@@ -203,8 +223,61 @@ export class FakeAuthApi implements AuthApi {
     this.signOutCalls += 1;
     await delay(this.latencyMs);
     this.consumeFailure();
+    this.currentKey = null;
   }
 
+  private currentAccount(): FakeAccount {
+    const account = this.currentKey ? this.accounts.get(this.currentKey) : undefined;
+    if (!account) throw new AppError('AUTH_SESSION_EXPIRED');
+    return account;
+  }
+
+  async changePassword(input: ChangePasswordInput): Promise<void> {
+    this.changePasswordCalls += 1;
+    await delay(this.latencyMs);
+    this.consumeFailure();
+    const account = this.currentAccount();
+    if (account.password === null || account.password !== input.currentPassword) {
+      throw new AppError('AUTH_WRONG_CURRENT_PASSWORD');
+    }
+    if (FAKE_WEAK_PASSWORDS.includes(input.newPassword)) throw new AppError('AUTH_WEAK_PASSWORD');
+    account.password = input.newPassword;
+  }
+
+  async updateDisplayName(displayName: string): Promise<{ readonly displayName: string }> {
+    this.displayNameCalls.push(displayName);
+    await delay(this.latencyMs);
+    this.consumeFailure();
+    this.currentAccount().displayName = displayName;
+    return { displayName };
+  }
+
+  /**
+   * Như máy chủ V1-14: sai mật khẩu thì không đổi gì; đúng thì tài khoản biến mất (không đăng nhập lại
+   * được) và phiên trên máy kết thúc. Bản giả không có cửa hàng theo tài khoản để khóa.
+   */
+  async deleteAccount(input: DeleteAccountInput): Promise<DeleteAccountOutcome> {
+    this.deleteAccountCalls += 1;
+    await delay(this.latencyMs);
+    this.consumeFailure();
+    // Như Firebase không bật chống dò email: người dùng đã bị xóa thì xác thực lại báo "không còn".
+    if (this.currentKey && this.deletedKeys.has(this.currentKey)) return 'already_deleted';
+    const account = this.currentAccount();
+    if (account.password === null || account.password !== input.password) {
+      throw new AppError('AUTH_WRONG_CURRENT_PASSWORD');
+    }
+    if (this.currentKey) {
+      this.accounts.delete(this.currentKey);
+      this.deletedKeys.add(this.currentKey);
+    }
+    return 'deleted';
+  }
+
+  /**
+   * Dùng chung cho hai chế độ (`PASSWORD_RECOVERY_MODE`): `email_link` (v1) chỉ cần kết quả trung tính
+   * và các kịch bản lỗi (bận, quá nhiều lần, mất mạng); mã `123456` chỉ có nghĩa ở chế độ `otp`.
+   * Bản giả không gửi thư thật.
+   */
   async requestPasswordRecovery(email: string): Promise<{ retryAfterSeconds?: number }> {
     this.recoveryRequests.push(email);
     await delay(this.latencyMs);
@@ -269,6 +342,7 @@ export class FakeAuthApi implements AuthApi {
 export class FakeShopApi implements ShopApi {
   readonly createCalls: CreateShopInput[] = [];
   readonly updateCalls: UpdateShopInput[] = [];
+  readonly renameCalls: { shopId: string; name: string }[] = [];
   private readonly latencyMs: number;
   private nextFailure: ErrorCode | null = null;
   private counter = 0;
@@ -309,6 +383,28 @@ export class FakeShopApi implements ShopApi {
     this.consumeFailure();
     const shop = this.shops.get(shopId);
     return shop ? { id: shop.id, name: shop.name, role: 'owner', canEdit: true } : null;
+  }
+
+  /** Bản giả không phân biệt tài khoản: mọi shop đã tạo trong tiến trình (thường là một). */
+  async listMyShops(): Promise<readonly ShopDetails[]> {
+    await delay(this.latencyMs);
+    this.consumeFailure();
+    return [...this.shops.values()].map((shop) => ({
+      id: shop.id,
+      name: shop.name,
+      role: 'owner',
+      canEdit: true,
+    }));
+  }
+
+  async renameShop(shopId: string, name: string): Promise<ShopDetails> {
+    this.renameCalls.push({ shopId, name });
+    await delay(this.latencyMs);
+    this.consumeFailure();
+    const shop = this.shops.get(shopId);
+    if (!shop) throw new AppError('SHOP_SAVE_FAILED');
+    this.shops.set(shopId, { ...shop, name });
+    return { id: shopId, name, role: 'owner', canEdit: true };
   }
 
   async updateShop(input: UpdateShopInput): Promise<CreatedShop> {

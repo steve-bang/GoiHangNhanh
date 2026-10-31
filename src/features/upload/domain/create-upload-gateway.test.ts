@@ -11,9 +11,12 @@ import type { UploadRequest } from './ports';
 const request: UploadRequest = {
   evidenceId: 'e1' as EvidenceId,
   shopId: 's1' as ShopId,
-  orderId: 'o1' as OrderId,
-  sessionId: 'ss1' as SessionId,
-  packageId: 'p1' as PackageId,
+  owner: {
+    kind: 'packing',
+    orderId: 'o1' as OrderId,
+    sessionId: 'ss1' as SessionId,
+    packageId: 'p1' as PackageId,
+  },
   kind: 'video',
   createdAtDevice: 1000,
   durationMs: 5000,
@@ -91,12 +94,15 @@ describe('createUploadGateway', () => {
       t.fail[step] = new UploadPortError('attention', 'AUTH_EXPIRED');
       expect(await t.gateway.upload(request)).toEqual({ kind: 'attention', code: 'AUTH_EXPIRED' });
       const u = setup();
-      u.fail[step] = new UploadPortError('retryable', 'NETWORK');
-      expect(await u.gateway.upload(request)).toEqual({ kind: 'retryable', code: 'NETWORK' });
+      u.fail[step] = new UploadPortError('retryable', 'HTTP_500');
+      expect(await u.gateway.upload(request)).toEqual({ kind: 'retryable', code: 'HTTP_500' });
+      const n = setup();
+      n.fail[step] = new UploadPortError('network', 'NETWORK');
+      expect(await n.gateway.upload(request)).toEqual({ kind: 'network', code: 'NETWORK' });
     }
   });
 
-  it('lỗi không phân loại được coi là lỗi tạm', async () => {
+  it('lỗi không phân loại được tính lượt (retryable), không coi là lỗi mạng', async () => {
     const t = setup();
     t.fail.send = new Error('boom');
     expect(await t.gateway.upload(request)).toEqual({
@@ -109,5 +115,95 @@ describe('createUploadGateway', () => {
     const t = setup();
     const states = await t.gateway.fetchServerStates(request.shopId, [request.evidenceId]);
     expect(states.get(request.evidenceId)).toBe('verified');
+  });
+
+  describe('hết giờ và hủy (R4)', () => {
+    const hang = () => new Promise<never>(() => undefined);
+
+    function hanging(step: 'declare' | 'session' | 'send' | 'read') {
+      const seen: { signal?: AbortSignal | undefined } = {};
+      const gateway = createUploadGateway(
+        {
+          declarer: { declare: async () => (step === 'declare' ? hang() : undefined) },
+          sessions: {
+            create: async () =>
+              step === 'session'
+                ? hang()
+                : ({ status: 'ready', url: 'u', method: 'POST', headers: {} } as const),
+          },
+          bytes: {
+            send: async (_s, _p, _n, signal) => {
+              seen.signal = signal;
+              return step === 'send' ? hang() : undefined;
+            },
+          },
+          serverStates: { read: async () => (step === 'read' ? hang() : new Map()) },
+        },
+        50,
+      );
+      return { gateway, seen };
+    }
+
+    it.each(['declare', 'session'] as const)(
+      'lệnh %s treo: hết giờ thành lỗi mạng TIMEOUT (không tính lượt)',
+      async (step) => {
+        const { gateway } = hanging(step);
+        expect(await gateway.upload(request)).toEqual({ kind: 'network', code: 'TIMEOUT' });
+      },
+    );
+
+    it('hỏi trạng thái máy chủ treo: hết giờ thì ném (hàng đợi coi như chưa biết)', async () => {
+      const { gateway } = hanging('read');
+      await expect(gateway.fetchServerStates(request.shopId, [request.evidenceId])).rejects.toThrow(
+        'TIMEOUT',
+      );
+    });
+
+    it('gửi tệp không có hạn cứng; hủy qua signal thì trả NETWORK_LOST và chuyển signal xuống', async () => {
+      const { gateway, seen } = hanging('send');
+      const controller = new AbortController();
+      const pending = gateway.upload(request, { signal: controller.signal });
+      await new Promise((resolve) => setTimeout(resolve, 80)); // quá hạn lệnh ngắn: vẫn chưa xong
+      let done = false;
+      void pending.then(() => (done = true));
+      await Promise.resolve();
+      expect(done).toBe(false);
+      expect(seen.signal).toBe(controller.signal);
+      controller.abort();
+      expect(await pending).toEqual({ kind: 'network', code: 'NETWORK_LOST' });
+    });
+
+    it('đã hủy trước khi bắt đầu: không gọi máy chủ', async () => {
+      const t = setup();
+      const controller = new AbortController();
+      controller.abort();
+      expect(await t.gateway.upload(request, { signal: controller.signal })).toEqual({
+        kind: 'network',
+        code: 'NETWORK_LOST',
+      });
+      expect(t.calls).toEqual([]);
+    });
+  });
+});
+
+describe('requestServerCheck (V1-08 Kiểm tra lại)', () => {
+  it('chỉ xin phiên (máy chủ đặt yêu cầu xác minh lại), không khai báo, không gửi tệp', async () => {
+    const { gateway, calls } = setup({ status: 'already_received' });
+    await gateway.requestServerCheck?.('s1' as ShopId, 'e1' as EvidenceId);
+    expect(calls).toEqual(['session']);
+  });
+
+  it('máy chủ (bất thường) cấp URL thì vẫn KHÔNG gửi tệp', async () => {
+    const { gateway, calls } = setup();
+    await gateway.requestServerCheck?.('s1' as ShopId, 'e1' as EvidenceId);
+    expect(calls).toEqual(['session']);
+  });
+
+  it('lỗi giữ đúng phân loại', async () => {
+    const { gateway, fail } = setup();
+    fail.session = new UploadPortError('attention', 'PERMISSION_DENIED');
+    await expect(
+      gateway.requestServerCheck?.('s1' as ShopId, 'e1' as EvidenceId),
+    ).rejects.toMatchObject({ kind: 'attention', code: 'PERMISSION_DENIED' });
   });
 });

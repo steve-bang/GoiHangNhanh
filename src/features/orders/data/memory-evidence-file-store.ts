@@ -2,6 +2,7 @@ import type { EvidenceId, OrderId, SessionId, ShopId } from '@/core/ids';
 import { AppError } from '@/core/errors/app-error';
 import {
   applyEventToFile,
+  countStates,
   hasSameBinding,
   isUnsynced,
   type EvidenceFile,
@@ -73,6 +74,16 @@ export function createMemoryEvidenceFileStore(
       ofShop(shopId)
         .filter((f) => states.includes(f.state))
         .sort(oldestFirst),
+    listForUpload: async (shopId, states, uid) => {
+      // Không có tra cứu phiên = không biết người tạo: không tải gì (không đoán, Q-24g).
+      if (!uid || !options.sessions) return [];
+      const result: EvidenceFile[] = [];
+      for (const file of ofShop(shopId).filter((f) => states.includes(f.state))) {
+        const session = await options.sessions.getSession(shopId, file.sessionId);
+        if (session?.createdBy === uid) result.push(file);
+      }
+      return result.sort(oldestFirst);
+    },
     listShopsWithStates: async (states) => [
       ...new Set([...files.values()].filter((f) => states.includes(f.state)).map((f) => f.shopId)),
     ],
@@ -91,5 +102,6 @@ export function createMemoryEvidenceFileStore(
     countUnsynced: async (shopId) => ofShop(shopId).filter((f) => isUnsynced(f.state)).length,
     countUnsyncedOnDevice: async () =>
       [...files.values()].filter((f) => isUnsynced(f.state)).length,
+    countByState: async (shopId, updatedIn) => countStates(ofShop(shopId), updatedIn),
   };
 }

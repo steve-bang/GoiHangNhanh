@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import type { ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -5,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from './Button';
 import { Text } from './Text';
-import { useTheme } from './theme';
+import { AppThemeScope, useTheme } from './theme';
 
 interface BottomSheetProps {
   visible: boolean;
@@ -20,13 +21,7 @@ interface BottomSheetProps {
  * Bottom sheet cho lựa chọn ngắn (docs/09 mục 3); tác vụ phức tạp dùng trang riêng. Có nút Đóng rõ
  * ràng (không chỉ chạm nền), nút Back của Android đóng sheet, nội dung cuộn được khi chữ lớn.
  */
-export function BottomSheet({
-  visible,
-  onClose,
-  title,
-  children,
-  compact = false,
-}: BottomSheetProps) {
+function BottomSheetBody({ visible, onClose, title, children, compact = false }: BottomSheetProps) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
@@ -80,3 +75,15 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1 },
   sheet: { maxHeight: '85%' },
 });
+
+/**
+ * Luôn trong phạm vi giao diện app: thành phần này (cùng nút bên trong) có thể hiện ngoài `Screen` (màn
+ * camera, hộp thoại gốc) nên tự bọc `AppThemeScope` để `Button`/`Text` nhận bảng màu của app.
+ */
+export function BottomSheet(props: ComponentProps<typeof BottomSheetBody>) {
+  return (
+    <AppThemeScope>
+      <BottomSheetBody {...props} />
+    </AppThemeScope>
+  );
+}

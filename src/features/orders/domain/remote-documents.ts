@@ -1,3 +1,5 @@
+import { toRemoteSource } from '@/core/orders/remote-source';
+
 import { toCodeKey } from './codes';
 import type { Order, OrderDetails, OrderPackage, PackingSession } from './types';
 
@@ -33,7 +35,8 @@ export function orderWrites(details: OrderDetails, uid: string, v: RemoteValues)
         shopId: order.shopId,
         orderCode: order.orderCode,
         orderCodeNormalized: toCodeKey(order.orderCode),
-        source: order.source,
+        // Từ vựng máy chủ (`other` -> `other_unknown`): Rules `isShopSource` chỉ nhận giá trị máy chủ.
+        source: toRemoteSource(order.source),
         ...(order.trackingCode !== null
           ? {
               trackingCode: order.trackingCode,
@@ -106,7 +109,7 @@ export function sessionWrite(
       packageId: session.packageId,
       orderSnapshot: {
         orderCode: snapshot.orderCode,
-        source: snapshot.source,
+        source: toRemoteSource(snapshot.source),
         trackingCode: snapshot.trackingCode,
         lines: snapshot.lines.map((l) => ({
           name: l.name,

@@ -1,4 +1,7 @@
 import {
+  deleteAllEvidenceFiles,
+  deleteRecording,
+  excludeEvidenceDirFromBackup,
   findPersistedRecording,
   getAvailableDiskBytes,
   persistRecording,
@@ -7,11 +10,20 @@ import {
   resolveRecordingUri,
 } from './recording-files';
 
+const mockExclude = jest.fn(async (_target: string, _uri: string) => 'excluded');
+let mockExclusionSupported = true;
+
+jest.mock('./backup-exclusion', () => ({
+  excludeFromBackup: (target: string, uri: string) => mockExclude(target, uri),
+  isBackupExclusionSupported: () => mockExclusionSupported,
+}));
+
 const mockFiles = new Map<string, number>();
 const mockDirs = new Set<string>();
 let mockMoveError: (Error & { code?: string }) | null = null;
 let mockDocument = 'file:///docs';
 let mockWriteError: Error | null = null;
+let mockDeleteMode: 'ok' | 'throw' | 'noop' = 'ok';
 const mockProbeLog: string[] = [];
 let mockDisk: number | (() => number) = 1_000_000;
 
@@ -39,6 +51,8 @@ jest.mock('expo-file-system', () => {
       if (mockWriteError) throw mockWriteError;
     }
     delete() {
+      if (mockDeleteMode === 'throw') throw new Error('locked');
+      if (mockDeleteMode === 'noop') return;
       mockFiles.delete(this.uri);
       mockProbeLog.push(`delete:${this.uri}`);
     }
@@ -80,10 +94,13 @@ jest.mock('expo-file-system', () => {
 });
 
 beforeEach(() => {
+  mockExclude.mockClear();
+  mockExclusionSupported = true;
   mockFiles.clear();
   mockDirs.clear();
   mockMoveError = null;
   mockWriteError = null;
+  mockDeleteMode = 'ok';
   mockProbeLog.length = 0;
   mockDocument = 'file:///docs';
   mockDisk = 1_000_000;
@@ -225,5 +242,129 @@ describe('probeEvidenceDirWritable', () => {
     expect(probeEvidenceDirWritable()).toBe(false);
     expect(mockProbeLog.map((l) => l.split(':')[0])).toEqual(['create', 'delete']);
     expect(mockFiles.size).toBe(0);
+  });
+});
+
+describe('deleteRecording (chỉ cho ngoại lệ xóa ảnh hàng hoàn, Q-26j)', () => {
+  it('xóa tệp bền theo đường dẫn tương đối; chỉ đúng tệp đó', () => {
+    mockFiles.set('file:///docs/evidence/a.jpg', 5);
+    mockFiles.set('file:///docs/evidence/b.jpg', 5);
+    expect(deleteRecording('evidence/a.jpg')).toEqual({ ok: true, deleted: true });
+    expect(mockFiles.has('file:///docs/evidence/a.jpg')).toBe(false);
+    expect(mockFiles.has('file:///docs/evidence/b.jpg')).toBe(true);
+  });
+
+  it('tệp không còn: ok (xóa lặp lại an toàn)', () => {
+    expect(deleteRecording('evidence/gone.jpg')).toEqual({ ok: true, deleted: false });
+  });
+
+  it('dữ liệu cũ lưu đường dẫn tuyệt đối với container đã đổi: tìm lại theo thư mục tài liệu hiện tại', () => {
+    mockFiles.set('file:///docs/evidence/a.jpg', 5);
+    expect(deleteRecording('file:///old-container/evidence/a.jpg')).toEqual({
+      ok: true,
+      deleted: true,
+    });
+    expect(mockFiles.size).toBe(0);
+  });
+
+  it('tệp ngoài thư mục evidence (tệp tạm camera) và đường dẫn có ".." thì KHÔNG đụng tới', () => {
+    mockFiles.set('file:///cache/Camera/x.jpg', 5);
+    mockFiles.set('file:///docs/other.txt', 5);
+    expect(deleteRecording('file:///cache/Camera/x.jpg')).toEqual({ ok: true, deleted: false });
+    expect(deleteRecording('evidence/../other.txt')).toEqual({ ok: false });
+    expect(mockFiles.has('file:///cache/Camera/x.jpg')).toBe(true);
+    expect(mockFiles.has('file:///docs/other.txt')).toBe(true);
+  });
+
+  it('xóa lỗi (ném lỗi hoặc tệp còn nguyên): ok false, không ném', () => {
+    mockFiles.set('file:///docs/evidence/a.jpg', 5);
+    mockDeleteMode = 'throw';
+    expect(deleteRecording('evidence/a.jpg')).toEqual({ ok: false });
+    mockDeleteMode = 'noop';
+    expect(deleteRecording('evidence/a.jpg')).toEqual({ ok: false });
+    expect(mockFiles.has('file:///docs/evidence/a.jpg')).toBe(true);
+  });
+});
+
+describe('loại thư mục bằng chứng khỏi sao lưu (V1-12, Q-24d)', () => {
+  it('khi mở app: tạo thư mục nếu thiếu rồi đặt cờ cho đúng thư mục evidence', async () => {
+    await expect(excludeEvidenceDirFromBackup()).resolves.toBe('excluded');
+    expect(mockDirs.has('file:///docs/evidence')).toBe(true);
+    expect(mockExclude).toHaveBeenCalledWith('evidence', 'file:///docs/evidence');
+  });
+
+  it('thư mục đã có: vẫn đặt lại cờ (idempotent), không tạo lại', async () => {
+    mockDirs.add('file:///docs/evidence');
+    await excludeEvidenceDirFromBackup();
+    await excludeEvidenceDirFromBackup();
+    expect(mockExclude).toHaveBeenCalledTimes(2);
+  });
+
+  it('không có module (Android, web, Expo Go): không đụng hệ tệp, không gọi adapter', async () => {
+    mockExclusionSupported = false;
+    await expect(excludeEvidenceDirFromBackup()).resolves.toBe('unsupported');
+    expect(mockDirs.size).toBe(0);
+    expect(mockExclude).not.toHaveBeenCalled();
+  });
+
+  it('kết quả của adapter (lỗi đặt cờ) được trả nguyên, không ném', async () => {
+    mockExclude.mockResolvedValueOnce('failed');
+    await expect(excludeEvidenceDirFromBackup()).resolves.toBe('failed');
+  });
+
+  it('persistRecording tự tạo lại thư mục thì đặt lại cờ; thư mục đã có thì không gọi', () => {
+    mockFiles.set('file:///cache/a.mp4', 1);
+    expect(persistRecording('file:///cache/a.mp4', 'ev-a', 'mp4')).toMatchObject({ ok: true });
+    expect(mockExclude).toHaveBeenCalledTimes(1);
+    expect(mockExclude).toHaveBeenCalledWith('evidence', 'file:///docs/evidence');
+    mockFiles.set('file:///cache/b.mp4', 1);
+    expect(persistRecording('file:///cache/b.mp4', 'ev-b', 'mp4')).toMatchObject({ ok: true });
+    expect(mockExclude).toHaveBeenCalledTimes(1);
+  });
+
+  it('đặt cờ lỗi không làm hỏng việc lưu tệp', () => {
+    mockExclude.mockRejectedValueOnce(new Error('x'));
+    mockFiles.set('file:///cache/c.mp4', 5);
+    expect(persistRecording('file:///cache/c.mp4', 'ev-c', 'mp4')).toEqual({
+      ok: true,
+      uri: 'evidence/ev-c.mp4',
+      sizeBytes: 5,
+    });
+  });
+
+  it('probeEvidenceDirWritable tự tạo thư mục thì cũng đặt cờ', () => {
+    expect(probeEvidenceDirWritable()).toBe(true);
+    expect(mockExclude).toHaveBeenCalledWith('evidence', 'file:///docs/evidence');
+  });
+});
+
+describe('deleteAllEvidenceFiles (chỉ sau khi máy chủ xác nhận xóa tài khoản, V1-15)', () => {
+  it('xóa mọi tệp trong evidence/, giữ thư mục, không đụng tệp ngoài evidence/', () => {
+    mockDirs.add('file:///docs/evidence');
+    mockFiles.set('file:///docs/evidence/ev-1.mp4', 10);
+    mockFiles.set('file:///docs/evidence/m-1.jpg', 5);
+    mockFiles.set('file:///docs/.pending-local-wipe', 2);
+    mockFiles.set('file:///cache/tmp.mp4', 1);
+    expect(deleteAllEvidenceFiles()).toBe(true);
+    expect([...mockFiles.keys()].sort()).toEqual([
+      'file:///cache/tmp.mp4',
+      'file:///docs/.pending-local-wipe',
+    ]);
+    expect(mockDirs.has('file:///docs/evidence')).toBe(true);
+  });
+
+  it('idempotent: thư mục không có hoặc đã rỗng thì true', () => {
+    expect(deleteAllEvidenceFiles()).toBe(true);
+    mockDirs.add('file:///docs/evidence');
+    expect(deleteAllEvidenceFiles()).toBe(true);
+  });
+
+  it('còn sót tệp (xóa lỗi) thì false, không ném', () => {
+    mockDirs.add('file:///docs/evidence');
+    mockFiles.set('file:///docs/evidence/ev-1.mp4', 10);
+    mockDeleteMode = 'throw';
+    expect(deleteAllEvidenceFiles()).toBe(false);
+    mockDeleteMode = 'noop';
+    expect(deleteAllEvidenceFiles()).toBe(false);
   });
 });

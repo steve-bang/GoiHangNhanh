@@ -18,7 +18,7 @@ async function setup(options: { online?: boolean; uid?: string | null } = {}) {
     publishOrder: async (d) => {
       calls.push(`order:${d.order.orderCode}`);
       await hooks.duringPublishOrder?.();
-      if (fail.order) throw new Error('denied');
+      if (fail.order) throw Object.assign(new Error('x'), { code: 'deadline-exceeded' });
     },
     publishPackage: async (_order, pkg) => {
       calls.push(`package:${pkg.index}`);
@@ -186,6 +186,25 @@ describe('đồng bộ đơn một chiều', () => {
     expect(await t.sync.runOnce(LOCAL_SHOP_ID)).toMatchObject({ ordersPublished: 0, failed: 1 });
     t.fail.order = false;
     expect(await t.sync.runOnce(LOCAL_SHOP_ID)).toMatchObject({ ordersPublished: 1, failed: 0 });
+  });
+
+  it('lệnh ghi hết giờ (deadline-exceeded, còn chờ trong SDK): không đánh dấu đơn/phiên đã đăng', async () => {
+    const t = await setup();
+    const { sessionId } = await t.addOrder('TO', 1000);
+    if (!sessionId) throw new Error('fixture');
+    await t.store.updateSessionStatus(LOCAL_SHOP_ID, sessionId, 'recording');
+    t.fail.order = true; // cổng thật ném { code: 'deadline-exceeded' } sau 30 giây
+    expect(await t.sync.runOnce(LOCAL_SHOP_ID)).toMatchObject({ ordersPublished: 0, failed: 1 });
+    expect(await t.store.listOrdersPendingRemote(LOCAL_SHOP_ID, 5, 'u1')).toHaveLength(1);
+    expect(await t.store.isSessionPublished(LOCAL_SHOP_ID, sessionId)).toBe(false);
+    t.fail.order = false;
+    t.fail.session = true;
+    await t.sync.runOnce(LOCAL_SHOP_ID);
+    // Đơn đã được máy chủ xác nhận, phiên thì chưa: tệp của phiên chưa được khai báo.
+    expect(await t.store.isSessionPublished(LOCAL_SHOP_ID, sessionId)).toBe(false);
+    t.fail.session = false;
+    await t.sync.runOnce(LOCAL_SHOP_ID);
+    expect(await t.store.isSessionPublished(LOCAL_SHOP_ID, sessionId)).toBe(true);
   });
 
   it('một đơn lỗi không chặn đơn khác', async () => {

@@ -31,7 +31,7 @@ import {
 } from '@/shared/ui';
 import { layout } from '@/core/theme';
 
-import { useCurrentShopId, useOrderStore } from '../data';
+import { useCurrentShopId, useOrderStore, useWritableShopId } from '../data';
 import {
   buildOrder,
   classifyMatches,
@@ -48,6 +48,7 @@ import {
 import { HeaderHelpButton } from './HeaderHelpButton';
 import { OrderMatchSheet } from './OrderMatchSheet';
 import { OrderSourcePicker } from './OrderSourcePicker';
+import { INPUT_LIMITS, lineErrorText, trackingErrorText } from './draft-error-text';
 import { QuickOrderLineEditor, type LineInput } from './QuickOrderLineEditor';
 import { useOrderLookup } from './use-order-lookup';
 
@@ -98,6 +99,7 @@ export function QuickOrderScreen() {
   const params = useRouteParams();
   const store = useOrderStore();
   const shopId = useCurrentShopId();
+  const writableShopId = useWritableShopId();
   const touch = getMinTouchTarget();
 
   const [initialCode] = useState(() => params.code ?? '');
@@ -118,11 +120,12 @@ export function QuickOrderScreen() {
   const savingRef = useRef(false);
   const match = useOrderLookup();
 
-  // Shop MỚI NHẤT của phiên, đọc lúc bấm Tạo (không dùng giá trị lúc mở form).
-  const shopIdRef = useRef(shopId);
+  // Shop MỚI NHẤT của phiên, đọc lúc bấm Tạo (không dùng giá trị lúc mở form). `null` = bản Firebase
+  // chưa biết shop thật: không lưu (V1-06; cổng phiên đã chặn màn, đây là lớp phòng thủ thứ hai).
+  const shopIdRef = useRef(writableShopId);
   useEffect(() => {
-    shopIdRef.current = shopId;
-  }, [shopId]);
+    shopIdRef.current = writableShopId;
+  }, [writableShopId]);
   // ID sinh MỘT lần cho cả lần tạo này (thử lại dùng lại đúng các ID này).
   // Bộ ID của lần tạo này; chỉ đọc/ghi trong handler (không trong render). Xoay bộ mới khi nội dung
   // đổi sau một lần lưu đã xong (xem `createOrder`) để không ghi đè đơn đã lưu.
@@ -222,6 +225,10 @@ export function QuickOrderScreen() {
     setSaveError(null);
     try {
       const shop = shopIdRef.current; // shop tại thời điểm bấm
+      if (!shop) {
+        setSaveError('ORDER_SAVE_FAILED');
+        return;
+      }
       let built = buildOrder(draft, { shopId: shop, ids: makeIds(), nowDevice: Date.now() });
       if (!built.ok) {
         setFieldError(built.error);
@@ -272,14 +279,7 @@ export function QuickOrderScreen() {
   };
 
   const activeLine = lines.find((l) => l.key === activeKey) ?? null;
-  const errorFor = (lineIndex: number, kind: 'name_required' | 'invalid_quantity') =>
-    fieldError && fieldError.kind === kind && fieldError.lineIndex === lineIndex
-      ? t(
-          kind === 'name_required'
-            ? 'screens:quickOrder.nameRequired'
-            : 'screens:quickOrder.quantityInvalid',
-        )
-      : undefined;
+  const trackingError = trackingErrorText(t, fieldError);
   const codeErrorText =
     fieldError?.kind === 'code_required'
       ? t('screens:quickOrder.codeRequired')
@@ -294,7 +294,7 @@ export function QuickOrderScreen() {
       onPress={() => (dirty ? setLeaveOpen(true) : navigation.back())}
       style={{ minHeight: touch, minWidth: touch, alignItems: 'center', justifyContent: 'center' }}
     >
-      <Text variant="formButton" style={{ color: tokens.color.action.primary }}>
+      <Text variant="formButton" style={{ color: tokens.color.action.link }}>
         {t('screens:quickOrder.cancel')}
       </Text>
     </Pressable>
@@ -454,6 +454,7 @@ export function QuickOrderScreen() {
           setOrderCode(value);
         }}
         autoCapitalize="characters"
+        maxLength={INPUT_LIMITS.code}
         {...(codeErrorText ? { error: codeErrorText } : {})}
         trailing={
           <Pressable
@@ -506,8 +507,9 @@ export function QuickOrderScreen() {
           index={index}
           total={lines.length}
           line={line}
-          nameError={errorFor(index, 'name_required')}
-          quantityError={errorFor(index, 'invalid_quantity')}
+          nameError={lineErrorText(t, fieldError, index, 'name')}
+          variantError={lineErrorText(t, fieldError, index, 'variant')}
+          quantityError={lineErrorText(t, fieldError, index, 'quantity')}
           nameSuggestions={
             activeLine?.key === line.key ? suggestProductNames(history, line.name) : []
           }
@@ -534,8 +536,8 @@ export function QuickOrderScreen() {
         }}
         style={[styles.addLine, { minHeight: touch, gap: tokens.space.sm }]}
       >
-        <Icon name="add" size={18} color={tokens.color.action.primary} />
-        <Text variant="formButton" style={{ color: tokens.color.action.primary }}>
+        <Icon name="add" size={18} color={tokens.color.brand.primary} />
+        <Text variant="formButton" style={{ color: tokens.color.action.link }}>
           {t('screens:quickOrder.addLine')}
         </Text>
       </Pressable>
@@ -546,8 +548,13 @@ export function QuickOrderScreen() {
           compact
           label={t('screens:quickOrder.trackingCode')}
           value={tracking}
-          onChangeText={setTracking}
+          onChangeText={(value) => {
+            setFieldError(null);
+            setTracking(value);
+          }}
           autoCapitalize="characters"
+          maxLength={INPUT_LIMITS.tracking}
+          {...(trackingError ? { error: trackingError } : {})}
         />
       ) : (
         <Pressable
@@ -556,8 +563,8 @@ export function QuickOrderScreen() {
           onPress={() => setShowTracking(true)}
           style={[styles.addLine, { minHeight: touch, gap: tokens.space.sm }]}
         >
-          <Icon name="add" size={18} color={tokens.color.action.primary} />
-          <Text variant="formButton" style={{ color: tokens.color.action.primary }}>
+          <Icon name="add" size={18} color={tokens.color.brand.primary} />
+          <Text variant="formButton" style={{ color: tokens.color.action.link }}>
             {t('screens:quickOrder.addTracking')}
           </Text>
         </Pressable>

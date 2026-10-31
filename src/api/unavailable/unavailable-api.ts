@@ -18,11 +18,16 @@ export function createUnavailableApi(): ApiClient {
     verifyRecoveryCode: unavailable,
     resetPassword: unavailable,
     signOut: unavailable,
+    changePassword: unavailable,
+    updateDisplayName: unavailable,
+    deleteAccount: unavailable,
   };
   const shop: ShopApi = {
     createShop: unavailable,
     updateShop: unavailable,
     getShop: unavailable,
+    listMyShops: unavailable,
+    renameShop: unavailable,
   };
   // Không có máy chủ nên không có phiên nào để khôi phục: luôn lỗi, màn Splash coi như chưa đăng nhập.
   const session: SessionApi = { restore: unavailable, identity: unavailable };

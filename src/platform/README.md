@@ -10,6 +10,11 @@ Hiện có:
   `useConfirmBeforeLeave` cho màn quay).
 - `layout.ts` - khác biệt bố cục iOS/Android (vùng chạm tối thiểu, tránh bàn phím).
 - `native-splash.ts` - giữ/ẩn splash hệ điều hành (`expo-splash-screen`) cho màn Splash UI-A01; lỗi bị nuốt.
+- `backup-exclusion.ts` - loại thư mục bằng chứng/CSDL khỏi iCloud Backup qua module Expo cục bộ
+  `modules/backup-exclusion` (chỉ iOS, V1-12); không có module (Android, web, Expo Go) thì no-op.
+- `keep-awake.ts` - giữ màn hình sáng khi đang quay (`useKeepScreenAwake`, `expo-keep-awake` nạp lười, V1-11).
+- `crash-reporter.ts` (+ `.web.ts` no-op) - báo lỗi ứng dụng qua Firebase Crashlytics (V1-16), nạp lười; chỉ nhận dữ liệu đã lọc bởi `core/logging/crash-safe.ts`, không `setUserId`/`setAttribute`; thay handler lỗi JS toàn cục của RNFirebase bằng bản lọc; `scrubErrorInPlace`/`reportFatalRenderError` cho boundary gốc. Chỉ `src/bootstrap` gọi (`crash-reporting-early.ts`, `CrashReportingBridge.tsx`, `RootErrorBoundary.tsx`).
+- `app-state.ts` - app trở lại foreground / chuyển sang nền (`background`, không gồm `inactive` của iOS).
 - `connectivity.ts` - **stub** `useIsOffline()` luôn `false` cho tới khi chọn thư viện theo dõi mạng.
 
 Camera, quét mã, hệ tệp, tải nền: thêm cùng tính năng đầu tiên cần đến.

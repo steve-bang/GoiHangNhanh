@@ -48,5 +48,5 @@ export type { ToastOptions, ToastTone } from './Toast';
 export { Text } from './Text';
 export { TextField } from './TextField';
 export type { TextFieldInput } from './TextField';
-export { useTheme } from './theme';
+export { AppThemeScope, useTheme } from './theme';
 export type { Theme } from './theme';

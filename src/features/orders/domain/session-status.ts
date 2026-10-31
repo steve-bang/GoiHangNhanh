@@ -42,3 +42,9 @@ export function canChangeSessionStatus(from: string, to: string): boolean {
   if (!isSessionStatus(from) || !isSessionStatus(to)) return false;
   return from === to || TRANSITIONS[from].includes(to);
 }
+
+/**
+ * Phiên đã dừng ghi bình thường (tệp video đã lưu trên máy): dùng để đếm "Đơn đã đóng gói" ở Trang chủ
+ * (V1-10). `interrupted`/`needs_attention` là ghi lỗi, không tính.
+ */
+export const PACKED_SESSION_STATUSES: readonly SessionStatus[] = ['ended', 'confirmed'];

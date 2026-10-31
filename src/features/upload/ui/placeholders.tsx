@@ -1,6 +1,5 @@
 import { PlaceholderScreen } from '@/shared/ui';
 
-/** Màn khung của upload: lưu và đồng bộ (UI-C05), chi tiết lỗi đồng bộ (UI-F02), dung lượng (UI-F03). */
+/** Màn khung của upload: lưu và đồng bộ (UI-C05), dung lượng (UI-F03). UI-F02 là màn thật (V1-08). */
 export const PackSavedScreen = () => <PlaceholderScreen uiCode="UI-C05" />;
-export const SyncErrorScreen = () => <PlaceholderScreen uiCode="UI-F02" />;
 export const StorageScreen = () => <PlaceholderScreen uiCode="UI-F03" />;

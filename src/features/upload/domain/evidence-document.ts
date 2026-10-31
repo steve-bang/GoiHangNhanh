@@ -9,7 +9,10 @@ export interface RemoteValues {
 /**
  * Tài liệu khai báo bằng chứng (`shops/{shopId}/evidence/{evidenceId}`) đúng hình dạng
  * `firebase/firestore.rules` yêu cầu: tệp đã đóng và đọc được (`clientFileState: 'queued'`), mã băm
- * thiết bị tính (`sha256Client`, máy chủ tính lại và không tin), liên kết bằng ID phiên + đơn + kiện.
+ * thiết bị tính (`sha256Client`, máy chủ tính lại và không tin). Hai hình dạng theo chủ sở hữu (Q-28):
+ * - Đóng gói: liên kết bằng ID phiên + đơn + kiện (không có `ownerKind`).
+ * - Hàng hoàn: `ownerKind: 'return'` + `returnId` (KHÔNG có phiên/đơn/kiện; hồ sơ chưa liên kết đơn
+ *   vẫn hợp lệ). Không gửi vị trí thiết bị lên máy chủ (Q-28a chờ chính sách quyền riêng tư).
  * Chỉ để TẠO; trạng thái máy chủ (`server.*`) không bao giờ do client ghi.
  */
 export function evidenceWrite(
@@ -18,13 +21,14 @@ export function evidenceWrite(
   v: RemoteValues,
   appVersion?: string,
 ) {
+  const { owner } = request;
   return {
     path: `shops/${request.shopId}/evidence/${request.evidenceId}`,
     data: {
       shopId: request.shopId,
-      sessionId: request.sessionId,
-      orderId: request.orderId,
-      packageId: request.packageId,
+      ...(owner.kind === 'packing'
+        ? { sessionId: owner.sessionId, orderId: owner.orderId, packageId: owner.packageId }
+        : { ownerKind: 'return', returnId: owner.returnId }),
       kind: request.kind === 'video' ? 'original_video' : 'photo',
       origin: 'in_app_capture',
       clientFileState: 'queued',

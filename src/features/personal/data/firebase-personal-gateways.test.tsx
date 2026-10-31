@@ -18,6 +18,28 @@ async function codeOf(promise: Promise<unknown>): Promise<string | undefined> {
   }
 }
 
+/** API giả với danh tính phiên cố định (cổng phiên giả không biết shop đã tạo trong cổng shop giả). */
+function withIdentity(
+  api: ReturnType<typeof createFakeApi>,
+  shopId: string | null,
+  signInMethod: 'password' | 'apple' | 'google' | null = 'password',
+) {
+  return {
+    ...api,
+    session: {
+      ...api.session,
+      restore: api.session.restore.bind(api.session),
+      identity: async () => ({
+        uid: 'u1',
+        email: 'a@x.vn',
+        displayName: null,
+        signInMethod,
+        shopId,
+      }),
+    },
+  };
+}
+
 function Probe() {
   const { state, key, signOut } = useSession();
   return (
@@ -31,22 +53,10 @@ function Probe() {
 }
 
 describe('cổng cá nhân chế độ Firebase (PR1)', () => {
-  it('nối danh tính, hồ sơ, shop và đăng xuất; phần còn lại GIỮ "chưa kết nối"', async () => {
+  it('nối danh tính, hồ sơ, shop và đăng xuất; cài đặt thông báo GIỮ "chưa kết nối" (mục menu ẩn ở v1)', async () => {
     const api = createFakeApi({ sessionState: 'signed_in' });
     const created = await api.shop.createShop({ name: 'Shop A', sellingSources: [] });
-    const { account, settings } = createFirebasePersonalGateways({
-      ...api,
-      session: {
-        ...api.session,
-        identity: async () => ({
-          uid: 'u1',
-          email: 'a@x.vn',
-          displayName: null,
-          signInMethod: 'password' as const,
-          shopId: created.id,
-        }),
-      },
-    });
+    const { account, settings } = createFirebasePersonalGateways(withIdentity(api, created.id));
     expect(await account.getSessionIdentity()).toEqual({
       uid: 'u1',
       email: 'a@x.vn',
@@ -61,12 +71,14 @@ describe('cổng cá nhân chế độ Firebase (PR1)', () => {
       role: 'owner',
     });
     for (const call of [
-      () => account.listShops(),
-      () => account.switchShop('s'),
-      () => account.updateShopName('s', 'Tên'),
-      () => account.updateProfile({ displayName: 'A' }),
-      () => account.changePassword({ currentPassword: 'a', newPassword: 'b' }),
       () => settings.getNotificationPreferences(),
+      () =>
+        settings.updateNotificationPreferences({
+          uploadProblems: true,
+          syncCompleted: false,
+          storageNearlyFull: true,
+          planExpiring: true,
+        }),
     ]) {
       expect(await codeOf(call())).toBe('AUTH_SERVICE_UNAVAILABLE');
     }
@@ -192,4 +204,103 @@ describe('Đăng xuất thật qua SessionProvider (PER-21)', () => {
     expect(screen.getByTestId('shop')).toHaveTextContent('null');
     expect(screen.getByTestId('key')).toHaveTextContent('anonymous');
   });
+});
+
+describe('cổng cá nhân chế độ Firebase: tab Cá nhân thật (V1-05)', () => {
+  async function setup() {
+    const api = createFakeApi({ sessionState: 'signed_in' });
+    const email = 'lan@example.com';
+    await api.auth.signUpWithEmail({ email, password: 'Mat-khau-1' });
+    const shop = await api.shop.createShop({ name: 'Shop Lan', sellingSources: ['shopee'] });
+    const gateways = createFirebasePersonalGateways(withIdentity(api, shop.id));
+    return { api, shop, account: gateways.account, email };
+  }
+
+  it('danh sách shop lấy từ máy chủ: shop của tài khoản, đang hoạt động', async () => {
+    const { account, shop } = await setup();
+    expect(await account.listShops()).toEqual([
+      { id: shop.id, name: 'Shop Lan', role: 'owner', status: 'active', canEdit: true },
+    ]);
+  });
+
+  it('danh sách shop lỗi thì ném mã của API (không trả rỗng giả)', async () => {
+    const { api, account } = await setup();
+    api.shop.failNext('AUTH_NETWORK_ERROR');
+    expect(await codeOf(account.listShops())).toBe('AUTH_NETWORK_ERROR');
+  });
+
+  it('đổi tên shop: gửi tên đã chuẩn hóa, trả shop máy chủ xác nhận', async () => {
+    const { api, account, shop } = await setup();
+    expect(await account.updateShopName(shop.id, '  Shop Mới ')).toMatchObject({
+      id: shop.id,
+      name: 'Shop Mới',
+      status: 'active',
+    });
+    expect(api.shop.renameCalls).toEqual([{ shopId: shop.id, name: 'Shop Mới' }]);
+  });
+
+  it('đổi tên shop: lỗi quyền giữ nguyên mã SHOP_PERMISSION_DENIED cho màn Sửa tên', async () => {
+    const { api, account, shop } = await setup();
+    api.shop.failNext('SHOP_PERMISSION_DENIED');
+    expect(await codeOf(account.updateShopName(shop.id, 'X'))).toBe('SHOP_PERMISSION_DENIED');
+  });
+
+  it('chuyển shop: chỉ shop đang dùng hợp lệ; shop khác SHOP_SWITCH_FAILED (máy chủ một shop/tài khoản)', async () => {
+    const { account, shop } = await setup();
+    expect(await account.switchShop(shop.id)).toMatchObject({ id: shop.id });
+    expect(await codeOf(account.switchShop('shop-khac'))).toBe('SHOP_SWITCH_FAILED');
+  });
+
+  it('đổi họ tên: gửi tên đã chuẩn hóa, hồ sơ trả về mang tên máy chủ đã nhận', async () => {
+    const { api, account } = await setup();
+    expect(await account.updateProfile({ displayName: '  Chị Lan ' })).toEqual({
+      uid: 'u1',
+      email: 'a@x.vn',
+      displayName: 'Chị Lan',
+      signInMethod: 'password',
+    });
+    expect(api.auth.displayNameCalls).toEqual(['Chị Lan']);
+  });
+
+  it('đổi họ tên lỗi mạng: ném, không báo đã lưu', async () => {
+    const { api, account } = await setup();
+    api.auth.failNext('AUTH_NETWORK_ERROR');
+    expect(await codeOf(account.updateProfile({ displayName: 'A' }))).toBe('AUTH_NETWORK_ERROR');
+  });
+
+  it('xóa tài khoản (V1-15): chuyển mật khẩu cho API; sai -> AUTH_WRONG_CURRENT_PASSWORD; đúng -> resolve', async () => {
+    const { api, account } = await setup();
+    expect(await codeOf(account.deleteAccount('sai-1'))).toBe('AUTH_WRONG_CURRENT_PASSWORD');
+    await expect(account.deleteAccount('Mat-khau-1')).resolves.toBe('deleted');
+    expect(api.auth.deleteAccountCalls).toBe(2);
+  });
+
+  it('đổi mật khẩu: sai mật khẩu hiện tại -> AUTH_WRONG_CURRENT_PASSWORD; đúng -> resolve', async () => {
+    const { api, account, email } = await setup();
+    expect(
+      await codeOf(account.changePassword({ currentPassword: 'sai-1', newPassword: 'Moi-hon-22' })),
+    ).toBe('AUTH_WRONG_CURRENT_PASSWORD');
+    await account.changePassword({ currentPassword: 'Mat-khau-1', newPassword: 'Moi-hon-22' });
+    expect(api.auth.changePasswordCalls).toBe(2);
+    await expect(
+      api.auth.signInWithPassword({ email, password: 'Moi-hon-22' }),
+    ).resolves.toBeTruthy();
+  });
+
+  it.each([
+    'AUTH_REQUIRES_RECENT_LOGIN',
+    'AUTH_SESSION_EXPIRED',
+    'AUTH_TOO_MANY_REQUESTS',
+  ] as const)(
+    'đổi mật khẩu: lỗi %s đi nguyên lên màn (màn có nút Đăng nhập lại khi cần)',
+    async (code) => {
+      const { api, account } = await setup();
+      api.auth.failNext(code);
+      expect(
+        await codeOf(
+          account.changePassword({ currentPassword: 'Mat-khau-1', newPassword: 'Moi-hon-22' }),
+        ),
+      ).toBe(code);
+    },
+  );
 });

@@ -37,6 +37,8 @@ export function PlaceholderScreen({
         title={t('common:placeholder.title')}
         message={t('common:placeholder.message')}
         actionLabel={t('common:placeholder.action')}
+        icon="clock"
+        actionVariant="primary"
         onAction={navigation.back}
       />
       {__DEV__ ? (

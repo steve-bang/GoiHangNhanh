@@ -5,6 +5,7 @@ import { deleteApp, initializeApp, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
 import {
+  handleEvidenceFinalized,
   hashStream,
   parseEvidencePath,
   verifyEvidenceObject,
@@ -87,6 +88,55 @@ describe('hashStream', () => {
 
 describe('verifyEvidenceObject', () => {
   const bytes = Buffer.from('video-goc-0123456789');
+
+  it('bằng chứng hàng hoàn (Q-28, không có phiên/đơn/kiện): cùng đường dẫn, băm lại phía máy chủ, verified + kiểm toán', async () => {
+    counter += 1;
+    const shopId = `shop-ev-${Date.now()}-${counter}`;
+    const evidenceId = `ev-ret-${counter}`;
+    await db.doc(`shops/${shopId}/evidence/${evidenceId}`).set({
+      shopId,
+      ownerKind: 'return',
+      returnId: 'ret-1',
+      kind: 'photo',
+      origin: 'in_app_capture',
+      clientFileState: 'uploading',
+      sha256Client: sha(bytes),
+      sizeBytes: bytes.length,
+      mimeType: 'image/jpeg',
+    });
+    const path = `shops/${shopId}/evidence/${evidenceId}/original`;
+    expect(await verifyEvidenceObject(db, readerOf(bytes), path)).toEqual({ outcome: 'verified' });
+    expect((await evidenceOf(shopId, evidenceId))?.server).toMatchObject({
+      state: 'verified',
+      sha256Server: sha(bytes),
+    });
+    expect(await auditOf(shopId)).toEqual([
+      expect.objectContaining({ type: 'evidence.verified', evidenceId }),
+    ]);
+  });
+
+  it('bằng chứng hàng hoàn có nội dung khác khai báo: hash_mismatch, không bao giờ verified', async () => {
+    counter += 1;
+    const shopId = `shop-ev-${Date.now()}-${counter}`;
+    const evidenceId = `ev-ret-${counter}`;
+    await db.doc(`shops/${shopId}/evidence/${evidenceId}`).set({
+      shopId,
+      ownerKind: 'return',
+      returnId: 'ret-1',
+      kind: 'original_video',
+      origin: 'in_app_capture',
+      clientFileState: 'uploading',
+      sha256Client: sha(Buffer.from('khac')),
+      sizeBytes: bytes.length,
+      mimeType: 'video/mp4',
+    });
+    const path = `shops/${shopId}/evidence/${evidenceId}/original`;
+    expect(await verifyEvidenceObject(db, readerOf(bytes), path)).toMatchObject({
+      outcome: 'hash_mismatch',
+      reason: 'sha256_differs',
+    });
+    expect((await evidenceOf(shopId, evidenceId))?.server.state).toBe('hash_mismatch');
+  });
 
   it('khớp mã băm và kích thước: server.state = verified, có mã băm máy chủ và một sự kiện kiểm toán', async () => {
     const { shopId, evidenceId, path } = await declare(bytes);
@@ -305,5 +355,156 @@ describe('verifyEvidenceObject', () => {
     const b = await declare(bytes);
     await verifyEvidenceObject(db, readerOf(bytes), a.path);
     expect((await evidenceOf(b.shopId, b.evidenceId))?.server).toBeUndefined();
+  });
+});
+
+describe('trần dung lượng khi xác minh (Q-24c)', () => {
+  const bytes = Buffer.from('anh-hoac-video');
+  const neverRead: EvidenceObjectReader = {
+    open: () => {
+      throw new Error('không được đọc tệp quá cỡ');
+    },
+  };
+
+  it('ảnh lớn hơn 25 000 000 byte: hash_mismatch size_exceeds_limit, KHÔNG băm, có kiểm toán', async () => {
+    const { shopId, evidenceId, path } = await declare(bytes, {
+      kind: 'photo',
+      mimeType: 'image/jpeg',
+    });
+    expect(await verifyEvidenceObject(db, neverRead, path, '1', 25_000_001)).toEqual({
+      outcome: 'hash_mismatch',
+      reason: 'size_exceeds_limit',
+    });
+    const server = (await evidenceOf(shopId, evidenceId))?.server;
+    expect(server).toMatchObject({ state: 'hash_mismatch', sizeBytesServer: 25_000_001 });
+    expect(server.sha256Server).toBeUndefined();
+    expect(server.verifiedAt).toBeUndefined();
+    expect(await auditOf(shopId)).toEqual([
+      expect.objectContaining({ type: 'evidence.hash_mismatch', reason: 'size_exceeds_limit' }),
+    ]);
+  });
+
+  it('video lớn hơn 2 000 000 000 byte: hash_mismatch không băm; đúng trần thì vẫn băm và xác minh', async () => {
+    const big = await declare(bytes);
+    expect((await verifyEvidenceObject(db, neverRead, big.path, '1', 2_000_000_001)).reason).toBe(
+      'size_exceeds_limit',
+    );
+    // Kích thước sự kiện đúng trần: không bị chặn bởi trần (băm như thường).
+    const ok = await declare(bytes);
+    expect(
+      (await verifyEvidenceObject(db, readerOf(bytes), ok.path, '1', bytes.length)).outcome,
+    ).toBe('verified');
+  });
+});
+
+describe('handleEvidenceFinalized: thử lại có trần', () => {
+  const bytes = Buffer.from('video-goc-handle');
+  const NOW = Date.parse('2026-10-30T12:00:00Z');
+
+  it('sự kiện mới, hoặc đã 23 giờ (còn trong cửa sổ thử lại 24 giờ): xác minh như thường', async () => {
+    const late = await declare(bytes);
+    expect(
+      (
+        await handleEvidenceFinalized(
+          db,
+          readerOf(bytes),
+          { name: late.path, generation: '5' },
+          new Date(NOW - 23 * 60 * 60_000).toISOString(),
+          NOW,
+        )
+      ).outcome,
+    ).toBe('verified');
+    const { path } = await declare(bytes);
+    const r = await handleEvidenceFinalized(
+      db,
+      readerOf(bytes),
+      { name: path, generation: '5', size: String(bytes.length) },
+      new Date(NOW - 60_000).toISOString(),
+      NOW,
+    );
+    expect(r.outcome).toBe('verified');
+  });
+
+  it('sự kiện quá 24 giờ: không đọc tệp, ghi một kiểm toán verify_abandoned, chạy lại không nhân đôi', async () => {
+    const { shopId, evidenceId, path } = await declare(bytes);
+    const reader: EvidenceObjectReader = {
+      open: () => {
+        throw new Error('không được đọc');
+      },
+    };
+    const old = new Date(NOW - 24 * 60 * 60_000 - 1).toISOString();
+    for (let i = 0; i < 2; i += 1) {
+      expect(
+        (await handleEvidenceFinalized(db, reader, { name: path, generation: '5' }, old, NOW))
+          .outcome,
+      ).toBe('abandoned_too_old');
+    }
+    expect(await auditOf(shopId)).toEqual([
+      expect.objectContaining({
+        type: 'evidence.verify_abandoned',
+        reason: 'event_too_old',
+        evidenceId,
+      }),
+    ]);
+    expect((await evidenceOf(shopId, evidenceId))?.server).toBeUndefined();
+  });
+
+  it('đối tượng không còn (404, lỗi bền): kết thúc không ném, kiểm toán verify_failed, không bao giờ verified', async () => {
+    const { shopId, evidenceId, path } = await declare(bytes);
+    const missing: EvidenceObjectReader = {
+      open: () =>
+        new Readable({
+          read() {
+            this.destroy(Object.assign(new Error('No such object'), { code: 404 }));
+          },
+        }),
+    };
+    for (let i = 0; i < 2; i += 1) {
+      expect(
+        (
+          await handleEvidenceFinalized(
+            db,
+            missing,
+            { name: path, generation: '5' },
+            new Date(NOW).toISOString(),
+            NOW,
+          )
+        ).outcome,
+      ).toBe('object_missing');
+    }
+    expect(await auditOf(shopId)).toEqual([
+      expect.objectContaining({ type: 'evidence.verify_failed', reason: 'object_missing' }),
+    ]);
+    expect((await evidenceOf(shopId, evidenceId))?.server.state).toBe('uploaded');
+  });
+
+  it('lỗi tạm (mạng): ném để Cloud Functions thử lại, không ghi kiểm toán dừng', async () => {
+    const { shopId, path } = await declare(bytes);
+    const flaky: EvidenceObjectReader = {
+      open: () =>
+        new Readable({
+          read() {
+            this.destroy(Object.assign(new Error('socket hang up'), { code: 'ECONNRESET' }));
+          },
+        }),
+    };
+    await expect(
+      handleEvidenceFinalized(db, flaky, { name: path }, new Date(NOW).toISOString(), NOW),
+    ).rejects.toThrow('socket hang up');
+    expect(await auditOf(shopId)).toEqual([]);
+  });
+
+  it('đường dẫn không phải bản gốc: bỏ qua, kể cả khi sự kiện đã cũ', async () => {
+    expect(
+      (
+        await handleEvidenceFinalized(
+          db,
+          readerOf(bytes),
+          { name: 'shops/s/exports/x.zip' },
+          '2000-01-01T00:00:00Z',
+          NOW,
+        )
+      ).outcome,
+    ).toBe('ignored_path');
   });
 });

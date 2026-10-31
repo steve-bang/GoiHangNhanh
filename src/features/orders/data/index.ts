@@ -1,4 +1,9 @@
-export { CurrentShopProvider, useCurrentShopId, useCurrentUid } from './current-shop';
+export {
+  CurrentShopProvider,
+  useCurrentShopId,
+  useCurrentUid,
+  useWritableShopId,
+} from './current-shop';
 export { createLocalOrderStore } from './create-order-store';
 export { createMemoryOrderStore } from './memory-order-store';
 export { OrderStoreProvider, useOrderStore } from './OrderStoreProvider';
@@ -11,3 +16,20 @@ export { OrderSyncRunner } from './OrderSyncRunner';
 export { createRemoteOrderWriter, RemoteNotSignedInError } from './remote-order-writer';
 export { createLocalEvidenceFileStore } from './create-evidence-file-store';
 export { EvidenceFileStoreProvider, useEvidenceFileStore } from './EvidenceFileStoreProvider';
+export { MIGRATIONS as ORDER_DB_MIGRATIONS } from './sqlite-migrations';
+export { runSerialized as runSerializedOnDb } from './db-queue';
+export { migrateLocalDatabase as migrateOrderDatabase } from './sqlite-order-store';
+export {
+  DeviceSettingsProvider,
+  useDeviceSetting,
+  useDeviceSettings,
+} from './DeviceSettingsProvider';
+export { createDeviceSettings } from './device-settings';
+export type { DeviceSettings, DeviceSettingSnapshot } from './device-settings';
+export {
+  createLocalDeviceSettingsStore,
+  createMemoryDeviceSettingsStore,
+  createSqliteDeviceSettingsStore,
+} from './device-settings-store';
+export { createLocalDataWiper, createLocalDeviceData, LocalWipeError } from './wipe-local-data';
+export type { LocalDataWiper, LocalDeviceData, LocalWipeSteps } from './wipe-local-data';

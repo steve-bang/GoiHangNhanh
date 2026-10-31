@@ -1,1 +1,4 @@
-export { PackSavedScreen as default } from '@/features/upload';
+import { PackSavedScreen } from '@/features/upload';
+import { withSessionGate } from '@/features/personal';
+
+export default withSessionGate(PackSavedScreen);

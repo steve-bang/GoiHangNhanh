@@ -24,20 +24,20 @@ Hướng dẫn từ máy phát triển đến phát hành production trên **Goo
 
 Không gửi bản lên cửa hàng công khai khi còn mục nào dưới đây chưa xong.
 
-| #   | Việc                                                                                               | Trạng thái  | Ghi chú                                                                        |
-| --- | -------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------ |
-| 1   | Chốt **tên ứng dụng và định danh gói** (O-11, Q-06)                                                | Chưa        | `vn.doncung.app.dev` là chỗ giữ chỗ và **không đổi được sau khi đã phát hành** |
-| 2   | Chốt **khu vực dữ liệu Firebase** (Q-08)                                                           | Chưa        | Không đổi được sau khi tạo; cần rà soát pháp lý (D-08)                         |
-| 3   | Tạo dự án Firebase `dev`/`staging`/`prod`, thay cổng giả bằng Firebase thật (ADR-002, ADR-009)     | Chưa        | Hiện chỉ có Rules + Emulator                                                   |
-| 4   | Chốt thư viện **ghi video, tải nền, mã băm** qua spike S1–S6 trên thiết bị thật (ADR-003, ADR-004) | Chưa        | Rủi ro kỹ thuật cao nhất                                                       |
-| 5   | Bật ghi video thật (`RECORDER_ENABLED`), bỏ dải "chưa ghi video"                                   | Chưa        | Không phát hành bản quảng bá ghi bằng chứng khi chưa ghi được                  |
-| 6   | Chốt **sàn phiên bản** iOS/Android (O-20)                                                          | Chưa        | Xem `docs/engineering/platform-support.md`                                     |
-| 7   | Chốt **đăng nhập Apple/Google** (O-15) và OTP (O-22)                                               | Chưa        | Liên quan quy định của Apple (mục 8.3)                                         |
-| 8   | URL thật cho Điều khoản và Chính sách quyền riêng tư                                               | Chưa        | `src/core/config/legal-links.ts` đang là `.invalid`                            |
-| 9   | Chọn dịch vụ crash/analytics hoặc quyết định không dùng (Q-07)                                     | Chưa        | Phải lọc mã đơn/vận đơn/thông tin khách                                        |
-| 10  | Chạy ma trận kiểm thử trên máy thật iOS + Android (`platform-support.md` mục 5, QA-01…14)          | Chưa        |                                                                                |
-| 11  | `npm run check` và `npm run test:rules` qua trên commit phát hành                                  | Có thể chạy |                                                                                |
-| 12  | Quyết định sao lưu bản gốc cục bộ (Q-09)                                                           | Chưa        |                                                                                |
+| #   | Việc                                                                                               | Trạng thái                   | Ghi chú                                                                        |
+| --- | -------------------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------ |
+| 1   | Chốt **tên ứng dụng và định danh gói** (O-11, Q-06)                                                | Chưa                         | `vn.doncung.app.dev` là chỗ giữ chỗ và **không đổi được sau khi đã phát hành** |
+| 2   | Chốt **khu vực dữ liệu Firebase** (Q-08)                                                           | Chưa                         | Không đổi được sau khi tạo; cần rà soát pháp lý (D-08)                         |
+| 3   | Tạo dự án Firebase `dev`/`staging`/`prod`, thay cổng giả bằng Firebase thật (ADR-002, ADR-009)     | Chưa                         | Hiện chỉ có Rules + Emulator                                                   |
+| 4   | Chốt thư viện **ghi video, tải nền, mã băm** qua spike S1–S6 trên thiết bị thật (ADR-003, ADR-004) | Chưa                         | Rủi ro kỹ thuật cao nhất                                                       |
+| 5   | Bật ghi video thật (`RECORDER_ENABLED`), bỏ dải "chưa ghi video"                                   | Chưa                         | Không phát hành bản quảng bá ghi bằng chứng khi chưa ghi được                  |
+| 6   | Chốt **sàn phiên bản** iOS/Android (O-20)                                                          | Chưa                         | Xem `docs/engineering/platform-support.md`                                     |
+| 7   | Chốt **đăng nhập Apple/Google** (O-15) và OTP (O-22)                                               | Chưa                         | Liên quan quy định của Apple (mục 8.3)                                         |
+| 8   | URL thật cho Điều khoản và Chính sách quyền riêng tư                                               | Chưa                         | `src/core/config/legal-links.ts` đang là `.invalid`                            |
+| 9   | Chọn dịch vụ crash/analytics hoặc quyết định không dùng (Q-07)                                     | Đã có mã (V1-16), chưa build | Crashlytics có lọc dữ liệu, không Analytics; kiểm release-checklist S-3b, G-9  |
+| 10  | Chạy ma trận kiểm thử trên máy thật iOS + Android (`platform-support.md` mục 5, QA-01…14)          | Chưa                         |                                                                                |
+| 11  | `npm run check` và `npm run test:rules` qua trên commit phát hành                                  | Có thể chạy                  |                                                                                |
+| 12  | Quyết định sao lưu bản gốc cục bộ (Q-09)                                                           | Chưa                         |                                                                                |
 
 ## 2. Môi trường và tài khoản
 
@@ -191,7 +191,14 @@ Rules là lớp bảo vệ thật (cô lập theo shop, bất biến #8): **khô
 
 ### 4.4 Cloud Functions
 
-`firebase/functions/` chưa có mã **[Chưa có]**. Khi thêm: tạo `package.json` riêng, thêm khối `"functions"` vào `firebase/firebase.json`, thêm Functions vào Emulator của `test:rules`/CI, rồi `npx firebase deploy --only functions --project <env>`. Callable `createShop` là chức năng đầu tiên dự kiến (decisions Q-14).
+`firebase/functions/` **đã có mã** (`package.json` riêng; khối `"functions"` đã có trong `firebase/firebase.json`): `createShop`, `updateShop`, `createUploadSession`, `verifyEvidence`, trigger kiểm toán và xác minh lại (V1-04), `deleteAccount`, `purgeDeletedShops` (V1-14). Logic được test trong `npm run test:rules` (Emulator). Deploy (chi tiết và thứ tự: `docs/engineering/firebase-setup.md` mục 5):
+
+```bash
+npm --prefix firebase/functions ci
+npx firebase deploy --config firebase/firebase.json --project <env> --only functions
+```
+
+**Luôn dùng `--config firebase/firebase.json`** (hoặc chạy trong thư mục `firebase/`): `firebase.json` ở gốc repo là cấu hình của React Native Firebase cho Crashlytics (V1-16, khóa `react-native`), không phải cấu hình Firebase CLI; chạy `firebase deploy` ở gốc mà không có `--config` sẽ không thấy Rules/Functions.
 
 ### 4.5 Tệp cấu hình Firebase cho app
 
@@ -215,9 +222,13 @@ rồi tham chiếu trong cấu hình động (mục 5.2). Tên và cờ lệnh `
 
 Trong `app.json` hiện có:
 
-- `ios.bundleIdentifier` / `android.package` = `vn.doncung.app.dev` (**giữ chỗ**; đặt giá trị chính thức trước bản build gửi cửa hàng đầu tiên)
+- `ios.bundleIdentifier` / `android.package` = `vn.doncung.app.dev` (**giữ chỗ**; đặt giá trị chính thức trước bản build gửi cửa hàng đầu tiên). `app.config.js` bỏ hậu tố `.dev` khi `APP_ENV=prod` (hoặc bí danh `production`): profile `production` của `eas.json` ra `vn.doncung.app`
 - `version` = `0.0.0`
 - Quyền camera có chuỗi mô tả tiếng Việt; micro **tắt** (`microphonePermission: false`, `recordAudioAndroid: false`)
+- `android.allowBackup: false` (Q-24d): video, CSDL và phiên đăng nhập không vào Android Auto Backup; đổi máy phải đăng nhập lại. Phần iOS (loại khỏi iCloud Backup) làm ở V1-12: module Expo cục bộ `modules/backup-exclusion` (Swift, tự liên kết, chỉ có ở bản build native, không có trong Expo Go)
+- `android.blockedPermissions`: gỡ `RECORD_AUDIO` (O-09, phòng thủ thêm), `SYSTEM_ALERT_WINDOW` (mẫu RN thêm vào, app không cần; bản debug vẫn giữ trong manifest `debug/`), `READ/WRITE_EXTERNAL_STORAGE` (`expo-file-system` thêm; app chỉ ghi trong thư mục riêng của app)
+- `@react-native-community/netinfo` (V1-02) tự thêm `ACCESS_NETWORK_STATE` và `ACCESS_WIFI_STATE` khi Gradle gộp manifest: quyền thường (không hỏi người dùng), chỉ để biết có mạng/loại mạng; app không đọc tên Wi‑Fi (SSID) hay vị trí qua NetInfo. iOS không thêm khóa `Info.plist` nào. Chưa kiểm manifest sau khi gộp (cần Android SDK)
+- `ios.config.usesNonExemptEncryption: false` -> `ITSAppUsesNonExemptEncryption = false` (app chỉ dùng HTTPS của hệ điều hành và SHA-256 để băm, không mã hóa riêng; thêm mã hóa riêng thì phải xem lại khai báo xuất khẩu)
 
 Cần cập nhật khi chuẩn bị phát hành:
 
@@ -251,54 +262,42 @@ Plugin của `@react-native-firebase/*` sẽ được thêm vào `plugins` khi t
 
 ### 5.3 Biến môi trường
 
-Biến `EXPO_PUBLIC_*` được **nhúng vào gói JS và ai cũng đọc được**. Tuyệt đối không đặt bí mật trong đó. Bản production **không** được đặt `EXPO_PUBLIC_USE_FAKE_BACKEND` hay `EXPO_PUBLIC_FAKE_SESSION`: khi Firebase thật được nối, kiểm tra cổng giả không còn trong bản phát hành.
+Biến `EXPO_PUBLIC_*` được **nhúng vào gói JS và ai cũng đọc được**. Tuyệt đối không đặt bí mật trong đó.
+
+| Biến                           | Ý nghĩa                                                                                                                                   | Giá trị theo profile `eas.json`                                           |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `APP_ENV`                      | Chọn mã app (`.dev` hay không) và thư mục `firebase/config/<env>/`. Nhận `dev`, `prod`, bí danh `production`; giá trị khác làm build dừng | `development`/`staging`: `dev`; `production`: `prod`                      |
+| `EXPO_PUBLIC_APP_ENV`          | Nhúng vào gói JS: `prod`/`production` thì app **luôn** dùng Firebase thật, bỏ qua mọi cờ cổng giả và emulator (`src/api/create-api.ts`)   | `development`/`staging`: `dev`; `production`: `prod`                      |
+| `EXPO_PUBLIC_BACKEND`          | `firebase` \| `fake` (ép chọn backend)                                                                                                    | `staging`, `production`: `firebase`                                       |
+| `EXPO_PUBLIC_RECORDER_ENABLED` | `1` bật ghi video thật (ADR-020)                                                                                                          | chỉ `staging` (cổng thiết bị); `production` bật ở V1-21 sau cổng thiết bị |
+
+**Chốt chặn bản production (V1-01), hai lớp:**
+
+1. **Lúc build:** `app.config.js` gọi `validateReleaseEnv` (`scripts/env/validate-release-env.cjs`). Khi `APP_ENV` là `prod`/`production`, mọi lệnh đọc cấu hình (`npx expo config`, `expo prebuild`, `eas build`) **dừng với lỗi** nếu: thiếu `EXPO_PUBLIC_APP_ENV=prod`; có `EXPO_PUBLIC_USE_FAKE_BACKEND` (mọi giá trị); `EXPO_PUBLIC_BACKEND` khác `firebase`; có `EXPO_PUBLIC_FAKE_SESSION`; có `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST`; trên máy build EAS (`EAS_BUILD=true`) thiếu tệp cấu hình Firebase của nền tảng đang build. Bản production **không** lấy tệp ở gốc repo (nơi đặt tệp dev): chỉ đường dẫn qua `GOOGLE_SERVICE_INFO_PLIST`/`GOOGLE_SERVICES_INFO_PLIST`/`GOOGLE_SERVICES_JSON` (EAS file secret) hoặc `firebase/config/prod/`; tệp tìm thấy phải có `BUNDLE_ID` (plist) và `package_name` (json) đúng mã app production (`vn.doncung.app`), lệch thì build dừng. Ngược lại, `EXPO_PUBLIC_APP_ENV=prod` mà `APP_ENV` không phải prod cũng bị từ chối (gói JS và mã app lệch môi trường). Kiểm cả biến đặt trên trang EAS (environment `production`), không chỉ `eas.json`.
+2. **Lúc chạy:** gói JS có `EXPO_PUBLIC_APP_ENV=prod` thì `resolveBackendMode` trả Firebase trước mọi cờ, không nối emulator; thiếu tệp cấu hình thì "chưa kết nối", không rơi về cổng giả.
+
+Tự kiểm trên máy dev (không cần tài khoản EAS):
+
+```bash
+APP_ENV=prod EXPO_PUBLIC_APP_ENV=prod npx expo config --type public | grep -E 'bundleIdentifier|package'   # vn.doncung.app
+APP_ENV=prod EXPO_PUBLIC_APP_ENV=prod EXPO_PUBLIC_BACKEND=fake npx expo config                              # phải lỗi
+```
 
 ## 6. Build bằng EAS
 
 ### 6.1 Khởi tạo và `eas.json` **[Đã có `eas.json`, chưa chạy build]**
 
-`eas.json` ở gốc repo có 4 profile: `development` (dev client; Android APK, iOS thiết bị thật), `development-simulator` (iOS simulator), `staging` (APK nội bộ), `production` (AAB, tự tăng số bản). Chưa có khối `submit` vì chưa có ID app trên App Store Connect. Bước còn lại là `eas init` (liên kết dự án với tài khoản Expo) và tạo EAS file secret cho hai tệp Firebase (mục 4.5). Với dev client, JS do Metro trên máy bạn đóng gói nên chọn Firebase thật bằng `EXPO_PUBLIC_BACKEND=firebase npm start`; với `staging`/`production`, JS đóng gói lúc build và mặc định là Firebase.
+`eas.json` ở gốc repo có 4 profile, mỗi profile đặt `env` (bảng mục 5.3): `development` (dev client; Android APK, iOS thiết bị thật; `APP_ENV=dev`), `development-simulator` (iOS simulator), `staging` (APK nội bộ, EAS environment `preview`, Firebase dev, mã app `.dev`, **bật ghi video** cho cổng thiết bị), `production` (AAB, tự tăng số bản, `APP_ENV=prod`, mã app không `.dev`, Firebase production, chưa bật ghi video). Khối `submit.production` có Android `track: internal`, `releaseStatus: draft` và iOS `ascAppId` **giữ chỗ** (`<ID app trên App Store Connect>`): `eas submit` iOS báo lỗi cho tới khi điền ID thật (release-checklist S-6). Bước còn lại là `eas init` (liên kết dự án với tài khoản Expo) và tạo EAS file secret cho hai tệp Firebase (mục 4.5; tên biến `GOOGLE_SERVICE_INFO_PLIST` hoặc `GOOGLE_SERVICES_INFO_PLIST`, `GOOGLE_SERVICES_JSON`): bản `production` trên máy build EAS **dừng** nếu thiếu tệp. Với dev client, JS do Metro trên máy bạn đóng gói nên chọn Firebase thật bằng `EXPO_PUBLIC_BACKEND=firebase npm start`; với `staging`/`production`, JS đóng gói lúc build theo `env` của profile.
 
 ```bash
 npx eas-cli login
 npx eas-cli init                 # liên kết dự án với tài khoản Expo, ghi projectId vào cấu hình
-npx eas-cli build:configure      # sinh eas.json
+# Không chạy `eas-cli build:configure`: eas.json đã có trong repo, nguồn duy nhất của cấu hình profile.
 ```
 
-Mẫu `eas.json` (điều chỉnh sau khi có `.firebaserc` và các môi trường):
+Cấu hình profile xem trực tiếp `eas.json` (không chép mẫu vào đây để khỏi lệch).
 
-```json
-{
-  "cli": { "version": ">= 16.0.0", "appVersionSource": "remote" },
-  "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "environment": "development",
-      "ios": { "simulator": false },
-      "android": { "buildType": "apk" }
-    },
-    "staging": {
-      "distribution": "internal",
-      "environment": "preview",
-      "android": { "buildType": "apk" }
-    },
-    "production": {
-      "environment": "production",
-      "autoIncrement": true,
-      "android": { "buildType": "app-bundle" }
-    }
-  },
-  "submit": {
-    "production": {
-      "android": { "track": "internal", "releaseStatus": "draft" },
-      "ios": { "ascAppId": "<ID app trên App Store Connect>" }
-    }
-  }
-}
-```
-
-Lưu ý: Google Play chỉ nhận **AAB** (`app-bundle`) cho app mới; APK dùng để cài thử trực tiếp. Nếu `staging` dùng bundle id khác bản production (để cài song song), tách bằng biến môi trường trong `app.config.ts`.
+Lưu ý: Google Play chỉ nhận **AAB** (`app-bundle`) cho app mới; APK dùng để cài thử trực tiếp. Nếu `staging` dùng bundle id khác bản production (để cài song song), tách bằng biến môi trường trong `app.config.js` (hôm nay `staging` dùng `APP_ENV=dev` nên mang `.dev`, cài song song được với bản production).
 
 ### 6.2 Chạy kiểm tra trước khi build
 

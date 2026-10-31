@@ -107,10 +107,16 @@ export const ROUTES = {
   // Biến thể đăng ký của UI-A03: dùng chung mã UI-A03 với /sign-in (một màn, hai chế độ).
   signUp: route('/sign-up', 'UI-A03'),
   createShop: route('/create-shop', 'UI-A04'),
+  // V1-15: tài khoản đang được xóa dở (`createShop` trả `account_deleted`): màn "Đang hoàn tất xóa tài
+  // khoản", route con của Tạo cửa hàng (cùng mã UI-A04, ngoài nhóm tab, không cần cửa hàng).
+  accountDeletionPending: subRoute('/create-shop/deletion-pending', 'createShop', 'UI-A04'),
   permissions: route('/permissions', 'UI-A05'),
   setupDone: route('/setup-done', 'UI-A06'),
-  // Quên mật khẩu -> Nhập mã xác minh -> Mật khẩu mới (docs/09; chỉ vào được theo thứ tự này)
+  // Quên mật khẩu -> Nhập mã xác minh -> Mật khẩu mới (docs/09; chỉ vào được theo thứ tự này).
+  // v1 (`PASSWORD_RECOVERY_MODE = 'email_link'`, D-14): Quên mật khẩu -> Kiểm tra hộp thư; UI-A08/A09
+  // không có lối vào (vào thẳng thì về Đăng nhập). decisions.md Q-29 / V1-03.
   forgotPassword: route('/forgot-password', 'UI-A07'),
+  recoveryEmailSent: subRoute('/forgot-password/sent', 'forgotPassword', 'UI-A07'),
   verifyOtp: route('/verify-otp', 'UI-A08'),
   newPassword: route('/new-password', 'UI-A09'),
   // Nhóm B + C01 - tab Tổng quan
@@ -137,6 +143,9 @@ export const ROUTES = {
   returnItems: route('/returns/items-check', 'UI-D05'),
   returnReview: route('/returns/review', 'UI-D06'),
   returnDone: route('/returns/done', 'UI-D07'),
+  // V1-17b: xem ảnh/video của hồ sơ hàng hoàn. Nội dung UI-E04 nên là route con của `evidenceDetail`, nhưng
+  // nằm trong luồng hàng hoàn ngoài nhóm tab (`tabBar: false`): ngoại lệ có tên trong routes.test.ts.
+  returnMediaDetail: subRoute('/returns/[returnId]/media/[mediaId]', 'evidenceDetail', 'UI-E04'),
   // Nhóm E - tab Đơn hàng
   orders: route('/orders', 'UI-E01', true),
   orderDetail: route('/orders/[orderId]', 'UI-E02', true),
@@ -155,6 +164,13 @@ export const ROUTES = {
   disputeSelectEvidence: route('/disputes/select-evidence', 'UI-G03'),
   disputeExport: route('/disputes/export', 'UI-G04'),
   disputeDetail: route('/disputes/[disputeId]', 'UI-G05'),
+  // V1-17b: xem một tệp của hồ sơ tranh chấp (đóng gói hoặc hàng hoàn), route con UI-E04 ngoài nhóm tab
+  // (cùng ngoại lệ như `returnMediaDetail`).
+  disputeEvidenceDetail: subRoute(
+    '/disputes/[disputeId]/evidence/[evidenceId]',
+    'evidenceDetail',
+    'UI-E04',
+  ),
   // Nhóm H, I - mở từ menu tài khoản
   plan: route('/account/plan', 'UI-H01', true),
   // PER-08: chi tiết gói và lịch sử thanh toán, route con của UI-H01 (Q-21b, không mã UI mới).
@@ -177,7 +193,7 @@ export const ROUTES = {
   security: route('/account/security', 'UI-I05', true),
   // PER-04: đổi mật khẩu, route con của UI-I05 (Q-20k).
   changePassword: subRoute('/account/change-password', 'security', 'UI-I05', true, true),
-  // PER-22: màn thông tin Xóa tài khoản (board 07 khung 20), route con của UI-I05; nút xóa khóa, không luồng xóa (Q-21h, Q-21af).
+  // PER-22: màn thông tin Xóa tài khoản (board 07 khung 20), route con của UI-I05; luồng xóa thật ở bản Firebase (V1-15; trước đây Q-21h, Q-21af).
   deleteAccount: subRoute('/account/delete-account', 'security', 'UI-I05', true, true),
   help: route('/account/help', 'UI-I06', true),
   // PER-16..19: danh mục, bài hướng dẫn, liên hệ hỗ trợ, điều khoản và chính sách; route con của UI-I06 (Q-21b, Q-21ae; không mã UI mới).

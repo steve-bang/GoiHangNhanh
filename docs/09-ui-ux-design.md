@@ -57,6 +57,8 @@ Màu không bao giờ là tín hiệu duy nhất: mọi trạng thái có **ch�
 
 **Ngoại lệ nhóm chữ form (chờ BA xác nhận):** theo yêu cầu bám thiết kế mockup 03 (người dùng đã duyệt), các màn dạng form/quy trình — Tạo đơn nhanh (UI-B04) và Xác nhận đơn (UI-C01) — dùng nhóm chữ nhỏ hơn mức "nội dung 15–17 pt" ở trên: `formLabel 13`, `formBody 14`, `formButton 14`, `formButtonSmall 13` (sp, vẫn co theo cỡ chữ hệ thống, không khóa `allowFontScaling`). Phạm vi: hai màn này, **tab Đơn hàng (danh sách UI-E01, bộ lọc, chi tiết UI-E02, trạng thái rỗng/lỗi; mở rộng theo yêu cầu người dùng, decisions.md Q-18m)** và các thành phần dùng trong chúng (nhãn ô nhập, tên/variant sản phẩm, nút). Không dùng nhóm này cho thông báo lỗi/cảnh báo quan trọng (các thông báo đó giữ cỡ nội dung hoặc chú thích ≥ 12 pt). Chữ trên lớp phủ camera của màn quay (huy hiệu, mã đơn + kiện) là `overlay 12` (tối thiểu bằng chú thích) và **không** được co nhỏ hơn bằng tự co chữ; mã dài thì cắt giữa và xem đủ qua nhãn trợ năng. Số liệu này được khóa bằng `src/core/theme/theme.test.ts` (đổi một bên phải đổi bên kia). **Chưa kiểm chứng** với chữ lớn hệ thống trên máy thật; BA cần xác nhận hoặc bác ngoại lệ (decisions.md Q-17l).
 
+**Ngoại lệ nhãn thanh tab trên màn hẹp (chờ BA xác nhận):** màn rộng dưới 360 pt (ví dụ 320 pt) có nhãn thanh tab bằng chú thích x 0,85 (~10 pt, ngang nhãn tab chuẩn của iOS), một dòng, iOS/Android tự co tới 80% khi chữ lớn; để "Trang chủ", "Đơn hàng", "Thông báo" không bị cắt chữ. Màn rộng hơn giữ chú thích 12 pt (decisions.md Q-29 / V1-18 k). **Chưa kiểm chứng** trên máy thật.
+
 **Thành phần dùng chung:** nút chính cố định gần đáy; thanh trạng thái bằng chứng có nhãn; ô quét/tìm/nhập nhanh; thẻ đơn, dòng sản phẩm, thumbnail video; bottom sheet cho lựa chọn ngắn (trang riêng cho tác vụ phức tạp); dialog xác nhận chỉ cho hành động quan trọng; skeleton khi tải; empty state có hành động cụ thể.
 
 ### Chuẩn hiển thị trạng thái bằng chứng
@@ -94,9 +96,9 @@ Mỗi màn: mục đích, thành phần, hành động chính. Quy tắc nghiệ
 | UI-A04 | Tạo hồ sơ shop | Tên shop là chính (bắt buộc, 1-50 ký tự); nguồn bán chọn nhiều (Shopee, TikTok Shop, Lazada, Khác), bỏ qua được; không bắt địa chỉ, mã số thuế, dữ liệu khách hàng. Thanh tiến trình 3 bước (hiện 2/3). Đã làm (chi tiết ở 5.1) |
 | UI-A05 | Giải thích quyền | Vì sao cần camera/micro/ảnh–tệp/thông báo; **chỉ xin quyền khi bắt đầu tác vụ liên quan**; bị từ chối → hướng dẫn mở Cài đặt, không lặp popup; không xin danh bạ/vị trí |
 | UI-A06 | Hoàn tất thiết lập | "Quét mã đơn để bắt đầu"; CTA *Bắt đầu sử dụng*; bỏ qua hướng dẫn được. Thẻ tóm tắt shop + nguồn bán, **không** hiện gói dịch vụ. Đã làm (chi tiết ở 5.1) |
-| UI-A07 | Quên mật khẩu | Nhập email; gửi mã xác minh; **trung tính** (không tiết lộ email có tài khoản hay không); thẻ Mẹo. Đã làm (5.6) |
-| UI-A08 | Nhập mã xác minh | 6 chữ số, tự xác minh khi đủ, đếm ngược gửi lại, mô tả với email đã che. Không dùng nếu chọn phương án C của O-22. Đã làm với cổng giả (5.6) |
-| UI-A09 | Mật khẩu mới | Hai ô + khối "Mật khẩu nên có" (một dòng: ít nhất 8 ký tự); xong về Đăng nhập kèm banner thành công. Đã làm (5.6) |
+| UI-A07 | Quên mật khẩu | Nhập email; gửi mã xác minh; **trung tính** (không tiết lộ email có tài khoản hay không); thẻ Mẹo. Đã làm (5.6). **v1 (`email_link`, D-14 tạm):** gửi thư đặt lại của Firebase, sau đó sang màn con **Kiểm tra hộp thư** (`/forgot-password/sent`, cùng mã UI-A07) |
+| UI-A08 | Nhập mã xác minh | 6 chữ số, tự xác minh khi đủ, đếm ngược gửi lại, mô tả với email đã che. Không dùng nếu chọn phương án C của O-22. Đã làm với cổng giả (5.6). **v1 (`email_link`): không có lối vào**, đường dẫn trực tiếp về Đăng nhập |
+| UI-A09 | Mật khẩu mới | Hai ô + khối "Mật khẩu nên có" (một dòng: ít nhất 8 ký tự); xong về Đăng nhập kèm banner thành công. Đã làm (5.6). **v1 (`email_link`): không có lối vào** (mật khẩu mới đặt trên trang của Firebase) |
 
 ### Nhóm B — Tổng quan và bắt đầu công việc
 
@@ -262,6 +264,8 @@ Các tấm hình dưới đây là **mockup khái niệm**, lưu ở `docs/asset
 
 Đã làm với **cổng giả** (chưa Firebase thật, không gửi email/SMS thật); kỹ thuật ở [layout.md mục 2.3](engineering/layout.md) và [decisions.md Q-14](engineering/decisions.md). Chữ ngoài khung điện thoại (khẩu hiệu, nhãn bước, chữ viết tay) là phần trình bày, không đưa vào app.
 
+> **v1 (V1-03; decisions.md `Q-29 / V1-03`):** cờ `PASSWORD_RECOVERY_MODE = 'email_link'`. Quên mật khẩu gửi **thư đặt lại của Firebase Auth** (thư tiếng Việt) thay vì mã 6 số; câu chữ đổi thành "…gửi thư có đường dẫn để bạn đặt lại mật khẩu", nút "Gửi email đặt lại". Gửi xong sang màn **Kiểm tra hộp thư** (`/forgot-password/sent`, UI-A07): câu trung tính "Nếu la•••@example.com đã đăng ký…", nhắc xem Thư rác, Gửi lại email có đếm ngược, Đổi email, Quay lại đăng nhập (điền sẵn email). Mật khẩu mới đặt trên trang của Firebase; Nhập mã và Mật khẩu mới không có lối vào (đường dẫn trực tiếp về Đăng nhập), giữ cho chế độ `otp` sau v1. **Apple/Google ẩn** ở Chào mừng, Đăng nhập, Đăng ký (O-15 v1: chỉ email + mật khẩu).
+
 - *Đăng nhập (`/sign-in`):* logo xếp dọc, "Chào mừng bạn trở lại!", ô Email + Mật khẩu (hiện/ẩn), "Quên mật khẩu?" căn phải dưới ô mật khẩu, nút Đăng nhập (khóa + vòng xoay, chống bấm đúp), "Hoặc đăng nhập bằng" + nút chỉ có biểu tượng Google/Apple (theo cờ cấu hình của Chào mừng; cờ tắt thì ẩn cả đường kẻ), "Bạn chưa có tài khoản? Tạo tài khoản". **Không có toast "đăng nhập thành công"**: thành công thì xóa lịch sử và vào Tổng quan (chưa có shop thì sang tạo shop). Sai thông tin báo **chung** ("Email hoặc mật khẩu chưa chính xác. Bạn kiểm tra lại nhé!"), không nói cái nào sai. Email điền sẵn (từ màn đăng ký hoặc sau khi đặt lại mật khẩu) đi qua **trạng thái luồng trong bộ nhớ, dùng một lần** (không đặt vào tham số/URL); hiện banner thành công **một lần** sau khi đặt lại mật khẩu.
 - *Quên mật khẩu:* nhập email, "Gửi mã xác minh", luôn sang màn Nhập mã (trung tính), thẻ "Mẹo nhỏ cho bạn", "Quay lại đăng nhập".
 - *Nhập mã:* "Nếu email này đã đăng ký, mã 6 chữ số đã được gửi đến da•••@example.com." (email đã che, giữ 2 ký tự đầu + miền); một ô nhập thật vẽ thành 6 ô (chỉ chữ số, dán được, gợi ý mã tự điền của hệ điều hành); tự xác minh khi đủ 6 số, vẫn có nút Xác minh; đếm ngược "Gửi lại mã sau 00:30" tính theo mốc thời gian; thẻ "Mẹo bảo mật". Sai mã: ô đỏ + giữ các số đã nhập.
@@ -273,13 +277,14 @@ Các tấm hình dưới đây là **mockup khái niệm**, lưu ở `docs/asset
 |---|---|---|
 | 1 | Ô "Số điện thoại hoặc email", OTP gửi về số điện thoại | Chỉ **Email** ở bản đầu; mọi chỗ nhắc số điện thoại đổi thành email |
 | 2 | Ô "Duy trì đăng nhập" | **Bỏ**: phiên luôn được giữ (tải nền cần phiên) |
-| 3 | Ba nút Google, Apple, TikTok | Chỉ **Google và Apple** (cờ cấu hình); không TikTok |
+| 3 | Ba nút Google, Apple, TikTok | Chỉ **Google và Apple** (cờ cấu hình); không TikTok. **v1: ẩn cả Google và Apple** (cờ tắt, O-15 v1, V1-03) |
 | 4 | Mật khẩu cần 8 ký tự + chữ hoa/thường + 1 số | Chỉ **từ 8 ký tự** (dùng đúng hàm kiểm tra của màn đăng ký); bỏ câu lỗi "chưa đáp ứng các yêu cầu bảo mật" |
 | 5 | (Đặc tả gốc) báo "Đăng nhập thành công" | Không toast; thành công thì chuyển màn |
 | 6 | "Mã xác nhận đã được gửi" khẳng định | Mô tả **trung tính** ("Nếu email này đã đăng ký..."); không tiết lộ email có tài khoản |
 | 7 | Ô nhập chỉ có chữ giữ chỗ | Giữ nhãn nhỏ luôn hiện phía trên (đồng nhất màn đăng ký, dễ đọc cho trình đọc màn hình) |
 | 8 | Hình cô gái, ổ khóa, điện thoại, tia sáng | Dựng bằng View + Ionicons (hình ở Đăng nhập dùng lại hình khiên + hộp của Chào mừng thu nhỏ, không có nhân vật); thay bằng hình thật ở `AuthIllustrations.tsx`/`WelcomeIllustration.tsx` |
 | 9 | Câu chữ có "vui lòng", "yêu cầu" | Đổi theo quy ước 5.1 (không dùng "vui lòng"/"yêu cầu"): vd. "Hãy nhập email của bạn.", "Bạn xin mã mới nhé." |
+| 10 | (v1) Bốn màn Quên mật khẩu -> Nhập mã -> Mật khẩu mới | **Hai màn**: Quên mật khẩu -> Kiểm tra hộp thư; mật khẩu mới đặt trên trang Firebase (D-14 tạm v1, V1-03) |
 
 ### 5.7 Splash — UI-A01
 

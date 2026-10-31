@@ -57,6 +57,12 @@ export interface RecordingPorts {
   readonly minFreeBytes?: number;
   /** Giới hạn thời lượng một lần quay (giây); không truyền = không giới hạn ở camera. */
   readonly maxDurationSec?: number;
+  /**
+   * Lần quay bị gián đoạn (app vào nền, camera bị hệ thống ngắt sớm; V1-11): đọc khi tệp ĐÃ lưu bền để
+   * đặt phiên `interrupted` thay vì `ended`. Video vẫn là bản gốc của phần đã ghi, không ghép/quay tiếp.
+   * Không truyền = không gián đoạn.
+   */
+  wasInterrupted?(): boolean;
 }
 
 export type RecordingOutcome =
@@ -71,6 +77,12 @@ export type RecordingOutcome =
 export interface ActiveRecording {
   readonly evidenceId: EvidenceId;
   stop(): void;
+  /**
+   * Ghi NGAY phiên `interrupted` khi màn phát hiện gián đoạn (app vào nền; V1-11), trước khi camera trả
+   * kết quả và trước khi lưu xong: app bị kill ở bất kỳ khe nào sau đó, phiên vẫn mang dấu gián đoạn.
+   * Không ném lỗi (lỗi kho: `finish` còn ghi lại một lần nữa). Bên gọi phải để `wasInterrupted()` trả `true`.
+   */
+  markInterrupted(): Promise<void>;
   /** Luôn hoàn tất, không ném lỗi. */
   readonly result: Promise<RecordingOutcome>;
 }
@@ -97,7 +109,8 @@ const extensionOf = (uri: string): string => {
  *    (bất biến 2); không tạo được thì KHÔNG quay.
  * 2. Phiên chuyển `recording` rồi mới ghi.
  * 3. Dừng: `saving_local` -> chuyển tệp vào thư mục bền -> băm -> `queued` (có đường dẫn, kích thước,
- *    mã băm). Tới đây tệp mới "đã lưu trên máy". Lỗi ở bất kỳ bước nào ghi `local_save_failed` hoặc
+ *    mã băm). Tới đây tệp mới "đã lưu trên máy"; phiên `ended`, hoặc `interrupted` nếu
+ *    `ports.wasInterrupted()` (vào nền, camera bị ngắt sớm). Lỗi ở bất kỳ bước nào ghi `local_save_failed` hoặc
  *    giữ trạng thái đúng thực tế và phiên `needs_attention`/`interrupted`; KHÔNG nói đã lưu.
  *    Ngay sau khi chuyển tệp, đường dẫn MỚI được ghi vào bản ghi (`LOCAL_FILE_MOVED`) TRƯỚC khi băm
  *    (băm bằng JS có thể mất rất lâu): app bị kill lúc băm thì không mất dấu bản gốc. Mọi lỗi sau bước
@@ -153,7 +166,11 @@ export async function startRecording(
     (recorded) => finish(ports, session, evidenceId, recorded),
     () => finish(ports, session, evidenceId, { ok: false, reason: 'RECORDER_FAILED' }),
   );
-  return { evidenceId, stop: () => handle.stop(), result };
+  const markInterrupted = () =>
+    orders
+      .updateSessionStatus(shopId, session.id, SESSION_STATUS.INTERRUPTED)
+      .catch(() => undefined);
+  return { evidenceId, stop: () => handle.stop(), markInterrupted, result };
 }
 
 async function markFailed(
@@ -189,6 +206,16 @@ async function finish(
 ): Promise<RecordingOutcome> {
   const { files, orders, persist, hash, now } = ports;
   const shopId = session.shopId;
+  // Gián đoạn (V1-11: vào nền, camera bị ngắt sớm) thì phiên `interrupted` NGAY khi camera trả kết quả,
+  // và lỗi lưu sau đó GIỮ `interrupted` (không hạ thành `needs_attention`, nếu không khôi phục lúc mở app
+  // sẽ đưa phiên về `ended` và mất dấu gián đoạn). Trạng thái tệp vẫn nói đúng lỗi lưu.
+  const interrupted = ports.wasInterrupted?.() ?? false;
+  if (interrupted) {
+    await orders
+      .updateSessionStatus(shopId, session.id, SESSION_STATUS.INTERRUPTED)
+      .catch(() => undefined);
+  }
+  const failedStatus = interrupted ? SESSION_STATUS.INTERRUPTED : SESSION_STATUS.NEEDS_ATTENTION;
   const fail = (
     reason: Extract<RecordingOutcome, { kind: 'failed' }>['reason'],
   ): RecordingOutcome => ({ kind: 'failed', evidenceId, reason });
@@ -207,7 +234,7 @@ async function finish(
 
     const saved = persist(recorded.tempUri, evidenceId, extensionOf(recorded.tempUri));
     if (!saved.ok) {
-      await markFailed(ports, session, evidenceId, SESSION_STATUS.NEEDS_ATTENTION, {
+      await markFailed(ports, session, evidenceId, failedStatus, {
         localPath: recorded.tempUri,
       });
       return fail(saved.reason === 'STORAGE_FULL' ? 'STORAGE_FULL' : 'SAVE_FAILED');
@@ -219,14 +246,14 @@ async function finish(
       localPath: saved.uri,
     });
     if (!moved.ok) {
-      await markFailed(ports, session, evidenceId, SESSION_STATUS.NEEDS_ATTENTION, {
+      await markFailed(ports, session, evidenceId, failedStatus, {
         localPath: saved.uri,
       });
       return fail('SAVE_FAILED');
     }
     const hashed = await hash(saved.uri);
     if (!hashed.ok) {
-      await markFailed(ports, session, evidenceId, SESSION_STATUS.NEEDS_ATTENTION, {
+      await markFailed(ports, session, evidenceId, failedStatus, {
         localPath: saved.uri,
       });
       return fail('FILE_UNREADABLE');
@@ -243,16 +270,16 @@ async function finish(
       },
     );
     if (!queued.ok) {
-      await markFailed(ports, session, evidenceId, SESSION_STATUS.NEEDS_ATTENTION, {
+      await markFailed(ports, session, evidenceId, failedStatus, {
         localPath: saved.uri,
       });
       return fail('SAVE_FAILED');
     }
     // Từ đây video ĐÃ an toàn trong hàng đợi: cập nhật phiên chỉ là cố gắng. Lỗi ở đây KHÔNG được làm
     // UI báo "chưa lưu được"; phiên kẹt ở `recording` sẽ được đối chiếu lại lúc mở app (reconcile).
-    await orders
-      .updateSessionStatus(shopId, session.id, SESSION_STATUS.ENDED)
-      .catch(() => undefined);
+    // Gián đoạn (V1-11) thì phiên `interrupted`: video có thể thiếu phần sau, không được coi là đủ (A05).
+    const sessionStatus = interrupted ? SESSION_STATUS.INTERRUPTED : SESSION_STATUS.ENDED;
+    await orders.updateSessionStatus(shopId, session.id, sessionStatus).catch(() => undefined);
     return { kind: 'saved', evidenceId };
   } catch {
     // Lỗi kho cục bộ giữa chừng: cố ghi lỗi (kèm đường dẫn bền nếu đã chuyển tệp); không được thì lần
@@ -261,7 +288,7 @@ async function finish(
       ports,
       session,
       evidenceId,
-      SESSION_STATUS.NEEDS_ATTENTION,
+      failedStatus,
       savedUri ? { localPath: savedUri } : undefined,
     );
     return fail('SAVE_FAILED');
@@ -271,13 +298,23 @@ async function finish(
 /** Trạng thái tệp cho thấy một lần quay dở dang (hoặc lưu lỗi còn tệp để thử lại). */
 export const UNFINISHED_STATES = ['recording', 'saving_local', 'local_save_failed'] as const;
 
-/** Đưa phiên về `ended` theo bảng chuyển hợp lệ; bảng không cho (đã `confirmed`...) hoặc lỗi kho thì bỏ qua. */
+/**
+ * Thử lại lưu cục bộ thành công: đưa phiên về `ended` CHỈ khi phiên đang `needs_attention` (lỗi lưu thường).
+ * Phiên `interrupted` (V1-11: vào nền/camera bị ngắt rồi lưu lỗi) giữ nguyên: `interrupted -> ended` hợp lệ
+ * theo bảng chuyển nhưng sẽ xóa dấu gián đoạn. Phiên đã `confirmed`, không đọc được hoặc lỗi kho: bỏ qua.
+ */
 async function endSession(
-  orders: Pick<OrderStore, 'updateSessionStatus'>,
+  orders: Pick<OrderStore, 'updateSessionStatus' | 'getSession'>,
   shopId: PackingSession['shopId'],
   sessionId: PackingSession['id'],
 ): Promise<void> {
-  await orders.updateSessionStatus(shopId, sessionId, SESSION_STATUS.ENDED).catch(() => undefined);
+  try {
+    const session = await orders.getSession(shopId, sessionId);
+    if (session?.sessionStatus !== SESSION_STATUS.NEEDS_ATTENTION) return;
+    await orders.updateSessionStatus(shopId, sessionId, SESSION_STATUS.ENDED);
+  } catch {
+    // thử lại lần mở app sau
+  }
 }
 
 /** Tệp đã lưu bền trên máy nhưng chưa tới đích tải lên: phiên của chúng phải là `ended`. */
@@ -465,7 +502,8 @@ export async function recoverInterruptedRecordings(
         }
       }
       if (!wasInterrupted) {
-        // Thử lại lưu cục bộ thành công: video đã vào hàng đợi nên phiên (đang `needs_attention`) về `ended`.
+        // Thử lại lưu cục bộ thành công: video đã vào hàng đợi nên phiên `needs_attention` về `ended`
+        // (phiên `interrupted` giữ nguyên, xem `endSession`).
         if (step === 'queued') await endSession(orders, shopId, file.sessionId);
         continue;
       }

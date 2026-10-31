@@ -45,21 +45,35 @@ async function seed(options: {
   roles?: string[];
   status?: string;
   evidence?: Record<string, unknown> | null;
+  /** Phiên đóng gói `sess-<n>` (mặc định do chính `uid` tạo); `null` = không có phiên. */
+  session?: Record<string, unknown> | null;
 }) {
   counter += 1;
   const shopId = `shop-up-${Date.now()}-${counter}`;
   const uid = `u-${counter}`;
   const evidenceId = `ev-${counter}`;
+  const sessionId = `sess-${counter}`;
   await db.doc(`shops/${shopId}/members/${uid}`).set({
     roles: options.roles ?? ['packer'],
     status: options.status ?? 'active',
   });
+  if (options.session !== null) {
+    await db.doc(`shops/${shopId}/sessions/${sessionId}`).set({
+      shopId,
+      kind: 'packing',
+      createdBy: uid,
+      ...options.session,
+    });
+  }
   if (options.evidence !== null) {
     await db.doc(`shops/${shopId}/evidence/${evidenceId}`).set({
       shopId,
+      sessionId,
+      kind: 'original_video',
       mimeType: 'video/mp4',
       sha256Client: 'a'.repeat(64),
       sizeBytes: 10,
+      createdBy: uid,
       ...options.evidence,
     });
   }
@@ -203,9 +217,196 @@ describe('createUploadSessionForUser', () => {
     expect(await audit(served.shopId)).toEqual([]);
   });
 
+  it('bằng chứng hàng hoàn (Q-28): cùng đường dẫn Storage, URL tạo-một-lần, kiểm toán ghi chủ sở hữu', async () => {
+    const { shopId, uid, evidenceId } = await seed({
+      evidence: {
+        ownerKind: 'return',
+        returnId: 'ret-1',
+        kind: 'photo',
+        mimeType: 'image/jpeg',
+      },
+    });
+    await db.doc(`shops/${shopId}/returns/ret-1`).set({ shopId, code: 'RH-00001', createdBy: uid });
+    const { signer, signed } = fakeSigner();
+    const result = await createUploadSessionForUser(db, signer, uid, { shopId, evidenceId });
+    const path = `shops/${shopId}/evidence/${evidenceId}/original`;
+    expect(result).toMatchObject({
+      status: 'ready',
+      storagePath: path,
+      headers: { 'Content-Type': 'image/jpeg', ...CREATE_ONLY_HEADERS },
+    });
+    expect(signed).toHaveLength(1);
+    expect(signed[0]?.extensionHeaders).toEqual(CREATE_ONLY_HEADERS);
+    expect(await audit(shopId)).toEqual([
+      expect.objectContaining({
+        type: 'evidence.upload_session_created',
+        ownerKind: 'return',
+        returnId: 'ret-1',
+        evidenceId,
+      }),
+    ]);
+  });
+
+  it('bằng chứng hàng hoàn chưa có hồ sơ neo (hoặc hồ sơ ở shop khác): failed-precondition, không ký', async () => {
+    const orphan = await seed({
+      evidence: { ownerKind: 'return', returnId: 'ret-chua-dang', mimeType: 'image/jpeg' },
+    });
+    const otherShop = await seed({
+      evidence: { ownerKind: 'return', returnId: 'ret-b', mimeType: 'image/jpeg' },
+    });
+    // Hồ sơ cùng ID nhưng nằm ở shop KHÁC: không được tính.
+    await db.doc(`shops/shop-khac/returns/ret-b`).set({ shopId: 'shop-khac' });
+    const badId = await seed({
+      evidence: { ownerKind: 'return', returnId: '../x', mimeType: 'image/jpeg' },
+    });
+    for (const s of [orphan, otherShop, badId]) {
+      const { signer, signed } = fakeSigner();
+      await expect(createUploadSessionForUser(db, signer, s.uid, s)).rejects.toMatchObject({
+        code: 'failed-precondition',
+      });
+      expect(signed).toEqual([]);
+    }
+  });
+
+  it('bằng chứng hàng hoàn đã có đối tượng: không cấp URL (bản gốc tạo một lần)', async () => {
+    const s = await seed({
+      evidence: { ownerKind: 'return', returnId: 'ret-1', mimeType: 'image/jpeg' },
+    });
+    await db.doc(`shops/${s.shopId}/returns/ret-1`).set({ shopId: s.shopId, createdBy: 'u-khac' });
+    const { signer, signed } = fakeSigner(true);
+    expect(await createUploadSessionForUser(db, signer, s.uid, s)).toMatchObject({
+      status: 'already_received',
+    });
+    expect(signed).toEqual([]);
+  });
+
   it('loại tệp không nằm trong danh sách cho phép: failed-precondition, không ký', async () => {
     for (const mimeType of ['application/zip', null, 5]) {
       const s = await seed({ evidence: { mimeType } });
+      const { signer, signed } = fakeSigner();
+      await expect(createUploadSessionForUser(db, signer, s.uid, s)).rejects.toMatchObject({
+        code: 'failed-precondition',
+      });
+      expect(signed).toEqual([]);
+    }
+  });
+
+  it('bằng chứng do tài khoản khác khai báo (Q-24g): permission-denied, không ký, không kiểm toán', async () => {
+    for (const createdBy of ['u-khac', null, '']) {
+      const s = await seed({ evidence: { createdBy } });
+      const { signer, signed } = fakeSigner();
+      await expect(createUploadSessionForUser(db, signer, s.uid, s)).rejects.toMatchObject({
+        code: 'permission-denied',
+      });
+      expect(signed).toEqual([]);
+      expect(await audit(s.shopId)).toEqual([]);
+    }
+  });
+
+  describe('người khai báo: người tạo phiên (đóng gói) hoặc người tạo media (hàng hoàn) (V1-07b)', () => {
+    it('phiên do tài khoản khác cùng shop tạo (hoặc không rõ người tạo): permission-denied + not_session_creator, không ký, không kiểm toán', async () => {
+      for (const createdBy of ['u-khac', null, '']) {
+        const s = await seed({ session: { createdBy } });
+        const { signer, signed } = fakeSigner();
+        await expect(createUploadSessionForUser(db, signer, s.uid, s)).rejects.toMatchObject({
+          code: 'permission-denied',
+          reason: 'not_session_creator',
+        });
+        expect(signed).toEqual([]);
+        expect(await audit(s.shopId)).toEqual([]);
+      }
+    });
+
+    it('phiên không tồn tại, ID phiên sai hoặc phiên chỉ có ở shop khác: failed-precondition + session_missing, không ký', async () => {
+      const missing = await seed({ session: null });
+      const badId = await seed({ evidence: { sessionId: '../x' } });
+      const noId = await seed({ evidence: { sessionId: null } });
+      const otherShop = await seed({ session: null, evidence: { sessionId: 'sess-b' } });
+      await db.doc(`shops/shop-khac/sessions/sess-b`).set({ createdBy: otherShop.uid });
+      for (const s of [missing, badId, noId, otherShop]) {
+        const { signer, signed } = fakeSigner();
+        await expect(createUploadSessionForUser(db, signer, s.uid, s)).rejects.toMatchObject({
+          code: 'failed-precondition',
+          reason: 'session_missing',
+        });
+        expect(signed).toEqual([]);
+      }
+    });
+
+    it('hàng hoàn: media của chính người gọi trong hồ sơ có bản neo do tài khoản khác tạo vẫn được ký (review PR #64)', async () => {
+      for (const createdBy of ['u-khac', null]) {
+        const s = await seed({
+          session: null,
+          evidence: { ownerKind: 'return', returnId: 'ret-x', mimeType: 'image/jpeg' },
+        });
+        await db.doc(`shops/${s.shopId}/returns/ret-x`).set({ shopId: s.shopId, createdBy });
+        const { signer, signed } = fakeSigner();
+        expect((await createUploadSessionForUser(db, signer, s.uid, s)).status).toBe('ready');
+        expect(signed).toHaveLength(1);
+      }
+    });
+
+    it('hàng hoàn: media do tài khoản khác khai báo bị từ chối (not_evidence_declarer); bản neo mất: return_missing', async () => {
+      const foreign = await seed({
+        session: null,
+        evidence: {
+          ownerKind: 'return',
+          returnId: 'ret-y',
+          mimeType: 'image/jpeg',
+          createdBy: 'u-khac',
+        },
+      });
+      await db.doc(`shops/${foreign.shopId}/returns/ret-y`).set({ createdBy: foreign.uid });
+      await expect(
+        createUploadSessionForUser(db, fakeSigner().signer, foreign.uid, foreign),
+      ).rejects.toMatchObject({ code: 'permission-denied', reason: 'not_evidence_declarer' });
+      const missing = await seed({
+        session: null,
+        evidence: { ownerKind: 'return', returnId: 'ret-mat', mimeType: 'image/jpeg' },
+      });
+      await expect(
+        createUploadSessionForUser(db, fakeSigner().signer, missing.uid, missing),
+      ).rejects.toMatchObject({ code: 'failed-precondition', reason: 'return_missing' });
+    });
+
+    it('bằng chứng do tài khoản khác khai báo mang lý do not_evidence_declarer', async () => {
+      const s = await seed({ evidence: { createdBy: 'u-khac' } });
+      await expect(
+        createUploadSessionForUser(db, fakeSigner().signer, s.uid, s),
+      ).rejects.toMatchObject({ code: 'permission-denied', reason: 'not_evidence_declarer' });
+    });
+
+    it('bản gốc đã có: chính người khai báo vẫn nhờ xác minh lại được dù phiên do người khác tạo (dữ liệu trước V1-07b)', async () => {
+      const s = await seed({ session: { createdBy: 'u-khac' } });
+      const { signer, signed } = fakeSigner(true);
+      expect(await createUploadSessionForUser(db, signer, s.uid, s)).toMatchObject({
+        status: 'already_received',
+      });
+      expect(signed).toEqual([]);
+    });
+  });
+
+  it('trần dung lượng (Q-24c): ảnh 25 000 000 qua, 25 000 001 bị từ chối; video 2 000 000 000 qua, hơn thì từ chối', async () => {
+    const ok = [
+      { kind: 'photo', mimeType: 'image/jpeg', sizeBytes: 25_000_000 },
+      { kind: 'original_video', mimeType: 'video/mp4', sizeBytes: 2_000_000_000 },
+    ];
+    for (const evidence of ok) {
+      const s = await seed({ evidence });
+      expect((await createUploadSessionForUser(db, fakeSigner().signer, s.uid, s)).status).toBe(
+        'ready',
+      );
+    }
+    const bad = [
+      { kind: 'photo', mimeType: 'image/jpeg', sizeBytes: 25_000_001 },
+      { kind: 'original_video', mimeType: 'video/mp4', sizeBytes: 2_000_000_001 },
+      { sizeBytes: 0 },
+      { sizeBytes: 1.5 },
+      { sizeBytes: '10' },
+      { sizeBytes: null },
+    ];
+    for (const evidence of bad) {
+      const s = await seed({ evidence });
       const { signer, signed } = fakeSigner();
       await expect(createUploadSessionForUser(db, signer, s.uid, s)).rejects.toMatchObject({
         code: 'failed-precondition',

@@ -1,7 +1,48 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
+import { logger } from '@/core/logging/logger';
+
+import {
+  excludeFromBackup,
+  isBackupExclusionSupported,
+  type BackupExclusionResult,
+} from './backup-exclusion';
+
 const EVIDENCE_DIR = 'evidence';
 const EVIDENCE_MARKER = `/${EVIDENCE_DIR}/`;
+
+/**
+ * Thư mục bền `evidence/`, tạo nếu thiếu. Vừa tạo mới thì đặt lại cờ loại khỏi sao lưu (V1-12, không chờ,
+ * không chặn): cờ gắn với thư mục, thư mục bị xóa và tạo lại thì mất cờ.
+ */
+function ensureEvidenceDirectory(): Directory {
+  const directory = new Directory(Paths.document, EVIDENCE_DIR);
+  if (!directory.exists) {
+    directory.create({ intermediates: true });
+    // Adapter không từ chối promise; `catch` chỉ phòng thủ để không thành lỗi chưa xử lý.
+    excludeFromBackup('evidence', directory.uri).catch(() => undefined);
+  }
+  return directory;
+}
+
+/**
+ * Loại thư mục bằng chứng (video, ảnh hàng hoàn) khỏi iCloud Backup (V1-12, Q-24d A); gọi khi mở app.
+ * Tạo thư mục nếu thiếu để cờ có chỗ gắn (chỉ khi có module: Android/web/Expo Go trả `unsupported`, không
+ * đụng hệ tệp). Không ném lỗi.
+ */
+export async function excludeEvidenceDirFromBackup(): Promise<BackupExclusionResult> {
+  if (!isBackupExclusionSupported()) return 'unsupported';
+  let uri: string;
+  try {
+    const directory = new Directory(Paths.document, EVIDENCE_DIR);
+    if (!directory.exists) directory.create({ intermediates: true });
+    uri = directory.uri;
+  } catch {
+    logger.warn('backup_exclusion.not_applied', { target: 'evidence', result: 'failed' });
+    return 'failed';
+  }
+  return excludeFromBackup('evidence', uri);
+}
 
 export type PersistResult =
   | { readonly ok: true; readonly uri: string; readonly sizeBytes: number }
@@ -65,8 +106,7 @@ export function persistRecording(
   try {
     const source = new File(tempUri);
     if (!source.exists) return { ok: false, reason: 'FILE_MISSING' };
-    const directory = new Directory(Paths.document, EVIDENCE_DIR);
-    if (!directory.exists) directory.create({ intermediates: true });
+    const directory = ensureEvidenceDirectory();
     const name = `${evidenceId}.${extension.replace(/^\./, '')}`;
     const target = new File(directory, name);
     if (target.exists) return { ok: false, reason: 'FAILED' };
@@ -74,6 +114,54 @@ export function persistRecording(
     return { ok: true, uri: storedRecordingPath(name), sizeBytes: target.size ?? 0 };
   } catch (error) {
     return { ok: false, reason: isStorageFull(error) ? 'STORAGE_FULL' : 'FAILED' };
+  }
+}
+
+export type DeleteRecordingResult =
+  { readonly ok: true; readonly deleted: boolean } | { readonly ok: false };
+
+/**
+ * Xóa MỘT tệp bền trong thư mục `evidence/` của app (chỉ dùng cho NGOẠI LỆ xóa ảnh hàng hoàn chụp nhầm,
+ * Q-26j; không dùng cho video đóng gói hay bằng chứng khác). An toàn: không ném lỗi; tệp không còn thì
+ * `ok` (xóa lặp lại được); đường dẫn có `..` hoặc nằm ngoài `evidence/` (ví dụ tệp tạm của camera, do hệ
+ * điều hành dọn) thì KHÔNG đụng tới và coi là `ok, deleted: false`. Xóa xong mà tệp còn thì `ok: false`.
+ * Chưa kiểm chứng trên thiết bị (quyền ghi, tệp bị khóa).
+ */
+export function deleteRecording(stored: string): DeleteRecordingResult {
+  try {
+    if (stored.split(/[\\/]/).includes('..')) return { ok: false };
+    const uri = resolveRecordingUri(stored);
+    if (!uri.includes(EVIDENCE_MARKER)) return { ok: true, deleted: false };
+    const file = new File(uri);
+    if (!file.exists) return { ok: true, deleted: false };
+    file.delete();
+    return file.exists ? { ok: false } : { ok: true, deleted: true };
+  } catch {
+    return { ok: false };
+  }
+}
+
+/**
+ * Xóa MỌI tệp trong thư mục `evidence/` (video, ảnh, tệp thăm dò) — CHỈ dùng sau khi máy chủ đã xác nhận
+ * xóa tài khoản (V1-15, ngoại lệ có chủ đích với bất biến 4, R-2 A; `features/orders/data/wipe-local-data`).
+ * Giữ lại chính thư mục (cờ loại khỏi sao lưu gắn với thư mục, V1-12). Idempotent: thư mục không có hoặc
+ * đã rỗng thì `true`. Không ném lỗi: `false` khi còn sót tệp (bên gọi giữ dấu và chạy lại sau). Không
+ * đụng tệp ngoài `evidence/` (tệp tạm của camera do hệ điều hành dọn). Chưa kiểm chứng trên thiết bị.
+ */
+export function deleteAllEvidenceFiles(): boolean {
+  try {
+    const directory = new Directory(Paths.document, EVIDENCE_DIR);
+    if (!directory.exists) return true;
+    for (const entry of directory.list()) {
+      try {
+        entry.delete();
+      } catch {
+        // Xóa tiếp tệp khác; kết quả cuối do lần liệt kê lại quyết định.
+      }
+    }
+    return directory.list().length === 0;
+  } catch {
+    return false;
   }
 }
 
@@ -142,8 +230,7 @@ function removeStaleProbes(directory: Directory): void {
 export function probeEvidenceDirWritable(): boolean {
   let probe: File | null = null;
   try {
-    const directory = new Directory(Paths.document, EVIDENCE_DIR);
-    if (!directory.exists) directory.create({ intermediates: true });
+    const directory = ensureEvidenceDirectory();
     removeStaleProbes(directory);
     probe = new File(directory, `${PROBE_PREFIX}${Date.now()}`);
     probe.create();

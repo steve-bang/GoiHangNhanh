@@ -100,7 +100,9 @@ export async function seed(env: RulesTestEnvironment): Promise<void> {
         status: 'recording',
         startedAtDevice: now,
         startedAtServer: now,
-        createdBy: 'seed',
+        // V1-07b: chỉ người tạo phiên khai báo/cập nhật bằng chứng của phiên; nền dùng packerA của mỗi
+        // shop (shop B không có packerA nên chỉ dùng để thử truy cập chéo shop).
+        createdBy: USERS.packerA,
       });
       await setDoc(doc(db, `shops/${shop}/evidence/evidence-1`), {
         shopId: shop,
@@ -115,7 +117,7 @@ export async function seed(env: RulesTestEnvironment): Promise<void> {
         mimeType: 'video/mp4',
         capturedAtDevice: now,
         createdAtServer: now,
-        createdBy: 'seed',
+        createdBy: USERS.packerA,
       });
       await setDoc(doc(db, `shops/${shop}/auditEvents/audit-1`), {
         shopId: shop,

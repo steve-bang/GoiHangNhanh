@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { appColors } from './app-colors';
 import { colors } from './colors';
 import { components } from './components';
 import { palette } from './primitives';
@@ -94,8 +95,15 @@ describe('tương phản token ngữ nghĩa (WCAG AA)', () => {
     ['text.subtle/raised', color.text.subtle, color.surface.raised],
     ['text.onAction/primary', color.text.onAction, color.action.primary],
     ['text.onAction/destructive', color.text.onAction, color.action.destructive],
-    ['action.primary/screen', color.action.primary, color.surface.screen],
-    ['action.primary/brandSoft', color.action.primary, color.brand.soft],
+    ['action.primary/raised', color.action.primary, color.surface.raised],
+    ['action.link/screen', color.action.link, color.surface.screen],
+    ['action.link/raised', color.action.link, color.surface.raised],
+    ['action.link/brandSoft', color.action.link, color.brand.soft],
+    ['brand.onSoft/softStrong', color.brand.onSoft, color.brand.softStrong],
+    ['text.secondary/brandSoft', color.text.secondary, color.brand.soft],
+    ['text.secondary/muted', color.text.secondary, color.surface.muted],
+    ['text.primary/softStrong', color.text.primary, color.brand.softStrong],
+    ['info', color.feedback.info.fg, color.feedback.info.bg],
     ['text.primary/brandSoft', color.text.primary, color.brand.soft],
     ['text.primary/info', color.text.primary, color.feedback.info.bg],
     ['text.primary/dangerBg', color.text.primary, color.feedback.danger.bg],
@@ -153,7 +161,7 @@ describe('token mới của đợt nâng cấp tab Cá nhân (PR-A, Q-21g)', () 
 
   // Biểu tượng/tông ô icon (IconTile) và mô tả trong thẻ trạng thái (StatusCard) nằm trên nền thẻ trắng.
   it.each([
-    ['brand', color.action.primary, color.brand.soft],
+    ['brand', color.brand.onSoft, color.brand.soft],
     ['blue', color.accent.blue.fg, color.accent.blue.bg],
     ['warning', color.feedback.warning.fg, color.feedback.warning.bg],
     ['success', color.feedback.success.fg, color.feedback.success.bg],
@@ -241,5 +249,125 @@ describe('typography', () => {
 
   it('vùng chạm tối thiểu 44pt iOS / 48dp Android', () => {
     expect(MIN_TOUCH_TARGET).toEqual({ ios: 44, android: 48 });
+  });
+});
+
+describe('token mở rộng của đợt nâng cấp design system v2', () => {
+  const { color, status } = semantic;
+
+  it.each([
+    ['text.tertiary/screen', color.text.tertiary, color.surface.screen],
+    ['text.tertiary/raised', color.text.tertiary, color.surface.raised],
+    ['text.tertiary/muted', color.text.tertiary, color.surface.muted],
+    ['text.onAction/primaryPressed', color.text.onAction, color.action.primaryPressed],
+  ] as const)('chữ %s đạt 4.5:1', (_name, fg, bg) => {
+    expect(contrast(fg, bg)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('ranh giới điều khiển border.strong đạt 3:1 trên nền thẻ; border.subtle chỉ để phân nhóm', () => {
+    expect(contrast(color.border.strong, color.surface.raised)).toBeGreaterThanOrEqual(3);
+    expect(contrast(color.border.subtle, color.surface.raised)).toBeLessThan(3);
+  });
+
+  it('nhấn nút chính đậm hơn trạng thái thường; thứ bậc chữ secondary >= tertiary > disabled', () => {
+    expect(luminance(color.action.primaryPressed)).toBeLessThan(luminance(color.action.primary));
+    const onRaised = (fg: string) => contrast(fg, color.surface.raised);
+    expect(onRaised(color.text.secondary)).toBeGreaterThanOrEqual(onRaised(color.text.tertiary));
+    expect(onRaised(color.text.tertiary)).toBeGreaterThan(onRaised(color.text.disabled));
+  });
+
+  it('trạng thái vận hành có bộ token riêng, đủ tương phản trên nền của chính nó', () => {
+    const keys = [
+      'recording',
+      'interrupted',
+      'retrying',
+      'offline',
+      'syncPending',
+      'synced',
+    ] as const;
+    for (const key of keys) {
+      expect(status[key]).toBeDefined();
+      expect(contrast(status[key].fg, status[key].bg)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('chỉ lỗi và đang ghi hình (ngoại lệ D-18) dùng sắc đỏ; mất mạng/gián đoạn không dùng đỏ', () => {
+    const red = color.feedback.danger.fg;
+    const reds = Object.entries(status)
+      .filter(([, v]) => v.fg === red)
+      .map(([k]) => k)
+      .sort();
+    expect(reds).toEqual(['error', 'recording']);
+  });
+
+  it('thang cỡ biểu tượng tăng dần và số liệu dùng chữ số cùng bề rộng', () => {
+    const sizes = Object.values(semantic.icon);
+    expect([...sizes].sort((a, b) => a - b)).toEqual(sizes);
+    expect(typography.numeric.fontVariant).toContain('tabular-nums');
+    expect(typography.cardTitle.fontSize).toBeGreaterThan(typography.body.fontSize);
+  });
+});
+
+describe('Bright Orange (v3)', () => {
+  const { color, status } = semantic;
+
+  it('giá trị nhận diện đúng palette được duyệt', () => {
+    expect(color.brand.primary).toBe('#EE4D2D');
+    expect(color.brand.hover).toBe('#FF6A45');
+    expect(color.brand.pressed).toBe('#D93B20');
+    expect(color.brand.soft).toBe('#FFF1EC');
+    expect(color.brand.softStrong).toBe('#FCE5DE');
+    expect(color.surface.screen).toBe('#FFFAF7');
+    expect(color.surface.raised).toBe('#FFFFFF');
+    expect(color.surface.muted).toBe('#FFF5F0');
+    expect(color.text.primary).toBe('#292524');
+    expect(color.border.default).toBe('#F0E4DE');
+    expect(color.feedback.success.fg).toBe('#15803D');
+    expect(color.feedback.warning.fg).toBe('#B45309');
+    expect(color.feedback.danger.fg).toBe('#B91C1C');
+    expect(color.feedback.info.fg).toBe('#0369A1');
+  });
+
+  it('chữ trắng trên nền cam: nền nút/thẻ chính đạt 4.5:1; màu nhận diện sáng chỉ cho đồ họa (>= 3:1)', () => {
+    expect(contrast(color.text.onAction, color.action.primary)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.text.onAction, color.action.primaryPressed)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.text.onAction, color.brand.deep)).toBeGreaterThanOrEqual(4.5);
+    // Trắng trên #EE4D2D chỉ ~3.66:1: KHÔNG được dùng làm nền chữ cỡ thường.
+    expect(contrast(color.text.onAction, color.brand.primary)).toBeLessThan(4.5);
+    expect(contrast(color.brand.primary, color.surface.raised)).toBeGreaterThanOrEqual(3);
+    expect(contrast(color.text.onAction, color.brand.primary)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('màu thương hiệu không bị dùng làm màu trạng thái nghiệp vụ', () => {
+    const brand = new Set<string>([
+      color.brand.primary,
+      color.brand.hover,
+      color.brand.pressed,
+      color.brand.soft,
+      color.brand.softStrong,
+      color.action.primary,
+      color.action.link,
+    ]);
+    for (const [name, v] of Object.entries(status)) {
+      expect(brand.has(v.fg)).toBe(false);
+      expect(brand.has(v.bg)).toBe(false);
+      expect(name).toBeTruthy();
+    }
+  });
+
+  it('trạng thái dùng đúng sắc: thành công xanh lá, đang tải xanh dương, chờ/cảnh báo vàng cam, lỗi đỏ', () => {
+    expect(status.verified.fg).toBe(color.feedback.success.fg);
+    expect(status.uploaded.fg).toBe(color.feedback.success.fg);
+    expect(status.uploading.fg).toBe(color.feedback.info.fg);
+    expect(status.waitingUpload.fg).toBe(color.feedback.warning.fg);
+    expect(status.error.fg).toBe(color.feedback.danger.fg);
+  });
+
+  it('bảng phẳng của màn trong app (appColors) khớp token ngữ nghĩa, bảng cũ đóng băng không đổi', () => {
+    expect(appColors.brand).toBe(color.action.primary);
+    expect(appColors.background).toBe(color.surface.screen);
+    expect(appColors.text).toBe(color.text.primary);
+    expect(colors.brand).toBe(palette.jade[700]);
+    expect(Object.keys(appColors).sort()).toEqual(Object.keys(colors).sort());
   });
 });

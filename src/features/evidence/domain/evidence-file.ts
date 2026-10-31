@@ -36,8 +36,32 @@ export interface EvidenceFile {
   readonly nextAttemptAtDevice: number | null;
   /** Mã lỗi gần nhất của lần tải lên (mã nghiệp vụ, không chứa đường dẫn/PII). */
   readonly lastErrorCode: string | null;
+  /**
+   * Dấu tệp lúc hàng đợi băm lại gần nhất và mã băm KHỚP `sha256Client` (V1-13). Vắng/`null` = chưa có:
+   * lần thử tải sau phải băm lại. Là bộ nhớ đệm, không phải chi tiết bất biến của bản gốc.
+   */
+  readonly hashedFingerprint?: FileFingerprint | null;
   readonly createdAtDevice: number;
   readonly updatedAtDevice: number;
+}
+
+/**
+ * Dấu rẻ của tệp cục bộ (kích thước + thời điểm sửa đổi của hệ tệp, giờ THIẾT BỊ ms) để hàng đợi tải lên
+ * KHÔNG băm lại toàn tệp ở mỗi lần thử khi tệp không đổi (V1-13, R9). Dấu khác hoặc thiếu thì băm lại.
+ * Không chứng minh nội dung không đổi (tệp sửa mà giữ nguyên hai giá trị này sẽ lọt kiểm tra cục bộ);
+ * máy chủ luôn băm lại độc lập nên tệp như vậy thành `hash_mismatch`, không bao giờ `verified` sai.
+ */
+export interface FileFingerprint {
+  readonly sizeBytes: number;
+  readonly modifiedAtMs: number;
+}
+
+/** Hai dấu cùng kích thước và cùng thời điểm sửa đổi. `null`/vắng không bao giờ khớp. */
+export function sameFingerprint(
+  a: FileFingerprint | null | undefined,
+  b: FileFingerprint | null | undefined,
+): boolean {
+  return !!a && !!b && a.sizeBytes === b.sizeBytes && a.modifiedAtMs === b.modifiedAtMs;
 }
 
 /** Dữ liệu tạo tệp mới: luôn bắt đầu ở trạng thái `recording`, chưa có đường dẫn/mã băm. */
@@ -57,6 +81,8 @@ export interface EvidenceFilePatch {
   readonly nextAttemptAtDevice?: number | null;
   /** `null` xóa mã lỗi. */
   readonly lastErrorCode?: string | null;
+  /** Dấu tệp đã băm (V1-13); `null` xóa dấu. Chỉ hàng đợi tải lên ghi. */
+  readonly hashedFingerprint?: FileFingerprint | null;
 }
 
 export type ApplyEventError =
@@ -165,7 +191,7 @@ export function applyEventToFile(
   nowDevice: number,
   patch: EvidenceFilePatch = {},
 ): ApplyEventResult {
-  const result = transition(file.state, event);
+  const result = transition(file.state, event, { lastErrorCode: file.lastErrorCode });
   if (!result.ok) return { ok: false, error: result.error };
   if (violatesImmutability(file, event, patch)) return { ok: false, error: 'IMMUTABLE_FIELD' };
   const next: EvidenceFile = {
@@ -181,6 +207,9 @@ export function applyEventToFile(
         ? file.nextAttemptAtDevice
         : patch.nextAttemptAtDevice,
     lastErrorCode: patch.lastErrorCode === undefined ? file.lastErrorCode : patch.lastErrorCode,
+    ...(patch.hashedFingerprint !== undefined
+      ? { hashedFingerprint: patch.hashedFingerprint }
+      : {}),
     updatedAtDevice: nowDevice,
   };
   if (result.state === FILE_STATES.QUEUED && !hasQueueDetails(file, patch)) {
@@ -210,6 +239,16 @@ export interface EvidenceFileStore {
   /** Tệp của shop đang ở một trong các trạng thái, cũ nhất trước (hàng đợi tải lên). */
   listByStates(shopId: ShopId, states: readonly FileState[]): Promise<readonly EvidenceFile[]>;
   /**
+   * Như `listByStates` nhưng CHỈ tệp thuộc phiên do CHÍNH `uid` tạo (`packing_sessions.created_by`; Q-24g,
+   * V1-07): hàng đợi tải lên không khai báo hộ tệp của tài khoản khác dùng chung máy. Phiên không rõ người
+   * tạo (`created_by` NULL) không bao giờ khớp; `uid` rỗng trả rỗng. Cũ nhất trước.
+   */
+  listForUpload(
+    shopId: ShopId,
+    states: readonly FileState[],
+    uid: string,
+  ): Promise<readonly EvidenceFile[]>;
+  /**
    * Các shop trên máy này có tệp ở một trong các trạng thái. CHỈ để khôi phục sau khi app bị đóng giữa
    * chừng (phiên của shop khác/shop tạm không được treo mãi ở "đang quay"); không dùng để hiển thị dữ liệu.
    */
@@ -223,4 +262,57 @@ export interface EvidenceFileStore {
   countUnsynced(shopId: ShopId): Promise<number>;
   /** Như `countUnsynced` nhưng mọi shop trên máy; chỉ để bảo vệ dữ liệu khi đăng xuất. */
   countUnsyncedOnDevice(): Promise<number>;
+  /**
+   * Số tệp của shop theo trạng thái (đếm trên máy, không nạp từng dòng; V1-10). `updatedIn`: chỉ tệp có
+   * lần đổi trạng thái cuối (`updatedAtDevice`) trong khoảng giờ THIẾT BỊ đó.
+   */
+  countByState(shopId: ShopId, updatedIn?: DeviceTimeRange): Promise<FileStateCounts>;
+}
+
+/** Khoảng giờ THIẾT BỊ (ms) nửa mở `[fromDevice, toDevice)`. */
+export interface DeviceTimeRange {
+  readonly fromDevice: number;
+  readonly toDevice: number;
+}
+
+/** Số tệp theo trạng thái; trạng thái không có tệp nào thì vắng mặt. */
+export type FileStateCounts = Readonly<Partial<Record<FileState, number>>>;
+
+export const inDeviceRange = (at: number, range: DeviceTimeRange | undefined): boolean =>
+  !range || (at >= range.fromDevice && at < range.toDevice);
+
+/** Đếm theo trạng thái trên danh sách trong bộ nhớ (kho bộ nhớ). */
+export function countStates(
+  items: Iterable<{ readonly state: FileState; readonly updatedAtDevice: number }>,
+  updatedIn?: DeviceTimeRange,
+): FileStateCounts {
+  const counts: Partial<Record<FileState, number>> = {};
+  for (const item of items) {
+    if (!inDeviceRange(item.updatedAtDevice, updatedIn)) continue;
+    counts[item.state] = (counts[item.state] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/** Gộp dòng `state, n` của SQL thành `FileStateCounts`; trạng thái lạ bị bỏ (không đoán). */
+export function toStateCounts(
+  rows: readonly { readonly state: string; readonly n: number }[],
+): FileStateCounts {
+  const counts: Partial<Record<FileState, number>> = {};
+  for (const row of rows) {
+    if ((ALL_FILE_STATES as readonly string[]).includes(row.state) && row.n > 0) {
+      counts[row.state as FileState] = row.n;
+    }
+  }
+  return counts;
+}
+
+/** Tổng số tệp ở các trạng thái `states` (mặc định: mọi trạng thái) của một hay nhiều bảng đếm. */
+export function sumCounts(
+  counts: readonly FileStateCounts[],
+  states: readonly FileState[] = ALL_FILE_STATES,
+): number {
+  let total = 0;
+  for (const c of counts) for (const s of states) total += c[s] ?? 0;
+  return total;
 }

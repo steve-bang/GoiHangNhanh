@@ -60,11 +60,12 @@ export function PlanScreen() {
       </Card>
       <View style={{ gap: tokens.space.md }}>
         <Button
+          variant="secondary"
           label={t('personal:planScreen.detailAction')}
           onPress={() => navigation.push(ROUTES.planDetail)}
           testID="plan-detail-action"
         />
-        <UpgradeAction variant="secondary" testID="plan-upgrade" />
+        <UpgradeAction variant="primary" testID="plan-upgrade" />
       </View>
     </Screen>
   );

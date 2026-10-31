@@ -1,5 +1,6 @@
 import type { RemoteDocuments } from '@/api/contract';
 import type { EvidenceId, ShopId } from '@/core/ids';
+import { NOT_EVIDENCE_CREATOR } from '@/features/evidence';
 
 import { evidenceWrite } from '../domain/evidence-document';
 import {
@@ -19,24 +20,65 @@ const ATTENTION_CODES = [
   'invalid-argument',
 ];
 
+/**
+ * Mã lỗi SDK nghĩa là mất mạng/máy chủ tạm không sẵn sàng (gồm hết giờ của `RemoteDocuments`, mã
+ * `deadline-exceeded`): không tính lượt (Q-24h).
+ */
+const NETWORK_CODES = ['unavailable', 'deadline-exceeded'];
+
+/**
+ * Mã mơ hồ: SDK callable trả `internal`/`unknown` cả khi KHÔNG tới được máy chủ (mất mạng, lỗi tầng
+ * HTTP). Không có `details` (máy chủ không gửi gì) -> lỗi mạng; có `details` (Function ném lỗi có nội
+ * dung) -> lỗi máy chủ, tính lượt. Mã thật trên thiết bị chưa đo (release-checklist G, V1-02).
+ */
+const AMBIGUOUS_CODES = ['internal', 'unknown'];
+
+function hasServerDetails(error: unknown): boolean {
+  const details = (error as { details?: unknown } | null)?.details;
+  return details !== undefined && details !== null;
+}
+
+/**
+ * `details.reason` của `createUploadSession` khi bằng chứng hoặc phiên đóng gói do tài khoản khác tạo
+ * (V1-07b, `firebase/functions/src/uploads.ts`). Người tạo không đổi nên thử lại vô ích: cần xử lý ngay,
+ * không cho bấm Thử lại (`NON_RETRYABLE_ATTENTION_CODES`). Hàng hoàn không ép người tạo bản neo.
+ */
+const NOT_CREATOR_REASONS = ['not_evidence_declarer', 'not_session_creator'];
+
+function serverReason(error: unknown): string | undefined {
+  const details = (error as { details?: unknown } | null)?.details;
+  if (typeof details !== 'object' || details === null) return undefined;
+  const reason = (details as { reason?: unknown }).reason;
+  return typeof reason === 'string' ? reason : undefined;
+}
+
 /** Phân loại lỗi SDK theo `code` (bỏ tiền tố `functions/`). Không đọc `message` (có thể chứa dữ liệu). */
 export function toPortError(error: unknown): UploadPortError {
   if (error instanceof UploadPortError) return error;
   const raw = (error as { code?: unknown } | null)?.code;
   const code = typeof raw === 'string' ? raw.replace(/^(functions|firestore)\//, '') : 'unknown';
-  return new UploadPortError(
-    ATTENTION_CODES.includes(code) ? 'attention' : 'retryable',
-    code.toUpperCase().replace(/-/g, '_'),
-  );
+  const reason = serverReason(error);
+  if (code === 'permission-denied' && reason && NOT_CREATOR_REASONS.includes(reason)) {
+    return new UploadPortError('attention', NOT_EVIDENCE_CREATOR);
+  }
+  const kind = ATTENTION_CODES.includes(code)
+    ? 'attention'
+    : NETWORK_CODES.includes(code) || (AMBIGUOUS_CODES.includes(code) && !hasServerDetails(error))
+      ? 'network'
+      : 'retryable';
+  return new UploadPortError(kind, code.toUpperCase().replace(/-/g, '_'));
 }
 
 const SERVER_STATES: readonly string[] = ['uploaded', 'verified', 'hash_mismatch'];
 
 /**
  * Các cổng tải lên qua Firebase: khai báo bằng chứng (Firestore), xin URL ký (callable
- * `createUploadSession`), đọc `server.state` do Cloud Function ghi. Lỗi Firestore `permission-denied`
- * khi khai báo thường là phiên chưa kịp đăng lên máy chủ (đồng bộ đơn/phiên đang chờ) nên coi là lỗi
- * tạm; vẫn có giới hạn số lần thử của hàng đợi.
+ * `createUploadSession`), đọc `server.state` do Cloud Function ghi. Hàng đợi chỉ khai báo khi phiên/hồ
+ * sơ đã đăng (`UploadSource.isReadyToDeclare`), nên Firestore `permission-denied` khi khai báo là máy
+ * chủ TỪ CHỐI thật (hoặc đăng chậm hơn dấu cục bộ): tính lượt (`retryable`), không phải lỗi mạng, và
+ * không thành "cần xử lý" ngay (V1-02). Rules cũng từ chối khi phiên đóng gói do tài khoản khác tạo
+ * (V1-07b) nhưng không kèm lý do; hàng đợi đã chỉ khai báo tệp của chính tài khoản nên hiếm, và vẫn dừng
+ * sau 8 lượt. Callable thì có `details.reason` -> `NOT_EVIDENCE_CREATOR` ngay.
  */
 export function createFirebaseUploadPorts(docs: RemoteDocuments, appVersion?: string) {
   const declarer: EvidenceDeclarer = {

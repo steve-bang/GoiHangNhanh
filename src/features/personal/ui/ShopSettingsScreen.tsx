@@ -7,6 +7,7 @@ import { useAppNavigation } from '@/platform';
 import {
   Card,
   Icon,
+  type IconName,
   IconTile,
   ListGroup,
   ListItem,
@@ -124,6 +125,7 @@ function ShopDetails({
       <View>
         <InfoRow
           label={t('personal:shop.roleLabel')}
+          icon="user"
           testID="shop-settings-role"
           accessibilityValue={t(`personal:shop.role.${shop.role}`)}
         >
@@ -131,10 +133,11 @@ function ShopDetails({
         </InfoRow>
         <InfoRow
           label={t('personal:shop.statusLabel')}
+          icon="info"
           testID="shop-settings-status"
           accessibilityValue={status}
         >
-          <Text bold color={active ? 'brand' : 'warning'}>
+          <Text bold color={active ? 'text' : 'warning'}>
             {status}
           </Text>
         </InfoRow>
@@ -183,9 +186,11 @@ function InfoRow({
   label,
   accessibilityValue,
   testID,
+  icon,
   children,
 }: {
   label: string;
+  icon: IconName;
   accessibilityValue: string;
   testID: string;
   children: ReactNode;
@@ -204,7 +209,7 @@ function InfoRow({
         paddingVertical: tokens.space.md,
       }}
     >
-      <Icon name="user" size={22} color={tokens.color.text.secondary} />
+      <Icon name={icon} size={22} color={tokens.color.text.secondary} />
       <View style={{ flex: 1, flexShrink: 1, gap: tokens.space.tight }}>
         <Text variant="caption" color="textMuted">
           {label}

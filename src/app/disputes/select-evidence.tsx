@@ -1,1 +1,4 @@
-export { DisputeSelectEvidenceScreen as default } from '@/features/disputes';
+import { DisputeSelectEvidenceScreen } from '@/features/disputes';
+import { withSessionGate } from '@/features/personal';
+
+export default withSessionGate(DisputeSelectEvidenceScreen);

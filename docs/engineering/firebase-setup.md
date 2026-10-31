@@ -12,7 +12,7 @@ app (src/features/*) → hợp đồng ApiClient (src/api/contract)
                           ├─ src/api/firebase   ← nơi DUY NHẤT gọi SDK Firebase
                           ├─ src/api/fake       (dev/test)
                           └─ src/api/unavailable (thiếu cấu hình: lỗi trung thực)
-Phía máy chủ (chỉ Firebase): firebase/functions (createShop, updateShop), firebase/firestore.rules
+Phía máy chủ (chỉ Firebase): firebase/functions (createShop, updateShop, createUploadSession, verifyEvidence, trigger kiểm toán, deleteAccount, purgeDeletedShops), firebase/firestore.rules
 ```
 
 | Chức năng | Cách làm |
@@ -21,12 +21,14 @@ Phía máy chủ (chỉ Firebase): firebase/functions (createShop, updateShop), 
 | Tạo/sửa shop | Cloud Function callable `createShop` / `updateShop` (client không tự ghi `shops`, `members`) |
 | Biết tài khoản đã có shop chưa | Tài liệu `userShops/{uid}` (Function ghi, chủ tài khoản chỉ đọc) |
 | Khôi phục phiên khi mở app | `onAuthStateChanged` + `userShops` từ bộ nhớ đệm, không chờ mạng |
+| Xóa tài khoản (V1-14, chưa deploy; app nối ở V1-15) | Callable `deleteAccount` (xác thực trong 5 phút), lịch `purgeDeletedShops` xóa hẳn sau 30 ngày, bản ghi `accountDeletions/{uid}` |
 | Quên mật khẩu (OTP), Apple/Google | **Chưa làm** (O-22, O-15): trả `AUTH_SERVICE_UNAVAILABLE` |
 
 Chọn backend lúc chạy (`src/api/create-api.ts`):
 
 | Điều kiện | Backend |
 |---|---|
+| `EXPO_PUBLIC_APP_ENV=prod` (hoặc `production`; bản production, V1-01) | Firebase, **bỏ qua mọi dòng dưới** và không nối emulator; thiếu cấu hình → "chưa kết nối" |
 | Chạy test | giả |
 | `EXPO_PUBLIC_USE_FAKE_BACKEND=1` hoặc `EXPO_PUBLIC_BACKEND=fake` | giả |
 | `EXPO_PUBLIC_BACKEND=firebase` hoặc có `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` | Firebase |
@@ -40,7 +42,9 @@ Trên https://console.firebase.google.com:
 1. **Create a project**, đặt mã dự án (hiện tại `ghn-test-67b39`; không đổi được sau khi tạo). Google Analytics có thể tắt.
 2. **Gói Blaze** (Upgrade ở góc dưới cột trái): bắt buộc cho Cloud Functions. Nên đặt cảnh báo ngân sách.
 3. **Authentication → Get started → Sign-in method:** bật **Email/Password** (không bật "Email link").
-4. **Authentication → Settings → User actions:** tắt **Email enumeration protection** cho dự án dev. Thông báo "email đã dùng" (Q-13 g2) cần Firebase trả đúng `auth/email-already-in-use`; nếu để bật, lỗi này có thể không bao giờ được trả về.
+4. **Authentication → Settings → User actions:** tắt **Email enumeration protection** cho dự án dev. Thông báo "email đã dùng" (Q-13 g2) cần Firebase trả đúng `auth/email-already-in-use`; nếu để bật, lỗi này có thể không bao giờ được trả về. (Quên mật khẩu không phụ thuộc cài đặt này: app nuốt `auth/user-not-found` để luôn trung tính, V1-03. Bản phát hành bật lại theo checklist G-0.)
+
+   **Authentication → Templates → Password reset** (V1-03, D-14 v1): chọn ngôn ngữ mẫu **Tiếng Việt** (app cũng đặt `languageCode = 'vi'` trước khi gửi), sửa tên người gửi/chủ đề cho dễ nhận ra; thư gửi từ `noreply@<dự án>.firebaseapp.com` dễ vào Thư rác (checklist F-6). Trang đặt mật khẩu mới là trang mặc định của Firebase (không theo thương hiệu); app không dùng `actionCodeSettings`/liên kết vào app.
 5. **Firestore Database → Create database:** chọn **Standard edition**, vị trí **`asia-southeast1`** (không đổi được), **Production mode** (Rules của repo ghi đè khi deploy).
 6. **Project settings → General → Your apps → Add app:** đăng ký hai app.
 
@@ -55,10 +59,10 @@ Giá trị `vn.doncung.app.dev` lấy từ `app.json`; đổi ở một nơi th�
 
 Hai tệp ở mục 2.6 chứa khóa API phía client (không phải bí mật tuyệt đối) nhưng **không commit** (ADR-009; đã có trong `.gitignore`). Cách đưa vào build (`app.config.js`):
 
-- Đặt ở **gốc repo** với đúng tên `GoogleService-Info.plist`, `google-services.json`; hoặc
+- Đặt ở **gốc repo** với đúng tên `GoogleService-Info.plist`, `google-services.json` (**chỉ bản dev**; bản production bỏ qua tệp ở gốc repo); hoặc
 - Trỏ bằng biến môi trường `GOOGLE_SERVICES_INFO_PLIST`, `GOOGLE_SERVICES_JSON` (với EAS: tạo **file secret** rồi dùng đường dẫn mà EAS cấp).
 
-Không có tệp thì `expo export`, test và bản giả vẫn chạy; bản build thật thiếu tệp sẽ rơi về "chưa kết nối" (không báo thành công giả).
+Không có tệp thì `expo export`, test và bản giả vẫn chạy; bản build thật thiếu tệp sẽ rơi về "chưa kết nối" (không báo thành công giả). Riêng bản `production` build trên EAS (`APP_ENV=prod`, `EAS_BUILD=true`) thiếu tệp của nền tảng đang build thì **build dừng**; `APP_ENV=prod` kèm bất kỳ cờ cổng giả/emulator nào cũng dừng; tệp production phải có `BUNDLE_ID`/`package_name` đúng `vn.doncung.app` (`scripts/env/validate-release-env.cjs`, `DEPLOYMENT.md` mục 5.3).
 
 **Không bao giờ** đưa vào repo, chat hay log: mật khẩu tài khoản Google, tệp service account (`private_key`), token của `firebase login`.
 
@@ -117,6 +121,25 @@ npx firebase deploy --config firebase/firebase.json --project ghn-test-67b39 \
 - `predeploy` tự chạy `npm run build` trong `firebase/functions`.
 - Lần đầu CLI có thể hỏi bật các API (Cloud Functions, Cloud Build, Artifact Registry, Cloud Run, Eventarc): trả lời `y`; nếu dừng giữa chừng, đợi vài phút rồi chạy lại. Nếu hỏi chính sách xóa ảnh build, đặt một số ngày ngắn để tránh phí lưu trữ.
 
+**Lưu ý khi deploy (R2b, Q-28):** Rules mới thêm `shops/{shopId}/returns/{returnId}` và hình dạng bằng chứng hàng hoàn (`ownerKind: 'return'`); `createUploadSession` ghi thêm `ownerKind`/`returnId` vào kiểm toán và kiểm hồ sơ neo tồn tại. Chưa deploy; deploy Rules và Functions CÙNG LÚC (app bản mới đăng bản neo trước khi khai báo bằng chứng, nên Rules cũ sẽ từ chối).
+
+**Lưu ý khi deploy (V1-04):** thêm 6 trigger Firestore `auditOrderWrite`, `auditOrderLineWrite`, `auditPackageWrite`, `auditSessionWrite`, `auditEvidenceWrite`, `auditReturnWrite` (`onDocumentWrittenWithAuthContext`, `asia-southeast1`, `retry: true`). Trigger Firestore thế hệ 2 cần Eventarc và **cơ sở dữ liệu Firestore cùng vùng** với trigger (dự án dùng Singapore, Q-08); nếu cơ sở dữ liệu ở vùng khác thì deploy báo lỗi vị trí, phải sửa vùng trigger cho khớp. Rules siết kiểu/độ dài và trần dung lượng mọi bằng chứng (ảnh ≤ 25 MB, video ≤ 2 GB): deploy Rules và Functions cùng commit. Trigger chỉ ghi kiểm toán cho các lần ghi SAU khi deploy (không ghi bù). Thêm trigger `reverifyEvidence` (`onDocumentWritten` trên `shops/{shopId}/evidenceReverify/{evidenceId}`, 540 giây, 1 GiB, không tự thử lại) để xác minh lại bằng chứng kẹt khi `createUploadSession` đặt yêu cầu; cần quyền đọc bucket như `verifyEvidence`. `createUploadSession` giữ cấu hình thường (không băm).
+
+**Lưu ý khi deploy (V1-14, xóa tài khoản):** thêm callable `deleteAccount` và hàm lịch `purgeDeletedShops` (gọi lại bước xóa Auth còn dở rồi purge; `onSchedule`, `every day 03:00` giờ `Asia/Ho_Chi_Minh`, 540 giây, 512 MiB, không tự thử lại; lần sau chạy tiếp phần còn lại). Rules thêm `accountDeletions/{uid}` (từ chối client) và khóa mọi đọc/ghi client vào shop có `status: 'deleting'`: deploy Rules và Functions cùng commit.
+
+**Lưu ý khi deploy (V1-07b, người khai báo bằng chứng):** Rules chỉ cho tạo `evidence` khi người khai báo là người đăng nhập và, với đóng gói, là người tạo phiên (`sessions/{sessionId}.createdBy`); với hàng hoàn chỉ cần bản neo tồn tại (đơn vị sở hữu là từng media). Chỉ người khai báo cập nhật trạng thái phía thiết bị; `createUploadSession` kiểm lại trước khi ký URL (lỗi kèm `details.reason`). Deploy `firestore:rules` và `functions:createUploadSession` cùng commit. Không tương thích với bản app cho phép khai báo hộ (trước V1-07): chưa có bản phát hành nào nên không ảnh hưởng người dùng; bằng chứng đã khai báo hộ trên dự án dev mà chưa có bản gốc sẽ không tải lên được nữa (đúng chính sách, xem decisions Q-29 / V1-07b).
+
+- **API:** lần đầu CLI hỏi bật **Cloud Scheduler** (`cloudscheduler.googleapis.com`) cho hàm lịch: trả lời `y`. Hàm lịch thế hệ 2 tạo một job Cloud Scheduler cùng vùng (`asia-southeast1`); kiểm ở Console → Cloud Scheduler sau deploy.
+- **IAM (tài khoản dịch vụ chạy Functions, mặc định `<số dự án>-compute@developer.gserviceaccount.com`):** `deleteAccount` xóa người dùng Auth bằng Admin SDK (cần vai trò có `firebaseauth.users.delete`, ví dụ **Firebase Authentication Admin** `roles/firebaseauth.admin`); `purgeDeletedShops` liệt kê và xóa đối tượng Storage (`storage.objects.list`, `storage.objects.delete`, ví dụ **Storage Object Admin** trên bucket bằng chứng) và xóa Firestore (`roles/datastore.user`). Tài khoản mặc định thường đã có quyền Editor; nếu dự án đã thu hẹp quyền thì cấp các vai trò này. Bucket bật Object Versioning (mục trên): `delete` chỉ tạo phiên bản cũ (noncurrent), nên **phải có quy tắc vòng đời xóa phiên bản cũ** (ví dụ sau 7 ngày: `gcloud storage buckets update gs://<bucket> --lifecycle-file=<tệp>` với điều kiện `isLive: false`, `daysSinceNoncurrentTime: 7`) thì dữ liệu mới thật sự mất; nếu không, bản cũ còn trong bucket dù app và Firestore không còn trỏ tới (ghi ở checklist F-4b).
+- **Dừng dọn một shop vì pháp lý/tranh chấp (bất biến 9):** đặt `shops/{shopId}.legalHold = true` bằng Console hoặc Admin SDK (client không ghi được). Hàm lịch bỏ qua shop đó và ghi `lastSkipReason: 'legal_hold_skip'` vào `accountDeletions/{uid}`. Gỡ cờ thì lần chạy kế tiếp xóa. Chưa có giao diện.
+- **Yêu cầu xóa qua email (nhân viên hỗ trợ):** sau khi đã xác minh người gửi là chủ tài khoản (trang web `/xoa-tai-khoan/`), chạy `gcloud auth application-default login` bằng tài khoản có quyền như trên, rồi
+  ```bash
+  npm --prefix firebase/functions run account:delete -- --project <dự án> --email <email>            # chạy thử: chỉ in kế hoạch
+  npm --prefix firebase/functions run account:delete -- --project <dự án> --email <email> --execute  # xóa thật
+  ```
+  (hoặc `--uid <uid>`). `--project` **bắt buộc** và được dùng trực tiếp cho Admin SDK (`initializeApp({ projectId })`), không lấy từ biến môi trường; dòng đầu in `Dự án: <dự án>`, và trước khi xóa thật in `SẼ XÓA tài khoản <uid> trên dự án <dự án>.`: đọc lại tên dự án trước khi tin kết quả. Script dùng chung hàm với `deleteAccount` (`firebase/functions/src/admin/delete-account-cli.ts`), không cần đăng nhập lại của người dùng, không in email; bản ghi có `channel: 'support'`. Mã thoát 0 = xong/chạy thử, 1 = không tìm thấy hoặc shop còn thành viên khác, 2 = sai cách dùng (kể cả thiếu/sai `--project`).
+- **Xóa dở dang:** nếu `deleteAccount` đã khóa cửa hàng nhưng lỗi khi xóa tài khoản Auth, bản ghi ở `requested`; hàm lịch hằng ngày tự gọi lại bước xóa Auth cho bản ghi `requested` quá 1 giờ (log `authRetry`), và chỉ đặt `purged` khi tài khoản Auth đã bị xóa. Có thể hoàn tất ngay bằng script trên với `--uid <uid> --execute`.
+
 **Kiểm tra sau deploy:**
 
 1. Terminal liệt kê `createShop` và `updateShop` ở `asia-southeast1`.
@@ -138,6 +161,9 @@ Làm sau khi deploy và có dev build (EAS hoặc `expo prebuild` + Xcode/Androi
 3. Đăng ký lại cùng email → thông báo "email đã dùng" (cần mục 2.4); sai mật khẩu → "sai thông tin".
 4. Bật chế độ máy bay rồi mở app (đã từng đăng nhập) → xem có vào được không. **Giới hạn đã biết:** nếu `userShops` chưa có trong bộ nhớ đệm và đang offline, `restore` lỗi và Splash đưa về Chào mừng (Q-19 e).
 5. Bấm tạo shop hai lần liên tiếp/ngắt mạng giữa chừng → chỉ có một shop (idempotent).
+
+   Quên mật khẩu (V1-03): email có tài khoản → nhận thư tiếng Việt (kiểm tra cả Thư rác), mở đường dẫn trên điện thoại, đặt mật khẩu mới trên trang Firebase, quay lại app đăng nhập bằng mật khẩu mới; email không có tài khoản → cùng màn "Kiểm tra hộp thư", không có thư; bấm Gửi lại nhiều lần → "Bạn đã gửi nhiều lần" (`auth/too-many-requests`).
+   Tab Cá nhân (V1-05): Sửa họ tên -> tắt mở app thấy tên mới; Đổi mật khẩu với mật khẩu hiện tại sai -> "Mật khẩu hiện tại chưa đúng", đúng -> đăng xuất rồi đăng nhập bằng mật khẩu mới; Sửa tên cửa hàng -> Console `shops/{id}.name` đổi, `sellingSources` giữ nguyên, có `auditEvents` `shop.updated`; Cài đặt cửa hàng hiện đúng một cửa hàng, không có nút chuyển.
 6. Ghi lại phiên bản máy/hệ điều hành và kết quả vào [platform-support.md](platform-support.md) và cập nhật "Trạng thái" ở đầu tài liệu này.
 
 ## 7. Lỗi thường gặp
@@ -149,6 +175,8 @@ Làm sau khi deploy và có dev build (EAS hoặc `expo prebuild` + Xcode/Androi
 | Lỗi quyền Cloud Build ở lần deploy đầu | Đợi vài phút sau khi bật API, chạy lại cùng lệnh |
 | `xcodebuild`: `firebase-ios-sdk ... contains incompatible tools version (6.2.0)` | `@react-native-firebase` 27 dùng firebase-ios-sdk 13.1.1 (Swift tools 6.2): cần **Xcode 26.2 trở lên** (kiểm tra `xcodebuild -version`). Không nâng được Xcode thì build iOS bằng EAS (image Xcode mới) hoặc hạ `@react-native-firebase` xuống ≤ 24.1.1 (firebase-ios-sdk 12.10, còn CocoaPods) — hướng hạ phiên bản chưa kiểm chứng với Expo 58 / RN 0.88 |
 | `pod install`: `SPM + static linkage is not supported` | `@react-native-firebase` 27 dùng Swift Package nên iOS phải dùng `useFrameworks: "dynamic"` (đã đặt trong `app.json`, plugin `expo-build-properties`); sau khi đổi chạy lại `npx expo prebuild --platform ios --clean` |
+| Build iOS lỗi sau khi thêm Crashlytics (V1-16): `pod install`/link `FirebaseCrashlytics`, thiếu framework lúc chạy | Tổ hợp `useFrameworks: "dynamic"` + Crashlytics chưa từng build (release-checklist S-3b). Kiểm `npx expo prebuild --platform ios --clean`, xem `Podfile.properties.json` có `"ios.useFrameworks": "dynamic"`. Không sửa được trong một ngày: tách V1-16 khỏi v1 (gỡ `@react-native-firebase/crashlytics`, plugin trong `app.json` và `firebase.json` gốc; `src/platform/crash-reporter.ts` tự thành no-op) |
+| `firebase deploy` chạy ở gốc repo báo không có gì để deploy | Gốc repo có `firebase.json` **của RNFirebase** (V1-16, khóa `react-native`), không phải cấu hình CLI. Luôn dùng `--config firebase/firebase.json` như các lệnh trong tài liệu này |
 | Lỗi build TypeScript ở predeploy | `npm --prefix firebase/functions run build` để xem lỗi; kiểm tra đã `npm --prefix firebase/functions ci` |
 | App báo "Hệ thống đang bận" ngay khi mở | Thiếu tệp cấu hình Firebase (rơi về "chưa kết nối") hoặc SDK chưa khởi tạo được; kiểm tra mục 3 và log dev |
 | `npm run typecheck` hoặc `test:rules` báo không thấy `firebase-admin` | Chưa chạy `npm --prefix firebase/functions ci` |
@@ -160,4 +188,4 @@ Phía app: thêm `src/api/<backend>/` hiện thực `ApiClient`, cho chạy qua 
 
 ## 9. Việc còn lại
 
-Triển khai khôi phục mật khẩu qua OTP (D-14, chờ chọn nhà cung cấp email), đăng nhập Apple/Google (O-15), App Check (ADR-009), môi trường staging/prod, đồng bộ đơn/phiên lên Firestore thay `LOCAL_SHOP_ID` (Q-17d), Storage và tải lên nền. Spike S4 (RNFirebase trên Expo 58/RN 0.88) và S6 (ghi chờ khi offline) quyết định ADR-002.
+Khôi phục mật khẩu qua OTP tự xây (D-14 hướng B, để sau v1; v1 dùng thư đặt lại của Firebase, V1-03), đăng nhập Apple/Google (O-15; v1 ẩn nút), App Check (ADR-009), môi trường staging/prod, đồng bộ đơn/phiên lên Firestore thay `LOCAL_SHOP_ID` (Q-17d), Storage và tải lên nền. Spike S4 (RNFirebase trên Expo 58/RN 0.88) và S6 (ghi chờ khi offline) quyết định ADR-002.

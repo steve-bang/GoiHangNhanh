@@ -9,11 +9,13 @@ import { makeOrder } from './order-store.contract';
 export interface EvidenceHarness {
   readonly files: EvidenceFileStore;
   readonly orders: OrderStore;
+  /** Đổi tài khoản mà kho đơn ghi làm người tạo phiên (`creatorUid`); `null` = chưa biết (V1-07). */
+  readonly signInAs: (uid: string | null) => void;
 }
 
 /** Lưu đơn + phiên thật (khóa ngoại của SQLite cần chúng) rồi trả dữ liệu tạo tệp. */
 export async function seedFile(
-  h: EvidenceHarness,
+  h: Pick<EvidenceHarness, 'files' | 'orders'>,
   code: string,
   options: { id?: string; shopId?: ShopId; at?: number } = {},
 ): Promise<NewEvidenceFile> {
@@ -338,6 +340,30 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
       expect(await h.files.countUnsyncedOnDevice()).toBe(1);
     });
 
+    it('countByState: đếm theo trạng thái của MỘT shop, lọc theo giờ đổi trạng thái [from, to)', async () => {
+      const h = await make();
+      const a = await seedFile(h, 'CNT-A');
+      const b = await seedFile(h, 'CNT-B');
+      const other = await seedFile(h, 'CNT-X', { shopId: 'shop-x' as ShopId });
+      await h.files.create(a);
+      await h.files.create(b);
+      await h.files.create(other);
+      await h.files.applyEvent(LOCAL_SHOP_ID, a.id, device('STOP_RECORDING'), 100);
+      await h.files.applyEvent(LOCAL_SHOP_ID, a.id, device('LOCAL_FILE_READABLE'), 200, CLOSED);
+      await h.files.applyEvent(LOCAL_SHOP_ID, a.id, device('UPLOAD_STARTED'), 300);
+      await h.files.applyEvent(LOCAL_SHOP_ID, a.id, server('SERVER_RECEIVED'), 400);
+      expect(await h.files.countByState(LOCAL_SHOP_ID)).toEqual({ uploaded: 1, recording: 1 });
+      expect(await h.files.countByState('shop-x' as ShopId)).toEqual({ recording: 1 });
+      expect(await h.files.countByState('shop-none' as ShopId)).toEqual({});
+      // Nửa mở: đúng mốc `fromDevice` tính, đúng mốc `toDevice` không tính.
+      expect(await h.files.countByState(LOCAL_SHOP_ID, { fromDevice: 400, toDevice: 401 })).toEqual(
+        { uploaded: 1 },
+      );
+      expect(await h.files.countByState(LOCAL_SHOP_ID, { fromDevice: 0, toDevice: 400 })).toEqual(
+        {},
+      );
+    });
+
     it('ghi và xóa số lần thử, thời điểm thử lại, mã lỗi; listByStates lọc theo trạng thái', async () => {
       const h = await make();
       const a = await seedFile(h, 'K');
@@ -391,6 +417,82 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
       expect(await h.files.listByOrders(LOCAL_SHOP_ID, [b.orderId])).toHaveLength(1);
       expect(await h.files.listByOrders(LOCAL_SHOP_ID, [])).toEqual([]);
       expect(await h.files.listByOrders('shop-khac' as ShopId, [a.orderId])).toEqual([]);
+    });
+
+    it('listForUpload (V1-07): chỉ tệp của phiên do CHÍNH uid tạo; NULL, uid rỗng, khác shop, sai trạng thái không có', async () => {
+      const h = await make();
+      const close = async (input: NewEvidenceFile) => {
+        await h.files.create(input);
+        await h.files.applyEvent(input.shopId, input.id, device('STOP_RECORDING'), 4000);
+        await h.files.applyEvent(
+          input.shopId,
+          input.id,
+          device('LOCAL_FILE_READABLE'),
+          4000,
+          CLOSED,
+        );
+      };
+      h.signInAs('u-1');
+      const mine = await seedFile(h, 'U1', { at: 3000 });
+      const mineOld = await seedFile(h, 'U1B', { at: 1000 });
+      h.signInAs('u-2');
+      const theirs = await seedFile(h, 'U2');
+      h.signInAs(null);
+      const nobody = await seedFile(h, 'U0');
+      h.signInAs('u-1');
+      const otherShop = await seedFile(h, 'U1S', { shopId: 'shop-khac' as ShopId });
+      for (const f of [mine, mineOld, theirs, nobody, otherShop]) await close(f);
+      const queued = ['queued'] as const;
+      expect((await h.files.listForUpload(LOCAL_SHOP_ID, queued, 'u-1')).map((f) => f.id)).toEqual([
+        mineOld.id,
+        mine.id,
+      ]);
+      expect((await h.files.listForUpload(LOCAL_SHOP_ID, queued, 'u-2')).map((f) => f.id)).toEqual([
+        theirs.id,
+      ]);
+      // Phiên không rõ người tạo không bao giờ khớp, kể cả uid rỗng.
+      expect(await h.files.listForUpload(LOCAL_SHOP_ID, queued, '')).toEqual([]);
+      expect(await h.files.listForUpload(LOCAL_SHOP_ID, ['uploading'], 'u-1')).toEqual([]);
+      expect(await h.files.listForUpload(LOCAL_SHOP_ID, [], 'u-1')).toEqual([]);
+      expect(
+        (await h.files.listForUpload('shop-khac' as ShopId, queued, 'u-1')).map((f) => f.id),
+      ).toEqual([otherShop.id]);
+      expect(await h.files.listForUpload('shop-khac' as ShopId, queued, 'u-2')).toEqual([]);
+      // Đọc không đổi gì: tệp của người khác vẫn nguyên trạng thái.
+      expect((await h.files.get(LOCAL_SHOP_ID, theirs.id))?.state).toBe('queued');
+      expect((await h.files.get(LOCAL_SHOP_ID, nobody.id))?.state).toBe('queued');
+    });
+
+    it('dấu tệp đã băm (V1-13): ghi cùng sự kiện, đọc lại được, `null` xóa; không đổi mã băm gốc', async () => {
+      const h = await make();
+      const input = await seedFile(h, 'FP');
+      await h.files.create(input);
+      await h.files.applyEvent(input.shopId, input.id, device('STOP_RECORDING'), 3500);
+      await h.files.applyEvent(input.shopId, input.id, device('LOCAL_FILE_READABLE'), 4000, CLOSED);
+      expect((await h.files.get(input.shopId, input.id))?.hashedFingerprint ?? null).toBeNull();
+      const fingerprint = { sizeBytes: 1024, modifiedAtMs: 1_700_000_000_123 };
+      const started = await h.files.applyEvent(
+        input.shopId,
+        input.id,
+        device('UPLOAD_STARTED'),
+        5000,
+        { hashedFingerprint: fingerprint },
+      );
+      expect(started.ok).toBe(true);
+      const stored = await h.files.get(input.shopId, input.id);
+      expect(stored?.hashedFingerprint).toEqual(fingerprint);
+      expect(stored?.sha256Client).toBe(CLOSED.sha256Client);
+      // Sự kiện không mang dấu thì giữ nguyên dấu cũ.
+      await h.files.applyEvent(input.shopId, input.id, device('UPLOAD_FAILED'), 6000, {
+        lastErrorCode: 'NETWORK',
+      });
+      expect((await h.files.get(input.shopId, input.id))?.hashedFingerprint).toEqual(fingerprint);
+      await h.files.applyEvent(input.shopId, input.id, device('NEEDS_ATTENTION'), 7000, {
+        hashedFingerprint: null,
+      });
+      expect((await h.files.get(input.shopId, input.id))?.hashedFingerprint ?? null).toBeNull();
+      // Shop khác không thấy tệp (bất biến 8).
+      expect(await h.files.get('shop-khac' as ShopId, input.id)).toBeNull();
     });
   });
 }

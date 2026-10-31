@@ -1,5 +1,6 @@
 import type { OrderId, OrderLineId, SessionId, ShopId } from '@/core/ids';
 import { AppError } from '@/core/errors/app-error';
+import { inDeviceRange } from '@/features/evidence';
 
 import { toCodeKey } from '../domain/codes';
 import { MAX_RECENT_SEARCHES } from '../domain/search';
@@ -12,7 +13,7 @@ import {
   type OrderListItem,
 } from '../domain/order-list';
 import { stampCreator, type CreatorUidProvider } from '../domain/creator';
-import { canChangeSessionStatus } from '../domain/session-status';
+import { canChangeSessionStatus, PACKED_SESSION_STATUSES } from '../domain/session-status';
 import {
   findActiveSession,
   isSessionActive,
@@ -201,6 +202,9 @@ export function createMemoryOrderStore(
     async countUnsyncedOnDevice() {
       return 0;
     },
+    async countUnsyncedByOwner() {
+      return { own: 0, foreign: 0 };
+    },
     async hasRecordingOnDevice() {
       return [...sessions.values()].some((s) => isSessionStatusRecording(s.sessionStatus));
     },
@@ -281,6 +285,22 @@ export function createMemoryOrderStore(
     async markSessionPublished(shopId, sessionId, status) {
       const session = sessions.get(sessionId);
       if (session && session.shopId === shopId) publishedSessions.set(sessionId, status);
+    },
+    async isSessionPublished(shopId, sessionId) {
+      return sessions.get(sessionId)?.shopId === shopId && publishedSessions.has(sessionId);
+    },
+    async countPackedOrders(shopId, startedIn) {
+      const orders = new Set<string>();
+      for (const s of sessions.values()) {
+        if (
+          s.shopId === shopId &&
+          (PACKED_SESSION_STATUSES as readonly string[]).includes(s.sessionStatus) &&
+          inDeviceRange(s.startedAtDevice, startedIn)
+        ) {
+          orders.add(s.orderId);
+        }
+      }
+      return orders.size;
     },
     async hasRecordingInProgress(shopId) {
       return [...sessions.values()].some(

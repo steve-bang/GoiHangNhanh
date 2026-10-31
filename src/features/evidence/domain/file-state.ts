@@ -56,6 +56,7 @@ export type FileEventType =
   | 'RETRY_UPLOAD'
   | 'NEEDS_ATTENTION'
   | 'ATTENTION_RESOLVED'
+  | 'USER_RETRY_ATTENTION'
   | 'MARK_UNRECOVERABLE'
   // Sự kiện từ máy chủ
   | 'SERVER_RECEIVED'
@@ -86,6 +87,12 @@ interface Rule {
  * - SERVER_RECEIVED từ QUEUED/UPLOAD_FAILED/NEEDS_ATTENTION: máy chủ đã nhận nhưng app mất phản hồi
  *   (QA-05); đối soát với máy chủ phải đưa được tệp tới UPLOADED mà không tải lại.
  * - SERVER_HASH_MISMATCH chỉ từ UPLOADED: mã băm được so sau khi máy chủ nhận đủ tệp.
+ * - USER_RETRY_ATTENTION (V1-08, R-3): người dùng bấm "Thử lại" ở Trung tâm đồng bộ cho tệp "cần xử lý".
+ *   Có ĐIỀU KIỆN (`isUserRetryableAttention`): chỉ khi lỗi không phải lỗi của chính tệp trên máy (tệp
+ *   mất/đổi/không đọc được, quá lớn, sai loại); thử lại những lỗi đó không bao giờ thành công. Chỉ tới
+ *   QUEUED; `hash_mismatch` không có lối ra. Thiếu ngữ cảnh mã lỗi = từ chối (bảo thủ).
+ * - ATTENTION_RESOLVED: giữ cho luồng "đã khắc phục nguyên nhân" sau này; hiện không mã nào phát ra.
+ *   Cùng điều kiện với USER_RETRY_ATTENTION (review PR #56): không có lối vòng đưa tệp lỗi cục bộ về QUEUED.
  */
 const RULES: Readonly<Record<FileEventType, Rule>> = {
   STOP_RECORDING: { origin: 'device', from: [S.RECORDING], to: S.SAVING_LOCAL },
@@ -107,6 +114,7 @@ const RULES: Readonly<Record<FileEventType, Rule>> = {
     to: S.NEEDS_ATTENTION,
   },
   ATTENTION_RESOLVED: { origin: 'device', from: [S.NEEDS_ATTENTION], to: S.QUEUED },
+  USER_RETRY_ATTENTION: { origin: 'device', from: [S.NEEDS_ATTENTION], to: S.QUEUED },
   MARK_UNRECOVERABLE: {
     origin: 'device',
     from: [S.RECORDING, S.SAVING_LOCAL, S.LOCAL_SAVE_FAILED, S.NEEDS_ATTENTION],
@@ -123,19 +131,70 @@ const RULES: Readonly<Record<FileEventType, Rule>> = {
 
 export const FILE_EVENT_TYPES = Object.keys(RULES) as readonly FileEventType[];
 
-export type TransitionError = 'ILLEGAL_TRANSITION' | 'ORIGIN_NOT_ALLOWED';
+export type TransitionError = 'ILLEGAL_TRANSITION' | 'ORIGIN_NOT_ALLOWED' | 'NOT_USER_RETRYABLE';
 
 export type TransitionResult =
   | { readonly ok: true; readonly state: FileState }
   | { readonly ok: false; readonly error: TransitionError; readonly state: FileState };
 
-export function transition(state: FileState, event: FileEvent): TransitionResult {
+/** Dữ liệu của bản ghi mà chuyển có điều kiện cần (`USER_RETRY_ATTENTION`, `ATTENTION_RESOLVED`). */
+export interface TransitionContext {
+  /** Mã lỗi gần nhất của tệp (`lastErrorCode` của kho). */
+  readonly lastErrorCode?: string | null;
+}
+
+/**
+ * Mã nội bộ (`lastErrorCode`, không phải mã lỗi nghiệp vụ) khi máy chủ từ chối vì bằng chứng hoặc phiên
+ * đóng gói do tài khoản KHÁC tạo (V1-07b, `details.reason` của `createUploadSession`).
+ */
+export const NOT_EVIDENCE_CREATOR = 'NOT_EVIDENCE_CREATOR';
+
+/**
+ * Mã lỗi "cần xử lý" mà người dùng KHÔNG thử lại được (V1-08, R-3): lỗi của chính tệp trên máy, phát hiện
+ * trước khi gửi gì (tệp đổi/mất/không đọc được, vượt trần dung lượng, loại tệp không nhận), và máy chủ
+ * từ chối vì người tạo khác (V1-07b: người tạo phiên/tệp không đổi). Thử lại không đổi được kết quả;
+ * tệp gốc vẫn giữ nguyên (bất biến 4).
+ */
+export const NON_RETRYABLE_ATTENTION_CODES: readonly string[] = [
+  'LOCAL_HASH_CHANGED',
+  'FILE_MISSING',
+  'FILE_UNREADABLE',
+  'UPLOAD_FILE_TOO_LARGE',
+  'UNSUPPORTED_FILE_TYPE',
+  NOT_EVIDENCE_CREATOR,
+];
+
+/**
+ * Tệp "cần xử lý" có được người dùng bấm Thử lại không: chỉ khi biết mã lỗi và mã đó không phải lỗi tệp
+ * cục bộ (máy chủ từ chối nhiều lần, đăng nhập hết hạn...). Không có mã = không biết lý do = không cho.
+ */
+export function isUserRetryableAttention(lastErrorCode: string | null | undefined): boolean {
+  return !!lastErrorCode && !NON_RETRYABLE_ATTENTION_CODES.includes(lastErrorCode);
+}
+
+/** Mọi lối ra `needs_attention -> queued` đều cần lỗi KHÔNG phải lỗi tệp cục bộ. */
+const CONDITIONAL_ATTENTION_EXITS: readonly FileEventType[] = [
+  'USER_RETRY_ATTENTION',
+  'ATTENTION_RESOLVED',
+];
+
+export function transition(
+  state: FileState,
+  event: FileEvent,
+  context: TransitionContext = {},
+): TransitionResult {
   const rule = RULES[event.type];
   if (rule.origin !== event.origin) {
     return { ok: false, error: 'ORIGIN_NOT_ALLOWED', state };
   }
   if (!rule.from.includes(state)) {
     return { ok: false, error: 'ILLEGAL_TRANSITION', state };
+  }
+  if (
+    CONDITIONAL_ATTENTION_EXITS.includes(event.type) &&
+    !isUserRetryableAttention(context.lastErrorCode)
+  ) {
+    return { ok: false, error: 'NOT_USER_RETRYABLE', state };
   }
   return { ok: true, state: rule.to };
 }

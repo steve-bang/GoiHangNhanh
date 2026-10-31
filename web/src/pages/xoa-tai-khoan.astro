@@ -1,0 +1,148 @@
+---
+/*
+ * GHI CHÚ NỘI BỘ (không hiển thị): trang "URL yêu cầu xóa tài khoản" khai báo với Google Play (Data safety >
+ * Data deletion). Bản nháp chờ luật sư rà (release-checklist C-2). Mô tả đúng thiết kế V1-14
+ * (`deleteAccount`, `purgeDeletedShops`: xóa cả shop gồm `auditEvents` sau 30 ngày trừ khi `legalHold`;
+ * chỉ giữ `accountDeletions`: uid, shopIds, thời điểm, lý do kỹ thuật, số lượng; không email/tên) và V1-15
+ * (chặn khi đang quay, còn tranh chấp mở hoặc máy còn dữ liệu của tài khoản khác; cảnh báo + xác nhận riêng khi còn tệp chưa tải; chỉ xóa cục bộ
+ * sau khi máy chủ trả thành công). Yêu cầu qua email xử lý bằng script hỗ trợ của V1-14. Số ngày trả lời
+ * email `site.legal.emailRequestDays` là đề xuất chờ duyệt. Đối chiếu app thật ở C-6.
+ */
+import LegalPage from '../components/LegalPage.astro';
+import Contact from '../components/Contact.astro';
+import { site } from '../config/site';
+
+const days = site.legal.purgeAfterDays;
+const replyDays = site.legal.emailRequestDays;
+const toc = [
+  { id: 'trong-ung-dung', label: 'Cách 1: xóa trong ứng dụng' },
+  { id: 'qua-email', label: 'Cách 2: gửi yêu cầu qua email' },
+  { id: 'du-lieu-bi-xoa', label: 'Dữ liệu nào bị xóa, khi nào' },
+  { id: 'du-lieu-giu-lai', label: 'Dữ liệu được giữ lại và lý do' },
+  { id: 'luu-y', label: 'Lưu ý trước khi xóa' },
+];
+---
+
+<LegalPage
+  title={`Yêu cầu xóa tài khoản và dữ liệu ứng dụng ${site.name}`}
+  description={`Cách xóa tài khoản ${site.name} trong ứng dụng hoặc qua email. Dữ liệu nào bị xóa ngay, xóa sau ${days} ngày và dữ liệu nào được giữ lại, vì sao.`}
+  path={site.legalPages.accountDeletionRequest}
+  heading={`Xóa tài khoản ${site.name}`}
+  crumb="Xóa tài khoản"
+  toc={toc}
+>
+  <p>
+    Trang này dành cho người dùng ứng dụng {site.name}. Bạn có hai cách xóa tài khoản. Cả hai cách đều xóa
+    cùng một loại dữ liệu trên máy chủ.
+  </p>
+
+  <h2 id="trong-ung-dung">Cách 1: xóa trong ứng dụng</h2>
+  <ol>
+    <li>Mở ứng dụng {site.name} và đăng nhập.</li>
+    <li>Vào <strong>Cá nhân</strong> &gt; <strong>Quyền riêng tư và bảo mật</strong> &gt; <strong>Xóa tài khoản</strong>.</li>
+    <li>Đọc các điều kiện trên màn hình.</li>
+    <li>Chọn đồng ý, rồi nhập mật khẩu để xác nhận.</li>
+    <li>Khi máy chủ báo xóa xong, ứng dụng xóa dữ liệu trên điện thoại này và đăng xuất.</li>
+  </ol>
+  <p>Ứng dụng sẽ chưa cho xóa khi:</p>
+  <ul>
+    <li>Đang quay video. Hãy quay xong trước.</li>
+    <li>Còn hồ sơ tranh chấp đang mở trên máy. Hãy đóng hồ sơ trước.</li>
+    <li>
+      Điện thoại còn dữ liệu do tài khoản khác tạo. Ứng dụng không xóa để tránh xóa nhầm; bạn dùng cách gửi
+      email bên dưới.
+    </li>
+  </ul>
+  <p>
+    Nếu còn tệp chưa tải lên, ứng dụng báo số tệp sẽ mất và yêu cầu bạn xác nhận riêng. Mất mạng hoặc máy
+    chủ lỗi thì không có gì bị xóa. Bạn thử lại sau.
+  </p>
+
+  <h2 id="qua-email">Cách 2: gửi yêu cầu qua email</h2>
+  <p>Dùng cách này khi bạn không còn mở được ứng dụng, ví dụ mất máy hoặc đã gỡ ứng dụng.</p>
+  <ol>
+    <li>Gửi thư <strong>từ email bạn dùng để đăng ký</strong>.</li>
+    <li>Tiêu đề: <strong>Yêu cầu xóa tài khoản</strong>.</li>
+    <li>Ghi tên cửa hàng nếu bạn nhớ. Không gửi mật khẩu.</li>
+  </ol>
+  <Contact subject="Yêu cầu xóa tài khoản" />
+  <p>
+    Chúng tôi trả lời trong {replyDays} ngày làm việc. Để tránh người khác xóa thay bạn, chúng tôi có thể gửi
+    thư hỏi lại và chờ bạn xác nhận.
+  </p>
+  <p>
+    Cách này không xóa được dữ liệu còn nằm trên điện thoại cũ. Nếu còn giữ máy đó, hãy gỡ ứng dụng để xóa
+    dữ liệu trên máy.
+  </p>
+
+  <h2 id="du-lieu-bi-xoa">Dữ liệu nào bị xóa, khi nào</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Thời điểm</th>
+          <th scope="col">Dữ liệu</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Ngay khi xóa</td>
+          <td>
+            Tài khoản đăng nhập (email, mật khẩu, họ tên) và quyền vào cửa hàng. Bạn không đăng nhập lại
+            được.
+          </td>
+        </tr>
+        <tr>
+          <td>Ngay khi xóa trong ứng dụng</td>
+          <td>
+            Dữ liệu trên điện thoại đó: đơn, video, ảnh, hồ sơ hàng hoàn, hồ sơ tranh chấp, lịch sử tìm, kể cả
+            tệp chưa tải lên.
+          </td>
+        </tr>
+        <tr>
+          <td>Sau {days} ngày</td>
+          <td>
+            Toàn bộ dữ liệu cửa hàng trên máy chủ: cửa hàng, đơn, sản phẩm, kiện, phiên quay, video, ảnh,
+            thông tin tệp và mã băm, mã hồ sơ hàng hoàn, nhật ký thao tác của cửa hàng.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Trong {days} ngày chờ, không ai trong ứng dụng đọc được dữ liệu này. Tài khoản đã xóa không khôi phục
+    được.
+  </p>
+
+  <h2 id="du-lieu-giu-lai">Dữ liệu được giữ lại và lý do</h2>
+  <ul>
+    <li>
+      <strong>Bản ghi xóa tài khoản:</strong> mã tài khoản nội bộ, mã cửa hàng, thời điểm yêu cầu và xóa
+      xong, lý do kỹ thuật, số lượng mục đã xóa. Không có email, tên hay mã đơn. Lý do: chứng minh yêu cầu
+      xóa đã được xử lý và không xử lý lặp. Hiện bản ghi này được giữ không thời hạn.
+    </li>
+    <li>
+      <strong>Dữ liệu bị yêu cầu giữ lại:</strong> nếu có yêu cầu giữ vì pháp luật hoặc tranh chấp, dữ liệu
+      cửa hàng chưa bị xóa sau {days} ngày. Dữ liệu được xóa khi hết lý do giữ.
+    </li>
+    <li>
+      <strong>Báo cáo lỗi ứng dụng:</strong> không gắn với tài khoản nên không tìm theo tài khoản để xóa
+      được. Dịch vụ báo lỗi tự xóa theo thời hạn của dịch vụ.
+    </li>
+  </ul>
+  <p>
+    Văn bản tóm tắt hay tệp bạn đã tự gửi cho sàn, đơn vị vận chuyển hoặc người khác nằm ngoài ứng dụng.
+    Chúng tôi không xóa được các bản đó.
+  </p>
+
+  <h2 id="luu-y">Lưu ý trước khi xóa</h2>
+  <ul>
+    <li>Nếu còn cần bằng chứng cho một khiếu nại, hãy chờ xong việc rồi mới xóa.</li>
+    <li>Sau khi xóa, bạn không xem lại được video và ảnh trong ứng dụng.</li>
+    <li>Muốn dùng lại, bạn cần đăng ký tài khoản mới. Dữ liệu cũ không quay về.</li>
+  </ul>
+  <p>
+    Chi tiết về dữ liệu: xem <a href={site.legalPages.privacy}>Chính sách quyền riêng tư</a>. Cần giúp: xem
+    <a href={site.legalPages.support}>trang Hỗ trợ</a>.
+  </p>
+</LegalPage>

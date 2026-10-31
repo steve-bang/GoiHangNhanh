@@ -5,10 +5,11 @@ import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
 import { useTheme } from './theme';
 
-type StatTone = 'success' | 'brand' | 'danger';
+type StatTone = 'success' | 'info' | 'brand' | 'danger';
 
 interface StatTileProps {
-  value: number;
+  /** Số đếm; chuỗi (ví dụ "–") khi chưa có số: đang đọc hoặc đọc lỗi, không hiện 0 giả. */
+  value: number | string;
   /** Nhãn chữ luôn có: màu và biểu tượng chỉ hỗ trợ, không là tín hiệu duy nhất. */
   label: string;
   icon: IconName;
@@ -22,7 +23,8 @@ export function StatTile({ value, label, icon, tone, onPress, testID }: StatTile
   const { tokens } = useTheme();
   const palette = {
     success: { fg: tokens.color.feedback.success.fg, bg: tokens.color.feedback.success.bg },
-    brand: { fg: tokens.color.action.primary, bg: tokens.color.brand.soft },
+    info: { fg: tokens.color.feedback.info.fg, bg: tokens.color.feedback.info.bg },
+    brand: { fg: tokens.color.brand.onSoft, bg: tokens.color.brand.soft },
     danger: { fg: tokens.color.feedback.danger.fg, bg: tokens.color.feedback.danger.bg },
   }[tone];
   return (
@@ -40,11 +42,11 @@ export function StatTile({ value, label, icon, tone, onPress, testID }: StatTile
       <View style={{ gap: tokens.space.xs }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs }}>
           <Icon name={icon} size={20} color={palette.fg} />
-          <Text variant="screenTitle" style={{ color: palette.fg }}>
+          <Text variant="numeric" style={{ color: palette.fg }}>
             {value}
           </Text>
         </View>
-        <Text variant="caption" color="textMuted">
+        <Text variant="caption" color="text">
           {label}
         </Text>
       </View>

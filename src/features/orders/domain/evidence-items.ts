@@ -12,6 +12,8 @@ export interface OrderEvidenceItem {
   /** Nhóm của màn: bằng chứng đóng gói hoặc hàng hoàn. */
   readonly group: 'pack' | 'return';
   readonly kind: 'video' | 'photo';
+  /** Phiên ghi nhận của tệp (ID lưu trong bản ghi tệp, bất biến 2); người tạo phiên = người tải tệp (V1-07). */
+  readonly sessionId: string;
   /** Thời gian THIẾT BỊ lúc ghi (không phải thời gian máy chủ). */
   readonly capturedAtDevice: number;
   readonly state: FileState;

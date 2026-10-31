@@ -19,6 +19,10 @@ const FORBIDDEN = [
   'chắc chắn được',
   'tự động hoàn tất',
   'bằng chứng pháp lý',
+  // v1 chỉ tải khi app đang mở, không tải nền; chưa xác minh thì chưa phải bản sao lưu (V1-18).
+  'tải nền',
+  'chạy nền',
+  'sao lưu an toàn',
 ];
 
 /**

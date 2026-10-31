@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, within } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { useState } from 'react';
 import { Pressable, Text, useWindowDimensions } from 'react-native';
 
@@ -540,5 +540,34 @@ describe('UI-A03 Đăng nhập: Apple/Google', () => {
     await renderWithProviders(<SignInScreen />);
     expect(screen.queryByTestId('signin-social-group')).toBeNull();
     expect(screen.queryByText('Hoặc đăng nhập bằng')).toBeNull();
+  });
+});
+
+describe('UI-A03 Đăng nhập: email điền sẵn từ "Đăng nhập lại" (V1-05)', () => {
+  function HintSetter({ email }: { email: string }) {
+    const session = useSession();
+    return <Text testID="set-hint" onPress={() => session.setSignInEmailHint(email)} />;
+  }
+  function HintProbe() {
+    return <Text testID="probe-hint">{useSession().signInEmailHint ?? '(trống)'}</Text>;
+  }
+
+  it('gợi ý email của phiên điền sẵn ô email một lần rồi bị xóa (không qua tham số route)', async () => {
+    function Harness() {
+      const [show, setShow] = useState(false);
+      return (
+        <>
+          <HintSetter email="lan@example.com" />
+          <HintProbe />
+          <Text testID="show" onPress={() => setShow(true)} />
+          {show ? <SignInScreen /> : null}
+        </>
+      );
+    }
+    await renderWithProviders(<Harness />);
+    await fireEvent.press(screen.getByTestId('set-hint'));
+    await fireEvent.press(screen.getByTestId('show'));
+    expect(screen.getByTestId('signin-email').props.value).toBe('lan@example.com');
+    await waitFor(() => expect(screen.getByTestId('probe-hint')).toHaveTextContent('(trống)'));
   });
 });

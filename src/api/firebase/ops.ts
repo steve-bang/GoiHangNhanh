@@ -1,15 +1,40 @@
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  getIdToken,
   onAuthStateChanged,
+  reauthenticateWithCredential,
+  sendPasswordResetEmail,
+  setLanguageCode,
   signInWithEmailAndPassword,
   signOut,
+  updatePassword,
+  updateProfile,
 } from '@react-native-firebase/auth';
 import { doc, getDoc, getDocFromCache } from '@react-native-firebase/firestore';
 import { httpsCallable } from '@react-native-firebase/functions';
 
-import type { CreatedShop, CreateShopInput, ShopDetails, UpdateShopInput } from '../contract';
+import type { ShopDetails } from '../contract';
 
 import type { FirebaseServices } from './client';
+import { NO_CURRENT_USER } from './error-map';
+
+/**
+ * Đầu vào/ra của callable `createShop`/`updateShop` theo TỪ VỰNG MÁY CHỦ (nguồn bán `other_unknown`,
+ * không phải `other` của app). `firebase-api.ts` đổi qua `@/core/orders/remote-source`; lớp này gửi và
+ * trả nguyên văn.
+ */
+export interface RemoteShopInput {
+  readonly name: string;
+  readonly sellingSources: readonly string[];
+  readonly shopId?: string;
+}
+
+export interface RemoteShopResult {
+  readonly id: string;
+  readonly name: string;
+  readonly sellingSources: readonly string[];
+}
 
 export interface FirebaseUser {
   readonly uid: string;
@@ -35,13 +60,41 @@ export interface FirebaseOps {
   readShopIdForRestore(uid: string): Promise<string | null>;
   /** Thoát Firebase Auth (xóa phiên trên máy). */
   signOut(): Promise<void>;
+  /**
+   * Firebase gửi thư có đường dẫn đặt lại mật khẩu (D-14 v1). Thư tiếng Việt nếu mẫu thư có bản
+   * tiếng Việt (Console). Không `actionCodeSettings`: mật khẩu mới đặt trên trang của Firebase.
+   */
+  sendPasswordReset(email: string): Promise<void>;
   /** Thông tin shop + vai trò của `uid` trong shop; `null` nếu không có shop hoặc không phải thành viên đang hoạt động. */
   readShopDetails(shopId: string, uid: string): Promise<ShopDetails | null>;
-  callShop(
-    name: 'createShop' | 'updateShop',
-    input: CreateShopInput | UpdateShopInput,
-  ): Promise<CreatedShop>;
+  /**
+   * Đổi mật khẩu người dùng đang đăng nhập: xác thực lại bằng email + mật khẩu hiện tại TRƯỚC, rồi
+   * `updatePassword`. Xác thực lại lỗi thì không đổi gì. Không còn người dùng: lỗi `NO_CURRENT_USER`.
+   */
+  changePassword(currentPassword: string, newPassword: string): Promise<void>;
+  /** Auth `updateProfile({ displayName })` của người dùng đang đăng nhập. */
+  updateDisplayName(displayName: string): Promise<void>;
+  /**
+   * Nguồn bán đang lưu của shop (Rules: thành viên đọc được), NGUYÊN giá trị máy chủ (từ vựng máy chủ);
+   * `null` khi không đọc ra được mảng.
+   */
+  readShopSellingSources(shopId: string): Promise<readonly string[] | null>;
+  callShop(name: 'createShop' | 'updateShop', input: RemoteShopInput): Promise<RemoteShopResult>;
+  /**
+   * Xác thực lại người dùng đang đăng nhập bằng email + mật khẩu. Không còn người dùng: lỗi `NO_CURRENT_USER`.
+   */
+  reauthenticate(password: string): Promise<void>;
+  /**
+   * BẮT BUỘC lấy ID token mới (`getIdToken(true)`) sau khi xác thực lại: token cũ mang `auth_time` cũ, máy
+   * chủ `deleteAccount` sẽ từ chối (V1-14 b). Không còn người dùng: lỗi `NO_CURRENT_USER`.
+   */
+  forceRefreshIdToken(): Promise<void>;
+  /** Callable `deleteAccount` (không tham số; uid lấy từ token ở máy chủ). Trả nguyên `data`. */
+  callDeleteAccount(): Promise<{ readonly status?: unknown }>;
 }
+
+/** Ngôn ngữ thư đặt lại mật khẩu của Firebase Auth. */
+export const PASSWORD_RESET_LANGUAGE = 'vi';
 
 const providerIdsOf = (user: { providerData?: readonly { providerId: string }[] }): string[] =>
   (user.providerData ?? []).map((info) => info.providerId);
@@ -117,6 +170,11 @@ export function createFirebaseOps({ auth, db, functions }: FirebaseServices): Fi
     signOut() {
       return signOut(auth);
     },
+    async sendPasswordReset(email) {
+      // Ngôn ngữ thư: đặt lỗi thì vẫn gửi (thư có thể ra tiếng Anh), không chặn người dùng lấy lại mật khẩu.
+      await setLanguageCode(auth, PASSWORD_RESET_LANGUAGE).catch(() => undefined);
+      await sendPasswordResetEmail(auth, email);
+    },
     async readShopDetails(shopId, uid) {
       // Chỉ thành viên đang hoạt động đọc được (Rules). Rules từ chối (`permission-denied`) thì coi như
       // không có shop (`null`); lỗi khác (mạng...) vẫn ném để bên gọi không nhầm là "chưa có shop".
@@ -145,8 +203,48 @@ export function createFirebaseOps({ auth, db, functions }: FirebaseServices): Fi
         canEdit: isOwner || roles.includes('manager'),
       };
     },
+    async changePassword(currentPassword, newPassword) {
+      const user = auth.currentUser;
+      if (!user?.email) throw Object.assign(new Error(NO_CURRENT_USER), { code: NO_CURRENT_USER });
+      await reauthenticateWithCredential(
+        user,
+        EmailAuthProvider.credential(user.email, currentPassword),
+      );
+      await updatePassword(user, newPassword);
+    },
+    async updateDisplayName(displayName) {
+      const user = auth.currentUser;
+      if (!user) throw Object.assign(new Error(NO_CURRENT_USER), { code: NO_CURRENT_USER });
+      await updateProfile(user, { displayName });
+    },
+    async readShopSellingSources(shopId) {
+      const snapshot = await getDoc(doc(db, 'shops', shopId));
+      if (!snapshot.exists()) return null;
+      const sources = (snapshot.data() as { sellingSources?: unknown } | undefined)?.sellingSources;
+      return Array.isArray(sources) && sources.every((value) => typeof value === 'string')
+        ? sources
+        : null;
+    },
+    async reauthenticate(password) {
+      const user = auth.currentUser;
+      if (!user?.email) throw Object.assign(new Error(NO_CURRENT_USER), { code: NO_CURRENT_USER });
+      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+    },
+    async forceRefreshIdToken() {
+      const user = auth.currentUser;
+      if (!user) throw Object.assign(new Error(NO_CURRENT_USER), { code: NO_CURRENT_USER });
+      await getIdToken(user, true);
+    },
+    async callDeleteAccount() {
+      const call = httpsCallable<Record<string, never>, { status?: unknown }>(
+        functions,
+        'deleteAccount',
+      );
+      const { data } = await call({});
+      return data ?? {};
+    },
     async callShop(name, input) {
-      const call = httpsCallable<CreateShopInput | UpdateShopInput, CreatedShop>(functions, name);
+      const call = httpsCallable<RemoteShopInput, RemoteShopResult>(functions, name);
       const { data } = await call(input);
       return { id: data.id, name: data.name, sellingSources: data.sellingSources };
     },

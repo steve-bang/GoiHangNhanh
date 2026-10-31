@@ -2,15 +2,12 @@
   "home": {
     "greeting": "Chào mừng trở lại!",
     "notifications": "Xem thông báo",
-    "bannerTitle": "Ghi hình đóng gói đầy đủ, lưu giữ rõ ràng",
-    "bannerHint": "Ghi hình – Lưu trữ – Theo dõi trạng thái",
     "packOrder": "Đóng gói đơn",
     "packOrderHint": "Ghi hình đóng gói và niêm phong",
     "receiveReturn": "Nhận hàng hoàn",
     "receiveReturnHint": "Ghi hình mở kiện và kiểm tra hàng",
     "returnsList": "Danh sách hàng hoàn",
     "quick": {
-      "scan": "Quét mã đơn",
       "quickOrder": "Tạo đơn nhanh",
       "orders": "Danh sách đơn",
       "evidence": "Bằng chứng"
@@ -24,7 +21,20 @@
     },
     "tipTitle": "Ghi hình đủ các bước",
     "tipHint": "Quay từ lúc lấy hàng đến khi dán niêm phong xong.",
-    "tipAction": "Xem hướng dẫn"
+    "shopFallback": "Cửa hàng của bạn",
+    "statUnknown": "–",
+    "todayEmpty": "Hôm nay chưa có đơn đóng gói hay tệp tải lên trên máy này.",
+    "todayLoadError": "Không đọc được số liệu trên máy.",
+    "deviceNotice": {
+      "title": "Dữ liệu nằm trên máy này",
+      "body": "Đơn và bằng chứng chỉ xem được trên máy đã tạo. Đổi máy hoặc cài lại ứng dụng sẽ không thấy dữ liệu cũ.",
+      "dismiss": "Đã hiểu"
+    }
+  },
+  "notificationList": {
+    "title": "Chưa có thông báo",
+    "message": "Ứng dụng chưa gửi thông báo. Lỗi tải lên xem ở Trung tâm đồng bộ.",
+    "openSync": "Mở Trung tâm đồng bộ"
   },
   "scan": {
     "hint": "Đưa mã QR / mã vạch vào khung hình để quét tự động",
@@ -83,6 +93,9 @@
     "nameRequired": "Hãy nhập tên sản phẩm cho phân loại này.",
     "quantityInvalid": "Hãy nhập số lượng hợp lệ.",
     "invalidCode": "Mã đơn chưa hợp lệ. Hãy kiểm tra lại.",
+    "trackingInvalid": "Mã vận đơn dài quá {{max}} ký tự hoặc có ký tự lạ. Hãy kiểm tra lại.",
+    "nameTooLong": "Tên sản phẩm dài quá {{max}} ký tự. Hãy rút gọn.",
+    "variantTooLong": "Phân loại dài quá {{max}} ký tự. Hãy rút gọn.",
     "title": "Tạo đơn nhanh",
     "confirmTitle": "Xác nhận đơn hàng",
     "cancel": "Hủy",
@@ -129,7 +142,8 @@
     "startRecording": "Kiểm tra camera và bắt đầu",
     "loading": "Đang mở đơn…",
     "notFound": "Không tìm thấy đơn này trong máy.",
-    "permissionReason": "Ứng dụng cần camera để xem trước khi quay. Phiên bản này chưa ghi video.",
+    "permissionReason": "Ứng dụng dùng camera để quay video đóng gói. Ứng dụng không ghi âm.",
+    "permissionReasonPreview": "Ứng dụng cần camera để xem trước khi quay. Phiên bản này chưa ghi video.",
     "help": "Trợ giúp"
   },
   "record": {
@@ -158,7 +172,10 @@
     "backToOrder": "Về đơn hàng",
     "limitSoon": "Sắp đủ {{minutes}} phút. App sẽ tự dừng quay.",
     "limitReachedSaving": "Đã đủ {{minutes}} phút. App đang dừng quay và lưu video.",
-    "limitReached": "Mỗi lần quay tối đa {{minutes}} phút nên app đã tự dừng. Video đã lưu trên máy."
+    "limitReached": "Mỗi lần quay tối đa {{minutes}} phút nên app đã tự dừng. Video đã lưu trên máy.",
+    "killWarning": "Giữ ứng dụng mở trong lúc quay. Nếu ứng dụng bị tắt, đoạn đang quay có thể mất.",
+    "backgroundSaving": "Đã dừng quay vì ứng dụng chuyển sang nền. Đang lưu phần đã quay…",
+    "stoppedInBackground": "Đã dừng quay vì ứng dụng chuyển sang nền. Ứng dụng không tự quay tiếp."
   },
   "confirm": {
     "nothingSaved": "Bản thử giao diện: chưa có video nào được lưu.",
@@ -180,7 +197,8 @@
     "uploadFailedMessage": "Video vẫn lưu trên máy. Tải lên chưa được, app sẽ tự thử lại.",
     "uploadAttentionMessage": "Video vẫn lưu trên máy. Việc tải lên cần bạn xử lý ở phần bằng chứng của đơn.",
     "hashMismatchMessage": "Máy chủ báo tệp không khớp bản trên máy. Video gốc vẫn được giữ trên máy.",
-    "partialFailed": "Một số video chưa lưu được trên máy. Video còn lại đã lưu trên máy."
+    "partialFailed": "Một số video chưa lưu được trên máy. Video còn lại đã lưu trên máy.",
+    "interrupted": "Lần quay bị gián đoạn giữa chừng. Video có thể thiếu phần sau."
   },
   "packDone": {
     "nothingSaved": "Bản thử giao diện: chưa có video nào được lưu.",
@@ -192,21 +210,6 @@
     "summaryQueued": "Phiên đóng gói đã hoàn tất. Video đã lưu trên thiết bị, đang chờ đồng bộ.",
     "summaryUploaded": "Phiên đóng gói đã hoàn tất. Máy chủ đã nhận video.",
     "summaryPartial": "Phiên chưa trọn vẹn: có video chưa lưu xong. Video còn lại đã lưu trên máy."
-  },
-  "returns": {
-    "search": "Tìm theo mã đơn, mã vận đơn hoặc mã hoàn",
-    "filterAll": "Tất cả",
-    "filter": {
-      "receiving": "Đang tiếp nhận",
-      "checking": "Đang kiểm tra",
-      "checked": "Đã kiểm tra",
-      "discrepancy": "Có sai lệch",
-      "unsynced": "Chưa đồng bộ"
-    },
-    "unlinked": "Chưa liên kết đơn gốc",
-    "receive": "Tiếp nhận hàng hoàn",
-    "emptyTitle": "Chưa có hồ sơ hàng hoàn nào",
-    "emptyMessage": "Khi nhận kiện hoàn, hãy tiếp nhận để ghi lại tình trạng kiện trước khi mở."
   },
   "orders": {
     "search": "Tìm mã đơn, mã vận đơn…",
@@ -264,18 +267,100 @@
     }
   },
   "sync": {
-    "note": "Tải nền có thể tạm dừng khi hệ điều hành giới hạn. Mở ứng dụng để tiếp tục.",
+    "note": "Ứng dụng chỉ tải lên khi đang mở. Đóng ứng dụng thì việc tải tạm dừng, mở lại sẽ tiếp tục.",
+    "offline": "Máy đang mất mạng. Tệp vẫn ở trên máy, sẽ tải khi có mạng lại.",
+    "waitingWifi": "Đang chờ Wi‑Fi. Tệp vẫn ở trên máy, sẽ tải khi máy dùng Wi‑Fi và ứng dụng đang mở.",
+    "wifiOnly": {
+      "label": "Chỉ tải khi có Wi‑Fi",
+      "description": "Bật để ảnh và video không tải qua mạng di động. Thông tin đơn vẫn được gửi.",
+      "saveFailed": "Chưa lưu được cài đặt. Bạn thử lại nhé."
+    },
     "filter": {
       "uploading": "Đang tải lên",
       "waiting_upload": "Chờ tải lên",
       "error": "Lỗi",
       "uploaded": "Đã tải lên"
     },
+    "filterCount": "{{label}} ({{count}})",
+    "loading": "Đang đọc danh sách tệp…",
+    "loadError": "Chưa đọc được danh sách tệp. Bạn thử lại nhé.",
+    "reload": "Thử lại",
+    "record": {
+      "pack": "{{code}} · Kiện {{index}}",
+      "packNoIndex": "{{code}}",
+      "return": "Hàng hoàn {{code}}",
+      "unknown": "Hồ sơ không còn trên máy"
+    },
+    "kind": {
+      "video": "Video",
+      "photo": "Ảnh"
+    },
+    "size": "{{kind}} · {{size}}",
+    "reason": {
+      "queued": "Đang chờ lượt tải. Ứng dụng tải khi đang mở.",
+      "offline": "Đang chờ mạng.",
+      "waitingWifi": "Đang chờ Wi‑Fi.",
+      "waitingNetwork": "Mạng chập chờn. Ứng dụng sẽ tự thử lại.",
+      "willRetry": "Chưa tải được. Ứng dụng sẽ tự thử lại.",
+      "serverRejected": "Máy chủ chưa nhận tệp sau nhiều lần thử.",
+      "signInAgain": "Cần đăng nhập lại để tải lên.",
+      "tooLarge": "Tệp quá lớn nên không tải lên được. Tệp vẫn còn trên máy này.",
+      "fileChanged": "Tệp trên máy đã khác lúc lưu nên không tải lên.",
+      "fileMissing": "Không tìm thấy tệp trên máy này.",
+      "fileUnreadable": "Không đọc được tệp trên máy này.",
+      "unsupportedType": "Loại tệp này không tải lên được.",
+      "notCreator": "Chỉ tài khoản tạo tệp hoặc phiên quay này mới tải lên được. Tệp vẫn còn trên máy.",
+      "unknownAttention": "Tệp cần được kiểm tra.",
+      "hashMismatch": "Bản trên máy chủ không khớp tệp gốc nên không được tính là đã xác minh.",
+      "localSaveFailed": "Lưu tệp trên máy bị lỗi.",
+      "unrecoverable": "Tệp hỏng hoặc đã mất, không còn bản nào.",
+      "verifying": "Máy chủ đang kiểm tra tệp.",
+      "verifyStuck": "Máy chủ đã nhận tệp nhưng chưa kiểm tra xong."
+    },
+    "foreignTitle": "Do tài khoản khác tạo trên máy này",
+    "foreignHint": "Máy này không tải các tệp này lên. Chỉ tài khoản đã tạo tệp mới tải lên được.",
+    "retry": "Thử lại",
+    "retryAll": "Thử lại tất cả ({{count}})",
+    "recheck": "Kiểm tra lại",
     "details": "Chi tiết",
+    "openRecord": "Mở hồ sơ",
+    "doneLimit": "Chỉ hiện {{count}} tệp mới nhất.",
+    "toast": {
+      "retried": "Đã đưa vào hàng chờ tải lên.",
+      "retriedOffline": "Đã đưa vào hàng chờ. Sẽ tải khi có mạng và ứng dụng đang mở.",
+      "retriedWaitingWifi": "Đã đưa vào hàng chờ. Sẽ tải khi có Wi‑Fi và ứng dụng đang mở.",
+      "retryChanged": "Trạng thái tệp vừa đổi. Danh sách đã được cập nhật.",
+      "retryFailed": "Chưa đưa tệp vào hàng chờ được. Bạn thử lại nhé.",
+      "recheckRequested": "Đã nhờ máy chủ kiểm tra lại. Kết quả sẽ hiện ở đây.",
+      "recheckRequestedWaitingWifi": "Đã nhờ máy chủ kiểm tra lại. Kết quả sẽ hiện khi có Wi‑Fi.",
+      "recheckOffline": "Cần có mạng để kiểm tra lại.",
+      "recheckFailed": "Chưa nhờ máy chủ kiểm tra lại được. Bạn thử lại sau nhé.",
+      "recheckUnavailable": "Chưa kết nối máy chủ nên chưa kiểm tra lại được."
+    },
     "emptyTitle": "Không có tệp ở mục này",
     "emptyMessage": "Chọn mục khác để xem các tệp còn lại, hoặc mở danh sách đơn.",
     "emptyAction": "Mở danh sách đơn",
-    "waitingNetwork": "Đang chờ mạng"
+    "detail": {
+      "causeTitle": "Chuyện gì xảy ra",
+      "whereTitle": "Dữ liệu đang ở đâu",
+      "where": {
+        "local": "Tệp gốc vẫn còn trên máy này. Không cần quay hay chụp lại.",
+        "localUnreadable": "Tệp vẫn ở trên máy này nhưng không đọc được.",
+        "missing": "Tệp gốc không còn trên máy này.",
+        "partial": "Tệp có thể chưa được lưu đầy đủ trên máy này.",
+        "server": "Máy chủ đã nhận tệp. Tệp gốc vẫn còn trên máy này.",
+        "changed": "Tệp trên máy đã khác bản lúc lưu."
+      },
+      "info": {
+        "attempts": "Số lần đã thử: {{count}}",
+        "updated": "Cập nhật lúc {{time}} (giờ trên máy)"
+      },
+      "noAction": "Ứng dụng không thử lại được lỗi này.",
+      "foreignNoAction": "Chỉ tài khoản đã tạo tệp mới tải lên được.",
+      "notFoundTitle": "Tệp này không còn cần xử lý.",
+      "notFoundMessage": "Có thể tệp đã tải lên xong. Xem lại ở Trung tâm đồng bộ.",
+      "back": "Về Trung tâm đồng bộ"
+    }
   },
   "splash": {
     "brandName": "Đơn Chứng",
@@ -401,8 +486,28 @@
     "errors": {
       "emailRequired": "Bạn nhập email trước nhé.",
       "sendFailed": "Chưa gửi được mã. Bạn thử lại sau ít phút nhé!",
-      "tooMany": "Bạn đã xin mã nhiều lần. Hãy thử lại sau ít phút."
+      "tooMany": "Bạn đã xin mã nhiều lần. Hãy thử lại sau ít phút.",
+      "emailSendFailed": "Chưa gửi được email. Bạn thử lại sau ít phút nhé!",
+      "emailTooMany": "Bạn đã gửi nhiều lần. Hãy thử lại sau ít phút."
+    },
+    "emailLink": {
+      "description": "Nhập email đã đăng ký. Đơn Chứng sẽ gửi thư có đường dẫn để bạn đặt lại mật khẩu.",
+      "submit": "Gửi email đặt lại"
     }
+  },
+  "recoverySent": {
+    "headerTitle": "Quên mật khẩu",
+    "title": "Kiểm tra hộp thư",
+    "description": "Nếu {{email}} đã đăng ký Đơn Chứng, thư đặt lại mật khẩu sẽ tới trong vài phút.",
+    "nextStep": "Mở đường dẫn trong thư để tạo mật khẩu mới, rồi quay lại đây đăng nhập.",
+    "notYours": "Sai email? ",
+    "changeEmail": "Đổi email",
+    "backToSignIn": "Quay lại đăng nhập",
+    "resend": "Gửi lại email",
+    "resendIn": "Gửi lại email sau {{time}}",
+    "resent": "Đã gửi lại. Nếu email đã đăng ký, thư sẽ đến trong vài phút.",
+    "tipTitle": "Không thấy thư?",
+    "tipBody": "Xem mục Thư rác hoặc Quảng cáo. Vẫn chưa có thì bấm Gửi lại email."
   },
   "otp": {
     "headerTitle": "Nhập mã OTP",
@@ -489,12 +594,19 @@
     "emptyReturnMessage": "Đơn này chưa có tệp hàng hoàn nào.",
     "recordPack": "Quay đóng gói",
     "kind": {
-      "pack": { "video": "Video đóng gói", "photo": "Ảnh đóng gói" },
-      "return": { "video": "Video hàng hoàn", "photo": "Ảnh hàng hoàn" }
+      "pack": {
+        "video": "Video đóng gói",
+        "photo": "Ảnh đóng gói"
+      },
+      "return": {
+        "video": "Video hàng hoàn",
+        "photo": "Ảnh hàng hoàn"
+      }
     },
     "capturedAt": "Ghi lúc {{time}} (giờ thiết bị)",
     "errorHint": "Tệp này cần xử lý.",
-    "openSync": "Mở trung tâm đồng bộ"
+    "openSync": "Mở trung tâm đồng bộ",
+    "openDetail": "Xem {{kind}}"
   },
   "orderMatch": {
     "title": "Tra cứu mã",

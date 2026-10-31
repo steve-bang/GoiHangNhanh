@@ -92,7 +92,7 @@ Feature dự kiến: `shop`, `orders`, `packing`, `returns`, `evidence`, `upload
 
 | Đối tượng (docs/02) | Đường dẫn | Client ghi? | Ghi chú |
 |---|---|---|---|
-| Shop | `shops/{shopId}` | Không (Function) | Gói dịch vụ/hạn mức: trường trong shop hoặc `plan` (chờ O-06) |
+| Shop | `shops/{shopId}` | Không (Function) | Gói dịch vụ/hạn mức: trường trong shop hoặc `plan` (chờ O-06). Xóa tài khoản (V1-14): `status: 'deleting'`, `deletionRequestedAt`, `purgeAfter`, `deletionRecordId`; `legalHold` chỉ Admin đặt. Shop `deleting` bị Rules khóa với mọi client |
 | Thành viên | `shops/{shopId}/members/{uid}` | Không (Function) | `roles[]`, `status` (`active`/`revoked`). Nguồn quyền cho Rules |
 | Đơn hàng | `shops/{shopId}/orders/{orderId}` | Có (Rules) | `orderCode`, `source`, `trackingCode?`, `status`, `dataSource`, `rev`… |
 | Dòng sản phẩm | `…/orders/{orderId}/lines/{lineId}` | Có | `name`, `variant?`, `quantity`; mỗi variant một dòng, không gộp |
@@ -100,11 +100,14 @@ Feature dự kiến: `shop`, `orders`, `packing`, `returns`, `evidence`, `upload
 | Lượt vận chuyển | `…/orders/{orderId}/shipments/{id}` | *(chưa có Rules)* | Đi/hoàn, mã vận đơn |
 | Phiên ghi nhận | `shops/{shopId}/sessions/{sessionId}` | Có (hạn chế) | `orderId`, `packageId` bất biến; `orderSnapshot` bất biến; chỉ đổi `status`, `interruptions`, `note` |
 | Bằng chứng (Media Asset) | `shops/{shopId}/evidence/{evidenceId}` | Có (hạn chế) | Xem 4.3; bản dẫn xuất chỉ Function tạo |
-| Hồ sơ hàng hoàn | `shops/{shopId}/returnCases/{id}` | *(chưa có Rules)* | `linkedOrderId` nullable; liên kết qua `linkEvents` (ai/lúc nào/căn cứ) |
+| Hồ sơ hàng hoàn — bản neo (R2b, Q-28) | `shops/{shopId}/returns/{returnId}` | Có (tạo một lần, bất biến) | Chỉ định danh: `code` (nhãn, không phải ID), `createdBy`, `createdAt`; KHÔNG chứa đơn gốc/tình trạng/dòng/sai lệch/vị trí. Hồ sơ chưa liên kết đơn vẫn đăng được |
+| Hồ sơ hàng hoàn — nội dung | `shops/{shopId}/returnCases/{id}` | *(chưa có Rules)* | `linkedOrderId` nullable; liên kết qua `linkEvents` (ai/lúc nào/căn cứ). Đồng bộ nội dung là Q-26c, chưa làm |
 | Sai lệch | `…/returnCases/{id}/discrepancies/{id}` | *(chưa có Rules)* | Dữ liệu thực nhận là bản ghi riêng, không ghi đè dữ liệu dự kiến |
 | Vụ tranh chấp | `shops/{shopId}/disputes/{id}` | *(chưa có Rules)* | Tham chiếu bằng ID; đặt cờ giữ trên bằng chứng (Function) |
 | Bộ bằng chứng xuất | `shops/{shopId}/exports/{id}` | Không (Function) | Manifest + tệp trong Storage |
 | Sự kiện kiểm toán | `shops/{shopId}/auditEvents/{id}` | **Không bao giờ** | Chỉ Function/trigger ghi; đọc: chủ shop, quản lý, người xử lý tranh chấp |
+| Yêu cầu xác minh lại (V1-04) | `shops/{shopId}/evidenceReverify/{evidenceId}` | **Không** (đọc cũng không) | Chỉ `createUploadSession` ghi; trigger `reverifyEvidence` đọc |
+| Nhật ký xóa tài khoản (V1-14) | `accountDeletions/{uid}` (cấp gốc, id = uid) | **Không** (đọc cũng không) | `uid`, `shopIds`, `leftShopIds`, `requestedAt`, `purgeAfter`, `status` (`requested` → `pending_purge`/`completed` → `purged`), `reason`, `channel`, `counts`, `purgedShopIds`, `lastSkipReason`; không email/tên/mã đơn. Bản ghi duy nhất còn lại sau purge (R-1) |
 
 "Chưa có Rules" nghĩa là **bị từ chối mặc định** cho tới khi tính năng tương ứng được làm cùng Rules + test; không mở trước.
 
@@ -113,7 +116,9 @@ Feature dự kiến: `shop`, `orders`, `packing`, `returns`, `evidence`, `upload
 ```
 evidence/{evidenceId}
   # Vùng client khai báo, bất biến sau khi tạo (trừ trạng thái phía thiết bị)
-  shopId, sessionId, orderId, packageId      # liên kết bằng ID; Rules kiểm tra khớp phiên
+  shopId, sessionId, orderId, packageId      # liên kết bằng ID; Rules kiểm tra khớp phiên (bằng chứng ĐÓNG GÓI)
+  # Hoặc, bằng chứng HÀNG HOÀN (R2b, Q-28): shopId, ownerKind: 'return', returnId   (KHÔNG có phiên/đơn/kiện;
+  # Rules kiểm tra shops/{shopId}/returns/{returnId} đã tồn tại; ảnh image/*, video video/*)
   kind: 'original_video' | 'photo'           # 'derived' chỉ Function tạo
   origin: 'in_app_capture'                   # nhập thư viện (O-02) chưa được phép
   sha256Client, sizeBytes, durationMs, mimeType
@@ -134,7 +139,7 @@ evidence/{evidenceId}
 ### 4.4 Storage (client bị từ chối hoàn toàn — ADR-006, chờ duyệt)
 
 ```
-shops/{shopId}/evidence/{evidenceId}/original            bản gốc, tạo đúng một lần
+shops/{shopId}/evidence/{evidenceId}/original            bản gốc, tạo đúng một lần (cả đóng gói lẫn hàng hoàn: đường dẫn chỉ cần shopId + evidenceId)
 shops/{shopId}/evidence/{evidenceId}/derived/{derivId}   xem trước/nén; liên kết bản gốc
 shops/{shopId}/exports/{exportId}/…                      bộ hồ sơ xuất
 ```
@@ -153,6 +158,7 @@ shops/{shopId}/exports/{exportId}/…                      bộ hồ sơ xuất
      │                    │                                  ▲  ▲                         │
      │ RECOVERY_FOUND_FILE│(đọc lại kiểm tra)               │  └──RETRY_UPLOAD── upload_failed ◄─UPLOAD_FAILED
      └──────────►─────────┘                                  └─ATTENTION_RESOLVED─ needs_attention
+                                                             └─USER_RETRY_ATTENTION (có điều kiện)─ needs_attention
                                                                                          
  [server] queued|uploading|upload_failed|needs_attention ──SERVER_RECEIVED──► uploaded
  [server] uploaded ──SERVER_VERIFIED──► verified           [server] uploaded ──SERVER_HASH_MISMATCH──► hash_mismatch
@@ -166,8 +172,9 @@ Bảo đảm (có unit test, xem [testing.md](testing.md)):
 1. **Client không tự tới `uploaded`/`verified`/`hash_mismatch`**: các chuyển này đòi `origin: 'server'`; sự kiện thiết bị giả danh bị từ chối (`ORIGIN_NOT_ALLOWED`). Chỉ lớp `data` mới tạo sự kiện server, và chỉ từ dữ liệu `server.*` đọc về. Lớp phòng thủ thứ nhất là Security Rules (cấm client ghi `server` và đặt `clientFileState` ngoài tập cho phép). *Mã trong app chỉ là kỷ luật; Rules mới là ranh giới tin cậy.*
 2. **Khôi phục sau khi app bị kill khi đang quay** đi qua `saving_local` (kiểm tra lại tệp), không vào hàng đợi trực tiếp (A05: "không tự nhận là video đầy đủ"). Cờ "phiên bị gián đoạn" nằm ở *trạng thái phiên*, không ở trạng thái tệp.
 3. **Đối soát QA-05**: máy chủ đã nhận nhưng app mất phản hồi → `SERVER_RECEIVED` được chấp nhận từ `queued`/`uploading`/`upload_failed`/`needs_attention`, nên đối soát đưa tệp lên `uploaded` mà không phải tải lại.
-4. **`hash_mismatch` và `unrecoverable` là trạng thái cuối** (không có lối ra bằng sự kiện thường; cách xử lý do người dùng/hỗ trợ, ghi audit).
-5. **`isLocalCopyReleasable`**: chỉ `verified` mới đủ *điều kiện cần* để giải phóng bản cục bộ (còn chính sách an toàn và thông báo người dùng). `uploaded` và `hash_mismatch` thì không (bản cục bộ có thể là bản đúng duy nhất).
+4. **Người dùng thử lại tệp `needs_attention` (V1-08, R-3):** `USER_RETRY_ATTENTION` (`origin: 'device'`, chỉ tới `queued`) cần ngữ cảnh `lastErrorCode` và bị từ chối (`NOT_USER_RETRYABLE`) với lỗi tệp cục bộ (`NON_RETRYABLE_ATTENTION_CODES`) hoặc khi không có mã. Patch giữ `lastErrorCode` (đối soát trước khi gửi lại).
+5. **`hash_mismatch` và `unrecoverable` là trạng thái cuối** (không có lối ra bằng sự kiện thường; cách xử lý do người dùng/hỗ trợ, ghi audit).
+6. **`isLocalCopyReleasable`**: chỉ `verified` mới đủ *điều kiện cần* để giải phóng bản cục bộ (còn chính sách an toàn và thông báo người dùng). `uploaded` và `hash_mismatch` thì không (bản cục bộ có thể là bản đúng duy nhất).
 
 **Nhãn hiển thị** (`toDisplayStatus` + `core/theme/evidence-status.ts`, docs/09 mục 3): sáu nhãn *Đã lưu trên máy / Chờ tải lên / Đang tải lên / Đã tải lên / Đã xác minh / Lỗi – cần xử lý*; hai pha ghi hình dùng trạng thái riêng của màn quay. Mọi trạng thái lỗi → *Lỗi – cần xử lý*. Cụm "Đã lưu an toàn trên máy chủ" chỉ gắn với `verified` (test i18n kiểm tra). **Điểm mơ hồ cần BA xác nhận** (Q-02): docs/09 ánh xạ cả *Đã lưu trên máy* và *Chờ tải lên* vào trạng thái nghiệp vụ "Chờ tải lên"; khung hiện phân biệt bằng "có lý do chờ" hay không.
 
@@ -181,7 +188,7 @@ Bảo đảm (có unit test, xem [testing.md](testing.md)):
 4. **Gián đoạn** (A05/B05): cuộc gọi/mất focus, hệ điều hành thu hồi camera, hết dung lượng, app bị kill. Cơ chế: lắng nghe sự kiện lỗi/tạm dừng của thư viện camera → ghi vào `sessions.interruptions[]` (thời điểm thiết bị, nguyên nhân); không bao giờ ghép các đoạn thành video liền mạch (UI-J14) — mỗi đoạn là một tệp/bằng chứng riêng thuộc cùng chuỗi phiên bổ sung. Hết dung lượng: cố đóng tệp an toàn, đánh dấu không hoàn chỉnh nếu không xác nhận được (QA-12).
 5. **Khởi động app**: quét SQLite tìm tệp ở `recording`/`saving_local` và quét thư mục tạm/bền tìm tệp mồ côi → `RECOVERY_FOUND_FILE` → kiểm tra lại; không đọc được → `unrecoverable` + phiên `needs_attention`. Không tự xác nhận phiên.
 6. **Kiểm tra trước khi quay** (A04, chạy ngầm): quyền camera/micro, dung lượng trống so với ngưỡng, ghi thử được vào thư mục bền. Ngưỡng dung lượng và thời lượng tối thiểu là cấu hình, chờ O-05.
-7. Bản gốc trong thư mục bền cần cân nhắc **loại khỏi sao lưu tự động của hệ điều hành** (iCloud/Android Auto Backup) để không đầy dung lượng cá nhân của người dùng — *cần quyết định/spike*, ghi trong ADR-004.
+7. Bản gốc trong thư mục bền **không vào sao lưu tự động của hệ điều hành** (Q-24d = A, điều phối chốt): Android `allowBackup: false` (V1-01) loại toàn bộ dữ liệu app; iOS dùng module Expo cục bộ `modules/backup-exclusion` (V1-12, Swift, chỉ `apple`) đặt `isExcludedFromBackup` cho thư mục `Documents/evidence` (khi mở app và khi thư mục được tạo lại) và thư mục CSDL `Documents/SQLite` (sau lần mở CSDL đầu tiên), qua adapter `src/platform/backup-exclusion.ts`; không có module (Android, web, Expo Go) thì no-op; lỗi chỉ log, không chặn. Hệ quả: đổi máy/cài lại mất tệp chưa tải (docs/06). Chưa kiểm chứng trên máy (release-checklist G-7).
 
 ## 7. Hàng đợi tải lên bền vững
 
@@ -195,6 +202,18 @@ Bảo đảm (có unit test, xem [testing.md](testing.md)):
 4. Tải theo khối có thể tiếp tục; giao việc cho **trình tải nền của hệ điều hành** khi thư viện được chọn hỗ trợ (mục 11). Tiến độ ghi SQLite.
 5. Xong phía thiết bị chỉ nghĩa là "đã gửi hết"; **trạng thái `uploaded` đến từ máy chủ** (trigger khi đối tượng được tạo xong ghi `server.state`). Client chỉ lắng nghe tài liệu bằng chứng.
 6. Lỗi: mạng → quay `queued` có backoff, **không** đếm là lỗi; xác thực hết hạn / hết hạn mức / gói không cho lưu → `needs_attention` với mã rõ (giữ tệp, không báo đã sao lưu); lỗi khác lặp lại → `upload_failed` cho người dùng thử lại.
+
+**Hiện thực hôm nay (V1-02, Q-24h = A; chưa kiểm chứng trên thiết bị):**
+
+- Nguồn mạng duy nhất: `src/platform/connectivity.ts` (NetInfo 12.0.1). `online = false` chỉ khi hệ điều hành báo chắc chắn mất kết nối; chưa biết = có mạng; không dùng `isInternetReachable`. Loại: `wifi`/`cellular`/`other`/`none`.
+- Máy báo mất mạng: hàng đợi và đồng bộ đơn/hồ sơ hoàn không chạy (`skipped: 'offline'`), lần gửi tệp đang chạy bị hủy (`AbortSignal` → `UploadTask.cancelAsync`), tệp về `upload_failed` mã `NETWORK_LOST`. Có mạng lại: chạy ngay, tệp `upload_failed` do lỗi mạng tới hạn ngay (tệp lỗi máy chủ giữ lịch giãn cách).
+- Phân loại (`UploadOutcome`): `network` (mất mạng, hết giờ, Firebase `unavailable`/`deadline-exceeded`, `internal`/`unknown` không có `details` từ máy chủ (tối đa 24 lần liên tiếp, đếm bền trong `lastErrorCode` dạng `INTERNAL@n`; sau đó tính lượt), HTTP 408/429/502/503/504) **không tăng `attemptCount`**, giãn cách theo số lỗi mạng liên tiếp (bộ nhớ, 5 giây gấp đôi, trần 15 phút) và dừng lượt; `retryable` (máy chủ từ chối: HTTP 401/403/412/500, `permission-denied` khi khai báo, lỗi không rõ) tính lượt, 8 lần → `needs_attention`; `attention` → `needs_attention` ngay. Trạng thái tệp vẫn là `upload_failed` (không thêm trạng thái mới; bất biến 3).
+- Hết giờ (R4): mỗi lệnh `RemoteDocuments` (Firestore/Functions) tối đa 30 giây theo bảng hạn `RemoteCallTimeouts` (ghi đè được theo thao tác/callable), ném `deadline-exceeded`; mọi lệnh đọc dùng nguồn máy chủ (`getDocFromServer`), không bộ đệm, để bản ghi đang chờ sau khi hết giờ không bị coi là đã đăng; mở phiên tải (POST) có hạn riêng 30 giây; cổng tải lên cũng giới hạn khai báo/xin phiên/hỏi trạng thái 30 giây. Lệnh bên dưới không bị hủy (ghi Firestore vẫn chờ trong SDK) nhưng lượt được giải phóng; mọi lệnh idempotent. Bước gửi tệp **không** có hạn cứng.
+- Tệp đóng gói chỉ khai báo khi phiên đã đăng (`OrderStore.isSessionPublished`), media hàng hoàn khi bản neo đã đăng: phiên chưa đăng thì tệp đứng ở `queued`, không gọi máy chủ, không tốn lượt.
+- **Một máy một tài khoản (V1-07, Q-24g = A):** hàng đợi chỉ đọc tệp do CHÍNH tài khoản đang đăng nhập (Firebase Auth `currentUid`) tạo: tệp đóng gói theo `packing_sessions.created_by` (`EvidenceFileStore.listForUpload`, JOIN cùng shop), media hàng hoàn theo `return_media.created_by` (`listMediaForUpload`). Tệp của tài khoản khác/không rõ không được khai báo, đối soát hay đổi trạng thái; UI hiện "Chờ tải lên" + lý do (`uploaderRelation`, `foreignUploadNote`). Đăng xuất/chuyển cửa hàng chỉ đếm tệp của chính tài khoản (`OrderStore.countUnsyncedByOwner`). Máy chủ cũng ép điều này (V1-07b, decisions Q-29 / V1-07b; chưa deploy): Rules chỉ cho tạo `evidence` khi `createdBy == auth.uid`, và với đóng gói còn `sessions/{sessionId}.createdBy == auth.uid` (đơn vị sở hữu là phiên); với hàng hoàn đơn vị sở hữu là từng media, bản neo chỉ cần tồn tại trong shop (ảnh B chụp thêm vào hồ sơ của A vẫn do B tải). Chỉ người khai báo cập nhật trạng thái phía thiết bị. `createUploadSession` kiểm lại trước khi ký URL, từ chối `permission-denied` kèm `details.reason` (`not_session_creator`, `not_evidence_declarer`). App đổi lý do này thành `NOT_EVIDENCE_CREATOR`: "cần xử lý" ngay, không có nút Thử lại.
+- **Chỉ tải khi có Wi‑Fi (V1-09, Q-24c = B):** cài đặt máy `upload.wifi_only` (bảng `device_settings`, migration v15; kho khóa/giá trị JSON dùng chung ở `features/orders`: `DeviceSettingsProvider`, `useDeviceSetting`), mặc định tắt = luôn tải kể cả 4G/5G. Bật mà `type !== 'wifi'` (gồm `other`: Ethernet, VPN, Bluetooth, chưa rõ) hoặc cài đặt chưa nạp xong: `uploadNetworkGate` = `waiting_wifi`, hàng đợi bỏ lượt (`skipped: 'waiting_wifi'`, không đối soát, không gửi, không tính lượt, trạng thái tệp không đổi); lần gửi đang chạy bị hủy như mất mạng; có Wi‑Fi lại hoặc tắt công tắc thì chạy ngay. UI-F01/F02 hiện lý do "Đang chờ Wi‑Fi." cạnh nhãn chuẩn (không phải trạng thái tệp). Chỉ áp dụng tệp ảnh/video; đồng bộ đơn/bản neo (vài KB) vẫn chạy. "Kiểm tra lại" (người dùng bấm, không gửi tệp) vẫn gọi máy chủ.
+
+- **Băm trước khi gửi (V1-13, R9; chưa kiểm chứng trên thiết bị):** băm SHA-256 thuần JS (`platform/file-hasher.ts`) đọc khối 1 MB, băm theo lát 256 KB và **nhường luồng JS** (một macrotask `setTimeout(0)`) khi đã chạy liên tục quá 12 ms (`core/crypto/cooperative-hash.ts`). Hàng đợi **không băm lại** tệp không đổi: sau lần băm lại khớp `sha256Client`, lưu dấu tệp `hashedFingerprint` (kích thước + `File.modificationTime`, cột `hashed_size_bytes`/`hashed_mtime_device` của `evidence_files` và `return_media`, migration v16) cùng sự kiện `UPLOAD_STARTED`; lần thử sau dấu đọc được khớp dấu đã lưu và kích thước khớp `sizeBytes` thì bỏ băm. Dấu khác, thiếu (hệ tệp không báo mtime, tệp mất), hoặc tệp đổi trong lúc băm (dấu trước ≠ dấu sau) thì băm lại; khác mã -> `LOCAL_HASH_CHANGED` -> `needs_attention`, không tải, xóa dấu. Lần thử đầu sau khi đóng tệp luôn băm lại. Không có inode. Tệp bị sửa mà giữ nguyên cả kích thước lẫn mtime lọt kiểm tra cục bộ, nhưng `verifyEvidence` băm lại độc lập nên thành `hash_mismatch`, không bao giờ `verified` sai.
 
 **Idempotency**: khóa = `evidenceId` (cũng là đường dẫn đối tượng). Rules/Function chỉ cho tạo đối tượng một lần; tạo lại cùng ID không sinh bằng chứng thứ hai (A07: "thử lại không tạo nhiều bản ghi").
 
@@ -218,9 +237,10 @@ Không có Function nào được viết trong khung này; bảng dưới là h�
 | Tạo shop, mời/thu hồi/đổi vai trò thành viên | Function (callable) | Ghi `members`, audit | Tự nâng quyền; thu hồi phải có hiệu lực ngay | #7, #8 |
 | Cấp phiên tải (resumable) | Function (callable) | Kiểm tra quyền + bằng chứng hợp lệ → trả session URI | Storage từ chối client; kiểm soát đường dẫn đích | #4, #8 |
 | **Xác minh mã băm** | Function (khi đối tượng Storage hoàn tất) | Đọc streaming, tính SHA-256, so `sha256Client` → ghi `server.state`/`sha256Server`/`verifiedAt`; không khớp → `hash_mismatch` | Không tin giá trị client | #3 |
-| Ghi nhật ký kiểm toán | Function/trigger (Firestore `onWrite`, callable) | Ghi `auditEvents` (ai, làm gì, đối tượng, kết quả, giá trị trước/sau cho trường quan trọng) | Client không được tự ghi/sửa | #7 |
+| Ghi nhật ký kiểm toán | Function/trigger (Firestore `onDocumentWritten`, callable) | Ghi `auditEvents` (ai, làm gì, đối tượng, kết quả, giá trị trước/sau cho trường quan trọng). **Đã viết (V1-04, chưa deploy):** `functions/src/audit.ts` cho `orders`, `lines`, `packages`, `sessions`, `evidence`, `returns`; id sự kiện cố định theo (đường dẫn, `updateTime`); chỉ giá trị trường không nhạy cảm (decisions.md Q-29 / V1-04) | Client không được tự ghi/sửa | #7 |
 | URL đọc có thời hạn | Function (callable) | Kiểm tra quyền → signed URL ngắn hạn + audit "đã xem" | URL không hết hạn vi phạm bảo mật | #8 |
 | Thời gian máy chủ | Firestore `serverTimestamp()` / `request.time` | Rules ép bằng nhau | Giờ thiết bị có thể sai/bị đổi | docs/06 |
+| **Xóa tài khoản** (V1-14, đã viết, chưa deploy) | Callable `deleteAccount` + lịch `purgeDeletedShops` (hằng ngày) + script hỗ trợ `admin/delete-account-cli.ts` (`functions/src/account.ts`) | `deleteAccount`: `auth_time` ≤ 5 phút; một transaction khóa shop chủ sở hữu (`deleting`, `purgeAfter` = +30 ngày, giữ hạn cũ khi gọi lại), gỡ thành viên, xóa `userShops`, ghi `accountDeletions/{uid}`; rồi xóa người dùng Auth. Shop còn thành viên khác đang hoạt động: từ chối (`shop_has_members`). Purge: shop `deleting` quá hạn và không `legalHold` → Storage `shops/{id}/` theo trang → `recursiveDelete` mọi collection con (gồm `auditEvents`, `evidenceReverify`) → tài liệu shop SAU CÙNG (bị ngắt thì lần sau tìm lại); idempotent, dừng sớm trước giới hạn 540 giây. Trigger kiểm toán bỏ qua sự kiện xóa nên không hồi sinh dữ liệu. Xóa Auth lỗi sau bước 1: bản ghi `requested`, lịch hằng ngày gọi lại sau 1 giờ; `purged` chỉ khi đã có `authDeletedAt` | Xóa người khác/xóa bằng chứng bị giữ; client không có quyền xóa | #7, #8, #9 |
 | Dọn theo hạn lưu | Function (lịch) | Tính hạn từ chính sách; **bỏ qua bằng chứng có `retention.hold`**; xóa có audit; xử lý bản sao lưu theo chính sách | Không để client xóa/giữ | #9 |
 | Cờ giữ do tranh chấp | Trigger trên `disputes` | Đặt/gỡ `retention.hold.disputeIds` | Giữ phải nhất quán, không dựa vào client | #9 |
 | Xuất bộ hồ sơ | Function (callable/task) | Gom tệp + manifest (liệt kê tệp thiếu/lỗi, trạng thái) | Cần đọc Storage và ghi audit; chờ O-08 | #7 |
@@ -234,7 +254,7 @@ Rủi ro kỹ thuật cần kiểm tra khi làm Function xác minh (spike S5): t
 - **Vai trò** `owner`, `manager`, `packer`, `returns_staff`, `dispute_handler`, `viewer` (docs/07). Ma trận quyền theo hành động còn mở (O-07), nên Rules hiện dùng **khung tạm**: thành viên đang hoạt động đọc được; `owner`/`manager`/`packer` ghi đơn, phiên, bằng chứng; chỉ `owner`/`manager`/`dispute_handler` đọc audit; mọi thay đổi thành viên qua Function. Khi O-07 chốt phải cập nhật Rules + test.
 - **Test truy cập chéo shop (QA-11)**: `firebase/tests/rules/firestore.rules.test.ts` và `storage.rules.test.ts` (đã chạy được với Emulator). Gồm: không đăng nhập, đoán ID tài liệu/danh sách của shop khác (kể cả chủ shop khác), người lạ, thành viên bị thu hồi, tự nâng quyền, giả mạo `shopId`.
 - **Không bí mật trong app**: không khóa dịch vụ, không khóa ký URL; mọi thao tác cần quyền cao đi qua Function.
-- **Quyền riêng tư**: thu thập tối thiểu; không đưa mã đơn/mã vận đơn/thông tin khách vào log/crash/analytics (logger che trường nhạy cảm; xem conventions mục 7). Chọn dịch vụ crash/analytics là quyết định riêng, chưa làm.
+- **Quyền riêng tư**: thu thập tối thiểu; không đưa mã đơn/mã vận đơn/thông tin khách vào log/crash/analytics (logger che trường nhạy cảm; xem conventions mục 7). Báo lỗi ứng dụng: Firebase Crashlytics (V1-16, mục 11.7c), không Analytics.
 
 ## 10. Offline-first và xung đột đồng bộ
 
@@ -313,7 +333,7 @@ Ngày kiểm tra: **2026-10-26**. "Cập nhật" = thời điểm xuất bản g
 
 ### 11.6 Mã băm tệp (SHA-256)
 
-`expo-file-system` 58 có `file.digest('SHA-256')` (khai báo kiểu có thuật toán MD5/SHA-1/256/384/512) — *chưa rõ có băm theo luồng hay nạp cả tệp vào bộ nhớ*; `expo-crypto` 58.0.7 chỉ băm `TypedArray`/chuỗi trong bộ nhớ (không phù hợp video lớn). Ứng viên thay thế: `react-native-quick-crypto` 1.1.8 (Nitro). **Spike S3**: băm tệp ≥ 1 GB, đo RAM đỉnh và thời gian trên máy cấu hình thấp.
+`expo-file-system` 58 có `file.digest('SHA-256')` (khai báo kiểu có thuật toán MD5/SHA-1/256/384/512). **Đã đọc mã nguồn 58.0.12 (V1-13):** là `AsyncFunction` native, đọc tệp theo luồng khối 64 KB (iOS `FileHandle` + CryptoKit `SHA256`, Android `FileInputStream` + `MessageDigest`), không nạp cả tệp vào bộ nhớ và không chạy trên luồng JS — ứng viên phương án B của R-5 **không cần thư viện mới**; chưa kiểm chứng trên máy (tốc độ, RAM, hủy giữa chừng). Hiện app vẫn băm bằng JS (`core/crypto/sha256.ts`) nhường luồng (V1-13, R-5 = A tạm); `expo-crypto` 58.0.7 chỉ băm `TypedArray`/chuỗi trong bộ nhớ (không phù hợp video lớn). Ứng viên thay thế: `react-native-quick-crypto` 1.1.8 (Nitro). **Spike S3**: băm tệp ≥ 1 GB, đo RAM đỉnh và thời gian trên máy cấu hình thấp.
 
 ### 11.7 Lưu trữ cục bộ cho hàng đợi/phiên
 
@@ -325,6 +345,29 @@ Ngày kiểm tra: **2026-10-26**. "Cập nhật" = thời điểm xuất bản g
 
 **Đề xuất (ADR-004b): `expo-sqlite`** (ít phụ thuộc, khớp SDK; hiệu năng thừa đủ cho hàng đợi vài trăm bản ghi). MMKV chỉ cho cờ nhỏ nếu cần.
 
+### 11.7b Phát lại video bằng chứng trên máy (V1-17, 2026-10-30)
+
+| | `expo-video` ~58.0.12 (npm 58.0.13) | `react-native-video` |
+|---|---|---|
+| Bảo trì | Module Expo chính chủ, đúng bản `bundledNativeModules.json` của SDK 58 | Bên thứ ba, cấu hình native riêng |
+| Nền tảng | iOS (AVPlayer), Android (Media3/ExoPlayer), web (`<video>`) | iOS, Android |
+| Phát `file://` | Có; lớp native đọc tệp, video không qua bộ nhớ JS | Có |
+| Cấu hình | Config plugin; đặt `supportsBackgroundPlayback`/`supportsPictureInPicture` = `false` (không thêm quyền/chế độ nền) | Thủ công |
+
+**Chọn `expo-video`** sau adapter `src/platform/video-player.tsx` (`LocalVideoPlayer`, `useCaching: false`, chỉ đọc). Chưa kiểm chứng trên thiết bị (video dài, tua, máy yếu: release-checklist G-6).
+
+### 11.7c Báo lỗi ứng dụng (V1-16, 2026-10-30)
+
+`@react-native-firebase/crashlytics` **27.1.0** (cùng họ `app`/`auth`/`firestore`/`functions` 27.1.0 đã dùng, kế hoạch v1 mục 1.2; không thêm SDK bên thứ ba khác). Không cân nhắc Sentry/Bugsnag: thêm một bên xử lý dữ liệu mới, khai báo store thêm một SDK, trong khi Firebase đã là backend.
+
+- **Cấu hình:** plugin `@react-native-firebase/crashlytics` trong `app.json` (Gradle Android: plugin `com.google.firebase.crashlytics` để tải mapping; iOS: pha tải dSYM của RNFirebase). `firebase.json` ở **gốc repo** (RNFirebase đọc lúc build; khác `firebase/firebase.json` của Firebase CLI, mọi lệnh CLI của repo đã dùng `--config firebase/firebase.json`): `crashlytics_auto_collection_enabled: false` (không gửi gì tới khi app đọc công tắc), `crashlytics_debug_enabled: false`, `crashlytics_is_error_generation_on_js_crash_enabled: false`.
+- **Luồng:** `src/bootstrap/CrashReportingBridge.tsx` (chỉ bản build không `__DEV__`, không test, backend `firebase`) đọc cài đặt máy `privacy.crash_reports` (mặc định bật, R-8 A) -> `crashReporter.setEnabled` + `setLogSink` của logger. Logger chuyển bản ghi `warn` (dòng nhật ký kèm báo cáo) và `error` (thêm lỗi không fatal `LoggedError`) **sau khi lọc** bằng `core/logging/crash-safe.ts`. Adapter thay handler lỗi JS toàn cục của RNFirebase: lỗi được lọc rồi mới ghi/chuyển cho handler mặc định React Native (sập native mang thông điệp đã lọc).
+- **Tắt:** ngay lập tức phía JS, `setCrashlyticsCollectionEnabled(false)` (SDK nhớ qua các lần mở) + `deleteUnsentReports`. **Bật lại:** lỗi JS ghi ngay; sập native chắc chắn từ lần mở app sau.
+- **Lỗi render và lúc khởi động (sửa sau review PR #62):** RN 0.88 đưa lỗi render chưa bắt thẳng tới `ExceptionsManager.handleException` (không qua `ErrorUtils`). Vì vậy app có `RootErrorBoundary` ngoài cùng (không vẽ UI, có lỗi thì `null`): lọc lỗi tại chỗ trong `getDerivedStateFromError`, rồi chuyển cho handler toàn cục như fatal. Handler lọc cài ngay khi nạp `src/app/_layout.tsx` (`bootstrap/crash-reporting-early.ts`), không đợi effect.
+- **Stack:** một dòng chỉ là khung khi kết thúc bằng vị trí (`:dòng:cột`, `native`, `<anonymous>`); tên hàm phải là định danh JS không có chuỗi 4+ chữ số, tên tệp chỉ giữ tên cuối có đuôi mã/bundle, không khớp thì `<unknown>`/`<file>`.
+- **Không gửi:** `setUserId`, khóa tùy chỉnh, `error.message`, componentStack, đường dẫn. Lỗi Promise bị từ chối không bắt (Hermes) không được gửi, trừ khi đi qua `logger.error`; handler Promise của RNFirebase gửi `message` gốc nhưng bất hoạt trên Hermes (decisions Q-29 / V1-16 k, kiểm G-9).
+- **Chưa kiểm chứng:** build iOS `useFrameworks: "dynamic"` + Crashlytics, dSYM/mapping, báo cáo thật trong Console (release-checklist S-3b, G-9).
+
 ### 11.8 Quản lý state, điều hướng, form, i18n
 
 | Hạng mục | Ứng viên (phiên bản, cập nhật) | Đề xuất | Lý do |
@@ -333,7 +376,7 @@ Ngày kiểm tra: **2026-10-26**. "Cập nhật" = thời điểm xuất bản g
 | Điều hướng | `expo-router` 58.0.26 vs `@react-navigation/native` 7.5.1 (2026-10-13) | Expo Router (xây trên React Navigation) | Chính thức theo SDK, typed routes, deep link cho lời mời/thông báo; route mỏng, màn hình nằm trong `features/*/ui`. Màn quay cần ẩn tab bar + chặn rời vô tình (docs/09 mục 2) — cả hai làm được. Khi dùng Expo Router, thư mục `src/app` dành cho route (vì vậy composition root đặt ở `src/bootstrap`). |
 | Form/validate | `react-hook-form` 7.91.0, `zod` 4.6.7 | `zod` để parse dữ liệu ở biên (Firestore → domain); **chưa** thêm react-hook-form | Form của app rất nhỏ (tạo đơn nhanh); thêm khi có form phức tạp |
 | i18n | `i18next` 26.5.11 + `react-i18next` 17.1.9 (đã cài trong khung) | Giữ | Trưởng thành, đủ cho tiếng Việt mặc định; `expo-localization` 58.0.5 thêm khi O-17 mở ngôn ngữ khác |
-| Mạng | `@react-native-community/netinfo` 12.0.1 | Dùng khi làm hàng đợi | Phát hiện offline/đổi Wi-Fi↔di động |
+| Mạng | `@react-native-community/netinfo` 12.0.1 | **Đã cài (V1-02, Q-24f)**, sau `platform/connectivity.ts`; chưa kiểm chứng trên thiết bị | Phát hiện offline/đổi Wi-Fi↔di động |
 | Công cụ | Jest 30 + `jest-expo` 58.0.12; ESLint 9.39 + `eslint-config-expo` 58.0.4; Prettier 3.9; TypeScript 6.0 (mẫu Expo dùng `~6.0.3`) | Đã cài | ESLint 10 và TypeScript 7.0 đã ra nhưng `eslint-plugin-react`/`import` chưa khai báo hỗ trợ ESLint 10 và mẫu Expo ghim TS 6.0 — chờ hệ sinh thái; nâng khi đồng bộ |
 
 ## 12. Kế hoạch spike trước khi khóa thư viện (cần thiết bị thật iOS + Android)
@@ -352,7 +395,9 @@ Ngày kiểm tra: **2026-10-26**. "Cập nhật" = thời điểm xuất bản g
 - **Đọc Firestore**: Rules `get()` thành viên tính vào chi phí đọc mỗi thao tác (mục 9); danh sách đồng bộ dùng truy vấn có giới hạn và listener có phạm vi (theo shop, trạng thái chưa `verified`), không nghe toàn bộ collection. Không ghi từng chuyển trạng thái cục bộ lên Firestore (mục 4.3).
 - **Ghi Firestore**: tài liệu bằng chứng tạo một lần, cập nhật chỉ khi cần cho thiết bị khác thấy; tiến độ tải (phần trăm) không ghi lên Firestore.
 - **Storage/băng thông video**: nén là *bản dẫn xuất*, không thay bản gốc (bất biến #4); lưu bản gốc là chi phí chính → gắn với hạn mức theo gói (O-06). Đo chi phí/ngày từ giai đoạn beta (docs/08 điều kiện phát hành "Vận hành").
-- **Functions**: băm theo luồng tốn CPU/thời gian theo kích thước tệp (S5).
+- **Functions**: băm theo luồng tốn CPU/thời gian theo kích thước tệp (S5). Tệp vượt trần theo loại (ảnh 25 MB, video 2 GB; V1-04) không được băm.
+- **Xóa tài khoản (V1-14):** Rules thêm một `get()` tài liệu shop vào mỗi yêu cầu client (kiểm `status != 'deleting'`; cùng tài liệu trong một yêu cầu chỉ tính một lần). Purge một shop: mỗi tài liệu = 1 lần xóa Firestore + 1 lần gọi trigger kiểm toán (thoát ngay, không ghi), mỗi đối tượng Storage = 1 lần xóa (thao tác lớp A/B miễn phí hoặc rất rẻ); một lần duy nhất cho mỗi tài khoản. Hàm lịch chạy mỗi ngày một truy vấn `shops where purgeAfter <= now` (chỉ mục một trường tự động). Bucket có Object Versioning: chi phí lưu phiên bản cũ đến khi quy tắc vòng đời xóa.
+- **Trigger kiểm toán (V1-04):** mỗi lần client/máy chủ ghi một tài liệu được theo dõi = 1 lần gọi Function + 1 lần ghi `auditEvents` (+ không đọc thêm). Ước tính một đơn một kiện một video quay xong và tải lên: tạo đơn (1) + dòng (n) + kiện (1) + phiên tạo (1) + đổi trạng thái phiên (1) + khai báo bằng chứng (1) + `uploaded` (1) + `verified` (1) ≈ **7 + n** sự kiện, cộng 2 sự kiện sẵn có của `createUploadSession`/`verifyEvidence`. Với 1 000 đơn/ngày, 2 dòng/đơn: ~9 000 lần gọi + ~11 000 lần ghi/ngày (~270 000 lần gọi, ~330 000 lần ghi/tháng); theo bảng giá công khai hiện hành ở mức vài USD/tháng, chủ yếu dưới hạn mức miễn phí của Functions. Số này phải đo lại ở beta; không đọc lại tài liệu trong trigger.
 
 ## 14. Hệ quả cần ghi vào docs nghiệp vụ
 

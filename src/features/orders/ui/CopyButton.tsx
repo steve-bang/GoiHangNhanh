@@ -32,7 +32,7 @@ export function CopyButton({
         },
       ]}
     >
-      <Text variant="formLabel" style={{ color: tokens.color.action.primary }}>
+      <Text variant="formLabel" style={{ color: tokens.color.action.link }}>
         {t('screens:preview.copy')}
       </Text>
     </Pressable>

@@ -2,7 +2,7 @@ import { act, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
 import type { RemoteDocuments } from '@/api/contract';
-import type { EvidenceId, OrderId, PackageId, SessionId } from '@/core/ids';
+import type { EvidenceId, SessionId } from '@/core/ids';
 import {
   LOCAL_SHOP_ID,
   OrderSyncRunner,
@@ -31,7 +31,7 @@ jest.mock('@/platform/app-state', () => ({
     return () => mockAppActive.delete(cb);
   },
 }));
-jest.mock('@/platform/connectivity', () => ({ useIsOffline: () => false }));
+// Trạng thái mạng: mock mặc định của jest.setup.ts (có mạng).
 
 const SHOP_A = 'shop-a';
 const SHOP_B = 'shop-b';
@@ -48,7 +48,8 @@ function setup() {
   // `authUid` mô phỏng `auth.currentUser?.uid`: đặt khi đăng nhập, về null khi signOut thành công.
   const state = { authUid: null as string | null, signOutError: null as Error | null };
   const orderStore = createMemoryOrderStore({ creatorUid: () => state.authUid });
-  const files = createMemoryEvidenceFileStore();
+  // Kho tệp tra phiên trong kho đơn: hàng đợi chỉ tải tệp của phiên do CHÍNH tài khoản đang đăng nhập tạo (V1-07).
+  const files = createMemoryEvidenceFileStore({ sessions: orderStore });
   const published: string[] = [];
   const uploaded: string[] = [];
   const docs: RemoteDocuments = {
@@ -90,16 +91,22 @@ function setup() {
     });
     if (!built.ok) throw new Error('fixture');
     await orderStore.saveSession(built.session);
+    // Phiên đã quay xong (có tệp): mới được đăng lên máy chủ, và tệp chỉ tải sau khi phiên đã đăng.
+    await orderStore.updateSessionStatus(shopId as never, built.session.id, 'recording');
+    await orderStore.updateSessionStatus(shopId as never, built.session.id, 'ended');
     state.authUid = previous;
   };
-  const seedFile = async (shopId: string, id: string) => {
+  /** Tệp của phiên đơn `code` (đã seed): hàng đợi chỉ tải khi phiên đó đã đăng lên máy chủ (V1-02). */
+  const seedFile = async (shopId: string, id: string, code: string) => {
     const evidenceId = id as EvidenceId;
+    const session = await orderStore.getSession(shopId as never, `s-${code}` as SessionId);
+    if (!session) throw new Error('fixture');
     await files.create({
       id: evidenceId,
       shopId: shopId as never,
-      orderId: 'o' as OrderId,
-      packageId: 'p' as PackageId,
-      sessionId: 's' as SessionId,
+      orderId: session.orderId,
+      packageId: session.packageId,
+      sessionId: session.id,
       group: 'pack',
       kind: 'video',
       createdAtDevice: 1,
@@ -152,6 +159,7 @@ function setup() {
 
   return {
     state,
+    orderStore,
     published,
     uploaded,
     files,
@@ -187,9 +195,9 @@ describe('runner đồng bộ/tải lên theo phiên (PR1)', () => {
   it('A đăng xuất rồi B đăng nhập: runner dừng với shop A, sau đó chỉ chạy với shop B', async () => {
     const t = setup();
     await t.seedOrder(SHOP_A, 'uid-a', 'A-1');
-    await t.seedFile(SHOP_A, 'ev-a-1');
+    await t.seedFile(SHOP_A, 'ev-a-1', 'A-1');
     await t.seedOrder(SHOP_B, 'uid-b', 'B-1');
-    await t.seedFile(SHOP_B, 'ev-b-1');
+    await t.seedFile(SHOP_B, 'ev-b-1', 'B-1');
     await t.mount();
     await flush();
     // Chưa đăng nhập: shop tạm, không runner nào chạy.
@@ -198,6 +206,8 @@ describe('runner đồng bộ/tải lên theo phiên (PR1)', () => {
 
     await t.press('login-a');
     await flush();
+    // Lượt tải đầu có thể chạy trước khi phiên kịp đăng (V1-02: chờ phiên, không tốn lượt); lượt sau tải.
+    await foreground();
     expect(t.publishedIn(SHOP_A).length).toBeGreaterThan(0);
     expect(t.publishedIn(SHOP_B)).toEqual([]);
     expect(t.uploaded).toEqual(['ev-a-1']);
@@ -205,7 +215,7 @@ describe('runner đồng bộ/tải lên theo phiên (PR1)', () => {
 
     // Việc mới của A xuất hiện NGAY TRƯỚC khi đăng xuất, rồi đăng xuất thật thành công.
     await t.seedOrder(SHOP_A, 'uid-a', 'A-2');
-    await t.seedFile(SHOP_A, 'ev-a-2');
+    await t.seedFile(SHOP_A, 'ev-a-2', 'A-2');
     const before = { published: t.published.length, uploaded: t.uploaded.length };
     await t.press('out');
     await flush();
@@ -224,6 +234,7 @@ describe('runner đồng bộ/tải lên theo phiên (PR1)', () => {
     // B đăng nhập: chỉ chạy với shop B; dữ liệu của A không bị đăng/tải.
     await t.press('login-b');
     await flush();
+    await foreground();
     expect(t.publishedIn(SHOP_B).length).toBeGreaterThan(0);
     expect(t.published.filter((p) => p.startsWith(`shops/${SHOP_A}/`))).toHaveLength(
       before.published,
@@ -245,8 +256,9 @@ describe('runner đồng bộ/tải lên theo phiên (PR1)', () => {
     expect(mockAppActive.size).toBe(2);
 
     await t.seedOrder(SHOP_A, 'uid-a', 'A-3');
-    await t.seedFile(SHOP_A, 'ev-a-3');
+    await t.seedFile(SHOP_A, 'ev-a-3', 'A-3');
     await foreground();
+    await foreground(); // lượt đầu đăng phiên, lượt sau tải tệp của phiên đã đăng
     expect(t.publishedIn(SHOP_A).length).toBeGreaterThan(0);
     expect(t.uploaded).toEqual(['ev-a-3']);
     expect(await t.pendingFor(SHOP_A, 'uid-a')).toEqual([]);
@@ -270,5 +282,22 @@ describe('runner đồng bộ/tải lên theo phiên (PR1)', () => {
     const orderDocs = t.published.filter((p) => /^shops\/shop-x\/orders\/[^/]+$/.test(p));
     expect(orderDocs).toHaveLength(1);
     expect(t.published.join('\n')).not.toContain(pendingA[0]?.order.id ?? 'khong-co');
+  });
+
+  it('V1-07: phiên của A ĐÃ đăng nhưng tệp chưa tải, A rời máy; B cùng shop không tải hộ tệp của A', async () => {
+    const t = setup();
+    await t.seedOrder(SHOP_X, 'uid-a', 'X-A');
+    await t.seedFile(SHOP_X, 'ev-x-a', 'X-A');
+    // Phiên của A đã có trên máy chủ (Rules sẽ cho B khai báo tệp nếu app không tự chặn).
+    await t.orderStore.markSessionPublished(SHOP_X as never, 's-X-A' as SessionId, 'ended');
+    await t.seedOrder(SHOP_X, 'uid-b', 'X-B');
+    await t.seedFile(SHOP_X, 'ev-x-b', 'X-B');
+    await t.mount();
+    await t.press('login-b-x');
+    await flush();
+    await foreground();
+    await foreground();
+    expect(t.uploaded).toEqual(['ev-x-b']);
+    expect((await t.files.get(SHOP_X as never, 'ev-x-a' as EvidenceId))?.state).toBe('queued');
   });
 });

@@ -1,7 +1,7 @@
 export { EditOrderScreen } from './EditOrderScreen';
-export { HomeScreen } from './HomeScreen';
 export { OrderDetailScreen } from './OrderDetailScreen';
 export { OrderPreviewScreen } from './OrderPreviewScreen';
+export { EvidenceDetailScreen, PackingEvidenceDetail } from './EvidenceDetailScreen';
 export { OrderEvidenceScreen } from './OrderEvidenceScreen';
 export { OrdersListScreen } from './OrdersListScreen';
 export { QuickOrderScreen } from './QuickOrderScreen';

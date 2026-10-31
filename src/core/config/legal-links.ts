@@ -1,20 +1,15 @@
-/**
- * Liên kết pháp lý ở màn Chào mừng (UI-A02) và màn Điều khoản và chính sách (tab Cá nhân). Hiện là URL
- * GIỮ CHỖ (tên miền `.invalid` không bao giờ phân giải được); thay bằng URL thật khi có trang Điều khoản
- * và Chính sách quyền riêng tư. Không có URL thật cho chính sách dữ liệu nên không khai báo ở đây.
- */
-export const LEGAL_LINKS = {
-  terms: 'https://don-chung.invalid/terms',
-  privacy: 'https://don-chung.invalid/privacy',
-} as const;
+import { PUBLIC_LINKS } from './public-links';
 
 /**
- * true khi URL là giữ chỗ hoặc không hợp lệ (tên miền `.invalid`, RFC 2606; hoặc không phải https):
- * màn nào hiển thị liên kết phải khóa hàng thay vì mở một trang chắc chắn lỗi.
+ * Lớp tương thích: liên kết pháp lý ở màn Chào mừng (UI-A02, màn đã khách xác nhận nên giữ nguyên import),
+ * Điều khoản và chính sách (tab Cá nhân) và Xóa tài khoản. Giá trị lấy từ `public-links.ts` (nguồn duy
+ * nhất, khớp web); KHÔNG khai báo URL ở đây. Không có trang "chính sách dữ liệu" riêng nên không có khóa đó.
  */
-export function isPlaceholderLink(url: string): boolean {
-  const match = /^https:\/\/([^/?#:]+)/i.exec(url.trim());
-  if (!match?.[1]) return true;
-  const host = match[1].toLowerCase();
-  return host === 'invalid' || host.endsWith('.invalid');
-}
+export const LEGAL_LINKS = {
+  terms: PUBLIC_LINKS.terms,
+  privacy: PUBLIC_LINKS.privacy,
+  /** Trang web hướng dẫn xóa tài khoản (`/xoa-tai-khoan/`); còn giữ chỗ thì màn Xóa tài khoản ẩn liên kết. */
+  accountDeletion: PUBLIC_LINKS.accountDeletionRequest,
+} as const;
+
+export { isPlaceholderLink } from './public-links';

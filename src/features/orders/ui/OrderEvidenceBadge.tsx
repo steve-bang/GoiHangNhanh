@@ -36,8 +36,7 @@ export function OrderEvidenceBadge({
   if (summary.kind === 'label') {
     return <EvidenceStatusBadge compact status={summary.label} {...(testID ? { testID } : {})} />;
   }
-  const tone =
-    summary.kind === 'capture' ? tokens.color.action.primary : tokens.color.text.secondary;
+  const tone = summary.kind === 'capture' ? tokens.color.action.link : tokens.color.text.secondary;
   return (
     <View
       testID={testID}

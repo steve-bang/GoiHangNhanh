@@ -1,147 +1,256 @@
 import type { EvidenceId, ShopId } from '@/core/ids';
 import {
   FILE_STATES,
-  type EvidenceFile,
-  type EvidenceFilePatch,
-  type EvidenceFileStore,
+  mayHaveReachedServer,
+  sameFingerprint,
   type FileEvent,
+  type FileFingerprint,
 } from '@/features/evidence';
 
 import { MAX_UPLOAD_ATTEMPTS, retryDelayMs } from './backoff';
-import type { LocalFileHasher, ServerFileState, UploadGateway } from './ports';
+import { evidenceMaxBytes, UPLOAD_FILE_TOO_LARGE } from './limits';
+import type {
+  LocalFileHasher,
+  ServerFileState,
+  UploadGateway,
+  UploadItem,
+  UploadItemPatch,
+  UploadSource,
+} from './ports';
 
 export interface UploadQueueDeps {
-  readonly files: EvidenceFileStore;
+  /**
+   * Các kho tệp hàng đợi phục vụ (tệp đóng gói, media hàng hoàn...). Mỗi nguồn đi qua CÙNG vòng đối
+   * soát, giãn cách thử lại và giới hạn số lần thử; không nhân đôi hàng đợi theo loại bằng chứng.
+   */
+  readonly sources: readonly UploadSource[];
   readonly gateway: UploadGateway;
   readonly hasher: LocalFileHasher;
   /** Giờ THIẾT BỊ (ms). */
   readonly now: () => number;
   readonly isOnline: () => boolean;
+  /**
+   * `true` khi người dùng bật "Chỉ tải khi có Wi‑Fi" mà mạng hiện tại không phải Wi‑Fi (V1-09,
+   * `uploadNetworkGate`). Khi đó hàng đợi KHÔNG chạy lượt: không gọi máy chủ, không tính lượt, không đổi
+   * trạng thái tệp. Không truyền = luôn được dùng mạng.
+   */
+  readonly isWaitingForWifi?: () => boolean;
+  /**
+   * Báo khi KHÔNG còn được gửi: máy MẤT mạng (NetInfo qua `platform/connectivity`) hoặc chuyển sang chờ
+   * Wi‑Fi (đổi mạng hoặc vừa bật công tắc). Lần gửi tệp đang chạy bị hủy (lỗi mạng, không tốn lượt) để
+   * lượt được giải phóng ngay thay vì chờ lớp mạng native báo lỗi. Trả hàm hủy đăng ký.
+   */
+  readonly subscribeOffline?: (onOffline: () => void) => () => void;
 }
 
+export interface UploadRunOptions {
+  /**
+   * Vừa có mạng lại: tệp `upload_failed` do LỖI MẠNG tới hạn ngay (không chờ hết giãn cách 15 phút).
+   * Tệp lỗi máy chủ giữ nguyên lịch giãn cách. Lượt đang chạy (`busy`) thì cờ được nhớ cho lượt sau.
+   */
+  readonly networkRestored?: boolean;
+}
+
+/**
+ * Mã `lastErrorCode` của lỗi mạng (do `create-upload-gateway`, `firebase-ports`, `resumable-upload`
+ * tạo). Dùng khi có mạng lại sau khi app khởi động lại (bộ đếm trong bộ nhớ đã mất). Mã mơ hồ
+ * `INTERNAL`/`UNKNOWN` không có ở đây: trong phiên chạy, tệp lỗi mạng loại này vẫn được nhận ra qua bộ
+ * đếm; sau khi khởi động lại thì chờ hết giãn cách (tối đa 15 phút).
+ */
+/**
+ * Mã MƠ HỒ (kết quả `network` nhưng có thể là lỗi máy chủ): SDK callable trả `internal`/`unknown` không
+ * `details` cả khi mất mạng lẫn khi Function lỗi bất ngờ (`toHttpsError` nhánh cuối, ví dụ thiếu quyền
+ * IAM ký URL). Đếm riêng số lần liên tiếp của một tệp; quá `MAX_AMBIGUOUS_NETWORK_FAILURES` thì xử lý
+ * như lỗi máy chủ (tính lượt, rồi "cần xử lý" theo trần 8) để lỗi máy chủ kéo dài không thử mãi.
+ */
+export const AMBIGUOUS_NETWORK_CODES: readonly string[] = ['INTERNAL', 'UNKNOWN'];
+
+/** 24 lần liên tiếp (khoảng 6 giờ với giãn cách trần 15 phút). */
+export const MAX_AMBIGUOUS_NETWORK_FAILURES = 24;
+
+const AMBIGUOUS_STREAK = /^(INTERNAL|UNKNOWN)@(\d+)$/;
+
+/**
+ * Bộ đếm lưu BỀN ngay trong `lastErrorCode` dạng `<MÃ>@<số lần>` (ví dụ `INTERNAL@7`), không cần
+ * migration: mã này là mã nội bộ, không hiển thị. Mã khác (lần trước không phải lỗi mơ hồ) = 0.
+ */
+export function ambiguousStreakOf(lastErrorCode: string | null): number {
+  const match = lastErrorCode ? AMBIGUOUS_STREAK.exec(lastErrorCode) : null;
+  return match ? Number(match[2]) : 0;
+}
+
+export const NETWORK_ERROR_CODES: readonly string[] = [
+  'NETWORK',
+  'NETWORK_LOST',
+  'TIMEOUT',
+  'UNAVAILABLE',
+  'DEADLINE_EXCEEDED',
+  'HTTP_408',
+  'HTTP_429',
+  'HTTP_502',
+  'HTTP_503',
+  'HTTP_504',
+];
+
 export interface UploadRunSummary {
-  /** `offline`/`busy`: không làm gì lượt này. */
-  readonly skipped?: 'offline' | 'busy';
+  /** `offline`/`waiting_wifi`/`busy`: không làm gì lượt này (không gọi máy chủ). */
+  readonly skipped?: 'offline' | 'waiting_wifi' | 'busy';
   readonly received: number;
+  /** Lỗi máy chủ từ chối/không rõ (tính lượt). */
   readonly failed: number;
+  /** Lỗi mạng (không tính lượt); lượt dừng ở tệp đầu tiên gặp lỗi mạng. */
+  readonly waitingNetwork: number;
   readonly needsAttention: number;
   readonly verified: number;
 }
 
+/**
+ * Kết quả nhờ máy chủ kiểm tra lại (V1-08): `requested` đã gửi yêu cầu; `not_eligible` tệp không thuộc
+ * hàng đợi của tài khoản này hoặc không ở `uploaded`; `offline` máy đang mất mạng; `failed` gọi máy chủ
+ * lỗi; `unsupported` cổng không hỗ trợ.
+ */
+export type ServerCheckResult = 'requested' | 'not_eligible' | 'offline' | 'failed' | 'unsupported';
+
 export interface UploadQueue {
   /** Một lượt xử lý tuần tự theo shop. Lượt chồng lên nhau bị bỏ qua (`busy`). Không ném lỗi. */
-  runOnce(shopId: ShopId): Promise<UploadRunSummary>;
+  runOnce(shopId: ShopId, options?: UploadRunOptions): Promise<UploadRunSummary>;
+  /**
+   * Nhờ máy chủ xác minh lại MỘT tệp đang `uploaded` của chính tài khoản (nguồn đã lọc uid). Không đổi
+   * trạng thái tệp ở đây: trạng thái chỉ đổi khi lượt sau đối soát thấy máy chủ báo (`origin: 'server'`).
+   * Không ném lỗi.
+   */
+  requestServerCheck(shopId: ShopId, id: EvidenceId): Promise<ServerCheckResult>;
 }
 
 const S = FILE_STATES;
 
-/** Mã lỗi phát sinh TRƯỚC khi gửi gì lên máy chủ (kiểm tra cục bộ): máy chủ chưa thể biết tệp này. */
-const LOCAL_ONLY_ERROR_CODES: readonly string[] = [
-  'LOCAL_HASH_CHANGED',
-  'FILE_MISSING',
-  'FILE_UNREADABLE',
-];
-
 /**
- * Máy chủ có thể đã biết tệp này không? Chỉ khi đó mới đáng hỏi (mỗi lần hỏi là lượt đọc Firestore):
- * đang tải/đã tải (`uploading`, `uploaded`), tải lỗi (có thể máy chủ nhận mà app mất phản hồi, QA-05),
- * cần xử lý trừ khi lỗi là kiểm tra cục bộ, hoặc đang chờ lại sau một lần thử (đã có lần thử hoặc mã lỗi).
- * Tệp `queued` chưa từng thử thì chưa khai báo, máy chủ chắc chắn chưa có.
+ * Có đáng hỏi máy chủ về tệp này không (mỗi lần hỏi là một lượt đọc Firestore)? Dựa trên định nghĩa
+ * "máy chủ có thể đã biết" dùng chung với quy tắc xóa ảnh hàng hoàn (`mayHaveReachedServer`,
+ * features/evidence), trừ tệp máy chủ đã chốt (`verified`/`hash_mismatch`): không hỏi lại.
  */
-export function mayBeKnownToServer(
-  file: Pick<EvidenceFile, 'state' | 'attemptCount' | 'lastErrorCode'>,
-): boolean {
-  switch (file.state) {
-    case S.UPLOADING:
-    case S.UPLOADED:
-    case S.UPLOAD_FAILED:
-      return true;
-    case S.NEEDS_ATTENTION:
-      return !file.lastErrorCode || !LOCAL_ONLY_ERROR_CODES.includes(file.lastErrorCode);
-    case S.QUEUED:
-      return file.attemptCount > 0 || file.lastErrorCode !== null;
-    default:
-      return false;
-  }
+export function mayBeKnownToServer(file: Parameters<typeof mayHaveReachedServer>[0]): boolean {
+  return file.state !== S.VERIFIED && file.state !== S.HASH_MISMATCH && mayHaveReachedServer(file);
 }
+
 const device = (type: FileEvent['type']): FileEvent => ({ type, origin: 'device' });
 const server = (type: FileEvent['type']): FileEvent => ({ type, origin: 'server' });
+
+interface Entry {
+  readonly source: UploadSource;
+  readonly item: UploadItem;
+}
 
 /**
  * Hàng đợi tải lên nền (docs/architecture "hàng đợi tải lên"). Chạy qua máy trạng thái tệp:
  * - Chỉ ĐỌC tệp gốc, không bao giờ sửa/xóa; không có đường nào ở đây xóa bản cục bộ (bất biến 4).
  * - Trước khi tải, tính lại mã băm: khác mã lúc đóng tệp -> `needs_attention`, không tải bản đã đổi.
+ *   Không băm lại khi dấu tệp (kích thước + thời điểm sửa đổi) KHÔNG đổi kể từ lần băm lại khớp gần nhất
+ *   (V1-13, `checkLocalFile`); dấu khác/thiếu thì băm lại.
  * - Sự kiện `origin: 'server'` chỉ được tạo từ phản hồi của cổng máy chủ (xác nhận nhận đủ, trạng
  *   thái máy chủ báo); hàng đợi không tự phát ra `verified`.
  * - Tệp đang `uploading` mà app bị tắt: hỏi máy chủ trước (QA-05); máy chủ chưa có thì mới đưa về
  *   hàng đợi để thử lại.
- * - Thất bại tạm: giãn cách tăng dần, tối đa `MAX_UPLOAD_ATTEMPTS` lần rồi `needs_attention`.
+ * - Lỗi mạng (Q-24h): `upload_failed`, KHÔNG tăng `attemptCount`, giãn cách theo số lỗi mạng liên tiếp
+ *   (đếm trong bộ nhớ, trần 15 phút), dừng lượt. Mất mạng bao lâu cũng không thành `needs_attention`.
+ * - Máy chủ từ chối/lỗi không rõ: giãn cách tăng dần, tối đa `MAX_UPLOAD_ATTEMPTS` lần rồi
+ *   `needs_attention`.
+ * - Tệp có chủ sở hữu chưa đăng lên máy chủ (`isReadyToDeclare`): bỏ qua lượt này, không gọi máy chủ.
+ * - Nhiều nguồn (Q-28): một nguồn lỗi kho không chặn nguồn khác trong cùng lượt.
+ * - "Chỉ tải khi có Wi‑Fi" (V1-09): đang chờ Wi‑Fi thì không chạy lượt (kể cả đối soát); lần gửi đang
+ *   chạy bị hủy như mất mạng. Riêng "Kiểm tra lại" (`requestServerCheck`, người dùng bấm, không gửi tệp)
+ *   vẫn được gọi.
  */
 export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
-  const { files, gateway, hasher, now, isOnline } = deps;
+  const { sources, gateway, hasher, now, isOnline, subscribeOffline } = deps;
+  const waitingWifi = deps.isWaitingForWifi ?? (() => false);
+  /** Được dùng mạng hiện tại để gửi tệp (có mạng và không chờ Wi‑Fi). */
+  const mayUseNetwork = () => isOnline() && !waitingWifi();
   let running = false;
+  /** Có mạng lại trong lúc một lượt đang chạy: áp cho lượt kế tiếp. */
+  let restoredPending = false;
+  /** Số lỗi mạng liên tiếp theo tệp (chỉ để tính giãn cách; mất khi app khởi động lại: chấp nhận). */
+  const networkStreak = new Map<EvidenceId, number>();
 
-  const apply = (file: EvidenceFile, event: FileEvent, patch?: EvidenceFilePatch) =>
-    files.applyEvent(file.shopId, file.id, event, now(), patch);
+  const apply = (entry: Entry, event: FileEvent, patch?: UploadItemPatch) =>
+    entry.source.applyEvent(entry.item.shopId, entry.item.id, event, now(), patch);
 
   /** Đưa tệp theo trạng thái máy chủ báo. Trả số tệp thành `verified`. */
-  async function followServer(file: EvidenceFile, state: ServerFileState): Promise<number> {
+  async function followServer(entry: Entry, state: ServerFileState): Promise<number> {
     const clear = { nextAttemptAtDevice: null, lastErrorCode: null } as const;
-    if (file.state !== S.UPLOADED) {
-      const received = await apply(file, server('SERVER_RECEIVED'), clear);
+    if (entry.item.state !== S.UPLOADED) {
+      const received = await apply(entry, server('SERVER_RECEIVED'), clear);
       if (!received.ok) return 0;
     }
     if (state === 'verified') {
-      return (await apply(file, server('SERVER_VERIFIED'))).ok ? 1 : 0;
+      return (await apply(entry, server('SERVER_VERIFIED'))).ok ? 1 : 0;
     }
     if (state === 'hash_mismatch') {
-      await apply(file, server('SERVER_HASH_MISMATCH'));
+      await apply(entry, server('SERVER_HASH_MISMATCH'));
     }
     return 0;
   }
 
+  /** Liệt kê theo từng nguồn; nguồn lỗi bị bỏ qua (lượt sau thử lại), không chặn nguồn khác. */
+  async function list(
+    shopId: ShopId,
+    states: readonly (typeof S)[keyof typeof S][],
+  ): Promise<Entry[]> {
+    const entries: Entry[] = [];
+    for (const source of sources) {
+      try {
+        for (const item of await source.listByStates(shopId, states)) {
+          entries.push({ source, item });
+        }
+      } catch {
+        // Lỗi kho cục bộ của nguồn này: bỏ qua lượt này.
+      }
+    }
+    return entries;
+  }
+
   async function reconcile(shopId: ShopId, summary: Counters): Promise<void> {
     const pending = (
-      await files.listByStates(shopId, [
-        S.UPLOADING,
-        S.QUEUED,
-        S.UPLOAD_FAILED,
-        S.NEEDS_ATTENTION,
-        S.UPLOADED,
-      ])
-    ).filter(mayBeKnownToServer);
+      await list(shopId, [S.UPLOADING, S.QUEUED, S.UPLOAD_FAILED, S.NEEDS_ATTENTION, S.UPLOADED])
+    ).filter((e) => mayBeKnownToServer(e.item));
     if (pending.length === 0) return;
     let known: ReadonlyMap<EvidenceId, ServerFileState>;
     try {
       known = await gateway.fetchServerStates(
         shopId,
-        pending.map((f) => f.id),
+        pending.map((e) => e.item.id),
       );
     } catch {
       known = new Map(); // không hỏi được: tải lên idempotent theo id nên vẫn an toàn
     }
-    for (const file of pending) {
-      const state = known.get(file.id);
+    for (const entry of pending) {
+      const state = known.get(entry.item.id);
       if (state) {
-        summary.verified += await followServer(file, state);
-      } else if (file.state === S.UPLOADING) {
-        // Máy chủ chưa có và không còn tiến trình tải nào: về hàng đợi thử lại.
-        await apply(file, device('UPLOAD_FAILED'), { nextAttemptAtDevice: now() });
+        summary.verified += await followServer(entry, state);
+      } else if (entry.item.state === S.UPLOADING) {
+        // Máy chủ chưa có và không còn tiến trình tải nào: về hàng đợi thử lại. GHI DẤU lần thử bị gián
+        // đoạn (tăng số lần thử + mã lỗi, không ghi PII) để sau khi về `queued` vẫn biết tệp đã từng
+        // được đưa cho máy chủ (`mayHaveReachedServer`, Q-26j/Q-28: ảnh không được xóa).
+        await apply(entry, device('UPLOAD_FAILED'), {
+          attemptCount: entry.item.attemptCount + 1,
+          lastErrorCode: 'UPLOAD_INTERRUPTED',
+          nextAttemptAtDevice: now(),
+        });
       }
     }
   }
 
-  async function failAttempt(file: EvidenceFile, code: string, summary: Counters): Promise<void> {
-    const attempt = file.attemptCount + 1;
+  async function failAttempt(entry: Entry, code: string, summary: Counters): Promise<void> {
+    const attempt = entry.item.attemptCount + 1;
     if (attempt >= MAX_UPLOAD_ATTEMPTS) {
-      await apply(file, device('NEEDS_ATTENTION'), {
+      await apply(entry, device('NEEDS_ATTENTION'), {
         lastErrorCode: code,
         nextAttemptAtDevice: null,
       });
       summary.needsAttention += 1;
       return;
     }
-    await apply(file, device('UPLOAD_FAILED'), {
+    await apply(entry, device('UPLOAD_FAILED'), {
       attemptCount: attempt,
       lastErrorCode: code,
       nextAttemptAtDevice: now() + retryDelayMs(attempt),
@@ -149,46 +258,140 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
     summary.failed += 1;
   }
 
-  async function uploadOne(file: EvidenceFile, summary: Counters): Promise<void> {
-    const { localPath, sizeBytes, sha256Client } = file;
-    if (!localPath || sizeBytes === null || !sha256Client) return; // chưa đủ chi tiết: không tải
+  async function waitForNetwork(entry: Entry, code: string, summary: Counters): Promise<void> {
+    const streak = (networkStreak.get(entry.item.id) ?? 0) + 1;
+    networkStreak.set(entry.item.id, streak);
+    await apply(entry, device('UPLOAD_FAILED'), {
+      lastErrorCode: code,
+      nextAttemptAtDevice: now() + retryDelayMs(streak),
+    });
+    summary.waitingNetwork += 1;
+  }
+
+  /** Gọi cổng tải lên; mất mạng giữa chừng (`subscribeOffline`) thì hủy lần gửi. Không ném. */
+  async function attempt(request: Parameters<UploadGateway['upload']>[0]) {
+    const controller = new AbortController();
+    const unsubscribe = subscribeOffline?.(() => controller.abort());
+    try {
+      if (!mayUseNetwork()) controller.abort();
+      return await gateway.upload(request, { signal: controller.signal });
+    } catch {
+      return { kind: 'retryable', code: 'UPLOAD_EXCEPTION' } as const;
+    } finally {
+      unsubscribe?.();
+    }
+  }
+
+  /**
+   * Tệp cục bộ còn đúng bản đã băm lúc đóng không (V1-13, R9). Dấu tệp đọc TRƯỚC khớp dấu đã lưu (và kích
+   * thước khớp `sizeBytes`) -> tin lần băm trước, không đọc lại cả tệp. Ngược lại băm lại toàn tệp; khớp mã
+   * thì trả dấu để lưu, nhưng CHỈ khi dấu trước và sau lúc băm giống nhau (tệp không bị ghi trong lúc băm).
+   * Tệp bị sửa mà giữ nguyên cả kích thước lẫn thời điểm sửa đổi sẽ lọt kiểm tra này; máy chủ băm lại độc
+   * lập nên tệp đó thành `hash_mismatch`, không bao giờ `verified`. Chỉ đọc tệp (bất biến 4).
+   */
+  async function checkLocalFile(
+    item: UploadItem,
+    localPath: string,
+    sha256Client: string,
+  ): Promise<
+    | { readonly ok: true; readonly fingerprint: FileFingerprint | null }
+    | { readonly ok: false; readonly code: string }
+  > {
+    const readFingerprint = async () =>
+      hasher.fingerprint ? await hasher.fingerprint(localPath).catch(() => null) : null;
+    const before = await readFingerprint();
+    if (
+      before &&
+      before.sizeBytes === item.sizeBytes &&
+      sameFingerprint(before, item.hashedFingerprint)
+    ) {
+      return { ok: true, fingerprint: before };
+    }
     const hash = await hasher.sha256(localPath);
-    if (!hash.ok || hash.sha256 !== sha256Client) {
-      const code = hash.ok ? 'LOCAL_HASH_CHANGED' : hash.reason;
-      await apply(file, device('NEEDS_ATTENTION'), {
-        lastErrorCode: code,
+    if (!hash.ok) return { ok: false, code: hash.reason };
+    if (hash.sha256 !== sha256Client) return { ok: false, code: 'LOCAL_HASH_CHANGED' };
+    if (!before) return { ok: true, fingerprint: null };
+    const after = await readFingerprint();
+    return { ok: true, fingerprint: sameFingerprint(before, after) ? before : null };
+  }
+
+  /** Trả `'stop'` khi gặp lỗi mạng: tệp sau trong lượt cũng sẽ lỗi, dừng để không tốn lượt gọi. */
+  async function uploadOne(entry: Entry, summary: Counters): Promise<'next' | 'stop'> {
+    const { localPath, sizeBytes, sha256Client } = entry.item;
+    if (!localPath || sizeBytes === null || !sha256Client) return 'next'; // chưa đủ chi tiết: không tải
+    if (sizeBytes > evidenceMaxBytes(entry.item.kind)) {
+      // Vượt trần máy chủ (Rules + Function luôn từ chối): không băm, không gửi, báo cần xử lý ngay.
+      // Tệp cục bộ giữ nguyên (bất biến 4).
+      await apply(entry, device('NEEDS_ATTENTION'), {
+        lastErrorCode: UPLOAD_FILE_TOO_LARGE,
         nextAttemptAtDevice: null,
       });
       summary.needsAttention += 1;
-      return;
+      return 'next';
     }
-    const started = await apply(file, device('UPLOAD_STARTED'));
-    if (!started.ok) return;
-    let outcome;
-    try {
-      outcome = await gateway.upload({
-        evidenceId: file.id,
-        shopId: file.shopId,
-        orderId: file.orderId,
-        sessionId: file.sessionId,
-        packageId: file.packageId,
-        kind: file.kind,
-        createdAtDevice: file.createdAtDevice,
-        durationMs: file.durationMs,
-        localPath,
-        sizeBytes,
-        sha256Client,
+    // Phiên/hồ sơ chưa đăng: Rules sẽ từ chối khai báo. Chờ đồng bộ, không gọi máy chủ, không tốn lượt.
+    if (entry.source.isReadyToDeclare && !(await entry.source.isReadyToDeclare(entry.item))) {
+      return 'next';
+    }
+    const local = await checkLocalFile(entry.item, localPath, sha256Client);
+    if (!local.ok) {
+      const code = local.code;
+      // Mã lỗi cục bộ ghi đè mã cũ: tệp ĐÃ TỪNG được đưa cho máy chủ (lỗi mạng, Thử lại sau khi bị từ
+      // chối...) phải giữ dấu `attemptCount >= 1` để vẫn bị coi là có thể đã tới máy chủ (ảnh hàng hoàn
+      // không xóa được, Q-26j, bất biến 4). Xóa dấu tệp: lần thử sau (nếu có) phải băm lại.
+      await apply(entry, device('NEEDS_ATTENTION'), {
+        lastErrorCode: code,
+        nextAttemptAtDevice: null,
+        hashedFingerprint: null,
+        ...(mayHaveReachedServer(entry.item)
+          ? { attemptCount: Math.max(entry.item.attemptCount, 1) }
+          : {}),
       });
-    } catch {
-      outcome = { kind: 'retryable', code: 'UPLOAD_EXCEPTION' } as const;
+      summary.needsAttention += 1;
+      return 'next';
     }
-    const current = started.file;
+    // Băm video dài mất thời gian: mạng có thể vừa đổi (mất mạng, sang 4G khi bật chỉ Wi‑Fi). Dừng TRƯỚC
+    // khi đổi trạng thái để tệp giữ nguyên `queued` (không tốn lượt).
+    if (!mayUseNetwork()) return 'stop';
+    // Dấu tệp ghi cùng sự kiện bắt đầu gửi (không thêm sự kiện/trạng thái tệp). Dừng ở trên vì mất mạng
+    // thì dấu chưa lưu: lần sau băm lại (chấp nhận).
+    const started = await apply(entry, device('UPLOAD_STARTED'), {
+      hashedFingerprint: local.fingerprint,
+    });
+    if (!started.ok) return 'next';
+    const current: Entry = { source: entry.source, item: started.item };
+    const outcome = await attempt({
+      evidenceId: current.item.id,
+      shopId: current.item.shopId,
+      owner: current.item.owner,
+      kind: current.item.kind,
+      createdAtDevice: current.item.createdAtDevice,
+      durationMs: current.item.durationMs,
+      localPath,
+      sizeBytes,
+      sha256Client,
+    });
+    if (outcome.kind !== 'network') networkStreak.delete(current.item.id);
     if (outcome.kind === 'received') {
       const done = await apply(current, server('SERVER_RECEIVED'), {
         nextAttemptAtDevice: null,
         lastErrorCode: null,
       });
       if (done.ok) summary.received += 1;
+    } else if (outcome.kind === 'network' && AMBIGUOUS_NETWORK_CODES.includes(outcome.code)) {
+      const streak = ambiguousStreakOf(current.item.lastErrorCode) + 1;
+      const code = `${outcome.code}@${streak}`;
+      if (streak > MAX_AMBIGUOUS_NETWORK_FAILURES) {
+        // Quá lâu để còn là mất mạng: coi là lỗi máy chủ, tính lượt (vẫn giữ bộ đếm trong mã).
+        networkStreak.delete(current.item.id);
+        await failAttempt(current, code, summary);
+        return 'next';
+      }
+      await waitForNetwork(current, code, summary);
+      return 'stop';
+    } else if (outcome.kind === 'network') {
+      await waitForNetwork(current, outcome.code, summary);
+      return 'stop';
     } else if (outcome.kind === 'attention') {
       await apply(current, device('NEEDS_ATTENTION'), {
         lastErrorCode: outcome.code,
@@ -198,25 +401,59 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
     } else {
       await failAttempt(current, outcome.code, summary);
     }
+    return 'next';
   }
 
   return {
-    async runOnce(shopId) {
-      const summary: Counters = { received: 0, failed: 0, needsAttention: 0, verified: 0 };
-      if (running) return { ...summary, skipped: 'busy' };
+    async requestServerCheck(shopId, id) {
+      if (!gateway.requestServerCheck) return 'unsupported';
+      if (!isOnline()) return 'offline';
+      const uploaded = await list(shopId, [S.UPLOADED]);
+      if (!uploaded.some((e) => e.item.id === id)) return 'not_eligible';
+      try {
+        await gateway.requestServerCheck(shopId, id);
+        return 'requested';
+      } catch {
+        return 'failed';
+      }
+    },
+    async runOnce(shopId, options) {
+      const summary: Counters = {
+        received: 0,
+        failed: 0,
+        waitingNetwork: 0,
+        needsAttention: 0,
+        verified: 0,
+      };
+      if (running) {
+        if (options?.networkRestored) restoredPending = true;
+        return { ...summary, skipped: 'busy' };
+      }
       if (!isOnline()) return { ...summary, skipped: 'offline' };
+      // Chờ Wi‑Fi: bỏ CẢ đối soát (không gọi máy chủ trên mạng người dùng không cho phép). Có lượt dồn
+      // từ lúc có mạng lại thì giữ cho lượt sau (lúc có Wi‑Fi).
+      if (waitingWifi()) {
+        if (options?.networkRestored) restoredPending = true;
+        return { ...summary, skipped: 'waiting_wifi' };
+      }
       running = true;
+      const restored = Boolean(options?.networkRestored) || restoredPending;
+      restoredPending = false;
       try {
         await reconcile(shopId, summary);
-        const due = (await files.listByStates(shopId, [S.UPLOAD_FAILED])).filter(
-          (f) => (f.nextAttemptAtDevice ?? 0) <= now(),
+        const failedByNetwork = (e: Entry) =>
+          networkStreak.has(e.item.id) ||
+          (e.item.lastErrorCode !== null && NETWORK_ERROR_CODES.includes(e.item.lastErrorCode));
+        const due = (await list(shopId, [S.UPLOAD_FAILED])).filter(
+          (e) => (e.item.nextAttemptAtDevice ?? 0) <= now() || (restored && failedByNetwork(e)),
         );
-        for (const file of due) {
-          await apply(file, device('RETRY_UPLOAD'), { nextAttemptAtDevice: null });
+        if (restored) networkStreak.clear();
+        for (const entry of due) {
+          await apply(entry, device('RETRY_UPLOAD'), { nextAttemptAtDevice: null });
         }
-        for (const file of await files.listByStates(shopId, [S.QUEUED])) {
-          if (!isOnline()) break;
-          await uploadOne(file, summary);
+        for (const entry of await list(shopId, [S.QUEUED])) {
+          if (!mayUseNetwork()) break;
+          if ((await uploadOne(entry, summary)) === 'stop') break;
         }
       } catch {
         // Lỗi kho cục bộ: dừng lượt này, trạng thái đã ghi vẫn nguyên; lượt sau chạy lại.
@@ -231,6 +468,7 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
 interface Counters {
   received: number;
   failed: number;
+  waitingNetwork: number;
   needsAttention: number;
   verified: number;
 }

@@ -325,7 +325,7 @@ export function OrderPreviewScreen() {
                     { backgroundColor: tokens.color.brand.soft, borderRadius: tokens.radius.md },
                   ]}
                 >
-                  <Icon name="package" size={26} color={tokens.color.action.primary} />
+                  <Icon name="package" size={26} color={tokens.color.brand.primary} />
                 </View>
                 <View style={[styles.flex, { gap: tokens.space.sm }]}>
                   <View>
@@ -376,8 +376,8 @@ export function OrderPreviewScreen() {
               onPress={() => void addPackage(details)}
               style={[styles.addPackage, { minHeight: touch, gap: tokens.space.xs }]}
             >
-              <Icon name="add" size={18} color={tokens.color.action.primary} />
-              <Text variant="formButton" style={{ color: tokens.color.action.primary }}>
+              <Icon name="add" size={18} color={tokens.color.brand.primary} />
+              <Text variant="formButton" style={{ color: tokens.color.action.link }}>
                 {t('screens:preview.addPackage')}
               </Text>
             </Pressable>

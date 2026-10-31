@@ -1,1 +1,4 @@
-export { OrderPreviewScreen as default } from '@/features/orders';
+import { OrderPreviewScreen } from '@/features/orders';
+import { withSessionGate } from '@/features/personal';
+
+export default withSessionGate(OrderPreviewScreen);

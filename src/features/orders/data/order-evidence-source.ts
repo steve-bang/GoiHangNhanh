@@ -38,6 +38,7 @@ export async function loadEvidenceItems(
     id: file.id,
     group: file.group,
     kind: file.kind,
+    sessionId: file.sessionId,
     capturedAtDevice: file.createdAtDevice,
     state: file.state,
   }));

@@ -6,7 +6,6 @@ import type { ComponentType } from 'react';
 
 import nav from '@/core/i18n/locales/vi/nav.json';
 import { ROUTES, type RouteDef } from '@/core/navigation';
-import { ILLUSTRATIVE_SHOP_NAME } from '@/shared/fixtures/illustrative-data';
 import { resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
 
@@ -27,9 +26,9 @@ function listFiles(dir: string): string[] {
 const routeFiles = listFiles(APP_DIR)
   .filter((file) => file.endsWith('.tsx'))
   .filter((file) => !/_layout\.tsx$/.test(file))
-  // Hai màn có chặn vào khi chưa qua bước trước (render rỗng rồi chuyển về bước đầu): có test riêng
-  // ở VerifyOtpScreen.test.tsx và NewPasswordScreen.test.tsx.
-  .filter((file) => !/(verify-otp|new-password)\.tsx$/.test(file))
+  // Các màn có chặn vào khi chưa qua bước trước (render rỗng rồi chuyển về bước đầu): có test riêng
+  // ở VerifyOtpScreen.test.tsx, NewPasswordScreen.test.tsx và RecoveryEmailSentScreen.test.tsx.
+  .filter((file) => !/(verify-otp|new-password|forgot-password[\\/]sent)\.tsx$/.test(file))
   // Chỗ giữ của nút Quét giữa thanh tab: chỉ chuyển hướng, không có màn riêng (xem tab-config.ts).
   .filter((file) => !/scan-tab\.tsx$/.test(file));
 
@@ -66,7 +65,8 @@ describe('mọi route của app render được (khung giao diện)', () => {
     // không có thanh tiêu đề; các màn còn lại hiện đúng tiêu đề.
     // Riêng Tổng quan (UI-B01) tiêu đề là tên shop (docs/09), tên tab vẫn là "Tổng quan".
     if (route.code === 'UI-B01') {
-      expect(screen.getByText(ILLUSTRATIVE_SHOP_NAME)).toBeOnTheScreen();
+      // Tên shop thật từ cổng phiên (cổng giả khi test), không còn dữ liệu minh họa (V1-10).
+      expect(await screen.findByText('Cửa hàng minh họa')).toBeOnTheScreen();
     } else if (route.parent) {
       const key = Object.keys(ROUTES).find((name) => ROUTES[name as keyof typeof ROUTES] === route);
       expect(

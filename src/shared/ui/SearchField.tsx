@@ -96,7 +96,7 @@ export function SearchField({
           onPress={onScan}
           style={[styles.clear, { minWidth: touch, minHeight: touch }]}
         >
-          <Icon name="scan" color={tokens.color.action.primary} />
+          <Icon name="scan" color={tokens.color.brand.primary} />
         </Pressable>
       ) : null}
     </View>
@@ -110,6 +110,8 @@ const styles = StyleSheet.create({
     gap: layout.space.sm,
     borderWidth: layout.borderWidth.thin,
   },
-  input: { flex: 1, paddingVertical: layout.space.sm },
+  // `minWidth: 0`: ô nhập được co hẹp hơn bề rộng nội tại (react-native-web: thẻ `<input>` có bề rộng mặc
+  // định nên đẩy nút quét ra ngoài viền ở màn 320 pt; V1-18).
+  input: { flex: 1, minWidth: 0, paddingVertical: layout.space.sm },
   clear: { alignItems: 'center', justifyContent: 'center' },
 });

@@ -13,6 +13,7 @@ import {
   useScreenFocused,
 } from '@/platform';
 import {
+  AppThemeScope,
   BottomSheet,
   Button,
   CameraPermissionSheet,
@@ -41,7 +42,7 @@ const CORNER_THICKNESS = 4;
  * Chống quét lặp; trong lúc hộp kết quả mở, mã mới bị bỏ qua (một mã chỉ một truy vấn). Là route cấp gốc (`/scan`) nên Back về đúng màn đứng trước khi bấm Quét (Q-16a). Ngoại lệ: chưa cấp/bị chặn quyền camera, camera không mở được
  * -> vẫn nhập tay được.
  */
-export function ScanScreen() {
+function ScanScreenBody() {
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
@@ -483,3 +484,12 @@ const styles = StyleSheet.create({
   tipRow: { flexDirection: 'row', alignItems: 'center', gap: layout.space.sm },
   tipText: { flex: 1 },
 });
+
+/** Màn quét không dùng `Screen` (camera tràn màn): tự bọc `AppThemeScope` để nút/hộp thoại nhận màu của app. */
+export function ScanScreen() {
+  return (
+    <AppThemeScope>
+      <ScanScreenBody />
+    </AppThemeScope>
+  );
+}

@@ -1,5 +1,5 @@
 import type { RemoteDocuments } from '@/api/contract';
-import { hashFile, uploadFileResumable } from '@/platform';
+import { fileFingerprint, hashFile, uploadFileResumable } from '@/platform';
 
 import {
   createUploadGateway,
@@ -10,23 +10,27 @@ import {
 import type { LocalFileHasher, UploadGateway } from '../domain/ports';
 import { createFirebaseUploadPorts } from './firebase-ports';
 
-/** Bộ băm tệp thật (đọc theo khối, native). */
+/** Bộ băm tệp thật (đọc theo khối, nhường luồng JS; V1-13) + dấu tệp rẻ để không băm lại tệp không đổi. */
 export const deviceHasher: LocalFileHasher = {
   sha256: async (path) => {
     const result = await hashFile(path);
     return result.ok ? { ok: true, sha256: result.sha256 } : { ok: false, reason: result.reason };
   },
+  fingerprint: async (path) => fileFingerprint(path),
 };
 
-/** Gửi tệp qua phiên tải có thể tiếp tục; loại tệp suy từ đuôi tệp như lúc khai báo. */
+/**
+ * Gửi tệp qua phiên tải có thể tiếp tục; loại tệp suy từ đuôi tệp như lúc khai báo. `signal` hủy
+ * (mất mạng) thì dừng lần gửi ở lớp native.
+ */
 const deviceBytes: BytesUploader = {
-  async send(session, localPath, _sizeBytes) {
+  async send(session, localPath, _sizeBytes, signal) {
     const contentType = mimeTypeOf(
       localPath,
       localPath.match(/\.(jpe?g|png)$/i) ? 'photo' : 'video',
     );
     if (!contentType) throw new UploadPortError('attention', 'UNSUPPORTED_FILE_TYPE');
-    const result = await uploadFileResumable(session, localPath, contentType);
+    const result = await uploadFileResumable(session, localPath, contentType, signal);
     if (!result.ok) throw new UploadPortError(result.kind, result.code);
   },
 };

@@ -14,6 +14,7 @@ const INFRA_PACKAGES = [
   'firebase',
   'firebase/*',
   '@react-native/*',
+  '@react-native-community/*',
 ];
 
 // Mẫu chung; mỗi khối override phải liệt kê lại (flat config thay thế, không gộp, cấu hình rule).
@@ -26,6 +27,12 @@ const COMMON_PATTERNS = [
   {
     group: ['../../../*'],
     message: 'Dùng alias @/ thay cho đường dẫn tương đối nhiều cấp.',
+  },
+  {
+    // V1-10: không dữ liệu minh họa trong app (tệp đã xóa; chặn tái phát ở MỌI tệp, kể cả test).
+    group: ['@/shared/fixtures/illustrative-data', '**/fixtures/illustrative-data'],
+    message:
+      'Không dùng dữ liệu minh họa: màn hình đọc dữ liệu thật từ kho/cổng (v1-release-plan mục 2.3).',
   },
 ];
 
@@ -47,7 +54,17 @@ const FEATURE_API_PATTERNS = [
 
 module.exports = [
   {
-    ignores: ['node_modules/', '.expo/', 'dist/', 'coverage/', 'android/', 'ios/', 'docs/', 'web/'],
+    ignores: [
+      'node_modules/',
+      '.expo/',
+      'dist/',
+      'coverage/',
+      'android/',
+      'ios/',
+      'docs/',
+      'web/',
+      'design-v2/',
+    ],
   },
   ...expoConfig,
   prettierConfig,
@@ -238,6 +255,13 @@ module.exports = [
       },
     },
     rules: { 'no-console': 'off' },
+  },
+  {
+    // Test Jest (project `tooling`) cho script Node, ví dụ scripts/env/validate-release-env.test.cjs.
+    files: ['scripts/**/*.test.cjs'],
+    languageOptions: {
+      globals: { describe: 'readonly', it: 'readonly', expect: 'readonly' },
+    },
   },
   // Design Token: chặn giá trị thiết kế viết thẳng trong giao diện (phạm vi: scripts/design-token-scope.cjs).
   {

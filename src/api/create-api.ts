@@ -20,15 +20,35 @@ export interface BackendEnv {
   readonly backend?: string | undefined;
   /** Giá trị của `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST`: có thì nối Firebase Emulator (chỉ dev). */
   readonly emulatorHost?: string | undefined;
+  /** Giá trị của `EXPO_PUBLIC_APP_ENV`: `prod`/`production` = bản production (bỏ qua mọi cờ giả/emulator). */
+  readonly appEnv?: string | undefined;
 }
 
 /**
- * Thứ tự quyết định: test luôn là bản giả; `EXPO_PUBLIC_USE_FAKE_BACKEND=1` hoặc
+ * Bí danh production. Giữ khớp `PROD_ALIASES` ở `scripts/env/validate-release-env.cjs` (chốt chặn lúc
+ * build, V1-01): build đã từ chối cờ giả khi production, đây là lớp phòng thủ thứ hai lúc chạy.
+ */
+const PRODUCTION_APP_ENVS: readonly string[] = ['prod', 'production'];
+
+export function isProductionAppEnv(appEnv: string | undefined): boolean {
+  return appEnv !== undefined && PRODUCTION_APP_ENVS.includes(appEnv.trim());
+}
+
+/** Host Firebase Emulator được phép dùng: bản production không bao giờ nối emulator. */
+export function firebaseEmulatorHost(env: BackendEnv): string | undefined {
+  if (isProductionAppEnv(env.appEnv)) return undefined;
+  return env.emulatorHost || undefined;
+}
+
+/**
+ * Thứ tự quyết định: bản production (`EXPO_PUBLIC_APP_ENV=prod`) luôn là Firebase, bỏ qua mọi cờ dưới
+ * đây (V1-01); test luôn là bản giả; `EXPO_PUBLIC_USE_FAKE_BACKEND=1` hoặc
  * `EXPO_PUBLIC_BACKEND=fake` ép bản giả (ví dụ xuất web chụp ảnh giao diện); `EXPO_PUBLIC_BACKEND=firebase`
  * hoặc có `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` ép Firebase; còn lại `__DEV__` là bản giả và bản build
  * thường là Firebase thật. Thiếu cấu hình Firebase thì `createApi` rơi về "chưa kết nối", không giả vờ thành công.
  */
 export function resolveBackendMode(env: BackendEnv): BackendMode {
+  if (isProductionAppEnv(env.appEnv)) return 'firebase';
   if (env.isTest) return 'fake';
   if (env.fakeFlag === '1' || env.backend === 'fake') return 'fake';
   if (env.backend === 'firebase' || env.emulatorHost) return 'firebase';
@@ -63,6 +83,7 @@ export function readBackendEnv(): BackendEnv {
     fakeSession: process.env.EXPO_PUBLIC_FAKE_SESSION,
     backend: process.env.EXPO_PUBLIC_BACKEND,
     emulatorHost: process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST,
+    appEnv: process.env.EXPO_PUBLIC_APP_ENV,
   };
 }
 
@@ -74,9 +95,8 @@ function tryCreateFirebaseApi(env: BackendEnv): ApiClient | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { createFirebaseApi, getFirebaseServices } = require('./firebase') as FirebaseModule;
-    return createFirebaseApi(
-      getFirebaseServices(env.emulatorHost ? { host: env.emulatorHost } : undefined),
-    );
+    const host = firebaseEmulatorHost(env);
+    return createFirebaseApi(getFirebaseServices(host ? { host } : undefined));
   } catch {
     return null;
   }

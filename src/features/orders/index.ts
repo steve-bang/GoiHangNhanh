@@ -11,10 +11,49 @@ export {
   createMemoryEvidenceFileStore,
   createMemoryOrderStore,
   createSqliteEvidenceFileStore,
+  ORDER_DB_MIGRATIONS,
+  migrateOrderDatabase,
+  runSerializedOnDb,
   useCurrentShopId,
+  useCurrentUid,
+  useWritableShopId,
   useOrderStore,
+  DeviceSettingsProvider,
+  useDeviceSetting,
+  useDeviceSettings,
+  createDeviceSettings,
+  createMemoryDeviceSettingsStore,
+  createSqliteDeviceSettingsStore,
+  createLocalDataWiper,
+  createLocalDeviceData,
+  LocalWipeError,
 } from './data';
-export { LOCAL_SHOP_ID } from './domain';
+export type {
+  DeviceSettings,
+  DeviceSettingSnapshot,
+  LocalDataWiper,
+  LocalDeviceData,
+  LocalWipeSteps,
+} from './data';
+export {
+  LOCAL_SHOP_ID,
+  booleanSetting,
+  classifyLookup,
+  formatDeviceDateTime,
+  normalizeCode,
+  stampCreator,
+  toCodeKey,
+  validateCode,
+  validateQuantity,
+} from './domain';
+export type {
+  CreatorUidProvider,
+  DeviceSettingDefinition,
+  DeviceSettingsStore,
+  LookupMatch,
+  LookupResult,
+  MatchReason,
+} from './domain';
 export type {
   Order,
   OrderDetails,

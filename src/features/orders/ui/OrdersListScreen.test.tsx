@@ -642,14 +642,24 @@ describe('UI-E01 Danh sách đơn (dữ liệu thật)', () => {
     });
   });
 
-  it('nút quét và nút tạo ở đầu trang dẫn tới Quét mã và Tạo đơn nhanh', async () => {
+  it('nút quét ở đầu trang và nút tạo đơn của trạng thái rỗng dẫn tới Quét mã và Tạo đơn nhanh', async () => {
     await open();
     await screen.findByTestId('orders-empty');
     await fireEvent.press(screen.getByRole('button', { name: 'Quét mã đơn' }));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.scan);
-    await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn' }));
+    // Danh sách rỗng: chỉ MỘT nút tạo đơn (trong khối trạng thái rỗng), không lặp ở đầu trang.
+    expect(screen.queryByTestId('orders-create')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn hàng' }));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.quickOrder);
     expect(screen.getByText('Đơn hàng')).toBeOnTheScreen();
+  });
+
+  it('có đơn rồi thì nút Tạo đơn ở đầu trang dẫn tới Tạo đơn nhanh', async () => {
+    const store = createMemoryOrderStore();
+    await seed(store, 'CO-DON', { at: NOW });
+    await open(store);
+    await fireEvent.press(await screen.findByTestId('orders-create'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.quickOrder);
   });
 
   it('cô lập shop: không thấy đơn của shop khác', async () => {

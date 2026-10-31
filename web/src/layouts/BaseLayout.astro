@@ -99,10 +99,15 @@ const robots = !site.indexable || noindex ? 'noindex, nofollow' : 'index, follow
         <p>
           <strong>{site.name}</strong> là tên làm việc. Ứng dụng đang phát triển, chưa phát hành.
         </p>
-        <p>
-          Chúng tôi không hứa kết quả khiếu nại và không phải dịch vụ pháp lý. Trang này chưa có
-          chính sách quyền riêng tư và điều khoản; sẽ bổ sung trước khi phát hành.
-        </p>
+        <p>Chúng tôi không hứa kết quả khiếu nại và không phải dịch vụ pháp lý.</p>
+        <nav aria-label="Thông tin pháp lý và hỗ trợ">
+          <ul class="footer-links">
+            <li><a href={site.legalPages.support}>Hỗ trợ</a></li>
+            <li><a href={site.legalPages.privacy}>Chính sách quyền riêng tư</a></li>
+            <li><a href={site.legalPages.terms}>Điều khoản sử dụng</a></li>
+            <li><a href={site.legalPages.accountDeletionRequest}>Xóa tài khoản</a></li>
+          </ul>
+        </nav>
       </div>
     </footer>
   </body>
@@ -156,6 +161,20 @@ const robots = !site.indexable || noindex ? 'noindex, nofollow' : 'index, follow
   .site-footer__legal p {
     max-width: var(--measure);
     margin-bottom: var(--space-8);
+  }
+  .footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-16);
+    list-style: none;
+    margin: var(--space-8) 0 0;
+    padding: 0;
+  }
+  .site-footer a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-touch);
+    color: var(--text-on-action);
   }
   @media (min-width: 60rem) {
     .site-footer__inner {

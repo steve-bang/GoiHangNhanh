@@ -124,6 +124,17 @@ describe('UI-A04 Tạo hồ sơ shop: ghi shop vào phiên toàn app', () => {
     await fireEvent.press(submit());
     expect(screen.getByTestId('probe')).toHaveTextContent('signed_out|-|-');
   });
+
+  it('tài khoản đang được xóa dở (V1-15): sang "Đang hoàn tất xóa tài khoản", không báo lỗi form', async () => {
+    const fake = createFakeApi();
+    await renderWithProviders(<CreateShopScreen />, { gateways: fake });
+    fake.shop.failNext('ACCOUNT_DELETION_PENDING');
+    await fireEvent.changeText(nameInput(), 'Shop');
+    await fireEvent.press(submit());
+    expect(mockNavigation.reset).toHaveBeenCalledWith(ROUTES.accountDeletionPending);
+    expect(mockNavigation.push).not.toHaveBeenCalledWith(ROUTES.setupDone);
+    expect(screen.queryByText(fullText(errors.ACCOUNT_DELETION_PENDING))).toBeNull();
+  });
 });
 
 describe('UI-A04 Tạo hồ sơ shop: giao diện', () => {
@@ -291,7 +302,13 @@ describe('UI-A04 Tạo hồ sơ shop: xử lý và lỗi', () => {
     const fake = createFakeApi();
     const gateways: Gateways = {
       auth: fake.auth,
-      shop: { createShop, updateShop: jest.fn(), getShop: fake.shop.getShop.bind(fake.shop) },
+      shop: {
+        listMyShops: fake.shop.listMyShops.bind(fake.shop),
+        renameShop: fake.shop.renameShop.bind(fake.shop),
+        createShop,
+        updateShop: jest.fn(),
+        getShop: fake.shop.getShop.bind(fake.shop),
+      },
       session: fake.session,
     };
     await renderWithProviders(<CreateShopScreen />, { gateways });
@@ -499,6 +516,8 @@ describe('UI-A04 Tạo hồ sơ shop: quay lại sau khi đã tạo shop', () =>
       session: createFakeApi().session,
       auth: fake.auth,
       shop: {
+        listMyShops: fake.shop.listMyShops.bind(fake.shop),
+        renameShop: fake.shop.renameShop.bind(fake.shop),
         createShop,
         updateShop: fake.shop.updateShop.bind(fake.shop),
         getShop: fake.shop.getShop.bind(fake.shop),

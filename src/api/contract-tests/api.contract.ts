@@ -53,6 +53,16 @@ export function describeApiContract(name: string, makeApi: () => ApiClient): voi
       ).rejects.toMatchObject({ code: 'AUTH_INVALID_CREDENTIALS' });
     });
 
+    it('quên mật khẩu TRUNG TÍNH: email có và không có tài khoản cùng resolve, cùng dạng kết quả', async () => {
+      const api = makeApi();
+      const registered = newEmail();
+      await api.auth.signUpWithEmail({ email: registered, password: PASSWORD });
+      const known = await api.auth.requestPasswordRecovery(registered);
+      const unknown = await api.auth.requestPasswordRecovery(newEmail());
+      expect(Object.keys(unknown).sort()).toEqual(Object.keys(known).sort());
+      expect(unknown.retryAfterSeconds).toBe(known.retryAfterSeconds);
+    });
+
     it('tạo shop: có id, giữ tên, nguồn bán bỏ trùng và theo thứ tự chuẩn', async () => {
       const api = makeApi();
       await api.auth.signUpWithEmail({ email: newEmail(), password: PASSWORD });
@@ -103,6 +113,62 @@ export function describeApiContract(name: string, makeApi: () => ApiClient): voi
         (error: unknown) => error,
       );
       expect(out === 'ok' || out instanceof AppError).toBe(true);
+    });
+
+    it('đổi mật khẩu: sai mật khẩu hiện tại bị từ chối; đúng thì đăng nhập bằng mật khẩu mới (V1-05)', async () => {
+      const api = makeApi();
+      const email = newEmail();
+      await api.auth.signUpWithEmail({ email, password: PASSWORD });
+      await expect(
+        api.auth.changePassword({
+          currentPassword: 'sai-mat-khau-9',
+          newPassword: 'Mat-khau-moi-2',
+        }),
+      ).rejects.toMatchObject({ code: 'AUTH_WRONG_CURRENT_PASSWORD' });
+      await api.auth.changePassword({ currentPassword: PASSWORD, newPassword: 'Mat-khau-moi-2' });
+      await expect(
+        api.auth.signInWithPassword({ email, password: PASSWORD }),
+      ).rejects.toMatchObject({ code: 'AUTH_INVALID_CREDENTIALS' });
+      await expect(
+        api.auth.signInWithPassword({ email, password: 'Mat-khau-moi-2' }),
+      ).resolves.toMatchObject({ email: expect.any(String) });
+    });
+
+    it('đổi họ tên: trả đúng tên đã gửi (V1-05)', async () => {
+      const api = makeApi();
+      await api.auth.signUpWithEmail({ email: newEmail(), password: PASSWORD });
+      await expect(api.auth.updateDisplayName('Chị Lan')).resolves.toEqual({
+        displayName: 'Chị Lan',
+      });
+    });
+
+    it('danh sách shop có shop vừa tạo; đổi tên giữ id (V1-05)', async () => {
+      const api = makeApi();
+      await api.auth.signUpWithEmail({ email: newEmail(), password: PASSWORD });
+      const created = await api.shop.createShop({ name: 'Shop A', sellingSources: ['shopee'] });
+      const shops = await api.shop.listMyShops();
+      expect(shops.map((shop) => shop.id)).toContain(created.id);
+      const renamed = await api.shop.renameShop(created.id, 'Shop B');
+      expect(renamed).toMatchObject({ id: created.id, name: 'Shop B' });
+      expect((await api.shop.listMyShops()).find((shop) => shop.id === created.id)?.name).toBe(
+        'Shop B',
+      );
+    });
+
+    it('xóa tài khoản: sai mật khẩu không đổi gì; đúng thì không đăng nhập lại được (V1-15)', async () => {
+      const api = makeApi();
+      const email = newEmail();
+      await api.auth.signUpWithEmail({ email, password: PASSWORD });
+      await expect(api.auth.deleteAccount({ password: 'sai-mat-khau-9' })).rejects.toMatchObject({
+        code: 'AUTH_WRONG_CURRENT_PASSWORD',
+      });
+      await expect(
+        api.auth.signInWithPassword({ email, password: PASSWORD }),
+      ).resolves.toMatchObject({ email: expect.any(String) });
+      await expect(api.auth.deleteAccount({ password: PASSWORD })).resolves.toBe('deleted');
+      await expect(
+        api.auth.signInWithPassword({ email, password: PASSWORD }),
+      ).rejects.toMatchObject({ code: 'AUTH_INVALID_CREDENTIALS' });
     });
 
     // Chưa kiểm được ở bản giả (cổng shop giả không biết tài khoản hiện tại); bản Firebase phải

@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { AppError } from '@/core/errors/app-error';
 import type { ErrorCode } from '@/core/errors/codes';
 import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
-import { ROUTES } from '@/core/navigation';
 import { useAppNavigation, useIsScreenActive } from '@/platform';
 import {
   Button,
@@ -31,6 +30,8 @@ import {
 import type { SignInMethod } from '../domain/types';
 import { usePersonalGateways } from './PersonalGatewaysProvider';
 import { useSession } from './SessionProvider';
+import { SignOutDialogs } from './SignOutDialogs';
+import { useSignOut } from './use-sign-out';
 import { useRegion } from './use-region';
 
 /** Mã lỗi buộc đăng nhập lại: không có cách nào sửa ngay tại màn này. */
@@ -54,6 +55,12 @@ export function ChangePasswordScreen() {
   const session = useSession();
   // Chỉ tài khoản đăng nhập bằng mật khẩu mới có mật khẩu để đổi (D-13, Q-20c): cần biết cách đăng nhập.
   const profile = useRegion(() => account.getProfile(), session.key);
+  // "Đăng nhập lại" PHẢI đi qua luồng Đăng xuất an toàn (PER-21: chặn khi đang quay, cảnh báo tệp chưa
+  // đồng bộ): chỉ chuyển màn sẽ để người khác đăng nhập tài khoản khác trên máy mà tệp của tài khoản này
+  // còn chưa tải (V1-05, review PR #51).
+  const signOut = useSignOut(
+    profile.state.status === 'ready' ? { signInAgainEmail: profile.state.data.email } : {},
+  );
 
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -204,7 +211,8 @@ export function ChangePasswordScreen() {
                 <Button
                   label={t('personal:changePassword.signInAgain')}
                   variant="secondary"
-                  onPress={() => navigation.reset(ROUTES.signIn)}
+                  onPress={signOut.start}
+                  disabled={signOut.busy}
                   testID="change-password-sign-in"
                 />
               ) : null}
@@ -220,6 +228,7 @@ export function ChangePasswordScreen() {
           />
         </View>
       ) : null}
+      <SignOutDialogs signOut={signOut} />
     </Screen>
   );
 }

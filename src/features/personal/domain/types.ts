@@ -62,8 +62,8 @@ export interface ChangePasswordInput {
  * Cổng tài khoản (port). Mọi hàm chỉ resolve khi máy chủ đã xác nhận: UI không được báo thành công
  * (đã đổi tên, đã đổi mật khẩu, đã đăng xuất) trước khi promise resolve (CLAUDE.md bất biến #3, #11).
  *
- * Cố ý CHƯA có `deleteAccount`: quy trình xóa tài khoản chưa chốt và dính chính sách lưu trữ
- * (decisions.md Q-20e, bất biến #9). Thêm khi đã chốt.
+ * `deleteAccount` (V1-15) chỉ resolve khi máy chủ đã ghi nhận yêu cầu xóa; KHÔNG xóa gì trên máy (bên
+ * gọi xóa dữ liệu cục bộ sau đó, theo `LocalWipeProvider`).
  */
 export interface AccountGateway {
   /**
@@ -91,6 +91,12 @@ export interface AccountGateway {
   updateProfile(input: UpdateProfileInput): Promise<UserProfile>;
   /** Tài khoản không đăng nhập bằng mật khẩu: bản thật phải từ chối; UI vốn đã ẩn mục này. */
   changePassword(input: ChangePasswordInput): Promise<void>;
+  /**
+   * Xóa tài khoản (PER-22, V1-15): xác thực lại bằng mật khẩu rồi gọi máy chủ. `already_deleted` = tài
+   * khoản đã không còn (lần trước máy chủ đã xóa mà app không nhận được xác nhận). Sai mật khẩu:
+   * `AUTH_WRONG_CURRENT_PASSWORD`; các lỗi khác xem `AuthApi.deleteAccount`. Không log mật khẩu.
+   */
+  deleteAccount(password: string): Promise<'deleted' | 'already_deleted'>;
   /**
    * Thu hồi phiên trên máy chủ/SDK. Lỗi thì ném, bên gọi KHÔNG được xả state như đã đăng xuất.
    * Không xóa dữ liệu cục bộ (decisions.md Q-20h).

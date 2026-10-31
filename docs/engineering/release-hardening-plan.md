@@ -3,6 +3,8 @@
 > **Đề xuất của đội kỹ thuật, chờ người dùng duyệt.** Nguồn: báo cáo review "người dùng thật" (HEAD `2f5a43a`, 2026-10-29, người dùng đã duyệt báo cáo). Phạm vi: 2 mục *Chặn phát hành* và 8 mục *Cao*. Mục *Trung bình/Thấp* của báo cáo nằm ngoài tài liệu này (xem "Việc để sau" cuối tệp). Câu hỏi cần quyết: [Q-24 trong decisions.md](decisions.md#q-24--gia-cố-trước-phát-hành-phạm-vi-phát-hành-và-các-lựa-chọn-chờ-quyết-định). Điều kiện phát hành tổng thể: `DEPLOYMENT.md` mục 1.
 >
 > Mã trong tài liệu này CHƯA được sửa. Các số dòng là của HEAD `2f5a43a` và có thể lệch sau khi có PR khác hợp nhất.
+>
+> **Cập nhật 2026-10-30:** PR1 và PR3 đã hợp nhất (`1097a3c`, `89584ce`). Thứ tự thực hiện các việc còn lại và phạm vi v1 nay theo [v1-release-plan.md](v1-release-plan.md) (V1-00…V1-21); tài liệu này vẫn là nguồn phân tích nguyên nhân gốc.
 
 ## 1. Tổng quan
 
@@ -125,6 +127,8 @@ Mỗi PR: nhánh riêng, `npm run check` xanh, thêm test theo mục; PR đụng
 - **Phụ thuộc:** PR2 (chính sách thử lại, mạng). **Rủi ro:** thiếu mã lỗi/thông báo trong docs/04–05 cho một số lỗi tải: phải đề xuất BA. **Công sức:** M.
 
 ### PR5. Giữ màn hình sáng và xử lý nền/cuộc gọi khi quay (R7)
+
+> Đã làm ở **V1-11** (2026-10-30, chưa kiểm chứng trên thiết bị): [plans/v1-11-recording-hardening.md](plans/v1-11-recording-hardening.md), decisions.md Q-29 / V1-11. Lệch: không dừng khi `inactive` (iOS).
 
 - **Mục tiêu:** quay trên giá đỡ không bị tắt màn hình giữa chừng; app vào nền/ngắt quãng được xử lý có chủ đích và nói đúng sự thật.
 - **Nguyên nhân gốc đã xác minh:** `PackRecordLive.tsx` chỉ dùng `useScreenFocused` và `usePreventRemove`; không có `AppState` hay keep-awake (grep `keepAwake|idleTimer` không có kết quả); `package.json` không có `expo-keep-awake`; `camera-recorder.tsx:49` gọi `recordAsync()` không `maxDuration`. Hành vi `expo-camera` khi app vào nền lúc đang ghi: **chưa xác minh** (cần máy thật; ADR-020 R-12).

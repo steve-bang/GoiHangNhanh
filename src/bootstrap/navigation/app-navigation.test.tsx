@@ -222,17 +222,21 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
     expectTabBarVisible(true);
   });
 
-  it('Thông báo (UI-I04) và Quyền riêng tư và bảo mật (UI-I05) mở từ menu Cá nhân; Đổi mật khẩu là route con ẩn thanh tab', async () => {
+  it('Cài đặt thông báo (UI-I04) ẩn khỏi menu ở v1 (V1-05) nhưng route vẫn mở được, có thanh tab', async () => {
     await renderRouter(APP_DIR, { initialUrl: ROUTES.profile.path });
-    await fireEvent.press(await screen.findByTestId('menu-UI-I04'));
+    expect(await screen.findByTestId('menu-UI-I05')).toBeOnTheScreen();
+    expect(screen.queryByTestId('menu-UI-I04')).toBeNull();
+    await act(async () => {
+      router.push(ROUTES.notifications.path);
+    });
     expect(screen.getByTestId('screen-UI-I04')).toBeOnTheScreen();
     expect(await screen.findByTestId('notification-options')).toBeOnTheScreen();
     expectTabBarVisible(true);
-    await act(async () => {
-      router.back();
-    });
-    expect(screen.getByTestId('screen-UI-I01')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByTestId('menu-UI-I05'));
+  });
+
+  it('Quyền riêng tư và bảo mật (UI-I05) mở từ menu Cá nhân; Đổi mật khẩu là route con ẩn thanh tab', async () => {
+    await renderRouter(APP_DIR, { initialUrl: ROUTES.profile.path });
+    await fireEvent.press(await screen.findByTestId('menu-UI-I05'));
     expect(screen.getByTestId('screen-UI-I05')).toBeOnTheScreen();
     await fireEvent.press(await screen.findByTestId('security-password'));
     expect(screen.getByTestId('screen-UI-I05-change-password')).toBeOnTheScreen();
@@ -452,9 +456,14 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
   });
 
   describe('tab Đơn hàng: danh sách thật và chi tiết (router thật, kho bộ nhớ)', () => {
+    /** Danh sách rỗng chỉ có nút trong khối trạng thái rỗng; có đơn rồi thì có nút ở đầu trang. */
+    const createButton = () =>
+      screen.queryByRole('button', { name: 'Tạo đơn' }) ??
+      screen.getByRole('button', { name: 'Tạo đơn hàng' });
+
     /** Tạo một đơn bằng UI (Tạo đơn -> Tiếp tục -> Tạo đơn hàng -> chi tiết), rồi lùi về danh sách. */
     async function createOrderFromList(code: string, product?: string) {
-      await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn' }));
+      await fireEvent.press(createButton());
       expect(screen.getByTestId('screen-UI-B04')).toBeOnTheScreen();
       await fireEvent.changeText(screen.getByTestId('quick-order-code'), code);
       if (product) await fireEvent.changeText(screen.getByTestId('line-name-0'), product);
@@ -542,7 +551,7 @@ describe('điều hướng thật (Expo Router, trong bộ nhớ)', () => {
 
     it('Hủy form đã nhập dở: hỏi Bỏ thay đổi?, xác nhận thì về danh sách và không có đơn nào được lưu', async () => {
       await openOrdersTab();
-      await fireEvent.press(screen.getByRole('button', { name: 'Tạo đơn' }));
+      await fireEvent.press(createButton());
       await fireEvent.changeText(screen.getByTestId('quick-order-code'), 'DH-HUY');
       await fireEvent.press(screen.getByTestId('quick-cancel'));
       expect(screen.getByText('Bỏ thay đổi?')).toBeOnTheScreen();

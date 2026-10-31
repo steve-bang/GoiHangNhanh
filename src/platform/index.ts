@@ -1,6 +1,12 @@
 export { getInputResetStyle, getKeyboardAvoidingBehavior, getMinTouchTarget } from './layout';
 export { getAppVersion } from './app-info';
-export { useIsOffline } from './connectivity';
+export {
+  getConnectivity,
+  subscribeConnectivity,
+  useConnectivity,
+  useIsOffline,
+} from './connectivity';
+export type { ConnectionType, Connectivity } from './connectivity';
 export {
   useAppNavigation,
   useConfirmBeforeLeave,
@@ -15,14 +21,28 @@ export type { ScannerPermission } from './barcode-scanner';
 export { hideNativeSplash, holdNativeSplash } from './native-splash';
 export { CameraPreview } from './camera-preview';
 export { copyText } from './clipboard';
-export { newEvidenceId, newOrderId, newOrderLineId, newPackageId, newSessionId } from './ids';
+export {
+  newEvidenceId,
+  newOrderId,
+  newOrderLineId,
+  newPackageId,
+  newDisputeId,
+  newDisputeRecordId,
+  newReturnCaseId,
+  newReturnRecordId,
+  newSessionId,
+} from './ids';
+export { shareText } from './share-text';
 export { openLocalDatabase } from './local-db';
 export type { SqlDatabase, SqlParam } from './sql-database';
-export { subscribeAppActive } from './app-state';
+export { onceAppActive, subscribeAppActive, subscribeAppBackground } from './app-state';
+export { useKeepScreenAwake } from './keep-awake';
 export { monotonicNow } from './monotonic-clock';
-export { hashFile, HASH_CHUNK_BYTES } from './file-hasher';
-export type { HashFileResult } from './file-hasher';
+export { fileFingerprint, hashFile, HASH_CHUNK_BYTES } from './file-hasher';
+export type { FileFingerprintReading, HashFileResult } from './file-hasher';
 export {
+  deleteRecording,
+  excludeEvidenceDirFromBackup,
   findPersistedRecording,
   getAvailableDiskBytes,
   persistRecording,
@@ -30,10 +50,24 @@ export {
   recordingExists,
   resolveRecordingUri,
 } from './recording-files';
-export type { PersistResult } from './recording-files';
+export type { DeleteRecordingResult, PersistResult } from './recording-files';
+export { LOCAL_WIPE_MARKER_NAME } from './local-wipe-marker';
+export { LOCAL_WIPE_FILE_STEPS } from './local-wipe-files';
 export { classifyUploadStatus, uploadFileResumable } from './resumable-upload';
 export type { UploadFileResult, UploadSessionRequest } from './resumable-upload';
+export { CameraPhoto, usePhotoPermission } from './camera-photo';
+export type { CameraPhotoHandle, PhotoPermission, PhotoResult } from './camera-photo';
 export { CameraRecorder } from './camera-recorder';
+export { LocalVideoPlayer } from './video-player';
+export { getCrashReporter, reportFatalRenderError, scrubErrorInPlace } from './crash-reporter';
+export type { CrashReporter } from './crash-reporter';
 export type { CameraRecorderHandle, RecorderResult } from './camera-recorder';
 export { readDeviceCondition, UNKNOWN_DEVICE_CONDITION } from './device-condition';
 export type { DeviceCondition, ThermalLevel } from '@/core/device';
+export {
+  getDeviceLocation,
+  getLocationPermission,
+  LOCATION_TIMEOUT_MS,
+  requestLocationPermission,
+} from './location';
+export type { DeviceLocationOutcome, LocationPermissionStatus } from './location';

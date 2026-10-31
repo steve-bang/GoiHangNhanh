@@ -5,8 +5,18 @@
   "SEARCH_UNAVAILABLE": "Chưa thể tìm kiếm lúc này. Bạn có thể thử lại hoặc lưu bản nháp nếu có đủ thông tin.",
   "CAMERA_PERMISSION_DENIED": "Ứng dụng chưa có quyền camera. Hãy cấp quyền để ghi hình.",
   "MIC_PERMISSION_DENIED": "Ứng dụng chưa có quyền micro. Video có thể không có âm thanh; hãy cấp quyền hoặc tiếp tục theo chính sách shop.",
+  "UPLOAD_FILE_TOO_LARGE": "Tệp quá lớn nên không tải lên được. Tệp vẫn còn trên máy này.",
   "INSUFFICIENT_STORAGE": "Dung lượng thiết bị không đủ để bắt đầu an toàn. Hãy giải phóng dung lượng rồi kiểm tra lại.",
   "LOCAL_SAVE_UNAVAILABLE": "Không thể chuẩn bị nơi lưu video. Chưa bắt đầu ghi hình.",
+  "RETURN_SAVE_FAILED": "Chưa lưu được hồ sơ hàng hoàn trên máy. Bạn thử lại nhé.",
+  "RETURN_ALREADY_CONFIRMED": "Hồ sơ đã xác nhận nên không sửa được nữa. Bạn vẫn liên kết được đơn gốc.",
+  "RETURN_PHOTO_FAILED": "Chưa lưu được ảnh này. Bạn thử chụp lại nhé.",
+  "RETURN_PHOTO_STORAGE_FULL": "Máy hết dung lượng nên chưa lưu được ảnh. Hãy giải phóng bộ nhớ rồi chụp lại.",
+  "RETURN_PHOTO_IN_USE": "Chưa xóa được ảnh này: đang được giữ trong tranh chấp hoặc đã bắt đầu tải lên.",
+  "RETURN_PHOTO_DELETE_FAILED": "Chưa xóa được ảnh trên máy. Bạn thử lại nhé.",
+  "RETURN_CAMERA_UNAVAILABLE": "Chưa mở được camera. Hãy đóng ứng dụng khác đang dùng camera rồi thử lại.",
+  "DISPUTE_SAVE_FAILED": "Chưa lưu được hồ sơ tranh chấp trên máy. Bạn thử lại nhé.",
+  "DISPUTE_CLOSED": "Hồ sơ này đã đóng nên không thêm hay sửa được nữa.",
   "ORDER_SAVE_FAILED": "Chưa xử lý được đơn trên máy. Bạn thử lại nhé.",
   "ORDER_HAS_SESSION": "Đơn này đã bắt đầu quay nên chưa sửa được số lượng.",
   "PACKAGE_SESSION_ACTIVE": "Kiện này đã có phiên đang thực hiện.",
@@ -80,6 +90,22 @@
     "title": "Chưa mở được ứng dụng email.",
     "hint": "Bạn thử lại nhé."
   },
+  "ACCOUNT_DELETE_SHOP_HAS_MEMBERS": {
+    "title": "Cửa hàng còn người khác đang dùng.",
+    "hint": "Bạn liên hệ hỗ trợ để xóa tài khoản."
+  },
+  "ACCOUNT_DELETION_PENDING": {
+    "title": "Tài khoản đang được xóa.",
+    "hint": "Bạn nhập mật khẩu để hoàn tất nhé."
+  },
   "BATTERY_LOW": "Pin còn quá thấp để quay an toàn. Hãy cắm sạc rồi kiểm tra lại.",
-  "DEVICE_OVERHEATED": "Máy đang quá nóng để quay an toàn. Hãy để máy nguội rồi kiểm tra lại."
+  "DEVICE_OVERHEATED": "Máy đang quá nóng để quay an toàn. Hãy để máy nguội rồi kiểm tra lại.",
+  "ACCOUNT_DELETE_UNCONFIRMED": {
+    "title": "Chưa rõ tài khoản đã xóa xong chưa.",
+    "hint": "Bạn thử lại nhé."
+  },
+  "ACCOUNT_DISABLED": {
+    "title": "Tài khoản đang bị khóa.",
+    "hint": "Bạn liên hệ hỗ trợ nhé."
+  }
 }

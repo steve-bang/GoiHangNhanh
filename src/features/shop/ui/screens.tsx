@@ -9,6 +9,7 @@ export { SplashScreen } from './SplashScreen';
 export { WelcomeScreen } from './WelcomeScreen';
 export { SignInScreen } from './SignInScreen';
 export { ForgotPasswordScreen } from './ForgotPasswordScreen';
+export { RecoveryEmailSentScreen } from './RecoveryEmailSentScreen';
 export { VerifyOtpScreen } from './VerifyOtpScreen';
 export { NewPasswordScreen } from './NewPasswordScreen';
 export { SignUpScreen } from './SignUpScreen';
@@ -21,5 +22,5 @@ export const CheckoutScreen = () => <PlaceholderScreen uiCode="UI-H03" />;
 export const PlanLimitScreen = () => <PlaceholderScreen uiCode="UI-H04" />;
 
 export const MembersScreen = () => <PlaceholderScreen uiCode="UI-I03" />;
-/** Tab Thông báo (danh sách): khung, chưa có dữ liệu thông báo thật (D-16). */
-export const NotificationListScreen = () => <PlaceholderScreen uiCode="UI-I07" hideBack inTabs />;
+/** Tab Thông báo (danh sách): trạng thái rỗng trung thực, v1 không gửi thông báo (D-16, V1-10). */
+export { NotificationListScreen } from './NotificationListScreen';

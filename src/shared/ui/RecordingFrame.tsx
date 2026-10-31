@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +11,7 @@ import { fontWeight, layout } from '@/core/theme';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Icon } from './Icon';
 import { Text } from './Text';
-import { useTheme } from './theme';
+import { AppThemeScope, useTheme } from './theme';
 
 interface RecordingFrameProps {
   /** Mã đơn/hồ sơ hiển thị cố định trên màn quay (chỉ để nhìn; liên kết thật dùng ID phiên). */
@@ -19,6 +20,11 @@ interface RecordingFrameProps {
   secondaryLabel: string;
   clockLabel: string;
   guidance: string;
+  /**
+   * Một dòng chữ nhỏ dưới nút dừng, nói giới hạn của việc ghi (V1-11, Q-24b: "nếu ứng dụng bị tắt, đoạn
+   * đang quay có thể mất"). Chỉ màn GHI THẬT truyền; màn chỉ xem trước không ghi gì nên không có.
+   */
+  footnote?: string;
   /** Người dùng chọn "Dừng quay". */
   onStop: () => void;
   /** Người dùng xác nhận "Kết thúc phiên" trong hộp thoại cảnh báo rời màn. */
@@ -66,11 +72,12 @@ interface RecordingFrameProps {
  * màn bằng nút X, nút Back hoặc cử chỉ đều đi qua hộp thoại cảnh báo; KHÔNG có nút thư viện ảnh
  * (O-02 chưa chốt) và không nút chụp ảnh (không có đặc tả), không bộ lọc/làm đẹp/chỉnh sửa.
  */
-export function RecordingFrame({
+function RecordingFrameBody({
   primaryCode,
   secondaryLabel,
   clockLabel,
   guidance,
+  footnote,
   onStop,
   onEndSession,
   stopHidden = false,
@@ -288,6 +295,25 @@ export function RecordingFrame({
               </View>
             </Pressable>
           )}
+          {footnote ? (
+            <Text
+              testID="recording-footnote"
+              variant="caption"
+              style={[
+                styles.previewText,
+                styles.footnote,
+                {
+                  color: tokens.color.camera.onCamera,
+                  backgroundColor: tokens.color.overlay.scrim,
+                  borderRadius: tokens.radius.md,
+                  paddingHorizontal: tokens.space.sm,
+                  paddingVertical: tokens.space.tight,
+                },
+              ]}
+            >
+              {footnote}
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -341,6 +367,7 @@ const styles = StyleSheet.create({
   previewText: { textAlign: 'center', alignSelf: 'stretch' },
   bottom: { alignItems: 'center' },
   guidance: { alignSelf: 'stretch' },
+  footnote: { overflow: 'hidden' },
   stopWrap: {
     alignItems: 'center',
     minHeight: layout.component.record.stopAreaMinHeight,
@@ -362,3 +389,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+/**
+ * Luôn trong phạm vi giao diện app: thành phần này (cùng nút bên trong) có thể hiện ngoài `Screen` (màn
+ * camera, hộp thoại gốc) nên tự bọc `AppThemeScope` để `Button`/`Text` nhận bảng màu của app.
+ */
+export function RecordingFrame(props: ComponentProps<typeof RecordingFrameBody>) {
+  return (
+    <AppThemeScope>
+      <RecordingFrameBody {...props} />
+    </AppThemeScope>
+  );
+}

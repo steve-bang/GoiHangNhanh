@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, View } from 'react-native';
 
 import { ROUTES } from '@/core/navigation';
+import { useEvidenceTotals } from '@/features/upload';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import {
   Button,
@@ -79,14 +80,18 @@ export function PlanHeroCard() {
 }
 
 /**
- * Khối "Dữ liệu bằng chứng" (board 1a): ba ô có nhãn và giá trị "Chưa có số liệu" (Q-21p), KHÔNG số liệu (chưa có tệp bằng chứng và
- * chưa có nguồn đếm theo cửa hàng; `countUnsyncedOnDevice` đếm cả máy nên không khớp nghĩa) kèm nút
- * mở Trung tâm đồng bộ. Tiêu đề (có "›") mở Dữ liệu bằng chứng (khung 11, PER-11).
+ * Khối "Dữ liệu bằng chứng" (board 1a): ba ô đếm THẬT tệp của cửa hàng đang dùng trên máy này (V1-10,
+ * định nghĩa ở `upload/domain/evidence-stats.ts`): trên máy / đang chờ đồng bộ / trên đám mây (chỉ tệp
+ * máy chủ đã kiểm tra khớp). Đang đọc hoặc đọc lỗi: "–", không số giả. Kèm nút mở Trung tâm đồng bộ.
+ * Tiêu đề (có "›") mở Dữ liệu bằng chứng (khung 11, PER-11).
  */
 export function EvidenceOverviewCard() {
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const navigation = useAppNavigation();
+  const { state } = useEvidenceTotals();
+  const value = (key: 'onDevice' | 'pending' | 'cloud') =>
+    state.kind === 'ready' ? state.data[key] : t('personal:evidenceOverview.unknown');
   const openDetail = () => navigation.push(ROUTES.evidenceData);
   return (
     <Card testID="evidence-overview">
@@ -131,26 +136,28 @@ export function EvidenceOverviewCard() {
         <View style={{ flexDirection: 'row' }}>
           <MetricTile
             label={t('personal:evidenceOverview.onDevice')}
-            value={t('personal:evidenceOverview.noData')}
+            value={value('onDevice')}
             icon="device-saved"
+            tone="neutral"
             testID="metric-on-device"
           />
           <MetricTile
             label={t('personal:evidenceOverview.pendingSync')}
-            value={t('personal:evidenceOverview.noData')}
+            value={value('pending')}
             icon="sync"
             tone="warning"
             testID="metric-pending-sync"
           />
           <MetricTile
             label={t('personal:evidenceOverview.cloud')}
-            value={t('personal:evidenceOverview.noData')}
+            value={value('cloud')}
             icon="cloud"
             tone="blue"
             testID="metric-cloud"
           />
         </View>
         <Button
+          variant="secondary"
           label={t('personal:evidenceOverview.openSync')}
           onPress={() => navigation.push(ROUTES.sync)}
           testID="open-sync-center"
@@ -172,7 +179,7 @@ export function ProfileNoName() {
         title={t('personal:profile.noNameTitle')}
         message={t('personal:profile.noNameMessage')}
         actionLabel={t('personal:profile.noNameAction')}
-        actionVariant="primary"
+        compact
         onAction={() => navigation.push(ROUTES.editProfile)}
       />
     </View>

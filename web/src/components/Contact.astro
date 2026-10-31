@@ -1,0 +1,51 @@
+---
+/**
+ * In thông tin liên hệ từ `site.legal`. Giá trị `null` (giữ chỗ) hiện câu trung thực "sẽ công bố",
+ * không in email/địa chỉ giả và không tạo liên kết `mailto` hỏng.
+ */
+import { site } from '../config/site';
+
+interface Props {
+  /** `email`: chỉ email hỗ trợ. `operator`: tên + địa chỉ bên vận hành + email. */
+  kind?: 'email' | 'operator';
+  /** Tiêu đề thư soạn sẵn khi bấm email. */
+  subject?: string;
+}
+
+const { kind = 'email', subject } = Astro.props;
+const { supportEmail, operatorName, operatorAddress } = site.legal;
+const mailto = supportEmail
+  ? `mailto:${supportEmail}${subject ? `?subject=${encodeURIComponent(subject)}` : ''}`
+  : null;
+---
+
+{
+  kind === 'operator' && (
+    <ul>
+      <li>
+        Bên vận hành:{' '}
+        {operatorName ?? 'tên cá nhân hoặc tổ chức vận hành sẽ được công bố tại đây trước khi phát hành.'}
+      </li>
+      <li>
+        Địa chỉ: {operatorAddress ?? 'sẽ được công bố tại đây trước khi phát hành.'}
+      </li>
+      <li>
+        Email:{' '}
+        {mailto ? <a href={mailto}>{supportEmail}</a> : 'sẽ được công bố tại đây trước khi phát hành.'}
+      </li>
+    </ul>
+  )
+}
+{
+  kind === 'email' && (
+    <p>
+      {mailto ? (
+        <>
+          Email: <a href={mailto}>{supportEmail}</a>
+        </>
+      ) : (
+        'Địa chỉ email hỗ trợ sẽ được công bố tại đây trước khi ứng dụng phát hành.'
+      )}
+    </p>
+  )
+}

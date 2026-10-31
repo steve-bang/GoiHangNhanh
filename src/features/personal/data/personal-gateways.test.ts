@@ -1,7 +1,11 @@
 import { createFakeApi } from '@/api/testing';
 import { AppError } from '@/core/errors/app-error';
 
-import { createFakePersonalGateways, FAKE_ACCOUNT_PASSWORD } from './fake-personal-gateways';
+import {
+  createFakePersonalGateways,
+  FAKE_ACCOUNT_PASSWORD,
+  FAKE_DELETE_OFFLINE_PASSWORD,
+} from './fake-personal-gateways';
 import {
   createPersonalGateways,
   getDefaultPersonalGateways,
@@ -110,6 +114,28 @@ describe('cổng cá nhân giả', () => {
     expect(await settings.getNotificationPreferences()).toEqual(before);
     await settings.updateNotificationPreferences({ ...before, syncCompleted: true });
     expect((await settings.getNotificationPreferences()).syncCompleted).toBe(true);
+  });
+});
+
+describe('cổng cá nhân giả: xóa tài khoản (V1-15)', () => {
+  it('sai mật khẩu / mô phỏng mất mạng: lỗi, chưa xóa; đúng: xóa, gọi lại báo phiên hết hạn; đăng xuất thì dùng lại được', async () => {
+    const { account } = createFakePersonalGateways();
+    expect(await codeOf(account.deleteAccount('sai'))).toBe('AUTH_WRONG_CURRENT_PASSWORD');
+    expect(await codeOf(account.deleteAccount(FAKE_DELETE_OFFLINE_PASSWORD))).toBe(
+      'AUTH_NETWORK_ERROR',
+    );
+    expect(account.deleted).toBe(false);
+    await expect(account.deleteAccount(FAKE_ACCOUNT_PASSWORD)).resolves.toBe('deleted');
+    expect(account.deleted).toBe(true);
+    await expect(account.deleteAccount(FAKE_ACCOUNT_PASSWORD)).resolves.toBe('already_deleted');
+    await account.signOut();
+    expect(account.deleted).toBe(false);
+  });
+
+  it('cổng "chưa kết nối" không bao giờ báo đã xóa', async () => {
+    expect(await codeOf(createUnavailablePersonalGateways().account.deleteAccount('x'))).toBe(
+      'AUTH_SERVICE_UNAVAILABLE',
+    );
   });
 });
 
@@ -293,12 +319,13 @@ describe('chọn cổng theo môi trường (cùng cơ chế với src/api/creat
     }
   });
 
-  it('chế độ Firebase với API thật: đăng xuất đi qua auth.signOut của API, phần còn lại vẫn chưa kết nối', async () => {
+  it('chế độ Firebase với API thật: tài khoản đi qua API (V1-05), cài đặt thông báo vẫn chưa kết nối', async () => {
     const api = createFakeApi();
-    const { account } = createPersonalGateways(prod, () => api);
+    const { account, settings } = createPersonalGateways(prod, () => api);
     await account.signOut();
     expect(api.auth.signOutCalls).toBe(1);
-    expect(await codeOf(account.listShops())).toBe('AUTH_SERVICE_UNAVAILABLE');
+    expect(await account.listShops()).toEqual([]);
+    expect(await codeOf(settings.getNotificationPreferences())).toBe('AUTH_SERVICE_UNAVAILABLE');
   });
 
   it('cổng mặc định là một thể hiện cho cả phiên', () => {

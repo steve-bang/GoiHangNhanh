@@ -1,4 +1,5 @@
 import type { OrderId, OrderLineId, PackageId, SessionId, ShopId } from '@/core/ids';
+import type { DeviceTimeRange } from '@/features/evidence';
 
 import type { OrderListPage, OrderListPageRequest, OrderListQuery } from './order-list';
 import type { Order, OrderDetails, OrderLine, OrderPackage, PackingSession } from './types';
@@ -10,6 +11,12 @@ import type { OrderEdit } from './update-order';
  * coi như không tồn tại, kể cả khi biết ID (bất biến 8). Lỗi ném `AppError`, không nuốt lỗi:
  * `ORDER_SAVE_FAILED` cho đơn/dòng/kiện; `LOCAL_SAVE_UNAVAILABLE` cho phiên.
  */
+/** Số tệp chưa đồng bộ tách theo người tạo (`OrderStore.countUnsyncedByOwner`). */
+export interface UnsyncedByOwner {
+  readonly own: number;
+  readonly foreign: number;
+}
+
 export interface OrderStore {
   /** Ghi đơn + dòng + kiện trong MỘT giao dịch: hoặc đủ hoặc không có gì. */
   saveNewOrder(details: OrderDetails): Promise<void>;
@@ -69,7 +76,7 @@ export interface OrderStore {
   /**
    * Số tệp bằng chứng trên máy này của shop mà máy chủ CHƯA xác nhận (định nghĩa trung thực): tệp
    * cục bộ có trạng thái chưa tới `uploaded`/`verified` (docs/06; `file-state.ts`). Kho SQLite đếm từ bảng
-   * `evidence_files` (ADR-020 R-7); kho bộ nhớ (web/test) không có tệp nên trả 0. Phiên `created` không phải bằng chứng.
+   * `evidence_files` (ADR-020 R-7) CỘNG ảnh hàng hoàn `return_media` (R2a, Q-26); kho bộ nhớ (web/test) không có tệp nên trả 0. Phiên `created` không phải bằng chứng.
    */
   countUnsynced(shopId: ShopId): Promise<number>;
   /**
@@ -79,11 +86,25 @@ export interface OrderStore {
    */
   hasRecordingInProgress(shopId: ShopId): Promise<boolean>;
   /**
+   * Số ĐƠN khác nhau của shop có ít nhất một phiên BẮT ĐẦU trong `startedIn` (giờ thiết bị) và đã dừng
+   * ghi bình thường (`PACKED_SESSION_STATUSES`: có video đã lưu). Phiên `created` (chưa ghi), đang ghi,
+   * bị gián đoạn hay cần xử lý không tính (Trang chủ, V1-10; bất biến 6, 11).
+   */
+  countPackedOrders(shopId: ShopId, startedIn: DeviceTimeRange): Promise<number>;
+  /**
    * Như `countUnsynced` nhưng cho MỌI shop có dữ liệu trên máy này. CHỈ để bảo vệ dữ liệu khi đăng xuất
    * (đăng xuất rời cả tài khoản, không chỉ shop đang dùng; Q-20o). Không dùng để hiển thị dữ liệu của
    * shop khác: mọi truy vấn còn lại vẫn theo `shopId`. Kho SQLite đếm từ `evidence_files` (ADR-020 R-7).
    */
   countUnsyncedOnDevice(): Promise<number>;
+  /**
+   * Tách số tệp chưa đồng bộ (cùng định nghĩa `countUnsynced`, gồm media hàng hoàn) theo người tạo
+   * (Q-24g, V1-07): `own` = do `uid` tạo VÀ tải được dưới `uid` (đóng gói: theo
+   * `packing_sessions.created_by`; hàng hoàn: `return_media.created_by` và hồ sơ đã đăng bản neo hoặc do
+   * chính `uid` tạo); `foreign` = còn lại (tài khoản khác, không rõ, hoặc chờ người tạo hồ sơ đăng bản neo).
+   * `scope` = một shop hoặc `'device'` (mọi shop, chỉ để bảo vệ dữ liệu khi đăng xuất). Kho bộ nhớ trả 0.
+   */
+  countUnsyncedByOwner(scope: ShopId | 'device', uid: string): Promise<UnsyncedByOwner>;
   /** Như `hasRecordingInProgress` nhưng cho mọi shop trên máy này (chỉ để chặn đăng xuất). Lỗi đọc ném `LOCAL_SAVE_UNAVAILABLE`. */
   hasRecordingOnDevice(): Promise<boolean>;
   /**
@@ -136,6 +157,12 @@ export interface OrderStore {
   ): Promise<PendingSession[]>;
   /** Ghi nhận phiên đã đăng với `status` (idempotent). */
   markSessionPublished(shopId: ShopId, sessionId: SessionId, status: string): Promise<void>;
+  /**
+   * Phiên đã có trên máy chủ chưa (đã đăng ít nhất một lần, với bất kỳ trạng thái nào)? Hàng đợi tải
+   * lên chỉ khai báo bằng chứng của phiên đã đăng (Rules cần phiên tồn tại), thay vì gọi rồi chờ bị từ
+   * chối. Cô lập theo shop: phiên của shop khác trả `false`.
+   */
+  isSessionPublished(shopId: ShopId, sessionId: SessionId): Promise<boolean>;
 }
 
 /**

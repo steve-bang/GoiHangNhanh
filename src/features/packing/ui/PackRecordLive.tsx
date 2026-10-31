@@ -9,8 +9,11 @@ import {
   hashFile,
   monotonicNow,
   newEvidenceId,
+  onceAppActive,
   persistRecording,
+  subscribeAppBackground,
   useAppNavigation,
+  useKeepScreenAwake,
   useScannerPermission,
   useScreenFocused,
   type CameraRecorderHandle,
@@ -20,6 +23,7 @@ import { Button, RecordingFrame, Screen, Text, useToast } from '@/shared/ui';
 import {
   ACTIVE_RECORDING_POLICY,
   WARN_BEFORE_LIMIT_SECONDS,
+  classifyCameraEnd,
   formatElapsed,
   maxRecordSeconds,
   requiredFreeBytes,
@@ -37,8 +41,6 @@ const CLOCK_TICK_MS = 1000;
  */
 const POLICY = ACTIVE_RECORDING_POLICY;
 const LIMIT_SECONDS = maxRecordSeconds(POLICY);
-/** Sai lệch cho phép khi camera tự dừng đúng hạn (đồng hồ camera và JS lệch nhau chút ít). */
-const LIMIT_TOLERANCE_MS = 3000;
 
 type Phase = 'preparing' | 'recording' | 'saving' | 'failed';
 type FailureKey =
@@ -72,7 +74,12 @@ const FAILURE_BY_REASON: Record<
  * Màn bị gỡ bằng đường khác (điều hướng chương trình): dừng ghi qua tay cầm đã giữ (không qua `ref` camera
  * đã bị tháo) và dừng ngay khi bắt đầu xong nếu màn gỡ trong lúc khởi động. KHÔNG hứa "lưu nốt" khi camera
  * bị gỡ giữa chừng: kết quả thật tới từ bộ ghi, lỗi thì tệp ghi `local_save_failed` và phiên `interrupted`.
- * CẦN kiểm chứng trên iOS và Android thật: hành vi của `expo-camera` khi view bị gỡ lúc đang ghi.
+ *
+ * V1-11: giữ màn hình sáng suốt lúc chuẩn bị, quay và lưu (tắt khi lỗi hoặc rời màn). App chuyển sang nền
+ * khi đang quay: dừng ghi qua đúng đường lưu ở trên, phiên `interrupted` (không quay tiếp, không ghép tệp,
+ * phiên/kiện giữ nguyên), quay lại app thì báo đã dừng. Camera tự dừng sớm (bị hệ thống ngắt) cũng là
+ * gián đoạn. `inactive` của iOS không tính là vào nền (`subscribeAppBackground`).
+ * CẦN kiểm chứng trên iOS và Android thật: hành vi của `expo-camera` khi view bị gỡ/app vào nền lúc đang ghi.
  */
 export function PackRecordLive({ session }: { session: PackingSession }) {
   const { t } = useTranslation();
@@ -108,6 +115,15 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
   const [cameraFailed, setCameraFailed] = useState(false);
   /** Bản trạng thái của `limitHit` để hiển thị (ref không được đọc lúc render). */
   const [limitReached, setLimitReached] = useState(false);
+  /** Lần quay bị gián đoạn (vào nền, camera bị ngắt sớm): phiên lưu xong sẽ là `interrupted`. */
+  const interrupted = useRef(false);
+  /** Đã dừng vì app vào nền (để nói đúng nguyên nhân ở dải báo). */
+  const [stoppedInBackground, setStoppedInBackground] = useState(false);
+  /**
+   * Bản đồng bộ của `phase` cho trình nghe vào nền: mọi chỗ gọi `setPhase` đặt ref NGAY cùng lúc (không chờ
+   * render), để sự kiện tới giữa lúc đổi pha và lần vẽ kế tiếp không bị bỏ qua.
+   */
+  const phaseRef = useRef<Phase>('preparing');
   const mounted = useRef(true);
 
   /** Dừng đúng một lần (tránh gọi `stopRecording` hai lần khi vừa bấm dừng vừa gỡ màn). */
@@ -146,13 +162,18 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
             timing.end = monotonicNow();
             // Camera đã trả kết quả: từ đây chỉ còn lưu + băm. Chốt NGAY nguyên nhân (trước khi lưu/băm có thể
             // mất lâu) và chuyển màn sang "đang lưu" để không còn hiện "Đang quay" / nút Dừng.
-            if (
-              !stopRequested.current &&
-              timing.end - timing.begin >= LIMIT_SECONDS * 1000 - LIMIT_TOLERANCE_MS
-            ) {
+            const ended = classifyCameraEnd({
+              stopRequested: stopRequested.current,
+              elapsedMs: timing.end - timing.begin,
+              limitSeconds: LIMIT_SECONDS,
+            });
+            if (ended === 'limit') {
               limitHit.current = true;
               if (mounted.current) setLimitReached(true);
+            } else if (ended === 'early') {
+              interrupted.current = true; // hệ thống ngắt camera: video có thể thiếu phần sau
             }
+            if (phaseRef.current !== 'failed') phaseRef.current = 'saving';
             if (mounted.current) setPhase((current) => (current === 'failed' ? current : 'saving'));
           };
           return {
@@ -175,6 +196,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
       hash: hashFile,
       availableBytes: getAvailableDiskBytes,
       maxDurationSec: LIMIT_SECONDS,
+      wasInterrupted: () => interrupted.current,
       newEvidenceId,
       now: Date.now, // giờ THIẾT BỊ cho dấu thời gian bằng chứng (không dùng đồng hồ đơn điệu)
     }),
@@ -183,6 +205,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
 
   const fail = useCallback((key: FailureKey) => {
     if (!mounted.current) return;
+    phaseRef.current = 'failed';
     setFailure(key);
     setPhase('failed');
   }, []);
@@ -196,6 +219,8 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
       return;
     }
     active.current = recording;
+    // Vào nền trong lúc khởi động (V1-11): ghi phiên `interrupted` ngay khi đã có bản ghi.
+    if (interrupted.current) void recording.markInterrupted();
     void recording.result.then((outcome) => {
       active.current = null;
       if (!mounted.current) return;
@@ -219,15 +244,46 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
     if (mounted.current) {
       startedAtRef.current = monotonicNow();
       setStartedAt(startedAtRef.current);
-      setPhase(pendingStop.current || cameraTiming.current?.end != null ? 'saving' : 'recording');
+      // Đặt ref NGAY (không chờ render): sự kiện vào nền tới trước lần vẽ kế tiếp vẫn thấy "đang quay".
+      const next: Phase =
+        pendingStop.current || cameraTiming.current?.end != null ? 'saving' : 'recording';
+      if (phaseRef.current !== 'failed') phaseRef.current = next;
+      setPhase(next);
     }
   }, [fail, navigation, ports, requestStop, session, t, toast]);
 
   const stop = useCallback(() => {
     if (!active.current) return;
+    phaseRef.current = 'saving';
     setPhase('saving');
     requestStop();
   }, [requestStop]);
+
+  useKeepScreenAwake(phase !== 'failed');
+
+  // App vào nền khi đang quay (V1-11): dừng có chủ đích qua đường lưu sẵn có, đánh dấu gián đoạn, báo khi
+  // quay lại. Toast hẹn qua `onceAppActive` vì lúc đó màn này có thể đã chuyển sang Xác nhận.
+  useEffect(
+    () =>
+      subscribeAppBackground(() => {
+        const current = phaseRef.current;
+        const recordingNow = current === 'recording' && active.current && !stopRequested.current;
+        const startingNow = current === 'preparing' && started.current && !active.current;
+        if (!recordingNow && !startingNow) return;
+        interrupted.current = true;
+        phaseRef.current = 'saving';
+        setStoppedInBackground(true);
+        setPhase('saving');
+        if (recordingNow) {
+          void active.current?.markInterrupted(); // ghi phiên `interrupted` NGAY, không chờ lưu xong
+          requestStop();
+        } else pendingStop.current = true; // bản ghi đang khởi động: dừng ngay khi bắt đầu xong
+        onceAppActive(() =>
+          toast.show(t('screens:record.stoppedInBackground'), { tone: 'info', durationMs: 10000 }),
+        );
+      }),
+    [requestStop, t, toast],
+  );
 
   // Đồng hồ + giới hạn thời lượng: tới hạn thì tự dừng và lưu như người dùng bấm "Dừng quay".
   useEffect(() => {
@@ -263,6 +319,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
       stop();
     } else if (phase === 'preparing' && started.current) {
       pendingStop.current = true; // bản ghi đang khởi động: dừng ngay khi xong
+      phaseRef.current = 'saving';
       setPhase('saving');
     } else if (phase === 'preparing') {
       cancelled.current = true; // chưa tạo tệp/phiên nào: chỉ về đơn
@@ -281,9 +338,14 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
   // Dải báo trung thực: đã dừng vì hết giờ / sắp hết giờ / đang lưu.
   const notice =
     phase === 'saving'
-      ? t(limitReached ? 'screens:record.limitReachedSaving' : 'screens:record.saving', {
-          minutes,
-        })
+      ? t(
+          stoppedInBackground
+            ? 'screens:record.backgroundSaving'
+            : limitReached
+              ? 'screens:record.limitReachedSaving'
+              : 'screens:record.saving',
+          { minutes },
+        )
       : remainingSeconds !== null && remainingSeconds <= WARN_BEFORE_LIMIT_SECONDS
         ? t('screens:record.limitSoon', { minutes })
         : null;
@@ -311,6 +373,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
       secondaryLabel={t('screens:record.package', { index: session.snapshot.packageIndex })}
       clockLabel={formatElapsed(startedAt ?? now, now)}
       guidance={t('screens:record.packGuidance')}
+      footnote={t('screens:record.killWarning')}
       recording={phase === 'recording'}
       badgeLabel={t('screens:record.badge')}
       previewLabel={t('screens:record.previewBadge')}

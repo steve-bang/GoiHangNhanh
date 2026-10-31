@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
+import { useDeviceSetting } from '@/features/orders';
 import { useAppNavigation } from '@/platform';
 import {
   ListGroup,
@@ -8,10 +10,13 @@ import {
   Screen,
   Skeleton,
   StatusBadge,
+  Switch,
   useTheme,
+  useToast,
   type IconName,
 } from '@/shared/ui';
 
+import { CRASH_REPORTS_ENABLED } from '../domain/crash-reports';
 import type { UserProfile } from '../domain/types';
 import { usePersonalGateways } from './PersonalGatewaysProvider';
 import { useSession } from './SessionProvider';
@@ -24,7 +29,7 @@ import { useRegion, type Region } from './use-region';
  * Xác thực 2 lớp (chưa có MFA; nhãn "Xác nhận 2 lớp" vì test cụm cấm chặn "xác thực"; bỏ "Chưa bật" của board), Thiết bị đăng nhập (PER-15
  * cần theo dõi phiên), Dữ liệu và quyền truy cập (chưa có màn đích). "Xóa tài khoản" (chữ đỏ, nhóm riêng) mở màn thông tin
  * `deleteAccount` (PER-22, khung 20): màn đó có nút xóa KHÓA, không luồng xóa (Q-20e, Q-21h). Không nói mã hóa, 2FA
- * hay bảo vệ đặc biệt nào chưa có.
+ * hay bảo vệ đặc biệt nào chưa có. Nhóm "Gửi báo lỗi ứng dụng" (V1-16): công tắc cài đặt máy, mặc định bật.
  */
 export function SecurityScreen() {
   const { t } = useTranslation();
@@ -47,6 +52,9 @@ export function SecurityScreen() {
         <LockedRow id="devices" icon="phone" />
         <LockedRow id="dataAccess" icon="eye" />
       </ListGroup>
+      <ListGroup testID="security-group-diagnostics">
+        <CrashReportsSwitch />
+      </ListGroup>
       <ListGroup testID="security-group-danger">
         <ListItem
           leadingIcon="alert-triangle"
@@ -58,6 +66,40 @@ export function SecurityScreen() {
         />
       </ListGroup>
     </Screen>
+  );
+}
+
+/**
+ * "Gửi báo lỗi ứng dụng" (V1-16, R-8 A): lưu trên máy (`device_settings`). Tắt có hiệu lực ngay; bật lại
+ * thì báo "đầy đủ từ lần mở ứng dụng sau" (thu thập sập native của SDK áp dụng ở lần chạy sau). Ghi lỗi:
+ * báo và giữ giá trị cũ (như `WifiOnlySwitch`).
+ */
+function CrashReportsSwitch() {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const { value, loaded, setValue } = useDeviceSetting(CRASH_REPORTS_ENABLED);
+  const [saving, setSaving] = useState(false);
+  const change = async (next: boolean) => {
+    setSaving(true);
+    try {
+      await setValue(next);
+      if (next) toast.show(t('personal:security.crashReports.enabled'));
+    } catch {
+      toast.show(t('personal:security.crashReports.saveFailed'), { tone: 'error' });
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <Switch
+      label={t('personal:security.crashReports.label')}
+      description={t('personal:security.crashReports.description')}
+      icon="send"
+      value={value}
+      onValueChange={(next) => void change(next)}
+      disabled={!loaded || saving}
+      testID="security-crashReports"
+    />
   );
 }
 

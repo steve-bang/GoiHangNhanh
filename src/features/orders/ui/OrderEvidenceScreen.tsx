@@ -1,16 +1,23 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { OrderId } from '@/core/ids';
 import { ROUTES } from '@/core/navigation';
-import { useAppNavigation, useRouteParams } from '@/platform';
+import {
+  foreignUploadNote,
+  toDisplayStatus,
+  uploaderRelation,
+  type UploaderRelation,
+} from '@/features/evidence';
+import { getMinTouchTarget, useAppNavigation, useRouteParams } from '@/platform';
 import {
   Button,
   Card,
   EmptyState,
   ErrorState,
   FilterChips,
+  Icon,
   IconTile,
   Screen,
   SkeletonCard,
@@ -20,13 +27,14 @@ import {
 } from '@/shared/ui';
 import { layout } from '@/core/theme';
 
+import { useCurrentUid } from '../data';
 import {
   canRecordNow,
   formatDeviceDateTime,
   isSessionActive,
-  summarizeOrderEvidence,
   summarizePackEvidence,
   type OrderEvidenceItem,
+  type OrderEvidenceSummary,
   type PackingSession,
 } from '../domain';
 import { OrderEvidenceBadge } from './OrderEvidenceBadge';
@@ -138,6 +146,7 @@ function EvidenceReady({
   const navigation = useAppNavigation();
   const activeSession = sessions.find(isSessionActive) ?? null;
   const { start, recordNow } = useRecordOrder(order.id, activeSession);
+  const uid = useCurrentUid();
   const packItems = items.filter((i) => i.group === 'pack');
   const returnItems = items.filter((i) => i.group === 'return');
   const shown = group === 'pack' ? packItems : returnItems;
@@ -213,6 +222,14 @@ function EvidenceReady({
             <EvidenceRow
               key={item.id}
               item={item}
+              // Người tạo tệp = người tạo PHIÊN của tệp; không còn phiên = không rõ (V1-07, Q-24g).
+              uploader={uploaderRelation(
+                sessions.find((s) => s.id === item.sessionId)?.createdBy,
+                uid,
+              )}
+              onOpen={() =>
+                navigation.push(ROUTES.evidenceDetail, { orderId: order.id, evidenceId: item.id })
+              }
               onOpenSync={() => navigation.push(ROUTES.sync)}
             />
           ))}
@@ -223,17 +240,49 @@ function EvidenceReady({
   );
 }
 
-function EvidenceRow({ item, onOpenSync }: { item: OrderEvidenceItem; onOpenSync: () => void }) {
+/**
+ * Một tệp: phần trên (loại, giờ, nhãn) là vùng chạm mở UI-E04 Chi tiết bằng chứng theo ID tệp (V1-17);
+ * nút "Mở trung tâm đồng bộ" của tệp lỗi nằm NGOÀI vùng chạm đó (không lồng nút trong nút).
+ */
+function EvidenceRow({
+  item,
+  uploader,
+  onOpen,
+  onOpenSync,
+}: {
+  item: OrderEvidenceItem;
+  uploader: UploaderRelation;
+  onOpen: () => void;
+  onOpenSync: () => void;
+}) {
   const { t } = useTranslation();
-  const summary = summarizeOrderEvidence([item.state]);
+  const { tokens } = useTheme();
+  // Nhãn MỘT tệp (docs/09 mục 3); tệp của tài khoản khác: "Chờ tải lên" + lý do (V1-07).
+  const display = toDisplayStatus(item.state, { uploader });
+  const summary: OrderEvidenceSummary =
+    display.kind === 'capture'
+      ? { kind: 'capture', phase: display.phase }
+      : { kind: 'label', label: display.label };
+  const note = foreignUploadNote(item.state, uploader);
   const failed = summary.kind === 'label' && summary.label === 'error';
+  const kindLabel = t(`screens:orderEvidence.kind.${item.group}.${item.kind}`);
   return (
     <Card compact testID={`evidence-item-${item.id}`}>
-      <View style={styles.row}>
+      <Pressable
+        testID={`evidence-open-${item.id}`}
+        accessibilityRole="button"
+        accessibilityLabel={t('screens:orderEvidence.openDetail', { kind: kindLabel })}
+        onPress={onOpen}
+        style={({ pressed }) => [
+          styles.row,
+          { minHeight: getMinTouchTarget() },
+          pressed ? { opacity: tokens.opacity.pressed } : null,
+        ]}
+      >
         <IconTile icon={item.kind === 'video' ? 'camera' : 'package'} tone="neutral" />
         <View style={styles.flex}>
           <Text variant="formButton" color="ink">
-            {t(`screens:orderEvidence.kind.${item.group}.${item.kind}`)}
+            {kindLabel}
           </Text>
           <Text variant="caption" color="textMuted">
             {t('screens:orderEvidence.capturedAt', {
@@ -241,8 +290,14 @@ function EvidenceRow({ item, onOpenSync }: { item: OrderEvidenceItem; onOpenSync
             })}
           </Text>
           <OrderEvidenceBadge summary={summary} testID={`evidence-status-${item.id}`} />
+          {note ? (
+            <Text variant="caption" color="textMuted" testID={`evidence-uploader-note-${item.id}`}>
+              {t(`evidence:uploaderNote.${note}`)}
+            </Text>
+          ) : null}
         </View>
-      </View>
+        <Icon name="forward" size={tokens.icon.md} color={tokens.color.text.secondary} />
+      </Pressable>
       {failed ? (
         <View>
           <Text variant="formBody" color="ink">

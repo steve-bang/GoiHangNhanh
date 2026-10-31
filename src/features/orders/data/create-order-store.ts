@@ -43,7 +43,9 @@ export function createLocalOrderStore(
     listSessionsOfOrder: async (shop, order) => (await get()).listSessionsOfOrder(shop, order),
     countUnsynced: async (shop) => (await get()).countUnsynced(shop),
     hasRecordingInProgress: async (shop) => (await get()).hasRecordingInProgress(shop),
+    countPackedOrders: async (shop, range) => (await get()).countPackedOrders(shop, range),
     countUnsyncedOnDevice: async () => (await get()).countUnsyncedOnDevice(),
+    countUnsyncedByOwner: async (scope, uid) => (await get()).countUnsyncedByOwner(scope, uid),
     hasRecordingOnDevice: async () => (await get()).hasRecordingOnDevice(),
     recordSearch: async (s, t, n) => (await get()).recordSearch(s, t, n),
     listRecentSearches: async (s, l) => (await get()).listRecentSearches(s, l),
@@ -55,5 +57,6 @@ export function createLocalOrderStore(
     markPackagePublished: async (s, p, a) => (await get()).markPackagePublished(s, p, a),
     listSessionsPendingRemote: async (s, l, u) => (await get()).listSessionsPendingRemote(s, l, u),
     markSessionPublished: async (s, i, st) => (await get()).markSessionPublished(s, i, st),
+    isSessionPublished: async (s, i) => (await get()).isSessionPublished(s, i),
   };
 }

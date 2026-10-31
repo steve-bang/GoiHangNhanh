@@ -24,7 +24,7 @@ import {
 import { MAX_RECENT_SEARCHES } from '../domain/search';
 import { UNSYNCED_STATES } from '@/features/evidence';
 import type { CreatorUidProvider } from '../domain/creator';
-import { canChangeSessionStatus } from '../domain/session-status';
+import { canChangeSessionStatus, PACKED_SESSION_STATUSES } from '../domain/session-status';
 import { runSerialized } from './db-queue';
 import { LEGACY_EVIDENCE_FILE_COLUMNS, MIGRATIONS } from './sqlite-migrations';
 
@@ -591,18 +591,48 @@ export function createSqliteOrderStore(
       guarded('LOCAL_SAVE_UNAVAILABLE', () => sessionsOfOrder(shopId, orderId)),
     countUnsynced: (shopId) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        // Gồm cả media hàng hoàn (`return_media`): còn tính là chưa đồng bộ tới khi máy chủ nhận
+        // (`uploaded`/`verified`); đang tải, tải lỗi, cần xử lý, lệch mã băm đều vẫn tính.
         const row = await db.getFirstAsync<{ n: number }>(
-          `SELECT COUNT(*) AS n FROM evidence_files WHERE shop_id = ? AND state IN (${UNSYNCED_SQL})`,
-          [shopId],
+          `SELECT (SELECT COUNT(*) FROM evidence_files WHERE shop_id = ? AND state IN (${UNSYNCED_SQL}))
+                + (SELECT COUNT(*) FROM return_media WHERE shop_id = ? AND state IN (${UNSYNCED_SQL})) AS n`,
+          [shopId, shopId],
         );
         return row?.n ?? 0;
       }),
     countUnsyncedOnDevice: () =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
         const row = await db.getFirstAsync<{ n: number }>(
-          `SELECT COUNT(*) AS n FROM evidence_files WHERE state IN (${UNSYNCED_SQL})`,
+          `SELECT (SELECT COUNT(*) FROM evidence_files WHERE state IN (${UNSYNCED_SQL}))
+                + (SELECT COUNT(*) FROM return_media WHERE state IN (${UNSYNCED_SQL})) AS n`,
         );
         return row?.n ?? 0;
+      }),
+    countUnsyncedByOwner: (scope, uid) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        // Đóng gói: người tạo là người tạo PHIÊN (tệp gắn phiên, bất biến 2); phiên không còn hoặc
+        // `created_by` NULL tính là "không rõ" (foreign). Hàng hoàn: `return_media.created_by` VÀ hồ sơ
+        // tải được dưới uid này: bản neo đã đăng, hoặc chính uid tạo hồ sơ (sẽ tự đăng). Ảnh uid chụp vào
+        // hồ sơ CHƯA đăng của người khác chỉ tải được sau khi người đó đăng nhập lại: tính foreign.
+        const device = scope === 'device';
+        const shopFilter = (alias: string) => (device ? '' : `AND ${alias}.shop_id = ?`);
+        const shopArg = device ? [] : [scope];
+        const row = await db.getFirstAsync<{ total: number; own: number }>(
+          `SELECT
+             (SELECT COUNT(*) FROM evidence_files f WHERE f.state IN (${UNSYNCED_SQL}) ${shopFilter('f')})
+           + (SELECT COUNT(*) FROM return_media m WHERE m.state IN (${UNSYNCED_SQL}) ${shopFilter('m')}) AS total,
+             (SELECT COUNT(*) FROM evidence_files f
+                JOIN packing_sessions s ON s.id = f.session_id AND s.shop_id = f.shop_id
+                WHERE f.state IN (${UNSYNCED_SQL}) AND s.created_by = ? ${shopFilter('f')})
+           + (SELECT COUNT(*) FROM return_media m
+                JOIN return_cases c ON c.id = m.return_id AND c.shop_id = m.shop_id
+                WHERE m.state IN (${UNSYNCED_SQL}) AND m.created_by = ?
+                  AND (c.remote_synced_at_device IS NOT NULL OR c.created_by = ?) ${shopFilter('m')}) AS own`,
+          [...shopArg, ...shopArg, uid, ...shopArg, uid, uid, ...shopArg],
+        );
+        const total = row?.total ?? 0;
+        const own = uid ? (row?.own ?? 0) : 0;
+        return { own, foreign: total - own };
       }),
     listOrdersPendingRemote: (shopId, limit, uid) =>
       guarded('ORDER_SAVE_FAILED', async () => {
@@ -673,6 +703,15 @@ export function createSqliteOrderStore(
           shopId,
         ]),
       ),
+    isSessionPublished: (shopId, sessionId) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        const row = await db.getFirstAsync<{ id: string }>(
+          `SELECT id FROM packing_sessions
+           WHERE id = ? AND shop_id = ? AND remote_status IS NOT NULL LIMIT 1`,
+          [sessionId, shopId],
+        );
+        return row !== null;
+      }),
     hasRecordingOnDevice: () =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
         const row = await db.getFirstAsync<{ id: string }>(
@@ -718,6 +757,17 @@ export function createSqliteOrderStore(
     clearRecentSearches: (shopId) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
         await db.runAsync('DELETE FROM search_history WHERE shop_id = ?', [shopId]);
+      }),
+    countPackedOrders: (shopId, startedIn) =>
+      guarded('LOCAL_SAVE_UNAVAILABLE', async () => {
+        const marks = PACKED_SESSION_STATUSES.map(() => '?').join(', ');
+        const row = await db.getFirstAsync<{ n: number }>(
+          `SELECT COUNT(DISTINCT order_id) AS n FROM packing_sessions
+           WHERE shop_id = ? AND session_status IN (${marks})
+             AND started_at_device >= ? AND started_at_device < ?`,
+          [shopId, ...PACKED_SESSION_STATUSES, startedIn.fromDevice, startedIn.toDevice],
+        );
+        return row?.n ?? 0;
       }),
     hasRecordingInProgress: (shopId) =>
       guarded('LOCAL_SAVE_UNAVAILABLE', async () => {

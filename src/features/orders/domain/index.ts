@@ -1,6 +1,16 @@
 export { buildNextPackage, buildOrder } from './build-order';
 export type { BuildResult, DraftError, IdFactory, LineDraft, OrderDraft } from './build-order';
-export { MAX_QUANTITY, normalizeCode, toCodeKey, validateCode, validateQuantity } from './codes';
+export {
+  MAX_CODE_LENGTH,
+  MAX_LINE_NAME_LENGTH,
+  MAX_LINE_VARIANT_LENGTH,
+  MAX_QUANTITY,
+  normalizeCode,
+  toCodeKey,
+  validateCode,
+  validateQuantity,
+  validateTrackingCode,
+} from './codes';
 export { classifyMatches, hasDuplicates } from './duplicates';
 export type { DuplicateMatches } from './duplicates';
 export {
@@ -68,5 +78,12 @@ export { stampCreator } from './creator';
 export type { CreatorUidProvider } from './creator';
 export * from './order-sync';
 export * from './remote-documents';
-export { SESSION_STATUSES, canChangeSessionStatus, isSessionStatus } from './session-status';
+export {
+  PACKED_SESSION_STATUSES,
+  SESSION_STATUSES,
+  canChangeSessionStatus,
+  isSessionStatus,
+} from './session-status';
 export type { SessionStatus } from './session-status';
+export { booleanSetting, decodeDeviceSetting, encodeDeviceSetting } from './device-settings';
+export type { DeviceSettingDefinition, DeviceSettingsStore } from './device-settings';

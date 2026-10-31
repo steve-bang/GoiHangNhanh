@@ -24,11 +24,27 @@ export const ERROR_CODES = {
   RETURN_LIST_UNAVAILABLE: 'RETURN_LIST_UNAVAILABLE',
   RETURN_SESSION_INTERRUPTED: 'RETURN_SESSION_INTERRUPTED',
   RETURN_UPLOAD_PENDING: 'RETURN_UPLOAD_PENDING',
+  // docs/04 - A07, docs/05 - B01 (V1-04): tệp vượt trần dung lượng máy chủ (ảnh 25 MB, video 2 GB)
+  UPLOAD_FILE_TOO_LARGE: 'UPLOAD_FILE_TOO_LARGE',
   // docs/05 - B02
   SOURCE_ORDER_NOT_FOUND: 'SOURCE_ORDER_NOT_FOUND',
   SOURCE_ORDER_AMBIGUOUS: 'SOURCE_ORDER_AMBIGUOUS',
   RETURN_CODE_DUPLICATE: 'RETURN_CODE_DUPLICATE',
   RETURN_ORDER_CONFLICT: 'RETURN_ORDER_CONFLICT',
+  // Đề xuất (chờ BA, R1 hàng hoàn): lưu hồ sơ hàng hoàn cục bộ; hồ sơ đã xác nhận không sửa được
+  RETURN_SAVE_FAILED: 'RETURN_SAVE_FAILED',
+  RETURN_ALREADY_CONFIRMED: 'RETURN_ALREADY_CONFIRMED',
+  // Đề xuất (chờ BA, R2a hàng hoàn): chụp/lưu ảnh kiện lỗi, máy hết dung lượng, camera không mở được
+  RETURN_PHOTO_FAILED: 'RETURN_PHOTO_FAILED',
+  RETURN_PHOTO_STORAGE_FULL: 'RETURN_PHOTO_STORAGE_FULL',
+  RETURN_CAMERA_UNAVAILABLE: 'RETURN_CAMERA_UNAVAILABLE',
+  // Đề xuất (chờ BA, Q-26j): xóa ảnh chụp nhầm bị từ chối (ảnh đang nằm trong hồ sơ tranh chấp hoặc đã lên
+  // máy chủ) hoặc không xóa được tệp trên máy
+  RETURN_PHOTO_IN_USE: 'RETURN_PHOTO_IN_USE',
+  RETURN_PHOTO_DELETE_FAILED: 'RETURN_PHOTO_DELETE_FAILED',
+  // Đề xuất (chờ BA, Q-27): lưu hồ sơ tranh chấp cục bộ; hồ sơ đã đóng không sửa được
+  DISPUTE_SAVE_FAILED: 'DISPUTE_SAVE_FAILED',
+  DISPUTE_CLOSED: 'DISPUTE_CLOSED',
   // Đề xuất (chờ BA, Q-04/Q-17): lưu đơn/dòng/kiện cục bộ và quy tắc phiên (docs/04 A03)
   ORDER_SAVE_FAILED: 'ORDER_SAVE_FAILED',
   ORDER_HAS_SESSION: 'ORDER_HAS_SESSION',
@@ -61,6 +77,15 @@ export const ERROR_CODES = {
   SETTINGS_SAVE_FAILED: 'SETTINGS_SAVE_FAILED',
   // Đề xuất (chờ BA, Q-21ae): không mở được ứng dụng email để soạn yêu cầu hỗ trợ (UI-I06)
   SUPPORT_MAIL_UNAVAILABLE: 'SUPPORT_MAIL_UNAVAILABLE',
+  // Đề xuất (chờ BA, Q-29 / V1-15): xóa tài khoản. Cửa hàng còn thành viên khác (máy chủ từ chối, không
+  // xảy ra ở v1); yêu cầu xóa đã ghi nhận nhưng chưa xong (`details.reason: 'account_deleted'`, V1-14 l).
+  ACCOUNT_DELETE_SHOP_HAS_MEMBERS: 'ACCOUNT_DELETE_SHOP_HAS_MEMBERS',
+  ACCOUNT_DELETION_PENDING: 'ACCOUNT_DELETION_PENDING',
+  // Lời gọi xóa đã gửi đi nhưng không có xác nhận rõ (lỗi mạng/máy chủ không lý do): KHÔNG được nói
+  // "chưa có gì bị xóa" (review PR #61).
+  ACCOUNT_DELETE_UNCONFIRMED: 'ACCOUNT_DELETE_UNCONFIRMED',
+  // Tài khoản bị khóa (`auth/user-disabled`) khi xóa tài khoản: KHÔNG phải đã xóa; không gọi máy chủ.
+  ACCOUNT_DISABLED: 'ACCOUNT_DISABLED',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

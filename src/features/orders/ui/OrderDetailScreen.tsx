@@ -258,6 +258,18 @@ function DetailReady({
         </View>
       </Card>
 
+      <EvidenceSummaryCard
+        summary={evidence}
+        counts={items.length > 0 ? countEvidence(items) : null}
+      />
+      <Button
+        size="slim"
+        variant="secondary"
+        testID="order-detail-dispute"
+        label={t('disputes:list.create')}
+        onPress={() => navigation.push(ROUTES.disputeNew, { orderId: order.id })}
+      />
+
       <Card compact>
         <View style={{ gap: tokens.space.sm }}>
           <Text variant="formButton" color="ink" accessibilityRole="header">
@@ -305,11 +317,6 @@ function DetailReady({
         </View>
       </Card>
 
-      <EvidenceSummaryCard
-        summary={evidence}
-        counts={items.length > 0 ? countEvidence(items) : null}
-      />
-
       <Card compact>
         <View style={{ gap: tokens.space.sm }}>
           <Text variant="formButton" color="ink" accessibilityRole="header">
@@ -317,7 +324,7 @@ function DetailReady({
           </Text>
           {history.map((event) => (
             <View key={event.key} style={styles.row} testID="detail-history-item">
-              <View style={[styles.dot, { backgroundColor: tokens.color.action.primary }]} />
+              <View style={[styles.dot, { backgroundColor: tokens.color.brand.primary }]} />
               <View style={styles.flex}>
                 <Text variant="formBody" color="ink">
                   {event.text}

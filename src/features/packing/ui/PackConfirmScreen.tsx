@@ -127,6 +127,12 @@ export function PackConfirmScreen() {
           {summary.notSaved > 0 ? (
             <Text accessibilityRole="alert">{t('screens:confirm.partialFailed')}</Text>
           ) : null}
+          {session.sessionStatus === 'interrupted' ? (
+            // A06 "thông báo gián đoạn": quay bị dừng giữa chừng (app vào nền, camera bị ngắt; V1-11).
+            <Text accessibilityRole="alert" testID="confirm-interrupted">
+              {t('screens:confirm.interrupted')}
+            </Text>
+          ) : null}
         </View>
       </Card>
     </Screen>

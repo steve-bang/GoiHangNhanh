@@ -13,15 +13,14 @@
     "hidePassword": "Ẩn mật khẩu",
     "dismiss": "Đóng thông báo"
   },
-  "illustrative": "Dữ liệu minh họa của khung giao diện, chưa phải dữ liệu thật.",
   "loading": "Đang tải",
   "offline": {
     "banner": "Đang ngoại tuyến. Bằng chứng sẽ được đồng bộ khi có mạng."
   },
   "placeholder": {
-    "title": "Màn hình đang được dựng khung",
-    "message": "Bố cục và đường vào màn hình này đã có; nội dung sẽ được bổ sung ở bản sau.",
-    "action": "Quay lại màn hình trước"
+    "title": "Tính năng sắp có",
+    "message": "Màn này đang được hoàn thiện. Dữ liệu và bằng chứng của bạn không bị ảnh hưởng.",
+    "action": "Quay lại"
   },
   "sources": {
     "shopee": "Shopee",
@@ -40,7 +39,7 @@
   },
   "syncBar": {
     "title": "Bằng chứng cần theo dõi",
-    "hint": "Tải nền có thể tạm dừng khi hệ điều hành giới hạn. Mở ứng dụng để tiếp tục.",
+    "hint": "Ứng dụng chỉ tải lên khi đang mở. Đóng ứng dụng thì việc tải tạm dừng, mở lại sẽ tiếp tục.",
     "action": "Mở trung tâm đồng bộ"
   },
   "recording": {
