@@ -1,0 +1,141 @@
+---
+import Icon, { type IconName } from '../Icon.astro';
+import PhoneMockup from '../PhoneMockup.astro';
+import orderShot from '../../assets/app-04-order-preview.png';
+
+const steps: { icon: IconName; title: string }[] = [
+  { icon: 'scan', title: 'Quét mã hoặc nhập đơn' },
+  { icon: 'box', title: 'Quay đóng gói' },
+  { icon: 'cloud', title: 'Lưu và theo dõi tải lên' },
+];
+---
+
+<section id="cach-dung" class="steps" aria-labelledby="cach-dung-tieu-de">
+  <div class="container steps__inner">
+    <div>
+      <h2 id="cach-dung-tieu-de">Cách dùng</h2>
+      <p class="steps__lead">
+        Chỉ vài bước. <span class="badge">Sắp có</span> Đây là thiết kế của ứng dụng; hôm nay ứng dụng
+        chưa ghi video thật và chưa tải video lên.
+      </p>
+      <ol class="steps__list">
+        {
+          steps.map((s, i) => (
+            <li>
+              <span class="steps__icon">
+                <Icon name={s.icon} size={30} />
+              </span>
+              <span class="steps__label">
+                <span class="steps__num">{i + 1}.</span> {s.title}
+              </span>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+
+    <figure class="steps__visual">
+      <div class="steps__stage">
+        <PhoneMockup
+          src={orderShot}
+          alt="Màn hình xem lại thông tin đơn trước khi lưu, trong ứng dụng bản thử."
+          sizes="200px"
+        />
+      </div>
+      <figcaption>Giao diện minh họa, đang phát triển.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<style>
+  .steps {
+    padding-block: var(--space-16) var(--space-32);
+  }
+  .steps__inner {
+    display: grid;
+    gap: var(--space-24);
+  }
+  .steps__lead {
+    color: var(--text-secondary);
+  }
+  .steps__list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-12);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .steps__list li {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-8);
+    max-width: none;
+    text-align: center;
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+  /* Mũi tên giữa các bước (trang trí). */
+  .steps__list li:not(:last-child)::after {
+    content: '\2192';
+    position: absolute;
+    top: 1rem;
+    right: -0.55rem;
+    color: var(--action-primary);
+  }
+  .steps__icon {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-full);
+    background: var(--brand-soft);
+    color: var(--action-primary);
+  }
+  .steps__visual {
+    margin: 0;
+  }
+  .steps__stage {
+    display: flex;
+    justify-content: center;
+    height: 18rem;
+    padding: var(--space-24) var(--space-16) 0;
+    overflow: hidden;
+    border-radius: var(--radius-24);
+    background: linear-gradient(200deg, var(--brand-soft), var(--mint-200));
+    --phone-width: 200px;
+  }
+  figcaption {
+    margin-top: var(--space-8);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+  @media (min-width: 60rem) {
+    .steps {
+      padding-block: var(--space-32) var(--space-48);
+    }
+    .steps__inner {
+      grid-template-columns: 1.1fr 0.9fr;
+      align-items: center;
+      gap: var(--space-48);
+    }
+    .steps__icon {
+      width: 88px;
+      height: 88px;
+    }
+    .steps__list li {
+      font-size: var(--text-base);
+    }
+    .steps__list li:not(:last-child)::after {
+      top: 1.6rem;
+      right: -1rem;
+      font-size: var(--text-xl);
+    }
+    .steps__stage {
+      height: 24rem;
+      --phone-width: 220px;
+    }
+  }
+</style>
