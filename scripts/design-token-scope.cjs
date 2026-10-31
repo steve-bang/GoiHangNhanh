@@ -3,22 +3,14 @@
  * NGUỒN DUY NHẤT về phạm vi áp dụng Design Token (docs/design-token-spec.md mục 7, audit mục 1).
  * ESLint (eslint.config.js) và script `check-design-tokens.cjs` cùng đọc tệp này.
  *
- * Ngoài phạm vi = các màn đã chạy và được khách hàng xác nhận: KHÔNG sửa, KHÔNG đổi hiển thị.
+ * Ngoài phạm vi = chỗ chứa giá trị gốc của hệ thống token và hạ tầng test.
  * Muốn đưa một màn vào phạm vi: xóa dòng tương ứng ở đây, chuyển màn sang `useTheme().tokens`.
  */
 
 /** Đường dẫn (tính từ gốc repo, dấu `/`) ngoài phạm vi. */
 const EXCLUDED_PATTERNS = [
-  // Splash
-  /^src\/features\/shop\/ui\/SplashScreen/,
-  /^src\/features\/shop\/ui\/splash\//,
-  // Đăng nhập, Đăng ký, Quên mật khẩu, OTP, Mật khẩu mới
-  /^src\/features\/shop\/ui\/(SignIn|SignUp|ForgotPassword|VerifyOtp|NewPassword)Screen/,
-  /^src\/features\/shop\/ui\/auth-layout/,
-  // Luồng thiết lập trước khi vào app (D-17: xác nhận ngoài phạm vi) và hạ tầng dùng chung của chúng
-  /^src\/features\/shop\/ui\/(Welcome|CreateShop|SetupDone)/,
-  /^src\/features\/shop\/ui\/(BrandLogo|onboarding|welcome-layout)/,
-  /^src\/features\/shop\/ui\/onboarding\//,
+  // Splash, đăng nhập/đăng ký, khôi phục mật khẩu và luồng thiết lập đã vào phạm vi (người dùng duyệt
+  // 2026-10-31: chuyển sang `useTheme().tokens`, chấp nhận đổi nhẹ giao diện cho khớp thang chung).
   // Chỗ chứa giá trị gốc của chính hệ thống token và hạ tầng test
   /^src\/core\/theme\//,
   /^src\/shared\/ui\/theme\.ts$/,
