@@ -7,12 +7,14 @@ import { PASSWORD_RECOVERY_MODE } from '@/core/config/feature-flags';
 import type { ErrorCode } from '@/core/errors/codes';
 import { resolveErrorMessage, type ErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
+import { layout as themeLayout } from '@/core/theme';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Text, useTheme } from '@/shared/ui';
 
 import { DEFAULT_RESEND_SECONDS } from '../domain/otp';
 import { normalizeEmail, validateEmail } from '../domain/validation';
-import { computeForgotLayout } from './auth-layout';
+import { AUTH_TITLE_VARIANT, computeForgotLayout } from './auth-layout';
+import { LINK_ROW_HEIGHT } from './onboarding-layout';
 import { TipCard } from './onboarding/AuthParts';
 import { LockIllustration } from './onboarding/AuthIllustrations';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
@@ -28,7 +30,7 @@ import { isRetryable, useGatewayTask } from './onboarding/useGatewayTask';
  */
 export function ForgotPasswordScreen() {
   const { t } = useTranslation();
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
@@ -101,7 +103,7 @@ export function ForgotPasswordScreen() {
       },
     },
   );
-  const { gaps, title } = layout;
+  const { gaps } = layout;
 
   const submit = () => {
     if (busyRef.current) return;
@@ -145,11 +147,18 @@ export function ForgotPasswordScreen() {
         </View>
       ) : null}
       <View style={{ marginTop: gaps.illustrationToTitle }}>
-        <Text accessibilityRole="header" bold style={[title, styles.center, { color: colors.ink }]}>
+        <Text
+          accessibilityRole="header"
+          variant={AUTH_TITLE_VARIANT}
+          style={[styles.center, { color: tokens.color.text.strong }]}
+        >
           {t('screens:forgot.title')}
         </Text>
         <Text
-          style={[styles.center, { color: colors.inkMuted, marginTop: gaps.titleToDescription }]}
+          style={[
+            styles.center,
+            { color: tokens.color.text.subtle, marginTop: gaps.titleToDescription },
+          ]}
         >
           {description}
         </Text>
@@ -183,7 +192,7 @@ export function ForgotPasswordScreen() {
       </View>
 
       {formError && bannerMessage ? (
-        <View style={{ marginTop: spacing.md }}>
+        <View style={{ marginTop: tokens.space.md }}>
           <FormErrorBanner
             code={formError}
             message={bannerMessage}
@@ -206,9 +215,9 @@ export function ForgotPasswordScreen() {
         accessibilityLabel={t('screens:forgot.backToSignIn')}
         onPress={backToSignIn}
         hitSlop={8}
-        style={[styles.link, { minHeight: Math.max(touch, 48) }]}
+        style={[styles.link, { minHeight: Math.max(touch, LINK_ROW_HEIGHT) }]}
       >
-        <Text bold style={{ color: colors.brand }}>
+        <Text bold style={{ color: tokens.color.action.link }}>
           {t('screens:forgot.backToSignIn')}
         </Text>
       </Pressable>
@@ -227,5 +236,5 @@ export function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   center: { textAlign: 'center' },
   link: { alignSelf: 'center', justifyContent: 'center' },
-  spacer: { flexGrow: 1, minHeight: 12 },
+  spacer: { flexGrow: 1, minHeight: themeLayout.space.md },
 });

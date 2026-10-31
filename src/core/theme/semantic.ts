@@ -75,6 +75,11 @@ const color = {
   },
   /** Tông xanh dương dùng làm điểm nhấn (ô icon cửa hàng, đám mây); không phải màu trạng thái. */
   accent: { blue: { fg: palette.blue[700], bg: palette.blue[50] } },
+  /**
+   * Hình minh họa trang trí (Chào mừng, Đăng nhập, Thiết lập xong): hộp carton giữ màu bìa thật để
+   * đọc ra là "hộp hàng". Không dùng cho chữ, viền điều khiển hay trạng thái.
+   */
+  illustration: { carton: palette.kraft[300], cartonShade: palette.kraft[500] },
   feedback: {
     success: { fg: palette.leaf[700], bg: palette.leaf[100] },
     warning: { fg: palette.amber[700], bg: palette.amber[50] },

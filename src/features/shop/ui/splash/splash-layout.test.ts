@@ -1,8 +1,10 @@
+import { semantic } from '@/core/theme';
+
 import {
   computeSplashLayout,
-  FEATURE_LABEL_FONT_SIZE,
   HERO_MAX_SCALE,
   HERO_MIN_SCALE,
+  SPLASH_TEXT_VARIANTS,
   type SplashLayout,
 } from './splash-layout';
 
@@ -49,8 +51,11 @@ describe('computeSplashLayout', () => {
       insetBottom: 34,
       fontScale: 1,
     });
-    expect(tall.header.paddingTop).toBeGreaterThan(normal.header.paddingTop);
-    expect(tall.header.paddingTop - normal.header.paddingTop).toBeLessThanOrEqual(20);
+    // Khoảng cách gốc là `space.sm`; 390x844 đã dư chỗ nên cả hai có thể chạm giới hạn trên.
+    expect(tall.header.paddingTop).toBeGreaterThan(semantic.space.sm);
+    expect(tall.header.paddingTop).toBeGreaterThanOrEqual(normal.header.paddingTop);
+    expect(tall.header.paddingTop - semantic.space.sm).toBeLessThanOrEqual(20);
+    expect(tall.hero.scale).toBeGreaterThanOrEqual(normal.hero.scale);
     expect(tall.hero.scale).toBeLessThanOrEqual(HERO_MAX_SCALE);
     expect(tall.fits).toBe(true);
   });
@@ -84,7 +89,7 @@ describe('computeSplashLayout', () => {
   });
 
   it('nhãn tính năng không nhỏ hơn 12dp', () => {
-    expect(FEATURE_LABEL_FONT_SIZE).toBeGreaterThanOrEqual(12);
+    expect(semantic.type[SPLASH_TEXT_VARIANTS.feature].fontSize).toBeGreaterThanOrEqual(12);
   });
 
   describe.each(DEVICES)('$name', (d) => {
@@ -93,7 +98,6 @@ describe('computeSplashLayout', () => {
       expect(l.fits).toBe(true);
       // Khiên + tên là một phần khối đầu, luôn có kích thước dương.
       expect(l.header.shield.width).toBeGreaterThan(0);
-      expect(l.header.wordmark.fontSize).toBeGreaterThan(0);
       // Không khối nào vượt chiều cao màn.
       expect(l.header.bottom).toBeLessThanOrEqual(d.height);
       expect(l.wave.height).toBeLessThanOrEqual(d.height);
@@ -111,7 +115,7 @@ describe('computeSplashLayout', () => {
   it('màn rất thấp: thu nhỏ ảnh trước khi ẩn; khiên + tên vẫn hiện', () => {
     const l = computeSplashLayout({
       width: 360,
-      height: 520,
+      height: 500,
       insetTop: 24,
       insetBottom: 0,
       fontScale: 1,

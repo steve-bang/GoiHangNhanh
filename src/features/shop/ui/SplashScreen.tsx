@@ -4,15 +4,16 @@ import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { fontWeight } from '@/core/theme';
 import { hideNativeSplash, useAppNavigation } from '@/platform';
-import { Text, useTheme } from '@/shared/ui';
+import { AppThemeScope, Text, useTheme } from '@/shared/ui';
 
 import { BrandMarkPlay } from './splash/BrandMarkPlay';
 import { SplashBackdrop } from './splash/SplashBackdrop';
 import { SplashFeatures } from './splash/SplashFeatures';
 import { SplashHero } from './splash/SplashHero';
 import { SplashWave } from './splash/SplashWave';
-import { computeSplashLayout, FONT_CAPS } from './splash/splash-layout';
+import { computeSplashLayout, FONT_CAPS, SPLASH_TEXT_VARIANTS } from './splash/splash-layout';
 import { useSplashLaunch } from './splash/use-splash-launch';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import { SPLASH_HERO_MAX_WAIT_MS } from '../domain/launch';
@@ -25,10 +26,13 @@ import { SPLASH_HERO_MAX_WAIT_MS } from '../domain/launch';
  *
  * Chữ theo thiết kế đã được người dùng duyệt giữ nguyên (decisions.md Q-15, D-15). Trợ năng: mọi
  * thành phần trang trí ẩn khỏi trình đọc màn hình; chỉ đọc tên app "Đơn Chứng".
+ *
+ * Màu và chữ theo design token (Bright Orange): không nằm trong `Screen` nên tự bọc `AppThemeScope`.
+ * Câu viết tay màu trắng nằm trên thân sóng đậm (`action.primary` -> `brand.deep`, >= 4.5:1).
  */
 export function SplashScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { color } = useTheme().tokens;
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
@@ -73,110 +77,97 @@ export function SplashScreen() {
   useEffect(() => () => hideNativeSplash(), []);
 
   return (
-    <View
-      testID="screen-UI-A01"
-      accessible
-      accessibilityRole="image"
-      accessibilityLabel={t('screens:splash.brandName')}
-      style={styles.root}
-    >
-      <SplashBackdrop />
+    <AppThemeScope>
       <View
-        pointerEvents="none"
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        style={StyleSheet.absoluteFill}
+        testID="screen-UI-A01"
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={t('screens:splash.brandName')}
+        style={styles.root}
       >
-        {layout.showHero ? (
-          <SplashHero
-            width={hero.width}
-            height={hero.height}
-            scale={hero.scale}
-            bottomOffset={hero.bottomOffset}
-            onSettled={heroSettled}
-          />
-        ) : null}
-        <SplashWave width={width} height={wave.height} />
-        {layout.showSlogan ? (
-          <View
-            testID="splash-slogan"
-            style={[styles.slogan, { bottom: 0, height: wave.height - wave.slogan.top }]}
-          >
-            <View style={styles.sloganTilt}>
-              <Text
-                maxFontSizeMultiplier={FONT_CAPS.slogan}
-                style={[
-                  styles.sloganText,
-                  {
-                    color: colors.onSplashWave,
-                    fontSize: wave.slogan.fontSize,
-                    lineHeight: wave.slogan.lineHeight,
-                  },
-                ]}
-              >
-                {t('screens:splash.slogan')}
-              </Text>
-              <Svg width={Math.round(width * 0.6)} height={10} viewBox="0 0 250 10">
-                <Path
-                  d="M0 9 C70 2 170 0 250 0 C170 2.2 70 5 0 9 Z"
-                  fill={colors.onSplashWave}
-                  fillOpacity={0.85}
-                />
-              </Svg>
+        <SplashBackdrop />
+        <View
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={StyleSheet.absoluteFill}
+        >
+          {layout.showHero ? (
+            <SplashHero
+              width={hero.width}
+              height={hero.height}
+              scale={hero.scale}
+              bottomOffset={hero.bottomOffset}
+              onSettled={heroSettled}
+            />
+          ) : null}
+          <SplashWave width={width} height={wave.height} />
+          {layout.showSlogan ? (
+            <View
+              testID="splash-slogan"
+              style={[styles.slogan, { bottom: 0, height: wave.height - wave.slogan.top }]}
+            >
+              <View style={styles.sloganTilt}>
+                <Text
+                  variant={SPLASH_TEXT_VARIANTS.slogan}
+                  maxFontSizeMultiplier={FONT_CAPS.slogan}
+                  style={[styles.sloganText, { color: color.text.onAction }]}
+                >
+                  {t('screens:splash.slogan')}
+                </Text>
+                <Svg width={Math.round(width * 0.6)} height={10} viewBox="0 0 250 10">
+                  <Path
+                    d="M0 9 C70 2 170 0 250 0 C170 2.2 70 5 0 9 Z"
+                    fill={color.text.onAction}
+                    fillOpacity={0.85}
+                  />
+                </Svg>
+              </View>
             </View>
-          </View>
-        ) : null}
+          ) : null}
 
-        <View style={[styles.header, { paddingTop: insets.top + header.paddingTop }]}>
-          <BrandMarkPlay width={header.shield.width} />
-          <Text
-            testID="splash-wordmark"
-            maxFontSizeMultiplier={FONT_CAPS.wordmark}
-            style={[
-              styles.wordmark,
-              {
-                marginTop: header.gaps.shieldWordmark,
-                color: colors.splashWordmark,
-                fontSize: header.wordmark.fontSize,
-                lineHeight: header.wordmark.lineHeight,
-              },
-            ]}
-          >
-            {t('screens:splash.brandName')}
-          </Text>
-          {layout.showTagline ? (
+          <View style={[styles.header, { paddingTop: insets.top + header.paddingTop }]}>
+            <BrandMarkPlay width={header.shield.width} />
             <Text
-              testID="splash-tagline"
-              maxFontSizeMultiplier={FONT_CAPS.tagline}
+              testID="splash-wordmark"
+              variant={SPLASH_TEXT_VARIANTS.wordmark}
+              maxFontSizeMultiplier={FONT_CAPS.wordmark}
               style={[
-                styles.tagline,
-                {
-                  marginTop: header.gaps.wordmarkTagline,
-                  color: colors.splashTagline,
-                  fontSize: header.tagline.fontSize,
-                  lineHeight: header.tagline.lineHeight,
-                },
+                styles.centered,
+                { marginTop: header.gaps.shieldWordmark, color: color.action.primary },
               ]}
             >
-              {t('screens:splash.tagline')}
+              {t('screens:splash.brandName')}
             </Text>
-          ) : null}
-          {layout.showFeatures ? (
-            <View style={{ marginTop: header.gaps.taglineFeatures, alignSelf: 'stretch' }}>
-              <SplashFeatures layout={header} />
-            </View>
-          ) : null}
+            {layout.showTagline ? (
+              <Text
+                testID="splash-tagline"
+                variant={SPLASH_TEXT_VARIANTS.tagline}
+                maxFontSizeMultiplier={FONT_CAPS.tagline}
+                style={[
+                  styles.centered,
+                  { marginTop: header.gaps.wordmarkTagline, color: color.brand.onSoft },
+                ]}
+              >
+                {t('screens:splash.tagline')}
+              </Text>
+            ) : null}
+            {layout.showFeatures ? (
+              <View style={{ marginTop: header.gaps.taglineFeatures, alignSelf: 'stretch' }}>
+                <SplashFeatures layout={header} />
+              </View>
+            ) : null}
+          </View>
         </View>
       </View>
-    </View>
+    </AppThemeScope>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
   header: { alignItems: 'center' },
-  wordmark: { fontWeight: '800', textAlign: 'center' },
-  tagline: { fontWeight: '600', textAlign: 'center' },
+  centered: { textAlign: 'center' },
   slogan: {
     position: 'absolute',
     left: 0,
@@ -184,6 +175,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sloganTilt: { alignItems: 'center', transform: [{ rotate: '-4deg' }] },
-  sloganText: { fontStyle: 'italic', fontWeight: '400', textAlign: 'center' },
+  sloganTilt: {
+    alignItems: 'center',
+    // token-exception: góc nghiêng trang trí của câu viết tay, không có thang góc
+    transform: [{ rotate: '-4deg' }],
+  },
+  sloganText: { fontStyle: 'italic', fontWeight: fontWeight.regular, textAlign: 'center' },
 });

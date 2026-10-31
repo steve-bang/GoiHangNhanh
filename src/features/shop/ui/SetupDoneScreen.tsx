@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ROUTES } from '@/core/navigation';
+import { layout } from '@/core/theme';
 import { useAppNavigation, useConfirmBeforeLeave } from '@/platform';
-import { Button, Icon, Text, useTheme, type IconName } from '@/shared/ui';
+import { Button, Icon, IconTile, Text, useTheme, type IconName } from '@/shared/ui';
 
 import { normalizeShopName } from '../domain/validation';
 import {
@@ -31,7 +32,8 @@ function SummaryRow({
   last: boolean;
   testID: string;
 }) {
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
+  const { color } = tokens;
   return (
     <Pressable
       testID={testID}
@@ -42,25 +44,23 @@ function SummaryRow({
         styles.row,
         {
           minHeight: SUMMARY_ROW_MIN_HEIGHT,
-          gap: spacing.md,
-          opacity: pressed ? 0.85 : 1,
+          gap: tokens.space.md,
+          opacity: pressed ? tokens.opacity.pressed : 1,
           borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
-          borderBottomColor: colors.fieldBorder,
+          borderBottomColor: color.border.subtle,
         },
       ]}
     >
-      <View style={[styles.rowIcon, { backgroundColor: colors.brand }]}>
-        <Icon name={icon} size={20} color={colors.onBrand} />
-      </View>
+      <IconTile icon={icon} size="md" />
       <View style={styles.rowText}>
-        <Text variant="caption" style={{ color: colors.inkMuted }}>
+        <Text variant="caption" style={{ color: color.text.subtle }}>
           {label}
         </Text>
-        <Text bold color="ink" numberOfLines={2}>
+        <Text bold numberOfLines={2} style={{ color: color.text.strong }}>
           {value}
         </Text>
       </View>
-      <Icon name="forward" size={20} color={colors.inkMuted} />
+      <Icon name="forward" size={tokens.icon.md} color={color.text.subtle} />
     </Pressable>
   );
 }
@@ -73,7 +73,8 @@ function SummaryRow({
  */
 export function SetupDoneScreen() {
   const { t } = useTranslation();
-  const { colors, radius, spacing } = useTheme();
+  const { tokens } = useTheme();
+  const { color } = tokens;
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
@@ -88,7 +89,7 @@ export function SetupDoneScreen() {
     insetBottom: insets.bottom,
     fontScale,
   });
-  const { gaps, titleLead } = layout;
+  const { gaps } = layout;
 
   const shopName = state.shop?.name ?? normalizeShopName(state.shopName);
   const sources = state.shop?.sellingSources ?? state.sources;
@@ -108,12 +109,12 @@ export function SetupDoneScreen() {
       </View>
 
       <View style={[styles.titleBlock, { marginTop: gaps.illustrationToTitle }]}>
-        <Text accessibilityRole="header" style={styles.center} bold>
-          <Text bold style={[titleLead, styles.block, { color: colors.ink }]}>
+        <Text variant="screenTitle" accessibilityRole="header" style={styles.center} bold>
+          <Text variant="screenTitle" bold style={[styles.center, { color: color.text.strong }]}>
             {t('screens:setupDone.titleLead')}
           </Text>
           {'\n'}
-          <Text bold style={[styles.titleSecond, { color: colors.ink }]}>
+          <Text variant="sectionTitle" bold style={{ color: color.text.strong }}>
             {t('screens:setupDone.title')}
           </Text>
         </Text>
@@ -121,7 +122,7 @@ export function SetupDoneScreen() {
           style={[
             styles.center,
             styles.subtitle,
-            { color: colors.inkMuted, marginTop: gaps.titleToSubtitle },
+            { color: color.text.subtle, marginTop: gaps.titleToSubtitle },
           ]}
         >
           {t('screens:setupDone.subtitle')}
@@ -132,11 +133,11 @@ export function SetupDoneScreen() {
         testID="setup-summary"
         style={{
           marginTop: gaps.subtitleToCard,
-          backgroundColor: colors.surface,
-          borderColor: colors.borderSubtle,
-          borderWidth: 1,
-          borderRadius: radius.lg,
-          paddingHorizontal: spacing.lg,
+          backgroundColor: color.surface.raised,
+          borderColor: color.border.default,
+          borderWidth: tokens.borderWidth.thin,
+          borderRadius: tokens.radius.lg,
+          paddingHorizontal: tokens.space.lg,
         }}
       >
         <SummaryRow
@@ -174,10 +175,10 @@ export function SetupDoneScreen() {
         accessibilityRole="button"
         accessibilityLabel={t('screens:setupDone.guide')}
         onPress={() => navigation.push(ROUTES.help)}
-        style={[styles.guide, { minHeight: LINK_ROW_HEIGHT, gap: spacing.sm }]}
+        style={[styles.guide, { minHeight: LINK_ROW_HEIGHT, gap: tokens.space.sm }]}
       >
-        <Icon name="play-circle" size={20} color={colors.brand} />
-        <Text bold style={{ color: colors.brand }}>
+        <Icon name="play-circle" size={tokens.icon.md} color={color.action.link} />
+        <Text bold style={{ color: color.action.link }}>
           {t('screens:setupDone.guide')}
         </Text>
       </Pressable>
@@ -188,18 +189,9 @@ export function SetupDoneScreen() {
 const styles = StyleSheet.create({
   titleBlock: { alignItems: 'center' },
   center: { textAlign: 'center' },
-  // Giới hạn bề rộng để đoạn chữ ngắt dòng cân đối như mockup (không còn một chữ lẻ ở dòng cuối).
+  // token-exception: giới hạn bề rộng đọc được để đoạn chữ ngắt dòng cân đối như mockup
   subtitle: { maxWidth: 280, alignSelf: 'center' },
-  block: { textAlign: 'center' },
-  titleSecond: { fontSize: 18, lineHeight: 24 },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  rowIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: layout.space.sm },
   rowText: { flex: 1 },
   spacer: { flexGrow: 1 },
   guide: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },

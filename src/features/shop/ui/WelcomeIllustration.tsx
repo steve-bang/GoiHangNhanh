@@ -9,16 +9,15 @@ interface WelcomeIllustrationProps {
   height: number;
 }
 
-const BOX = '#C99A5B';
-const BOX_DARK = '#A97A3F';
-
 /**
- * Hình minh họa giữa màn Chào mừng: nền tròn xanh nhạt, lá, hộp hàng và khiên có dấu tick, dựng
- * bằng biểu tượng sẵn có. THAY BẰNG HÌNH THẬT chỉ ở tệp này (ví dụ `<Image source=... />` cùng
- * kích thước `height`); màn hình không phải sửa. Bị ẩn khỏi trình đọc màn hình (chỉ trang trí).
+ * Hình minh họa giữa màn Chào mừng: nền tròn cam nhạt, lá, hộp hàng và khiên có dấu tick, dựng
+ * bằng biểu tượng sẵn có, tô bằng token (tông Bright Orange + trung tính ấm cho hộp). THAY BẰNG HÌNH
+ * THẬT chỉ ở tệp này (ví dụ `<Image source=... />` cùng kích thước `height`); màn hình không phải
+ * sửa. Bị ẩn khỏi trình đọc màn hình (chỉ trang trí).
  */
 export function WelcomeIllustration({ height }: WelcomeIllustrationProps) {
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
+  const { brand, text } = tokens.color;
   const g = getIllustrationGeometry(Math.min(height, ILLUSTRATION_MAX_HEIGHT));
   return (
     <View
@@ -34,26 +33,34 @@ export function WelcomeIllustration({ height }: WelcomeIllustrationProps) {
           top: (g.frame.height - g.blob.diameter) / 2,
           width: g.blob.diameter,
           height: g.blob.diameter,
-          borderRadius: g.blob.diameter / 2,
-          backgroundColor: colors.welcomeBlob,
+          borderRadius: tokens.radius.full,
+          backgroundColor: brand.soft,
         }}
       />
       <View style={{ position: 'absolute', left: g.leafLeft.left, bottom: g.leafLeft.bottom }}>
-        <Icon name="leaf" size={g.leafLeft.size} color="#7CC08F" />
+        <Icon name="leaf" size={g.leafLeft.size} color={brand.hover} />
       </View>
       <View style={{ position: 'absolute', right: g.leafRight.right, bottom: g.leafRight.bottom }}>
-        <Icon name="leaf" size={g.leafRight.size} color="#9BD0AA" />
+        <Icon name="leaf" size={g.leafRight.size} color={brand.softStrong} />
       </View>
       <View style={{ position: 'absolute', left: g.boxLarge.left, bottom: g.boxLarge.bottom }}>
-        <Icon name="package-solid" size={g.boxLarge.size} color={BOX} />
+        <Icon
+          name="package-solid"
+          size={g.boxLarge.size}
+          color={tokens.color.illustration.carton}
+        />
       </View>
       <View style={{ position: 'absolute', left: g.boxSmall.left, bottom: g.boxSmall.bottom }}>
-        <Icon name="package-solid" size={g.boxSmall.size} color={BOX_DARK} />
+        <Icon
+          name="package-solid"
+          size={g.boxSmall.size}
+          color={tokens.color.illustration.cartonShade}
+        />
       </View>
       <View style={{ position: 'absolute', right: g.shield.right, top: g.shield.top }}>
-        <Icon name="brand-shield" size={g.shield.size} color={colors.brand} />
+        <Icon name="brand-shield" size={g.shield.size} color={brand.primary} />
         <View style={[StyleSheet.absoluteFill, styles.center]}>
-          <Icon name="check" size={g.shield.checkSize} color={colors.onBrand} />
+          <Icon name="check" size={g.shield.checkSize} color={text.onAction} />
         </View>
       </View>
     </View>

@@ -55,9 +55,9 @@ describe('computeWelcomeLayout', () => {
     }
   });
 
-  it('320x568: tiêu đề nhỏ hơn, khoảng cách thu gọn, hình ẩn', () => {
+  it('320x568: màn hẹp, khoảng cách thu gọn, hình ẩn', () => {
     const l = computeWelcomeLayout({ ...BASE, width: 320, height: 568 });
-    expect(l.title.fontSize).toBeLessThan(30);
+    expect(l.narrow).toBe(true);
     expect(l.compact).toBe(true);
     expect(l.illustrationHeight).toBe(0);
   });
@@ -76,7 +76,7 @@ describe('computeWelcomeLayout', () => {
     const l = computeWelcomeLayout({ ...BASE, width, height });
     expect(l.compact).toBe(false);
     expect(l.gaps).toEqual({ top: 24, section: 24 });
-    expect(l.title.fontSize).toBe(30);
+    expect(l.narrow).toBe(false);
     expect(l.illustrationHeight).toBe(ILLUSTRATION_MAX_HEIGHT);
   });
 

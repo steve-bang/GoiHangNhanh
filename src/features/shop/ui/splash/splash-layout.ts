@@ -1,3 +1,5 @@
+import { semantic } from '@/core/theme';
+
 /**
  * Bố cục màn Splash (UI-A01): thuần TypeScript, không React/RN để dễ test.
  *
@@ -8,9 +10,13 @@
  * Màn thấp: ẩn dần theo thứ tự câu viết tay -> hàng 4 tính năng -> khẩu hiệu -> thu nhỏ ảnh. Khiên
  * và tên LUÔN hiện. Chữ hệ thống lớn (fontScale >= 1,25): ẩn hàng tính năng và khẩu hiệu. Màn cao
  * hơn thiết kế (2:3): phần dư chia vào khoảng cách (có giới hạn trên) rồi cho ảnh lớn thêm chút.
+ *
+ * Cỡ chữ KHÔNG tính ở đây: màn dùng `<Text variant>` cố định (`SPLASH_TEXT_VARIANTS`); hàm chỉ đọc
+ * `lineHeight` của các variant đó để ước tính chiều cao. Khoảng cách lấy từ thang `semantic.space`.
  */
 
 /** Kích thước ảnh minh họa sau khi cắt biên trong suốt (assets/images/splash/splash-hero.webp). */
+// token-exception: kích thước điểm ảnh của tệp ảnh minh họa, không phải giá trị thiết kế
 export const HERO_IMAGE = { width: 1024, height: 1050 } as const;
 const HERO_ASPECT = HERO_IMAGE.height / HERO_IMAGE.width;
 /** Ảnh nhỏ hơn mức này (so với chiều rộng màn) thì ẩn hẳn. */
@@ -18,7 +24,7 @@ export const HERO_MIN_SCALE = 0.6;
 /** Ảnh lớn thêm tối đa mức này khi còn dư chỗ (lớn hơn thì bong bóng sát mép bị cắt; ảnh có chừng 1% lề). */
 export const HERO_MAX_SCALE = 1.02;
 
-/** Màn hẹp hơn ngưỡng này (dp) dùng cỡ chữ và khoảng cách nhỏ hơn. */
+/** Màn hẹp hơn ngưỡng này (dp) dùng khoảng cách và hình nhỏ hơn. */
 export const NARROW_WIDTH_BELOW = 340;
 /** Từ cỡ chữ hệ thống này trở lên: ẩn hàng tính năng và khẩu hiệu. */
 export const HIDE_DETAILS_FONT_SCALE = 1.25;
@@ -26,10 +32,22 @@ export const HIDE_DETAILS_FONT_SCALE = 1.25;
 /** Giới hạn phóng chữ theo `maxFontSizeMultiplier` (không khóa `allowFontScaling`). */
 export const FONT_CAPS = { wordmark: 1.2, tagline: 1.3, feature: 1.3, slogan: 1.3 } as const;
 
-/** Cỡ chữ nhãn tính năng (dp). KHÔNG co theo ảnh: tối thiểu 12dp. */
-export const FEATURE_LABEL_FONT_SIZE = 12;
+/**
+ * Variant chữ của từng khối (`Text variant`). Nhãn tính năng dùng `caption` (12dp, không co theo
+ * ảnh). Câu viết tay dùng `sectionTitle` với trọng số thường (màn đặt `fontWeight.regular`).
+ */
+export const SPLASH_TEXT_VARIANTS = {
+  wordmark: 'screenTitle',
+  tagline: 'cardTitle',
+  feature: 'caption',
+  slogan: 'sectionTitle',
+} as const;
+const lineHeightOf = (key: keyof typeof SPLASH_TEXT_VARIANTS) =>
+  semantic.type[SPLASH_TEXT_VARIANTS[key]].lineHeight;
+const { space } = semantic;
 
 /** Đường cong sóng vẽ trong khung 1024 x 130 (đơn vị thiết kế); sóng đậm sâu nhất khoảng y = 118. */
+// token-exception: khung toạ độ của đường cong SVG, không phải kích thước hiển thị
 export const WAVE_VIEWBOX = { width: 1024, height: 130 } as const;
 const WAVE_DEEPEST_TOP = 100; // chỗ sóng đậm sâu nhất ở phần giữa, nơi mép bàn chạm sóng
 /** Ảnh phủ xuống dưới đỉnh sóng sâu nhất (dp) để sóng che mép dưới ảnh. */
@@ -56,8 +74,6 @@ export interface SplashLayout {
   header: {
     paddingTop: number;
     shield: { width: number; height: number };
-    wordmark: { fontSize: number; lineHeight: number };
-    tagline: { fontSize: number; lineHeight: number };
     feature: { disc: number; gap: number; lineHeight: number };
     gaps: { shieldWordmark: number; wordmarkTagline: number; taglineFeatures: number };
     /** Mép dưới của khối đầu so với đỉnh màn (dp, ước tính theo cỡ chữ đã giới hạn). */
@@ -77,11 +93,13 @@ export interface SplashLayout {
     height: number;
     /** Chiều cao phần đường cong (trên cùng) của sóng. */
     contourHeight: number;
-    slogan: { fontSize: number; lineHeight: number; top: number };
+    slogan: { top: number };
   };
   /** true khi mọi khối vừa chiều cao màn (khối đầu không đè lên ảnh hoặc sóng). */
   fits: boolean;
 }
+
+type GapKey = 'paddingTop' | 'shieldWordmark' | 'wordmarkTagline' | 'taglineFeatures' | 'headHero';
 
 interface Visibility {
   slogan: boolean;
@@ -96,29 +114,28 @@ export function computeSplashLayout(input: SplashLayoutInput): SplashLayout {
 
   const shieldWidth = clamp(Math.round(width * 0.145), 42, 60);
   const shield = { width: shieldWidth, height: Math.round((shieldWidth * 156) / 140) };
-  const wordmarkBase = narrow ? { fontSize: 28, lineHeight: 34 } : { fontSize: 34, lineHeight: 40 };
-  const taglineBase = narrow ? { fontSize: 14, lineHeight: 19 } : { fontSize: 16, lineHeight: 21 };
-  const sloganBase = narrow ? { fontSize: 19, lineHeight: 26 } : { fontSize: 21, lineHeight: 29 };
-  const feature = narrow
-    ? { disc: 38, gap: 5, lineHeight: 16 }
-    : { disc: 42, gap: 6, lineHeight: 16 };
+  const feature = {
+    disc: narrow ? 38 : 42,
+    gap: narrow ? space.xs : space.tight,
+    lineHeight: lineHeightOf('feature'),
+  };
 
-  const wordmarkH = wordmarkBase.lineHeight * cap(fontScale, FONT_CAPS.wordmark);
-  const taglineH = 2 * taglineBase.lineHeight * cap(fontScale, FONT_CAPS.tagline);
+  const wordmarkH = lineHeightOf('wordmark') * cap(fontScale, FONT_CAPS.wordmark);
+  const taglineH = 2 * lineHeightOf('tagline') * cap(fontScale, FONT_CAPS.tagline);
   const featuresH =
     feature.disc + feature.gap + 2 * feature.lineHeight * cap(fontScale, FONT_CAPS.feature);
-  const sloganH = 2 * sloganBase.lineHeight * cap(fontScale, FONT_CAPS.slogan);
+  const sloganH = 2 * lineHeightOf('slogan') * cap(fontScale, FONT_CAPS.slogan);
 
-  const base = {
-    paddingTop: narrow ? 6 : 8,
-    shieldWordmark: 8,
-    wordmarkTagline: 4,
-    taglineFeatures: narrow ? 12 : 18,
-    headHero: 4,
+  const base: Record<GapKey, number> = {
+    paddingTop: narrow ? space.tight : space.sm,
+    shieldWordmark: space.sm,
+    wordmarkTagline: space.xs,
+    taglineFeatures: narrow ? space.md : space.lg,
+    headHero: space.xs,
   };
   const contour = Math.round(WAVE_VIEWBOX.height * k);
-  const sloganGap = 14;
-  const bottomPad = Math.max(insetBottom, 12) + (narrow ? 8 : 12);
+  const sloganGap = space.md;
+  const bottomPad = Math.max(insetBottom, space.md) + (narrow ? space.sm : space.md);
   const heroFullHeight = width * HERO_ASPECT;
 
   const waveHeight = (v: Visibility) => contour + (v.slogan ? sloganGap + sloganH : 0) + bottomPad;
@@ -200,8 +217,6 @@ export function computeSplashLayout(input: SplashLayoutInput): SplashLayout {
     header: {
       paddingTop: gaps.paddingTop,
       shield,
-      wordmark: wordmarkBase,
-      tagline: taglineBase,
       feature,
       gaps: {
         shieldWordmark: gaps.shieldWordmark,
@@ -214,7 +229,7 @@ export function computeSplashLayout(input: SplashLayoutInput): SplashLayout {
     wave: {
       height: waveH,
       contourHeight: contour,
-      slogan: { ...sloganBase, top: contour + sloganGap },
+      slogan: { top: contour + sloganGap },
     },
     fits,
   };

@@ -4,9 +4,9 @@
 
 ## 1. Phạm vi — đọc trước
 
-Token **bắt buộc** cho mọi màn bên trong app sau đăng nhập (Trang chủ, Đơn hàng, Thông báo, Cá nhân và các màn đi ra từ đó) cùng `shared/ui`. **Không áp dụng, không sửa** các màn đã được khách hàng xác nhận: Splash, Đăng nhập, Đăng ký, Quên mật khẩu, OTP, Mật khẩu mới, và luồng thiết lập (Welcome, Tạo shop, Thiết lập xong). Danh sách tệp ngoài phạm vi ở một nơi: `scripts/design-token-scope.cjs` (ESLint và `check:tokens` cùng đọc). Muốn đưa một màn vào phạm vi: sửa tệp đó, chuyển màn sang `tokens`, báo khách hàng duyệt thay đổi nhìn thấy được.
+Token **bắt buộc** cho mọi màn của app, kể cả Splash, Chào mừng, Đăng nhập, Đăng ký, Quên mật khẩu, OTP, Mật khẩu mới, Tạo shop, Hoàn tất thiết lập (D-20, thay D-17: các màn này đã chuyển sang `tokens` và Bright Orange). Ngoài phạm vi chỉ còn chỗ chứa giá trị gốc của hệ thống token (`src/core/theme/`, `src/shared/ui/theme.ts`) và `src/test-utils/`; danh sách ở một nơi: `scripts/design-token-scope.cjs` (ESLint và `check:tokens` cùng đọc). Màn không nằm trong `Screen` (Splash, khung `OnboardingScaffold`, Chào mừng) phải bọc `AppThemeScope` để `Button`/`Text`/`Icon` nhận bảng Bright Orange.
 
-`Button`, `Text`, `Icon`, `SourceIcon` được cả hai bên dùng: chỉ thay literal bằng token **cùng giá trị**; test `frozen-style-equivalence.test.tsx` giữ style hiện tại.
+`Button`, `Text`, `Icon`, `SourceIcon` vẫn đọc được bảng phẳng `colors` (trong `AppThemeScope` là bảng Bright Orange suy từ token); test `frozen-style-equivalence.test.tsx` giữ style của chúng. Bảng cũ jade (`colors.ts` khối `@frozen`) không còn màn nào dùng; gỡ hẳn là việc dọn dẹp riêng.
 
 ## 2. Ba tầng
 
@@ -75,6 +75,7 @@ const styles = StyleSheet.create({
 | Ranh giới điều khiển (hộp kiểm, nút chọn) · đường kẻ phân nhóm | `color.border.strong` (≥ 3:1) · `color.border.subtle` |
 | Nút đang nhấn · nền vô hiệu hóa (component mới) | `color.action.primaryPressed` · `color.action.disabled` |
 | Lớp nổi (sheet, hộp thoại) | `color.surface.elevated` |
+| Hộp carton trong hình minh họa | `color.illustration.carton` / `.cartonShade` (chỉ đồ họa trang trí) |
 | Trạng thái quay/đồng bộ: đang ghi, gián đoạn, đang thử lại, mất mạng, chờ/xong đồng bộ | `status.recording / interrupted / retrying / offline / syncPending / synced` (luôn kèm chữ + biểu tượng riêng) |
 | Cỡ biểu tượng | `tokens.icon.sm/md/lg/xl` (16/20/24/32) |
 | Vùng chạm tối thiểu | `getMinTouchTarget()` từ `@/platform` (44 iOS / 48 Android) — không nhân bản |
@@ -140,4 +141,4 @@ Chi tiết giá trị, tương phản và cơ chế phạm vi: [design-token-spe
 - Chữ cam trên nền màn/trắng/cam nhạt: `action.link`. Biểu tượng, viền chọn, tiến độ, nút Quét: `brand.primary`.
 - Trạng thái nghiệp vụ lấy từ `status.*` / `feedback.*`, không bao giờ dùng cam.
 - Màn mới phải nằm trong `Screen` (hoặc bọc `AppThemeScope`) để `Button`/`Text`/`Icon` nhận bảng màu mới.
-- Ảnh icon ứng dụng, Splash gốc và các tệp ảnh tĩnh (`assets/`) vẫn màu cũ (jade): ngoài phạm vi, cần thiết kế lại riêng.
+- Splash, đăng nhập và luồng thiết lập đã dùng Bright Orange (D-20). Ảnh minh họa Splash đã đổi sang cam bằng `scripts/assets/recolor-splash-hero.py`. Icon ứng dụng và ảnh splash native của hệ điều hành (`assets/images/icon.png`, `splash/splash-icon*.png`) vẫn màu cũ (jade): cần thiết kế lại riêng.

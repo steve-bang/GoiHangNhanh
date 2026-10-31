@@ -11,7 +11,7 @@ import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Text, useTheme } from '@/shared/ui';
 
 import { validateConfirmPassword, validatePassword } from '../domain/validation';
-import { computeNewPasswordLayout } from './auth-layout';
+import { AUTH_TITLE_VARIANT, computeNewPasswordLayout } from './auth-layout';
 import { PasswordToggle, RequirementCard } from './onboarding/AuthParts';
 import { LockCheckIllustration } from './onboarding/AuthIllustrations';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
@@ -26,7 +26,7 @@ import { isRetryable, useGatewayTask } from './onboarding/useGatewayTask';
  */
 export function NewPasswordScreen() {
   const { t } = useTranslation();
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
@@ -110,7 +110,7 @@ export function NewPasswordScreen() {
       },
     },
   );
-  const { gaps, title } = layout;
+  const { gaps } = layout;
 
   const submit = () => {
     if (busyRef.current || !ticket) return;
@@ -170,10 +170,14 @@ export function NewPasswordScreen() {
         </View>
       ) : null}
       <View style={{ marginTop: gaps.illustrationToTitle }}>
-        <Text accessibilityRole="header" bold style={[title, { color: colors.ink }]}>
+        <Text
+          accessibilityRole="header"
+          variant={AUTH_TITLE_VARIANT}
+          style={{ color: tokens.color.text.strong }}
+        >
           {t('screens:newPassword.title')}
         </Text>
-        <Text style={{ color: colors.inkMuted, marginTop: gaps.titleToDescription }}>
+        <Text style={{ color: tokens.color.text.subtle, marginTop: gaps.titleToDescription }}>
           {t('screens:newPassword.description')}
         </Text>
       </View>
@@ -246,7 +250,7 @@ export function NewPasswordScreen() {
       </View>
 
       {formError && bannerMessage ? (
-        <View style={{ marginTop: spacing.md }}>
+        <View style={{ marginTop: tokens.space.md }}>
           <FormErrorBanner
             code={formError}
             message={bannerMessage}

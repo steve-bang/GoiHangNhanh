@@ -2,7 +2,7 @@ import { act, fireEvent, screen, within } from '@testing-library/react-native';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 
 import { resources } from '@/core/i18n/resources';
-import { colors } from '@/core/theme';
+import { semantic } from '@/core/theme';
 import { ROUTES } from '@/core/navigation';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { renderWithProviders } from '@/test-utils/render';
@@ -285,12 +285,14 @@ describe('UI-A08 Nhập mã: xác minh', () => {
     ).toBeOnTheScreen();
     expect(input().props.value).toBe('111111');
     const first = cell(0);
-    expect(StyleSheet.flatten(first.props.style)).toMatchObject({ borderColor: colors.danger });
+    expect(StyleSheet.flatten(first.props.style)).toMatchObject({
+      borderColor: semantic.color.feedback.danger.fg,
+    });
     expect(mockNavigation.replace).not.toHaveBeenCalled();
     await fireEvent.changeText(input(), '11111');
     expect(screen.queryByTestId('otp-error')).toBeNull();
     expect(StyleSheet.flatten(cell(0).props.style)).not.toMatchObject({
-      borderColor: colors.danger,
+      borderColor: semantic.color.feedback.danger.fg,
     });
   });
 

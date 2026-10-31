@@ -1,20 +1,19 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Icon, Text, useTheme } from '@/shared/ui';
+import { Icon, useTheme } from '@/shared/ui';
 
 /**
  * Hình minh họa của ba màn khôi phục mật khẩu (UI-A07 ổ khóa, UI-A08 điện thoại + mã, UI-A09 ổ khóa
  * có dấu tick), dựng bằng View + biểu tượng sẵn có, tĩnh. Mọi kích thước = giá trị thiết kế x
  * (height / 150): một tham số duy nhất. THAY BẰNG HÌNH THẬT chỉ ở tệp này; màn hình không phải sửa.
  * Ẩn khỏi trình đọc màn hình (chỉ trang trí).
+ *
+ * Màu theo token thương hiệu (Bright Orange, D-20) để hợp tông với phần còn lại của app: thân khóa và
+ * biểu tượng `brand.primary`, quai/viền đậm `brand.pressed`, lá `brand.hover`/`brand.primary`, nền
+ * đốm `brand.soft`, chi tiết trắng `text.onAction` (trên nền cam) / `surface.raised` (màn điện thoại).
  */
-const LEAF_A = '#5DAF7B';
-const LEAF_B = '#8CCBA3';
-const LOCK_GREEN = '#1F8A5F';
-const LOCK_DARK = '#157852';
-
-/** Chữ trang trí trong bong bóng (không phải nội dung giao diện). */
-const MASKED_CODE = '***';
+/** Số chấm trang trí trong bong bóng "mã đã gửi" (thay chữ "***": hình không mang chữ). */
+const MASKED_DOTS = 3;
 const DESIGN_HEIGHT = 150;
 const FRAME_WIDTH = 240;
 
@@ -40,8 +39,22 @@ function Frame({
   );
 }
 
+/** Bảng màu của hình (đọc qua `tokens`, không viết hex). */
+function useIllustrationColors() {
+  const { color } = useTheme().tokens;
+  return {
+    blob: color.brand.soft,
+    leafA: color.brand.hover,
+    leafB: color.brand.primary,
+    body: color.brand.primary,
+    dark: color.brand.pressed,
+    onBody: color.text.onAction,
+    screen: color.surface.raised,
+  };
+}
+
 function Blob({ u }: { u: number }) {
-  const { colors } = useTheme();
+  const c = useIllustrationColors();
   return (
     <View
       style={{
@@ -51,27 +64,29 @@ function Blob({ u }: { u: number }) {
         width: 180 * u,
         height: 120 * u,
         borderRadius: 90 * u,
-        backgroundColor: colors.welcomeBlob,
+        backgroundColor: c.blob,
       }}
     />
   );
 }
 
 function Leaves({ u }: { u: number }) {
+  const c = useIllustrationColors();
   return (
     <>
       <View style={{ position: 'absolute', left: 28 * u, bottom: 12 * u }}>
-        <Icon name="leaf" size={46 * u} color={LEAF_A} />
+        <Icon name="leaf" size={46 * u} color={c.leafA} />
       </View>
       <View style={{ position: 'absolute', right: 26 * u, bottom: 8 * u }}>
-        <Icon name="leaf" size={40 * u} color={LEAF_B} />
+        <Icon name="leaf" size={40 * u} color={c.leafB} />
       </View>
     </>
   );
 }
 
-/** Ổ khóa: thân xanh + quai; `mark` là lỗ khóa hoặc dấu tick. */
+/** Ổ khóa: thân màu thương hiệu + quai; `mark` là lỗ khóa hoặc dấu tick. */
 function Padlock({ u, mark }: { u: number; mark: 'keyhole' | 'check' }) {
+  const c = useIllustrationColors();
   const bodyW = 78 * u;
   const bodyH = 64 * u;
   const shackleW = 50 * u;
@@ -93,7 +108,7 @@ function Padlock({ u, mark }: { u: number; mark: 'keyhole' | 'check' }) {
           borderBottomWidth: 0,
           borderTopLeftRadius: shackleW / 2,
           borderTopRightRadius: shackleW / 2,
-          borderColor: LOCK_DARK,
+          borderColor: c.dark,
           marginBottom: -4 * u,
         }}
       />
@@ -102,13 +117,13 @@ function Padlock({ u, mark }: { u: number; mark: 'keyhole' | 'check' }) {
           width: bodyW,
           height: bodyH,
           borderRadius: 14 * u,
-          backgroundColor: LOCK_GREEN,
+          backgroundColor: c.body,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
         {mark === 'check' ? (
-          <Icon name="check" size={40 * u} color="#FFFFFF" />
+          <Icon name="check" size={40 * u} color={c.onBody} />
         ) : (
           <>
             <View
@@ -116,14 +131,14 @@ function Padlock({ u, mark }: { u: number; mark: 'keyhole' | 'check' }) {
                 width: 14 * u,
                 height: 14 * u,
                 borderRadius: 7 * u,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: c.onBody,
               }}
             />
             <View
               style={{
                 width: 5 * u,
                 height: 16 * u,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: c.onBody,
                 marginTop: -2 * u,
               }}
             />
@@ -136,6 +151,7 @@ function Padlock({ u, mark }: { u: number; mark: 'keyhole' | 'check' }) {
 
 /** UI-A07: ổ khóa có lỗ khóa, lá hai bên, máy bay giấy (mã sắp được gửi). */
 export function LockIllustration({ height }: { height: number }) {
+  const c = useIllustrationColors();
   const u = height / DESIGN_HEIGHT;
   return (
     <Frame height={height} testID="forgot-illustration">
@@ -143,7 +159,7 @@ export function LockIllustration({ height }: { height: number }) {
       <Leaves u={u} />
       <Padlock u={u} mark="keyhole" />
       <View style={{ position: 'absolute', right: 34 * u, top: 40 * u }}>
-        <Icon name="send" size={26 * u} color={LOCK_GREEN} />
+        <Icon name="send" size={26 * u} color={c.body} />
       </View>
     </Frame>
   );
@@ -151,6 +167,7 @@ export function LockIllustration({ height }: { height: number }) {
 
 /** UI-A09: ổ khóa có dấu tick và vài tia sáng (mật khẩu mới đã sẵn sàng). */
 export function LockCheckIllustration({ height }: { height: number }) {
+  const c = useIllustrationColors();
   const u = height / DESIGN_HEIGHT;
   return (
     <Frame height={height} testID="new-password-illustration">
@@ -158,18 +175,18 @@ export function LockCheckIllustration({ height }: { height: number }) {
       <Leaves u={u} />
       <Padlock u={u} mark="check" />
       <View style={{ position: 'absolute', right: 40 * u, top: 18 * u }}>
-        <Icon name="sparkle" size={22 * u} color={LOCK_GREEN} />
+        <Icon name="sparkle" size={22 * u} color={c.body} />
       </View>
       <View style={{ position: 'absolute', right: 26 * u, top: 60 * u }}>
-        <Icon name="sparkle" size={14 * u} color={LEAF_A} />
+        <Icon name="sparkle" size={14 * u} color={c.leafA} />
       </View>
     </Frame>
   );
 }
 
-/** UI-A08: điện thoại có khiên + bong bóng "***" (mã xác minh được gửi tới). */
+/** UI-A08: điện thoại có khiên + bong bóng ba chấm (mã xác minh được gửi tới). */
 export function PhoneCodeIllustration({ height }: { height: number }) {
-  const { colors } = useTheme();
+  const c = useIllustrationColors();
   const u = height / DESIGN_HEIGHT;
   const phoneW = 80 * u;
   return (
@@ -184,13 +201,13 @@ export function PhoneCodeIllustration({ height }: { height: number }) {
           height: 132 * u,
           borderRadius: 14 * u,
           borderWidth: 4 * u,
-          borderColor: LOCK_DARK,
-          backgroundColor: '#FFFFFF',
+          borderColor: c.dark,
+          backgroundColor: c.screen,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Icon name="brand-shield-check" size={44 * u} color={LOCK_GREEN} />
+        <Icon name="brand-shield-check" size={44 * u} color={c.body} />
       </View>
       <View
         style={{
@@ -200,23 +217,26 @@ export function PhoneCodeIllustration({ height }: { height: number }) {
           paddingHorizontal: 12 * u,
           height: 30 * u,
           borderRadius: 10 * u,
-          backgroundColor: LOCK_GREEN,
-          justifyContent: 'center',
+          backgroundColor: c.body,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 5 * u,
         }}
       >
-        <Text
-          bold
-          style={{
-            color: colors.onBrand,
-            fontSize: Math.max(10, 16 * u),
-            lineHeight: Math.max(12, 20 * u),
-          }}
-        >
-          {MASKED_CODE}
-        </Text>
+        {Array.from({ length: MASKED_DOTS }, (_, i) => (
+          <View
+            key={i}
+            style={{
+              width: 7 * u,
+              height: 7 * u,
+              borderRadius: 3.5 * u,
+              backgroundColor: c.onBody,
+            }}
+          />
+        ))}
       </View>
       <View style={{ position: 'absolute', left: 34 * u, top: 44 * u }}>
-        <Icon name="sparkle" size={14 * u} color={LEAF_A} />
+        <Icon name="sparkle" size={14 * u} color={c.leafA} />
       </View>
     </Frame>
   );

@@ -1,3 +1,5 @@
+import { layout, MIN_TOUCH_TARGET, typography } from '@/core/theme';
+
 import {
   COMPACT_HEIGHT_BELOW,
   HIDE_ILLUSTRATION_FONT_SCALE,
@@ -7,13 +9,15 @@ import {
 
 /**
  * Bố cục ba màn thiết lập (UI-A03 đăng ký, UI-A04, UI-A06): thuần TypeScript, không React/RN để dễ
- * test. Mỗi hàm cho biết cỡ chữ, khoảng cách và chiều cao hình minh họa theo kích thước cửa sổ,
- * kèm ước tính chiều cao nội dung để biết màn có phải cuộn. Quy tắc chung: hình minh họa co lại rồi
+ * test. Mỗi hàm cho biết khoảng cách và chiều cao hình minh họa theo kích thước cửa sổ, kèm ước
+ * tính chiều cao nội dung để biết màn có phải cuộn. Cỡ chữ KHÔNG do tệp này quyết: màn dùng
+ * `<Text variant>` và ước tính đọc cùng `typography` (D-20, chuyển sang Design Token). Khoảng cách
+ * lấy từ thang `layout.space`. Quy tắc chung: hình minh họa co lại rồi
  * ẨN trước khi nội dung thiết yếu (tiêu đề, trường, nút chính, liên kết chính) bị cắt; không vừa
  * thì cuộn.
  *
  * Các hằng số chiều cao ngoài chữ (ô nhập, nút, thẻ...) là chính các giá trị mà component dùng
- * (xuất ra để component và ước tính không lệch nhau). Số dòng chữ ước tính theo độ rộng ký tự
+ * (xuất ra để component và ước tính không lệch nhau), suy từ token. Số dòng chữ ước tính theo độ rộng ký tự
  * trung bình; đã đối chiếu với bản render web, cần đo lại trên thiết bị thật.
  */
 
@@ -42,26 +46,35 @@ export interface OnboardingLayoutBase {
   scrollNeeded: boolean;
 }
 
-/** Chiều cao hàng nút quay lại (vùng chạm đủ cho cả iOS 44 và Android 48). */
 /** Sai số chừa lại khi quyết định có hiện hình hay không (dp). */
-export const ESTIMATE_SAFETY_MARGIN = 8;
+export const ESTIMATE_SAFETY_MARGIN = layout.space.sm;
 
-export const BACK_ROW_HEIGHT = 48;
-export const BUTTON_HEIGHT = 56;
-export const SOCIAL_BUTTON_HEIGHT = 48;
-export const LINK_ROW_HEIGHT = 48;
-export const BODY_LINE_HEIGHT = 22;
-export const CAPTION_LINE_HEIGHT = 16;
-/** Chữ lỗi dưới ô nhập (đủ lớn để đọc, không dùng cỡ chú thích 12). */
-export const FIELD_ERROR_FONT_SIZE = 14;
-export const FIELD_ERROR_LINE_HEIGHT = 20;
-/** Khung lỗi chung phía trên nút chính. */
-export const BANNER_LINE_HEIGHT = 22;
-export const BANNER_PADDING = 12;
-const FIELD_ERROR_MARGIN_TOP = 6;
-const BANNER_GAP = 12;
-/** Ước tính số ký tự trên một dòng để căn chỗ cho lỗi, cùng cách với estimateLines. */
-const FIELD_ERROR_ICON_AND_GAPS = 28;
+/**
+ * Vùng chạm đủ cho CẢ HAI nền tảng (iOS 44, Android 48): hàng cố định dùng chung một số để bố cục
+ * và ước tính giống nhau trên iOS và Android. Component vẫn so thêm với `getMinTouchTarget()`.
+ */
+const TOUCH_BOTH_PLATFORMS = Math.max(MIN_TOUCH_TARGET.ios, MIN_TOUCH_TARGET.android);
+
+/** Chiều cao hàng nút quay lại. */
+export const BACK_ROW_HEIGHT = TOUCH_BOTH_PLATFORMS;
+export const BUTTON_HEIGHT = layout.component.button.minHeight.primary;
+export const SOCIAL_BUTTON_HEIGHT = TOUCH_BOTH_PLATFORMS;
+export const LINK_ROW_HEIGHT = TOUCH_BOTH_PLATFORMS;
+/** Dòng chữ `body` / `caption` (variant của `Text`). */
+export const BODY_LINE_HEIGHT = typography.body.lineHeight;
+export const CAPTION_LINE_HEIGHT = typography.caption.lineHeight;
+/** Chữ lỗi dưới ô nhập = variant `formBody` (đủ lớn để đọc, không dùng cỡ chú thích 12). */
+export const FIELD_ERROR_FONT_SIZE = typography.formBody.fontSize;
+export const FIELD_ERROR_LINE_HEIGHT = typography.formBody.lineHeight;
+/** Khung lỗi chung phía trên nút chính (chữ variant `body`). */
+export const BANNER_LINE_HEIGHT = typography.body.lineHeight;
+export const BANNER_PADDING = layout.space.md;
+const FIELD_ERROR_MARGIN_TOP = layout.space.tight;
+const BANNER_GAP = layout.space.md;
+/** Lề trái + biểu tượng + khoảng cách của dòng lỗi (trừ khỏi bề rộng chữ khi ước tính số dòng). */
+const FIELD_ERROR_ICON_AND_GAPS = layout.space.xs + layout.icon.sm + layout.space.xs;
+/** Biểu tượng + khoảng cách + viền hai bên của khung lỗi chung. */
+const BANNER_ICON_AND_BORDER = layout.icon.md + layout.space.sm + 2 * layout.borderWidth.thin;
 
 /** Chiều cao của widget có chữ: không nhỏ hơn mức cơ bản, nở ra theo cỡ chữ hệ thống. */
 function grow(baseHeight: number, textHeight: number, padding: number, scale: number): number {
@@ -72,8 +85,8 @@ function base(input: OnboardingLayoutInput) {
   const { width, height, insetTop, insetBottom, fontScale } = input;
   const compact = height < COMPACT_HEIGHT_BELOW;
   const narrow = width < NARROW_WIDTH_BELOW;
-  const padX = narrow ? 20 : 24;
-  const bottomPad = Math.max(insetBottom, 12);
+  const padX = narrow ? layout.space.lg : layout.space.xl;
+  const bottomPad = Math.max(insetBottom, layout.space.md);
   return {
     compact,
     narrow,
@@ -128,7 +141,6 @@ function finish(
 /* ------------------------------------------------------------------ UI-A03 đăng ký */
 
 export interface SignUpLayout extends OnboardingLayoutBase {
-  title: { fontSize: number; lineHeight: number };
   fieldHeight: number;
   gaps: {
     afterBack: number;
@@ -142,10 +154,11 @@ export interface SignUpLayout extends OnboardingLayoutBase {
   };
 }
 
-const SIGN_UP_TITLE = {
-  regular: { fontSize: 30, lineHeight: 38 },
-  narrow: { fontSize: 24, lineHeight: 30 },
-};
+const TITLE = typography.screenTitle;
+/** Trần chiều cao hình khiên + bảng ghi của màn đăng ký (đơn vị dp, hình minh họa). */
+export const SIGN_UP_ILLUSTRATION_MAX_HEIGHT = 170;
+/** Ô nhập có nhãn của màn đăng ký: nhãn `caption` + giá trị `body` + đệm dọc hai bên. */
+const ICON_FIELD_CONTENT_HEIGHT = CAPTION_LINE_HEIGHT + BODY_LINE_HEIGHT + 2 * layout.space.sm;
 const SIGN_UP_SUBTITLE_CHARS = 62;
 const SIGN_UP_TITLE_CHARS = 23;
 
@@ -195,14 +208,14 @@ export function estimateBannerHeight(
 ): number {
   if (!spec) return 0;
   const lines = estimateLines(
-    { chars: spec.chars, fontSize: 15 },
-    contentWidth - 2 * BANNER_PADDING - 28 - 2,
+    { chars: spec.chars, fontSize: typography.body.fontSize },
+    contentWidth - 2 * BANNER_PADDING - BANNER_ICON_AND_BORDER,
     scale,
   );
   return (
     marginTop +
     2 * BANNER_PADDING +
-    2 +
+    2 * layout.borderWidth.thin +
     lines * BANNER_LINE_HEIGHT * scale +
     (spec.withRetry ? BANNER_GAP + Math.max(touch, BUTTON_HEIGHT) : 0)
   );
@@ -217,43 +230,43 @@ export function computeSignUpLayout(
   const b = base(input);
   const touch = options.touch ?? 48;
   const errors = options.errors ?? {};
-  const title = b.narrow ? SIGN_UP_TITLE.narrow : SIGN_UP_TITLE.regular;
+  const { space } = layout;
   const gaps = b.compact
     ? {
-        afterBack: 4,
-        titleToSubtitle: 8,
-        subtitleToFields: 20,
-        betweenFields: 12,
-        fieldsToButton: 16,
-        buttonToDivider: 16,
-        dividerToSocial: 12,
-        socialToLink: 8,
+        afterBack: space.xs,
+        titleToSubtitle: space.sm,
+        subtitleToFields: space.lg,
+        betweenFields: space.md,
+        fieldsToButton: space.lg,
+        buttonToDivider: space.lg,
+        dividerToSocial: space.md,
+        socialToLink: space.sm,
       }
     : {
-        afterBack: 8,
-        titleToSubtitle: 12,
-        subtitleToFields: 28,
-        betweenFields: 16,
-        fieldsToButton: 20,
-        buttonToDivider: 24,
-        dividerToSocial: 16,
-        socialToLink: 8,
+        afterBack: space.sm,
+        titleToSubtitle: space.md,
+        subtitleToFields: space.xl,
+        betweenFields: space.lg,
+        fieldsToButton: space.xl,
+        buttonToDivider: space.xl,
+        dividerToSocial: space.lg,
+        socialToLink: space.sm,
       };
-  const fieldHeight = b.compact ? 58 : 64;
+  const fieldHeight = ICON_FIELD_CONTENT_HEIGHT + (b.compact ? space.xs : space.sm);
   const titleLines = estimateLines(
-    { chars: SIGN_UP_TITLE_CHARS, fontSize: title.fontSize, bold: true },
+    { chars: SIGN_UP_TITLE_CHARS, fontSize: TITLE.fontSize, bold: true },
     b.contentWidth,
     b.scale,
   );
   const subtitleLines = estimateLines(
-    { chars: SIGN_UP_SUBTITLE_CHARS, fontSize: 15 },
+    { chars: SIGN_UP_SUBTITLE_CHARS, fontSize: typography.body.fontSize },
     b.contentWidth,
     b.scale,
   );
   const fixed =
     BACK_ROW_HEIGHT +
     gaps.afterBack +
-    titleLines * title.lineHeight * b.scale +
+    titleLines * TITLE.lineHeight * b.scale +
     gaps.titleToSubtitle +
     subtitleLines * BODY_LINE_HEIGHT * b.scale +
     gaps.subtitleToFields +
@@ -261,7 +274,7 @@ export function computeSignUpLayout(
     estimateFieldErrorHeight(errors.email, b.contentWidth, b.scale, touch) +
     estimateFieldErrorHeight(errors.password, b.contentWidth, b.scale, touch) +
     gaps.betweenFields +
-    estimateBannerHeight(errors.banner, b.contentWidth, b.scale, touch, 12) +
+    estimateBannerHeight(errors.banner, b.contentWidth, b.scale, touch, space.md) +
     gaps.fieldsToButton +
     grow(BUTTON_HEIGHT, BODY_LINE_HEIGHT, 20, b.scale) +
     (options.showSocial
@@ -273,12 +286,13 @@ export function computeSignUpLayout(
     gaps.socialToLink +
     grow(
       LINK_ROW_HEIGHT,
-      estimateLines({ chars: 30, fontSize: 15 }, b.contentWidth, b.scale) * BODY_LINE_HEIGHT,
+      estimateLines({ chars: 30, fontSize: typography.body.fontSize }, b.contentWidth, b.scale) *
+        BODY_LINE_HEIGHT,
       8,
       b.scale,
     );
-  const fin = finish(b, fixed, { maxHeight: 170, chrome: 16 });
-  return { ...b, ...fin, title, fieldHeight, gaps };
+  const fin = finish(b, fixed, { maxHeight: SIGN_UP_ILLUSTRATION_MAX_HEIGHT, chrome: space.lg });
+  return { ...b, ...fin, fieldHeight, gaps };
 }
 
 /** Hình khiên + bảng ghi ở đáy màn đăng ký: một tham số (chiều cao), khung rộng = 1,7 x cao. */
@@ -297,7 +311,6 @@ export function getShieldClipboardGeometry(height: number) {
 /* ------------------------------------------------------------------ UI-A04 tạo hồ sơ shop */
 
 export interface CreateShopLayout extends OnboardingLayoutBase {
-  title: { fontSize: number; lineHeight: number };
   gaps: {
     afterBack: number;
     progressToTitle: number;
@@ -312,57 +325,61 @@ export interface CreateShopLayout extends OnboardingLayoutBase {
   cardHeight: number;
 }
 
-export const PROGRESS_ROW_HEIGHT = 28;
-export const SHOP_NAME_INPUT_HEIGHT = 52;
+export const PROGRESS_ROW_HEIGHT = layout.component.tile.sm;
+export const SHOP_NAME_INPUT_HEIGHT = layout.component.field.minHeight;
 export const SOURCE_COUNT = 4;
 
 export function computeCreateShopLayout(input: OnboardingLayoutInput): CreateShopLayout {
   const b = base(input);
-  const title = b.narrow ? { fontSize: 22, lineHeight: 28 } : { fontSize: 28, lineHeight: 34 };
+  const { space } = layout;
   const gaps = b.compact
     ? {
         afterBack: 0,
-        progressToTitle: 14,
-        titleToSubtitle: 8,
-        subtitleToName: 18,
-        nameToSources: 8,
-        sourcesHeaderToCards: 8,
-        betweenCards: 6,
-        cardsToButton: 14,
+        progressToTitle: space.md,
+        titleToSubtitle: space.sm,
+        subtitleToName: space.lg,
+        nameToSources: space.sm,
+        sourcesHeaderToCards: space.sm,
+        betweenCards: space.tight,
+        cardsToButton: space.md,
         buttonToSkip: 0,
       }
     : {
         afterBack: 0,
-        progressToTitle: 16,
-        titleToSubtitle: 12,
-        subtitleToName: 24,
-        nameToSources: 12,
-        sourcesHeaderToCards: 12,
-        betweenCards: 8,
-        cardsToButton: 20,
-        buttonToSkip: 4,
+        progressToTitle: space.lg,
+        titleToSubtitle: space.md,
+        subtitleToName: space.xl,
+        nameToSources: space.md,
+        sourcesHeaderToCards: space.md,
+        betweenCards: space.sm,
+        cardsToButton: space.xl,
+        buttonToSkip: space.xs,
       };
-  const cardHeight = b.compact ? 48 : 50;
+  const cardHeight = b.compact ? TOUCH_BOTH_PLATFORMS : layout.component.tile.lg;
   const titleLines = estimateLines(
-    { chars: 22, fontSize: title.fontSize, bold: true },
+    { chars: 22, fontSize: TITLE.fontSize, bold: true },
     b.contentWidth,
     b.scale,
   );
-  const subtitleLines = estimateLines({ chars: 52, fontSize: 15 }, b.contentWidth, b.scale);
+  const subtitleLines = estimateLines(
+    { chars: 52, fontSize: typography.body.fontSize },
+    b.contentWidth,
+    b.scale,
+  );
   const fixed =
     BACK_ROW_HEIGHT +
     gaps.afterBack +
     PROGRESS_ROW_HEIGHT +
     gaps.progressToTitle +
-    titleLines * title.lineHeight * b.scale +
+    titleLines * TITLE.lineHeight * b.scale +
     gaps.titleToSubtitle +
     subtitleLines * BODY_LINE_HEIGHT * b.scale +
     gaps.subtitleToName +
     // nhãn + ô + dòng đếm ký tự
     BODY_LINE_HEIGHT * b.scale +
-    8 +
+    space.sm +
     grow(SHOP_NAME_INPUT_HEIGHT, BODY_LINE_HEIGHT, 24, b.scale) +
-    4 +
+    space.xs +
     CAPTION_LINE_HEIGHT * b.scale +
     gaps.nameToSources +
     // nhãn nguồn bán + gợi ý
@@ -378,7 +395,6 @@ export function computeCreateShopLayout(input: OnboardingLayoutInput): CreateSho
   const estimatedContentHeight = fixed;
   return {
     ...b,
-    title,
     gaps,
     cardHeight,
     illustrationHeight: 0,
@@ -390,7 +406,6 @@ export function computeCreateShopLayout(input: OnboardingLayoutInput): CreateSho
 /* ------------------------------------------------------------------ UI-A06 hoàn tất */
 
 export interface SetupDoneLayout extends OnboardingLayoutBase {
-  titleLead: { fontSize: number; lineHeight: number };
   gaps: {
     top: number;
     illustrationToTitle: number;
@@ -401,33 +416,46 @@ export interface SetupDoneLayout extends OnboardingLayoutBase {
 }
 
 export const SETUP_ILLUSTRATION_MAX_HEIGHT = 230;
-export const SUMMARY_ROW_MIN_HEIGHT = 64;
+/** Hàng tóm tắt: ô biểu tượng `tile.md` + đệm dọc `space.sm` hai bên (nở theo chữ). */
+export const SUMMARY_ROW_MIN_HEIGHT = layout.component.tile.md + 2 * layout.space.sm;
 export const SUMMARY_ROWS = 2;
 
 export function computeSetupDoneLayout(input: OnboardingLayoutInput): SetupDoneLayout {
   const b = base(input);
-  const titleLead = b.narrow ? { fontSize: 26, lineHeight: 32 } : { fontSize: 30, lineHeight: 36 };
+  const { space } = layout;
   const gaps = b.compact
-    ? { top: 4, illustrationToTitle: 4, titleToSubtitle: 8, subtitleToCard: 14, cardToButton: 14 }
+    ? {
+        top: space.xs,
+        illustrationToTitle: space.xs,
+        titleToSubtitle: space.sm,
+        subtitleToCard: space.md,
+        cardToButton: space.md,
+      }
     : {
-        top: 16,
-        illustrationToTitle: 16,
-        titleToSubtitle: 12,
-        subtitleToCard: 28,
-        cardToButton: 28,
+        top: space.lg,
+        illustrationToTitle: space.lg,
+        titleToSubtitle: space.md,
+        subtitleToCard: space.xl,
+        cardToButton: space.xl,
       };
+  // Dòng đầu `screenTitle`, dòng sau `sectionTitle` (variant của `Text` ở màn).
   const leadLines = 1;
+  const second = typography.sectionTitle;
   const titleLines = estimateLines(
-    { chars: 33, fontSize: 18, bold: true },
+    { chars: 33, fontSize: second.fontSize, bold: true },
     b.contentWidth,
     b.scale,
   );
-  const subtitleLines = estimateLines({ chars: 100, fontSize: 15 }, b.contentWidth, b.scale);
+  const subtitleLines = estimateLines(
+    { chars: 100, fontSize: typography.body.fontSize },
+    b.contentWidth,
+    b.scale,
+  );
   const fixed =
     gaps.top +
     gaps.illustrationToTitle +
-    leadLines * titleLead.lineHeight * b.scale +
-    titleLines * 24 * b.scale +
+    leadLines * TITLE.lineHeight * b.scale +
+    titleLines * second.lineHeight * b.scale +
     gaps.titleToSubtitle +
     subtitleLines * BODY_LINE_HEIGHT * b.scale +
     gaps.subtitleToCard +
@@ -436,8 +464,24 @@ export function computeSetupDoneLayout(input: OnboardingLayoutInput): SetupDoneL
     grow(BUTTON_HEIGHT, BODY_LINE_HEIGHT, 20, b.scale) +
     grow(LINK_ROW_HEIGHT, BODY_LINE_HEIGHT, 16, b.scale);
   const fin = finish(b, fixed, { maxHeight: SETUP_ILLUSTRATION_MAX_HEIGHT, chrome: 0 });
-  return { ...b, ...fin, titleLead, gaps };
+  return { ...b, ...fin, gaps };
 }
+
+/**
+ * Pháo giấy của hình hoàn tất, theo ĐƠN VỊ THIẾT KẾ của khung 342 x 230 (nhân với tỉ lệ `u` khi
+ * dựng): [x, y, rộng, cao, góc xoay (độ), chỉ số màu 0-2].
+ */
+const CONFETTI_DESIGN: readonly (readonly [number, number, number, number, number, 0 | 1 | 2])[] = [
+  [22, 14, 16, 6, 35, 0],
+  [80, 8, 10, 10, 0, 1],
+  [150, 2, 6, 14, 20, 2],
+  [232, 10, 8, 16, -25, 0],
+  [296, 26, 18, 6, -35, 2],
+  [316, 92, 14, 6, 30, 0],
+  [8, 84, 14, 6, -20, 2],
+  [268, 142, 12, 6, -30, 1],
+  [52, 54, 8, 8, 0, 1],
+];
 
 /** Hình hoàn tất: khiên + hộp + bảng ghi + pháo giấy trong khung 342 x 230 (đơn vị thiết kế). */
 export function getSetupDoneGeometry(height: number) {
@@ -452,23 +496,13 @@ export function getSetupDoneGeometry(height: number) {
     leafLeft: { left: 26 * u, bottom: 22 * u, size: 46 * u },
     leafRight: { right: 36 * u, bottom: 24 * u, size: 40 * u },
     /** Pháo giấy tĩnh: vị trí (đơn vị thiết kế), góc xoay, kích thước, màu theo chỉ số. */
-    confetti: [
-      { left: 22, top: 14, w: 16, h: 6, rotate: 35, tone: 0 },
-      { left: 80, top: 8, w: 10, h: 10, rotate: 0, tone: 1 },
-      { left: 150, top: 2, w: 6, h: 14, rotate: 20, tone: 2 },
-      { left: 232, top: 10, w: 8, h: 16, rotate: -25, tone: 0 },
-      { left: 296, top: 26, w: 18, h: 6, rotate: -35, tone: 2 },
-      { left: 316, top: 92, w: 14, h: 6, rotate: 30, tone: 0 },
-      { left: 8, top: 84, w: 14, h: 6, rotate: -20, tone: 2 },
-      { left: 268, top: 142, w: 12, h: 6, rotate: -30, tone: 1 },
-      { left: 52, top: 54, w: 8, h: 8, rotate: 0, tone: 1 },
-    ].map((c) => ({
-      left: c.left * u,
-      top: c.top * u,
-      width: c.w * u,
-      height: c.h * u,
-      rotate: c.rotate,
-      tone: c.tone,
+    confetti: CONFETTI_DESIGN.map(([x, y, w, h, rotate, tone]) => ({
+      left: x * u,
+      top: y * u,
+      width: w * u,
+      height: h * u,
+      rotate,
+      tone,
     })),
   };
 }

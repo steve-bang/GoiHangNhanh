@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions } from 'react-native';
 
 import { AppError } from '@/core/errors/app-error';
-import { colors } from '@/core/theme';
+import { semantic } from '@/core/theme';
 import { resources } from '@/core/i18n/resources';
 import { ROUTES } from '@/core/navigation';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
@@ -422,7 +422,9 @@ describe('UI-A03 Tạo tài khoản: gửi và trạng thái xử lý', () => {
     expect(within(error).getByText('Email chưa đúng. Ví dụ: ten@cuahang.com')).toBeOnTheScreen();
     expect(error.props.accessibilityRole).toBe('alert');
     const text = within(error).getByText('Email chưa đúng. Ví dụ: ten@cuahang.com');
-    expect(StyleSheet.flatten(text.props.style)).toMatchObject({ color: colors.ink });
+    expect(StyleSheet.flatten(text.props.style)).toMatchObject({
+      color: semantic.color.text.strong,
+    });
   });
 
   it.each([

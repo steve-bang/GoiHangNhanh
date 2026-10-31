@@ -1,8 +1,9 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { useState } from 'react';
-import { Pressable, Text, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions } from 'react-native';
 
 import { resources } from '@/core/i18n/resources';
+import { semantic, typography } from '@/core/theme';
 import { ROUTES } from '@/core/navigation';
 import { useSession } from '@/features/personal';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
@@ -88,6 +89,22 @@ describe('UI-A03 Đăng nhập: giao diện', () => {
     expect(
       screen.getByTestId('welcome-illustration', { includeHiddenElements: true }),
     ).toBeOnTheScreen();
+  });
+
+  it('dùng Design Token: tiêu đề screenTitle chữ đậm tối, liên kết màu action.link (Bright Orange)', async () => {
+    await renderWithProviders(<SignInScreen />);
+    expect(
+      StyleSheet.flatten(screen.getByText('Chào mừng bạn trở lại!').props.style),
+    ).toMatchObject({
+      ...typography.screenTitle,
+      color: semantic.color.text.strong,
+    });
+    expect(StyleSheet.flatten(screen.getByText('Quên mật khẩu?').props.style)).toMatchObject({
+      color: semantic.color.action.link,
+    });
+    expect(StyleSheet.flatten(screen.getByText('Tạo tài khoản').props.style)).toMatchObject({
+      color: semantic.color.action.link,
+    });
   });
 
   it('KHÔNG có ô "Duy trì đăng nhập", nút TikTok, nhãn "Số điện thoại", nút quay lại', async () => {

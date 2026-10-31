@@ -6,12 +6,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PASSWORD_RECOVERY_MODE } from '@/core/config/feature-flags';
 import { resolveErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
+import { layout as themeLayout } from '@/core/theme';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Text, useTheme } from '@/shared/ui';
 
 import { maskEmail } from '../domain/mask-email';
 import { DEFAULT_RESEND_SECONDS, formatCountdown, isOtpComplete, sanitizeOtp } from '../domain/otp';
-import { computeOtpLayout } from './auth-layout';
+import { AUTH_TITLE_VARIANT, computeOtpLayout } from './auth-layout';
+import { LINK_ROW_HEIGHT } from './onboarding-layout';
 import { OtpBoxes, SuccessBanner, TipCard, useCountdown } from './onboarding/AuthParts';
 import { PhoneCodeIllustration } from './onboarding/AuthIllustrations';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
@@ -26,7 +28,7 @@ import { isRetryable, useGatewayTask } from './onboarding/useGatewayTask';
  */
 export function VerifyOtpScreen() {
   const { t } = useTranslation();
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
@@ -72,7 +74,7 @@ export function VerifyOtpScreen() {
       notice,
     },
   );
-  const { gaps, title } = layout;
+  const { gaps } = layout;
 
   const verify = (value: string) => {
     if (!requestedEmail || busyRef.current) return;
@@ -157,18 +159,25 @@ export function VerifyOtpScreen() {
         </View>
       ) : null}
       <View style={{ marginTop: gaps.illustrationToTitle }}>
-        <Text accessibilityRole="header" bold style={[title, styles.center, { color: colors.ink }]}>
+        <Text
+          accessibilityRole="header"
+          variant={AUTH_TITLE_VARIANT}
+          style={[styles.center, { color: tokens.color.text.strong }]}
+        >
           {t('screens:otp.title')}
         </Text>
         <Text
           testID="otp-description"
-          style={[styles.center, { color: colors.inkMuted, marginTop: gaps.titleToDescription }]}
+          style={[
+            styles.center,
+            { color: tokens.color.text.subtle, marginTop: gaps.titleToDescription },
+          ]}
         >
           {t('screens:otp.description', { email: maskEmail(requestedEmail) })}
         </Text>
       </View>
-      <View style={[styles.linkRow, { minHeight: Math.max(touch, 48) }]}>
-        <Text style={{ color: colors.inkMuted }}>{t('screens:otp.notYours')}</Text>
+      <View style={[styles.linkRow, { minHeight: Math.max(touch, LINK_ROW_HEIGHT) }]}>
+        <Text style={{ color: tokens.color.text.subtle }}>{t('screens:otp.notYours')}</Text>
         <Pressable
           testID="otp-change"
           accessibilityRole="link"
@@ -177,13 +186,13 @@ export function VerifyOtpScreen() {
           hitSlop={8}
           style={{ minHeight: touch, justifyContent: 'center' }}
         >
-          <Text bold style={{ color: colors.brand }}>
+          <Text bold style={{ color: tokens.color.action.link }}>
             {t('screens:otp.change')}
           </Text>
         </Pressable>
       </View>
 
-      <View style={{ marginTop: gaps.toBoxes - 8 }}>
+      <View style={{ marginTop: gaps.toBoxes }}>
         <OtpBoxes
           testID="otp-input"
           value={code}
@@ -203,13 +212,13 @@ export function VerifyOtpScreen() {
       </View>
 
       {notice ? (
-        <View style={{ marginTop: spacing.sm }}>
+        <View style={{ marginTop: tokens.space.sm }}>
           <SuccessBanner testID="otp-resent" message={t('screens:otp.resent')} />
         </View>
       ) : null}
 
       {formError && bannerMessage ? (
-        <View style={{ marginTop: spacing.md }}>
+        <View style={{ marginTop: tokens.space.md }}>
           <FormErrorBanner
             code={formError}
             {...(formError === 'AUTH_OTP_EXPIRED'
@@ -227,9 +236,18 @@ export function VerifyOtpScreen() {
         </View>
       ) : null}
 
-      <View style={[styles.linkRow, { minHeight: Math.max(touch, 48), marginTop: 8 }]}>
+      <View
+        style={[
+          styles.linkRow,
+          { minHeight: Math.max(touch, LINK_ROW_HEIGHT), marginTop: tokens.space.sm },
+        ]}
+      >
         {seconds > 0 ? (
-          <Text testID="otp-countdown" variant="caption" style={{ color: colors.inkMuted }}>
+          <Text
+            testID="otp-countdown"
+            variant="caption"
+            style={{ color: tokens.color.text.subtle }}
+          >
             {t('screens:otp.resendIn', { time: formatCountdown(seconds) })}
           </Text>
         ) : (
@@ -243,7 +261,7 @@ export function VerifyOtpScreen() {
             hitSlop={8}
             style={{ minHeight: touch, justifyContent: 'center' }}
           >
-            <Text bold style={{ color: colors.brand }}>
+            <Text bold style={{ color: tokens.color.action.link }}>
               {t('screens:otp.resend')}
             </Text>
           </Pressable>
@@ -279,5 +297,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexWrap: 'wrap',
   },
-  spacer: { flexGrow: 1, minHeight: 12 },
+  spacer: { flexGrow: 1, minHeight: themeLayout.space.md },
 });

@@ -7,6 +7,7 @@ import { getEnabledSocialProviders, type SocialProvider } from '@/core/config/fe
 import type { ErrorCode } from '@/core/errors/codes';
 import { resolveErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
+import { layout as themeLayout } from '@/core/theme';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Icon, Text, useTheme } from '@/shared/ui';
 
@@ -22,6 +23,7 @@ import {
   type SignUpErrorSpecs,
 } from './onboarding-layout';
 import { useGatewayTask } from './onboarding/useGatewayTask';
+import { AUTH_TITLE_VARIANT } from './auth-layout';
 
 /** Mật khẩu đã gửi đi không còn trong app: ô hiện chấm cố định, không phải mật khẩu thật. */
 const LOCKED_PASSWORD_MASK = '••••••••';
@@ -42,7 +44,7 @@ function SocialButton({
   onPress: () => void;
 }) {
   const { t } = useTranslation();
-  const { colors, radius, spacing } = useTheme();
+  const { tokens } = useTheme();
   return (
     <Pressable
       testID={`signup-social-${provider}`}
@@ -57,16 +59,16 @@ function SocialButton({
         styles.social,
         {
           minHeight: Math.max(getMinTouchTarget(), SOCIAL_BUTTON_HEIGHT),
-          backgroundColor: colors.surface,
-          borderColor: colors.fieldBorder,
-          borderRadius: radius.md,
-          gap: spacing.sm,
-          opacity: disabled ? 0.6 : pressed ? 0.85 : 1,
+          backgroundColor: tokens.color.surface.raised,
+          borderColor: tokens.color.border.field,
+          borderRadius: tokens.radius.md,
+          gap: tokens.space.sm,
+          opacity: disabled ? tokens.opacity.disabled : pressed ? tokens.opacity.pressed : 1,
         },
       ]}
     >
-      <Icon name={provider} size={20} color={colors.ink} />
-      <Text bold color="ink">
+      <Icon name={provider} size={tokens.icon.md} color={tokens.color.text.strong} />
+      <Text bold style={{ color: tokens.color.text.strong }}>
         {t(`screens:signUp.${provider}`)}
       </Text>
     </Pressable>
@@ -84,7 +86,7 @@ function SocialButton({
  */
 export function SignUpScreen() {
   const { t } = useTranslation();
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
@@ -148,7 +150,7 @@ export function SignUpScreen() {
     { width, height, insetTop: insets.top, insetBottom: insets.bottom, fontScale },
     { showSocial: providers.length > 0, touch, errors: errorSpecs },
   );
-  const { gaps, title } = layout;
+  const { gaps } = layout;
 
   /** Lỗi gắn với một ô hiện dưới ô đó; các lỗi khác thành khung lỗi chung (xử lý ở `useGatewayTask`). */
   const runGateway = (task: Parameters<typeof run>[0]) => {
@@ -202,10 +204,14 @@ export function SignUpScreen() {
       onBack={navigation.back}
     >
       <View style={{ marginTop: gaps.afterBack }}>
-        <Text accessibilityRole="header" bold style={[title, { color: colors.ink }]}>
+        <Text
+          accessibilityRole="header"
+          variant={AUTH_TITLE_VARIANT}
+          style={{ color: tokens.color.text.strong }}
+        >
           {t('screens:signUp.title')}
         </Text>
-        <Text style={{ color: colors.inkMuted, marginTop: gaps.titleToSubtitle }}>
+        <Text style={{ color: tokens.color.text.subtle, marginTop: gaps.titleToSubtitle }}>
           {t('screens:signUp.subtitle')}
         </Text>
       </View>
@@ -286,7 +292,11 @@ export function SignUpScreen() {
                 hitSlop={6}
                 style={[styles.eye, { minWidth: touch, minHeight: touch }]}
               >
-                <Icon name={showPassword ? 'eye-off' : 'eye'} size={22} color={colors.inkMuted} />
+                <Icon
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={tokens.icon.lg}
+                  color={tokens.color.text.subtle}
+                />
               </Pressable>
             )
           }
@@ -294,7 +304,7 @@ export function SignUpScreen() {
       </View>
 
       {formError ? (
-        <View style={{ marginTop: spacing.md }}>
+        <View style={{ marginTop: tokens.space.md }}>
           <FormErrorBanner code={formError} onRetry={retry} />
         </View>
       ) : null}
@@ -310,14 +320,16 @@ export function SignUpScreen() {
 
       {providers.length > 0 ? (
         <View testID="signup-social-group" style={{ marginTop: gaps.buttonToDivider }}>
-          <View style={[styles.dividerRow, { gap: spacing.md }]}>
-            <View style={[styles.line, { backgroundColor: colors.fieldBorder }]} />
-            <Text variant="caption" style={{ color: colors.inkMuted }}>
+          <View style={[styles.dividerRow, { gap: tokens.space.md }]}>
+            <View style={[styles.line, { backgroundColor: tokens.color.border.field }]} />
+            <Text variant="caption" style={{ color: tokens.color.text.subtle }}>
               {t('screens:signUp.orSignUpWith')}
             </Text>
-            <View style={[styles.line, { backgroundColor: colors.fieldBorder }]} />
+            <View style={[styles.line, { backgroundColor: tokens.color.border.field }]} />
           </View>
-          <View style={[styles.socialRow, { gap: spacing.md, marginTop: gaps.dividerToSocial }]}>
+          <View
+            style={[styles.socialRow, { gap: tokens.space.md, marginTop: gaps.dividerToSocial }]}
+          >
             {providers.map((provider) => (
               <SocialButton
                 key={provider}
@@ -331,7 +343,7 @@ export function SignUpScreen() {
       ) : null}
 
       <View style={[styles.linkRow, { minHeight: LINK_ROW_HEIGHT, marginTop: gaps.socialToLink }]}>
-        <Text style={{ color: colors.inkMuted }}>{t('screens:signUp.haveAccount')}</Text>
+        <Text style={{ color: tokens.color.text.subtle }}>{t('screens:signUp.haveAccount')}</Text>
         <Pressable
           testID="signup-to-sign-in"
           accessibilityRole="link"
@@ -340,7 +352,7 @@ export function SignUpScreen() {
           hitSlop={8}
           style={{ minHeight: touch, justifyContent: 'center' }}
         >
-          <Text bold style={{ color: colors.brand }}>
+          <Text bold style={{ color: tokens.color.action.link }}>
             {t('screens:signUp.signIn')}
           </Text>
         </Pressable>
@@ -356,7 +368,8 @@ export function SignUpScreen() {
 }
 
 const styles = StyleSheet.create({
-  eye: { alignItems: 'center', justifyContent: 'center', marginRight: -8 },
+  // Kéo nút mắt sát mép phải ô nhập (bù đệm ngang của ô), vùng chạm vẫn đủ lớn.
+  eye: { alignItems: 'center', justifyContent: 'center', marginRight: -themeLayout.space.sm },
   dividerRow: { flexDirection: 'row', alignItems: 'center' },
   line: { flex: 1, height: StyleSheet.hairlineWidth },
   socialRow: { flexDirection: 'row' },
@@ -365,8 +378,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    paddingHorizontal: 12,
+    borderWidth: themeLayout.borderWidth.thin,
+    paddingHorizontal: themeLayout.space.md,
   },
   linkRow: {
     flexDirection: 'row',
@@ -374,5 +387,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexWrap: 'wrap',
   },
-  illustrationSlot: { flexGrow: 1, justifyContent: 'center', paddingTop: 16 },
+  illustrationSlot: { flexGrow: 1, justifyContent: 'center', paddingTop: themeLayout.space.lg },
 });

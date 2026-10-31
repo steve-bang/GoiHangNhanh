@@ -12,14 +12,11 @@ import { useTranslation } from 'react-i18next';
 import type { ErrorCode } from '@/core/errors/codes';
 import { resolveErrorMessage, type ErrorMessage } from '@/core/i18n/error-message';
 import type { OrderSource } from '@/core/orders/order-source';
+import { layout, typography } from '@/core/theme';
 import { getInputResetStyle, getMinTouchTarget } from '@/platform';
 import { Button, Icon, SourceIcon, Text, useTheme, type IconName } from '@/shared/ui';
 
-import {
-  BANNER_LINE_HEIGHT,
-  FIELD_ERROR_FONT_SIZE,
-  FIELD_ERROR_LINE_HEIGHT,
-} from '../onboarding-layout';
+import { BANNER_LINE_HEIGHT, FIELD_ERROR_LINE_HEIGHT } from '../onboarding-layout';
 import type { StepState } from '../onboarding-progress';
 import { useScrollIntoView } from './OnboardingScaffold';
 
@@ -66,7 +63,8 @@ export function IconField({
   inputProps,
   testID,
 }: IconFieldProps) {
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
+  const { color } = tokens;
   const wrapperRef = useRef<ComponentRef<typeof View>>(null);
   const scrollIntoView = useScrollIntoView();
   const [focused, setFocused] = useState(false);
@@ -84,17 +82,26 @@ export function IconField({
           styles.fieldBox,
           {
             minHeight: height,
-            backgroundColor: colors.surface,
-            borderColor: error ? colors.danger : focused ? colors.brand : colors.fieldBorder,
-            borderRadius: radius.lg,
-            paddingHorizontal: spacing.lg,
-            gap: spacing.md,
+            backgroundColor: color.surface.raised,
+            borderColor: error
+              ? color.feedback.danger.fg
+              : focused
+                ? color.brand.primary
+                : color.border.field,
+            // Viền đậm khi focus/lỗi; đệm ngang bù phần viền dày thêm để chữ không xê dịch.
+            borderWidth: error || focused ? tokens.borderWidth.emphasis : tokens.borderWidth.thin,
+            paddingHorizontal:
+              error || focused
+                ? tokens.space.lg - (tokens.borderWidth.emphasis - tokens.borderWidth.thin)
+                : tokens.space.lg,
+            borderRadius: tokens.radius.lg,
+            gap: tokens.space.md,
           },
         ]}
       >
-        <Icon name={icon} size={22} color={colors.inkMuted} />
+        <Icon name={icon} size={tokens.icon.md} color={color.text.subtle} />
         <View style={styles.fieldBody}>
-          <Text variant="caption" style={{ color: colors.inkMuted }} numberOfLines={1}>
+          <Text variant="caption" style={{ color: color.text.subtle }} numberOfLines={1}>
             {label}
           </Text>
           <TextInput
@@ -112,11 +119,11 @@ export function IconField({
               onBlur?.();
             }}
             placeholder={placeholder}
-            placeholderTextColor={colors.inkMuted}
+            placeholderTextColor={color.text.subtle}
             autoCapitalize="none"
             autoCorrect={false}
             {...inputProps}
-            style={[styles.fieldInput, getInputResetStyle(), { color: colors.ink }]}
+            style={[styles.fieldInput, getInputResetStyle(), { color: color.text.strong }]}
           />
         </View>
         {accessory}
@@ -124,7 +131,11 @@ export function IconField({
       {!error && hint ? (
         <Text
           variant="caption"
-          style={{ color: colors.inkMuted, marginTop: 6, marginLeft: 4 }}
+          style={{
+            color: color.text.subtle,
+            marginTop: tokens.space.tight,
+            marginLeft: tokens.space.xs,
+          }}
           testID={testID ? `${testID}-hint` : undefined}
         >
           {hint}
@@ -151,7 +162,7 @@ export function FieldError({
   action?: { label: string; onPress: () => void; testID?: string } | undefined;
   testID?: string | undefined;
 }) {
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
   const touch = getMinTouchTarget();
   return (
     <View
@@ -161,26 +172,17 @@ export function FieldError({
       style={[
         styles.fieldError,
         {
-          marginTop: 6,
-          marginLeft: 4,
-          gap: spacing.xs,
+          marginTop: tokens.space.tight,
+          marginLeft: tokens.space.xs,
+          gap: tokens.space.xs,
           alignItems: action ? 'center' : 'flex-start',
         },
       ]}
     >
       <View style={styles.fieldErrorIcon}>
-        <Icon name="alert-triangle" size={16} color={colors.danger} />
+        <Icon name="alert-triangle" size={tokens.icon.sm} color={tokens.color.feedback.danger.fg} />
       </View>
-      <Text
-        style={[
-          styles.fieldErrorText,
-          {
-            color: colors.ink,
-            fontSize: FIELD_ERROR_FONT_SIZE,
-            lineHeight: FIELD_ERROR_LINE_HEIGHT,
-          },
-        ]}
-      >
+      <Text variant="formBody" style={[styles.fieldErrorText, { color: tokens.color.text.strong }]}>
         {message}
       </Text>
       {action ? (
@@ -189,10 +191,10 @@ export function FieldError({
           accessibilityRole="button"
           accessibilityLabel={action.label}
           onPress={action.onPress}
-          hitSlop={4}
+          hitSlop={tokens.space.xs}
           style={[styles.fieldErrorAction, { minHeight: touch, minWidth: touch }]}
         >
-          <Text bold style={{ color: colors.brand, fontSize: FIELD_ERROR_FONT_SIZE }}>
+          <Text variant="formBody" bold style={{ color: tokens.color.action.link }}>
             {action.label}
           </Text>
         </Pressable>
@@ -219,7 +221,7 @@ export function FormErrorBanner({
   message?: ErrorMessage;
 }) {
   const { t } = useTranslation();
-  const { colors, spacing, radius } = useTheme();
+  const { tokens } = useTheme();
   const scrollIntoView = useScrollIntoView();
   const bannerRef = useRef<ComponentRef<typeof View>>(null);
   const message = override ?? resolveErrorMessage(t, code);
@@ -237,20 +239,24 @@ export function FormErrorBanner({
       style={[
         styles.banner,
         {
-          backgroundColor: colors.dangerSoft,
-          borderColor: colors.danger,
-          borderRadius: radius.md,
-          padding: spacing.md,
-          gap: spacing.md,
+          backgroundColor: tokens.color.feedback.danger.bg,
+          borderColor: tokens.color.feedback.danger.fg,
+          borderRadius: tokens.radius.md,
+          padding: tokens.space.md,
+          gap: tokens.space.md,
         },
       ]}
     >
-      <View style={[styles.bannerRow, { gap: spacing.sm }]}>
+      <View style={[styles.bannerRow, { gap: tokens.space.sm }]}>
         <View style={styles.bannerIcon}>
-          <Icon name="alert-triangle" size={20} color={colors.danger} />
+          <Icon
+            name="alert-triangle"
+            size={tokens.icon.md}
+            color={tokens.color.feedback.danger.fg}
+          />
         </View>
-        <Text style={[styles.bannerText, { color: colors.ink }]}>
-          <Text bold style={{ color: colors.ink }}>
+        <Text variant="body" style={[styles.bannerText, { color: tokens.color.text.strong }]}>
+          <Text bold style={{ color: tokens.color.text.strong }}>
             {message.title}
           </Text>
           {message.hint ? ` ${message.hint}` : ''}
@@ -287,7 +293,8 @@ interface StepProgressProps {
  */
 export function StepProgress({ segments, current, total }: StepProgressProps) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
+  const { color } = tokens;
   return (
     <View
       testID="step-progress"
@@ -304,19 +311,19 @@ export function StepProgress({ segments, current, total }: StepProgressProps) {
             style={[
               state === 'todo' ? styles.nodeTodo : styles.nodeActive,
               {
-                backgroundColor: state === 'todo' ? colors.fieldBorder : colors.brand,
+                backgroundColor: state === 'todo' ? color.border.field : color.brand.primary,
               },
             ]}
           >
-            {state === 'done' ? <Icon name="check" size={12} color={colors.onBrand} /> : null}
+            {state === 'done' ? <Icon name="check" size={12} color={color.text.onAction} /> : null}
             {state === 'current' ? (
-              <View style={[styles.nodeDot, { backgroundColor: colors.onBrand }]} />
+              <View style={[styles.nodeDot, { backgroundColor: color.text.onAction }]} />
             ) : null}
           </View>
           <View
             style={[
               styles.progressLine,
-              { backgroundColor: state === 'done' ? colors.brand : colors.borderSubtle },
+              { backgroundColor: state === 'done' ? color.brand.primary : color.border.default },
             ]}
           />
         </View>
@@ -324,7 +331,7 @@ export function StepProgress({ segments, current, total }: StepProgressProps) {
       <Text
         variant="caption"
         bold
-        style={{ color: colors.inkMuted, marginLeft: 8 }}
+        style={{ color: color.text.subtle, marginLeft: tokens.space.sm }}
         importantForAccessibility="no"
       >
         {t('screens:createShop.progressValue', { current, total })}
@@ -343,7 +350,8 @@ interface SourceCardProps {
 
 /** Thẻ chọn nguồn bán có ô tích (chọn nhiều). Cả thẻ là một vùng chạm kiểu checkbox. */
 export function SourceCard({ source, label, checked, onToggle, height }: SourceCardProps) {
-  const { colors, radius, spacing } = useTheme();
+  const { tokens } = useTheme();
+  const { color } = tokens;
   return (
     <Pressable
       testID={`source-${source}`}
@@ -355,66 +363,86 @@ export function SourceCard({ source, label, checked, onToggle, height }: SourceC
         styles.sourceCard,
         {
           minHeight: Math.max(height, getMinTouchTarget()),
-          backgroundColor: colors.surface,
-          borderColor: checked ? colors.brand : colors.borderSubtle,
-          borderRadius: radius.md,
-          paddingHorizontal: spacing.md,
-          gap: spacing.md,
-          opacity: pressed ? 0.85 : 1,
+          backgroundColor: color.surface.raised,
+          borderColor: checked ? color.brand.primary : color.border.default,
+          // Thẻ đang chọn: viền đậm; đệm ngang bù phần viền dày thêm để nội dung không xê dịch.
+          borderWidth: checked ? tokens.borderWidth.emphasis : tokens.borderWidth.thin,
+          paddingHorizontal: checked
+            ? tokens.space.md - (tokens.borderWidth.emphasis - tokens.borderWidth.thin)
+            : tokens.space.md,
+          borderRadius: tokens.radius.md,
+          gap: tokens.space.md,
+          opacity: pressed ? tokens.opacity.pressed : 1,
         },
       ]}
     >
       <SourceIcon source={source} />
-      <Text style={styles.sourceLabel} color="ink">
-        {label}
-      </Text>
+      <Text style={[styles.sourceLabel, { color: color.text.strong }]}>{label}</Text>
       <View
         style={[
           styles.checkbox,
           {
-            backgroundColor: checked ? colors.brand : colors.surface,
-            borderColor: checked ? colors.brand : '#B6C6C0',
+            backgroundColor: checked ? color.brand.primary : color.surface.raised,
+            borderColor: checked ? color.brand.primary : color.border.strong,
           },
         ]}
       >
-        {checked ? <Icon name="check" size={16} color={colors.onBrand} /> : null}
+        {checked ? <Icon name="check" size={tokens.icon.sm} color={color.text.onAction} /> : null}
       </View>
     </Pressable>
   );
 }
 
+/** Nút bước của thanh tiến trình: cao bằng biểu tượng nhỏ; nút đang/đã làm dài thêm thành viên thuốc. */
+const STEP_NODE = layout.icon.sm;
+
 const styles = StyleSheet.create({
   fieldWrap: { alignSelf: 'stretch' },
-  fieldBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
-  fieldBody: { flex: 1, justifyContent: 'center', paddingVertical: 8 },
-  fieldInput: { fontSize: 15, lineHeight: 22, padding: 0, margin: 0, minHeight: 22 },
+  fieldBox: { flexDirection: 'row', alignItems: 'center' },
+  fieldBody: { flex: 1, justifyContent: 'center', paddingVertical: layout.space.sm },
+  // Ô nhập không dùng được `Text`: lấy cỡ chữ variant `body` (TextInput không co theo `Text`).
+  fieldInput: {
+    ...typography.body,
+    padding: 0,
+    margin: 0,
+    minHeight: typography.body.lineHeight,
+  },
   fieldError: { flexDirection: 'row' },
   fieldErrorIcon: { height: FIELD_ERROR_LINE_HEIGHT, justifyContent: 'center' },
   fieldErrorText: { flexShrink: 1 },
-  fieldErrorAction: { justifyContent: 'center', paddingHorizontal: 8 },
-  banner: { borderWidth: 1 },
+  fieldErrorAction: { justifyContent: 'center', paddingHorizontal: layout.space.sm },
+  banner: { borderWidth: layout.borderWidth.thin },
   bannerRow: { flexDirection: 'row', alignItems: 'flex-start' },
   bannerIcon: { height: BANNER_LINE_HEIGHT, justifyContent: 'center' },
-  bannerText: { flex: 1, fontSize: 15, lineHeight: BANNER_LINE_HEIGHT },
-  progress: { flexDirection: 'row', alignItems: 'center', height: 28 },
+  bannerText: { flex: 1 },
+  progress: { flexDirection: 'row', alignItems: 'center', minHeight: layout.component.tile.sm },
   progressSegment: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   nodeActive: {
-    width: 30,
-    height: 18,
-    borderRadius: 9,
+    width: STEP_NODE + layout.space.md,
+    height: STEP_NODE,
+    borderRadius: layout.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  nodeTodo: { width: 18, height: 18, borderRadius: 9 },
-  nodeDot: { width: 6, height: 6, borderRadius: 3 },
-  progressLine: { flex: 1, height: 4, borderRadius: 2, marginHorizontal: 4 },
-  sourceCard: { flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
+  nodeTodo: { width: STEP_NODE, height: STEP_NODE, borderRadius: layout.radius.full },
+  nodeDot: {
+    width: layout.space.tight,
+    height: layout.space.tight,
+    borderRadius: layout.radius.full,
+  },
+  progressLine: {
+    flex: 1,
+    height: layout.space.xs,
+    borderRadius: layout.radius.full,
+    marginHorizontal: layout.space.xs,
+  },
+  sourceCard: { flexDirection: 'row', alignItems: 'center' },
   sourceLabel: { flex: 1 },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 1.5,
+    width: layout.component.checkbox.size,
+    height: layout.component.checkbox.size,
+    borderRadius: layout.radius.sm,
+    borderWidth: layout.borderWidth.emphasis,
     alignItems: 'center',
     justifyContent: 'center',
   },
