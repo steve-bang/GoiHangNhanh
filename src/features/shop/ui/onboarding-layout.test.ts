@@ -1,3 +1,5 @@
+import { layout as themeLayout, typography } from '@/core/theme';
+
 import {
   computeCreateShopLayout,
   computeSetupDoneLayout,
@@ -65,9 +67,10 @@ describe('bố cục ba màn thiết lập', () => {
       expect(layout.scrollNeeded).toBe(true);
     });
 
-    it('màn hẹp 320 dùng lề 20; màn thấp 375x667 và 320x568 dùng khoảng cách thu gọn', () => {
+    it('màn hẹp 320 dùng lề `space.lg`, màn thường `space.xl`; màn thấp 375x667 và 320x568 dùng khoảng cách thu gọn', () => {
       expect(compute(SMALL).narrow).toBe(true);
-      expect(compute(SMALL).padX).toBe(20);
+      expect(compute(SMALL).padX).toBe(themeLayout.space.lg);
+      expect(compute(IPHONE).padX).toBe(themeLayout.space.xl);
       expect(compute(SE).narrow).toBe(false);
       expect(compute(SE).compact).toBe(true);
       expect(compute(SMALL).compact).toBe(true);
@@ -80,12 +83,16 @@ describe('bố cục ba màn thiết lập', () => {
   });
 
   describe('đăng ký (UI-A03)', () => {
-    it('390x844 có hình; 375x667 và 320x568 ẩn hình nhưng vẫn không cần cuộn', () => {
+    it('390x844 có hình; 375x667 hình thu nhỏ (hoặc ẩn); 320x568 ẩn hình; cả ba không cần cuộn', () => {
       expect(computeSignUpLayout(IPHONE).illustrationHeight).toBeGreaterThanOrEqual(110);
-      for (const i of [SE, SMALL]) {
-        const layout = computeSignUpLayout(i);
-        expect(layout.illustrationHeight).toBe(0);
-        expect(layout.scrollNeeded).toBe(false);
+      const se = computeSignUpLayout(SE);
+      expect(se.illustrationHeight === 0 || se.illustrationHeight >= MIN_ILLUSTRATION_HEIGHT).toBe(
+        true,
+      );
+      expect(se.illustrationHeight).toBeLessThan(computeSignUpLayout(IPHONE).illustrationHeight);
+      expect(computeSignUpLayout(SMALL).illustrationHeight).toBe(0);
+      for (const i of [IPHONE, SE, SMALL]) {
+        expect(computeSignUpLayout(i).scrollNeeded).toBe(false);
       }
     });
 
@@ -112,7 +119,7 @@ describe('bố cục ba màn thiết lập', () => {
           errors: { email: spec },
         });
         expect(withEmail.estimatedContentHeight - without.estimatedContentHeight).toBeCloseTo(
-          estimateFieldErrorHeight(spec, 280, 1, 48),
+          estimateFieldErrorHeight(spec, 320 - 2 * themeLayout.space.lg, 1, 48),
           5,
         );
         const banner = estimateBannerHeight(BANNER_ONLY.banner, 342, 1, 48, 12);
@@ -174,10 +181,13 @@ describe('bố cục ba màn thiết lập', () => {
       });
     });
 
-    it('màn hẹp dùng tiêu đề nhỏ hơn', () => {
-      expect(computeSignUpLayout(SMALL).title.fontSize).toBeLessThan(
-        computeSignUpLayout(IPHONE).title.fontSize,
-      );
+    it('tiêu đề theo variant `screenTitle` ở mọi cỡ màn (cỡ chữ không do bố cục quyết)', () => {
+      for (const i of [SMALL, IPHONE]) {
+        expect(computeSignUpLayout(i).title).toEqual({
+          fontSize: typography.screenTitle.fontSize,
+          lineHeight: typography.screenTitle.lineHeight,
+        });
+      }
     });
   });
 
@@ -198,10 +208,15 @@ describe('bố cục ba màn thiết lập', () => {
   });
 
   describe('hoàn tất (UI-A06)', () => {
-    it('390x844 hình đủ lớn; 375x667 vẫn có hình; 320x568 ẩn hình', () => {
+    it('390x844 hình đủ lớn; 375x667 vẫn có hình; 320x568 hình thu nhỏ hoặc ẩn, không cần cuộn', () => {
       expect(computeSetupDoneLayout(IPHONE).illustrationHeight).toBe(SETUP_ILLUSTRATION_MAX_HEIGHT);
       expect(computeSetupDoneLayout(SE).illustrationHeight).toBeGreaterThanOrEqual(110);
-      expect(computeSetupDoneLayout(SMALL).illustrationHeight).toBe(0);
+      const small = computeSetupDoneLayout(SMALL);
+      expect(
+        small.illustrationHeight === 0 || small.illustrationHeight >= MIN_ILLUSTRATION_HEIGHT,
+      ).toBe(true);
+      expect(small.illustrationHeight).toBeLessThan(SETUP_ILLUSTRATION_MAX_HEIGHT);
+      expect(small.scrollNeeded).toBe(false);
     });
   });
 });

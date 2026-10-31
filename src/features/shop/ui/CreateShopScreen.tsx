@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ErrorCode } from '@/core/errors/codes';
 import { ROUTES } from '@/core/navigation';
 import type { OrderSource } from '@/core/orders/order-source';
+import { layout, typography } from '@/core/theme';
 import { useSession } from '@/features/personal';
 import { getInputResetStyle, getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Text, useTheme } from '@/shared/ui';
@@ -50,15 +51,16 @@ function ShopNameField({
   onSubmit: () => void;
 }) {
   const { t } = useTranslation();
-  const { colors, radius, spacing } = useTheme();
+  const { tokens } = useTheme();
+  const { color } = tokens;
   const [focused, setFocused] = useState(false);
   const wrapperRef = useRef<ComponentRef<typeof View>>(null);
   const scrollIntoView = useScrollIntoView();
   return (
     <View ref={wrapperRef} collapsable={false}>
-      <Text bold color="ink">
+      <Text bold style={{ color: color.text.strong }}>
         {t('screens:createShop.shopNameLabel')}
-        <Text bold style={{ color: colors.danger }} accessibilityElementsHidden>
+        <Text bold style={{ color: color.text.subtle }} accessibilityElementsHidden>
           {' *'}
         </Text>
       </Text>
@@ -77,7 +79,7 @@ function ShopNameField({
           onBlur();
         }}
         placeholder={t('screens:createShop.shopNamePlaceholder')}
-        placeholderTextColor={colors.inkMuted}
+        placeholderTextColor={color.text.subtle}
         maxLength={SHOP_NAME_MAX_LENGTH}
         autoCapitalize="words"
         autoCorrect={false}
@@ -88,13 +90,22 @@ function ShopNameField({
           styles.nameInput,
           getInputResetStyle(),
           {
-            height: Math.max(SHOP_NAME_INPUT_HEIGHT, getMinTouchTarget()),
-            marginTop: 8,
-            color: colors.ink,
-            backgroundColor: colors.surface,
-            borderColor: error ? colors.danger : focused ? colors.brand : colors.fieldBorder,
-            borderRadius: radius.lg,
-            paddingHorizontal: spacing.lg,
+            minHeight: Math.max(SHOP_NAME_INPUT_HEIGHT, getMinTouchTarget()),
+            marginTop: tokens.space.sm,
+            color: color.text.strong,
+            backgroundColor: color.surface.raised,
+            borderColor: error
+              ? color.feedback.danger.fg
+              : focused
+                ? color.brand.primary
+                : color.border.field,
+            // Viền đậm khi focus/lỗi; đệm ngang bù phần viền dày thêm để chữ không xê dịch.
+            borderWidth: error || focused ? tokens.borderWidth.emphasis : tokens.borderWidth.thin,
+            paddingHorizontal:
+              error || focused
+                ? tokens.space.lg - (tokens.borderWidth.emphasis - tokens.borderWidth.thin)
+                : tokens.space.lg,
+            borderRadius: tokens.radius.lg,
           },
         ]}
       />
@@ -102,11 +113,11 @@ function ShopNameField({
         <Text
           variant="caption"
           accessibilityLiveRegion="polite"
-          style={[styles.nameError, { color: colors.danger }]}
+          style={[styles.nameError, { color: color.feedback.danger.fg }]}
         >
           {error ?? ''}
         </Text>
-        <Text variant="caption" style={{ color: colors.inkMuted }}>
+        <Text variant="caption" style={{ color: color.text.subtle }}>
           {t('screens:createShop.shopNameCounter', {
             count: textLength(value),
             max: SHOP_NAME_MAX_LENGTH,
@@ -125,7 +136,8 @@ function ShopNameField({
  */
 export function CreateShopScreen() {
   const { t } = useTranslation();
-  const { colors, spacing } = useTheme();
+  const { tokens } = useTheme();
+  const { color } = tokens;
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
   const navigation = useAppNavigation();
@@ -143,7 +155,7 @@ export function CreateShopScreen() {
     insetBottom: insets.bottom,
     fontScale,
   });
-  const { gaps, title } = layout;
+  const { gaps } = layout;
 
   const nameIssue = validateShopName(state.shopName);
   const nameError =
@@ -234,10 +246,15 @@ export function CreateShopScreen() {
         />
       </View>
       <View style={{ marginTop: gaps.progressToTitle }}>
-        <Text accessibilityRole="header" bold style={[title, { color: colors.ink }]}>
+        <Text
+          variant="screenTitle"
+          accessibilityRole="header"
+          bold
+          style={{ color: color.text.strong }}
+        >
           {t('screens:createShop.title')}
         </Text>
-        <Text style={{ color: colors.inkMuted, marginTop: gaps.titleToSubtitle }}>
+        <Text style={{ color: color.text.subtle, marginTop: gaps.titleToSubtitle }}>
           {t('screens:createShop.subtitle')}
         </Text>
       </View>
@@ -258,10 +275,10 @@ export function CreateShopScreen() {
       </View>
 
       <View style={{ marginTop: gaps.nameToSources }}>
-        <Text bold color="ink">
+        <Text bold style={{ color: color.text.strong }}>
           {t('screens:createShop.sourcesLabel')}
         </Text>
-        <Text variant="caption" style={{ color: colors.inkMuted }}>
+        <Text variant="caption" style={{ color: color.text.subtle }}>
           {t('screens:createShop.sourcesHint')}
         </Text>
         <View
@@ -284,7 +301,7 @@ export function CreateShopScreen() {
       <View style={styles.spacer} />
 
       {formError ? (
-        <View style={{ marginTop: spacing.md }}>
+        <View style={{ marginTop: tokens.space.md }}>
           <FormErrorBanner code={formError} />
         </View>
       ) : null}
@@ -306,7 +323,7 @@ export function CreateShopScreen() {
         onPress={skip}
         style={[styles.skip, { minHeight: LINK_ROW_HEIGHT, marginTop: gaps.buttonToSkip }]}
       >
-        <Text bold style={{ color: colors.brand }}>
+        <Text bold style={{ color: color.action.link }}>
           {t('screens:createShop.skip')}
         </Text>
       </Pressable>
@@ -315,9 +332,14 @@ export function CreateShopScreen() {
 }
 
 const styles = StyleSheet.create({
-  nameInput: { fontSize: 15, borderWidth: 1 },
-  nameFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  nameError: { flex: 1, paddingRight: 8 },
+  // Ô nhập không dùng được `Text`: lấy cỡ chữ variant `body`.
+  nameInput: { fontSize: typography.body.fontSize },
+  nameFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: layout.space.xs,
+  },
+  nameError: { flex: 1, paddingRight: layout.space.sm },
   spacer: { flexGrow: 1 },
   skip: { alignItems: 'center', justifyContent: 'center' },
 });

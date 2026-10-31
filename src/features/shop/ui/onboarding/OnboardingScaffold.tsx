@@ -8,12 +8,20 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { layout } from '@/core/theme';
 import { getKeyboardAvoidingBehavior, getMinTouchTarget } from '@/platform';
-import { Icon, Text, useTheme } from '@/shared/ui';
+import { AppThemeScope, Icon, Text, useTheme } from '@/shared/ui';
 
 import { BACK_ROW_HEIGHT } from '../onboarding-layout';
 
@@ -45,8 +53,9 @@ interface OnboardingScaffoldProps {
 
 /**
  * Khung chung ba màn thiết lập: nền, vùng an toàn, nút quay lại (tùy chọn), nội dung cuộn được và
- * tránh bàn phím. Không dùng `Screen` vì mockup không có thanh tiêu đề. Nội dung luôn nằm trong
- * ScrollView (`flexGrow: 1`) nên chữ lớn hay màn thấp thì cuộn, không vỡ bố cục.
+ * tránh bàn phím. Không dùng `Screen` vì mockup không có thanh tiêu đề; bọc `AppThemeScope` để
+ * `Button`/`Text`/`Icon` bên trong dùng bảng Bright Orange như màn trong app (D-20). Nội dung luôn
+ * nằm trong ScrollView (`flexGrow: 1`) nên chữ lớn hay màn thấp thì cuộn, không vỡ bố cục.
  */
 export function OnboardingScaffold({
   testID,
@@ -57,7 +66,8 @@ export function OnboardingScaffold({
   children,
 }: OnboardingScaffoldProps) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
+  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const contentRef = useRef<ComponentRef<typeof View>>(null);
@@ -79,67 +89,91 @@ export function OnboardingScaffold({
   }, []);
   const value = useMemo(() => ({ scrollIntoView }), [scrollIntoView]);
   const touch = getMinTouchTarget();
+  // Đốm nền trang trí ở góc dưới, tỉ lệ theo bề rộng cửa sổ (thiết kế gốc 520 trên màn rộng 390).
+  const blob = width * 1.33;
 
   return (
-    <View testID={testID} style={[styles.root, { backgroundColor: colors.onboardingBackground }]}>
-      <View
-        pointerEvents="none"
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        style={StyleSheet.absoluteFill}
-      >
-        <View style={[styles.blob, { backgroundColor: colors.welcomeBlob }]} />
+    <AppThemeScope>
+      <View testID={testID} style={[styles.root, { backgroundColor: tokens.color.surface.screen }]}>
+        <View
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={StyleSheet.absoluteFill}
+        >
+          <View
+            style={[
+              styles.blob,
+              {
+                width: blob,
+                height: blob,
+                bottom: -blob * 0.63,
+                left: -blob * 0.12,
+                backgroundColor: tokens.color.brand.soft,
+              },
+            ]}
+          />
+        </View>
+        <ScaffoldContext.Provider value={value}>
+          <KeyboardAvoidingView style={styles.flex} behavior={getKeyboardAvoidingBehavior()}>
+            <ScrollView
+              ref={scrollRef}
+              style={styles.flex}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{
+                flexGrow: 1,
+                paddingTop: insets.top,
+                paddingBottom: bottomPad,
+                paddingHorizontal: padX,
+              }}
+            >
+              <View ref={contentRef} collapsable={false} style={styles.content}>
+                {onBack || headerTitle ? (
+                  <View style={styles.headerRow}>
+                    {onBack ? (
+                      <Pressable
+                        testID="onboarding-back"
+                        accessibilityRole="button"
+                        accessibilityLabel={t('common:actions.back')}
+                        onPress={onBack}
+                        hitSlop={tokens.space.sm}
+                        style={[
+                          styles.back,
+                          {
+                            minWidth: touch,
+                            height: BACK_ROW_HEIGHT,
+                            marginLeft: -tokens.space.md,
+                          },
+                        ]}
+                      >
+                        <Icon
+                          name="arrow-back"
+                          size={tokens.icon.lg}
+                          color={tokens.color.text.strong}
+                        />
+                      </Pressable>
+                    ) : null}
+                    {headerTitle ? (
+                      <Text
+                        variant="sectionTitle"
+                        accessibilityRole="header"
+                        bold
+                        style={{ color: tokens.color.text.strong }}
+                      >
+                        {headerTitle}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
+                {children}
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </ScaffoldContext.Provider>
       </View>
-      <ScaffoldContext.Provider value={value}>
-        <KeyboardAvoidingView style={styles.flex} behavior={getKeyboardAvoidingBehavior()}>
-          <ScrollView
-            ref={scrollRef}
-            style={styles.flex}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{
-              flexGrow: 1,
-              paddingTop: insets.top,
-              paddingBottom: bottomPad,
-              paddingHorizontal: padX,
-            }}
-          >
-            <View ref={contentRef} collapsable={false} style={styles.content}>
-              {onBack || headerTitle ? (
-                <View style={styles.headerRow}>
-                  {onBack ? (
-                    <Pressable
-                      testID="onboarding-back"
-                      accessibilityRole="button"
-                      accessibilityLabel={t('common:actions.back')}
-                      onPress={onBack}
-                      hitSlop={8}
-                      style={[
-                        styles.back,
-                        { minWidth: touch, height: BACK_ROW_HEIGHT, marginLeft: -12 },
-                      ]}
-                    >
-                      <Icon name="arrow-back" size={26} color={colors.ink} />
-                    </Pressable>
-                  ) : null}
-                  {headerTitle ? (
-                    <Text
-                      accessibilityRole="header"
-                      bold
-                      style={{ color: colors.ink, fontSize: 17 }}
-                    >
-                      {headerTitle}
-                    </Text>
-                  ) : null}
-                </View>
-              ) : null}
-              {children}
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </ScaffoldContext.Provider>
-    </View>
+    </AppThemeScope>
   );
 }
 
@@ -147,15 +181,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
   flex: { flex: 1 },
   content: { flexGrow: 1 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: layout.space.xs },
   back: { justifyContent: 'center', alignItems: 'center', alignSelf: 'flex-start' },
-  blob: {
-    position: 'absolute',
-    width: 520,
-    height: 520,
-    borderRadius: 260,
-    bottom: -330,
-    left: -60,
-    opacity: 0.6,
-  },
+  blob: { position: 'absolute', borderRadius: layout.radius.full },
 });

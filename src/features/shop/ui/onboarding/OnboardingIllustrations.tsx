@@ -1,20 +1,31 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Icon, useTheme } from '@/shared/ui';
+import { Icon, useTheme, type Theme } from '@/shared/ui';
 
 import { getSetupDoneGeometry, getShieldClipboardGeometry } from '../onboarding-layout';
 
 /**
  * Hình minh họa của ba màn thiết lập, dựng bằng View + biểu tượng sẵn có (tĩnh, không thư viện
  * animation). THAY BẰNG HÌNH THẬT chỉ ở tệp này (ví dụ `<Image />` cùng kích thước `height`); màn
- * hình không phải sửa. Bị ẩn khỏi trình đọc màn hình (chỉ trang trí).
+ * hình không phải sửa. Bị ẩn khỏi trình đọc màn hình (chỉ trang trí). Màu lấy từ token (tông Bright
+ * Orange, trung tính ấm cho hộp/bảng ghi, điểm nhấn xanh dương cho pháo giấy), không viết mã màu.
  */
 
-const BOX = '#D9A566';
-const BOX_DARK = '#C48A47';
-const LEAF_A = '#5DAF7B';
-const LEAF_B = '#8CCBA3';
-const CONFETTI = ['#4FAE7A', '#F1D98B', '#2E9A6B'] as const;
+type ThemeColor = Theme['tokens']['color'];
+
+/** Bảng màu minh họa suy từ token (không phải màu trạng thái). */
+function illustrationPalette(color: ThemeColor) {
+  return {
+    ground: color.brand.soft,
+    box: color.border.field,
+    boxDark: color.border.strong,
+    leafA: color.brand.hover,
+    leafB: color.brand.softStrong,
+    paper: color.surface.raised,
+    paperLine: color.border.field,
+    confetti: [color.brand.primary, color.brand.softStrong, color.accent.blue.fg] as const,
+  };
+}
 
 function Clipboard({
   width,
@@ -27,15 +38,17 @@ function Clipboard({
   rotate: number;
   frame: string;
 }) {
-  const lineHeight = Math.max(2, height * 0.04);
+  const { tokens } = useTheme();
+  const p = illustrationPalette(tokens.color);
+  const lineHeight = Math.max(tokens.borderWidth.emphasis, height * 0.04);
   return (
     <View
       style={{
         width,
         height,
         borderRadius: width * 0.12,
-        backgroundColor: '#FFFFFF',
-        borderWidth: Math.max(2, width * 0.04),
+        backgroundColor: p.paper,
+        borderWidth: Math.max(tokens.borderWidth.emphasis, width * 0.04),
         borderColor: frame,
         transform: [{ rotate: `${rotate}deg` }],
         paddingTop: height * 0.2,
@@ -50,7 +63,7 @@ function Clipboard({
             width: `${fraction * 100}%`,
             height: lineHeight,
             borderRadius: lineHeight / 2,
-            backgroundColor: '#C9D8D2',
+            backgroundColor: p.paperLine,
           }}
         />
       ))}
@@ -70,12 +83,12 @@ function Clipboard({
 }
 
 function Shield({ size, checkSize }: { size: number; checkSize: number }) {
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
   return (
     <View>
-      <Icon name="brand-shield" size={size} color={colors.brand} />
+      <Icon name="brand-shield" size={size} color={tokens.color.brand.primary} />
       <View style={[StyleSheet.absoluteFill, styles.center]}>
-        <Icon name="check" size={checkSize} color={colors.onBrand} />
+        <Icon name="check" size={checkSize} color={tokens.color.text.onAction} />
       </View>
     </View>
   );
@@ -83,7 +96,8 @@ function Shield({ size, checkSize }: { size: number; checkSize: number }) {
 
 /** Khiên + bảng ghi + lá ở đáy màn đăng ký (UI-A03). `height` là chiều cao khung. */
 export function ShieldClipboardIllustration({ height }: { height: number }) {
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
+  const p = illustrationPalette(tokens.color);
   const g = getShieldClipboardGeometry(height);
   return (
     <View
@@ -99,8 +113,8 @@ export function ShieldClipboardIllustration({ height }: { height: number }) {
           bottom: g.ground.bottom,
           width: g.ground.width,
           height: g.ground.height,
-          borderRadius: g.ground.height,
-          backgroundColor: colors.welcomeBlob,
+          borderRadius: tokens.radius.full,
+          backgroundColor: p.ground,
         }}
       />
       <View style={{ position: 'absolute', left: g.clipboard.left, top: g.clipboard.top }}>
@@ -108,14 +122,14 @@ export function ShieldClipboardIllustration({ height }: { height: number }) {
           width={g.clipboard.width}
           height={g.clipboard.height}
           rotate={5}
-          frame="#7FC49A"
+          frame={tokens.color.brand.hover}
         />
       </View>
       <View style={{ position: 'absolute', left: g.leafLeft.left, bottom: g.leafLeft.bottom }}>
-        <Icon name="leaf" size={g.leafLeft.size} color={LEAF_A} />
+        <Icon name="leaf" size={g.leafLeft.size} color={p.leafA} />
       </View>
       <View style={{ position: 'absolute', right: g.leafRight.right, bottom: g.leafRight.bottom }}>
-        <Icon name="leaf" size={g.leafRight.size} color={LEAF_B} />
+        <Icon name="leaf" size={g.leafRight.size} color={p.leafB} />
       </View>
       <View style={{ position: 'absolute', left: g.shield.left, top: g.shield.top }}>
         <Shield size={g.shield.size} checkSize={g.shield.checkSize} />
@@ -126,7 +140,8 @@ export function ShieldClipboardIllustration({ height }: { height: number }) {
 
 /** Hình lớn ở màn hoàn tất (UI-A06): khiên, hộp hàng, bảng ghi, lá, pháo giấy tĩnh. */
 export function SetupDoneIllustration({ height }: { height: number }) {
-  const { colors } = useTheme();
+  const { tokens } = useTheme();
+  const p = illustrationPalette(tokens.color);
   const g = getSetupDoneGeometry(height);
   return (
     <View
@@ -142,8 +157,8 @@ export function SetupDoneIllustration({ height }: { height: number }) {
           top: (g.frame.height - g.blob.diameter) / 2,
           width: g.blob.diameter,
           height: g.blob.diameter,
-          borderRadius: g.blob.diameter / 2,
-          backgroundColor: colors.welcomeBlob,
+          borderRadius: tokens.radius.full,
+          backgroundColor: p.ground,
         }}
       />
       {g.confetti.map((piece, index) => (
@@ -156,7 +171,7 @@ export function SetupDoneIllustration({ height }: { height: number }) {
             width: piece.width,
             height: piece.height,
             borderRadius: Math.min(piece.width, piece.height) / 2,
-            backgroundColor: CONFETTI[piece.tone],
+            backgroundColor: p.confetti[piece.tone],
             transform: [{ rotate: `${piece.rotate}deg` }],
           }}
         />
@@ -166,23 +181,23 @@ export function SetupDoneIllustration({ height }: { height: number }) {
           width={g.clipboard.width}
           height={g.clipboard.height}
           rotate={8}
-          frame="#2F8F66"
+          frame={tokens.color.brand.pressed}
         />
       </View>
       <View style={{ position: 'absolute', left: g.leafLeft.left, bottom: g.leafLeft.bottom }}>
-        <Icon name="leaf" size={g.leafLeft.size} color={LEAF_A} />
+        <Icon name="leaf" size={g.leafLeft.size} color={p.leafA} />
       </View>
       <View style={{ position: 'absolute', right: g.leafRight.right, bottom: g.leafRight.bottom }}>
-        <Icon name="leaf" size={g.leafRight.size} color={LEAF_B} />
+        <Icon name="leaf" size={g.leafRight.size} color={p.leafB} />
       </View>
       <View style={{ position: 'absolute', left: g.shield.left, top: g.shield.top }}>
         <Shield size={g.shield.size} checkSize={g.shield.checkSize} />
       </View>
       <View style={{ position: 'absolute', left: g.boxLarge.left, bottom: g.boxLarge.bottom }}>
-        <Icon name="package-solid" size={g.boxLarge.size} color={BOX} />
+        <Icon name="package-solid" size={g.boxLarge.size} color={p.box} />
       </View>
       <View style={{ position: 'absolute', left: g.boxSmall.left, bottom: g.boxSmall.bottom }}>
-        <Icon name="package-solid" size={g.boxSmall.size} color={BOX_DARK} />
+        <Icon name="package-solid" size={g.boxSmall.size} color={p.boxDark} />
       </View>
     </View>
   );

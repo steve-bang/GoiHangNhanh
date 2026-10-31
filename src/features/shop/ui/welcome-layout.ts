@@ -1,7 +1,10 @@
+import { layout } from '@/core/theme';
+
 /**
  * Tính bố cục màn Chào mừng (UI-A02): thuần TypeScript, không React/RN để dễ test.
- * Hai việc: (1) cỡ + khoảng cách dọc theo chiều cao màn, (2) hình học của hình minh họa từ MỘT tham số
- * kích thước để cả khối co giãn như một.
+ * Hai việc: (1) khoảng cách dọc theo chiều cao màn (thang `layout.space`), (2) hình học của hình minh
+ * họa từ MỘT tham số kích thước để cả khối co giãn như một. Cỡ chữ không ở đây: màn dùng
+ * `<Text variant="screenTitle">` cho mọi cỡ màn (D-20).
  */
 
 /** Khung thiết kế của hình minh họa (đơn vị thiết kế): rộng x cao. Rộng = vùng nội dung của iPhone 14. */
@@ -16,22 +19,20 @@ export const COMPACT_HEIGHT_BELOW = 700;
 /** Từ cỡ chữ hệ thống này trở lên: ẩn hình, để nội dung cuộn. */
 export const HIDE_ILLUSTRATION_FONT_SCALE = 1.25;
 
-/** Màn hẹp hơn ngưỡng này (dp) dùng tiêu đề nhỏ hơn để không gãy thành 4 dòng (ví dụ 320x568). */
+/** Màn hẹp hơn ngưỡng này (dp): tiêu đề gãy thêm dòng, ước tính phần ngoài hình khác (ví dụ 320x568). */
 export const NARROW_WIDTH_BELOW = 340;
-
-/** Cỡ tiêu đề (dp): mặc định và màn hẹp. */
-const TITLE_REGULAR = { fontSize: 30, lineHeight: 38 };
-const TITLE_NARROW = { fontSize: 24, lineHeight: 30 };
 
 /**
  * Chiều cao (dp, fontScale 1, không gồm lề đáy) của mọi thứ ngoài hình minh họa: logo, chữ, nút, social,
- * dòng pháp lý, khoảng cách và đệm của ô hình. Đo trên bản render web (react-native-web, Chromium).
+ * dòng pháp lý, khoảng cách và đệm của ô hình. Đo trên bản render web (react-native-web, Chromium) với
+ * tiêu đề cũ 30dp; tiêu đề nay là `screenTitle` (24/32) nên số dưới đây là cận trên (an toàn: hình chỉ
+ * nhỏ đi, không đè nội dung). Cần đo lại trên thiết bị thật.
  */
 const CHROME_REGULAR = 528;
 const CHROME_COMPACT = 492;
-/** Màn hẹp (tiêu đề 24dp, 2 dòng) theo khoảng cách thường / thu gọn. */
-const CHROME_NARROW_REGULAR = 512;
-const CHROME_NARROW_COMPACT = 476;
+/** Màn hẹp (tiêu đề 2 dòng) theo khoảng cách thường / thu gọn; +8 cho dòng `screenTitle` (32 thay 30) và ô logo `tile.lg` (52 thay 48). */
+const CHROME_NARROW_REGULAR = 520;
+const CHROME_NARROW_COMPACT = 484;
 
 export interface WelcomeLayoutInput {
   /** Chiều rộng cửa sổ. */
@@ -46,7 +47,7 @@ export interface WelcomeLayoutInput {
 
 export interface WelcomeLayout {
   compact: boolean;
-  title: { fontSize: number; lineHeight: number };
+  narrow: boolean;
   /** Khoảng cách dọc giữa các khối (dp). */
   gaps: { top: number; section: number };
   /** Chiều cao hình; 0 nghĩa là ẩn hình. */
@@ -61,8 +62,11 @@ export interface WelcomeLayout {
 export function computeWelcomeLayout(input: WelcomeLayoutInput): WelcomeLayout {
   const { width, height, insetTop, insetBottom, fontScale } = input;
   const compact = height < COMPACT_HEIGHT_BELOW;
-  const gaps = compact ? { top: 12, section: 16 } : { top: 24, section: 24 };
-  const bottomPad = Math.max(insetBottom, 16) + 8;
+  const { space } = layout;
+  const gaps = compact
+    ? { top: space.md, section: space.lg }
+    : { top: space.xl, section: space.xl };
+  const bottomPad = Math.max(insetBottom, space.lg) + space.sm;
   const availableHeight = height - insetTop - bottomPad;
   const scale = Math.max(1, fontScale);
   const narrow = width < NARROW_WIDTH_BELOW;
@@ -80,7 +84,7 @@ export function computeWelcomeLayout(input: WelcomeLayoutInput): WelcomeLayout {
   const estimatedContentHeight = chrome + illustrationHeight;
   return {
     compact,
-    title: narrow ? TITLE_NARROW : TITLE_REGULAR,
+    narrow,
     gaps,
     illustrationHeight,
     estimatedContentHeight,
