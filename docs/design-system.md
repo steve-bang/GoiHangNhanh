@@ -141,4 +141,4 @@ Chi tiết giá trị, tương phản và cơ chế phạm vi: [design-token-spe
 - Chữ cam trên nền màn/trắng/cam nhạt: `action.link`. Biểu tượng, viền chọn, tiến độ, nút Quét: `brand.primary`.
 - Trạng thái nghiệp vụ lấy từ `status.*` / `feedback.*`, không bao giờ dùng cam.
 - Màn mới phải nằm trong `Screen` (hoặc bọc `AppThemeScope`) để `Button`/`Text`/`Icon` nhận bảng màu mới.
-- Splash, đăng nhập và luồng thiết lập đã dùng Bright Orange (D-20). Ảnh icon ứng dụng, ảnh splash gốc native và các tệp ảnh tĩnh (`assets/`) vẫn màu cũ (jade): cần thiết kế lại riêng.
+- Splash, đăng nhập và luồng thiết lập đã dùng Bright Orange (D-20). Ảnh minh họa Splash đã đổi sang cam bằng `scripts/assets/recolor-splash-hero.py`. Icon ứng dụng và ảnh splash native của hệ điều hành (`assets/images/icon.png`, `splash/splash-icon*.png`) vẫn màu cũ (jade): cần thiết kế lại riêng.

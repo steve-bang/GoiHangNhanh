@@ -32,6 +32,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Changed
 
+- Ảnh minh họa màn Splash đổi tông xanh ngọc sang cam chủ đạo (áo yếm, điện thoại, biểu tượng trong bong bóng); logo Shopee/TikTok/Lazada và hai chậu cây giữ nguyên. Ảnh gốc xanh giữ ở `docs/assets/brand/splash/splash-hero-jade.webp`, script tạo lại ở `scripts/assets/recolor-splash-hero.py`. Chỉ kiểm qua ảnh bản web, chưa xem trên thiết bị.
 - Màn Chào mừng dùng ảnh minh họa 3D mới (hộp hàng, điện thoại đang quay, mã vạch, khiên xác nhận, biểu tượng Shopee/TikTok/Lazada); màn Đăng nhập vẫn dùng hình vẽ cũ. Chỉ kiểm qua ảnh bản web, chưa xem trên thiết bị.
 - Giao diện Splash, Chào mừng, Đăng nhập, Đăng ký, Quên mật khẩu, Mã xác minh, Mật khẩu mới, Tạo shop và Hoàn tất thiết lập đồng nhất với phần còn lại của ứng dụng: màu cam thương hiệu thay xanh ngọc, cỡ chữ và khoảng cách theo bộ chuẩn chung, liên kết cùng một màu; dấu * bắt buộc ở Tên shop không còn màu đỏ. Biểu tượng ứng dụng và ảnh tĩnh (ảnh khởi động, ảnh minh họa Splash) chưa đổi. Chỉ kiểm qua ảnh bản web và unit test, chưa xem trên thiết bị (D-20).
 - Tài liệu nội bộ: `CLAUDE.md` (trạng thái dự án, lệnh, ngoại lệ thứ hai của bất biến 4) và trạng thái từng PR trong kế hoạch v1 khớp mã sau V1-20 (tài liệu).

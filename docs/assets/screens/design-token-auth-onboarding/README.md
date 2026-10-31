@@ -15,3 +15,4 @@ Mỗi ảnh: **trái = trước** (`main`, bảng màu jade), **phải = sau** (
 | `07-setup-done` | UI-A06 Hoàn tất thiết lập |
 
 | `08-welcome-hero` | UI-A02 Chào mừng với ảnh minh họa 3D mới, ba cỡ màn (320x568 hết chỗ nên ẩn ảnh, đúng thiết kế) |
+| `09-splash-anh-cam` | UI-A01 Splash sau khi ảnh minh họa đổi sang cam (390x844, 360x800) |
