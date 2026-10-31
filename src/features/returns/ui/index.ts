@@ -7,3 +7,4 @@ export { ReturnReviewScreen } from './ReturnReviewScreen';
 export { ReturnsListScreen } from './ReturnsListScreen';
 export { ReturnMediaRecovery } from './ReturnMediaRecovery';
 export { resumeRoute } from './return-routes';
+export { ReturnMediaDetail, ReturnMediaDetailScreen } from './ReturnMediaDetail';

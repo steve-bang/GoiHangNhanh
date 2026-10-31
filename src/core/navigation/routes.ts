@@ -143,6 +143,9 @@ export const ROUTES = {
   returnItems: route('/returns/items-check', 'UI-D05'),
   returnReview: route('/returns/review', 'UI-D06'),
   returnDone: route('/returns/done', 'UI-D07'),
+  // V1-17b: xem ảnh/video của hồ sơ hàng hoàn. Nội dung UI-E04 nên là route con của `evidenceDetail`, nhưng
+  // nằm trong luồng hàng hoàn ngoài nhóm tab (`tabBar: false`): ngoại lệ có tên trong routes.test.ts.
+  returnMediaDetail: subRoute('/returns/[returnId]/media/[mediaId]', 'evidenceDetail', 'UI-E04'),
   // Nhóm E - tab Đơn hàng
   orders: route('/orders', 'UI-E01', true),
   orderDetail: route('/orders/[orderId]', 'UI-E02', true),
@@ -161,6 +164,13 @@ export const ROUTES = {
   disputeSelectEvidence: route('/disputes/select-evidence', 'UI-G03'),
   disputeExport: route('/disputes/export', 'UI-G04'),
   disputeDetail: route('/disputes/[disputeId]', 'UI-G05'),
+  // V1-17b: xem một tệp của hồ sơ tranh chấp (đóng gói hoặc hàng hoàn), route con UI-E04 ngoài nhóm tab
+  // (cùng ngoại lệ như `returnMediaDetail`).
+  disputeEvidenceDetail: subRoute(
+    '/disputes/[disputeId]/evidence/[evidenceId]',
+    'evidenceDetail',
+    'UI-E04',
+  ),
   // Nhóm H, I - mở từ menu tài khoản
   plan: route('/account/plan', 'UI-H01', true),
   // PER-08: chi tiết gói và lịch sử thanh toán, route con của UI-H01 (Q-21b, không mã UI mới).

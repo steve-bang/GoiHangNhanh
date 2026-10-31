@@ -188,6 +188,21 @@ function SelectBody({
                     )}
                   </Text>
                 ) : null}
+                {/* V1-17b: xem lại tệp (chỉ đọc), tách khỏi ô chọn để không chọn nhầm. */}
+                <View style={{ alignSelf: 'flex-start' }}>
+                  <Button
+                    testID={`dispute-file-open-${file.id}`}
+                    label={t(`disputes:select.open.${file.kind}`)}
+                    variant="secondary"
+                    size="slim"
+                    onPress={() =>
+                      navigation.push(ROUTES.disputeEvidenceDetail, {
+                        disputeId: dispute.id,
+                        evidenceId: file.id,
+                      })
+                    }
+                  />
+                </View>
               </View>
             </Card>
           );

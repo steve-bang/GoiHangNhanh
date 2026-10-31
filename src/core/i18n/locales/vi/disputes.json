@@ -80,7 +80,11 @@
     "add": "Thêm {{count}} bằng chứng",
     "addNone": "Chọn bằng chứng để thêm",
     "done": "Xong",
-    "closedNotice": "Hồ sơ đã đóng nên không thêm bằng chứng được nữa."
+    "closedNotice": "Hồ sơ đã đóng nên không thêm bằng chứng được nữa.",
+    "open": {
+      "video": "Xem video",
+      "photo": "Xem ảnh"
+    }
   },
   "export": {
     "intro": "Bản tóm tắt dưới đây nêu đúng những gì đang có trong hồ sơ. Đây chưa phải kết luận về nguyên nhân hay bên chịu trách nhiệm.",

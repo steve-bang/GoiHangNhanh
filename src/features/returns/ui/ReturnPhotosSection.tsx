@@ -6,6 +6,7 @@ import type { TFunction } from 'i18next';
 import type { ErrorCode } from '@/core/errors/codes';
 import type { ReturnCaseId } from '@/core/ids';
 import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
+import { ROUTES } from '@/core/navigation';
 import { foreignUploadNote, mayHaveReachedServer, toDisplayStatus } from '@/features/evidence';
 import { formatDeviceDateTime, useCurrentUid } from '@/features/orders';
 import {
@@ -15,6 +16,7 @@ import {
   requestLocationPermission,
   resolveRecordingUri,
   usePhotoPermission,
+  useAppNavigation,
   type CameraPhotoHandle,
 } from '@/platform';
 import {
@@ -85,6 +87,7 @@ export function ReturnPhotosSection({
   const removePhoto = useDeleteReturnPhoto();
   const toast = useToast();
   const permission = usePhotoPermission();
+  const navigation = useAppNavigation();
   const handleRef = useRef<CameraPhotoHandle | null>(null);
   const [open, setOpen] = useState(false);
   const [wantsCamera, setWantsCamera] = useState(false);
@@ -209,6 +212,10 @@ export function ReturnPhotosSection({
                 item={item}
                 returnCase={returnCase}
                 busy={busy}
+                // V1-17b: xem lại ảnh ĐÃ LƯU (chỉ đọc). Không mở khi camera đang chụp (`busy`).
+                onOpen={() =>
+                  navigation.push(ROUTES.returnMediaDetail, { returnId, mediaId: item.id })
+                }
                 // Ảnh đã từng được đưa cho máy chủ thì không xóa được (Q-28): ẩn nút thay vì để bấm rồi lỗi.
                 {...(locked || busy || deleting || mayHaveReachedServer(item)
                   ? {}
@@ -395,11 +402,13 @@ function PhotoRow({
   item,
   returnCase,
   busy,
+  onOpen,
   onDelete,
 }: {
   item: ReturnMedia;
   returnCase: ReturnPhotosSectionProps['returnCase'];
   busy: boolean;
+  onOpen: () => void;
   onDelete?: () => void;
 }) {
   const { t } = useTranslation();
@@ -474,16 +483,28 @@ function PhotoRow({
             {t('returns:photos.failedItem')}
           </Text>
         ) : null}
-        {onDelete ? (
-          <View style={{ alignSelf: 'flex-start' }}>
-            <Button
-              testID={`return-photo-delete-${item.id}`}
-              label={t('returns:photos.delete')}
-              variant="destructive"
-              outlined
-              size="slim"
-              onPress={onDelete}
-            />
+        {hasFile || onDelete ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.xs }}>
+            {hasFile ? (
+              <Button
+                testID={`return-photo-open-${item.id}`}
+                label={t('returns:photos.open')}
+                variant="secondary"
+                size="slim"
+                disabled={busy}
+                onPress={onOpen}
+              />
+            ) : null}
+            {onDelete ? (
+              <Button
+                testID={`return-photo-delete-${item.id}`}
+                label={t('returns:photos.delete')}
+                variant="destructive"
+                outlined
+                size="slim"
+                onPress={onDelete}
+              />
+            ) : null}
           </View>
         ) : null}
       </View>
