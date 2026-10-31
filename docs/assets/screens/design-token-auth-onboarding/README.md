@@ -13,3 +13,5 @@ Mỗi ảnh: **trái = trước** (`main`, bảng màu jade), **phải = sau** (
 | `05-forgot-password` | UI-A07 Quên mật khẩu |
 | `06-create-shop` | UI-A04 Tạo shop |
 | `07-setup-done` | UI-A06 Hoàn tất thiết lập |
+
+| `08-welcome-hero` | UI-A02 Chào mừng với ảnh minh họa 3D mới, ba cỡ màn (320x568 hết chỗ nên ẩn ảnh, đúng thiết kế) |

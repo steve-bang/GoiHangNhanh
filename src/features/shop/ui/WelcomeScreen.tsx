@@ -13,7 +13,7 @@ import { signInWithProvider } from '../data/auth-gateway';
 import { BrandLogo } from './BrandLogo';
 import { SOCIAL_BUTTON_HEIGHT } from './onboarding-layout';
 import { computeWelcomeLayout } from './welcome-layout';
-import { WelcomeIllustration } from './WelcomeIllustration';
+import { WelcomeHero } from './WelcomeHero';
 
 function SocialButton({ provider }: { provider: SocialProvider }) {
   const { t } = useTranslation();
@@ -141,7 +141,7 @@ function WelcomeContent() {
         </View>
 
         <View style={styles.illustrationSlot}>
-          {illustrationHeight > 0 ? <WelcomeIllustration height={illustrationHeight} /> : null}
+          {illustrationHeight > 0 ? <WelcomeHero height={illustrationHeight} /> : null}
         </View>
 
         <View style={{ gap: space.md }}>
