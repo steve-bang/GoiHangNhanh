@@ -2,6 +2,8 @@
 
 > **Đề xuất kỹ thuật, 2026-10-30.** Viết trên nhánh `claude/v1-release-plan` tách từ `main` `42f6a3c`. Các quyết định ở mục 1.2 do **agent điều phối chốt thay người dùng** theo ủy quyền mà điều phối báo lại; **chưa có xác nhận trực tiếp của người dùng** trong phiên này, nên mọi chỗ ghi "đã chốt" ở đây nghĩa là "điều phối chốt", không phải D-xx. Câu chữ tiếng Việt mới và mã lỗi mới vẫn cần BA/khách rà (mục 6.2).
 >
+> **Trạng thái 2026-10-31 (`main` `12aa19d`):** V1-00…V1-20 cùng V1-07b, V1-17b đã hợp nhất (#40–#65, cột "Trạng thái" ở bảng 3.1); thêm hai PR ngoài kế hoạch: sửa nguồn bán "Khác" (#52, [plans/fix-other-source.md](plans/fix-other-source.md)) và hạn test Jest (#50). Còn **V1-21** chờ cổng thiết bị và checklist con người ([release-checklist.md](release-checklist.md)). Mục 2 mô tả hiện trạng lúc viết (`42f6a3c`), không cập nhật lại; hiện trạng mới ở `CLAUDE.md`.
+>
 > Tài liệu này **thay thế thứ tự thực hiện** ở [release-hardening-plan.md](release-hardening-plan.md) mục 2 (PR1…PR9 vẫn là nguồn phân tích nguyên nhân gốc; bảng đối chiếu ở mục 3.1). Checklist cho con người: [release-checklist.md](release-checklist.md). Thay đổi theo PR ghi ở [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ## Mục lục
@@ -124,31 +126,33 @@ Ngoài tab Cá nhân, `src/api/firebase/firebase-api.ts:68-71`: `signInWithProvi
 
 ### 3.1 Bảng tổng và đối chiếu với release-hardening-plan
 
-| PR | Tên ngắn | Mục tiêu một dòng | Nguồn | Phụ thuộc | Song song được với | Cỡ mã |
-|---|---|---|---|---|---|---|
-| V1-00 | screens-tooling | Script chụp ảnh bản web ngoài repo, không đổi `package.json` | mục 4 | – | tất cả | S |
-| V1-01 | env-guard | `eas.json`/`app.config.js` đúng môi trường, chặn cổng giả ở production, `allowBackup: false` | PR6 (phần EAS), Q-24d | – | tất cả trừ V1-16 (cùng `app.json`) | S |
-| V1-02 | network-retry | NetInfo thật, lỗi mạng không tốn lượt, timeout, không treo hàng đợi | PR2, Q-24f/h | – | V1-00/01/03/04/11/12/19/20 | M |
-| V1-03 | auth-email-reset | Quên mật khẩu bằng email Firebase, ẩn Apple/Google | O-15, D-14 | – | V1-00/01/02/04/11/12/19/20 | S-M |
-| V1-04 | server-audit-rules | Trigger kiểm toán, siết Rules + trần dung lượng mọi bằng chứng, sửa Function | PR6, Q-24c | – | mọi PR không đụng `firebase/` | M |
-| V1-05 | personal-firebase | Đổi mật khẩu, họ tên, danh sách/đổi tên shop thật; ẩn Cài đặt thông báo | Q-20t | V1-03 | V1-06, V1-07, V1-14, V1-17 | M |
-| V1-06 | session-guard | Chặn route khi chưa đăng nhập; không tạo đơn khi chưa biết shop thật | release-hardening mục 6 | – (hợp nhất sau V1-02 nếu dùng `useIsOffline`) | V1-05, V1-07 | S-M |
-| V1-07 | uploader-identity | Không tải hộ tệp do tài khoản khác tạo trên máy | Q-24g | V1-02 (hợp nhất sau) | V1-05, V1-06 | S |
-| V1-08 | sync-center | UI-F01/F02 dữ liệu thật, Thử lại, "Cần xử lý" thử lại được có điều kiện | PR4, Q-24h | V1-02, V1-07 | V1-15, V1-17 | M-L |
-| V1-09 | wifi-only | Công tắc "Chỉ tải khi có Wi‑Fi" (migration v15, bảng `device_settings`) | Q-24c | V1-02, V1-08 | V1-14…V1-20 | S-M |
-| V1-10 | home-real-data | Trang chủ, thẻ Dữ liệu bằng chứng thật, Thông báo rỗng trung thực, cấm dữ liệu minh họa | mục 2.3, Q-24a | V1-08, V1-09 | V1-13…V1-20 | M |
-| V1-11 | recording-hardening | Giữ màn hình sáng, xử lý vào nền khi quay, câu giới hạn Q-24b | PR5, Q-24b | – | làn A | S-M |
-| V1-12 | backup-exclusion-ios | Module Expo cục bộ đặt `isExcludedFromBackup` cho `evidence/` và CSDL | Q-24d | – (bổ sung cho V1-01, khác tệp) | làn A | S (native) |
-| V1-13 | hash-efficiency | Băm nhường luồng JS, không băm lại tệp không đổi (migration v16) | PR7 bước 2 | V1-02, V1-09 | V1-14…V1-20 | S-M |
-| V1-14 | account-delete-server | Function `deleteAccount` + `purgeDeletedShops` + nhật ký | xóa tài khoản | V1-04 | V1-05…V1-13 | M |
-| V1-15 | account-delete-client | Luồng xóa trong app, xóa dữ liệu cục bộ sau khi máy chủ xác nhận | xóa tài khoản | V1-05, V1-14 | V1-16, V1-17 | M |
-| V1-16 | crashlytics | Báo lỗi ứng dụng sau adapter, che PII, có công tắc (lưu ở `device_settings`) | Q-07 | V1-01, V1-09 | V1-14, V1-15, V1-17 | S-M (native) |
-| V1-17 | local-playback | UI-E04 thật: phát video/xem ảnh từ tệp trên máy | Q-24a | – (sau V1-16 về lockfile) | V1-14, V1-15 | M (native) |
-| V1-18 | content-help-legal | Trợ giúp, câu thời hạn lưu, chuỗi quyền, `public-links.ts` một chỗ | Q-24a/b, store | V1-03, V1-11 (i18n) | V1-19, V1-20 | S-M |
-| V1-19 | web-legal-pages | Trang web quyền riêng tư, điều khoản, hỗ trợ, yêu cầu xóa tài khoản | store | – | tất cả | S (web) |
-| V1-20 | store-listing-docs | Mô tả store, Privacy Labels, Data safety, ghi chú duyệt (chỉ tài liệu) | store | – | tất cả | tài liệu |
-| — | **Cổng thiết bị** (con người) | Build `staging` EAS, QA-01…14 iOS + Android | release-checklist G | V1-00…V1-20 | – | – |
-| V1-21 | release-1.0.0 | Phiên bản 1.0.0, bật ghi video ở production, CHANGELOG `[1.0.0]` | – | cổng thiết bị đạt | – | S |
+| PR | Tên ngắn | Mục tiêu một dòng | Nguồn | Phụ thuộc | Song song được với | Cỡ mã | Trạng thái (2026-10-31) |
+|---|---|---|---|---|---|---|---|
+| V1-00 | screens-tooling | Script chụp ảnh bản web ngoài repo, không đổi `package.json` | mục 4 | – | tất cả | S | Đã hợp nhất (#41) |
+| V1-01 | env-guard | `eas.json`/`app.config.js` đúng môi trường, chặn cổng giả ở production, `allowBackup: false` | PR6 (phần EAS), Q-24d | – | tất cả trừ V1-16 (cùng `app.json`) | S | Đã hợp nhất (#43) |
+| V1-02 | network-retry | NetInfo thật, lỗi mạng không tốn lượt, timeout, không treo hàng đợi | PR2, Q-24f/h | – | V1-00/01/03/04/11/12/19/20 | M | Đã hợp nhất (#48) |
+| V1-03 | auth-email-reset | Quên mật khẩu bằng email Firebase, ẩn Apple/Google | O-15, D-14 | – | V1-00/01/02/04/11/12/19/20 | S-M | Đã hợp nhất (#47) |
+| V1-04 | server-audit-rules | Trigger kiểm toán, siết Rules + trần dung lượng mọi bằng chứng, sửa Function | PR6, Q-24c | – | mọi PR không đụng `firebase/` | M | Đã hợp nhất (#44) |
+| V1-05 | personal-firebase | Đổi mật khẩu, họ tên, danh sách/đổi tên shop thật; ẩn Cài đặt thông báo | Q-20t | V1-03 | V1-06, V1-07, V1-14, V1-17 | M | Đã hợp nhất (#51) |
+| V1-06 | session-guard | Chặn route khi chưa đăng nhập; không tạo đơn khi chưa biết shop thật | release-hardening mục 6 | – (hợp nhất sau V1-02 nếu dùng `useIsOffline`) | V1-05, V1-07 | S-M | Đã hợp nhất (#49) |
+| V1-07 | uploader-identity | Không tải hộ tệp do tài khoản khác tạo trên máy | Q-24g | V1-02 (hợp nhất sau) | V1-05, V1-06 | S | Đã hợp nhất (#55) |
+| V1-07b | evidence-declarer-rules | Máy chủ ép người khai báo bằng chứng: đóng gói = người tạo phiên, hàng hoàn = người tạo media (Rules + `createUploadSession`) | review V1-07 | V1-07, V1-04 | – | S | Đã hợp nhất (#64) |
+| V1-08 | sync-center | UI-F01/F02 dữ liệu thật, Thử lại, "Cần xử lý" thử lại được có điều kiện | PR4, Q-24h | V1-02, V1-07 | V1-15, V1-17 | M-L | Đã hợp nhất (#56) |
+| V1-09 | wifi-only | Công tắc "Chỉ tải khi có Wi‑Fi" (migration v15, bảng `device_settings`) | Q-24c | V1-02, V1-08 | V1-14…V1-20 | S-M | Đã hợp nhất (#57) |
+| V1-10 | home-real-data | Trang chủ, thẻ Dữ liệu bằng chứng thật, Thông báo rỗng trung thực, cấm dữ liệu minh họa | mục 2.3, Q-24a | V1-08, V1-09 | V1-13…V1-20 | M | Đã hợp nhất (#58) |
+| V1-11 | recording-hardening | Giữ màn hình sáng, xử lý vào nền khi quay, câu giới hạn Q-24b | PR5, Q-24b | – | làn A | S-M | Đã hợp nhất (#59) |
+| V1-12 | backup-exclusion-ios | Module Expo cục bộ đặt `isExcludedFromBackup` cho `evidence/` và CSDL | Q-24d | – (bổ sung cho V1-01, khác tệp) | làn A | S (native) | Đã hợp nhất (#46) |
+| V1-13 | hash-efficiency | Băm nhường luồng JS, không băm lại tệp không đổi (migration v16) | PR7 bước 2 | V1-02, V1-09 | V1-14…V1-20 | S-M | Đã hợp nhất (#60) |
+| V1-14 | account-delete-server | Function `deleteAccount` + `purgeDeletedShops` + nhật ký | xóa tài khoản | V1-04 | V1-05…V1-13 | M | Đã hợp nhất (#53) |
+| V1-15 | account-delete-client | Luồng xóa trong app, xóa dữ liệu cục bộ sau khi máy chủ xác nhận | xóa tài khoản | V1-05, V1-14 | V1-16, V1-17 | M | Đã hợp nhất (#61) |
+| V1-16 | crashlytics | Báo lỗi ứng dụng sau adapter, che PII, có công tắc (lưu ở `device_settings`) | Q-07 | V1-01, V1-09 | V1-14, V1-15, V1-17 | S-M (native) | Đã hợp nhất (#62) |
+| V1-17 | local-playback | UI-E04 thật: phát video/xem ảnh từ tệp trên máy | Q-24a | – (sau V1-16 về lockfile) | V1-14, V1-15 | M (native) | Đã hợp nhất (#54) |
+| V1-17b | returns-disputes-playback | Xem lại ảnh/video hàng hoàn và tệp của tranh chấp trên máy (route con UI-E04) | review V1-17 | V1-17 | – | S-M | Đã hợp nhất (#65) |
+| V1-18 | content-help-legal | Trợ giúp, câu thời hạn lưu, chuỗi quyền, `public-links.ts` một chỗ | Q-24a/b, store | V1-03, V1-11 (i18n) | V1-19, V1-20 | S-M | Đã hợp nhất (#63) |
+| V1-19 | web-legal-pages | Trang web quyền riêng tư, điều khoản, hỗ trợ, yêu cầu xóa tài khoản | store | – | tất cả | S (web) | Đã hợp nhất (#42) |
+| V1-20 | store-listing-docs | Mô tả store, Privacy Labels, Data safety, ghi chú duyệt (chỉ tài liệu) | store | – | tất cả | tài liệu | Đã hợp nhất (#45) |
+| — | **Cổng thiết bị** (con người) | Build `staging` EAS, QA-01…14 iOS + Android | release-checklist G | V1-00…V1-20 | – | – | Chưa làm (release-checklist G) |
+| V1-21 | release-1.0.0 | Phiên bản 1.0.0, bật ghi video ở production, CHANGELOG `[1.0.0]` | – | cổng thiết bị đạt | – | S | Chờ cổng thiết bị |
 
 PR8 (chia đoạn video) và PR9 (kéo xuống) của release-hardening-plan **không làm ở v1** (Q-24a A, Q-24b A). PR7 bước 1 (đo) và module băm native chỉ làm nếu cổng thiết bị cho thấy V1-13 chưa đủ (mục 7, R-5).
 
