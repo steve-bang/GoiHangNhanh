@@ -13,7 +13,8 @@ import { useDisputeFiles } from './use-dispute-files';
 /**
  * Xem MỘT tệp của hồ sơ tranh chấp (V1-17b), mở từ G03. Route trung tính trong tranh chấp, nội dung
  * UI-E04 chỉ đọc. Hai lớp kiểm (bất biến 1, 8): (1) hồ sơ tranh chấp phải của shop hiện tại và tệp phải
- * nằm trong tập tệp của hồ sơ (cùng nguồn với G03: tệp của đơn gắn với hồ sơ + ảnh/video của hồ sơ hoàn);
+ * nằm trong tập tệp CÓ THỂ CHỌN của hồ sơ (cùng nguồn với G03: tệp của đơn gắn với hồ sơ + ảnh/video của
+ * hồ sơ hoàn), không chỉ tệp đã chọn, để xem trước rồi mới chọn;
  * (2) màn con kiểm lại tệp thuộc đơn / hồ sơ hoàn và shop. Lệch ở đâu cũng là "Không tìm thấy bằng chứng
  * này.", không lộ thông tin của tệp.
  */
