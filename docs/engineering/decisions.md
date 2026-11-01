@@ -1154,9 +1154,13 @@ Kế hoạch: `docs/engineering/plans/v1-29-server-playback.md`. Yêu cầu do n
 | 4 | Đường dẫn Storage do máy chủ dựng từ shopId + evidenceId; ghi `auditEvents` `evidence.read_url_issued` {actorUid, evidenceId, ownerKind}; URL và đường dẫn không vào kiểm toán hay log | Bất biến 7, 8 |
 | 5 | `localPlaybackOf` trả `local`/`cloud`/`capturing`/`missing`. Ưu tiên tệp trên máy (không gọi máy chủ); mất mà máy chủ đã xác nhận thì `cloud`; tệp trên máy phát lỗi mà máy chủ đã xác nhận thì chuyển sang `cloud` | Nhanh, đỡ tốn dữ liệu; không còn báo "không xem được" khi máy chủ còn bản |
 | 6 | Xem từ máy chủ KHÔNG tải ngược về máy, không tạo lại tệp local, không đổi luồng quay/lưu/tải lên | Bất biến 4 |
-| 7 | Player đặt `useCaching: false` cả với URL https; ảnh từ máy chủ dùng `cache: 'reload'` (iOS) | Bằng chứng nhạy cảm. Chưa chứng minh được Android không giữ đệm HTTP ảnh: ghi ở G-14 |
+| 7 | Player đặt `useCaching: false` cả với URL https; ảnh từ máy chủ đặt `cache: 'reload'`, nhưng thuộc tính này **chỉ có tác dụng trên iOS** | Bằng chứng nhạy cảm. Android chưa bảo đảm không đệm HTTP ảnh (chưa có biện pháp riêng): kiểm ở G-14 |
 | 8 | Phát lỗi/URL hết hạn: tự xin URL mới đúng một lần (phát lại từ đầu, chưa giữ vị trí tua); lỗi tiếp thì hiện lỗi kèm Thử lại. Offline: báo "Không có mạng" kèm Thử lại, không gọi | Câu chữ theo `docs/09` mục 5.1 |
 | 9 | Gọi qua `RemoteDocuments.callFunction` (như `createUploadSession`), không thêm vào `ApiClient`; cổng giả/chưa kết nối: báo không xem được | Giữ ranh giới lớp |
 | 10 | Ảnh hàng hoàn: nút "Xem" hiện cả khi máy chủ đã xác nhận; thumbnail khi mất tệp vẫn là chỗ trống (không gọi URL cho từng ảnh) | Tránh tốn dữ liệu và số lần cấp URL |
+| 11 | Mỗi lần cấp URL ghi một `auditEvents` riêng (`.add()`, id không tất định); chủ ý | Mỗi lần xem là một sự kiện "đã xem" riêng (bất biến 7). Chưa chốt id tất định |
+| 12 | `uploaded` = máy chủ đã nhận nhưng chưa chắc đã băm xong, nên có thể xem bản chưa `verified`. UI hiện nhãn trạng thái thật; câu chữ BA không được gọi là "đã xác minh" | Bất biến 3, 11 |
+| 13 | Mọi thành viên active xem được mọi bằng chứng của shop (người dùng xác nhận). Siết quyền khi có đa thành viên: ghi ở O-07 | Khung quyền tạm; O-07 chưa chốt |
+| 14 | Tự xin URL lại đúng một lần cho MỖI lần lỗi liên tiếp; bộ đếm đặt lại khi URL đã sống >= 30 giây rồi mới lỗi (hết hạn), nên màn mở >30 phút vẫn tự gia hạn các lần sau; URL mới lỗi trong 30 giây thì hiện lỗi + Thử lại | URL 15 phút; không vòng lặp vô hạn. Chọn mốc thời gian thay vì tín hiệu "đã phát" vì `VideoPlayer`/`Image` chưa có sự kiện đó, khỏi đổi adapter |
 
-**Chuỗi mới chờ BA duyệt (không mã lỗi mới):** `evidence:detail.media.cloudLabel`, `cloudLoading`, `cloudNote`, `cloudError.{offline,network,unavailable,playback}`.
+**Chuỗi mới chờ BA duyệt (không mã lỗi mới):** `evidence:detail.media.cloudLabel`, `cloudLoading`, `cloudNote`, `cloudError.{offline,network,unavailable,playback}`. Đã bỏ khóa `detail.media.missingMessage.server` ("Xem từ máy chủ."): nhánh không đạt tới được vì máy chủ đã xác nhận thì nguồn là `cloud`.

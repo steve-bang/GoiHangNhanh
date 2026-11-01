@@ -64,7 +64,7 @@ Tài liệu nghiệp vụ (BRD/PRD) cho ứng dụng di động quản lý bằn
 | O-04 | Được hoàn tất phiên khi chưa quay? Quy tắc chi tiết cho đơn nhiều kiện? (Việc nhập sản phẩm/số lượng không còn bắt buộc — D-10) | — |
 | O-05 | Chuẩn bằng chứng: thời lượng tối thiểu, điều kiện "đầy đủ", ngưỡng cảnh báo video ngắn | — |
 | O-06 | Thời hạn lưu từng gói, mốc cảnh báo, mốc bắt đầu tính hạn (lúc quay hay lúc tải lên thành công), thời gian giữ khi tranh chấp | Phải ghi rõ trong điều khoản dịch vụ |
-| O-07 | Ai được xem, tải, xuất, sửa liên kết, yêu cầu xóa | Khung vai trò ở [07](07-roles-permissions-security.md) |
+| O-07 | Ai được xem, tải, xuất, sửa liên kết, yêu cầu xóa | Khung vai trò ở [07](07-roles-permissions-security.md). Hiện mọi thành viên active xem được mọi bằng chứng của shop qua URL đọc (`getEvidenceReadUrl`, V1-29); siết khi có đa thành viên |
 | O-08 | Chuẩn xuất hồ sơ: cấu trúc thư mục, danh mục, metadata, cách thể hiện tệp thiếu/lỗi | — |
 | O-09 | Video có tiếng hay không khi quyền micro bị từ chối | Là chính sách cấu hình theo shop, không phải hành vi ngẫu nhiên |
 | O-10 | Công nghệ website marketing | Trước đây đề xuất Next.js; chưa chốt lại sau D-03 |

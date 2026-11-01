@@ -311,6 +311,56 @@ describe('UI-E04 Chi tiết bằng chứng (xem lại trên máy)', () => {
     await waitFor(() => expect(get).toHaveBeenCalledTimes(3));
   });
 
+  it('hết hạn nhiều lần khi màn mở lâu: mỗi lần hết hạn đều tự xin lại, không báo lỗi', async () => {
+    const { store, d, file } = await seed();
+    const { api, get } = readUrlApi(
+      'https://signed.example/1',
+      'https://signed.example/2',
+      'https://signed.example/3',
+    );
+    await open(
+      store,
+      [file('verified')],
+      { orderId: d.order.id, evidenceId: 'ev-1' },
+      undefined,
+      api,
+    );
+    await screen.findByTestId('evidence-video-player');
+    const realNow = Date.now();
+    const now = jest.spyOn(Date, 'now');
+    try {
+      now.mockReturnValue(realNow + 16 * 60_000);
+      await act(async () => mockVideoPlayer.onError?.());
+      await waitFor(() => expect(mockVideoPlayer.uri).toBe('https://signed.example/2'));
+      now.mockReturnValue(realNow + 32 * 60_000);
+      await act(async () => mockVideoPlayer.onError?.());
+      await waitFor(() => expect(mockVideoPlayer.uri).toBe('https://signed.example/3'));
+    } finally {
+      now.mockRestore();
+    }
+    expect(get).toHaveBeenCalledTimes(3);
+    expect(screen.queryByTestId('evidence-media-cloud-error')).toBeNull();
+  });
+
+  it('xin lại mà URL mới vẫn lỗi ngay: báo lỗi kèm Thử lại, số lần gọi không tăng thêm', async () => {
+    const { store, d, file } = await seed();
+    const { api, get } = readUrlApi('https://signed.example/1', 'https://signed.example/2');
+    await open(
+      store,
+      [file('verified')],
+      { orderId: d.order.id, evidenceId: 'ev-1' },
+      undefined,
+      api,
+    );
+    await screen.findByTestId('evidence-video-player');
+    await act(async () => mockVideoPlayer.onError?.());
+    await waitFor(() => expect(mockVideoPlayer.uri).toBe('https://signed.example/2'));
+    await act(async () => mockVideoPlayer.onError?.());
+    expect(await screen.findByTestId('evidence-media-cloud-error')).toBeOnTheScreen();
+    expect(screen.getByText('Thử lại')).toBeOnTheScreen();
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+
   it('offline: báo lỗi kèm Thử lại, không gọi máy chủ; có mạng lại thì Thử lại phát được', async () => {
     const { store, d, file } = await seed();
     const { api, get } = readUrlApi('https://signed.example/1');

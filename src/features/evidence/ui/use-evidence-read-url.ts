@@ -17,10 +17,15 @@ export type EvidenceReadUrlState =
  *
  * - Chỉ gọi khi `enabled`; tệp còn trên máy thì không bao giờ gọi (ưu tiên máy, đỡ tốn dữ liệu).
  * - URL chỉ nằm trong state: không lưu SQLite/đĩa, không log.
- * - `reportPlayError()`: URL hết hạn hoặc phát lỗi -> tự xin URL mới ĐÚNG MỘT lần; lần sau lỗi nữa thì
- *   hiện lỗi kèm nút Thử lại (`retry()` đặt lại bộ đếm).
+ * - `reportPlayError()`: URL hết hạn hoặc phát lỗi -> tự xin URL mới ĐÚNG MỘT lần cho mỗi lần lỗi liên tiếp;
+ *   URL vừa xin lại mà lỗi ngay (trong `HEALTHY_AFTER_MS`) thì hiện lỗi kèm nút Thử lại (`retry()` đặt lại
+ *   bộ đếm). URL đã dùng được từ `HEALTHY_AFTER_MS` trở lên rồi mới lỗi (hết hạn 15 phút) tính là lần lỗi mới,
+ *   nên màn mở rất lâu vẫn tự gia hạn các lần hết hạn sau, mà không vòng lặp vô hạn.
  * - Mất mạng: báo `offline` ngay, không gọi (nút Thử lại gọi lại khi có mạng).
  */
+/** URL sống ít nhất chừng này rồi mới lỗi = đã dùng được (hết hạn), không phải URL hỏng ngay từ đầu. */
+const HEALTHY_AFTER_MS = 30_000;
+
 export function useEvidenceReadUrl(
   shopId: ShopId,
   evidenceId: EvidenceId,
@@ -34,6 +39,7 @@ export function useEvidenceReadUrl(
   const [state, setState] = useState<EvidenceReadUrlState>({ kind: 'idle' });
   const generation = useRef(0);
   const autoRenewed = useRef(false);
+  const readyAt = useRef(0);
 
   const load = useCallback(async () => {
     generation.current += 1;
@@ -49,7 +55,10 @@ export function useEvidenceReadUrl(
     setState({ kind: 'loading' });
     try {
       const { url } = await api.get(shopId, evidenceId);
-      if (mine === generation.current) setState({ kind: 'ready', url });
+      if (mine === generation.current) {
+        readyAt.current = Date.now();
+        setState({ kind: 'ready', url });
+      }
     } catch (error) {
       if (mine !== generation.current) return;
       const reason =
@@ -63,6 +72,9 @@ export function useEvidenceReadUrl(
   useEffect(() => {
     if (!enabled) {
       generation.current += 1;
+      // Bật lại sau này không được hiện URL cũ dù chỉ một lượt render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- xóa URL khi rời trạng thái xem từ máy chủ
+      setState({ kind: 'idle' });
       return;
     }
     autoRenewed.current = false;
@@ -79,6 +91,9 @@ export function useEvidenceReadUrl(
   }, [load]);
 
   const reportPlayError = useCallback(() => {
+    if (autoRenewed.current && Date.now() - readyAt.current >= HEALTHY_AFTER_MS) {
+      autoRenewed.current = false;
+    }
     if (autoRenewed.current) {
       generation.current += 1;
       setState({ kind: 'error', reason: 'playback' });

@@ -72,7 +72,6 @@
         "photo": "Ảnh không còn trên máy này."
       },
       "missingMessage": {
-        "server": "Xem từ máy chủ.",
         "lost": "Tệp không còn trên máy này và máy chủ chưa xác nhận có bản.",
         "mismatch": "Bản trên máy chủ không khớp với tệp gốc, và tệp gốc trên máy đã mất."
       },

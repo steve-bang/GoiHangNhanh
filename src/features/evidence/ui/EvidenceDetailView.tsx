@@ -117,9 +117,7 @@ export function EvidenceDetailView({
         shopId={shopId}
         serverHas={serverHas}
         playback={playback}
-        missingReason={
-          serverHas ? 'server' : state === FILE_STATES.HASH_MISMATCH ? 'mismatch' : 'lost'
-        }
+        missingReason={state === FILE_STATES.HASH_MISMATCH ? 'mismatch' : 'lost'}
       />
       {lost ? null : (
         <Card compact testID="evidence-detail-status">
@@ -213,10 +211,10 @@ function EvidenceMedia({
   serverHas: boolean;
   playback: LocalPlayback;
   /**
-   * Câu khi không xem được: `server` = máy chủ có bản nhưng không lấy được (dự phòng); `mismatch` = máy chủ
-   * có bản nhưng không khớp mã băm; `lost` = máy chủ chưa có bản.
+   * Câu khi không xem được: `mismatch` = máy chủ có bản nhưng không khớp mã băm; `lost` = máy chủ chưa có
+   * bản. (Máy chủ đã xác nhận thì nguồn là `cloud`, không bao giờ tới nhánh `missing`.)
    */
-  missingReason: 'server' | 'mismatch' | 'lost';
+  missingReason: 'mismatch' | 'lost';
 }) {
   const { t } = useTranslation();
   const [localFailed, setLocalFailed] = useState(false);
@@ -333,7 +331,8 @@ function MediaContent({
     <Image
       key={uri}
       testID="evidence-photo"
-      // Ảnh từ máy chủ (iOS `cache: 'reload'`): nhạy cảm, không dùng lại bản trong bộ nhớ đệm HTTP.
+      // Ảnh từ máy chủ: `cache: 'reload'` chỉ có tác dụng trên iOS (nhạy cảm, không dùng lại đệm HTTP).
+      // Android chưa bảo đảm không đệm: kiểm ở G-14.
       source={uri.startsWith('https://') ? { uri, cache: 'reload' } : { uri }}
       style={styles.fill}
       resizeMode="contain"

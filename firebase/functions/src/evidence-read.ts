@@ -71,6 +71,7 @@ export async function getEvidenceReadUrlForUser(
   }
   const expiresAtMs = nowMs + READ_URL_TTL_MS;
   const url = await signer.signRead(`shops/${shopId}/evidence/${evidenceId}/original`, expiresAtMs);
+  // Chủ ý `.add()` (id ngẫu nhiên): mỗi lần cấp URL là một sự kiện "đã xem" riêng, không gộp (bất biến 7).
   await db.collection(`shops/${shopId}/auditEvents`).add({
     type: 'evidence.read_url_issued',
     actorUid: uid,
