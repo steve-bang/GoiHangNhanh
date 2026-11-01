@@ -1,6 +1,11 @@
 import { createRef, type MutableRefObject } from 'react';
 import { render } from '@testing-library/react-native';
 
+import {
+  isRecordingActive,
+  resetRecordingActivityForTest,
+} from '@/core/recording/recording-activity';
+
 import { CameraRecorder, type CameraRecorderHandle } from './camera-recorder';
 
 const mockCameraProps = jest.fn();
@@ -92,5 +97,51 @@ describe('CameraRecorder: thông số quay (V1-22)', () => {
       ok: false,
       reason: 'RECORDER_FAILED',
     });
+  });
+});
+
+describe('CameraRecorder: tín hiệu đang quay (V1-28)', () => {
+  beforeEach(() => {
+    mockRecordAsync.mockReset();
+    resetRecordingActivityForTest();
+  });
+  afterEach(() => resetRecordingActivityForTest());
+
+  it('bật từ lúc ghi, tắt khi quay xong', async () => {
+    const handle = await mount(PROFILE);
+    let finish: (v: { uri: string }) => void = () => undefined;
+    mockRecordAsync.mockReturnValueOnce(new Promise((r) => (finish = r)));
+    const recording = handle().record();
+    expect(isRecordingActive()).toBe(true);
+    finish({ uri: 'file:///a.mp4' });
+    expect((await recording.done).ok).toBe(true);
+    expect(isRecordingActive()).toBe(false);
+  });
+
+  it('recordAsync bị từ chối: cờ tắt', async () => {
+    const handle = await mount(PROFILE);
+    mockRecordAsync.mockRejectedValueOnce(new Error('ERROR_INSUFFICIENT_STORAGE'));
+    await handle().record().done;
+    expect(isRecordingActive()).toBe(false);
+  });
+
+  it('recordAsync ném đồng bộ: cờ tắt và lỗi vẫn tới bên gọi', async () => {
+    const handle = await mount(PROFILE);
+    mockRecordAsync.mockImplementationOnce(() => {
+      throw new Error('sync');
+    });
+    expect(() => handle().record()).toThrow('sync');
+    expect(isRecordingActive()).toBe(false);
+  });
+
+  it('camera bị gỡ khi đang ghi: cờ tắt', async () => {
+    const handleRef =
+      createRef<CameraRecorderHandle | null>() as MutableRefObject<CameraRecorderHandle | null>;
+    const view = await render(<CameraRecorder handleRef={handleRef} />);
+    mockRecordAsync.mockReturnValueOnce(new Promise(() => undefined));
+    handleRef.current?.record();
+    expect(isRecordingActive()).toBe(true);
+    await view.unmount();
+    expect(isRecordingActive()).toBe(false);
   });
 });

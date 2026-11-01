@@ -2,6 +2,8 @@ import { useEffect, useRef, type MutableRefObject } from 'react';
 import { CameraView } from 'expo-camera';
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
+import { beginRecordingActivity } from '@/core/recording/recording-activity';
+
 export type RecorderResult =
   | { readonly ok: true; readonly tempUri: string }
   | { readonly ok: false; readonly reason: 'RECORDER_FAILED' };
@@ -62,25 +64,44 @@ export function CameraRecorder({
   const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
+    // Phiếu "đang quay" (V1-28) của các lần ghi chưa kết thúc; gỡ camera thì trả hết (không kẹt cờ).
+    const open = new Set<() => void>();
     handleRef.current = {
       record(options) {
         const camera = cameraRef.current;
         if (!camera) throw new Error('camera_not_ready');
+        // Tín hiệu cho hàng đợi tải lên nhường máy (V1-28): bật từ lúc bắt đầu ghi, tắt ở MỌI đường kết
+        // thúc (`done` luôn settle, `recordAsync` ném đồng bộ, camera bị gỡ; ngoài ra có lưới thời gian).
+        const end = beginRecordingActivity();
+        open.add(end);
         const recordOptions = {
           ...(options?.maxDurationSec !== undefined ? { maxDuration: options.maxDurationSec } : {}),
           // maxFileSize: lưới cứng chống tệp > 2 GB, có trên cả hai nền tảng (camera tự dừng và trả tệp
           // hợp lệ khi chạm trần). `codec` bắt buộc ở iOS để `videoBitrate` có tác dụng.
           ...(profile ? { maxFileSize: profile.maxFileBytes, codec: profile.codec } : {}),
         };
-        const done = camera
-          .recordAsync(Object.keys(recordOptions).length > 0 ? recordOptions : undefined)
+        let started: ReturnType<CameraView['recordAsync']>;
+        try {
+          started = camera.recordAsync(
+            Object.keys(recordOptions).length > 0 ? recordOptions : undefined,
+          );
+        } catch (error) {
+          open.delete(end);
+          end();
+          throw error;
+        }
+        const done = started
           .then(
             (video): RecorderResult =>
               video?.uri
                 ? { ok: true, tempUri: video.uri }
                 : { ok: false, reason: 'RECORDER_FAILED' },
             (): RecorderResult => ({ ok: false, reason: 'RECORDER_FAILED' }),
-          );
+          )
+          .finally(() => {
+            open.delete(end);
+            end();
+          });
         // Giữ chính đối tượng camera đang ghi: khi màn bị gỡ, React tháo `cameraRef` TRƯỚC các cleanup nên
         // `cameraRef.current?.stopRecording()` lúc đó là no-op. Dừng qua tay cầm này không phụ thuộc màn.
         // Nếu view native đã bị hủy, lời gọi có thể không còn tác dụng (cần kiểm chứng trên thiết bị).
@@ -98,6 +119,8 @@ export function CameraRecorder({
     };
     return () => {
       handleRef.current = null;
+      for (const end of [...open]) end();
+      open.clear();
     };
   }, [handleRef, profile]);
 

@@ -66,6 +66,8 @@ function setup(
   let online = options.online ?? true;
   /** "Chỉ tải khi có Wi‑Fi" bật mà mạng không phải Wi‑Fi (V1-09). */
   let waitingWifi = false;
+  /** Máy đang quay video (V1-28). */
+  let recording = false;
   /** Gọi trong lúc băm (mô phỏng mạng đổi giữa lúc băm video dài). */
   let duringHash: (() => void) | null = null;
   const uploads: string[] = [];
@@ -123,6 +125,7 @@ function setup(
     now: () => clock,
     isOnline: () => online,
     isWaitingForWifi: () => waitingWifi,
+    isPaused: () => recording,
     subscribeOffline: (listener) => {
       offlineListeners.add(listener);
       return () => void offlineListeners.delete(listener);
@@ -147,6 +150,7 @@ function setup(
     advance: (ms: number) => void (clock += ms),
     setOnline: (v: boolean) => void (online = v),
     setWaitingWifi: (v: boolean) => void (waitingWifi = v),
+    setRecording: (v: boolean) => void (recording = v),
     onHash: (fn: (() => void) | null) => void (duringHash = fn),
     fetches: () => fetchCount,
     setHash: (h: HashResult) => void (hashResult = h),
@@ -894,6 +898,90 @@ describe('Chỉ tải khi có Wi‑Fi (V1-09)', () => {
     t.setWaitingWifi(true);
     await t.queue.runOnce(SHOP, { networkRestored: true });
     t.setWaitingWifi(false);
+    await t.queue.runOnce(SHOP);
+    expect(await t.state('a')).toBe('uploaded');
+  });
+});
+
+describe('Tạm dừng khi đang quay video (V1-28)', () => {
+  it('đang quay: không đối soát, không băm, không gửi; trạng thái, số lượt, giờ thử lại không đổi', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    await queuedFile(t.files, 'b', 2000);
+    await t.files.applyEvent(
+      SHOP,
+      'b' as EvidenceId,
+      { type: 'UPLOAD_STARTED', origin: 'device' },
+      1,
+    );
+    const before = await Promise.all(['a', 'b'].map((id) => t.files.get(SHOP, id as EvidenceId)));
+    let hashed = 0;
+    t.onHash(() => void (hashed += 1));
+    t.setRecording(true);
+    expect((await t.queue.runOnce(SHOP)).skipped).toBe('recording');
+    expect(t.uploads).toEqual([]);
+    expect(t.fetches()).toBe(0);
+    expect(hashed).toBe(0);
+    const after = await Promise.all(['a', 'b'].map((id) => t.files.get(SHOP, id as EvidenceId)));
+    expect(after).toEqual(before);
+  });
+
+  it('hết quay: lượt sau chạy bình thường', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    t.setRecording(true);
+    await t.queue.runOnce(SHOP);
+    t.setRecording(false);
+    expect((await t.queue.runOnce(SHOP)).received).toBe(1);
+    expect(await t.state('a')).toBe('uploaded');
+  });
+
+  it('bắt đầu quay giữa lúc băm: dừng TRƯỚC khi gửi, tệp giữ queued, không tốn lượt', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    t.onHash(() => t.setRecording(true));
+    await t.queue.runOnce(SHOP);
+    expect(t.uploads).toEqual([]);
+    expect(await t.files.get(SHOP, 'a' as EvidenceId)).toMatchObject({
+      state: 'queued',
+      attemptCount: 0,
+    });
+  });
+
+  it('bắt đầu quay giữa lần gửi: hủy, lỗi mạng KHÔNG tốn lượt, tệp sau không bị gửi, tệp còn nguyên', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    await queuedFile(t.files, 'b', 2000);
+    t.hangNextUpload();
+    const run = t.queue.runOnce(SHOP);
+    await new Promise((r) => setTimeout(r, 0));
+    t.setRecording(true);
+    for (const listener of [...t.offlineListeners]) listener();
+    const summary = await run;
+    expect(summary.waitingNetwork).toBe(1);
+    expect(t.uploads).toEqual(['a']);
+    expect(await t.files.get(SHOP, 'a' as EvidenceId)).toMatchObject({
+      state: 'upload_failed',
+      attemptCount: 0,
+      lastErrorCode: 'NETWORK_LOST',
+      localPath: 'file:///v/a.mp4',
+    });
+    expect(await t.state('b')).toBe('queued');
+    // Quay xong: tệp bị hủy tới hạn ngay (cùng đường "có mạng lại"), không đợi giãn cách.
+    t.setRecording(false);
+    await t.queue.runOnce(SHOP, { networkRestored: true });
+    expect(await t.state('a')).toBe('uploaded');
+    expect(await t.state('b')).toBe('uploaded');
+  });
+
+  it('lượt bị bỏ vì đang quay vẫn nhớ "có mạng lại" cho lượt sau', async () => {
+    const t = setup();
+    await queuedFile(t.files, 'a');
+    t.outcomes.push({ kind: 'network', code: 'NETWORK' });
+    await t.queue.runOnce(SHOP);
+    t.setRecording(true);
+    await t.queue.runOnce(SHOP, { networkRestored: true });
+    t.setRecording(false);
     await t.queue.runOnce(SHOP);
     expect(await t.state('a')).toBe('uploaded');
   });

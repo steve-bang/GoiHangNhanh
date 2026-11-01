@@ -8,6 +8,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Added
 
+- Tạm dừng hàng đợi tải lên và băm nền khi đang quay video (tín hiệu `core/recording/recording-activity`, bật trong `platform/camera-recorder`, tắt ở mọi đường kết thúc + lưới 15 phút); quay xong chạy lại ngay, lần gửi bị hủy không tốn lượt; chưa đo trên thiết bị (V1-28).
 - Số đo xử lý video không PII (`core/diagnostics/media-metrics`, log `media.metrics` qua `platform/media-metrics-log`): byte/phút, thời gian lưu/băm/gửi, MB/giây, số lần băm cho cổng thiết bị G-3/G-4/G-5/G-14; chưa chạy trên thiết bị (V1-27).
 - Kế hoạch tổng phát hành v1.0, checklist phát hành cho con người và nhật ký thay đổi này (tài liệu).
 - Công cụ chụp ảnh màn hình bản web với cổng giả cho PR (`scripts/screens`, không đổi phụ thuộc, không chạy ở CI) và bộ ảnh mốc các màn chính (V1-00, #41).
