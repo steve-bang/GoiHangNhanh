@@ -56,7 +56,7 @@ describe('đăng nhập (Expo Router thật, cổng giả)', () => {
     await fireEvent.changeText(screen.getByTestId('signin-password'), 'sai-mat-khau-1');
     await fireEvent.press(screen.getByTestId('signin-submit'));
     expect(
-      await screen.findByText('Email hoặc mật khẩu chưa chính xác. Bạn kiểm tra lại nhé!'),
+      await screen.findByText('Email hoặc mật khẩu chưa chính xác. Bạn kiểm tra lại nhé.'),
     ).toBeOnTheScreen();
     expect(screen.getByTestId('signin-email').props.value).toBe(DEMO);
     expect(screen.queryByTestId('screen-UI-B01')).toBeNull();
@@ -196,7 +196,7 @@ describe('quên mật khẩu -> nhập mã -> mật khẩu mới -> đăng nhậ
     expect(screen.getByTestId('otp-description')).toHaveTextContent(/kh•••@example\.com/);
     await fireEvent.changeText(screen.getByTestId('otp-input'), '123456');
     expect(
-      await screen.findByText('Mã xác minh chưa chính xác. Bạn kiểm tra lại nhé!'),
+      await screen.findByText('Mã xác minh chưa chính xác. Bạn kiểm tra lại nhé.'),
     ).toBeOnTheScreen();
     expect(screen.queryByTestId('screen-UI-A09')).toBeNull();
   });

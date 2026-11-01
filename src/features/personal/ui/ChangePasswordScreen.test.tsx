@@ -184,7 +184,7 @@ describe('ChangePasswordScreen (route con của UI-I05)', () => {
     await renderChange();
     await fill(FAKE_ACCOUNT_PASSWORD, '12345678', '12345678');
     await submit();
-    expect(await screen.findByText(/Mật khẩu này dễ đoán/)).toBeOnTheScreen();
+    expect(await screen.findByText(/Mật khẩu cần ít nhất 8 ký tự/)).toBeOnTheScreen();
   });
 
   it('AUTH_REQUIRES_RECENT_LOGIN: báo lỗi và có nút Đăng nhập lại về luồng đăng nhập sẵn có', async () => {

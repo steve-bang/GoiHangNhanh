@@ -14,7 +14,11 @@ import {
   type DeviceSettingsStore,
   type OrderStore,
 } from '@/features/orders';
-import type { EvidenceFileStore } from '@/features/evidence';
+import {
+  EvidenceReadUrlProvider,
+  type EvidenceReadUrlApi,
+  type EvidenceFileStore,
+} from '@/features/evidence';
 import {
   DisputeStoreProvider,
   createMemoryDisputeStore,
@@ -53,6 +57,8 @@ export function renderWithProviders(
     /** Kho cài đặt máy (V1-09); mặc định kho bộ nhớ mới cho mỗi lần render. */
     deviceSettingsStore?: DeviceSettingsStore;
     personalGateways?: PersonalGateways;
+    /** Cổng xin URL xem từ máy chủ (mặc định không có = "không xem được"). */
+    readUrlApi?: EvidenceReadUrlApi | null;
     /** Chế độ chặt của cổng phiên (bản Firebase, V1-06). Mặc định theo môi trường test = `false`. */
     requireKnownShop?: boolean;
     /** Phần xóa dữ liệu trên máy (V1-15); mặc định bản giả trong bộ nhớ, không có dấu. */
@@ -85,7 +91,9 @@ export function renderWithProviders(
                         <ReturnStoreProvider store={returnStore}>
                           <DisputeStoreProvider store={disputeStore}>
                             <DeviceSettingsProvider store={deviceSettingsStore}>
-                              {ui}
+                              <EvidenceReadUrlProvider api={options.readUrlApi ?? null}>
+                                {ui}
+                              </EvidenceReadUrlProvider>
                             </DeviceSettingsProvider>
                           </DisputeStoreProvider>
                         </ReturnStoreProvider>

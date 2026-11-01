@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react-native';
 
-import { LocalVideoPlayer } from './video-player';
+import { VideoPlayer } from './video-player';
 
 jest.unmock('@/platform/video-player');
 
@@ -34,9 +34,9 @@ beforeEach(() => {
   mockStatusListener = undefined;
 });
 
-describe('LocalVideoPlayer (adapter expo-video)', () => {
+describe('VideoPlayer (adapter expo-video)', () => {
   it('mở đúng tệp trên máy, không cache, có thanh điều khiển, không hình-trong-hình', async () => {
-    await render(<LocalVideoPlayer uri="file:///docs/evidence/ev-1.mp4" testID="p" />);
+    await render(<VideoPlayer uri="file:///docs/evidence/ev-1.mp4" testID="p" />);
     expect(mockSources.at(-1)).toEqual({
       uri: 'file:///docs/evidence/ev-1.mp4',
       useCaching: false,
@@ -48,9 +48,17 @@ describe('LocalVideoPlayer (adapter expo-video)', () => {
     expect(props.contentFit).toBe('contain');
   });
 
+  it('nhận URL https của máy chủ và vẫn không cache (dữ liệu nhạy cảm)', async () => {
+    await render(<VideoPlayer uri="https://storage.example/ev-1?sig=x" />);
+    expect(mockSources.at(-1)).toEqual({
+      uri: 'https://storage.example/ev-1?sig=x',
+      useCaching: false,
+    });
+  });
+
   it('báo lỗi khi trình phát không mở được tệp; trạng thái khác thì không', async () => {
     const onError = jest.fn();
-    await render(<LocalVideoPlayer uri="file:///x.mp4" onError={onError} />);
+    await render(<VideoPlayer uri="file:///x.mp4" onError={onError} />);
     mockStatusListener?.({ status: 'loading' });
     mockStatusListener?.({ status: 'readyToPlay' });
     expect(onError).not.toHaveBeenCalled();

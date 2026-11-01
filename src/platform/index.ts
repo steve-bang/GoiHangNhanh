@@ -58,7 +58,7 @@ export type { UploadFileResult, UploadSessionRequest } from './resumable-upload'
 export { CameraPhoto, usePhotoPermission } from './camera-photo';
 export type { CameraPhotoHandle, PhotoPermission, PhotoResult } from './camera-photo';
 export { CameraRecorder } from './camera-recorder';
-export { LocalVideoPlayer } from './video-player';
+export { VideoPlayer } from './video-player';
 export { getCrashReporter, reportFatalRenderError, scrubErrorInPlace } from './crash-reporter';
 export type { CrashReporter } from './crash-reporter';
 export type { CameraRecorderHandle, RecorderResult } from './camera-recorder';

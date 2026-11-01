@@ -130,11 +130,11 @@ describe('câu chữ thông báo lỗi AUTH_*, signUp.errors và lỗi các màn
 
   it('lời đăng nhập sai KHÔNG nói rõ cái nào sai; đúng từng chữ theo thiết kế', () => {
     const text = fullText(errors.AUTH_INVALID_CREDENTIALS as Message);
-    expect(text).toBe('Email hoặc mật khẩu chưa chính xác. Bạn kiểm tra lại nhé!');
+    expect(text).toBe('Email hoặc mật khẩu chưa chính xác. Bạn kiểm tra lại nhé.');
   });
 
   it('mã xác minh, quá nhiều lần, phiên hết hạn: đúng từng chữ', () => {
-    expect(errors.AUTH_OTP_INVALID).toBe('Mã xác minh chưa chính xác. Bạn kiểm tra lại nhé!');
+    expect(errors.AUTH_OTP_INVALID).toBe('Mã xác minh chưa chính xác. Bạn kiểm tra lại nhé.');
     expect(fullText(errors.AUTH_OTP_EXPIRED as Message)).toBe(
       'Mã xác minh đã hết hạn. Bạn xin mã mới nhé.',
     );
@@ -157,9 +157,7 @@ describe('câu chữ thông báo lỗi AUTH_*, signUp.errors và lỗi các màn
   });
 
   it('mã cửa hàng (Q-20n): đúng từng chữ với kế hoạch đã duyệt', () => {
-    expect(fullText(msg('SHOP_SAVE_FAILED'))).toBe(
-      'Không thể cập nhật cửa hàng lúc này. Bạn thử lại nhé.',
-    );
+    expect(fullText(msg('SHOP_SAVE_FAILED'))).toBe('Chưa cập nhật được cửa hàng. Bạn thử lại nhé.');
     expect(fullText(msg('SHOP_SWITCH_FAILED'))).toBe('Chưa chuyển được cửa hàng. Bạn thử lại nhé.');
     expect(fullText(msg('SHOP_PERMISSION_DENIED'))).toBe(
       'Bạn chưa có quyền thực hiện thao tác này. Hãy liên hệ chủ cửa hàng.',
@@ -299,7 +297,7 @@ describe('quét toàn bộ chuỗi giao diện', () => {
   });
 
   it('mật khẩu yếu theo D-13: đúng từng chữ, không đòi chữ và số', () => {
-    expect(errors.AUTH_WEAK_PASSWORD).toBe('Mật khẩu này dễ đoán. Hãy dùng ít nhất 8 ký tự.');
+    expect(errors.AUTH_WEAK_PASSWORD).toBe('Mật khẩu cần ít nhất 8 ký tự.');
   });
 });
 

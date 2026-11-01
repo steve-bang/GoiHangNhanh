@@ -31,7 +31,7 @@ describe('EvidenceDataScreen (UI-I01 route con, khung 11)', () => {
     const labels: [string, string][] = [
       ['evidence-total-metric', 'Tổng số bằng chứng: 0'],
       ['evidence-on-device', 'Trên thiết bị: 0'],
-      ['evidence-pending-sync', 'Đang chờ đồng bộ: 0'],
+      ['evidence-pending-sync', 'Đang chờ tải lên: 0'],
       ['evidence-cloud', 'Trên đám mây: 0'],
     ];
     for (const [id, label] of labels) {
@@ -59,7 +59,7 @@ describe('EvidenceDataScreen (UI-I01 route con, khung 11)', () => {
     const labels: [string, string][] = [
       ['evidence-total-metric', 'Tổng số bằng chứng: 9'],
       ['evidence-on-device', 'Trên thiết bị: 8'],
-      ['evidence-pending-sync', 'Đang chờ đồng bộ: 4'],
+      ['evidence-pending-sync', 'Đang chờ tải lên: 4'],
       ['evidence-cloud', 'Trên đám mây: 4'],
     ];
     for (const [id, label] of labels) {
@@ -119,7 +119,7 @@ describe('RetentionDetailScreen (UI-I01 route con, khung 12)', () => {
     expect(screen.getByText('Thời hạn lưu bằng chứng')).toBeOnTheScreen();
     expect(
       within(screen.getByTestId('retention-note')).getByText(
-        'Hiện ứng dụng chưa tự động xóa bằng chứng đã tải lên và chưa áp dụng thời hạn lưu. Nếu có thay đổi, bạn sẽ được báo trước trong ứng dụng.',
+        'Hiện chưa có thời hạn lưu, ứng dụng không tự xóa bằng chứng. Nếu đổi, bạn sẽ được báo trước.',
       ),
     ).toBeOnTheScreen();
     expect(

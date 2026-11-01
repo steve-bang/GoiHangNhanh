@@ -70,8 +70,8 @@
     "success": "Bạn đã đăng xuất thành công.",
     "recordingTitle": "Đang quay video",
     "recordingMessage": "Bạn đang quay video đóng gói. Hãy dừng quay trước khi đăng xuất.",
-    "unsyncedTitle": "Còn bằng chứng chưa đồng bộ",
-    "unsyncedMessage": "Còn {{count}} tệp bằng chứng trên máy chưa được máy chủ xác nhận. Hãy đồng bộ xong rồi đăng xuất.",
+    "unsyncedTitle": "Còn bằng chứng chưa tải lên",
+    "unsyncedMessage": "Còn {{count}} tệp chưa tải lên xong. Chờ tải xong rồi đăng xuất nhé.",
     "openSync": "Xem trung tâm đồng bộ"
   },
   "sessionGate": {
@@ -137,10 +137,10 @@
     "confirm": "Xác nhận",
     "cancel": "Hủy",
     "switched": "Đã chuyển sang {{name}}.",
-    "recordingTitle": "Không thể chuyển cửa hàng",
+    "recordingTitle": "Chưa chuyển được cửa hàng",
     "recordingMessage": "Bạn đang quay video đóng gói. Hãy dừng quay trước khi chuyển.",
-    "unsyncedTitle": "Còn bằng chứng chưa đồng bộ",
-    "unsyncedMessage": "Cửa hàng hiện tại còn {{count}} tệp bằng chứng chưa được máy chủ xác nhận. Các tệp vẫn được giữ trên máy, không bị xóa.",
+    "unsyncedTitle": "Còn bằng chứng chưa tải lên",
+    "unsyncedMessage": "Cửa hàng này còn {{count}} tệp chưa tải lên xong. Tệp vẫn được giữ trên máy.",
     "unsyncedContinue": "Vẫn chuyển cửa hàng",
     "openSync": "Xem trung tâm đồng bộ",
     "suspendedHint": "Cửa hàng đang bị khóa nên chưa chuyển vào được.",
@@ -160,7 +160,7 @@
   "evidenceOverview": {
     "title": "Dữ liệu bằng chứng",
     "onDevice": "Trên thiết bị",
-    "pendingSync": "Đang chờ đồng bộ",
+    "pendingSync": "Đang chờ tải lên",
     "cloud": "Trên đám mây",
     "unknown": "–",
     "openSync": "Xem trung tâm đồng bộ",
@@ -201,7 +201,7 @@
     "loadError": "Không đọc được số liệu trên máy.",
     "scope": "Chỉ tính tệp của cửa hàng này trên máy này.",
     "explainOnDevice": "Trên thiết bị: tệp còn trên máy này. Đây chưa phải bản sao lưu.",
-    "explainPending": "Đang chờ đồng bộ: tệp chưa được máy chủ xác nhận đã nhận.",
+    "explainPending": "Đang chờ tải lên: tệp chưa được máy chủ xác nhận đã nhận.",
     "explainCloud": "Trên đám mây: chỉ tính tệp máy chủ đã xác nhận và kiểm tra khớp.",
     "retentionRow": "Thời hạn lưu",
     "openSync": "Xem trung tâm đồng bộ"
@@ -209,7 +209,7 @@
   "retentionDetail": {
     "planEyebrow": "Thời hạn lưu bằng chứng",
     "planName": "Chưa áp dụng",
-    "note": "Hiện ứng dụng chưa tự động xóa bằng chứng đã tải lên và chưa áp dụng thời hạn lưu. Nếu có thay đổi, bạn sẽ được báo trước trong ứng dụng.",
+    "note": "Hiện chưa có thời hạn lưu, ứng dụng không tự xóa bằng chứng. Nếu đổi, bạn sẽ được báo trước.",
     "deviceNote": "Tệp trên máy này sẽ mất nếu bạn gỡ ứng dụng."
   },
   "notificationSettings": {
@@ -223,7 +223,7 @@
       },
       "syncCompleted": {
         "title": "Đồng bộ dữ liệu",
-        "description": "Nhận thông báo khi đồng bộ hoàn tất."
+        "description": "Nhận thông báo khi tải lên xong."
       },
       "storageNearlyFull": {
         "title": "Dung lượng sắp đầy",
@@ -340,7 +340,7 @@
         "keywords": "quyền camera bị chặn không mở được camera cài đặt"
       },
       "unsynced": {
-        "title": "Video chưa đồng bộ",
+        "title": "Video chưa tải lên",
         "summary": "Nhãn trạng thái cho biết video đang ở đâu. Video chỉ có bản trên máy chủ khi nhãn là Đã tải lên hoặc Đã xác minh.",
         "step": {
           "1": "Đã lưu trên máy: video nằm trong điện thoại, chưa có bản trên máy chủ.",
@@ -407,8 +407,8 @@
         "keywords": "quay video đóng gói camera ghi hình bắt đầu quay"
       },
       "unsynced": {
-        "title": "Video chưa đồng bộ",
-        "summary": "Bản này chưa ghi video nên chưa có video nào để đồng bộ. Khi có video, nhãn trạng thái cho biết video đang ở đâu.",
+        "title": "Video chưa tải lên",
+        "summary": "Bản này chưa ghi video nên chưa có video nào để tải lên. Khi có video, nhãn trạng thái cho biết video đang ở đâu.",
         "step": {
           "1": "Đã lưu trên máy: video nằm trong điện thoại, chưa có bản trên máy chủ.",
           "2": "Chờ tải lên và Đang tải lên: chưa phải bản sao lưu cho tới khi máy chủ xác nhận.",

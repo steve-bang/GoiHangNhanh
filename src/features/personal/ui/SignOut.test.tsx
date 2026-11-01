@@ -200,12 +200,12 @@ describe('Đăng xuất an toàn (PER-21)', () => {
     await openDialog();
     await confirmSignOut();
     await waitFor(() => expect(screen.getByTestId('sign-out-unsynced')).toBeOnTheScreen());
-    expect(screen.getByTestId('sign-out-unsynced')).toHaveTextContent(/Còn 3 tệp bằng chứng/);
+    expect(screen.getByTestId('sign-out-unsynced')).toHaveTextContent(/Còn 3 tệp chưa tải lên/);
     expect(gateways.account.signOutCalls).toBe(0);
     expect(mockNavigation.reset).not.toHaveBeenCalled();
 
     // Khung 4c: nút chính "Xem trung tâm đồng bộ", nút phụ "Ở lại ứng dụng"; KHÔNG có "Đăng xuất" (Q-20l).
-    expect(screen.getByText('Còn bằng chứng chưa đồng bộ')).toBeOnTheScreen();
+    expect(screen.getByText('Còn bằng chứng chưa tải lên')).toBeOnTheScreen();
     expect(
       screen.getAllByRole('button', { name: 'Đăng xuất' }).map((b) => b.props.testID as string),
     ).toEqual(['sign-out']);
@@ -256,7 +256,7 @@ describe('Đăng xuất an toàn (PER-21)', () => {
     await openDialog();
     await confirmSignOut();
     await waitFor(() => expect(screen.getByTestId('sign-out-unsynced')).toBeOnTheScreen());
-    expect(screen.getByTestId('sign-out-unsynced')).toHaveTextContent(/Còn 2 tệp bằng chứng/);
+    expect(screen.getByTestId('sign-out-unsynced')).toHaveTextContent(/Còn 2 tệp chưa tải lên/);
     expect(countUnsyncedByOwner).toHaveBeenCalledWith('device', 'user-a');
     expect(countUnsyncedOnDevice).not.toHaveBeenCalled();
   });

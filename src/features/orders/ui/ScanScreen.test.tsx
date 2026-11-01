@@ -188,9 +188,7 @@ describe('UI-B02 Quét mã đơn hàng', () => {
     await fireEvent.press(screen.getByTestId('scan-manual-open'));
     await fireEvent.changeText(screen.getByTestId('scan-manual-code'), 'X'.repeat(65));
     await fireEvent.press(screen.getByTestId('scan-manual-lookup'));
-    expect(
-      screen.getByText('Mã nhập chưa hợp lệ hoặc chỉ chứa ký tự không được hỗ trợ.'),
-    ).toBeOnTheScreen();
+    expect(screen.getByText('Mã chưa đúng. Bạn kiểm tra lại nhé.')).toBeOnTheScreen();
     expect(spy).not.toHaveBeenCalled();
   });
 

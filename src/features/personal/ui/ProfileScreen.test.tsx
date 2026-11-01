@@ -169,7 +169,7 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
       ),
     );
     expect(screen.getByTestId('metric-pending-sync').props.accessibilityLabel).toBe(
-      'Đang chờ đồng bộ: 0',
+      'Đang chờ tải lên: 0',
     );
     expect(screen.getByTestId('metric-cloud').props.accessibilityLabel).toBe('Trên đám mây: 0');
     expect(block).not.toHaveTextContent(/Chưa có số liệu/);

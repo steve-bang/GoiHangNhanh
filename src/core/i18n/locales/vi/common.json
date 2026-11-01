@@ -15,7 +15,7 @@
   },
   "loading": "Đang tải",
   "offline": {
-    "banner": "Đang ngoại tuyến. Bằng chứng sẽ được đồng bộ khi có mạng."
+    "banner": "Đang không có mạng. Bằng chứng sẽ tự tải lên khi có mạng."
   },
   "placeholder": {
     "title": "Tính năng sắp có",
@@ -49,7 +49,7 @@
     "cameraPlaceholder": "Khung xem trước camera (minh họa, chưa kết nối camera)",
     "leave": {
       "title": "Phiên quay chưa kết thúc",
-      "message": "Bạn đang trong một phiên quay. Hãy giữ video và quay lại, hoặc kết thúc phiên để chuyển sang bước xác nhận video. Phần đã ghi không bị xóa.",
+      "message": "Bạn đang quay. Video đã quay vẫn được giữ. Quay lại, hoặc kết thúc để xác nhận.",
       "keep": "Giữ video và quay lại",
       "end": "Kết thúc phiên",
       "messagePreview": "Phiên quay sẽ kết thúc và bạn quay về bước trước.",

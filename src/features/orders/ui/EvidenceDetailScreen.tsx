@@ -10,7 +10,7 @@ import {
 } from '@/features/evidence';
 import { useRouteParams } from '@/platform';
 
-import { useCurrentUid } from '../data';
+import { useCurrentShopId, useCurrentUid } from '../data';
 import { formatDeviceDateTime, isSessionStatus } from '../domain';
 import { useEvidenceDetail, type EvidenceDetailState } from './use-evidence-detail';
 
@@ -55,6 +55,7 @@ export function PackingEvidenceDetail({
 }: PackingEvidenceDetailProps) {
   const { t } = useTranslation();
   const uid = useCurrentUid();
+  const shopId = useCurrentShopId();
   const { state, reload } = useEvidenceDetail(orderId, evidenceId);
   const shell = {
     title,
@@ -69,6 +70,7 @@ export function PackingEvidenceDetail({
   return (
     <EvidenceDetailShell {...shell}>
       <EvidenceDetailView
+        shopId={shopId}
         file={state.file}
         kindLabel={t(`screens:orderEvidence.kind.${state.file.group}.${state.file.kind}`)}
         capturedAtLabel={formatDeviceDateTime(state.file.createdAtDevice)}

@@ -250,8 +250,8 @@ describe('UI-C01 Xác nhận đơn trước khi quay', () => {
     it.each([
       ['ended', /Kiện này đã quay xong/],
       ['confirmed', /Kiện này đã quay xong/],
-      ['interrupted', /lần quay chưa hoàn tất/],
-      ['needs_attention', /lần quay chưa hoàn tất/],
+      ['interrupted', /chưa xong/],
+      ['needs_attention', /chưa xong/],
     ])(
       'kiện đã có phiên %s: KHÔNG tạo phiên mới, báo trung thực và chỉ đường xem bằng chứng (R-11)',
       async (status, message) => {

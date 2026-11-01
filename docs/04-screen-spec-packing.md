@@ -50,9 +50,9 @@ Luồng chuẩn: **A01** Danh sách công việc → **A02** Tìm/tạo đơn �
 | Mã lỗi | Thông báo |
 |---|---|
 | `ORDER_NOT_FOUND` | Chưa tìm thấy đơn. Bạn có thể tạo đơn mới hoặc kiểm tra lại mã. |
-| `ORDER_DUPLICATE` | Có nhiều bản ghi phù hợp với mã này. Hãy chọn đúng đơn trước khi tiếp tục. |
-| `INVALID_CODE` | Mã nhập chưa hợp lệ hoặc chỉ chứa ký tự không được hỗ trợ. |
-| `SEARCH_UNAVAILABLE` | Chưa thể tìm kiếm lúc này. Bạn có thể thử lại hoặc lưu bản nháp nếu có đủ thông tin. |
+| `ORDER_DUPLICATE` | Mã này có nhiều đơn. Bạn chọn đúng đơn nhé. |
+| `INVALID_CODE` | Mã chưa đúng. Bạn kiểm tra lại nhé. |
+| `SEARCH_UNAVAILABLE` | Chưa tìm được lúc này. Bạn thử lại nhé. |
 
 **Nghiệm thu:**
 - Tạo được đơn mới khi không kết nối sàn nào.
@@ -99,9 +99,9 @@ Luồng chuẩn: **A01** Danh sách công việc → **A02** Tìm/tạo đơn �
 | Mã lỗi | Thông báo |
 |---|---|
 | `CAMERA_PERMISSION_DENIED` | Ứng dụng chưa có quyền camera. Hãy cấp quyền để ghi hình. |
-| `MIC_PERMISSION_DENIED` | Ứng dụng chưa có quyền micro. Video có thể không có âm thanh; hãy cấp quyền hoặc tiếp tục theo chính sách shop. |
-| `INSUFFICIENT_STORAGE` | Dung lượng thiết bị không đủ để bắt đầu an toàn. Hãy giải phóng dung lượng rồi kiểm tra lại. |
-| `LOCAL_SAVE_UNAVAILABLE` | Không thể chuẩn bị nơi lưu video. Chưa bắt đầu ghi hình. |
+| `MIC_PERMISSION_DENIED` | Ứng dụng chưa có quyền micro. Bạn cấp quyền trong Cài đặt nếu cần. |
+| `INSUFFICIENT_STORAGE` | Máy hết chỗ lưu. Bạn xóa bớt ảnh, video rồi thử lại. |
+| `LOCAL_SAVE_UNAVAILABLE` | Chưa chuẩn bị được chỗ lưu video, nên chưa quay. Bạn thử lại nhé. |
 
 **Nghiệm thu:**
 - Không hiện "Đang quay" trước khi ghi tệp được.

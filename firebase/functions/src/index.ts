@@ -21,6 +21,7 @@ import {
 } from './account';
 import { AUDITED_ENTITIES, entityLocation, recordAuditForWrite, type AuditedEntity } from './audit';
 import { handleEvidenceFinalized } from './evidence';
+import { getEvidenceReadUrlForUser, parseReadUrlInput } from './evidence-read';
 import { toHttpsError } from './http-errors';
 import { isEventTooOld } from './limits';
 import {
@@ -211,6 +212,32 @@ export const createUploadSession = onCall({ region: REGION }, async (request) =>
       storageSigner(),
       uid,
       parseUploadSessionInput(request.data),
+    );
+  } catch (error) {
+    return toHttpsError(error);
+  }
+});
+
+/**
+ * Cấp URL ký chỉ đọc (15 phút) để xem lại bản gốc khi tệp trên máy không còn (evidence-read.ts). Không
+ * log URL; kiểm toán chỉ ghi ai xem bằng chứng nào.
+ */
+export const getEvidenceReadUrl = onCall({ region: REGION }, async (request) => {
+  const uid = requireUid(request.auth);
+  try {
+    const bucket = getStorage().bucket();
+    return await getEvidenceReadUrlForUser(
+      getFirestore(),
+      {
+        signRead: async (path, expiresAtMs) =>
+          (
+            await bucket
+              .file(path)
+              .getSignedUrl({ version: 'v4', action: 'read', expires: expiresAtMs })
+          )[0],
+      },
+      uid,
+      parseReadUrlInput(request.data),
     );
   } catch (error) {
     return toHttpsError(error);

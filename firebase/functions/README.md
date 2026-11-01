@@ -3,10 +3,11 @@
 TypeScript, region `asia-southeast1` (Singapore, Q-08). Phần MÁY CHỦ của hiện thực Firebase (`src/api/firebase`
 ở app); đổi backend thì phần này làm lại riêng.
 
-| Function                | Việc                                                                                                                    |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `createShop` (callable) | Tạo shop + thành viên `owner` + chỉ mục `userShops/{uid}` + kiểm toán, trong MỘT transaction; idempotent theo tài khoản |
-| `updateShop` (callable) | Sửa tên/nguồn bán; chỉ thành viên `owner`/`manager` đang hoạt động; ghi kiểm toán trước/sau                             |
+| Function                        | Việc                                                                                                                                                                        |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createShop` (callable)         | Tạo shop + thành viên `owner` + chỉ mục `userShops/{uid}` + kiểm toán, trong MỘT transaction; idempotent theo tài khoản                                                     |
+| `updateShop` (callable)         | Sửa tên/nguồn bán; chỉ thành viên `owner`/`manager` đang hoạt động; ghi kiểm toán trước/sau                                                                                 |
+| `getEvidenceReadUrl` (callable) | Cấp URL ký v4 chỉ đọc (15 phút) để xem lại bản gốc; thành viên đang hoạt động; chỉ khi máy chủ đã `uploaded`/`verified`; ghi kiểm toán (không URL) (`src/evidence-read.ts`) |
 
 Logic nằm ở `src/shop.ts` (nhận `Firestore`, test được trên emulator); `src/index.ts` chỉ nối callable.
 

@@ -242,7 +242,7 @@ describe('ShopSwitchScreen (UI-I02 route con, PER-07)', () => {
     expect(screen.getByTestId('switch-shop-recording')).toHaveTextContent(
       'Bạn đang quay video đóng gói. Hãy dừng quay trước khi chuyển.',
     );
-    expect(screen.getByText('Không thể chuyển cửa hàng')).toBeOnTheScreen();
+    expect(screen.getByText('Chưa chuyển được cửa hàng')).toBeOnTheScreen();
     expect(hasRecording).toHaveBeenCalledWith('shop-a');
     expect(gateways.account.switchShopCalls).toEqual([]);
     expect(screen.queryByText(DIALOG_TITLE)).toBeNull();

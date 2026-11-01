@@ -8,6 +8,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Added
 
+- Xem lại bằng chứng từ máy chủ khi tệp trên máy không còn (video và ảnh, kể cả ảnh hàng hoàn): Function `getEvidenceReadUrl` cấp URL ký chỉ đọc 15 phút cho thành viên đang hoạt động, chỉ khi máy chủ đã nhận; ưu tiên tệp trên máy; chưa kiểm chứng trên thiết bị, chưa deploy (V1-29).
 - Tạm dừng hàng đợi tải lên và băm nền khi đang quay video (tín hiệu `core/recording/recording-activity`, bật trong `platform/camera-recorder`, tắt ở mọi đường kết thúc + lưới 15 phút); quay xong chạy lại ngay, lần gửi bị hủy không tốn lượt; chưa đo trên thiết bị (V1-28).
 - Số đo xử lý video không PII (`core/diagnostics/media-metrics`, log `media.metrics` qua `platform/media-metrics-log`): byte/phút, thời gian lưu/băm/gửi, MB/giây, số lần băm cho cổng thiết bị G-3/G-4/G-5/G-14; chưa chạy trên thiết bị (V1-27).
 - Kế hoạch tổng phát hành v1.0, checklist phát hành cho con người và nhật ký thay đổi này (tài liệu).
@@ -34,6 +35,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Changed
 
+- Rà soát câu chữ thông báo cho thân thiện và ngắn hơn (mã lỗi, rời màn quay, ngoại tuyến, hạn chế bằng chứng, trạng thái máy chủ); thống nhất "tải lên", "Ứng dụng", "Chưa … được"; chỉ đổi chữ, chờ BA duyệt (C-1; `MIC_PERMISSION_DENIED` chờ O-09).
 - Thông số quay tường minh trên cả iOS và Android: 1080p30, H.264 (`avc1`), 6 Mbps, `maxFileSize` 1,9 GB (< trần tải lên 2 GB) qua prop `profile` của `CameraRecorder`; `ESTIMATED_BYTES_PER_MINUTE` suy từ bitrate (58,5 MB/phút). Dựa trên đọc mã `expo-camera` 58.0.12, chưa chạy trên thiết bị (V1-22, Q-30a/b).
 - Ảnh minh họa màn Splash đổi tông xanh ngọc sang cam chủ đạo (áo yếm, điện thoại, biểu tượng trong bong bóng); logo Shopee/TikTok/Lazada và hai chậu cây giữ nguyên. Ảnh gốc xanh giữ ở `docs/assets/brand/splash/splash-hero-jade.webp`, script tạo lại ở `scripts/assets/recolor-splash-hero.py`. Chỉ kiểm qua ảnh bản web, chưa xem trên thiết bị.
 - Màn Chào mừng dùng ảnh minh họa 3D mới (hộp hàng, điện thoại đang quay, mã vạch, khiên xác nhận, biểu tượng Shopee/TikTok/Lazada); màn Đăng nhập vẫn dùng hình vẽ cũ. Chỉ kiểm qua ảnh bản web, chưa xem trên thiết bị.

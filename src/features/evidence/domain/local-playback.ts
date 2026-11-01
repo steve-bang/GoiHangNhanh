@@ -1,15 +1,16 @@
 import { FILE_STATES, type FileState } from './file-state';
 
 /**
- * Xem lại bằng chứng TRÊN CHÍNH MÁY NÀY (UI-E04, V1-17). Hàm thuần: quyết định có mở tệp cục bộ được
- * không, không đọc/ghi tệp (bất biến 4: chỉ đọc bản gốc). v1 chưa có URL xem từ máy chủ (Q-24a), nên
- * tệp không còn trên máy là "không xem được", KHÔNG hứa xem từ máy chủ.
+ * Chọn NGUỒN xem lại bằng chứng (UI-E04, V1-17, mở rộng bởi xem từ máy chủ). Hàm thuần: không đọc/ghi
+ * tệp (bất biến 4: chỉ đọc bản gốc, không tải ngược về ghi đè hay tạo lại tệp trên máy).
  *
  * - `capturing`: tệp còn đang ghi hoặc đang lưu (`recording`/`saving_local`): tệp chưa đóng, không mở.
- * - `missing`: không có đường dẫn tệp, hoặc có đường dẫn nhưng tệp không còn (cài lại app, đã dọn).
- * - `available`: tệp đã đóng và còn trên máy.
+ * - `local`: tệp đã đóng và còn trên máy: ưu tiên (nhanh, không tốn dữ liệu), không gọi máy chủ.
+ * - `cloud`: tệp không còn trên máy nhưng máy chủ ĐÃ xác nhận có bản (`uploaded`/`verified`): xem qua
+ *   URL ký ngắn hạn từ Function `getEvidenceReadUrl`.
+ * - `missing`: tệp không còn trên máy và máy chủ chưa xác nhận có bản: bằng chứng không xem được.
  */
-export type LocalPlayback = 'capturing' | 'missing' | 'available';
+export type LocalPlayback = 'capturing' | 'local' | 'cloud' | 'missing';
 
 const CAPTURING: readonly FileState[] = [FILE_STATES.RECORDING, FILE_STATES.SAVING_LOCAL];
 
@@ -18,8 +19,8 @@ export function localPlaybackOf(
   exists: (localPath: string) => boolean,
 ): LocalPlayback {
   if (CAPTURING.includes(file.state)) return 'capturing';
-  if (!file.localPath) return 'missing';
-  return exists(file.localPath) ? 'available' : 'missing';
+  if (file.localPath && exists(file.localPath)) return 'local';
+  return isServerConfirmed(file.state) ? 'cloud' : 'missing';
 }
 
 /**
