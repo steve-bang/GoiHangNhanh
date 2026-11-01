@@ -40,11 +40,14 @@ export {
 export {
   ACTIVE_RECORDING_POLICY,
   DEFAULT_RECORDING_POLICY,
+  BITRATE_HEADROOM,
   ESTIMATED_BYTES_PER_MINUTE,
   MIN_BATTERY_LEVEL,
   maxRecordSeconds,
   MIN_FREE_BYTES_TO_RECORD,
   requiredFreeBytes,
   WARN_BEFORE_LIMIT_SECONDS,
+  VIDEO_PROFILE,
   type RecordingPolicy,
+  type VideoProfile,
 } from './recording-policy';

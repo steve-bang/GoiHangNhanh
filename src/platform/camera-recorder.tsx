@@ -14,7 +14,22 @@ export interface CameraRecorderHandle {
   };
 }
 
+/**
+ * Thông số quay (V1-22). Kiểu định nghĩa ở đây để `platform` không import `features`; UI truyền hằng từ
+ * domain (`VIDEO_PROFILE`) xuống. `quality`/`bitrateBps` là prop của `CameraView`; `codec`/`maxFileBytes`
+ * là tùy chọn của `recordAsync` (`codec` chỉ iOS; Android bỏ qua, CameraX ra H.264). Không đặt thì dùng
+ * mặc định của `expo-camera` (hành vi cũ).
+ */
+export interface CameraRecordProfile {
+  readonly quality: '1080p' | '720p';
+  readonly bitrateBps: number;
+  readonly codec: 'avc1' | 'hvc1';
+  readonly maxFileBytes: number;
+}
+
 interface CameraRecorderProps {
+  /** Thông số quay cố định (độ phân giải, bitrate, codec, trần dung lượng). */
+  profile?: CameraRecordProfile;
   /** Nhận tay cầm điều khiển ghi khi camera đã gắn; `null` khi gỡ. */
   handleRef: MutableRefObject<CameraRecorderHandle | null>;
   /** Camera đã sẵn sàng ghi. */
@@ -32,7 +47,8 @@ interface CameraRecorderProps {
  * mở O-09; không đụng micro để không phát sinh quyền mới. Tệp trả về nằm ở thư mục TẠM của hệ điều hành
  * nên bên gọi phải chuyển vào thư mục bền ngay (`persistRecording`). `expo-camera` không có sự kiện
  * "đã bắt đầu ghi": coi là đang ghi khi `recordAsync` đã được gọi mà chưa báo lỗi. Chưa kiểm chứng
- * trên thiết bị (độ ổn định ghi dài, bị ngắt cuộc gọi/nền, hết bộ nhớ).
+ * trên thiết bị (độ ổn định ghi dài, bị ngắt cuộc gọi/nền, hết bộ nhớ). Hành vi `profile` (V1-22) dựa trên
+ * ĐỌC mã nguồn `expo-camera` 58.0.12, chưa chạy trên máy.
  */
 export function CameraRecorder({
   handleRef,
@@ -41,6 +57,7 @@ export function CameraRecorder({
   onError,
   style,
   testID,
+  profile,
 }: CameraRecorderProps) {
   const cameraRef = useRef<CameraView>(null);
 
@@ -49,12 +66,14 @@ export function CameraRecorder({
       record(options) {
         const camera = cameraRef.current;
         if (!camera) throw new Error('camera_not_ready');
+        const recordOptions = {
+          ...(options?.maxDurationSec !== undefined ? { maxDuration: options.maxDurationSec } : {}),
+          // maxFileSize: lưới cứng chống tệp > 2 GB, có trên cả hai nền tảng (camera tự dừng và trả tệp
+          // hợp lệ khi chạm trần). `codec` bắt buộc ở iOS để `videoBitrate` có tác dụng.
+          ...(profile ? { maxFileSize: profile.maxFileBytes, codec: profile.codec } : {}),
+        };
         const done = camera
-          .recordAsync(
-            options?.maxDurationSec !== undefined
-              ? { maxDuration: options.maxDurationSec }
-              : undefined,
-          )
+          .recordAsync(Object.keys(recordOptions).length > 0 ? recordOptions : undefined)
           .then(
             (video): RecorderResult =>
               video?.uri
@@ -80,7 +99,7 @@ export function CameraRecorder({
     return () => {
       handleRef.current = null;
     };
-  }, [handleRef]);
+  }, [handleRef, profile]);
 
   return (
     <CameraView
@@ -90,6 +109,7 @@ export function CameraRecorder({
       facing="back"
       mode="video"
       mute
+      {...(profile ? { videoQuality: profile.quality, videoBitrate: profile.bitrateBps } : {})}
       enableTorch={torch}
       {...(onReady ? { onCameraReady: onReady } : {})}
       {...(onError ? { onMountError: () => onError() } : {})}

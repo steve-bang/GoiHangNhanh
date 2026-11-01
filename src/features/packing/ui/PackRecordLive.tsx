@@ -29,6 +29,7 @@ import {
   maxRecordSeconds,
   requiredFreeBytes,
   startRecording,
+  VIDEO_PROFILE,
   type ActiveRecording,
   type RecordingOutcome,
   type RecordingPorts,
@@ -392,6 +393,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
           <CameraRecorder
             testID="record-camera"
             handleRef={handleRef}
+            profile={VIDEO_PROFILE}
             torch={torch}
             onReady={() => void begin()}
             onError={() => {

@@ -19,11 +19,43 @@ export const DEFAULT_RECORDING_POLICY: RecordingPolicy = { maxRecordMinutes: 10 
 export const ACTIVE_RECORDING_POLICY: RecordingPolicy = DEFAULT_RECORDING_POLICY;
 
 /**
- * Ước lượng dung lượng một phút video (byte) để đổi "phút" ra "byte": 60 MB/phút (khoảng 8 Mbps, 1080p).
- * GIÁ TRỊ ƯỚC LƯỢNG chưa đo trên thiết bị (bitrate thực phụ thuộc máy và mã hóa của expo-camera): cần
- * đo rồi chỉnh. Chỉ dùng để quy đổi ngưỡng, không hiển thị cho người dùng.
+ * Thông số quay tường minh, giống nhau trên iOS và Android (V1-22, Q-30a/b người dùng đã chốt): 1080p30,
+ * H.264 (`avc1`), khoảng 6 Mbps. Hằng thuần (domain không import SDK); `platform/camera-recorder` nhận nó
+ * qua prop `profile` và áp vào `CameraView` (`videoQuality`, `videoBitrate`) và `recordAsync` (`codec`,
+ * `maxFileSize`). Chưa kiểm chứng trên thiết bị: cần đo ở G-14 (bytes/phút cảnh tĩnh và động, nhãn vận
+ * đơn còn đọc được).
  */
-export const ESTIMATED_BYTES_PER_MINUTE = 60 * 1024 * 1024;
+export interface VideoProfile {
+  readonly quality: '1080p';
+  /** Bitrate mục tiêu (bit/giây). Bộ mã hóa có thể vượt 20-30% khi cảnh động (xem `HEADROOM`). */
+  readonly bitrateBps: number;
+  /** H.264 cho cả hai nền tảng. iOS BẮT BUỘC truyền codec thì `videoBitrate` mới có tác dụng; Android bỏ qua. */
+  readonly codec: 'avc1';
+  /**
+   * Lưới cứng chống tệp quá trần tải lên (2.000.000.000 byte, `VIDEO_MAX_BYTES` của `features/upload`):
+   * camera tự dừng và trả tệp hợp lệ khi chạm trần. Chừa ~5% cho khối container. Test đối chiếu hai hằng.
+   */
+  readonly maxFileBytes: number;
+}
+
+export const VIDEO_PROFILE: VideoProfile = {
+  quality: '1080p',
+  bitrateBps: 6_000_000,
+  codec: 'avc1',
+  maxFileBytes: 1_900_000_000,
+};
+
+/** Bộ mã hóa vượt bitrate mục tiêu 20-30% khi cảnh động: ước lượng dung lượng cộng thêm 30%. */
+export const BITRATE_HEADROOM = 1.3;
+
+/**
+ * Ước lượng dung lượng một phút video (byte, thập phân) SUY RA từ bitrate đã đặt cộng headroom: với 6 Mbps
+ * là khoảng 58,5 MB/phút (45 MB/phút danh nghĩa). Giá trị ước lượng chưa đo trên thiết bị (G-14): cần so
+ * với bytes/phút đo được ở cảnh động rồi chỉnh. Chỉ dùng để quy đổi ngưỡng, không hiển thị cho người dùng.
+ */
+export const ESTIMATED_BYTES_PER_MINUTE = Math.ceil(
+  (VIDEO_PROFILE.bitrateBps / 8) * 60 * BITRATE_HEADROOM,
+);
 
 export function requiredFreeBytes(policy: RecordingPolicy = DEFAULT_RECORDING_POLICY): number {
   return Math.max(0, policy.maxRecordMinutes) * ESTIMATED_BYTES_PER_MINUTE;

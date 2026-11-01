@@ -1,6 +1,6 @@
 # V1-22…V1-27 video-pipeline-hardening — kế hoạch chi tiết (nhóm PR, CHƯA làm)
 
-Nguồn: review xử lý video (2026-11-01, người review khác, chưa kiểm chứng trên thiết bị) + đối chiếu mã ở HEAD `12aa19d`. Bám khuôn [v1-13-hash-efficiency.md](v1-13-hash-efficiency.md), [v1-11-recording-hardening.md](v1-11-recording-hardening.md). **Thiết kế kỹ thuật là đề xuất, chờ người dùng duyệt**; các câu hỏi Q-30a…Q-30h ở mục 8 **chưa ai chốt**. Trạng thái PR: **V1-27 đã code** (nhánh `feat/v1-27-capture-metrics`), **V1-23 đã code** phần 3.1 (nhánh `feat/v1-23-temp-file-safety`); cả hai chờ hợp nhất; các PR còn lại xem bên dưới.
+Nguồn: review xử lý video (2026-11-01, người review khác, chưa kiểm chứng trên thiết bị) + đối chiếu mã ở HEAD `12aa19d`. Bám khuôn [v1-13-hash-efficiency.md](v1-13-hash-efficiency.md), [v1-11-recording-hardening.md](v1-11-recording-hardening.md). **Thiết kế kỹ thuật là đề xuất, chờ người dùng duyệt**; các câu hỏi Q-30a…Q-30h ở mục 8 **chưa ai chốt**. Trạng thái PR: **V1-27 đã code** (nhánh `feat/v1-27-capture-metrics`), **V1-23 đã code** phần 3.1 (nhánh `feat/v1-23-temp-file-safety`), **V1-22 đã code** (nhánh `feat/v1-22-recorder-profile`); cả ba chờ hợp nhất; các PR còn lại xem bên dưới.
 
 ## 0. Kết quả xác minh từng phát hiện của review
 
@@ -46,6 +46,8 @@ Lý do: V1-27 đi đầu để build staging đầu tiên đã in được số 
 Độ phức tạp tổng: ~6 PR, mỗi PR ≤ ~600 dòng mã (ngân sách 1500 không bị chạm; V1-24 có migration v17). Rủi ro lớn nhất không nằm ở mã mà ở **số đo trên máy thật**: không có số đo thì V1-22 (bitrate) và V1-25 (băm) chỉ là phỏng đoán có căn cứ.
 
 ## 2. V1-22 recorder-profile
+
+**Trạng thái: đã code (nhánh `feat/v1-22-recorder-profile`, xếp chồng trên V1-23).** Người dùng đã chốt **Q-30a = A** (1080p30, ~6 Mbps) và **Q-30b = A** (H.264 cả hai nền tảng). Triển khai: `VIDEO_PROFILE`, `BITRATE_HEADROOM`, `ESTIMATED_BYTES_PER_MINUTE` suy từ bitrate ở `recording-policy.ts`; prop `profile` ở `platform/camera-recorder.tsx` (`videoQuality`/`videoBitrate` vào `CameraView`; `maxFileSize`/`codec` vào `recordAsync`); cả `PackRecordLive` và `ReturnRecordLive` truyền `VIDEO_PROFILE`. Test đối chiếu `maxFileBytes < VIDEO_MAX_BYTES` đặt ở `recording-policy.test.ts` (import qua `@/features/upload`). Đã đọc mã nguồn `expo-camera` 58.0.12: Android `maxFileSize` là `Int` (1,9 GB vừa), `0` = không giới hạn; iOS chỉ áp `videoBitrate` khi có `codec`, codec không hỗ trợ thì ném `CameraRecordingException`; Android không có trường `codec` (chưa xác nhận bỏ qua im lặng, G-14d). **Chưa chạy trên thiết bị**; G-14 vẫn phải đo bytes/phút, codec thật, hành vi chạm `maxFileSize` và độ đọc được của nhãn. Không thêm chuỗi/mã lỗi mới (chạm trần dung lượng = `early`, phiên `interrupted`).
 
 **Mục tiêu.** (1) Thông số quay tường minh và giống nhau trên hai nền tảng; (2) bất kỳ lần quay nào cũng không thể sinh tệp > trần tải lên 2 GB; (3) `ESTIMATED_BYTES_PER_MINUTE` suy ra từ bitrate đã đặt, không phải số "ước".
 
