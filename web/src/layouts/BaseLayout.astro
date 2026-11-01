@@ -1,6 +1,9 @@
 ---
 import '../styles/global.css';
 import { site } from '../config/site';
+import NavMenu from '../components/NavMenu.astro';
+import DownloadCta from '../components/DownloadCta.astro';
+import { navLinks } from '../config/nav';
 import { absoluteUrl, serializeLd, type JsonLd } from '../lib/jsonld';
 
 interface Props {
@@ -66,26 +69,33 @@ const robots = !site.indexable || noindex ? 'noindex, nofollow' : 'index, follow
   </head>
   <body>
     <a class="skip-link" href="#noi-dung">Bỏ qua, tới nội dung chính</a>
-    <header class="site-header">
-      <div class="container site-header__inner">
-        <a class="brand" href="/" aria-label={`${site.name}, về trang chủ`}>
-          <img src="/favicon.png" alt="" width="32" height="32" />
-          <span>{site.name}</span>
-        </a>
-        <nav aria-label="Chính">
-          <ul>
-            <li><a href="/#van-de">Vấn đề</a></li>
-            <li><a href="/#cach-dung">Cách dùng</a></li>
-            <li><a href="/#cau-hoi">Câu hỏi</a></li>
-          </ul>
-        </nav>
-      </div>
-    </header>
+    <NavMenu current={Astro.url.pathname} />
     <main id="noi-dung">
       <slot />
     </main>
     <footer class="site-footer">
-      <div class="container">
+      <div class="container site-footer__inner">
+        <div class="site-footer__brand">
+          <p class="site-footer__name">
+            <img src="/favicon.png" alt="" width="32" height="32" />
+            <strong>{site.name}</strong>
+          </p>
+          <p>{site.tagline}</p>
+        </div>
+        <nav aria-label="Chân trang">
+          <ul>
+            {
+              navLinks.map((l) => (
+                <li>
+                  <a href={l.href}>{l.label}</a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+        <div class="site-footer__cta"><DownloadCta tone="dark" compact label="Sắp có trên App Store và Google Play" /></div>
+      </div>
+      <div class="container site-footer__legal">
         <p>
           <strong>{site.name}</strong> là tên làm việc. Ứng dụng đang phát triển, chưa phát hành.
         </p>
@@ -104,50 +114,51 @@ const robots = !site.indexable || noindex ? 'noindex, nofollow' : 'index, follow
 </html>
 
 <style is:global>
-  .site-header {
-    background: var(--surface-raised);
-    border-bottom: var(--border-thin) solid var(--border-default);
-  }
-  .site-header__inner {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-8) var(--space-16);
-    padding-block: var(--space-8);
-  }
-  .brand {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-8);
-    min-height: var(--size-touch);
-    font-weight: 700;
-    color: var(--brand-dark);
-    text-decoration: none;
-  }
-  .site-header ul {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-4);
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  .site-header nav a {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--size-touch);
-    padding-inline: var(--space-12);
-    text-decoration: none;
-    font-weight: 500;
-  }
   .site-footer {
     background: var(--brand-dark);
     color: var(--text-on-action);
     padding-block: var(--space-32);
     font-size: var(--text-sm);
   }
-  .site-footer p {
+  .site-footer a {
+    color: var(--text-on-action);
+  }
+  .site-footer__inner {
+    display: grid;
+    gap: var(--space-24);
+    padding-bottom: var(--space-24);
+    border-bottom: var(--border-thin) solid rgb(255 255 255 / 0.2);
+  }
+  .site-footer__name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    margin-bottom: var(--space-4);
+    font-size: var(--text-lg);
+  }
+  .site-footer__brand p:last-child {
+    margin: 0;
+    color: var(--mint-200);
+  }
+  .site-footer ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-16);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .site-footer nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-touch);
+    text-decoration: none;
+  }
+  .site-footer__legal {
+    padding-top: var(--space-16);
+    color: var(--mint-200);
+  }
+  .site-footer__legal p {
     max-width: var(--measure);
     margin-bottom: var(--space-8);
   }
@@ -164,5 +175,12 @@ const robots = !site.indexable || noindex ? 'noindex, nofollow' : 'index, follow
     align-items: center;
     min-height: var(--size-touch);
     color: var(--text-on-action);
+  }
+  @media (min-width: 60rem) {
+    .site-footer__inner {
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: var(--space-32);
+    }
   }
 </style>
