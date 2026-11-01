@@ -2,6 +2,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 
 import type { ReturnCaseId, ShopId } from '@/core/ids';
 import { ROUTES } from '@/core/navigation';
+import type { EvidenceReadUrlApi } from '@/features/evidence';
 import { createMemoryOrderStore, LOCAL_SHOP_ID } from '@/features/orders';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { mockVideoPlayer, resetMockVideoPlayer } from '@/test-utils/mock-video-player';
@@ -132,11 +133,16 @@ async function seed(store: ReturnStore, options: SeedOptions = {}) {
   return { id, photoId, photoPath, videoId, videoPath };
 }
 
-async function openDetail(store: ReturnStore, params: { returnId?: string; mediaId?: string }) {
+async function openDetail(
+  store: ReturnStore,
+  params: { returnId?: string; mediaId?: string },
+  readUrlApi?: EvidenceReadUrlApi,
+) {
   mockNavigation.params = params;
   await renderWithProviders(<ReturnMediaDetailScreen />, {
     returnStore: store,
     orderStore: createMemoryOrderStore(),
+    ...(readUrlApi ? { readUrlApi } : {}),
   });
 }
 
@@ -160,6 +166,38 @@ describe('V1-17b: chi tiết ảnh/video hàng hoàn (UI-E04)', () => {
     expect(screen.queryByText(/10[.,]76|106[.,]66|12 m|[Vv]ị trí/)).toBeNull();
     expect(screen.queryByTestId('evidence-detail-duration')).toBeNull();
     expect(screen.queryByTestId('return-media-limited')).toBeNull();
+  });
+
+  it('ảnh đã lên máy chủ (verified) mà tệp trên máy mất: xem từ máy chủ qua URL https, không đụng tệp local', async () => {
+    const store = createMemoryReturnStore();
+    const { id, photoId } = await seed(store);
+    await store.applyMediaEvent(
+      SHOP,
+      photoId,
+      { type: 'SERVER_RECEIVED', origin: 'server' } as never,
+      AT,
+    );
+    await store.applyMediaEvent(
+      SHOP,
+      photoId,
+      { type: 'SERVER_VERIFIED', origin: 'server' } as never,
+      AT,
+    );
+    // Tệp không có trong `mockExisting`: đã bị dọn khỏi máy.
+    const get = jest.fn(async () => ({
+      url: 'https://signed.example/photo?sig=x',
+      expiresAtMs: 1,
+    }));
+    await openDetail(store, { returnId: id, mediaId: photoId }, { get });
+    const photo = await screen.findByTestId('evidence-photo');
+    expect(photo.props.source).toEqual({
+      uri: 'https://signed.example/photo?sig=x',
+      cache: 'reload',
+    });
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Ảnh không còn trên máy này.')).toBeNull();
+    expect(mockFileOps.persistRecording).not.toHaveBeenCalled();
+    expect(mockFileOps.deleteRecording).not.toHaveBeenCalled();
   });
 
   it('chỉ đọc: chỉ có nút Quay lại, không xóa/sửa/cắt/chia sẻ (kể cả ảnh còn xóa được ở D03)', async () => {

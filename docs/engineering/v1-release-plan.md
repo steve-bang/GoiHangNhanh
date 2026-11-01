@@ -42,7 +42,7 @@
 
 | Mã | Quyết định | Hệ quả kỹ thuật | PR |
 |---|---|---|---|
-| Q-24a | **A.** Một thiết bị/một tài khoản; nói rõ trong Trợ giúp, Cá nhân, thẻ thông tin ở Trang chủ; cảnh báo khi đăng xuất/xóa tài khoản. Kéo xuống nhiều máy và URL xem video từ máy chủ để sau v1. **Xem lại video trên chính máy: đưa vào v1** (đánh giá ở mục 3, V1-17) | Không có Function URL đọc; không đọc Firestore về SQLite | V1-10, V1-17, V1-18 |
+| Q-24a | **A.** Một thiết bị/một tài khoản; nói rõ trong Trợ giúp, Cá nhân, thẻ thông tin ở Trang chủ; cảnh báo khi đăng xuất/xóa tài khoản. Kéo xuống nhiều máy để sau v1. (URL xem từ máy chủ đã được thêm sau, V1-29.) **Xem lại video trên chính máy: đưa vào v1** (đánh giá ở mục 3, V1-17) | Không có Function URL đọc; không đọc Firestore về SQLite | V1-10, V1-17, V1-18 |
 | Q-24b | **A.** Giữ nguyên; ghi giới hạn "video đang ghi có thể mất nếu app bị tắt giữa chừng" trong UI màn quay (một dòng) và Trợ giúp | Không chia đoạn; `recording` bị kill vẫn `unrecoverable` | V1-11, V1-18 |
 | Q-24c | **B.** Mặc định luôn tải (cả 4G/5G), công tắc "Chỉ tải khi có Wi‑Fi". Trần: ảnh ≤ 25 MB, video ≤ 2 GB cho **mọi** bằng chứng (thống nhất Q-28b) trong Rules + Function, có test | Migration v15 (cài đặt máy) | V1-04, V1-09 |
 | Q-24d | **A.** Loại video bằng chứng và CSDL khỏi iCloud Backup/Android Auto Backup; ghi vào chính sách quyền riêng tư | Android `allowBackup: false`; iOS module cục bộ đặt `isExcludedFromBackup` | V1-01, V1-12, V1-19 |
@@ -485,7 +485,7 @@ Phụ thuộc vòng: không có (V1-05 -> V1-03; V1-16 -> V1-01, V1-09; V1-15 ->
 | 5 không tự liên kết | V1-07 | Tệp của uid khác không bị gán lại cho uid hiện tại |
 | 6 không dữ liệu giả | V1-08, V1-10, V1-11 | Bỏ dữ liệu minh họa; gián đoạn ghi `interrupted`, không ghép |
 | 7 lịch sử, kiểm toán bất biến | V1-04, V1-14 | Trigger chỉ Admin SDK ghi; `accountDeletions` client không đọc/ghi. Người dùng thường vẫn không sửa/xóa được nhật ký; `auditEvents` của shop chỉ bị máy chủ xóa khi purge theo yêu cầu xóa tài khoản của chủ, sau 30 ngày, không có `legalHold`/tranh chấp (điều phối chốt, mục 7.5) |
-| 8 cô lập shop, không URL công khai | V1-04, V1-06, V1-14 | Test chéo shop cho mọi luật mới; không thêm URL đọc |
+| 8 cô lập shop, không URL công khai | V1-04, V1-06, V1-14 | Test chéo shop cho mọi luật mới; URL đọc chỉ qua `getEvidenceReadUrl` (V1-29: ngắn hạn, kiểm toán) |
 | 9 không xóa bằng chứng bị giữ | V1-14, V1-15 | Chặn khi tranh chấp mở; `legalHold`; không có dọn theo hạn lưu |
 | 10 dữ liệu tối giản | – | Không đổi mô hình đơn |
 | 11 ngôn ngữ trung thực | V1-03, V1-11, V1-18, V1-19, V1-20 | Câu v1 về thời hạn, tải khi app mở, mã băm, vị trí; test chuỗi |

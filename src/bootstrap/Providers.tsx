@@ -10,6 +10,7 @@ import {
   OrderStoreProvider,
   OrderSyncRunner,
 } from '@/features/orders';
+import { EvidenceReadUrlProvider } from '@/features/evidence';
 import { RecordingRecovery } from '@/features/packing';
 import { DisputeStoreProvider } from '@/features/disputes';
 import { ReturnMediaRecovery, ReturnStoreProvider, ReturnSyncRunner } from '@/features/returns';
@@ -86,7 +87,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
                             <DeviceSettingsProvider>
                               {/* V1-16: công tắc "Gửi báo lỗi ứng dụng" -> Crashlytics (chỉ bản build Firebase). */}
                               <CrashReportingBridge />
-                              <BackgroundRunners>{children}</BackgroundRunners>
+                              {/* Xem lại bằng chứng từ máy chủ khi tệp trên máy không còn. */}
+                              <EvidenceReadUrlProvider docs={getDefaultRemoteDocuments()}>
+                                <BackgroundRunners>{children}</BackgroundRunners>
+                              </EvidenceReadUrlProvider>
                             </DeviceSettingsProvider>
                           </DisputeStoreProvider>
                         </ReturnStoreProvider>

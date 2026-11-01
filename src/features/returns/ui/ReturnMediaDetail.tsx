@@ -7,7 +7,7 @@ import {
   EvidenceDetailView,
   type EvidenceDetailRow,
 } from '@/features/evidence';
-import { formatDeviceDateTime, useCurrentUid } from '@/features/orders';
+import { formatDeviceDateTime, useCurrentShopId, useCurrentUid } from '@/features/orders';
 import { useRouteParams } from '@/platform';
 import { Card, StatusBadge, Text, useTheme } from '@/shared/ui';
 
@@ -45,6 +45,7 @@ export function ReturnMediaDetail({ returnId, mediaId, title, testID }: ReturnMe
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const uid = useCurrentUid();
+  const shopId = useCurrentShopId();
   const { state, reload } = useReturnMediaDetail(returnId, mediaId);
   const sourceOrderId = state.kind === 'ready' ? state.details.returnCase.sourceOrderId : null;
   const orderCode = useLinkedOrderCode(sourceOrderId);
@@ -91,6 +92,7 @@ export function ReturnMediaDetail({ returnId, mediaId, title, testID }: ReturnMe
         </Card>
       ) : null}
       <EvidenceDetailView
+        shopId={shopId}
         // Chỉ truyền trường của tệp: vị trí (Q-26k) không bao giờ tới màn này.
         file={{
           id: media.id as EvidenceId,

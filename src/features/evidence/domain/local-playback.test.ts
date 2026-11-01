@@ -8,17 +8,17 @@ import {
   shortId,
 } from './local-playback';
 
-describe('localPlaybackOf (xem lại trên máy, chỉ đọc)', () => {
+describe('localPlaybackOf (chọn nguồn xem lại)', () => {
   const exists = (p: string) => p === 'evidence/ok.mp4';
 
   it.each<FileState>([FILE_STATES.RECORDING, FILE_STATES.SAVING_LOCAL])(
-    '%s: tệp chưa đóng, không mở dù đã có đường dẫn',
+    '%s: tệp chưa đóng, báo đang lưu dù đã có đường dẫn hay máy chủ có bản',
     (state) => {
       expect(localPlaybackOf({ state, localPath: 'evidence/ok.mp4' }, exists)).toBe('capturing');
     },
   );
 
-  it('tệp đã đóng và còn trên máy: mở được ở mọi trạng thái sau khi lưu', () => {
+  it('tệp còn trên máy: local ở mọi trạng thái, kể cả khi máy chủ đã xác nhận', () => {
     for (const state of [
       FILE_STATES.QUEUED,
       FILE_STATES.UPLOADING,
@@ -28,25 +28,36 @@ describe('localPlaybackOf (xem lại trên máy, chỉ đọc)', () => {
       FILE_STATES.HASH_MISMATCH,
       FILE_STATES.NEEDS_ATTENTION,
     ]) {
-      expect(localPlaybackOf({ state, localPath: 'evidence/ok.mp4' }, exists)).toBe('available');
+      expect(localPlaybackOf({ state, localPath: 'evidence/ok.mp4' }, exists)).toBe('local');
     }
   });
 
-  it('không có đường dẫn hoặc tệp đã mất: missing (không đoán nơi khác)', () => {
-    expect(localPlaybackOf({ state: FILE_STATES.VERIFIED, localPath: null }, exists)).toBe(
-      'missing',
-    );
-    expect(
-      localPlaybackOf({ state: FILE_STATES.QUEUED, localPath: 'evidence/gone.mp4' }, exists),
-    ).toBe('missing');
-    expect(
-      localPlaybackOf({ state: FILE_STATES.UNRECOVERABLE, localPath: 'evidence/gone.mp4' }, exists),
-    ).toBe('missing');
+  it.each<FileState>([FILE_STATES.UPLOADED, FILE_STATES.VERIFIED])(
+    'mất tệp (không đường dẫn hoặc tệp đã dọn) và máy chủ đã xác nhận %s: cloud',
+    (state) => {
+      expect(localPlaybackOf({ state, localPath: null }, exists)).toBe('cloud');
+      expect(localPlaybackOf({ state, localPath: 'evidence/gone.mp4' }, exists)).toBe('cloud');
+    },
+  );
+
+  it('mất tệp và máy chủ chưa xác nhận: missing (không đoán nơi khác)', () => {
+    for (const state of [
+      FILE_STATES.QUEUED,
+      FILE_STATES.UPLOADING,
+      FILE_STATES.UPLOAD_FAILED,
+      FILE_STATES.HASH_MISMATCH,
+      FILE_STATES.NEEDS_ATTENTION,
+      FILE_STATES.UNRECOVERABLE,
+    ]) {
+      expect(localPlaybackOf({ state, localPath: null }, exists)).toBe('missing');
+      expect(localPlaybackOf({ state, localPath: 'evidence/gone.mp4' }, exists)).toBe('missing');
+    }
   });
 
-  it('không hỏi hệ tệp khi tệp còn đang ghi', () => {
+  it('không hỏi hệ tệp khi tệp còn đang ghi hoặc không có đường dẫn', () => {
     const probe = jest.fn(() => true);
     localPlaybackOf({ state: FILE_STATES.RECORDING, localPath: 'x' }, probe);
+    localPlaybackOf({ state: FILE_STATES.VERIFIED, localPath: null }, probe);
     expect(probe).not.toHaveBeenCalled();
   });
 });

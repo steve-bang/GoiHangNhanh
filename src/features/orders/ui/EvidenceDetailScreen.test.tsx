@@ -1,7 +1,14 @@
-import { act, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import type { EvidenceId, OrderId, PackageId, SessionId, ShopId } from '@/core/ids';
-import type { EvidenceFile, EvidenceFileStore, FileState } from '@/features/evidence';
+import {
+  EvidenceReadUrlError,
+  type EvidenceFile,
+  type EvidenceFileStore,
+  type EvidenceReadUrlApi,
+  type FileState,
+} from '@/features/evidence';
+import { setMockConnectivity, resetMockConnectivity } from '@/test-utils/mock-connectivity';
 import { mockNavigation, resetMockNavigation } from '@/test-utils/mock-navigation';
 import { mockVideoPlayer, resetMockVideoPlayer } from '@/test-utils/mock-video-player';
 import { renderWithProviders } from '@/test-utils/render';
@@ -37,6 +44,7 @@ const PATH = 'evidence/ev-1.mp4';
 beforeEach(() => {
   resetMockNavigation();
   resetMockVideoPlayer();
+  resetMockConnectivity();
   mockExisting.clear();
   mockFileOps.deleteRecording.mockClear();
   mockFileOps.persistRecording.mockClear();
@@ -99,6 +107,7 @@ async function open(
   params: { orderId?: string; evidenceId?: string },
   /** Tài khoản đang đăng nhập (V1-07); không truyền = như phiên của bộ render test. */
   signedInAs?: string,
+  readUrlApi?: EvidenceReadUrlApi,
 ) {
   mockNavigation.params = params;
   const screenUi = signedInAs ? (
@@ -111,6 +120,7 @@ async function open(
   await renderWithProviders(screenUi, {
     orderStore: store,
     evidenceFileStore: fileStore(files),
+    ...(readUrlApi ? { readUrlApi } : {}),
   });
 }
 
@@ -216,22 +226,161 @@ describe('UI-E04 Chi tiết bằng chứng (xem lại trên máy)', () => {
     expect(screen.queryByTestId('evidence-video-player')).toBeNull();
   });
 
+  /** Cổng xin URL giả: ghi lại số lần gọi, trả lần lượt kết quả (hết thì lặp lại kết quả cuối). */
+  function readUrlApi(...results: (string | EvidenceReadUrlError)[]) {
+    let calls = 0;
+    const get = jest.fn(async (): Promise<{ url: string; expiresAtMs: number }> => {
+      const next = results[Math.min(calls, results.length - 1)];
+      calls += 1;
+      if (next instanceof EvidenceReadUrlError) throw next;
+      return { url: next as string, expiresAtMs: Date.now() + 900_000 };
+    });
+    return { api: { get } as EvidenceReadUrlApi, get };
+  }
+
+  it('tệp còn trên máy: phát từ máy, KHÔNG gọi máy chủ dù đã verified', async () => {
+    const { store, d, file } = await seed();
+    mockExisting.add(PATH);
+    const { api, get } = readUrlApi('https://signed.example/ev-1');
+    await open(
+      store,
+      [file('verified')],
+      { orderId: d.order.id, evidenceId: 'ev-1' },
+      undefined,
+      api,
+    );
+    await screen.findByTestId('evidence-video-player');
+    expect(mockVideoPlayer.uri).toBe(`file:///docs/${PATH}`);
+    expect(get).not.toHaveBeenCalled();
+  });
+
   it.each<[FileState, string]>([
     ['verified', 'Đã xác minh'],
     ['uploaded', 'Đã tải lên'],
   ])(
-    'tệp %s không còn trên máy: máy chủ có bản, giữ nhãn + câu máy chủ, không trình phát',
+    'tệp %s không còn trên máy: xem từ máy chủ qua URL https, giữ nhãn, không báo "không xem được"',
     async (state, label) => {
       const { store, d, file } = await seed();
-      await open(store, [file(state)], { orderId: d.order.id, evidenceId: 'ev-1' });
-      expect(await screen.findByText('Video không còn trên máy này.')).toBeOnTheScreen();
-      expect(screen.getByText('Ứng dụng chưa hỗ trợ xem lại tệp từ máy chủ.')).toBeOnTheScreen();
-      expect(screen.queryByText(/bằng chứng này đã mất/)).toBeNull();
+      const { api, get } = readUrlApi('https://signed.example/ev-1?sig=x');
+      await open(store, [file(state)], { orderId: d.order.id, evidenceId: 'ev-1' }, undefined, api);
+      expect(await screen.findByTestId('evidence-video-player')).toBeOnTheScreen();
+      expect(mockVideoPlayer.uri).toBe('https://signed.example/ev-1?sig=x');
+      expect(get).toHaveBeenCalledTimes(1);
+      expect(get).toHaveBeenCalledWith(d.order.shopId, 'ev-1');
+      expect(screen.getByText(/Bạn đang xem bản trên máy chủ/)).toBeOnTheScreen();
+      expect(screen.queryByText('Video không còn trên máy này.')).toBeNull();
       expect(screen.getByText(label)).toBeOnTheScreen();
-      expect(screen.getByTestId('evidence-detail-hint')).toHaveTextContent(/máy chủ/i);
-      expect(screen.queryByTestId('evidence-video-player')).toBeNull();
+      // Không tải ngược về máy, không đụng tệp local (bất biến 4).
+      expect(mockFileOps.persistRecording).not.toHaveBeenCalled();
+      expect(mockFileOps.deleteRecording).not.toHaveBeenCalled();
     },
   );
+
+  it('đang xin URL: hiện "Đang tải từ máy chủ"', async () => {
+    const { store, d, file } = await seed();
+    const api: EvidenceReadUrlApi = { get: () => new Promise(() => undefined) };
+    await open(
+      store,
+      [file('verified')],
+      { orderId: d.order.id, evidenceId: 'ev-1' },
+      undefined,
+      api,
+    );
+    expect(await screen.findByText('Đang tải từ máy chủ')).toBeOnTheScreen();
+    expect(screen.queryByTestId('evidence-video-player')).toBeNull();
+  });
+
+  it('phát lỗi (URL hết hạn): tự xin URL mới đúng một lần; lỗi tiếp thì báo lỗi kèm Thử lại', async () => {
+    const { store, d, file } = await seed();
+    const { api, get } = readUrlApi('https://signed.example/1', 'https://signed.example/2');
+    await open(
+      store,
+      [file('verified')],
+      { orderId: d.order.id, evidenceId: 'ev-1' },
+      undefined,
+      api,
+    );
+    await screen.findByTestId('evidence-video-player');
+    await act(async () => mockVideoPlayer.onError?.());
+    await waitFor(() => expect(mockVideoPlayer.uri).toBe('https://signed.example/2'));
+    expect(get).toHaveBeenCalledTimes(2);
+    await act(async () => mockVideoPlayer.onError?.());
+    expect(await screen.findByTestId('evidence-media-cloud-error')).toBeOnTheScreen();
+    expect(get).toHaveBeenCalledTimes(2);
+    await act(async () => fireEvent.press(screen.getByText('Thử lại')));
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(3));
+  });
+
+  it('offline: báo lỗi kèm Thử lại, không gọi máy chủ; có mạng lại thì Thử lại phát được', async () => {
+    const { store, d, file } = await seed();
+    const { api, get } = readUrlApi('https://signed.example/1');
+    setMockConnectivity({ online: false, type: 'none' });
+    await open(
+      store,
+      [file('verified')],
+      { orderId: d.order.id, evidenceId: 'ev-1' },
+      undefined,
+      api,
+    );
+    expect(await screen.findByText(/Không có mạng/)).toBeOnTheScreen();
+    expect(get).not.toHaveBeenCalled();
+    setMockConnectivity({ online: true, type: 'wifi' });
+    await act(async () => fireEvent.press(screen.getByText('Thử lại')));
+    expect(await screen.findByTestId('evidence-video-player')).toBeOnTheScreen();
+  });
+
+  it('máy chủ không cho xem (hoặc lỗi mạng): báo lỗi kèm Thử lại', async () => {
+    const { store, d, file } = await seed();
+    const { api } = readUrlApi(new EvidenceReadUrlError('network'));
+    await open(
+      store,
+      [file('verified')],
+      { orderId: d.order.id, evidenceId: 'ev-1' },
+      undefined,
+      api,
+    );
+    expect(await screen.findByText(/Chưa kết nối được máy chủ/)).toBeOnTheScreen();
+    expect(screen.getByText('Thử lại')).toBeOnTheScreen();
+  });
+
+  it('tệp trên máy phát lỗi mà máy chủ đã xác nhận: chuyển sang xem từ máy chủ', async () => {
+    const { store, d, file } = await seed();
+    mockExisting.add(PATH);
+    const { api, get } = readUrlApi('https://signed.example/fallback');
+    await open(
+      store,
+      [file('verified')],
+      { orderId: d.order.id, evidenceId: 'ev-1' },
+      undefined,
+      api,
+    );
+    await screen.findByTestId('evidence-video-player');
+    expect(get).not.toHaveBeenCalled();
+    await act(async () => mockVideoPlayer.onError?.());
+    await waitFor(() => expect(mockVideoPlayer.uri).toBe('https://signed.example/fallback'));
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+
+  it('chưa có cổng máy chủ (cổng giả/chưa kết nối): bằng chứng đã lên máy chủ vẫn báo không xem được, không treo', async () => {
+    const { store, d, file } = await seed();
+    await open(store, [file('verified')], { orderId: d.order.id, evidenceId: 'ev-1' });
+    expect(await screen.findByTestId('evidence-media-cloud-error')).toBeOnTheScreen();
+    expect(screen.queryByTestId('evidence-video-player')).toBeNull();
+  });
+
+  it('chưa lên máy chủ mà mất tệp: báo không xem được, KHÔNG gọi máy chủ', async () => {
+    const { store, d, file } = await seed();
+    const { api, get } = readUrlApi('https://signed.example/1');
+    await open(
+      store,
+      [file('queued')],
+      { orderId: d.order.id, evidenceId: 'ev-1' },
+      undefined,
+      api,
+    );
+    expect(await screen.findByText('Video không còn trên máy này.')).toBeOnTheScreen();
+    expect(get).not.toHaveBeenCalled();
+  });
 
   it.each<['video' | 'photo', string, RegExp]>([
     ['video', 'Video đã lưu trên máy này. Chưa có bản trên máy chủ.', /Ảnh đã lưu/],

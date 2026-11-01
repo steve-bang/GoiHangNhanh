@@ -7,7 +7,12 @@ import type { ErrorCode } from '@/core/errors/codes';
 import type { ReturnCaseId } from '@/core/ids';
 import { errorText, resolveErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
-import { foreignUploadNote, mayHaveReachedServer, toDisplayStatus } from '@/features/evidence';
+import {
+  foreignUploadNote,
+  isServerConfirmed,
+  mayHaveReachedServer,
+  toDisplayStatus,
+} from '@/features/evidence';
 import { formatDeviceDateTime, useCurrentUid } from '@/features/orders';
 import {
   CameraPhoto,
@@ -420,6 +425,8 @@ function PhotoRow({
   const display = toDisplayStatus(item.state, { uploader });
   const note = foreignUploadNote(item.state, uploader);
   const hasFile = isMediaSavedLocally(item) && item.localPath !== null;
+  // Máy chủ đã xác nhận có bản: vẫn mở được (xem từ máy chủ) khi tệp trên máy không còn.
+  const canOpen = hasFile || isServerConfirmed(item.state);
   return (
     <View
       testID={`return-photo-${item.id}`}
@@ -483,9 +490,9 @@ function PhotoRow({
             {t('returns:photos.failedItem')}
           </Text>
         ) : null}
-        {hasFile || onDelete ? (
+        {canOpen || onDelete ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.xs }}>
-            {hasFile ? (
+            {canOpen ? (
               <Button
                 testID={`return-photo-open-${item.id}`}
                 label={t('returns:photos.open')}

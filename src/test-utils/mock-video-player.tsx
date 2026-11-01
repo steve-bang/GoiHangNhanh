@@ -16,7 +16,7 @@ export function resetMockVideoPlayer(): void {
 }
 
 export const videoPlayerMock = {
-  LocalVideoPlayer: ({
+  VideoPlayer: ({
     uri,
     onError,
     testID,
