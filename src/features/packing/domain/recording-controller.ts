@@ -1,3 +1,4 @@
+import type { MediaMetricsReporter } from '@/core/diagnostics';
 import type { EvidenceId } from '@/core/ids';
 import type { EvidenceFile, EvidenceFileStore, FileEventType } from '@/features/evidence';
 import type { OrderStore, PackingSession } from '@/features/orders';
@@ -63,6 +64,8 @@ export interface RecordingPorts {
    * Không truyền = không gián đoạn.
    */
   wasInterrupted?(): boolean;
+  /** Nhận số đo không PII (V1-27: kích thước, thời gian lưu/băm). Không truyền = không đo. Không ném lỗi. */
+  readonly metrics?: MediaMetricsReporter;
 }
 
 export type RecordingOutcome =
@@ -162,15 +165,27 @@ export async function startRecording(
     return { kind: 'failed', reason: 'RECORDER_FAILED' };
   }
 
+  const startedAt = now();
   const result = handle.done.then(
-    (recorded) => finish(ports, session, evidenceId, recorded),
-    () => finish(ports, session, evidenceId, { ok: false, reason: 'RECORDER_FAILED' }),
+    (recorded) => finish(ports, session, evidenceId, recorded, now() - startedAt),
+    () => finish(ports, session, evidenceId, { ok: false, reason: 'RECORDER_FAILED' }, 0),
   );
   const markInterrupted = () =>
     orders
       .updateSessionStatus(shopId, session.id, SESSION_STATUS.INTERRUPTED)
       .catch(() => undefined);
   return { evidenceId, stop: () => handle.stop(), markInterrupted, result };
+}
+
+function reportMetrics(
+  ports: Pick<RecordingPorts, 'metrics'>,
+  input: Parameters<MediaMetricsReporter>[0],
+): void {
+  try {
+    ports.metrics?.(input);
+  } catch {
+    // số đo không được làm hỏng việc lưu video
+  }
 }
 
 async function markFailed(
@@ -203,6 +218,7 @@ async function finish(
   session: PackingSession,
   evidenceId: EvidenceId,
   recorded: RecordResult,
+  wallMs: number,
 ): Promise<RecordingOutcome> {
   const { files, orders, persist, hash, now } = ports;
   const shopId = session.shopId;
@@ -232,7 +248,9 @@ async function finish(
     });
     if (!stopped.ok) return fail('SAVE_FAILED');
 
+    const persistStart = now();
     const saved = persist(recorded.tempUri, evidenceId, extensionOf(recorded.tempUri));
+    const persistMs = now() - persistStart;
     if (!saved.ok) {
       await markFailed(ports, session, evidenceId, failedStatus, {
         localPath: recorded.tempUri,
@@ -251,7 +269,9 @@ async function finish(
       });
       return fail('SAVE_FAILED');
     }
+    const hashStart = now();
     const hashed = await hash(saved.uri);
+    const hashMs = now() - hashStart;
     if (!hashed.ok) {
       await markFailed(ports, session, evidenceId, failedStatus, {
         localPath: saved.uri,
@@ -275,6 +295,14 @@ async function finish(
       });
       return fail('SAVE_FAILED');
     }
+    reportMetrics(ports, {
+      kind: 'record_save',
+      sizeBytes: hashed.sizeBytes,
+      wallMs,
+      hashMs,
+      persistMs,
+      hashCount: 1,
+    });
     // Từ đây video ĐÃ an toàn trong hàng đợi: cập nhật phiên chỉ là cố gắng. Lỗi ở đây KHÔNG được làm
     // UI báo "chưa lưu được"; phiên kẹt ở `recording` sẽ được đối chiếu lại lúc mở app (reconcile).
     // Gián đoạn (V1-11) thì phiên `interrupted`: video có thể thiếu phần sau, không được coi là đủ (A05).
@@ -369,7 +397,10 @@ export async function reconcileSavedSessions(
 /** Đường dẫn của tệp bền: `evidence/...` tương đối, hoặc tuyệt đối chứa `/evidence/` (dữ liệu cũ). */
 export const isPersistentPath = (path: string): boolean => /(^|\/)evidence\//.test(path);
 
-export interface RecoveryPorts extends Pick<RecordingPorts, 'files' | 'persist' | 'hash' | 'now'> {
+export interface RecoveryPorts extends Pick<
+  RecordingPorts,
+  'files' | 'persist' | 'hash' | 'now' | 'metrics'
+> {
   readonly orders: Pick<OrderStore, 'updateSessionStatus' | 'getSession'>;
   /** Đường dẫn đã lưu (tương đối hoặc tuyệt đối) còn tệp không. */
   readonly exists: (localPath: string) => boolean;
@@ -418,8 +449,11 @@ async function completeLocalSave(
     return 'lost';
   };
   try {
+    let persistMs: number | null = null;
     if (!location.durable) {
+      const persistStart = now();
       const saved = persist(path, file.id, extensionOf(path));
+      persistMs = now() - persistStart;
       if (!saved.ok) {
         return saved.reason === 'FILE_MISSING' && !exists(path) ? await lose() : await keepSafe();
       }
@@ -429,7 +463,9 @@ async function completeLocalSave(
       });
       if (!moved.ok) return await keepSafe();
     }
+    const hashStart = now();
     const hashed = await hash(path);
+    const hashMs = now() - hashStart;
     if (!hashed.ok) {
       return hashed.reason === 'FILE_MISSING' && !exists(path) ? await lose() : await keepSafe();
     }
@@ -438,7 +474,15 @@ async function completeLocalSave(
       sizeBytes: hashed.sizeBytes,
       sha256Client: hashed.sha256,
     });
-    return queued.ok ? 'queued' : await keepSafe();
+    if (!queued.ok) return await keepSafe();
+    reportMetrics(ports, {
+      kind: 'recovery_save',
+      sizeBytes: hashed.sizeBytes,
+      hashMs,
+      persistMs,
+      hashCount: 1,
+    });
+    return 'queued';
   } catch {
     // Lỗi kho cục bộ: không đổi gì, tệp vẫn ở trạng thái hiện tại và được thử lại lần mở app sau.
     return 'kept';

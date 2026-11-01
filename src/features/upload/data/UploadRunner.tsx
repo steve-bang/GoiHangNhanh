@@ -12,6 +12,7 @@ import { useReturnStore } from '@/features/returns';
 import {
   getAppVersion,
   getConnectivity,
+  reportMediaMetrics,
   subscribeAppActive,
   subscribeConnectivity,
 } from '@/platform';
@@ -159,6 +160,7 @@ export function UploadRunner({
       gateway: effectiveGateway,
       hasher: hasher ?? deviceHasher,
       now: Date.now,
+      metrics: reportMediaMetrics,
       isOnline: () => getConnectivity().online,
       isWaitingForWifi: () => gate() === 'waiting_wifi',
       subscribeOffline: (onStop) => {

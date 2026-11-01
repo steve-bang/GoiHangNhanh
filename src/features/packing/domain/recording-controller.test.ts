@@ -735,3 +735,53 @@ describe('phiên và tệp không lệch nhau (finding 2)', () => {
 });
 
 export type { SessionId };
+
+describe('V1-27 số đo (metrics)', () => {
+  it('một lần quay lưu thành công sinh đúng một bản ghi record_save có kích thước và hashCount 1', async () => {
+    const t = await setup();
+    const metrics = jest.fn();
+    let clock = 0;
+    const ports: RecordingPorts = {
+      ...t.ports,
+      metrics,
+      now: () => {
+        clock += 1000;
+        return clock;
+      },
+    };
+    const active = await startRecording(ports, t.session);
+    if ('kind' in active) throw new Error('should start');
+    active.stop();
+    t.finish({ ok: true, tempUri: 'file:///cache/Camera/x.mov' });
+    expect(await active.result).toEqual({ kind: 'saved', evidenceId: 'ev-1' });
+    expect(metrics).toHaveBeenCalledTimes(1);
+    expect(metrics.mock.calls[0][0]).toMatchObject({
+      kind: 'record_save',
+      sizeBytes: 2048,
+      hashCount: 1,
+    });
+    expect(metrics.mock.calls[0][0].wallMs).toBeGreaterThan(0);
+    expect(JSON.stringify(metrics.mock.calls[0][0])).not.toMatch(/ev-1|cache|evidence\//);
+  });
+
+  it('lưu lỗi thì không có số đo; reporter ném lỗi cũng không làm hỏng việc lưu', async () => {
+    const t = await setup();
+    const metrics = jest.fn(() => {
+      throw new Error('metrics');
+    });
+    const active = await startRecording({ ...t.ports, metrics }, t.session);
+    if ('kind' in active) throw new Error('should start');
+    t.finish({ ok: true, tempUri: 'file:///cache/Camera/x.mov' });
+    expect(await active.result).toEqual({ kind: 'saved', evidenceId: 'ev-1' });
+    expect(await t.fileState()).toBe('queued');
+
+    const f = await setup();
+    const metrics2 = jest.fn();
+    f.state.hash = { ok: false, reason: 'FILE_UNREADABLE' };
+    const active2 = await startRecording({ ...f.ports, metrics: metrics2 }, f.session);
+    if ('kind' in active2) throw new Error('should start');
+    f.finish({ ok: true, tempUri: 'file:///cache/Camera/x.mov' });
+    expect((await active2.result).kind).toBe('failed');
+    expect(metrics2).not.toHaveBeenCalled();
+  });
+});

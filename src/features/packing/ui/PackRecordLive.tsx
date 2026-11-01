@@ -11,6 +11,7 @@ import {
   newEvidenceId,
   onceAppActive,
   persistRecording,
+  reportMediaMetrics,
   subscribeAppBackground,
   useAppNavigation,
   useKeepScreenAwake,
@@ -197,6 +198,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
       availableBytes: getAvailableDiskBytes,
       maxDurationSec: LIMIT_SECONDS,
       wasInterrupted: () => interrupted.current,
+      metrics: reportMediaMetrics,
       newEvidenceId,
       now: Date.now, // giờ THIẾT BỊ cho dấu thời gian bằng chứng (không dùng đồng hồ đơn điệu)
     }),

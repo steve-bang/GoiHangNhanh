@@ -1,6 +1,6 @@
 # V1-22…V1-27 video-pipeline-hardening — kế hoạch chi tiết (nhóm PR, CHƯA làm)
 
-Nguồn: review xử lý video (2026-11-01, người review khác, chưa kiểm chứng trên thiết bị) + đối chiếu mã ở HEAD `12aa19d`. Bám khuôn [v1-13-hash-efficiency.md](v1-13-hash-efficiency.md), [v1-11-recording-hardening.md](v1-11-recording-hardening.md). **Thiết kế kỹ thuật là đề xuất, chờ người dùng duyệt**; các câu hỏi Q-30a…Q-30h ở mục 8 **chưa ai chốt**. Chưa PR nào trong nhóm được bắt đầu.
+Nguồn: review xử lý video (2026-11-01, người review khác, chưa kiểm chứng trên thiết bị) + đối chiếu mã ở HEAD `12aa19d`. Bám khuôn [v1-13-hash-efficiency.md](v1-13-hash-efficiency.md), [v1-11-recording-hardening.md](v1-11-recording-hardening.md). **Thiết kế kỹ thuật là đề xuất, chờ người dùng duyệt**; các câu hỏi Q-30a…Q-30h ở mục 8 **chưa ai chốt**. Trạng thái PR: **V1-27 đã code** (nhánh `feat/v1-27-capture-metrics`, chờ hợp nhất); các PR còn lại xem bên dưới.
 
 ## 0. Kết quả xác minh từng phát hiện của review
 
@@ -162,6 +162,8 @@ Hiện `RecorderResult` chỉ có `RECORDER_FAILED`. Tệp một phần thườn
 **Tách riêng, KHÔNG nằm trong nhóm: giải phóng bản cục bộ đã `verified`** (Q-30g). Lý do cần người dùng: là ngoại lệ thứ ba của bất biến 4, và v1 **chưa có đường xem video từ máy chủ**, nên xóa bản cục bộ = người dùng không còn xem lại được bằng chứng trong app.
 
 ## 7. V1-27 capture-metrics
+
+**Trạng thái: đã code (nhánh `feat/v1-27-capture-metrics`).** Triển khai: `core/diagnostics/media-metrics.ts` (hàm thuần + danh sách khóa), adapter `platform/media-metrics-log.ts` (thêm `platform` rồi `logger.info('media.metrics')`), cổng tùy chọn `metrics` ở `RecordingPorts`/`RecoveryPorts`/`UploadQueueDeps` (domain không import platform), bản ghi `record_save`, `recovery_save`, `upload` (thêm `uploadMs`/`uploadMBps` và `hashCount` 0/1 để đếm số lần băm cho V1-25). Chưa chạy trên thiết bị.
 
 **Mục tiêu.** Biến các điểm "chưa chắc" thành số đo đọc được ở G-3/G-4/G-5/G-14, không cần build riêng.
 

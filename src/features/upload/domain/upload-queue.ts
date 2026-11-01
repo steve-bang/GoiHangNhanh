@@ -1,3 +1,4 @@
+import type { MediaMetricsReporter } from '@/core/diagnostics';
 import type { EvidenceId, ShopId } from '@/core/ids';
 import {
   FILE_STATES,
@@ -41,6 +42,8 @@ export interface UploadQueueDeps {
    * lượt được giải phóng ngay thay vì chờ lớp mạng native báo lỗi. Trả hàm hủy đăng ký.
    */
   readonly subscribeOffline?: (onOffline: () => void) => () => void;
+  /** Nhận số đo không PII (V1-27: thời gian băm và gửi mỗi tệp). Không truyền = không đo. */
+  readonly metrics?: MediaMetricsReporter;
 }
 
 export interface UploadRunOptions {
@@ -294,7 +297,12 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
     localPath: string,
     sha256Client: string,
   ): Promise<
-    | { readonly ok: true; readonly fingerprint: FileFingerprint | null }
+    | {
+        readonly ok: true;
+        readonly fingerprint: FileFingerprint | null;
+        /** Thời gian băm JS (ms); `null` = tin dấu tệp, không băm lại. */
+        readonly hashMs: number | null;
+      }
     | { readonly ok: false; readonly code: string }
   > {
     const readFingerprint = async () =>
@@ -305,14 +313,31 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
       before.sizeBytes === item.sizeBytes &&
       sameFingerprint(before, item.hashedFingerprint)
     ) {
-      return { ok: true, fingerprint: before };
+      return { ok: true, fingerprint: before, hashMs: null };
     }
+    const hashStart = deps.now();
     const hash = await hasher.sha256(localPath);
+    const hashMs = deps.now() - hashStart;
     if (!hash.ok) return { ok: false, code: hash.reason };
     if (hash.sha256 !== sha256Client) return { ok: false, code: 'LOCAL_HASH_CHANGED' };
-    if (!before) return { ok: true, fingerprint: null };
+    if (!before) return { ok: true, fingerprint: null, hashMs };
     const after = await readFingerprint();
-    return { ok: true, fingerprint: sameFingerprint(before, after) ? before : null };
+    return { ok: true, fingerprint: sameFingerprint(before, after) ? before : null, hashMs };
+  }
+
+  /** Số đo một lần gửi thành công (V1-27); không bao giờ làm hỏng hàng đợi. */
+  function reportUploadMetrics(sizeBytes: number, hashMs: number | null, uploadMs: number): void {
+    try {
+      deps.metrics?.({
+        kind: 'upload',
+        sizeBytes,
+        hashMs,
+        uploadMs,
+        hashCount: hashMs === null ? 0 : 1,
+      });
+    } catch {
+      // số đo không được làm hỏng hàng đợi
+    }
   }
 
   /** Trả `'stop'` khi gặp lỗi mạng: tệp sau trong lượt cũng sẽ lỗi, dừng để không tốn lượt gọi. */
@@ -360,6 +385,7 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
     });
     if (!started.ok) return 'next';
     const current: Entry = { source: entry.source, item: started.item };
+    const uploadStart = deps.now();
     const outcome = await attempt({
       evidenceId: current.item.id,
       shopId: current.item.shopId,
@@ -371,8 +397,10 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
       sizeBytes,
       sha256Client,
     });
+    const uploadMs = deps.now() - uploadStart;
     if (outcome.kind !== 'network') networkStreak.delete(current.item.id);
     if (outcome.kind === 'received') {
+      reportUploadMetrics(sizeBytes, local.hashMs, uploadMs);
       const done = await apply(current, server('SERVER_RECEIVED'), {
         nextAttemptAtDevice: null,
         lastErrorCode: null,
