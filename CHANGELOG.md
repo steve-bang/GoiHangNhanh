@@ -44,6 +44,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Fixed
 
+- Lỗi kho SQLite lúc dừng quay không còn làm mất dấu tệp tạm: vẫn chuyển sang `evidence/<id>.<đuôi>` và ghi lại bằng `RECOVERY_FOUND_FILE` (thử lại 3 lần), mọi nhánh lỗi mang đường dẫn; khôi phục tệp `recording` tìm tệp bền theo ID (đóng gói và hàng hoàn). Không quét thư mục tạm, không xóa tệp (V1-23).
 - Trang chủ không còn dữ liệu minh họa: tên cửa hàng lấy từ tài khoản, ba ô "Thống kê hôm nay" đếm thật trên máy (đơn đã đóng gói có video, tệp máy chủ đã nhận hôm nay, tệp lỗi cần xử lý; ô Lỗi mở thẳng bộ lọc Lỗi), máy trống hiện số 0 kèm câu rỗng, thêm thẻ "Dữ liệu nằm trên máy này" đóng được; thẻ và màn Dữ liệu bằng chứng ở Cá nhân có số thật; tab Thông báo nói rõ ứng dụng chưa gửi thông báo và mở Trung tâm đồng bộ. Chưa kiểm chứng trên thiết bị (V1-10).
 - Trung tâm đồng bộ hiện tệp thật trên máy (video đóng gói, ảnh/video hàng hoàn) thay cho dữ liệu minh họa, theo bốn mục Đang tải lên / Chờ tải lên / Lỗi / Đã tải lên; có nút Thử lại cho lỗi máy chủ (không cho lỗi của chính tệp), Kiểm tra lại cho tệp máy chủ nhận lâu chưa xác minh, nhóm riêng cho tệp của tài khoản khác, màn Chi tiết lỗi thật; nói rõ ứng dụng chỉ tải khi đang mở. Chưa kiểm chứng trên thiết bị (V1-08).
 - Một máy một tài khoản: app chỉ tải lên ảnh/video do chính tài khoản đang đăng nhập tạo, không tải hộ tài khoản khác dùng chung máy; tệp của tài khoản khác hiện "Chờ tải lên" kèm lý do; tệp của tài khoản khác không còn chặn đăng xuất. Chưa kiểm chứng trên thiết bị (V1-07).

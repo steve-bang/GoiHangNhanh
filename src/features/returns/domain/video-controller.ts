@@ -59,6 +59,8 @@ export interface VideoPorts {
    * (hạn chế bằng chứng). Không truyền = không gián đoạn.
    */
   wasInterrupted?(): boolean;
+  /** Chờ (ms) giữa các lần thử ghi lại CSDL sau lỗi lúc dừng (V1-23). Không truyền = `setTimeout`. */
+  readonly sleep?: (ms: number) => Promise<void>;
 }
 
 /** Vì sao KHÔNG bắt đầu quay (chưa tạo bản ghi nào, trừ `LOCAL_STORE`/`RECORDER_FAILED`). */
@@ -181,6 +183,40 @@ async function persistInterrupted(ports: VideoPorts, shopId: ShopId, mediaId: st
   }
 }
 
+const RECORD_RETRY_DELAYS_MS = [200, 400, 800] as const;
+
+/**
+ * STOP_RECORDING không ghi được nhưng tệp ĐÃ ở thư mục bền: ghi vị trí thật bằng `RECOVERY_FOUND_FILE`
+ * (hoặc `LOCAL_FILE_MOVED` nếu STOP thật ra đã ghi xong), thử tối đa 3 lần có chờ. Không ném lỗi.
+ */
+async function recordFoundFile(
+  ports: VideoPorts,
+  shopId: ShopId,
+  mediaId: string,
+  localPath: string,
+): Promise<boolean> {
+  const sleep =
+    ports.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  for (let attempt = 0; attempt <= RECORD_RETRY_DELAYS_MS.length; attempt += 1) {
+    if (attempt > 0) await sleep(RECORD_RETRY_DELAYS_MS[attempt - 1] as number);
+    for (const type of ['RECOVERY_FOUND_FILE', 'LOCAL_FILE_MOVED'] as const) {
+      try {
+        const applied = await ports.store.applyMediaEvent(
+          shopId,
+          mediaId,
+          device(type),
+          ports.now(),
+          { localPath },
+        );
+        if (applied.ok) return true;
+      } catch {
+        // kho kẹt tạm: thử lại sau
+      }
+    }
+  }
+  return false;
+}
+
 async function markFailed(
   ports: VideoPorts,
   shopId: ShopId,
@@ -210,6 +246,8 @@ async function finish(
   const fail = (reason: VideoFailure): VideoOutcome => ({ kind: 'failed', mediaId, reason });
   /** Đường dẫn bền sau khi chuyển tệp; có giá trị thì mọi lỗi về sau phải giữ nó. */
   let savedUri: string | null = null;
+  /** Đường dẫn tạm camera đã giao (có ngay khi `recorded.ok`). */
+  let knownPath: string | null = null;
   // Camera đã trả kết quả: gián đoạn (vào nền, camera tự dừng sớm) ghi cờ BỀN trước mọi bước lưu, để lưu
   // lỗi/app bị tắt về sau vẫn khôi phục đúng `interrupted: true` (V1-13).
   if (ports.wasInterrupted?.()) await persistInterrupted(ports, shopId, mediaId);
@@ -218,14 +256,14 @@ async function finish(
       await markFailed(ports, shopId, mediaId);
       return fail('RECORDER_FAILED');
     }
-    const stopped = await store.applyMediaEvent(shopId, mediaId, device('STOP_RECORDING'), now(), {
-      localPath: recorded.tempUri,
-    });
-    if (!stopped.ok) {
-      // Giữ đường dẫn tạm (không xóa tệp) để khôi phục sau kill tìm lại được, như photo-controller.
-      await markFailed(ports, shopId, mediaId, recorded.tempUri);
-      return fail('SAVE_FAILED');
-    }
+    knownPath = recorded.tempUri;
+    // Ghi lỗi lúc dừng (SQLite kẹt/ném) KHÔNG được dừng ở đây (V1-23): tệp tạm đã giao cho app. Vẫn chuyển
+    // vào `evidence/<id>.<đuôi>` (tên mang ID tạo trước khi quay), rồi ghi lại bằng `RECOVERY_FOUND_FILE`.
+    const stopped = await store
+      .applyMediaEvent(shopId, mediaId, device('STOP_RECORDING'), now(), {
+        localPath: recorded.tempUri,
+      })
+      .catch(() => ({ ok: false as const }));
 
     const saved = persist(recorded.tempUri, mediaId, extensionOf(recorded.tempUri));
     if (!saved.ok) {
@@ -234,9 +272,11 @@ async function finish(
     }
     savedUri = saved.uri;
     // Ghi đường dẫn MỚI ngay, trước khi băm: app bị kill lúc băm không được mất dấu bản gốc.
-    const moved = await store.applyMediaEvent(shopId, mediaId, device('LOCAL_FILE_MOVED'), now(), {
-      localPath: saved.uri,
-    });
+    const moved = stopped.ok
+      ? await store.applyMediaEvent(shopId, mediaId, device('LOCAL_FILE_MOVED'), now(), {
+          localPath: saved.uri,
+        })
+      : { ok: await recordFoundFile(ports, shopId, mediaId, saved.uri) };
     if (!moved.ok) {
       await markFailed(ports, shopId, mediaId, saved.uri);
       return fail('SAVE_FAILED');
@@ -274,7 +314,7 @@ async function finish(
     return { kind: 'saved', mediaId, recordedInCase, interrupted };
   } catch {
     // Lỗi kho cục bộ giữa chừng: cố ghi lỗi (kèm đường dẫn bền nếu đã chuyển tệp).
-    await markFailed(ports, shopId, mediaId, savedUri ?? undefined);
+    await markFailed(ports, shopId, mediaId, savedUri ?? knownPath ?? undefined);
     return fail('SAVE_FAILED');
   }
 }

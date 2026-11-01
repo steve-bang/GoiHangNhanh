@@ -568,6 +568,20 @@ export function runReturnStoreContract(
         });
       });
 
+      it('V1-23: RECOVERY_FOUND_FILE từ recording ghi vị trí tệp bền và sang saving_local', async () => {
+        const store = await create();
+        const { returnCase } = await store.createReturn(makeNewReturn());
+        await store.createMedia(newMedia(returnCase.id, 'm1'));
+        expect(
+          await store.applyMediaEvent(SHOP, 'm1', dev('RECOVERY_FOUND_FILE'), 2, {
+            localPath: 'evidence/m1.mov',
+          }),
+        ).toMatchObject({
+          ok: true,
+          media: { state: 'saving_local', localPath: 'evidence/m1.mov' },
+        });
+      });
+
       it('lỗi ghi: LOCAL_WRITE_FAILED giữ đường dẫn đã biết', async () => {
         const store = await create();
         const { returnCase } = await store.createReturn(makeNewReturn());

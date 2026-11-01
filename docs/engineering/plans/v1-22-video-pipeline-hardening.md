@@ -1,6 +1,6 @@
 # V1-22…V1-27 video-pipeline-hardening — kế hoạch chi tiết (nhóm PR, CHƯA làm)
 
-Nguồn: review xử lý video (2026-11-01, người review khác, chưa kiểm chứng trên thiết bị) + đối chiếu mã ở HEAD `12aa19d`. Bám khuôn [v1-13-hash-efficiency.md](v1-13-hash-efficiency.md), [v1-11-recording-hardening.md](v1-11-recording-hardening.md). **Thiết kế kỹ thuật là đề xuất, chờ người dùng duyệt**; các câu hỏi Q-30a…Q-30h ở mục 8 **chưa ai chốt**. Trạng thái PR: **V1-27 đã code** (nhánh `feat/v1-27-capture-metrics`, chờ hợp nhất); các PR còn lại xem bên dưới.
+Nguồn: review xử lý video (2026-11-01, người review khác, chưa kiểm chứng trên thiết bị) + đối chiếu mã ở HEAD `12aa19d`. Bám khuôn [v1-13-hash-efficiency.md](v1-13-hash-efficiency.md), [v1-11-recording-hardening.md](v1-11-recording-hardening.md). **Thiết kế kỹ thuật là đề xuất, chờ người dùng duyệt**; các câu hỏi Q-30a…Q-30h ở mục 8 **chưa ai chốt**. Trạng thái PR: **V1-27 đã code** (nhánh `feat/v1-27-capture-metrics`), **V1-23 đã code** phần 3.1 (nhánh `feat/v1-23-temp-file-safety`); cả hai chờ hợp nhất; các PR còn lại xem bên dưới.
 
 ## 0. Kết quả xác minh từng phát hiện của review
 
@@ -72,6 +72,8 @@ Lý do: V1-27 đi đầu để build staging đầu tiên đã in được số 
 **Bất biến.** Không đụng liên kết phiên–kiện (2); không xóa/ghi đè (4); không đổi câu chữ (11).
 
 ## 3. V1-23 temp-file-safety (gồm lỗi SQLite lúc STOP_RECORDING)
+
+**Trạng thái: đã code phần 3.1 (nhánh `feat/v1-23-temp-file-safety`, xếp chồng trên V1-27).** Áp dụng cho cả đóng gói (`recording-controller.ts`) và video hàng hoàn (`video-controller.ts`, `media-recovery.ts`; media ảnh ở trạng thái `recording` cũng được cứu nếu đã có tệp bền theo ID). Cổng `sleep?` tiêm được cho test. **Q-30c đã chốt = A (người dùng)**: phần 3.2 (cứu tệp khi `recordAsync` bị từ chối) KHÔNG làm ở 1.0, không có `camera-temp-files.ts`; chỉ ĐO bằng G-15. Chưa chạy trên thiết bị. Lệch kế hoạch: nhánh `catch` ngoài cùng và `persist` lỗi giữ đường dẫn tạm (không có đường dẫn bền); `RECOVERY_FOUND_FILE` còn thử `LOCAL_FILE_MOVED` khi STOP thật ra đã ghi xong dù báo lỗi.
 
 **Mục tiêu.** Mọi tệp tạm mà camera đã giao cho app phải đi tiếp tới `evidence/<id>.<đuôi>` hoặc ít nhất để lại dấu vết tìm lại được, kể cả khi kho SQLite lỗi; không còn nhánh nào giữ tệp mà không ai biết nó ở đâu.
 
