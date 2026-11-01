@@ -13,6 +13,7 @@ import {
   formatElapsed,
   maxRecordSeconds,
   requiredFreeBytes,
+  VIDEO_PROFILE,
 } from '@/features/packing';
 import {
   CameraRecorder,
@@ -592,6 +593,7 @@ function LiveCamera({
             <CameraRecorder
               testID="record-camera"
               handleRef={handleRef}
+              profile={VIDEO_PROFILE}
               torch={torch}
               onReady={() => void begin()}
               onError={() => {

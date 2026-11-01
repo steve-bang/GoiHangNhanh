@@ -35,4 +35,13 @@ describe('classifyCameraEnd', () => {
     ).toBe('early');
     expect(classifyCameraEnd({ stopRequested: false, elapsedMs: 0, limitSeconds })).toBe('early');
   });
+
+  it('V1-22: camera tự dừng vì chạm trần dung lượng (maxFileSize, resolve tệp hợp lệ) khi chưa tới giờ và không ai yêu cầu: early (phiên interrupted), KHÔNG bị coi là requested', () => {
+    expect(classifyCameraEnd({ stopRequested: false, elapsedMs: 4 * 60_000, limitSeconds })).toBe(
+      'early',
+    );
+    expect(
+      classifyCameraEnd({ stopRequested: false, elapsedMs: 4 * 60_000, limitSeconds }),
+    ).not.toBe('requested');
+  });
 });

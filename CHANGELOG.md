@@ -8,6 +8,8 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Added
 
+- Tạm dừng hàng đợi tải lên và băm nền khi đang quay video (tín hiệu `core/recording/recording-activity`, bật trong `platform/camera-recorder`, tắt ở mọi đường kết thúc + lưới 15 phút); quay xong chạy lại ngay, lần gửi bị hủy không tốn lượt; chưa đo trên thiết bị (V1-28).
+- Số đo xử lý video không PII (`core/diagnostics/media-metrics`, log `media.metrics` qua `platform/media-metrics-log`): byte/phút, thời gian lưu/băm/gửi, MB/giây, số lần băm cho cổng thiết bị G-3/G-4/G-5/G-14; chưa chạy trên thiết bị (V1-27).
 - Kế hoạch tổng phát hành v1.0, checklist phát hành cho con người và nhật ký thay đổi này (tài liệu).
 - Công cụ chụp ảnh màn hình bản web với cổng giả cho PR (`scripts/screens`, không đổi phụ thuộc, không chạy ở CI) và bộ ảnh mốc các màn chính (V1-00, #41).
 - Website: trang Chính sách quyền riêng tư, Điều khoản sử dụng, Hỗ trợ và Yêu cầu xóa tài khoản (bản chờ rà pháp lý; email, tên pháp nhân, tên miền còn giữ chỗ), liên kết ở chân trang và sitemap; trang chủ web không còn nói "tải lên chạy nền" (V1-19, #42).
@@ -32,6 +34,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Changed
 
+- Thông số quay tường minh trên cả iOS và Android: 1080p30, H.264 (`avc1`), 6 Mbps, `maxFileSize` 1,9 GB (< trần tải lên 2 GB) qua prop `profile` của `CameraRecorder`; `ESTIMATED_BYTES_PER_MINUTE` suy từ bitrate (58,5 MB/phút). Dựa trên đọc mã `expo-camera` 58.0.12, chưa chạy trên thiết bị (V1-22, Q-30a/b).
 - Ảnh minh họa màn Splash đổi tông xanh ngọc sang cam chủ đạo (áo yếm, điện thoại, biểu tượng trong bong bóng); logo Shopee/TikTok/Lazada và hai chậu cây giữ nguyên. Ảnh gốc xanh giữ ở `docs/assets/brand/splash/splash-hero-jade.webp`, script tạo lại ở `scripts/assets/recolor-splash-hero.py`. Chỉ kiểm qua ảnh bản web, chưa xem trên thiết bị.
 - Màn Chào mừng dùng ảnh minh họa 3D mới (hộp hàng, điện thoại đang quay, mã vạch, khiên xác nhận, biểu tượng Shopee/TikTok/Lazada); màn Đăng nhập vẫn dùng hình vẽ cũ. Chỉ kiểm qua ảnh bản web, chưa xem trên thiết bị.
 - Giao diện Splash, Chào mừng, Đăng nhập, Đăng ký, Quên mật khẩu, Mã xác minh, Mật khẩu mới, Tạo shop và Hoàn tất thiết lập đồng nhất với phần còn lại của ứng dụng: màu cam thương hiệu thay xanh ngọc, cỡ chữ và khoảng cách theo bộ chuẩn chung, liên kết cùng một màu; dấu * bắt buộc ở Tên shop không còn màu đỏ. Biểu tượng ứng dụng và ảnh tĩnh (ảnh khởi động, ảnh minh họa Splash) chưa đổi. Chỉ kiểm qua ảnh bản web và unit test, chưa xem trên thiết bị (D-20).
@@ -43,6 +46,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Fixed
 
+- Lỗi kho SQLite lúc dừng quay không còn làm mất dấu tệp tạm: vẫn chuyển sang `evidence/<id>.<đuôi>` và ghi lại bằng `RECOVERY_FOUND_FILE` (thử lại 3 lần), mọi nhánh lỗi mang đường dẫn; khôi phục tệp `recording` tìm tệp bền theo ID (đóng gói và hàng hoàn). Không quét thư mục tạm, không xóa tệp (V1-23).
 - Trang chủ không còn dữ liệu minh họa: tên cửa hàng lấy từ tài khoản, ba ô "Thống kê hôm nay" đếm thật trên máy (đơn đã đóng gói có video, tệp máy chủ đã nhận hôm nay, tệp lỗi cần xử lý; ô Lỗi mở thẳng bộ lọc Lỗi), máy trống hiện số 0 kèm câu rỗng, thêm thẻ "Dữ liệu nằm trên máy này" đóng được; thẻ và màn Dữ liệu bằng chứng ở Cá nhân có số thật; tab Thông báo nói rõ ứng dụng chưa gửi thông báo và mở Trung tâm đồng bộ. Chưa kiểm chứng trên thiết bị (V1-10).
 - Trung tâm đồng bộ hiện tệp thật trên máy (video đóng gói, ảnh/video hàng hoàn) thay cho dữ liệu minh họa, theo bốn mục Đang tải lên / Chờ tải lên / Lỗi / Đã tải lên; có nút Thử lại cho lỗi máy chủ (không cho lỗi của chính tệp), Kiểm tra lại cho tệp máy chủ nhận lâu chưa xác minh, nhóm riêng cho tệp của tài khoản khác, màn Chi tiết lỗi thật; nói rõ ứng dụng chỉ tải khi đang mở. Chưa kiểm chứng trên thiết bị (V1-08).
 - Một máy một tài khoản: app chỉ tải lên ảnh/video do chính tài khoản đang đăng nhập tạo, không tải hộ tài khoản khác dùng chung máy; tệp của tài khoản khác hiện "Chờ tải lên" kèm lý do; tệp của tài khoản khác không còn chặn đăng xuất. Chưa kiểm chứng trên thiết bị (V1-07).

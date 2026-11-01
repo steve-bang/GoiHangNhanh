@@ -260,7 +260,7 @@ describe('startOpeningVideo: quay video mở kiện', () => {
     expect((await t.store.getReturn(SHOP, returnId))?.returnCase.openingVideo).toBeNull();
   });
 
-  it('ghi STOP_RECORDING không được: vẫn giữ đường dẫn TẠM ở lưu lỗi để khôi phục tìm lại được', async () => {
+  it('ghi STOP_RECORDING không được (V1-23): vẫn chuyển tệp và ghi lại bằng RECOVERY_FOUND_FILE, không dừng ở SAVE_FAILED', async () => {
     const t = setup();
     const returnId = await makeCase(t.store);
     const real = t.store.applyMediaEvent.bind(t.store);
@@ -273,27 +273,9 @@ describe('startOpeningVideo: quay video mở kiện', () => {
     };
     const active = await startOpeningVideo({ ...t.ports, store }, { shopId: SHOP, returnId });
     if ('kind' in active) throw new Error(active.reason);
-    expect(await active.result).toMatchObject({ kind: 'failed', reason: 'SAVE_FAILED' });
+    expect(await active.result).toMatchObject({ kind: 'saved', recordedInCase: true });
     const [media] = await mediaOf(t.store, returnId);
-    expect(media).toMatchObject({
-      state: 'local_save_failed',
-      localPath: 'file:///cache/Camera/v.mov',
-    });
-    // Khôi phục sau kill thấy tệp tạm còn (không bị coi là "không đường dẫn" -> unrecoverable).
-    const result = await recoverInterruptedMedia(
-      {
-        store: t.store,
-        persist: (_tmp, id, ext) => ({ ok: true, uri: `evidence/${id}.${ext}`, sizeBytes: 9 }),
-        hash: async () => ({ ok: true, sha256: 'cd'.repeat(32), sizeBytes: 9 }),
-        exists: () => true,
-        findPersisted: () => null,
-        now: () => 99_999,
-        newId: () => 'rec-1',
-      },
-      1_000_000,
-    );
-    expect(result).toMatchObject({ lost: 0, rescued: 1 });
-    expect((await mediaOf(t.store, returnId))[0]?.state).toBe('queued');
+    expect(media).toMatchObject({ state: 'queued', localPath: `evidence/${active.mediaId}.mov` });
   });
 
   it('băm lỗi: giữ đường dẫn BỀN đã chuyển, FILE_UNREADABLE, hồ sơ không ghi video', async () => {
@@ -520,5 +502,87 @@ describe('startOpeningVideo: quay video mở kiện', () => {
     const details = await t.store.getReturn(SHOP, id);
     expect(details?.returnCase.openingVideo?.kind).toBe('recorded');
     expect(hasOpeningEvidenceLimit(details?.returnCase ?? ({} as never))).toBe(true);
+  });
+});
+
+describe('startOpeningVideo: lỗi kho lúc STOP_RECORDING (V1-23)', () => {
+  const flakyStore = (
+    store: ReturnStore,
+    types: string[],
+    mode: 'throw' | 'notok',
+    times = Number.POSITIVE_INFINITY,
+  ): ReturnStore => {
+    let left = times;
+    const wrapped = Object.create(store) as ReturnStore;
+    wrapped.applyMediaEvent = async (shopId, mediaId, event, at, patch) => {
+      if (types.includes(event.type) && left > 0) {
+        left -= 1;
+        if (mode === 'throw') throw new Error('SQLITE_BUSY');
+        return { ok: false, error: 'ILLEGAL_TRANSITION' } as never;
+      }
+      return store.applyMediaEvent(shopId, mediaId, event, at, patch);
+    };
+    return wrapped;
+  };
+
+  it.each(['throw', 'notok'] as const)(
+    'STOP lỗi (%s): vẫn chuyển tệp sang thư mục bền, ghi lại bằng RECOVERY_FOUND_FILE, video vào hàng đợi',
+    async (mode) => {
+      const t = setup();
+      const returnId = await makeCase(t.store);
+      const ports = {
+        ...t.ports,
+        store: flakyStore(t.store, ['STOP_RECORDING'], mode),
+        sleep: async () => undefined,
+      };
+      const active = await startOpeningVideo(ports, { shopId: SHOP, returnId });
+      if ('kind' in active) throw new Error(active.reason);
+      expect(await active.result).toMatchObject({ kind: 'saved', recordedInCase: true });
+      expect(t.log.filter((l) => l.startsWith('persist'))).toHaveLength(1);
+      expect((await mediaOf(t.store, returnId))[0]).toMatchObject({
+        state: 'queued',
+        localPath: `evidence/${active.mediaId}.mov`,
+      });
+    },
+  );
+
+  it('mọi lần ghi lại đều lỗi: failed kèm mediaId, local_save_failed giữ đường dẫn bền; kho ném hết: tệp vẫn ở thư mục bền theo ID', async () => {
+    const t = setup();
+    const returnId = await makeCase(t.store);
+    const waits: number[] = [];
+    const ports = {
+      ...t.ports,
+      store: flakyStore(
+        t.store,
+        ['STOP_RECORDING', 'RECOVERY_FOUND_FILE', 'LOCAL_FILE_MOVED'],
+        'notok',
+      ),
+      sleep: async (ms: number) => void waits.push(ms),
+    };
+    const active = await startOpeningVideo(ports, { shopId: SHOP, returnId });
+    if ('kind' in active) throw new Error(active.reason);
+    expect(await active.result).toEqual({
+      kind: 'failed',
+      mediaId: active.mediaId,
+      reason: 'SAVE_FAILED',
+    });
+    expect(waits).toEqual([200, 400, 800]);
+    expect((await mediaOf(t.store, returnId))[0]).toMatchObject({
+      state: 'local_save_failed',
+      localPath: `evidence/${active.mediaId}.mov`,
+    });
+    expect((await t.store.getReturn(SHOP, returnId))?.returnCase.openingVideo).toBeNull();
+
+    const t2 = setup();
+    const returnId2 = await makeCase(t2.store);
+    const all = ['STOP_RECORDING', 'RECOVERY_FOUND_FILE', 'LOCAL_FILE_MOVED', 'LOCAL_WRITE_FAILED'];
+    const active2 = await startOpeningVideo(
+      { ...t2.ports, store: flakyStore(t2.store, all, 'throw'), sleep: async () => undefined },
+      { shopId: SHOP, returnId: returnId2 },
+    );
+    if ('kind' in active2) throw new Error(active2.reason);
+    expect(await active2.result).toMatchObject({ kind: 'failed', reason: 'SAVE_FAILED' });
+    expect(t2.log.filter((l) => l.startsWith('persist'))).toHaveLength(1);
+    expect((await mediaOf(t2.store, returnId2))[0]?.state).toBe('recording');
   });
 });

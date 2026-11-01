@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
 
 import type { RemoteDocuments } from '@/api/contract';
+import { isRecordingActive, subscribeRecordingActivity } from '@/core/recording/recording-activity';
 import {
   useCurrentShopId,
   useDeviceSettings,
@@ -12,6 +13,7 @@ import { useReturnStore } from '@/features/returns';
 import {
   getAppVersion,
   getConnectivity,
+  reportMediaMetrics,
   subscribeAppActive,
   subscribeConnectivity,
 } from '@/platform';
@@ -80,6 +82,9 @@ interface Engine {
  * thẳng từ `platform/connectivity`), nếu không cờ `running` của thể hiện cũ mất tác dụng và hai lượt tải
  * chạy chồng nhau. Mất mạng: hàng đợi dừng (lần gửi đang chạy bị hủy); có mạng lại: chạy ngay, tệp lỗi
  * mạng tới hạn ngay (V1-02).
+ *
+ * Đang quay video (V1-28, `core/recording/recording-activity`): không chạy lượt mới (cả băm kiểm tra tệp
+ * và đối soát), lần gửi đang chạy bị hủy như mất mạng; quay xong thì chạy lại ngay.
  *
  * "Chỉ tải khi có Wi‑Fi" (V1-09, cài đặt máy `UPLOAD_WIFI_ONLY`): bật mà mạng không phải Wi‑Fi thì như
  * mất mạng với hàng đợi (không chạy lượt, lần gửi đang chạy bị hủy). Có Wi‑Fi lại hoặc tắt công tắc:
@@ -159,8 +164,10 @@ export function UploadRunner({
       gateway: effectiveGateway,
       hasher: hasher ?? deviceHasher,
       now: Date.now,
+      metrics: reportMediaMetrics,
       isOnline: () => getConnectivity().online,
       isWaitingForWifi: () => gate() === 'waiting_wifi',
+      isPaused: isRecordingActive,
       subscribeOffline: (onStop) => {
         stopListeners.add(onStop);
         return () => {
@@ -212,8 +219,18 @@ export function UploadRunner({
     };
     const unsubscribeNetwork = subscribeConnectivity(onGateChange);
     const unsubscribeSetting = settings.subscribe(UPLOAD_WIFI_ONLY.key, onGateChange);
+    // Đang quay (V1-28): bắt đầu quay -> hủy lần gửi đang chạy (như mất mạng, không tốn lượt); quay xong
+    // -> chạy ngay, tệp bị hoãn vì lần hủy này tới hạn ngay (cùng đường `networkRestored`).
+    const unsubscribeRecording = subscribeRecordingActivity((recording) => {
+      if (recording) {
+        for (const listener of [...stopListeners]) listener();
+      } else {
+        run({ networkRestored: true }, true);
+      }
+    });
     return () => {
       disposed = true;
+      unsubscribeRecording();
       if (engine.current?.queue === queue) engine.current = null;
       clearInterval(timer);
       unsubscribeActive();

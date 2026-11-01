@@ -18,6 +18,10 @@ import {
 
 import { ReturnStoreProvider, createMemoryReturnStore, type ReturnStore } from '@/features/returns';
 
+import {
+  beginRecordingActivity,
+  resetRecordingActivityForTest,
+} from '@/core/recording/recording-activity';
 import { resetMockConnectivity, setMockConnectivity } from '@/test-utils/mock-connectivity';
 
 import { UPLOAD_WIFI_ONLY } from '../domain/network-policy';
@@ -54,7 +58,10 @@ beforeEach(() => {
   settingsStore = createMemoryDeviceSettingsStore();
 });
 
-afterEach(() => resetMockConnectivity());
+afterEach(() => {
+  resetMockConnectivity();
+  resetRecordingActivityForTest();
+});
 
 /**
  * Kho tệp có một video `queued` thuộc phiên 's' do `creator` tạo (`null` = không rõ người tạo).
@@ -586,5 +593,107 @@ describe('Chỉ tải khi có Wi‑Fi (V1-09, Q-24c B)', () => {
     await flush();
     expect(uploads).toEqual(['ev-1', 'ev-1']);
     expect((await files.get(REAL_SHOP as never, 'ev-1' as EvidenceId))?.state).toBe('uploaded');
+  });
+});
+
+describe('Tạm dừng khi đang quay video (V1-28)', () => {
+  it('đang quay lúc mở app: không gọi máy chủ; quay xong: tải ngay, không đợi chu kỳ 60 giây', async () => {
+    const end = beginRecordingActivity();
+    const files = await storeWithQueuedFile(REAL_SHOP);
+    const t = fakeGateway();
+    await mount(files, REAL_SHOP, { docs, gateway: t.gateway });
+    await flush();
+    expect(t.uploads).toEqual([]);
+    expect(await files.get(REAL_SHOP as never, 'ev-1' as EvidenceId)).toMatchObject({
+      state: 'queued',
+      attemptCount: 0,
+    });
+    await act(async () => end());
+    await flush();
+    expect(t.uploads).toEqual(['ev-1']);
+  });
+
+  it('đang quay: foreground, có mạng lại, Thử ngay đều không chạy lượt', async () => {
+    beginRecordingActivity();
+    const files = await storeWithQueuedFile(REAL_SHOP);
+    const t = fakeGateway();
+    let control: UploadQueueControl | null = null;
+    function Spy() {
+      control = useUploadQueueControl();
+      return null;
+    }
+    await render(
+      <CurrentShopProvider shopId={REAL_SHOP}>
+        <OrderStoreProvider store={orderStore}>
+          <EvidenceFileStoreProvider store={files}>
+            <ReturnStoreProvider store={createMemoryReturnStore()}>
+              <DeviceSettingsProvider store={settingsStore}>
+                <UploadRunner docs={docs} hasher={hasher} gateway={t.gateway}>
+                  <Spy />
+                </UploadRunner>
+              </DeviceSettingsProvider>
+            </ReturnStoreProvider>
+          </EvidenceFileStoreProvider>
+        </OrderStoreProvider>
+      </CurrentShopProvider>,
+    );
+    await flush();
+    await act(async () => activeListener?.());
+    await goOnline(false);
+    await goOnline(true);
+    await act(async () => (control as UploadQueueControl | null)?.runNow());
+    await flush();
+    expect(t.uploads).toEqual([]);
+  });
+
+  it('bắt đầu quay giữa lần gửi: hủy lần gửi; quay xong tải lại, tệp còn nguyên', async () => {
+    const files = await storeWithQueuedFile(REAL_SHOP);
+    let calls = 0;
+    const signals: (AbortSignal | undefined)[] = [];
+    const gateway: UploadGateway = {
+      upload: async (_request, attempt) => {
+        calls += 1;
+        signals.push(attempt?.signal);
+        if (calls > 1) return { kind: 'received' };
+        return new Promise((resolve) =>
+          attempt?.signal?.addEventListener('abort', () =>
+            resolve({ kind: 'network', code: 'NETWORK_LOST' }),
+          ),
+        );
+      },
+      fetchServerStates: async () => new Map(),
+    };
+    await mount(files, REAL_SHOP, { docs, gateway });
+    await flush();
+    expect(calls).toBe(1);
+    let end = () => undefined as void;
+    await act(async () => void (end = beginRecordingActivity()));
+    await flush();
+    expect(signals[0]?.aborted).toBe(true);
+    expect(await files.get(REAL_SHOP as never, 'ev-1' as EvidenceId)).toMatchObject({
+      state: 'upload_failed',
+      attemptCount: 0,
+      localPath: 'file:///v.mp4',
+    });
+    expect(calls).toBe(1);
+    await act(async () => end());
+    await flush();
+    expect(calls).toBe(2);
+    expect(await files.get(REAL_SHOP as never, 'ev-1' as EvidenceId)).toMatchObject({
+      state: 'uploaded',
+      attemptCount: 0,
+    });
+  });
+
+  it('gỡ runner khi đang quay: không lỗi, không chạy lượt sau khi gỡ', async () => {
+    const end = beginRecordingActivity();
+    const files = await storeWithQueuedFile(REAL_SHOP);
+    const t = fakeGateway();
+    const view = await mount(files, REAL_SHOP, { docs, gateway: t.gateway });
+    await flush();
+    await view.unmount();
+    await act(async () => end());
+    await flush();
+    expect(t.uploads).toEqual([]);
   });
 });

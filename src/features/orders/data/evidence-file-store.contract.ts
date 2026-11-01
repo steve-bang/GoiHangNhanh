@@ -187,6 +187,24 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
       expect(await apply('UPLOAD_STARTED', 5, { attemptCount: 1 })).toMatchObject({ ok: true });
     });
 
+    it('V1-23: RECOVERY_FOUND_FILE từ recording ghi vị trí tệp bền (chưa từng có đường dẫn) và sang saving_local', async () => {
+      const h = await make();
+      const input = await seedFile(h, 'RFF');
+      await h.files.create(input);
+      expect(
+        await h.files.applyEvent(LOCAL_SHOP_ID, input.id, device('RECOVERY_FOUND_FILE'), 2, {
+          localPath: 'evidence/rff.mp4',
+        }),
+      ).toMatchObject({ ok: true, file: { state: 'saving_local', localPath: 'evidence/rff.mp4' } });
+      // Sau đó đóng bình thường qua LOCAL_FILE_READABLE.
+      expect(
+        await h.files.applyEvent(LOCAL_SHOP_ID, input.id, device('LOCAL_FILE_READABLE'), 3, {
+          ...CLOSED,
+          localPath: 'evidence/rff.mp4',
+        }),
+      ).toMatchObject({ ok: true, file: { state: 'queued' } });
+    });
+
     it('vị trí tệp: đặt khi chưa có, ghi vị trí thật khi chuyển tệp (trước khi đóng), không đổi sau khi đóng', async () => {
       const h = await make();
       const input = await seedFile(h, 'LOC');

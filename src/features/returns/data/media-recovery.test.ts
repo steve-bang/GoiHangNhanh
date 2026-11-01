@@ -250,3 +250,32 @@ describe('recoverInterruptedMedia: khôi phục sau khi app bị kill', () => {
     });
   });
 });
+
+describe('recoverInterruptedMedia: recording + tệp bền theo ID (V1-23)', () => {
+  it('video recording nhưng đã có evidence/<id>.<đuôi>: RECOVERY_FOUND_FILE -> queued, ghi vào hồ sơ là gián đoạn', async () => {
+    const t = setup();
+    const returnId = await makeCase(t.store);
+    await makeMedia(t.store, returnId, 'v1', 'video', 'recording');
+    t.files.add('evidence/v1.mov');
+    t.durable.set('v1', 'evidence/v1.mov');
+    const result = await recoverInterruptedMedia(t.ports, STARTED);
+    expect(result).toEqual({ interrupted: 1, lost: 0, rescued: 1, storeFailed: false });
+    expect(await stateOf(t.store, SHOP, returnId, 'v1')).toMatchObject({
+      state: 'queued',
+      localPath: 'evidence/v1.mov',
+    });
+    expect((await t.store.getReturn(SHOP, returnId))?.returnCase.openingVideo).toMatchObject({
+      mediaId: 'v1',
+      interrupted: true,
+    });
+    expect(t.persisted).toEqual([]);
+  });
+
+  it('recording không có tệp bền: unrecoverable như cũ (hồi quy)', async () => {
+    const t = setup();
+    const returnId = await makeCase(t.store);
+    await makeMedia(t.store, returnId, 'v1', 'video', 'recording');
+    expect(await recoverInterruptedMedia(t.ports, STARTED)).toMatchObject({ lost: 1, rescued: 0 });
+    expect((await stateOf(t.store, SHOP, returnId, 'v1'))?.state).toBe('unrecoverable');
+  });
+});

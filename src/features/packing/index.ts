@@ -8,4 +8,5 @@ export {
   formatElapsed,
   maxRecordSeconds,
   requiredFreeBytes,
+  VIDEO_PROFILE,
 } from './domain';

@@ -107,8 +107,10 @@ async function completeLocalSave(
  * Khôi phục sau khi app bị đóng/kill giữa lúc chụp/quay/lưu media hàng hoàn (ảnh và video; trả nợ hạn chế
  * R2a "ảnh dở dang chưa khôi phục"). Chỉ xử lý media tạo TRƯỚC `startedBefore` (tàn dư của lần chạy
  * trước); media của lần chạy này (đang chụp/quay/lưu) không bao giờ bị đụng:
- * - `recording`: KHÔNG biết tệp tạm ở đâu (camera tự đặt tên) và đoán tệp là tự liên kết (bất biến 5) ->
- *   `unrecoverable`; ghi nhận thiếu, không dựng video giả (bất biến 6). Tệp tạm nếu còn KHÔNG bị xóa.
+ * - `recording`: KHÔNG biết tệp tạm ở đâu (camera tự đặt tên) và đoán tệp là tự liên kết (bất biến 5).
+ *   Chỉ khi đã có tệp bền theo ID (lỗi kho lúc dừng để lại, V1-23) thì `RECOVERY_FOUND_FILE` rồi hoàn tất
+ *   lưu như `saving_local`; không có -> `unrecoverable`; ghi nhận thiếu, không dựng video giả (bất biến 6).
+ *   Tệp tạm nếu còn KHÔNG bị xóa.
  * - `saving_local`: tìm tệp ở thư mục bền theo ID và ở đường dẫn đã ghi. Còn tệp thì chuyển, băm, đưa vào
  *   hàng đợi; chỉ khi KHÔNG còn tệp nào mới `unrecoverable`. Lỗi tạm thì giữ `local_save_failed`.
  * - `local_save_failed` còn đường dẫn: thử lại cùng quy trình.
@@ -133,8 +135,23 @@ export async function recoverInterruptedMedia(
       const wasInterrupted = media.state !== 'local_save_failed';
       let step: Step;
       if (media.state === 'recording') {
-        await store.applyMediaEvent(media.shopId, media.id, device('MARK_UNRECOVERABLE'), now());
-        step = 'lost';
+        // V1-23: lỗi kho lúc dừng có thể để lại tệp ĐÃ ở `evidence/<id>.<đuôi>` mà CSDL còn `recording`.
+        // Tên tệp mang ID tạo trước khi quay nên không phải tự liên kết; không quét thư mục tạm.
+        const durable = findPersisted(media.id);
+        if (!durable) {
+          await store.applyMediaEvent(media.shopId, media.id, device('MARK_UNRECOVERABLE'), now());
+          step = 'lost';
+        } else {
+          const found = await store.applyMediaEvent(
+            media.shopId,
+            media.id,
+            device('RECOVERY_FOUND_FILE'),
+            now(),
+            { localPath: durable },
+          );
+          if (!found.ok) continue;
+          step = await completeLocalSave(ports, media, { path: durable, durable: true });
+        }
       } else {
         const durable = findPersisted(media.id);
         const recorded = media.localPath && exists(media.localPath) ? media.localPath : null;

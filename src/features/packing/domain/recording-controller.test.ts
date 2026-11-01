@@ -735,3 +735,240 @@ describe('phiên và tệp không lệch nhau (finding 2)', () => {
 });
 
 export type { SessionId };
+
+describe('V1-27 số đo (metrics)', () => {
+  it('một lần quay lưu thành công sinh đúng một bản ghi record_save có kích thước và hashCount 1', async () => {
+    const t = await setup();
+    const metrics = jest.fn();
+    let clock = 0;
+    const ports: RecordingPorts = {
+      ...t.ports,
+      metrics,
+      now: () => {
+        clock += 1000;
+        return clock;
+      },
+    };
+    const active = await startRecording(ports, t.session);
+    if ('kind' in active) throw new Error('should start');
+    active.stop();
+    t.finish({ ok: true, tempUri: 'file:///cache/Camera/x.mov' });
+    expect(await active.result).toEqual({ kind: 'saved', evidenceId: 'ev-1' });
+    expect(metrics).toHaveBeenCalledTimes(1);
+    expect(metrics.mock.calls[0][0]).toMatchObject({
+      kind: 'record_save',
+      sizeBytes: 2048,
+      hashCount: 1,
+    });
+    expect(metrics.mock.calls[0][0].wallMs).toBeGreaterThan(0);
+    expect(JSON.stringify(metrics.mock.calls[0][0])).not.toMatch(/ev-1|cache|evidence\//);
+  });
+
+  it('lưu lỗi thì không có số đo; reporter ném lỗi cũng không làm hỏng việc lưu', async () => {
+    const t = await setup();
+    const metrics = jest.fn(() => {
+      throw new Error('metrics');
+    });
+    const active = await startRecording({ ...t.ports, metrics }, t.session);
+    if ('kind' in active) throw new Error('should start');
+    t.finish({ ok: true, tempUri: 'file:///cache/Camera/x.mov' });
+    expect(await active.result).toEqual({ kind: 'saved', evidenceId: 'ev-1' });
+    expect(await t.fileState()).toBe('queued');
+
+    const f = await setup();
+    const metrics2 = jest.fn();
+    f.state.hash = { ok: false, reason: 'FILE_UNREADABLE' };
+    const active2 = await startRecording({ ...f.ports, metrics: metrics2 }, f.session);
+    if ('kind' in active2) throw new Error('should start');
+    f.finish({ ok: true, tempUri: 'file:///cache/Camera/x.mov' });
+    expect((await active2.result).kind).toBe('failed');
+    expect(metrics2).not.toHaveBeenCalled();
+  });
+});
+
+describe('V1-23: lỗi kho lúc STOP_RECORDING không làm mất tệp', () => {
+  type T = Awaited<ReturnType<typeof setup>>;
+  /** Kho bọc: `applyEvent` lỗi (ném hoặc ok:false) cho sự kiện được chọn, tối đa `times` lần. */
+  const flaky = (
+    t: T,
+    types: string[],
+    mode: 'throw' | 'notok',
+    times = Number.POSITIVE_INFINITY,
+  ): RecordingPorts => {
+    let left = times;
+    const files = Object.create(t.files) as RecordingPorts['files'];
+    files.applyEvent = async (shopId, id, event, at, patch) => {
+      if (types.includes(event.type) && left > 0) {
+        left -= 1;
+        if (mode === 'throw') throw new Error('SQLITE_BUSY');
+        return { ok: false, error: 'ILLEGAL_TRANSITION' } as never;
+      }
+      return t.files.applyEvent(shopId, id, event, at, patch);
+    };
+    return { ...t.ports, files, sleep: async () => undefined };
+  };
+  const run = async (t: T, ports: RecordingPorts, tempUri = 'file:///cache/Camera/x.mov') => {
+    const active = await startRecording(ports, t.session);
+    if ('kind' in active) throw new Error('should start');
+    t.finish({ ok: true, tempUri });
+    return active.result;
+  };
+  const noDelete = (t: T) => {
+    // Không có cổng xóa nào trong RecordingPorts; khẳng định không có hàm xóa được thêm vào.
+    expect(Object.keys(t.ports).filter((k) => /delete|remove|unlink/i.test(k))).toEqual([]);
+  };
+
+  it.each(['throw', 'notok'] as const)(
+    'STOP_RECORDING lỗi (%s) một lần: VẪN chuyển tệp sang evidence/<id>, CSDL ghi lại bằng RECOVERY_FOUND_FILE, tệp vào hàng đợi',
+    async (mode) => {
+      const t = await setup();
+      const ports = flaky(t, ['STOP_RECORDING'], mode);
+      const result = await run(t, ports);
+      expect(result).toEqual({ kind: 'saved', evidenceId: 'ev-1' });
+      expect(t.state.persistCalls).toEqual(['file:///cache/Camera/x.mov->ev-1']);
+      expect(await t.files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId)).toMatchObject({
+        state: 'queued',
+        localPath: 'file:///docs/evidence/ev-1.mp4',
+      });
+      noDelete(t);
+    },
+  );
+
+  it('lần ghi RECOVERY_FOUND_FILE đầu cũng kẹt: thử lại có chờ 200/400/800 ms rồi thành công', async () => {
+    const t = await setup();
+    const waits: number[] = [];
+    const ports = {
+      ...flaky(t, ['STOP_RECORDING', 'RECOVERY_FOUND_FILE'], 'throw', 3),
+      sleep: async (ms: number) => void waits.push(ms),
+    };
+    expect(await run(t, ports)).toEqual({ kind: 'saved', evidenceId: 'ev-1' });
+    expect(waits).toEqual([200, 400]);
+    expect(await t.fileState()).toBe('queued');
+  });
+
+  it('mọi lần ghi lại đều lỗi: tệp bền vẫn còn, markFailed mang đường dẫn bền (local_save_failed), kết quả failed có evidenceId', async () => {
+    const t = await setup();
+    const waits: number[] = [];
+    const ports = {
+      ...flaky(t, ['STOP_RECORDING', 'RECOVERY_FOUND_FILE', 'LOCAL_FILE_MOVED'], 'notok'),
+      sleep: async (ms: number) => void waits.push(ms),
+    };
+    expect(await run(t, ports)).toEqual({
+      kind: 'failed',
+      evidenceId: 'ev-1',
+      reason: 'SAVE_FAILED',
+    });
+    expect(waits).toEqual([200, 400, 800]);
+    expect(t.state.persistCalls).toHaveLength(1);
+    expect(await t.files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId)).toMatchObject({
+      state: 'local_save_failed',
+      localPath: 'file:///docs/evidence/ev-1.mp4',
+    });
+  });
+
+  it('kho lỗi hoàn toàn (mọi ghi đều ném): tệp vẫn được chuyển sang thư mục bền theo ID, không ném ngoại lệ ra ngoài', async () => {
+    const t = await setup();
+    const ports = flaky(
+      t,
+      ['STOP_RECORDING', 'RECOVERY_FOUND_FILE', 'LOCAL_FILE_MOVED', 'LOCAL_WRITE_FAILED'],
+      'throw',
+    );
+    expect(await run(t, ports)).toMatchObject({ kind: 'failed', evidenceId: 'ev-1' });
+    expect(t.state.persistCalls).toEqual(['file:///cache/Camera/x.mov->ev-1']);
+    // CSDL còn `recording`; khôi phục lúc mở app tìm tệp bền theo ID (test bên dưới).
+    expect(await t.fileState()).toBe('recording');
+  });
+
+  it('persist thất bại sau STOP lỗi: markFailed mang đường dẫn tạm (local_save_failed), không mất dấu', async () => {
+    const t = await setup();
+    t.state.persist = { ok: false, reason: 'STORAGE_FULL' };
+    const result = await run(t, flaky(t, ['STOP_RECORDING'], 'throw'));
+    expect(result).toMatchObject({ kind: 'failed', reason: 'STORAGE_FULL' });
+    expect(await t.files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId)).toMatchObject({
+      state: 'local_save_failed',
+      localPath: 'file:///cache/Camera/x.mov',
+    });
+  });
+
+  it.each([
+    ['moved', ['LOCAL_FILE_MOVED'], 'file:///docs/evidence/ev-1.mp4'],
+    ['hash', [], 'file:///docs/evidence/ev-1.mp4'],
+  ])(
+    'nhánh lỗi %s sau persist luôn truyền đường dẫn bền cho markFailed',
+    async (name, types, path) => {
+      const t = await setup();
+      if (name === 'hash') t.state.hash = { ok: false, reason: 'FILE_UNREADABLE' };
+      const result = await run(t, flaky(t, types, 'notok'));
+      expect(result.kind).toBe('failed');
+      expect(await t.files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId)).toMatchObject({
+        state: 'local_save_failed',
+        localPath: path,
+      });
+    },
+  );
+
+  it('ngoại lệ ném sau persist (LOCAL_FILE_READABLE ném): catch giữ đường dẫn bền', async () => {
+    const t = await setup();
+    const result = await run(t, flaky(t, ['LOCAL_FILE_READABLE'], 'throw'));
+    expect(result).toMatchObject({ kind: 'failed', reason: 'SAVE_FAILED' });
+    expect(await t.files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId)).toMatchObject({
+      state: 'local_save_failed',
+      localPath: 'file:///docs/evidence/ev-1.mp4',
+    });
+  });
+
+  describe('khôi phục trạng thái recording bằng tệp bền theo ID', () => {
+    const recoverPorts = (t: T, durable: string | null) => ({
+      files: t.files,
+      orders: t.orders,
+      persist: t.ports.persist,
+      hash: t.ports.hash,
+      now: () => 9000,
+      exists: (p: string) => p === durable,
+      findPersisted: () => durable,
+    });
+
+    it('recording + findPersisted có đường dẫn: RECOVERY_FOUND_FILE -> queued, lost = 0, phiên interrupted', async () => {
+      const t = await setup();
+      await started(t);
+      const result = await recoverInterruptedRecordings(
+        recoverPorts(t, 'evidence/ev-1.mp4'),
+        LOCAL_SHOP_ID,
+      );
+      expect(result).toEqual({ interrupted: 1, lost: 0 });
+      expect(await t.files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId)).toMatchObject({
+        state: 'queued',
+        localPath: 'evidence/ev-1.mp4',
+      });
+      expect((await t.orders.getSession(LOCAL_SHOP_ID, t.session.id))?.sessionStatus).toBe(
+        'interrupted',
+      );
+      expect(t.state.persistCalls).toEqual([]);
+    });
+
+    it('recording + không có tệp bền: unrecoverable như cũ (hồi quy Q-24b)', async () => {
+      const t = await setup();
+      await started(t);
+      const result = await recoverInterruptedRecordings(recoverPorts(t, null), LOCAL_SHOP_ID);
+      expect(result).toEqual({ interrupted: 1, lost: 1 });
+      expect(await t.fileState()).toBe('unrecoverable');
+    });
+
+    it('đầu-cuối: kho lỗi hoàn toàn lúc dừng, rồi mở app lại thì cứu được tệp theo ID', async () => {
+      const t = await setup();
+      const broken = flaky(
+        t,
+        ['STOP_RECORDING', 'RECOVERY_FOUND_FILE', 'LOCAL_FILE_MOVED', 'LOCAL_WRITE_FAILED'],
+        'throw',
+      );
+      await run(t, broken);
+      expect(await t.fileState()).toBe('recording');
+      const result = await recoverInterruptedRecordings(
+        recoverPorts(t, 'file:///docs/evidence/ev-1.mp4'),
+        LOCAL_SHOP_ID,
+      );
+      expect(result).toEqual({ interrupted: 1, lost: 0 });
+      expect(await t.fileState()).toBe('queued');
+    });
+  });
+});

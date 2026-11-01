@@ -1,3 +1,4 @@
+import type { MediaMetricsReporter } from '@/core/diagnostics';
 import type { EvidenceId } from '@/core/ids';
 import type { EvidenceFile, EvidenceFileStore, FileEventType } from '@/features/evidence';
 import type { OrderStore, PackingSession } from '@/features/orders';
@@ -63,6 +64,10 @@ export interface RecordingPorts {
    * Không truyền = không gián đoạn.
    */
   wasInterrupted?(): boolean;
+  /** Nhận số đo không PII (V1-27: kích thước, thời gian lưu/băm). Không truyền = không đo. Không ném lỗi. */
+  readonly metrics?: MediaMetricsReporter;
+  /** Chờ (ms) giữa các lần thử ghi lại CSDL sau lỗi lúc dừng (V1-23). Không truyền = `setTimeout`. */
+  readonly sleep?: (ms: number) => Promise<void>;
 }
 
 export type RecordingOutcome =
@@ -115,6 +120,8 @@ const extensionOf = (uri: string): string => {
  *    Ngay sau khi chuyển tệp, đường dẫn MỚI được ghi vào bản ghi (`LOCAL_FILE_MOVED`) TRƯỚC khi băm
  *    (băm bằng JS có thể mất rất lâu): app bị kill lúc băm thì không mất dấu bản gốc. Mọi lỗi sau bước
  *    chuyển đều truyền đường dẫn mới.
+ *    Ghi `STOP_RECORDING` lỗi (SQLite kẹt) KHÔNG chặn việc chuyển tệp (V1-23): tệp vẫn sang
+ *    `evidence/<id>.<đuôi>` rồi CSDL được ghi lại bằng `RECOVERY_FOUND_FILE` (thử lại 3 lần).
  * 4. Không xóa tệp tạm hay tệp gốc ở bất kỳ nhánh lỗi nào (có thể là bản duy nhất).
  * Không bao giờ ném lỗi ra ngoài: kết quả nằm ở `result`. Chưa chạy trên thiết bị.
  */
@@ -162,15 +169,63 @@ export async function startRecording(
     return { kind: 'failed', reason: 'RECORDER_FAILED' };
   }
 
+  const startedAt = now();
   const result = handle.done.then(
-    (recorded) => finish(ports, session, evidenceId, recorded),
-    () => finish(ports, session, evidenceId, { ok: false, reason: 'RECORDER_FAILED' }),
+    (recorded) => finish(ports, session, evidenceId, recorded, now() - startedAt),
+    () => finish(ports, session, evidenceId, { ok: false, reason: 'RECORDER_FAILED' }, 0),
   );
   const markInterrupted = () =>
     orders
       .updateSessionStatus(shopId, session.id, SESSION_STATUS.INTERRUPTED)
       .catch(() => undefined);
   return { evidenceId, stop: () => handle.stop(), markInterrupted, result };
+}
+
+/** Chờ giữa các lần thử ghi lại CSDL (lỗi SQLite thường là kẹt tạm). Tiêm `ports.sleep` khi test. */
+const RECORD_RETRY_DELAYS_MS = [200, 400, 800] as const;
+
+/**
+ * STOP_RECORDING không ghi được nhưng tệp ĐÃ nằm ở thư mục bền: ghi vị trí thật bằng `RECOVERY_FOUND_FILE`
+ * (`recording -> saving_local`); nếu thật ra STOP đã ghi xong dù báo lỗi (`saving_local`) thì dùng
+ * `LOCAL_FILE_MOVED`. Thử tối đa 3 lần có chờ. Trả `true` khi CSDL đã trỏ đúng tệp bền. Không ném lỗi.
+ */
+async function recordFoundFile(
+  ports: RecordingPorts,
+  evidenceId: EvidenceId,
+  shopId: PackingSession['shopId'],
+  localPath: string,
+): Promise<boolean> {
+  const sleep =
+    ports.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  for (let attempt = 0; attempt <= RECORD_RETRY_DELAYS_MS.length; attempt += 1) {
+    if (attempt > 0) await sleep(RECORD_RETRY_DELAYS_MS[attempt - 1] as number);
+    for (const type of ['RECOVERY_FOUND_FILE', 'LOCAL_FILE_MOVED'] as const) {
+      try {
+        const applied = await ports.files.applyEvent(
+          shopId,
+          evidenceId,
+          device(type),
+          ports.now(),
+          { localPath },
+        );
+        if (applied.ok) return true;
+      } catch {
+        // kho kẹt tạm: thử lại sau
+      }
+    }
+  }
+  return false;
+}
+
+function reportMetrics(
+  ports: Pick<RecordingPorts, 'metrics'>,
+  input: Parameters<MediaMetricsReporter>[0],
+): void {
+  try {
+    ports.metrics?.(input);
+  } catch {
+    // số đo không được làm hỏng việc lưu video
+  }
 }
 
 async function markFailed(
@@ -203,6 +258,7 @@ async function finish(
   session: PackingSession,
   evidenceId: EvidenceId,
   recorded: RecordResult,
+  wallMs: number,
 ): Promise<RecordingOutcome> {
   const { files, orders, persist, hash, now } = ports;
   const shopId = session.shopId;
@@ -221,18 +277,27 @@ async function finish(
   ): RecordingOutcome => ({ kind: 'failed', evidenceId, reason });
   /** Đường dẫn bền sau khi chuyển tệp; có giá trị thì mọi lỗi về sau phải giữ nó. */
   let savedUri: string | null = null;
+  /** Đường dẫn tạm camera đã giao (có ngay khi `recorded.ok`); giữ cho mọi nhánh lỗi. */
+  let knownPath: string | null = null;
   try {
     if (!recorded.ok) {
       await markFailed(ports, session, evidenceId, SESSION_STATUS.INTERRUPTED);
       return fail('RECORDER_FAILED');
     }
-    // Ghi đường dẫn tệp tạm ngay khi dừng để phục hồi được nếu app bị kill trước khi chuyển tệp.
-    const stopped = await files.applyEvent(shopId, evidenceId, device('STOP_RECORDING'), now(), {
-      localPath: recorded.tempUri,
-    });
-    if (!stopped.ok) return fail('SAVE_FAILED');
+    knownPath = recorded.tempUri;
+    // Ghi đường dẫn tệp tạm ngay khi dừng để phục hồi được nếu app bị kill trước khi chuyển tệp. Ghi lỗi
+    // (SQLite kẹt/ném ngoại lệ) KHÔNG được dừng ở đây (V1-23): tệp tạm đã giao cho app, bỏ đi là mất dấu
+    // nó. Vẫn chuyển tệp sang `evidence/<id>.<đuôi>` (tên mang ID đã gắn phiên/kiện từ trước quay, bất
+    // biến 2), rồi ghi lại CSDL bằng `RECOVERY_FOUND_FILE` có thử lại.
+    const stopped = await files
+      .applyEvent(shopId, evidenceId, device('STOP_RECORDING'), now(), {
+        localPath: recorded.tempUri,
+      })
+      .catch(() => ({ ok: false as const }));
 
+    const persistStart = now();
     const saved = persist(recorded.tempUri, evidenceId, extensionOf(recorded.tempUri));
+    const persistMs = now() - persistStart;
     if (!saved.ok) {
       await markFailed(ports, session, evidenceId, failedStatus, {
         localPath: recorded.tempUri,
@@ -242,16 +307,20 @@ async function finish(
     savedUri = saved.uri;
     // Ghi vị trí mới NGAY (trước khi băm, có thể mất rất lâu): tệp đã rời thư mục tạm, CSDL không
     // được còn trỏ vào đó, nếu không app bị kill lúc băm sẽ coi bản gốc là mất.
-    const moved = await files.applyEvent(shopId, evidenceId, device('LOCAL_FILE_MOVED'), now(), {
-      localPath: saved.uri,
-    });
+    const moved = stopped.ok
+      ? await files.applyEvent(shopId, evidenceId, device('LOCAL_FILE_MOVED'), now(), {
+          localPath: saved.uri,
+        })
+      : { ok: await recordFoundFile(ports, evidenceId, shopId, saved.uri) };
     if (!moved.ok) {
       await markFailed(ports, session, evidenceId, failedStatus, {
         localPath: saved.uri,
       });
       return fail('SAVE_FAILED');
     }
+    const hashStart = now();
     const hashed = await hash(saved.uri);
+    const hashMs = now() - hashStart;
     if (!hashed.ok) {
       await markFailed(ports, session, evidenceId, failedStatus, {
         localPath: saved.uri,
@@ -275,6 +344,14 @@ async function finish(
       });
       return fail('SAVE_FAILED');
     }
+    reportMetrics(ports, {
+      kind: 'record_save',
+      sizeBytes: hashed.sizeBytes,
+      wallMs,
+      hashMs,
+      persistMs,
+      hashCount: 1,
+    });
     // Từ đây video ĐÃ an toàn trong hàng đợi: cập nhật phiên chỉ là cố gắng. Lỗi ở đây KHÔNG được làm
     // UI báo "chưa lưu được"; phiên kẹt ở `recording` sẽ được đối chiếu lại lúc mở app (reconcile).
     // Gián đoạn (V1-11) thì phiên `interrupted`: video có thể thiếu phần sau, không được coi là đủ (A05).
@@ -282,6 +359,7 @@ async function finish(
     await orders.updateSessionStatus(shopId, session.id, sessionStatus).catch(() => undefined);
     return { kind: 'saved', evidenceId };
   } catch {
+    const lostTrackOf = savedUri ?? knownPath;
     // Lỗi kho cục bộ giữa chừng: cố ghi lỗi (kèm đường dẫn bền nếu đã chuyển tệp); không được thì lần
     // mở app sau khôi phục theo trạng thái tệp và thư mục bền.
     await markFailed(
@@ -289,7 +367,7 @@ async function finish(
       session,
       evidenceId,
       failedStatus,
-      savedUri ? { localPath: savedUri } : undefined,
+      lostTrackOf ? { localPath: lostTrackOf } : undefined,
     );
     return fail('SAVE_FAILED');
   }
@@ -369,7 +447,10 @@ export async function reconcileSavedSessions(
 /** Đường dẫn của tệp bền: `evidence/...` tương đối, hoặc tuyệt đối chứa `/evidence/` (dữ liệu cũ). */
 export const isPersistentPath = (path: string): boolean => /(^|\/)evidence\//.test(path);
 
-export interface RecoveryPorts extends Pick<RecordingPorts, 'files' | 'persist' | 'hash' | 'now'> {
+export interface RecoveryPorts extends Pick<
+  RecordingPorts,
+  'files' | 'persist' | 'hash' | 'now' | 'metrics'
+> {
   readonly orders: Pick<OrderStore, 'updateSessionStatus' | 'getSession'>;
   /** Đường dẫn đã lưu (tương đối hoặc tuyệt đối) còn tệp không. */
   readonly exists: (localPath: string) => boolean;
@@ -418,8 +499,11 @@ async function completeLocalSave(
     return 'lost';
   };
   try {
+    let persistMs: number | null = null;
     if (!location.durable) {
+      const persistStart = now();
       const saved = persist(path, file.id, extensionOf(path));
+      persistMs = now() - persistStart;
       if (!saved.ok) {
         return saved.reason === 'FILE_MISSING' && !exists(path) ? await lose() : await keepSafe();
       }
@@ -429,7 +513,9 @@ async function completeLocalSave(
       });
       if (!moved.ok) return await keepSafe();
     }
+    const hashStart = now();
     const hashed = await hash(path);
+    const hashMs = now() - hashStart;
     if (!hashed.ok) {
       return hashed.reason === 'FILE_MISSING' && !exists(path) ? await lose() : await keepSafe();
     }
@@ -438,7 +524,15 @@ async function completeLocalSave(
       sizeBytes: hashed.sizeBytes,
       sha256Client: hashed.sha256,
     });
-    return queued.ok ? 'queued' : await keepSafe();
+    if (!queued.ok) return await keepSafe();
+    reportMetrics(ports, {
+      kind: 'recovery_save',
+      sizeBytes: hashed.sizeBytes,
+      hashMs,
+      persistMs,
+      hashCount: 1,
+    });
+    return 'queued';
   } catch {
     // Lỗi kho cục bộ: không đổi gì, tệp vẫn ở trạng thái hiện tại và được thử lại lần mở app sau.
     return 'kept';
@@ -449,8 +543,9 @@ async function completeLocalSave(
  * Phục hồi sau khi app bị đóng/kill giữa chừng (A05: không tự nhận là video đầy đủ). Chạy lúc mở app:
  * - `recording`: KHÔNG biết tệp tạm ở đâu (`expo-camera` tự đặt tên trong thư mục tạm, ta chưa có đường
  *   dẫn; quét thư mục tạm rồi đoán tệp thuộc phiên nào là tự liên kết, vi phạm bất biến 5, và tệp ghi dở
- *   thường không phát được) -> `unrecoverable`, phiên `interrupted`: ghi nhận thiếu, không dựng video
- *   giả (bất biến 6). Tệp tạm nếu còn trên đĩa KHÔNG bị xóa.
+ *   thường không phát được). Chỉ khi đã có tệp bền theo ID (`evidence/<id>.<đuôi>`; lỗi kho lúc dừng để
+ *   lại, V1-23) thì `RECOVERY_FOUND_FILE` rồi hoàn tất lưu như `saving_local`. Không có -> `unrecoverable`,
+ *   phiên `interrupted`: ghi nhận thiếu, không dựng video giả (bất biến 6). Tệp tạm KHÔNG bị xóa.
  * - `saving_local`: tìm tệp ở thư mục bền theo ID bằng chứng và ở đường dẫn đã ghi. Còn tệp thì chuyển
  *   (nếu cần), băm, đưa vào hàng đợi; chỉ khi KHÔNG còn tệp nào mới `unrecoverable`. Lỗi tạm thời thì giữ
  *   `local_save_failed` kèm đường dẫn thật.
@@ -475,8 +570,24 @@ export async function recoverInterruptedRecordings(
       if (file.state === 'local_save_failed' && !file.localPath) continue; // lỗi trước khi có tệp
       let step: RecoveryStep;
       if (file.state === 'recording') {
-        await markUnrecoverable(ports, shopId, file.id);
-        step = 'lost';
+        // V1-23: lỗi kho lúc dừng có thể để lại tệp ĐÃ nằm ở `evidence/<id>.<đuôi>` mà CSDL còn `recording`.
+        // Tên tệp mang ID tạo trước khi quay (bất biến 2) nên đây KHÔNG phải tự liên kết; không quét thư
+        // mục tạm. Không có tệp bền nào thì mất như cũ (app bị kill giữa lúc quay, Q-24b).
+        const durable = findPersisted(file.id);
+        if (!durable) {
+          await markUnrecoverable(ports, shopId, file.id);
+          step = 'lost';
+        } else {
+          const found = await files.applyEvent(
+            shopId,
+            file.id,
+            device('RECOVERY_FOUND_FILE'),
+            now(),
+            { localPath: durable },
+          );
+          if (!found.ok) continue;
+          step = await completeLocalSave(ports, shopId, file, { path: durable, durable: true });
+        }
       } else {
         const durable = findPersisted(file.id);
         const recorded = file.localPath && exists(file.localPath) ? file.localPath : null;

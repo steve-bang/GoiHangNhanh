@@ -3,7 +3,13 @@ import { useTranslation } from 'react-i18next';
 
 import type { EvidenceFile, EvidenceFileStore } from '@/features/evidence';
 import { useEvidenceFileStore, useOrderStore } from '@/features/orders';
-import { findPersistedRecording, hashFile, persistRecording, recordingExists } from '@/platform';
+import {
+  findPersistedRecording,
+  hashFile,
+  persistRecording,
+  recordingExists,
+  reportMediaMetrics,
+} from '@/platform';
 import { useToast } from '@/shared/ui';
 
 import {
@@ -70,6 +76,7 @@ export function RecordingRecovery() {
           persist: persistRecording,
           hash: hashFile,
           now: Date.now,
+          metrics: reportMediaMetrics,
           exists: recordingExists,
           findPersisted: findPersistedRecording,
         };

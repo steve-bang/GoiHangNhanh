@@ -1,3 +1,4 @@
+import type { MediaMetricsReporter } from '@/core/diagnostics';
 import type { EvidenceId, ShopId } from '@/core/ids';
 import {
   FILE_STATES,
@@ -36,11 +37,20 @@ export interface UploadQueueDeps {
    */
   readonly isWaitingForWifi?: () => boolean;
   /**
+   * `true` khi máy đang QUAY VIDEO (V1-28, `core/recording/recording-activity`). Hàng đợi nhường CPU,
+   * mạng và pin cho bộ mã hóa: không chạy lượt (kể cả đối soát và băm kiểm tra tệp), lần gửi đang chạy bị
+   * hủy qua `subscribeOffline` như mất mạng (lỗi mạng, KHÔNG tốn lượt). Chỉ tạm hoãn, không đổi ý nghĩa
+   * bất kỳ trạng thái tệp nào, không xóa gì. Không truyền = không bao giờ tạm dừng.
+   */
+  readonly isPaused?: () => boolean;
+  /**
    * Báo khi KHÔNG còn được gửi: máy MẤT mạng (NetInfo qua `platform/connectivity`) hoặc chuyển sang chờ
    * Wi‑Fi (đổi mạng hoặc vừa bật công tắc). Lần gửi tệp đang chạy bị hủy (lỗi mạng, không tốn lượt) để
    * lượt được giải phóng ngay thay vì chờ lớp mạng native báo lỗi. Trả hàm hủy đăng ký.
    */
   readonly subscribeOffline?: (onOffline: () => void) => () => void;
+  /** Nhận số đo không PII (V1-27: thời gian băm và gửi mỗi tệp). Không truyền = không đo. */
+  readonly metrics?: MediaMetricsReporter;
 }
 
 export interface UploadRunOptions {
@@ -94,7 +104,7 @@ export const NETWORK_ERROR_CODES: readonly string[] = [
 
 export interface UploadRunSummary {
   /** `offline`/`waiting_wifi`/`busy`: không làm gì lượt này (không gọi máy chủ). */
-  readonly skipped?: 'offline' | 'waiting_wifi' | 'busy';
+  readonly skipped?: 'offline' | 'waiting_wifi' | 'recording' | 'busy';
   readonly received: number;
   /** Lỗi máy chủ từ chối/không rõ (tính lượt). */
   readonly failed: number;
@@ -165,7 +175,8 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
   const { sources, gateway, hasher, now, isOnline, subscribeOffline } = deps;
   const waitingWifi = deps.isWaitingForWifi ?? (() => false);
   /** Được dùng mạng hiện tại để gửi tệp (có mạng và không chờ Wi‑Fi). */
-  const mayUseNetwork = () => isOnline() && !waitingWifi();
+  const paused = deps.isPaused ?? (() => false);
+  const mayUseNetwork = () => isOnline() && !waitingWifi() && !paused();
   let running = false;
   /** Có mạng lại trong lúc một lượt đang chạy: áp cho lượt kế tiếp. */
   let restoredPending = false;
@@ -294,7 +305,12 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
     localPath: string,
     sha256Client: string,
   ): Promise<
-    | { readonly ok: true; readonly fingerprint: FileFingerprint | null }
+    | {
+        readonly ok: true;
+        readonly fingerprint: FileFingerprint | null;
+        /** Thời gian băm JS (ms); `null` = tin dấu tệp, không băm lại. */
+        readonly hashMs: number | null;
+      }
     | { readonly ok: false; readonly code: string }
   > {
     const readFingerprint = async () =>
@@ -305,14 +321,31 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
       before.sizeBytes === item.sizeBytes &&
       sameFingerprint(before, item.hashedFingerprint)
     ) {
-      return { ok: true, fingerprint: before };
+      return { ok: true, fingerprint: before, hashMs: null };
     }
+    const hashStart = deps.now();
     const hash = await hasher.sha256(localPath);
+    const hashMs = deps.now() - hashStart;
     if (!hash.ok) return { ok: false, code: hash.reason };
     if (hash.sha256 !== sha256Client) return { ok: false, code: 'LOCAL_HASH_CHANGED' };
-    if (!before) return { ok: true, fingerprint: null };
+    if (!before) return { ok: true, fingerprint: null, hashMs };
     const after = await readFingerprint();
-    return { ok: true, fingerprint: sameFingerprint(before, after) ? before : null };
+    return { ok: true, fingerprint: sameFingerprint(before, after) ? before : null, hashMs };
+  }
+
+  /** Số đo một lần gửi thành công (V1-27); không bao giờ làm hỏng hàng đợi. */
+  function reportUploadMetrics(sizeBytes: number, hashMs: number | null, uploadMs: number): void {
+    try {
+      deps.metrics?.({
+        kind: 'upload',
+        sizeBytes,
+        hashMs,
+        uploadMs,
+        hashCount: hashMs === null ? 0 : 1,
+      });
+    } catch {
+      // số đo không được làm hỏng hàng đợi
+    }
   }
 
   /** Trả `'stop'` khi gặp lỗi mạng: tệp sau trong lượt cũng sẽ lỗi, dừng để không tốn lượt gọi. */
@@ -360,6 +393,7 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
     });
     if (!started.ok) return 'next';
     const current: Entry = { source: entry.source, item: started.item };
+    const uploadStart = deps.now();
     const outcome = await attempt({
       evidenceId: current.item.id,
       shopId: current.item.shopId,
@@ -371,8 +405,10 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
       sizeBytes,
       sha256Client,
     });
+    const uploadMs = deps.now() - uploadStart;
     if (outcome.kind !== 'network') networkStreak.delete(current.item.id);
     if (outcome.kind === 'received') {
+      reportUploadMetrics(sizeBytes, local.hashMs, uploadMs);
       const done = await apply(current, server('SERVER_RECEIVED'), {
         nextAttemptAtDevice: null,
         lastErrorCode: null,
@@ -435,6 +471,11 @@ export function createUploadQueue(deps: UploadQueueDeps): UploadQueue {
       if (waitingWifi()) {
         if (options?.networkRestored) restoredPending = true;
         return { ...summary, skipped: 'waiting_wifi' };
+      }
+      // Đang quay (V1-28): bỏ cả đối soát và băm; giữ cờ "có mạng lại" cho lượt sau khi quay xong.
+      if (paused()) {
+        if (options?.networkRestored) restoredPending = true;
+        return { ...summary, skipped: 'recording' };
       }
       running = true;
       const restored = Boolean(options?.networkRestored) || restoredPending;

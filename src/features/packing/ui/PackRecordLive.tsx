@@ -11,6 +11,7 @@ import {
   newEvidenceId,
   onceAppActive,
   persistRecording,
+  reportMediaMetrics,
   subscribeAppBackground,
   useAppNavigation,
   useKeepScreenAwake,
@@ -28,6 +29,7 @@ import {
   maxRecordSeconds,
   requiredFreeBytes,
   startRecording,
+  VIDEO_PROFILE,
   type ActiveRecording,
   type RecordingOutcome,
   type RecordingPorts,
@@ -197,6 +199,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
       availableBytes: getAvailableDiskBytes,
       maxDurationSec: LIMIT_SECONDS,
       wasInterrupted: () => interrupted.current,
+      metrics: reportMediaMetrics,
       newEvidenceId,
       now: Date.now, // giờ THIẾT BỊ cho dấu thời gian bằng chứng (không dùng đồng hồ đơn điệu)
     }),
@@ -390,6 +393,7 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
           <CameraRecorder
             testID="record-camera"
             handleRef={handleRef}
+            profile={VIDEO_PROFILE}
             torch={torch}
             onReady={() => void begin()}
             onError={() => {

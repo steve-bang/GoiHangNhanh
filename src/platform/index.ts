@@ -71,3 +71,4 @@ export {
   requestLocationPermission,
 } from './location';
 export type { DeviceLocationOutcome, LocationPermissionStatus } from './location';
+export { reportMediaMetrics } from './media-metrics-log';
