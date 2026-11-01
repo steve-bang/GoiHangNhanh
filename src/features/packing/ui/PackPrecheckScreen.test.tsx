@@ -143,7 +143,7 @@ describe('UI-C02 Kiểm tra trước khi quay', () => {
     await open();
     expect(await screen.findByTestId('precheck-issue-localWrite')).toBeOnTheScreen();
     expect(
-      screen.getByText('Không thể chuẩn bị nơi lưu video. Chưa bắt đầu ghi hình.'),
+      screen.getByText('Chưa chuẩn bị được chỗ lưu video, nên chưa quay. Bạn thử lại nhé.'),
     ).toBeOnTheScreen();
     expect(mockNavigation.replace).not.toHaveBeenCalled();
   });

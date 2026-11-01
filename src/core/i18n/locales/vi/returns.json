@@ -17,7 +17,7 @@
     "noVideo": "Chưa có video mở kiện",
     "discrepancies": "{{count}} sai lệch",
     "resumeHint": "Chạm để tiếp tục",
-    "localOnly": "Nội dung hồ sơ hàng hoàn (tình trạng, kiểm kê) chỉ lưu trên máy này, chưa đồng bộ lên máy chủ.",
+    "localOnly": "Nội dung hồ sơ hàng hoàn (tình trạng, kiểm kê) chỉ lưu trên máy này, chưa gửi lên máy chủ.",
     "limited": "Hạn chế bằng chứng"
   },
   "stage": {
@@ -88,7 +88,7 @@
     "leave": "Tiếp tục sang bước kiểm tra hàng. Hồ sơ ghi nhận chưa có video mở kiện.",
     "unlinked": "Chưa liên kết đơn gốc",
     "skipTitle": "Tiếp tục không có video mở kiện?",
-    "skipMessage": "Video mở kiện là bằng chứng quan trọng nhất của hồ sơ này. Bỏ qua thì hồ sơ vẫn xác nhận được nhưng sẽ mang nhãn hạn chế bằng chứng.",
+    "skipMessage": "Video mở kiện là bằng chứng quan trọng nhất. Bỏ qua vẫn xác nhận được, nhưng hồ sơ sẽ ghi \"hạn chế bằng chứng\".",
     "skipReasonLabel": "Vì sao chưa có video?",
     "skipReasons": {
       "recorder_unavailable": "Bản này chưa quay được video",
@@ -190,7 +190,7 @@
     },
     "limitsNote": "Bằng chứng của hồ sơ này còn hạn chế. Hồ sơ vẫn được lưu để xử lý.",
     "discrepancyWarn": "Hồ sơ có sai lệch. Bạn vẫn xác nhận kiểm kê và xử lý tiếp sau.",
-    "localOnly": "Nội dung hồ sơ (tình trạng, kiểm kê) chỉ lưu trên máy này, chưa đồng bộ lên máy chủ.",
+    "localOnly": "Nội dung hồ sơ (tình trạng, kiểm kê) chỉ lưu trên máy này, chưa gửi lên máy chủ.",
     "finalNoteLabel": "Ghi chú cuối (không bắt buộc)",
     "confirm": "Xác nhận hồ sơ",
     "saveLater": "Lưu tạm, về danh sách",
@@ -206,10 +206,10 @@
       "uploaded": "{{count}} đã tải lên, máy chủ chưa xác minh",
       "uploading": "{{count}} đang tải lên",
       "onDevice": "{{count}} mới lưu trên máy, chưa tải lên",
-      "retrying": "{{count}} chưa tải được, app sẽ thử lại",
+      "retrying": "{{count}} chưa tải được, ứng dụng sẽ thử lại",
       "attention": "{{count}} cần xử lý"
     },
-    "photosLocation": "Có vị trí máy cho {{withLocation}}/{{count}} ảnh. Đây là số đọc của máy, không chứng minh nơi chụp.",
+    "photosLocation": "Có vị trí máy cho {{withLocation}}/{{count}} ảnh. Vị trí do máy ghi, không chứng minh nơi chụp.",
     "openPhoto": "Xem ảnh {{index}}",
     "openVideo": "Xem video mở kiện"
   },
@@ -243,7 +243,7 @@
   "photos": {
     "title": "Ảnh kiện hàng",
     "count": "{{count}}/{{max}} ảnh",
-    "hint": "Không bắt buộc. Ảnh lưu trên máy trước. App tải lên máy chủ khi đang mở và có mạng; xem trạng thái từng ảnh bên dưới.",
+    "hint": "Không bắt buộc. Ảnh lưu trên máy trước, rồi tự tải lên khi ứng dụng mở và có mạng.",
     "damageHint": "Nên chụp ảnh chỗ bị hư hỏng khi có thể.",
     "empty": "Chưa chụp ảnh nào. Hồ sơ sẽ ghi là chưa có ảnh bên ngoài.",
     "capture": "Chụp ảnh kiện",
@@ -269,7 +269,7 @@
     "deleteConfirm": "Xóa ảnh",
     "deleteCancel": "Giữ ảnh",
     "deleteDone": "Đã xóa ảnh.",
-    "locationNote": "Máy ghi thêm vị trí nếu có. Đây là số đọc của máy lúc chụp, không chứng minh nơi chụp thật.",
+    "locationNote": "Máy ghi thêm vị trí nếu có. Vị trí này không chứng minh nơi chụp thật.",
     "location": {
       "has": "Có vị trí (±{{meters}} m)",
       "hasNoAccuracy": "Có vị trí",

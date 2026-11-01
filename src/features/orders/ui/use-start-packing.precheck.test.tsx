@@ -83,9 +83,7 @@ describe('Bắt đầu quay ở bản Firebase khi phiên chưa biết cửa hà
     });
     await screen.findByTestId('preview-order-code');
     await fireEvent.press(screen.getByTestId('preview-start'));
-    expect(
-      await screen.findByText('Chưa xử lý được đơn trên máy. Bạn thử lại nhé.'),
-    ).toBeOnTheScreen();
+    expect(await screen.findByText('Chưa lưu được đơn. Bạn thử lại nhé.')).toBeOnTheScreen();
     expect(saveSession).not.toHaveBeenCalled();
     expect(mockNavigation.replace).not.toHaveBeenCalled();
     expect(mockNavigation.push).not.toHaveBeenCalled();

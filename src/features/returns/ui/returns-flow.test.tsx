@@ -858,7 +858,7 @@ describe('UI-D06 Xác nhận kết quả kiểm tra', () => {
     expect(within(limits).getByText('Chưa có ảnh bên ngoài kiện.')).toBeOnTheScreen();
     expect(screen.queryByText(/đầy đủ bằng chứng/i)).toBeNull();
     expect(screen.getByTestId('return-discrepancy-warning')).toBeOnTheScreen();
-    expect(screen.getByTestId('return-local-only')).toHaveTextContent(/chưa đồng bộ lên máy chủ/);
+    expect(screen.getByTestId('return-local-only')).toHaveTextContent(/chưa gửi lên máy chủ/);
   });
 
   it('hồ sơ chưa liên kết: hiện "Chưa liên kết đơn gốc", không số dự kiến; nêu hạn chế chưa liên kết', async () => {

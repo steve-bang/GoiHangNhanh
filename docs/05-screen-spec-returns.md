@@ -45,9 +45,9 @@ Luồng chuẩn: **B01** Danh sách hàng hoàn → **B02** Tìm đơn gốc / t
 | Mã lỗi | Thông báo |
 |---|---|
 | `SOURCE_ORDER_NOT_FOUND` | Chưa tìm được đơn gốc. Bạn có thể tiếp tục với hồ sơ chưa liên kết. |
-| `SOURCE_ORDER_AMBIGUOUS` | Có nhiều đơn phù hợp. Hãy kiểm tra thêm trước khi chọn. |
-| `RETURN_CODE_DUPLICATE` | Mã này đã có hồ sơ hàng hoàn. Hãy mở hồ sơ hiện có hoặc xác nhận đây là lần tiếp nhận khác. |
-| `RETURN_ORDER_CONFLICT` | Thông tin đang chọn không khớp với hồ sơ hiện có. Hãy kiểm tra trước khi tiếp tục. |
+| `SOURCE_ORDER_AMBIGUOUS` | Có nhiều đơn giống nhau. Bạn chọn đúng đơn nhé. |
+| `RETURN_CODE_DUPLICATE` | Mã này đã có hồ sơ hoàn. Mở hồ sơ cũ, hoặc tạo mới nếu là lần hoàn khác. |
+| `RETURN_ORDER_CONFLICT` | Đơn bạn chọn không khớp hồ sơ này. Bạn kiểm tra lại nhé. |
 
 **Nghiệm thu:** bắt đầu được khi không có mã đơn gốc; không liên kết ngầm với đơn không phù hợp; liên kết sau có lịch sử, không ghi đè quan hệ cũ; phân biệt nhiều lần hoàn của cùng một đơn.
 

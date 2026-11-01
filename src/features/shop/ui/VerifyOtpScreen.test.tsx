@@ -281,7 +281,7 @@ describe('UI-A08 Nhập mã: xác minh', () => {
     const error = screen.getByTestId('otp-error');
     expect(error.props.accessibilityRole).toBe('alert');
     expect(
-      within(error).getByText('Mã xác minh chưa chính xác. Bạn kiểm tra lại nhé!'),
+      within(error).getByText('Mã xác minh chưa chính xác. Bạn kiểm tra lại nhé.'),
     ).toBeOnTheScreen();
     expect(input().props.value).toBe('111111');
     const first = cell(0);

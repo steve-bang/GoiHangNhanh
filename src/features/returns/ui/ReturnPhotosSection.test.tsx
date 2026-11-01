@@ -604,7 +604,7 @@ describe('UI-D06 hạn chế ảnh ngoài khi đã/chưa chụp', () => {
     const line = await screen.findByTestId('return-summary-photos-sync');
     expect(line).toHaveTextContent(/1 đã tải lên, máy chủ chưa xác minh/);
     expect(line).toHaveTextContent(/1 mới lưu trên máy, chưa tải lên/);
-    expect(line).toHaveTextContent(/1 chưa tải được, app sẽ thử lại/);
+    expect(line).toHaveTextContent(/1 chưa tải được, ứng dụng sẽ thử lại/);
     expect(line).not.toHaveTextContent(/đã được máy chủ xác minh/);
     expect(screen.getByTestId('return-summary-photos')).toHaveTextContent(/Có 3 ảnh kiện/);
   });

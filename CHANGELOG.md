@@ -35,6 +35,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Changed
 
+- Rà soát câu chữ thông báo cho thân thiện và ngắn hơn (mã lỗi, rời màn quay, ngoại tuyến, hạn chế bằng chứng, trạng thái máy chủ); thống nhất "tải lên", "Ứng dụng", "Chưa … được"; chỉ đổi chữ, chờ BA duyệt (C-1; `MIC_PERMISSION_DENIED` chờ O-09).
 - Thông số quay tường minh trên cả iOS và Android: 1080p30, H.264 (`avc1`), 6 Mbps, `maxFileSize` 1,9 GB (< trần tải lên 2 GB) qua prop `profile` của `CameraRecorder`; `ESTIMATED_BYTES_PER_MINUTE` suy từ bitrate (58,5 MB/phút). Dựa trên đọc mã `expo-camera` 58.0.12, chưa chạy trên thiết bị (V1-22, Q-30a/b).
 - Ảnh minh họa màn Splash đổi tông xanh ngọc sang cam chủ đạo (áo yếm, điện thoại, biểu tượng trong bong bóng); logo Shopee/TikTok/Lazada và hai chậu cây giữ nguyên. Ảnh gốc xanh giữ ở `docs/assets/brand/splash/splash-hero-jade.webp`, script tạo lại ở `scripts/assets/recolor-splash-hero.py`. Chỉ kiểm qua ảnh bản web, chưa xem trên thiết bị.
 - Màn Chào mừng dùng ảnh minh họa 3D mới (hộp hàng, điện thoại đang quay, mã vạch, khiên xác nhận, biểu tượng Shopee/TikTok/Lazada); màn Đăng nhập vẫn dùng hình vẽ cũ. Chỉ kiểm qua ảnh bản web, chưa xem trên thiết bị.

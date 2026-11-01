@@ -117,7 +117,7 @@ describe('ShopEditScreen (UI-I02 route con, PER-06)', () => {
     gateways.account.failNext('SHOP_SAVE_FAILED');
     await fireEvent.press(saveButton());
     expect(await screen.findByTestId('edit-shop-save-error')).toHaveTextContent(
-      'Không thể cập nhật cửa hàng lúc này. Bạn thử lại nhé.',
+      'Chưa cập nhật được cửa hàng. Bạn thử lại nhé.',
     );
     expect(screen.getByTestId('edit-shop-name').props.value).toBe('Shop Mới');
     expect(screen.queryByText('Đã cập nhật thông tin cửa hàng.')).toBeNull();

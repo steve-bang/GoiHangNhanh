@@ -432,14 +432,14 @@ describe('Xác nhận / Hoàn tất theo tệp thật của phiên', () => {
     }
   });
 
-  it('Hoàn tất: số video thật và câu chờ đồng bộ; không có tệp thì không báo hoàn tất', async () => {
+  it('Hoàn tất: số video thật và câu chờ tải lên; không có tệp thì không báo hoàn tất', async () => {
     const ok = await withFile('queued');
     const view = await renderWithProviders(<PackDoneScreen />, {
       orderStore: ok.orders,
       evidenceFileStore: ok.files,
     });
     expect(
-      await screen.findByText(/Video đã lưu trên thiết bị, đang chờ đồng bộ/),
+      await screen.findByText(/Video đã lưu trên thiết bị, đang chờ tải lên/),
     ).toBeOnTheScreen();
     expect(screen.getByText('Số video: 1')).toBeOnTheScreen();
     await view.unmount();
@@ -500,7 +500,7 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
     await advance(8 * 60);
     expect(screen.queryByTestId('recording-notice')).toBeNull();
     await advance(60);
-    expect(screen.getByText('Sắp đủ 10 phút. App sẽ tự dừng quay.')).toBeOnTheScreen();
+    expect(screen.getByText('Sắp đủ 10 phút. Ứng dụng sẽ tự dừng quay.')).toBeOnTheScreen();
     expect(mockRecorder.stopCalls).toBe(0);
     expect(screen.getByText('Đang quay')).toBeOnTheScreen();
   });
@@ -509,7 +509,9 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
     const { session, files } = await startRecordingNow();
     await advance(10 * 60);
     expect(mockRecorder.stopCalls).toBe(1);
-    expect(screen.getByText('Đã đủ 10 phút. App đang dừng quay và lưu video.')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Đã đủ 10 phút. Ứng dụng đang dừng quay và lưu video.'),
+    ).toBeOnTheScreen();
     await advance(30); // quá hạn thêm: không dừng lần hai
     expect(mockRecorder.stopCalls).toBe(1);
     await act(async () => mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mov' }));
@@ -518,7 +520,9 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
       sessionId: session.id,
     });
     expect(
-      screen.getByText('Mỗi lần quay tối đa 10 phút nên app đã tự dừng. Video đã lưu trên máy.'),
+      screen.getByText(
+        'Mỗi lần quay tối đa 10 phút nên ứng dụng đã tự dừng. Video đã lưu trên máy.',
+      ),
     ).toBeOnTheScreen();
     expect((await filesOf(files, session.id))[0]?.state).toBe('queued');
   });
@@ -530,7 +534,9 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
     await act(async () => mockRecorder.finish({ ok: true, tempUri: 'file:///cache/v.mp4' }));
     await advance(0);
     expect(
-      screen.getByText('Mỗi lần quay tối đa 10 phút nên app đã tự dừng. Video đã lưu trên máy.'),
+      screen.getByText(
+        'Mỗi lần quay tối đa 10 phút nên ứng dụng đã tự dừng. Video đã lưu trên máy.',
+      ),
     ).toBeOnTheScreen();
   });
 
@@ -543,7 +549,9 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
     await advance(30); // băm chưa xong, đồng hồ vẫn chạy
     expect(screen.queryByText('Đang quay')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Dừng quay' })).toBeNull();
-    expect(screen.getByText('Đã đủ 10 phút. App đang dừng quay và lưu video.')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Đã đủ 10 phút. Ứng dụng đang dừng quay và lưu video.'),
+    ).toBeOnTheScreen();
     expect(screen.queryByText(/Sắp đủ 10 phút/)).toBeNull();
     expect(mockRecorder.stopCalls).toBe(0);
     await act(async () => finishHash({ ok: true, sha256: 'ab'.repeat(32), sizeBytes: 4096 }));
@@ -552,7 +560,9 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
       sessionId: session.id,
     });
     expect(
-      screen.getByText('Mỗi lần quay tối đa 10 phút nên app đã tự dừng. Video đã lưu trên máy.'),
+      screen.getByText(
+        'Mỗi lần quay tối đa 10 phút nên ứng dụng đã tự dừng. Video đã lưu trên máy.',
+      ),
     ).toBeOnTheScreen();
   });
 
@@ -570,7 +580,9 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
       sessionId: session.id,
     });
     expect(
-      screen.getByText('Mỗi lần quay tối đa 10 phút nên app đã tự dừng. Video đã lưu trên máy.'),
+      screen.getByText(
+        'Mỗi lần quay tối đa 10 phút nên ứng dụng đã tự dừng. Video đã lưu trên máy.',
+      ),
     ).toBeOnTheScreen();
   });
 
@@ -588,7 +600,7 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
     expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packConfirm, {
       sessionId: session.id,
     });
-    expect(screen.queryByText(/app đã tự dừng/)).toBeNull();
+    expect(screen.queryByText(/ứng dụng đã tự dừng/)).toBeNull();
     expect(screen.queryByText(/Đã đủ 10 phút/)).toBeNull();
   });
 
@@ -602,7 +614,7 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
     expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packConfirm, {
       sessionId: session.id,
     });
-    expect(screen.queryByText(/app đã tự dừng/)).toBeNull();
+    expect(screen.queryByText(/ứng dụng đã tự dừng/)).toBeNull();
     expect(screen.queryByText(/Đã đủ 10 phút/)).toBeNull();
   });
 
@@ -625,7 +637,7 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
     expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packConfirm, {
       sessionId: session.id,
     });
-    expect(screen.queryByText(/app đã tự dừng/)).toBeNull();
+    expect(screen.queryByText(/ứng dụng đã tự dừng/)).toBeNull();
   });
 
   it('giờ máy nhảy tiến (đồng bộ giờ mạng): bộ đếm đơn điệu KHÔNG tự dừng sớm', async () => {
@@ -646,7 +658,7 @@ describe('giới hạn quay tối đa 10 phút (O-05)', () => {
     expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.packConfirm, {
       sessionId: session.id,
     });
-    expect(screen.queryByText(/app đã tự dừng/)).toBeNull();
+    expect(screen.queryByText(/ứng dụng đã tự dừng/)).toBeNull();
   });
 
   it('hết giờ nhưng lưu lỗi: nói lỗi đúng, KHÔNG báo "Video đã lưu"', async () => {

@@ -5,7 +5,7 @@
     "missingHint": "Hồ sơ có thể thuộc cửa hàng khác hoặc không còn trên máy này.",
     "backToList": "Về danh sách tranh chấp",
     "limited": "Hạn chế bằng chứng",
-    "localOnly": "Hồ sơ tranh chấp hiện chỉ lưu trên máy này, chưa đồng bộ lên máy chủ."
+    "localOnly": "Hồ sơ tranh chấp hiện chỉ lưu trên máy này, chưa gửi lên máy chủ."
   },
   "list": {
     "loadError": "Chưa tải được danh sách tranh chấp. Bạn thử lại nhé.",
