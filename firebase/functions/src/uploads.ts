@@ -47,7 +47,12 @@ export type UploadSessionResult =
  * bản neo do tài khoản khác tạo (thử lại không đổi được) hoặc phiên/bản neo chưa có trên máy chủ.
  */
 export type UploadErrorReason =
-  'not_evidence_declarer' | 'not_session_creator' | 'session_missing' | 'return_missing';
+  | 'not_evidence_declarer'
+  | 'not_session_creator'
+  | 'session_missing'
+  | 'return_missing'
+  /** `getEvidenceReadUrl`: máy chủ chưa xác nhận bản gốc (chưa `uploaded`/`verified`). */
+  | 'not_server_confirmed';
 
 export class UploadError extends Error {
   constructor(
