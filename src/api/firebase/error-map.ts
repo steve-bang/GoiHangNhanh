@@ -76,6 +76,9 @@ export function mapFirebaseError(error: unknown, overrides: ErrorOverrides = {})
   const byReason = mapCallableReason(error);
   if (byReason) return byReason;
   const raw = readCode(error);
+  // TEMP-DEBUG (xóa sau khi tìm xong nguyên nhân)
+  // eslint-disable-next-line no-console
+  if (__DEV__) console.warn('[TEMP-DEBUG] firebase error', raw, error);
   // Chỉ giữ mã SDK (không nhạy cảm) trong context để tra lỗi; không giữ message.
   const code = raw ? (overrides[raw] ?? CODE_MAP[raw]) : undefined;
   return new AppError(code ?? 'AUTH_SERVICE_UNAVAILABLE', raw ? { sdkCode: raw } : {}, {

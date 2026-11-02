@@ -121,7 +121,6 @@
       "package": "vn.doncung.app.dev",
       "allowBackup": false,
       "blockedPermissions": [
-        "android.permission.RECORD_AUDIO",
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
@@ -135,6 +134,7 @@
     "plugins": [
       "expo-router",
       "@react-native-firebase/app",
+      "./scripts/with-firebase-configure.cjs",
       "@react-native-firebase/crashlytics",
       [
         "expo-build-properties",
@@ -147,9 +147,9 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Đơn Chứng dùng camera để quét mã đơn hàng, quay video đóng gói và mở kiện, chụp ảnh kiện hàng hoàn. Ứng dụng không ghi âm.",
-          "microphonePermission": false,
-          "recordAudioAndroid": false
+          "cameraPermission": "Đơn Chứng dùng camera để quét mã đơn hàng, quay video đóng gói và mở kiện, chụp ảnh kiện hàng hoàn.",
+          "microphonePermission": "Đơn Chứng dùng micro để thu tiếng trong video đóng gói và mở kiện làm bằng chứng.",
+          "recordAudioAndroid": true
         }
       ],
       [

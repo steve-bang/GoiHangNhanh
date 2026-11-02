@@ -11,9 +11,15 @@ import { CameraRecorder, type CameraRecorderHandle } from './camera-recorder';
 const mockCameraProps = jest.fn();
 const mockRecordAsync = jest.fn();
 const mockStopRecording = jest.fn();
+const mockRequestMic = jest.fn();
+let mockMicPermission: { granted: boolean; canAskAgain: boolean } = {
+  granted: false,
+  canAskAgain: false,
+};
 jest.mock('expo-camera', () => {
   const React = jest.requireActual('react');
   return {
+    useMicrophonePermissions: () => [mockMicPermission, mockRequestMic],
     CameraView: React.forwardRef(function MockCameraView(
       props: Record<string, unknown>,
       ref: unknown,
@@ -49,11 +55,25 @@ const mount = async (profile?: typeof PROFILE) => {
 describe('CameraRecorder: thông số quay (V1-22)', () => {
   beforeEach(() => {
     mockCameraProps.mockClear();
+    mockRequestMic.mockClear();
+    mockMicPermission = { granted: false, canAskAgain: false };
     mockRecordAsync.mockReset();
     mockRecordAsync.mockResolvedValue({ uri: 'file:///cache/Camera/a.mp4' });
   });
 
-  it('CameraView nhận videoQuality và videoBitrate từ profile; vẫn mode video, không thu tiếng', async () => {
+  it('đã cấp micro thì không mute; chưa cấp và hỏi lại được thì xin quyền', async () => {
+    mockMicPermission = { granted: true, canAskAgain: true };
+    await mount(PROFILE);
+    expect(mockCameraProps.mock.calls.at(-1)?.[0]).toMatchObject({ mute: false });
+    expect(mockRequestMic).not.toHaveBeenCalled();
+
+    mockMicPermission = { granted: false, canAskAgain: true };
+    await mount(PROFILE);
+    expect(mockCameraProps.mock.calls.at(-1)?.[0]).toMatchObject({ mute: true });
+    expect(mockRequestMic).toHaveBeenCalled();
+  });
+
+  it('CameraView nhận videoQuality và videoBitrate từ profile; vẫn mode video, chưa cấp micro thì mute', async () => {
     await mount(PROFILE);
     const props = mockCameraProps.mock.calls.at(-1)?.[0] as Record<string, unknown>;
     expect(props).toMatchObject({
