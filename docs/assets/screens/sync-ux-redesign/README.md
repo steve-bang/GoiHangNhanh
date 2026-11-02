@@ -3,7 +3,7 @@
 Chụp bằng bản **web** react-native-web, cổng giả, phiên `signed_in`. **Không phải ảnh iOS/Android**: font, vùng an toàn, bóng, chữ lớn hệ thống và kéo-làm-mới thật khác thiết bị thật.
 
 - `before-*`: nhánh `docs/ux-architecture-redesign`.
-- `after-*`: nhánh `feat/sync-ux-redesign`.
+- `after-*`: nhánh `feat/sync-ux-redesign` (**đã gồm Gói A**: khối trạng thái tổng, hàng Cài đặt tải lên mở sheet, chip xếp Lỗi trước, hàng tệp gọn có vạch trạng thái). Ảnh `after-*` chụp ở 390x1100 và 320x1100 (kể cả `after-empty`, trong khi `before-empty` là 390x844 / 320x568).
 
 | Tệp | Trạng thái | Cách có được |
 |---|---|---|
@@ -24,3 +24,5 @@ Các trạng thái bổ sung (cùng dữ liệu vá, thêm một tệp do tài k
 | `before|after-uploaded-*` | Bộ lọc "Đã tải lên" (tệp đã xác minh, bấm cả hàng mở hồ sơ) | `/sync?data`, bấm chip "Đã tải lên" |
 
 Chưa chụp được: đang chờ Wi‑Fi, kéo để làm mới thật, màn Chi tiết lỗi (UI-F02). Chúng được kiểm bằng test.
+
+Ảnh thêm cho bản sau: `after-settings-*` (sheet **Cài đặt tải lên** mở từ hàng cài đặt, chứa câu "Ứng dụng chỉ tải lên khi đang mở…" và công tắc Chỉ tải khi có Wi‑Fi; không có ảnh `before` tương ứng vì bản cũ để công tắc ở đầu màn). Bản sau dùng bộ dữ liệu vá có thêm một tệp lỗi thứ hai (7 tệp) để thấy nút "Thử lại tất cả". Hàng chip bản sau cuộn ngang nhẹ: ở 390dp chip "Đã tải lên" bị cắt mép phải.
