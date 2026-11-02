@@ -1,0 +1,48 @@
+---
+/*
+ * GHI CHÚ NỘI BỘ: chỉ mục hướng dẫn. Danh sách lấy từ src/config/guides.ts. Chờ BA duyệt câu chữ (C-1) và đối chiếu
+ * với app thật ở bản phát hành (C-6).
+ */
+import LegalPage from '../../components/LegalPage.astro';
+import { site } from '../../config/site';
+import { guides, guidePath } from '../../config/guides';
+---
+
+<LegalPage
+  title={`Hướng dẫn dùng ${site.name}: quay, tải lên, hàng hoàn`}
+  description={`Hướng dẫn từng bước dùng ${site.name}: tạo tài khoản, quay video đóng hàng, hiểu trạng thái tải lên, nhận hàng hoàn, tranh chấp, xóa tài khoản.`}
+  path={site.pages.guides}
+  heading={`Hướng dẫn dùng ${site.name}`}
+  crumb="Hướng dẫn"
+  hideEffectiveDate
+>
+  <p>
+    Các hướng dẫn ngắn, làm theo từng bước trên điện thoại. {site.name} đang phát triển; hướng dẫn mô tả bản 1.0.
+  </p>
+  <ul class="guide-list">
+    {
+      guides.map((g) => (
+        <li>
+          <a href={guidePath(g.slug)}><strong>{g.title}</strong></a>
+          <span>{g.summary}</span>
+        </li>
+      ))
+    }
+  </ul>
+  <p class="note">
+    Chưa có ứng dụng? Xem <a href={site.pages.download}>trang tải ứng dụng</a>. Cần giúp thêm thì xem
+    <a href={site.legalPages.support}>Hỗ trợ</a>.
+  </p>
+</LegalPage>
+
+<style>
+  .guide-list {
+    list-style: none;
+    padding: 0;
+  }
+  .guide-list li {
+    display: grid;
+    gap: var(--space-4);
+    margin-block: var(--space-16);
+  }
+</style>

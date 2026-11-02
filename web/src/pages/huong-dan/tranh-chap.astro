@@ -1,0 +1,33 @@
+---
+/* Khớp disputes.json (list, new, select, detail, export). Hồ sơ chỉ trên máy, chưa có gói tệp xuất (Q-27). */
+import GuidePage from '../../components/GuidePage.astro';
+import { site } from '../../config/site';
+---
+
+<GuidePage
+  slug="tranh-chap"
+  title={`Tạo hồ sơ tranh chấp trong ${site.name}: gom bằng chứng`}
+  description="Gom video và ảnh của một đơn hoặc hồ sơ hàng hoàn vào một hồ sơ tranh chấp, thêm ghi chú, chia sẻ bản tóm tắt và đóng hồ sơ khi xong."
+  heading="Tạo hồ sơ tranh chấp"
+  lead="Khi có khiếu nại, tạo hồ sơ để gom bằng chứng của đơn hoặc hàng hoàn vào một chỗ."
+  steps={[
+    { name: 'Tạo hồ sơ', text: 'Vào danh sách tranh chấp và chọn Tạo hồ sơ tranh chấp.' },
+    { name: 'Chọn đơn hoặc hồ sơ hàng hoàn', text: 'Nhập mã đơn rồi chọn Tìm đơn, hoặc chọn một hồ sơ hàng hoàn gần đây.' },
+    { name: 'Chọn vấn đề', text: 'Chọn Thiếu hàng, Sai phân loại, Hàng hư hỏng, Tình trạng kiện hoặc Khác. Thêm mô tả ngắn nếu muốn rồi chọn Tạo hồ sơ.' },
+    { name: 'Thêm bằng chứng', text: 'Chọn Thêm bằng chứng, tick video và ảnh cần dùng. Bằng chứng đã chọn được đánh dấu giữ khi hồ sơ còn mở.' },
+    { name: 'Xem trước và chia sẻ', text: 'Chọn Xem trước và xuất, đọc phần Cần lưu ý, rồi chọn Chia sẻ bản tóm tắt.' },
+    { name: 'Ghi chú và đóng hồ sơ', text: 'Thêm ghi chú khi cần. Xong việc thì chọn Đóng hồ sơ. Đóng hồ sơ không xóa bằng chứng.' },
+  ]}
+>
+  <h2 id="gioi-han">Giới hạn bản 1.0</h2>
+  <ul>
+    <li>Hồ sơ tranh chấp chỉ lưu trên máy này, chưa gửi lên máy chủ.</li>
+    <li>Chia sẻ được văn bản tóm tắt. Tệp video và ảnh chưa xuất được trong phiên bản này.</li>
+    <li>Tệp chưa lên máy chủ hoặc đang lỗi vẫn thêm được, nhưng hồ sơ ghi rõ điều đó.</li>
+    <li>Hồ sơ hoàn có hạn chế bằng chứng thì nhãn đó đi theo hồ sơ tranh chấp.</li>
+  </ul>
+  <p>
+    {site.name} giúp lưu và tìm lại bằng chứng có tổ chức. Chúng tôi không hứa kết quả khiếu nại; sàn và đơn vị vận
+    chuyển là bên quyết định. Bản tóm tắt không kết luận nguyên nhân hay bên chịu trách nhiệm.
+  </p>
+</GuidePage>

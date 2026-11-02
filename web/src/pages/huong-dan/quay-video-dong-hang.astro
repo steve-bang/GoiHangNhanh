@@ -1,0 +1,32 @@
+---
+/* Khớp: scan, orderMatch, quickOrder, preview, record, confirm, packDone (screens.json, common.json recording). Cần bản build bật ghi video (V1-21). */
+import GuidePage from '../../components/GuidePage.astro';
+import { site } from '../../config/site';
+---
+
+<GuidePage
+  slug="quay-video-dong-hang"
+  title={`Quay video đóng hàng với ${site.name}: từng bước làm theo`}
+  description={`Quét hoặc nhập mã đơn, kiểm tra thông tin, quay video từ lúc lấy hàng đến khi dán niêm phong, rồi lưu bằng chứng gắn đúng đơn.`}
+  heading="Quay video đóng hàng"
+  lead="Quay toàn bộ quá trình đóng gói, từ khi lấy hàng đến khi dán niêm phong. Video được gắn đúng đơn bạn chọn từ trước khi quay."
+  steps={[
+    { name: 'Quét hoặc nhập mã đơn', text: 'Chọn nút Quét ở thanh dưới và đưa mã vào khung. Không quét được thì chọn Nhập mã thủ công, nhập mã rồi chọn Tra cứu mã.' },
+    { name: 'Chọn đúng đơn', text: 'Đã có đơn trên máy thì chọn Xem chi tiết đơn. Chưa có thì chọn Tạo đơn với mã này. Có nhiều đơn trùng mã, ứng dụng bắt bạn chọn, không tự chọn thay.' },
+    { name: 'Tạo đơn nhanh', text: 'Chọn nguồn bán, kiểm tra mã đơn, thêm mã vận đơn nếu có, tên sản phẩm không bắt buộc. Chọn Tiếp tục rồi Tạo đơn hàng.' },
+    { name: 'Kiểm tra trước khi quay', text: 'Xem lại mã đơn, sản phẩm và kiện hàng để tránh quay nhầm đơn. Chưa khai báo sản phẩm vẫn quay được.' },
+    { name: 'Bắt đầu quay', text: 'Chọn Kiểm tra camera và bắt đầu. Quay đủ các bước đóng gói. Video không có tiếng.' },
+    { name: 'Dừng và lưu', text: 'Chọn Dừng quay, xem lại video nếu cần, rồi chọn Lưu bằng chứng.' },
+    { name: 'Đóng gói đơn tiếp theo', text: 'Ở màn hoàn tất, chọn Đóng gói đơn tiếp theo. Video đã lưu vẫn gắn với đơn trước.' },
+  ]}
+>
+  <h2 id="nen-biet">Nên biết</h2>
+  <ul>
+    <li>Video lưu trên điện thoại trước, rồi tự tải lên khi ứng dụng đang mở và có mạng.</li>
+    <li>Giữ ứng dụng ở màn hình quay. Thoát ra hoặc chuyển ứng dụng thì ứng dụng dừng quay và giữ phần đã quay.</li>
+    <li>Nếu ứng dụng bị tắt đột ngột khi đang quay, video đang quay có thể bị mất. Quay lại thì thành một phiên mới.</li>
+    <li>Máy cần đủ chỗ trống. Khi đầy bộ nhớ, ứng dụng báo để bạn giải phóng dung lượng.</li>
+    <li>Quên quay thì không bổ sung được video giả như quay lúc đóng hàng; ứng dụng ghi nhận là thiếu bằng chứng.</li>
+  </ul>
+  <p>Xem tiếp: <a href="/huong-dan/trang-thai-tai-len/">hiểu trạng thái tải lên</a>.</p>
+</GuidePage>

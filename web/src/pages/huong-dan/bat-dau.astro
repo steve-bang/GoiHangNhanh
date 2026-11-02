@@ -1,0 +1,31 @@
+---
+/* Khớp màn: signUp, createShop, forgot (screens.json), quyền camera (scan.permission). Không có đăng nhập Apple/Google (O-15). */
+import GuidePage from '../../components/GuidePage.astro';
+import { site } from '../../config/site';
+---
+
+<GuidePage
+  slug="bat-dau"
+  title={`Bắt đầu với ${site.name}: tạo tài khoản và cửa hàng đầu tiên`}
+  description={`Cách tạo tài khoản ${site.name} bằng email, tạo cửa hàng, cho phép camera và lấy lại mật khẩu khi quên. Làm xong trong vài phút.`}
+  heading="Bắt đầu: tạo tài khoản và cửa hàng"
+  lead="Bạn chỉ cần email và mật khẩu. Không cần kết nối với sàn bán hàng."
+  steps={[
+    { name: 'Tạo tài khoản', text: 'Mở ứng dụng, chọn Tạo tài khoản, nhập email và mật khẩu từ 8 ký tự rồi chọn Tạo tài khoản.' },
+    { name: 'Nhập thông tin shop', text: 'Nhập Tên shop (bắt buộc, tối đa 50 ký tự). Chọn các kênh bạn bán trong mục Nguồn bán, hoặc chọn Bỏ qua, để sau.' },
+    { name: 'Cho phép camera', text: 'Lần đầu quét mã hoặc quay, chọn Cho phép camera. Ứng dụng không ghi âm và không xin quyền micro.' },
+    { name: 'Bắt đầu dùng', text: 'Vào Trang chủ. Chọn Đóng gói đơn để quay đơn đầu tiên.' },
+  ]}
+>
+  <h2 id="quen-mat-khau">Quên mật khẩu</h2>
+  <p>
+    Ở màn Đăng nhập, chọn Quên mật khẩu?, nhập email đã đăng ký và chọn Gửi email đặt lại. Mở thư, làm theo
+    đường dẫn để đặt mật khẩu mới rồi đăng nhập lại. Không thấy thư thì xem cả mục Thư rác.
+  </p>
+
+  <h2 id="luu-y">Lưu ý quan trọng</h2>
+  <ul>
+    <li>Mỗi tài khoản dùng trên một điện thoại. Dữ liệu trên máy cũ không tự chuyển sang máy mới.</li>
+    <li>Nguồn bán chỉ để bạn phân loại đơn, không kết nối với sàn.</li>
+  </ul>
+</GuidePage>

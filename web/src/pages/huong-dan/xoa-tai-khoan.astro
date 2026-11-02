@@ -1,0 +1,42 @@
+---
+/* Khớp personal.json deleteAccount (V1-15) và firebase purgeDeletedShops 30 ngày (V1-14, R-4). Đối chiếu trang /xoa-tai-khoan/ (pháp lý). */
+import GuidePage from '../../components/GuidePage.astro';
+import { site } from '../../config/site';
+---
+
+<GuidePage
+  slug="xoa-tai-khoan"
+  title={`Hướng dẫn xóa tài khoản ${site.name} và dữ liệu trên máy`}
+  description={`Cách xóa tài khoản ${site.name} trong ứng dụng, điều kiện cần đạt, dữ liệu bị xóa trên máy và trên máy chủ, và thời hạn 30 ngày.`}
+  heading="Xóa tài khoản và dữ liệu"
+  lead="Tài khoản đã xóa không khôi phục được. Hãy tải hết tệp còn chờ lên máy chủ trước nếu bạn muốn giữ."
+  steps={[
+    { name: 'Mở màn xóa tài khoản', text: 'Vào Cá nhân, chọn Quyền riêng tư và bảo mật, rồi chọn Xóa tài khoản.' },
+    { name: 'Xem các điều kiện', text: 'Mỗi điều kiện hiện Đạt hoặc Cần xử lý. Xử lý hết mục Cần xử lý trước.' },
+    { name: 'Đọc cảnh báo dữ liệu', text: 'Nếu còn tệp chưa tải lên, tích ô xác nhận riêng vì các tệp này sẽ mất khỏi máy.' },
+    { name: 'Xác nhận bằng mật khẩu', text: 'Tích Tôi hiểu và đồng ý, chọn Xóa tài khoản rồi nhập mật khẩu.' },
+  ]}
+>
+  <h2 id="dieu-kien">Điều kiện</h2>
+  <ul>
+    <li>Không đang quay video trên máy này.</li>
+    <li>Không còn hồ sơ tranh chấp đang mở trên máy. Đóng hồ sơ không xóa bằng chứng.</li>
+    <li>Máy không còn dữ liệu do tài khoản khác tạo. Khi đó hãy xóa qua trang web hoặc liên hệ hỗ trợ.</li>
+  </ul>
+
+  <h2 id="du-lieu">Dữ liệu sẽ ra sao</h2>
+  <ul>
+    <li>Tài khoản bị xóa ngay.</li>
+    <li>
+      Dữ liệu cửa hàng trên máy chủ bị xóa hẳn sau {site.legal.purgeAfterDays} ngày, trừ khi phải giữ lại vì lý do
+      pháp lý hoặc tranh chấp đang mở.
+    </li>
+    <li>Video, ảnh và dữ liệu trên máy này bị xóa ngay sau khi máy chủ xác nhận, kể cả tệp chưa tải lên.</li>
+  </ul>
+
+  <h2 id="khong-mo-duoc-app">Không mở được ứng dụng?</h2>
+  <p>
+    Gửi yêu cầu qua <a href={site.legalPages.accountDeletionRequest}>trang yêu cầu xóa tài khoản</a>. Xem thêm
+    <a href={site.legalPages.privacy}>Chính sách quyền riêng tư</a>.
+  </p>
+</GuidePage>

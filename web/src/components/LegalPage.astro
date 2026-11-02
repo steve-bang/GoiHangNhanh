@@ -24,6 +24,8 @@ interface Props {
   jsonLd?: JsonLd[];
   /** Ẩn ngày hiệu lực (trang Hỗ trợ không phải văn bản pháp lý). */
   hideEffectiveDate?: boolean;
+  /** Cấp cha trong đường dẫn (giữa Trang chủ và trang hiện tại), ví dụ Hướng dẫn. */
+  parents?: { name: string; path: string }[];
 }
 
 const {
@@ -35,6 +37,7 @@ const {
   toc = [],
   jsonLd = [],
   hideEffectiveDate = false,
+  parents = [],
 } = Astro.props;
 
 const [y, m, d] = site.legal.effectiveDate.split('-').map(Number);
@@ -42,6 +45,7 @@ const effective = `${d} tháng ${m} năm ${y}`;
 const ld = [
   breadcrumbLd([
     { name: 'Trang chủ', path: '/' },
+    ...parents,
     { name: crumb, path },
   ]),
   ...jsonLd,
@@ -54,6 +58,7 @@ const ld = [
       <nav aria-label="Đường dẫn" class="crumbs">
         <ol>
           <li><a href="/">Trang chủ</a></li>
+          {parents.map((p) => <li><a href={p.path}>{p.name}</a></li>)}
           <li aria-current="page">{crumb}</li>
         </ol>
       </nav>
