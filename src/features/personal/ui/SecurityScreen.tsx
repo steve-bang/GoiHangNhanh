@@ -46,14 +46,17 @@ export function SecurityScreen() {
       testID="screen-UI-I05"
       contentGap={tokens.space.lg}
     >
+      {/* Việc làm được (đổi mật khẩu, gửi báo lỗi) lên trước; ba hàng "Sắp có" xuống sau (audit PR-2). */}
       <ListGroup testID="security-group">
         <PasswordRow profile={profile} />
-        <LockedRow id="twoFactor" icon="shield-check" />
-        <LockedRow id="devices" icon="phone" />
-        <LockedRow id="dataAccess" icon="eye" />
       </ListGroup>
       <ListGroup testID="security-group-diagnostics">
         <CrashReportsSwitch />
+      </ListGroup>
+      <ListGroup testID="security-group-soon">
+        <LockedRow id="twoFactor" icon="shield-check" />
+        <LockedRow id="devices" icon="phone" />
+        <LockedRow id="dataAccess" icon="eye" />
       </ListGroup>
       <ListGroup testID="security-group-danger">
         <ListItem

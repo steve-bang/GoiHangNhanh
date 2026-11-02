@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Pressable, View } from 'react-native';
+import { Pressable, View, useWindowDimensions } from 'react-native';
 
 import { ROUTES } from '@/core/navigation';
 import { useEvidenceTotals } from '@/features/upload';
@@ -79,6 +79,10 @@ export function PlanHeroCard() {
   );
 }
 
+/** Dưới ngưỡng này (dp) hoặc khi chữ phóng từ mức này, ba ô số liệu bằng chứng xếp theo cột. */
+const STACK_METRICS_BELOW_WIDTH = 340;
+const STACK_METRICS_FONT_SCALE = 1.5;
+
 /**
  * Khối "Dữ liệu bằng chứng" (board 1a): ba ô đếm THẬT tệp của cửa hàng đang dùng trên máy này (V1-10,
  * định nghĩa ở `upload/domain/evidence-stats.ts`): trên máy / đang chờ đồng bộ / trên đám mây (chỉ tệp
@@ -90,6 +94,10 @@ export function EvidenceOverviewCard() {
   const { tokens } = useTheme();
   const navigation = useAppNavigation();
   const { state } = useEvidenceTotals();
+  const { width, fontScale } = useWindowDimensions();
+  // Màn hẹp hoặc chữ phóng lớn: ba ô xếp theo cột, mỗi ô một hàng để số và nhãn không bị cắt.
+  const stack = width < STACK_METRICS_BELOW_WIDTH || fontScale >= STACK_METRICS_FONT_SCALE;
+  const layout = stack ? 'row' : 'stacked';
   const value = (key: 'onDevice' | 'pending' | 'cloud') =>
     state.kind === 'ready' ? state.data[key] : t('personal:evidenceOverview.unknown');
   const openDetail = () => navigation.push(ROUTES.evidenceData);
@@ -133,8 +141,9 @@ export function EvidenceOverviewCard() {
             <Icon name="forward" size={18} color={tokens.color.text.secondary} />
           </Pressable>
         </Pressable>
-        <View style={{ flexDirection: 'row' }}>
+        <View style={{ flexDirection: stack ? 'column' : 'row', gap: stack ? tokens.space.sm : 0 }}>
           <MetricTile
+            layout={layout}
             label={t('personal:evidenceOverview.onDevice')}
             value={value('onDevice')}
             icon="device-saved"
@@ -142,6 +151,7 @@ export function EvidenceOverviewCard() {
             testID="metric-on-device"
           />
           <MetricTile
+            layout={layout}
             label={t('personal:evidenceOverview.pendingSync')}
             value={value('pending')}
             icon="sync"
@@ -149,6 +159,7 @@ export function EvidenceOverviewCard() {
             testID="metric-pending-sync"
           />
           <MetricTile
+            layout={layout}
             label={t('personal:evidenceOverview.cloud')}
             value={value('cloud')}
             icon="cloud"
