@@ -409,9 +409,20 @@ describe('UI-E02 Chi tiết đơn (chỉ đọc)', () => {
     await open(store, d.order.id);
     await screen.findByTestId('detail-order-code');
     expect(screen.queryByTestId('order-detail-edit')).toBeNull();
-    expect(screen.getByTestId('detail-edit-locked')).toHaveTextContent(
-      'Đơn đã bắt đầu quay nên chưa sửa được thông tin.',
-    );
+    const locked = screen.getByTestId('detail-edit-locked');
+    expect(locked).toHaveTextContent(/Đơn đã bắt đầu quay nên chưa sửa được thông tin\./);
+    expect(locked).toBeDisabled();
+  });
+
+  it('hàng Tranh chấp mở màn tạo tranh chấp bằng ID đơn', async () => {
+    const store = createMemoryOrderStore();
+    const d = makeOrder('DISPUTE', { at: CREATED });
+    await store.saveNewOrder(d);
+    await open(store, d.order.id);
+    await fireEvent.press(await screen.findByTestId('order-detail-dispute'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.disputeNew, {
+      orderId: d.order.id,
+    });
   });
 
   it('nút quay lại của header gọi back', async () => {

@@ -9,6 +9,8 @@ import {
   Button,
   Card,
   EmptyState,
+  ListGroup,
+  ListItem,
   ProductLineList,
   Screen,
   Skeleton,
@@ -138,6 +140,11 @@ function DetailReady({
   const activeSession = sessions.find(isSessionActive) ?? null; // mới nhất trước; cùng quy tắc với danh sách
   const { start, recordNow } = useRecordOrder(order.id, activeSession);
   const record = canRecordNow(evidence);
+  const rowPad = {
+    paddingVertical: tokens.space.sm,
+    paddingHorizontal: tokens.space.lg,
+    gap: tokens.space.sm,
+  } as const;
   const copyTracking = async (text: string) => {
     setCopied((await copyText(text)) ? 'trackingCode' : 'failed');
   };
@@ -182,99 +189,102 @@ function DetailReady({
         </>
       }
     >
-      <Card compact>
-        <View style={{ gap: tokens.space.sm }}>
-          <CopyableOrderCode orderCode={order.orderCode} />
-          <View style={styles.row}>
-            <SourceIcon source={order.source} size={tokens.component.tile.sm} />
+      {/* Đầu trang (không thẻ): nhận diện + trạng thái bằng chứng tổng hợp. */}
+      <View style={{ gap: tokens.space.sm }}>
+        <CopyableOrderCode orderCode={order.orderCode} />
+        <View style={styles.row}>
+          <SourceIcon source={order.source} size={tokens.component.tile.sm} />
+          <View style={styles.flex}>
+            <Text variant="formLabel" color="inkMuted">
+              {t('screens:orderDetail.source')}
+            </Text>
+            <Text variant="formButton" color="ink" testID="detail-source">
+              {t(`common:sources.${order.source}`)}
+            </Text>
+          </View>
+        </View>
+        <EvidenceSummaryCard
+          summary={evidence}
+          counts={items.length > 0 ? countEvidence(items) : null}
+        />
+        <View>
+          <Text variant="formLabel" color="inkMuted">
+            {t('screens:orderDetail.createdAt')}
+          </Text>
+          <Text variant="formBody" color="ink" testID="detail-created-at">
+            {formatDeviceDateTime(order.createdAtDevice)}
+          </Text>
+          <Text variant="caption" color="textMuted">
+            {t('screens:orderDetail.deviceTime')}
+          </Text>
+        </View>
+        <Text variant="caption" color="textMuted">
+          {t('screens:orderDetail.enteredByYou')}
+        </Text>
+      </View>
+
+      <ListGroup>
+        {order.trackingCode ? (
+          <View key="tracking" style={[styles.row, rowPad]}>
             <View style={styles.flex}>
               <Text variant="formLabel" color="inkMuted">
-                {t('screens:orderDetail.source')}
+                {t('screens:orderDetail.trackingCode')}
               </Text>
-              <Text variant="formButton" color="ink" testID="detail-source">
-                {t(`common:sources.${order.source}`)}
+              <Text variant="formButton" color="ink" testID="detail-tracking-code">
+                {order.trackingCode}
               </Text>
+              {copied ? (
+                <Text
+                  testID="copy-feedback"
+                  variant="caption"
+                  color={copied === 'failed' ? 'danger' : 'success'}
+                  accessibilityLiveRegion="polite"
+                >
+                  {t(copied === 'failed' ? 'screens:preview.copyFailed' : 'screens:preview.copied')}
+                </Text>
+              ) : null}
             </View>
+            <CopyButton
+              testID="copy-tracking-code"
+              label={t('screens:orderDetail.copyTrackingCode')}
+              onPress={() => void copyTracking(order.trackingCode ?? '')}
+            />
           </View>
-          {order.trackingCode ? (
-            <View style={styles.row}>
-              <View style={styles.flex}>
-                <Text variant="formLabel" color="inkMuted">
-                  {t('screens:orderDetail.trackingCode')}
-                </Text>
-                <Text variant="formButton" color="ink" testID="detail-tracking-code">
-                  {order.trackingCode}
-                </Text>
-              </View>
-              <CopyButton
-                testID="copy-tracking-code"
-                label={t('screens:orderDetail.copyTrackingCode')}
-                onPress={() => void copyTracking(order.trackingCode ?? '')}
-              />
-            </View>
-          ) : (
+        ) : (
+          <View key="tracking" style={rowPad}>
             <Text variant="formBody" color="inkMuted" testID="detail-no-tracking">
               {t('screens:orderDetail.noTracking')}
             </Text>
-          )}
-          {copied ? (
-            <Text
-              testID="copy-feedback"
-              variant="caption"
-              color={copied === 'failed' ? 'danger' : 'success'}
-              accessibilityLiveRegion="polite"
-            >
-              {t(copied === 'failed' ? 'screens:preview.copyFailed' : 'screens:preview.copied')}
-            </Text>
-          ) : null}
-          <View>
-            <Text variant="formLabel" color="inkMuted">
-              {t('screens:orderDetail.createdAt')}
-            </Text>
-            <Text variant="formBody" color="ink" testID="detail-created-at">
-              {formatDeviceDateTime(order.createdAtDevice)}
-            </Text>
-            <Text variant="caption" color="textMuted">
-              {t('screens:orderDetail.deviceTime')}
-            </Text>
           </View>
-          <Text variant="caption" color="textMuted">
-            {t('screens:orderDetail.enteredByYou')}
-          </Text>
-          {sessions.length === 0 ? (
-            <Button
-              size="slim"
-              variant="secondary"
-              testID="order-detail-edit"
-              label={t('screens:orderDetail.edit')}
-              onPress={() => navigation.push(ROUTES.orderEdit, { orderId: order.id })}
-            />
-          ) : (
-            // Đơn đã bắt đầu quay: chưa sửa được (chưa có lịch sử thay đổi; bất biến 7, Q-22ah).
-            <Text variant="caption" color="textMuted" testID="detail-edit-locked">
-              {t('screens:orderEdit.lockedMessage')}
-            </Text>
-          )}
-        </View>
-      </Card>
+        )}
+        <ListItem
+          key="dispute"
+          testID="order-detail-dispute"
+          title={t('disputes:list.create')}
+          onPress={() => navigation.push(ROUTES.disputeNew, { orderId: order.id })}
+        />
+        {sessions.length === 0 ? (
+          <ListItem
+            key="edit"
+            testID="order-detail-edit"
+            title={t('screens:orderDetail.edit')}
+            onPress={() => navigation.push(ROUTES.orderEdit, { orderId: order.id })}
+          />
+        ) : (
+          // Đơn đã bắt đầu quay: chưa sửa được (chưa có lịch sử thay đổi; bất biến 7, Q-22ah).
+          <ListItem
+            key="edit-locked"
+            testID="detail-edit-locked"
+            disabled
+            title={t('screens:orderDetail.edit')}
+            subtitle={t('screens:orderEdit.lockedMessage')}
+            showChevron={false}
+          />
+        )}
+      </ListGroup>
 
-      <EvidenceSummaryCard
-        summary={evidence}
-        counts={items.length > 0 ? countEvidence(items) : null}
-      />
-      <Button
-        size="slim"
-        variant="secondary"
-        testID="order-detail-dispute"
-        label={t('disputes:list.create')}
-        onPress={() => navigation.push(ROUTES.disputeNew, { orderId: order.id })}
-      />
-
-      <Card compact>
-        <View style={{ gap: tokens.space.sm }}>
-          <Text variant="formButton" color="ink" accessibilityRole="header">
-            {t('screens:orderDetail.products')}
-          </Text>
+      <ListGroup title={t('screens:orderDetail.products')}>
+        <View key="products" style={rowPad}>
           <ProductLineList
             compact
             lines={lines.map((l) => ({
@@ -290,56 +300,46 @@ function DetailReady({
             </Text>
           ) : null}
         </View>
-      </Card>
+      </ListGroup>
 
-      <Card compact>
-        <View style={{ gap: tokens.space.sm }}>
-          <Text variant="formButton" color="ink" accessibilityRole="header">
-            {t('screens:orderDetail.packages')}
-          </Text>
-          {packages.map((pkg) => {
-            const session = sessions.find((s) => s.packageId === pkg.id);
-            return (
-              <View key={pkg.id} testID={`detail-package-${pkg.id}`}>
-                <Text variant="formButton" color="ink">
-                  {t('screens:orderDetail.package', { index: pkg.index })}
-                </Text>
-                <Text variant="formBody" color="inkMuted">
-                  {session
-                    ? t('screens:orderDetail.packageActiveSession', {
-                        time: formatDeviceDateTime(session.startedAtDevice),
-                      })
-                    : t('screens:orderDetail.packageNoSession')}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
-      </Card>
+      <ListGroup title={t('screens:orderDetail.packages')}>
+        {packages.map((pkg) => {
+          const session = sessions.find((s) => s.packageId === pkg.id);
+          return (
+            <ListItem
+              key={pkg.id}
+              testID={`detail-package-${pkg.id}`}
+              title={t('screens:orderDetail.package', { index: pkg.index })}
+              subtitle={
+                session
+                  ? t('screens:orderDetail.packageActiveSession', {
+                      time: formatDeviceDateTime(session.startedAtDevice),
+                    })
+                  : t('screens:orderDetail.packageNoSession')
+              }
+            />
+          );
+        })}
+      </ListGroup>
 
-      <Card compact>
-        <View style={{ gap: tokens.space.sm }}>
-          <Text variant="formButton" color="ink" accessibilityRole="header">
-            {t('screens:orderDetail.history')}
-          </Text>
-          {history.map((event) => (
-            <View key={event.key} style={styles.row} testID="detail-history-item">
-              <View style={[styles.dot, { backgroundColor: tokens.color.brand.primary }]} />
-              <View style={styles.flex}>
-                <Text variant="formBody" color="ink">
-                  {event.text}
-                </Text>
-                <Text variant="caption" color="textMuted">
-                  {formatDeviceDateTime(event.at)}
-                </Text>
-              </View>
+      <ListGroup title={t('screens:orderDetail.history')}>
+        {history.map((event) => (
+          <View key={event.key} style={[styles.row, rowPad]} testID="detail-history-item">
+            <View style={[styles.dot, { backgroundColor: tokens.color.brand.primary }]} />
+            <View style={styles.flex}>
+              <Text variant="formBody" color="ink">
+                {event.text}
+              </Text>
+              <Text variant="caption" color="textMuted">
+                {formatDeviceDateTime(event.at)}
+              </Text>
             </View>
-          ))}
-          <Text variant="caption" color="textMuted">
-            {t('screens:orderDetail.historyNote')}
-          </Text>
-        </View>
-      </Card>
+          </View>
+        ))}
+      </ListGroup>
+      <Text variant="caption" color="textMuted">
+        {t('screens:orderDetail.historyNote')}
+      </Text>
       {start.permissionSheet}
     </Screen>
   );

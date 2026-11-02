@@ -45,6 +45,7 @@
   "recording": {
     "clock": "Thời lượng",
     "stop": "Dừng quay",
+    "stopHint": "Dừng quay và lưu video trên máy.",
     "close": "Rời màn quay",
     "cameraPlaceholder": "Khung xem trước camera (minh họa, chưa kết nối camera)",
     "leave": {

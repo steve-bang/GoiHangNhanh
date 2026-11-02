@@ -196,6 +196,35 @@ export function EvidenceDetailView({
 }
 
 /**
+ * Trình xem MỘT tệp, dùng ngoài màn UI-E04 (ví dụ xem lại ngay ở Xác nhận video, UI-C04). Cùng nguồn và
+ * cùng các trạng thái trung thực với `EvidenceDetailView` (đang lưu / tệp mất / phát lỗi / bản máy chủ).
+ * CHỈ ĐỌC: không tự phát, không sửa, không ghi đè tệp gốc (bất biến 4).
+ */
+export function EvidencePlayer({
+  file,
+  shopId,
+}: {
+  file: EvidenceDetailViewProps['file'];
+  shopId: ShopId;
+}) {
+  const { state, localPath } = file;
+  const playback = useMemo(
+    () => localPlaybackOf({ state, localPath }, recordingExists),
+    [state, localPath],
+  );
+  const serverHas = isServerConfirmed(state);
+  return (
+    <EvidenceMedia
+      file={file}
+      shopId={shopId}
+      serverHas={serverHas}
+      playback={playback}
+      missingReason={state === FILE_STATES.HASH_MISMATCH ? 'mismatch' : 'lost'}
+    />
+  );
+}
+
+/**
  * Khung xem: tệp trên máy (ưu tiên) hoặc bản của máy chủ khi tệp không còn/không phát được; ngược lại là
  * trạng thái trung thực, không đoán. Xem từ máy chủ KHÔNG tải ngược về máy hay tạo lại tệp (bất biến 4).
  */

@@ -1,6 +1,5 @@
-import type { ComponentProps } from 'react';
-import { useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { AccessibilityInfo, Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -57,6 +56,16 @@ interface RecordingFrameProps {
   leaveMessage?: string;
   /** Ẩn nút dừng khi không còn gì để dừng (đã dừng, đang lưu). Mặc định hiện. */
   stopHidden?: boolean;
+  /**
+   * Đồng hồ ở dạng đọc được ("1 phút 12 giây"), đổi thưa (không mỗi giây) để trình đọc màn hình không
+   * bị làm phiền. Không truyền thì dùng `clockLabel`.
+   */
+  clockSpoken?: string;
+  /** Có thì tắt nút dừng và hiện đúng lý do bên dưới (ví dụ "Đang chuẩn bị camera…"). */
+  stopDisabledReason?: string;
+  /** Thông báo cho trình đọc màn hình khi bắt đầu / dừng ghi thật (chuyển `recording` false <-> true). */
+  announceStart?: string;
+  announceStop?: string;
   /** Có `onToggleTorch` thì hiện nút đèn pin ở bên phải. */
   torch?: boolean;
   onToggleTorch?: () => void;
@@ -81,6 +90,10 @@ function RecordingFrameBody({
   onStop,
   onEndSession,
   stopHidden = false,
+  clockSpoken,
+  stopDisabledReason,
+  announceStart,
+  announceStop,
   preview,
   previewMessage,
   recording,
@@ -98,6 +111,15 @@ function RecordingFrameBody({
   const [leaveDialogVisible, setLeaveDialogVisible] = useState(false);
   const { allowLeave } = useConfirmBeforeLeave(true, () => setLeaveDialogVisible(true));
   const touch = getMinTouchTarget();
+  const wasRecording = useRef(false);
+  useEffect(() => {
+    if (recording && !wasRecording.current && announceStart) {
+      AccessibilityInfo.announceForAccessibility(announceStart);
+    } else if (!recording && wasRecording.current && announceStop) {
+      AccessibilityInfo.announceForAccessibility(announceStop);
+    }
+    wasRecording.current = recording;
+  }, [recording, announceStart, announceStop]);
   const overlay = {
     backgroundColor: tokens.color.camera.control,
     borderRadius: tokens.radius.md,
@@ -134,7 +156,7 @@ function RecordingFrameBody({
             accessible
             accessibilityLabel={
               recording
-                ? `${badgeLabel}, ${t('common:recording.clock')} ${clockLabel}`
+                ? `${badgeLabel}, ${t('common:recording.clock')} ${clockSpoken ?? clockLabel}`
                 : [previewLabel, notice].filter(Boolean).join(', ')
             }
             style={[
@@ -278,13 +300,19 @@ function RecordingFrameBody({
               testID="recording-stop"
               accessibilityRole="button"
               accessibilityLabel={t('common:recording.stop')}
+              accessibilityHint={t('common:recording.stopHint')}
+              accessibilityState={{ disabled: stopDisabledReason !== undefined }}
+              disabled={stopDisabledReason !== undefined}
               onPress={() => {
                 // Dừng quay là cách kết thúc bình thường: tắt chặn rời màn trước, nếu không điều hướng
                 // đi nơi khác sẽ bị chính hộp thoại cảnh báo chặn lại.
                 allowLeave();
                 onStop();
               }}
-              style={styles.stopWrap}
+              style={[
+                styles.stopWrap,
+                stopDisabledReason !== undefined ? { opacity: tokens.opacity.disabled } : null,
+              ]}
             >
               <View style={[styles.stopRing, { borderColor: tokens.color.camera.onCamera }]}>
                 <View
@@ -295,6 +323,16 @@ function RecordingFrameBody({
               </View>
             </Pressable>
           )}
+          {!stopHidden && stopDisabledReason ? (
+            <Text
+              testID="recording-stop-reason"
+              variant="caption"
+              accessibilityLiveRegion="polite"
+              style={[styles.previewText, { color: tokens.color.camera.onCamera }]}
+            >
+              {stopDisabledReason}
+            </Text>
+          ) : null}
           {footnote ? (
             <Text
               testID="recording-footnote"
