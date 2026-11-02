@@ -97,7 +97,12 @@ function tryCreateFirebaseApi(env: BackendEnv): ApiClient | null {
     const { createFirebaseApi, getFirebaseServices } = require('./firebase') as FirebaseModule;
     const host = firebaseEmulatorHost(env);
     return createFirebaseApi(getFirebaseServices(host ? { host } : undefined));
-  } catch {
+  } catch (error) {
+    // Chỉ dev: lỗi khởi tạo bị nuốt sẽ biến mọi thao tác thành AUTH_SERVICE_UNAVAILABLE, khó tra.
+    if (__DEV__ && process.env.NODE_ENV !== 'test') {
+      // eslint-disable-next-line no-console
+      console.warn('[api] Khởi tạo Firebase thất bại, rơi về bản "chưa kết nối":', error);
+    }
     return null;
   }
 }
@@ -107,6 +112,12 @@ export function createApi(
   createFirebase: (env: BackendEnv) => ApiClient | null = tryCreateFirebaseApi,
 ): ApiClient {
   const mode = resolveBackendMode(env);
+  if (__DEV__ && process.env.NODE_ENV !== 'test') {
+    // eslint-disable-next-line no-console
+    console.log(
+      `[api] backend=${mode} appEnv=${env.appEnv ?? '-'} emulator=${firebaseEmulatorHost(env) ?? '-'}`,
+    );
+  }
   if (mode === 'firebase') return createFirebase(env) ?? createUnavailableApi();
   if (mode === 'unavailable') return createUnavailableApi();
   return createFakeApi({
