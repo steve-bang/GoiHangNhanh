@@ -1,3 +1,4 @@
+import { AccessibilityInfo } from 'react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -19,7 +20,7 @@ import {
   useScreenFocused,
   type CameraRecorderHandle,
 } from '@/platform';
-import { Button, RecordingFrame, Screen, Text, useToast } from '@/shared/ui';
+import { Button, ErrorState, RecordingFrame, Screen, useToast } from '@/shared/ui';
 
 import {
   ACTIVE_RECORDING_POLICY,
@@ -333,6 +334,26 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
   }, [phase, stop, toOrder]);
 
   const cameraReady = permission.status === 'granted' && !cameraFailed;
+  // Đồng hồ cho trình đọc màn hình: làm tròn xuống 15 giây để nhãn đổi thưa; mỗi phút trọn thì báo một lần.
+  const elapsedSeconds = startedAt !== null ? Math.max(0, Math.floor((now - startedAt) / 1000)) : 0;
+  const spokenSeconds = elapsedSeconds - (elapsedSeconds % 15);
+  const spokenMinutes = Math.floor(spokenSeconds / 60);
+  const clockSpoken =
+    spokenMinutes > 0
+      ? t('screens:record.spokenElapsed', { minutes: spokenMinutes, seconds: spokenSeconds % 60 })
+      : t('screens:record.spokenElapsedSeconds', { seconds: spokenSeconds });
+  const wholeMinutes = Math.floor(elapsedSeconds / 60);
+  const announcedMinute = useRef(0);
+  useEffect(() => {
+    if (phase !== 'recording' || wholeMinutes < 1 || wholeMinutes === announcedMinute.current)
+      return;
+    announcedMinute.current = wholeMinutes;
+    AccessibilityInfo.announceForAccessibility(
+      t('screens:record.announceMinute', {
+        spoken: t('screens:record.spokenElapsed', { minutes: wholeMinutes, seconds: 0 }),
+      }),
+    );
+  }, [phase, wholeMinutes, t]);
   const minutes = POLICY.maxRecordMinutes;
   const remainingSeconds =
     phase === 'recording' && startedAt !== null
@@ -360,11 +381,14 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
         testID="screen-UI-C03"
         footer={<Button label={t('screens:record.backToOrder')} onPress={toOrder} />}
       >
-        <Text accessibilityRole="alert">
-          {failure === 'insufficientStorage'
-            ? t('screens:precheck.storageMinutes', { minutes: POLICY.maxRecordMinutes })
-            : t(`screens:record.${failure ?? 'saveFailed'}`)}
-        </Text>
+        <ErrorState
+          testID="record-failed"
+          title={
+            failure === 'insufficientStorage'
+              ? t('screens:precheck.storageMinutes', { minutes: POLICY.maxRecordMinutes })
+              : t(`screens:record.${failure ?? 'saveFailed'}`)
+          }
+        />
       </Screen>
     );
   }
@@ -375,6 +399,10 @@ export function PackRecordLive({ session }: { session: PackingSession }) {
       primaryCode={session.snapshot.orderCode}
       secondaryLabel={t('screens:record.package', { index: session.snapshot.packageIndex })}
       clockLabel={formatElapsed(startedAt ?? now, now)}
+      clockSpoken={clockSpoken}
+      announceStart={t('screens:record.announceStart')}
+      announceStop={t('screens:record.announceStop')}
+      {...(phase === 'preparing' ? { stopDisabledReason: t('screens:record.preparing') } : {})}
       guidance={t('screens:record.packGuidance')}
       footnote={t('screens:record.killWarning')}
       recording={phase === 'recording'}

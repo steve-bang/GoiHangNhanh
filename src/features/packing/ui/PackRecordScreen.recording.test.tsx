@@ -89,6 +89,20 @@ describe('màn quay khi bộ ghi thật bật', () => {
     expect(file).toMatchObject({ state: 'recording', sessionId: session.id, kind: 'video' });
   });
 
+  it('chuẩn bị: nút Dừng tắt kèm lý do; ghi xong chuẩn bị thì bật, có gợi ý trợ năng', async () => {
+    await setup(<PackRecordScreen />);
+    const stop = await screen.findByTestId('recording-stop');
+    expect(stop).toBeDisabled();
+    expect(screen.getByTestId('recording-stop-reason')).toHaveTextContent('Đang chuẩn bị camera…');
+    await act(async () => mockRecorder.signalReady());
+    await screen.findByText('Đang quay');
+    expect(screen.getByTestId('recording-stop')).toBeEnabled();
+    expect(screen.queryByTestId('recording-stop-reason')).toBeNull();
+    expect(screen.getByTestId('recording-stop').props.accessibilityHint).toBe(
+      'Dừng quay và lưu video trên máy.',
+    );
+  });
+
   it('sẵn sàng hai lần chỉ bắt đầu ghi một lần', async () => {
     await setup(<PackRecordScreen />);
     await act(async () => mockRecorder.signalReady());

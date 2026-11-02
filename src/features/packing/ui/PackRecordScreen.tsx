@@ -11,7 +11,7 @@ import {
   useScannerPermission,
   useScreenFocused,
 } from '@/platform';
-import { Button, RecordingFrame, Screen, Text } from '@/shared/ui';
+import { Button, ErrorState, RecordingFrame, Screen, Skeleton, Text } from '@/shared/ui';
 
 import { RECORDER_ENABLED, formatElapsed } from '../domain';
 import { PackRecordLive } from './PackRecordLive';
@@ -63,9 +63,19 @@ export function PackRecordScreen() {
     return (
       <Screen title={t('nav:titles.UI-C03')} onBack={navigation.back} testID="screen-UI-C03">
         {session === null ? (
-          <Text accessibilityRole="alert">{t('screens:record.sessionMissing')}</Text>
+          <ErrorState
+            title={t('screens:record.sessionMissing')}
+            onRetry={navigation.back}
+            retryLabel={t('screens:record.backToOrder')}
+            testID="record-session-missing"
+          />
         ) : (
-          <Text color="textMuted">{t('screens:preview.loading')}</Text>
+          <>
+            <Text color="textMuted" accessibilityLiveRegion="polite">
+              {t('screens:preview.loading')}
+            </Text>
+            <Skeleton height={72} />
+          </>
         )}
       </Screen>
     );

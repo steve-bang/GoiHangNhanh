@@ -8,6 +8,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Added
 
+- Quay đóng gói (UI-C03) theo `ux-architecture-redesign` §6.5 / audit PK-4: nút Dừng có gợi ý trợ năng và bị tắt kèm chữ "Đang chuẩn bị camera…" lúc chuẩn bị; đồng hồ đọc dạng "1 phút 12 giây" đổi thưa, thông báo bắt đầu/dừng và mỗi phút qua `AccessibilityInfo`; trạng thái lỗi/đang mở/không thấy phiên dùng `ErrorState`/`Skeleton`. `RecordingFrame` chỉ thêm prop tùy chọn (UI-D04 không đổi). Chưa kiểm chứng trên thiết bị; chưa có haptics (cần thêm phụ thuộc, PK-5).
 - Chi tiết đơn (UI-E02) bớt thẻ theo audit OD-1 / `ux-architecture-redesign` §6.7: đầu trang phẳng (mã đơn, nguồn, trạng thái bằng chứng, giờ tạo), `ListGroup` cho Mã vận đơn · Tranh chấp · Sửa đơn, Sản phẩm, Kiện hàng, Lịch sử; "Sửa thông tin đơn" là hàng bị tắt kèm lý do khi đơn đã có phiên. Nghiệp vụ, route, `testID` giữ nguyên; ảnh web ở `docs/assets/screens/od-1-order-detail/`, chưa kiểm chứng trên thiết bị.
 - Xem lại bằng chứng từ máy chủ khi tệp trên máy không còn (video và ảnh, kể cả ảnh hàng hoàn): Function `getEvidenceReadUrl` cấp URL ký chỉ đọc 15 phút cho thành viên đang hoạt động, chỉ khi máy chủ đã nhận; ưu tiên tệp trên máy; chưa kiểm chứng trên thiết bị, chưa deploy (V1-29).
 - Tạm dừng hàng đợi tải lên và băm nền khi đang quay video (tín hiệu `core/recording/recording-activity`, bật trong `platform/camera-recorder`, tắt ở mọi đường kết thúc + lưới 15 phút); quay xong chạy lại ngay, lần gửi bị hủy không tốn lượt; chưa đo trên thiết bị (V1-28).

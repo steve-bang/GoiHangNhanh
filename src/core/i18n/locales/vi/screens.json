@@ -173,6 +173,12 @@
     "limitSoon": "Sắp đủ {{minutes}} phút. Ứng dụng sẽ tự dừng quay.",
     "limitReachedSaving": "Đã đủ {{minutes}} phút. Ứng dụng đang dừng quay và lưu video.",
     "limitReached": "Mỗi lần quay tối đa {{minutes}} phút nên ứng dụng đã tự dừng. Video đã lưu trên máy.",
+    "preparing": "Đang chuẩn bị camera…",
+    "spokenElapsed": "{{minutes}} phút {{seconds}} giây",
+    "spokenElapsedSeconds": "{{seconds}} giây",
+    "announceStart": "Đã bắt đầu quay.",
+    "announceStop": "Đã dừng quay.",
+    "announceMinute": "Đang quay, {{spoken}}.",
     "killWarning": "Giữ ứng dụng mở trong lúc quay. Nếu ứng dụng bị tắt, đoạn đang quay có thể mất.",
     "backgroundSaving": "Đã dừng quay vì ứng dụng chuyển sang nền. Đang lưu phần đã quay…",
     "stoppedInBackground": "Đã dừng quay vì ứng dụng chuyển sang nền. Ứng dụng không tự quay tiếp."
