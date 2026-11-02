@@ -1,0 +1,88 @@
+---
+/*
+ * GHI CHÚ NỘI BỘ (không hiển thị): trang tải app. Chưa phát hành -> DownloadCta/StoreButtons tự hiện "Sắp có",
+ * không có href; điền `site.stores.*.url` khi lên store thì trang tự đổi sang nút tải thật.
+ * Không ghi sàn iOS/Android tối thiểu cho tới khi D-2 chốt. Không nêu tên sàn TMĐT như đối tác.
+ * Mô tả khớp CLAUDE.md "Trạng thái dự án" (một tài khoản một điện thoại, tải lên khi app mở, không ghi âm).
+ */
+import LegalPage from '../components/LegalPage.astro';
+import DownloadCta from '../components/DownloadCta.astro';
+import PhoneMockup from '../components/PhoneMockup.astro';
+import { site } from '../config/site';
+import homeShot from '../assets/app-01-home.png';
+import scanShot from '../assets/app-02-scan.png';
+import orderShot from '../assets/app-04-order-preview.png';
+
+const released = Boolean(site.stores.appStore.url || site.stores.googlePlay.url);
+---
+
+<LegalPage
+  title={`Tải ứng dụng ${site.name} cho iPhone và Android: lưu bằng chứng`}
+  description={`Tải ${site.name} về iPhone hoặc điện thoại Android để quay video đóng hàng, gắn đúng đơn và tìm lại theo mã đơn khi khách báo thiếu hàng.`}
+  path={site.pages.download}
+  heading={`Tải ứng dụng ${site.name}`}
+  crumb="Tải ứng dụng"
+  hideEffectiveDate
+>
+  <p>
+    {site.name} chạy trên iPhone và điện thoại Android. {
+      released
+        ? 'Chọn cửa hàng ứng dụng phù hợp với máy của bạn.'
+        : 'Ứng dụng đang phát triển và chưa có trên cửa hàng. Khi có, nút tải sẽ hiện ở đây.'
+    }
+  </p>
+  <DownloadCta label="Sắp có trên App Store và Google Play" />
+
+  <h2 id="ung-dung-lam-gi">Ứng dụng làm được gì</h2>
+  <ul>
+    <li>Quét hoặc nhập mã đơn, rồi quay video đóng hàng gắn đúng đơn đó.</li>
+    <li>Ghi nhận hàng hoàn: chụp ảnh, quay video mở kiện, đối chiếu với đơn gốc.</li>
+    <li>Tìm lại video theo mã đơn khi khách báo thiếu hàng hoặc hàng hoàn có vấn đề.</li>
+  </ul>
+
+  <div class="shots" role="group" aria-label="Ảnh màn hình ứng dụng bản thử">
+    <PhoneMockup src={homeShot} alt="Màn hình Trang chủ bản thử: Đóng gói đơn, Nhận hàng hoàn, Quét mã đơn." />
+    <PhoneMockup src={scanShot} alt="Màn hình Quét mã đơn bản thử." />
+    <PhoneMockup src={orderShot} alt="Màn hình chuẩn bị quay cho một đơn hàng bản thử." />
+  </div>
+  <p class="note">Giao diện minh họa của bản thử, có thể thay đổi khi phát hành.</p>
+
+  <h2 id="can-biet">Điều cần biết trước khi cài</h2>
+  <ul>
+    <li>
+      <strong>Cần đăng ký tài khoản</strong> bằng email và mật khẩu. Bạn không cần kết nối với sàn bán hàng nào.
+    </li>
+    <li>
+      <strong>Cho phép camera</strong> để quét mã, quay video và chụp ảnh. Ứng dụng không ghi âm và không xin quyền micro.
+    </li>
+    <li>
+      <strong>Dữ liệu nằm trên điện thoại tạo ra nó.</strong> Mỗi tài khoản dùng trên một điện thoại. Đổi máy
+      thì dữ liệu chưa tải lên sẽ không tự chuyển sang.
+    </li>
+    <li>
+      <strong>Video được tải lên khi ứng dụng đang mở</strong> và có mạng. Ứng dụng chưa tải khi đã bị tắt hẳn.
+      Bạn có thể bật Chỉ tải khi có Wi-Fi.
+    </li>
+    <li>
+      Ứng dụng giúp lưu và tìm lại bằng chứng có tổ chức. Chúng tôi không hứa kết quả khiếu nại với sàn hay
+      đơn vị vận chuyển.
+    </li>
+  </ul>
+
+  <h2 id="xem-them">Xem thêm</h2>
+  <ul>
+    <li><a href={site.legalPages.support}>Hỗ trợ và câu hỏi thường gặp</a></li>
+    <li><a href={site.legalPages.privacy}>Chính sách quyền riêng tư</a></li>
+    <li><a href={site.legalPages.accountDeletionRequest}>Yêu cầu xóa tài khoản và dữ liệu</a></li>
+  </ul>
+</LegalPage>
+
+<style>
+  .shots {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-16);
+    margin-block: var(--space-24);
+  }
+</style>
