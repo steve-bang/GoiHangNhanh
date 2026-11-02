@@ -197,7 +197,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
         ? {
             headerRight: (
               <Button
-                size="compact"
+                size="slim"
                 testID="orders-create"
                 icon="add"
                 label={t('screens:orders.createAction')}
