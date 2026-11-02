@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useDeviceSetting } from '@/features/orders';
 import { useConnectivity } from '@/platform';
-import { Switch, useToast } from '@/shared/ui';
+import { BottomSheet, ListGroup, ListItem, Switch, Text, useToast, useTheme } from '@/shared/ui';
 
 import { UPLOAD_WIFI_ONLY, uploadNetworkGate, type UploadNetworkGate } from '../domain';
 
@@ -47,5 +47,45 @@ export function WifiOnlySwitch({ testID = 'wifi-only-switch' }: { testID?: strin
       disabled={!loaded || saving}
       testID={testID}
     />
+  );
+}
+
+/**
+ * Hàng "Cài đặt tải lên" ở UI-F01 (thay thẻ công tắc cao): phụ đề nêu chế độ hiện tại, chạm mở bảng
+ * chứa công tắc "Chỉ tải khi có Wi‑Fi" và câu "chỉ tải khi đang mở" (bất biến 11: không hứa tải nền).
+ * Cài đặt chưa nạp xong thì coi như tắt, giống `useUploadNetworkGate`.
+ */
+export function UploadSettingsRow() {
+  const { t } = useTranslation();
+  const { tokens } = useTheme();
+  const { value, loaded } = useDeviceSetting(UPLOAD_WIFI_ONLY);
+  const [open, setOpen] = useState(false);
+  const mode = loaded && value ? 'modeWifi' : 'modeAny';
+  return (
+    <>
+      <ListItem
+        leadingIcon="wifi"
+        title={t('screens:sync.uploadSettings.title')}
+        subtitle={t(`screens:sync.uploadSettings.${mode}`)}
+        onPress={() => setOpen(true)}
+        testID="sync-upload-settings"
+      />
+      <BottomSheet
+        visible={open}
+        onClose={() => setOpen(false)}
+        title={t('screens:sync.uploadSettings.title')}
+      >
+        <Text
+          color="textMuted"
+          testID="sync-upload-note"
+          style={{ paddingBottom: tokens.space.md }}
+        >
+          {t('screens:sync.note')}
+        </Text>
+        <ListGroup>
+          <WifiOnlySwitch />
+        </ListGroup>
+      </BottomSheet>
+    </>
   );
 }

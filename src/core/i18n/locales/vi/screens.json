@@ -275,17 +275,23 @@
       "description": "Bật để ảnh và video không tải qua mạng di động. Thông tin đơn vẫn được gửi.",
       "saveFailed": "Chưa lưu được cài đặt. Bạn thử lại nhé."
     },
-    "filter": {
-      "uploading": "Đang tải lên",
-      "waiting_upload": "Chờ tải lên",
+    "chip": {
+      "uploading": "Đang tải",
+      "waiting_upload": "Chờ tải",
       "error": "Lỗi",
       "uploaded": "Đã tải lên"
     },
     "filterCount": "{{label}} ({{count}})",
     "summary": {
       "waiting": "{{count}} tệp đang chờ",
-      "error": "{{count}} lỗi",
+      "errorTitle": "{{count}} tệp cần xử lý",
+      "onDevice": "Tệp vẫn ở trên máy",
       "none": "Không có tệp nào đang chờ hoặc lỗi"
+    },
+    "uploadSettings": {
+      "title": "Cài đặt tải lên",
+      "modeAny": "Tải qua mọi mạng",
+      "modeWifi": "Chỉ tải khi có Wi‑Fi"
     },
     "loading": "Đang đọc danh sách tệp…",
     "loadError": "Chưa đọc được danh sách tệp. Bạn thử lại nhé.",
