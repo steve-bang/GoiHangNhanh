@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { logger } from '@/core/logging/logger';
@@ -12,15 +13,21 @@ import {
   Card,
   Icon,
   type IconName,
-  QuickAction,
+  ListGroup,
+  ListItem,
   Screen,
   StatTile,
+  SyncStatusBar,
   Text,
   useTheme,
 } from '@/shared/ui';
 import { layout } from '@/core/theme';
 
 import { HOME_DEVICE_DATA_NOTICE_DISMISSED } from '../domain';
+
+/** Dưới ngưỡng này (dp) hoặc khi chữ phóng từ mức này, ba ô thống kê xếp theo cột. */
+const STACK_STATS_BELOW_WIDTH = 340;
+const STACK_STATS_FONT_SCALE = 1.5;
 
 /**
  * UI-B01 Trang chủ (đặc tả A01; mockup docs/assets/ui/02-home-and-scan.png, D-16; làm gọn theo
@@ -29,6 +36,12 @@ import { HOME_DEVICE_DATA_NOTICE_DISMISSED } from '../domain';
  * còn banner/thẻ gradient trang trí; lối tắt Quét bỏ vì trùng nút Quét giữa thanh tab. Chữ đã sửa so với mẫu (docs/09 mục 5.5): không hứa quá
  * mức, nhãn thống kê dùng nhãn trạng thái chuẩn. KHÔNG biểu đồ doanh thu. Hàng hoàn và Đồng bộ
  * không còn là tab: vào từ đây. "Đơn gần đây"/"Việc cần xử lý" của docs/09 chưa có trên mẫu (Q-16).
+ *
+ * UX redesign (docs/ux-architecture-redesign.md mục 6.1, PR #71, chưa BA duyệt): thứ tự hai thẻ hành động
+ * -> khối "Bằng chứng cần theo dõi" (chỉ khi có tệp lỗi, dùng `SyncStatusBar`) -> thống kê hôm nay (ô số có
+ * khối giữ chỗ khi đang đọc, nút Thử lại khi lỗi, ba ô xếp cột khi màn hẹp/chữ lớn) -> nhóm "Lối tắt" dạng
+ * danh sách (gồm Danh sách hàng hoàn, trước đây là chữ lẻ) -> thẻ phụ. Kéo để làm mới đọc lại số liệu.
+ * Không đổi route, dữ liệu hay luật nghiệp vụ.
  *
  * V1-10: tên shop từ phiên (`getShopSummary`), 3 ô đếm THẬT trên máy cho shop đang dùng
  * (`useTodayEvidenceStats`: định nghĩa ở `upload/domain/evidence-stats.ts`), không còn dữ liệu minh họa.
@@ -41,7 +54,23 @@ export function HomeScreen() {
   const navigation = useAppNavigation();
   const touch = getMinTouchTarget();
   const shopName = useCurrentShopName();
-  const { state: stats } = useTodayEvidenceStats();
+  const { state: stats, reload } = useTodayEvidenceStats();
+  const { width, fontScale } = useWindowDimensions();
+  const [refreshing, setRefreshing] = useState(false);
+  // Màn hẹp hoặc chữ phóng lớn: xếp ba ô số theo cột để số và nhãn không bị cắt (chưa kiểm trên máy).
+  const stackStats = width < STACK_STATS_BELOW_WIDTH || fontScale >= STACK_STATS_FONT_SCALE;
+  const refresh = () => {
+    setRefreshing(true);
+    reload()
+      .catch((error: unknown) => {
+        logger.warn('home.refresh_failed', {
+          reason: error instanceof Error ? error.name : 'unknown',
+        });
+      })
+      .finally(() => setRefreshing(false));
+  };
+  const loadingStats = stats.kind === 'loading';
+  const needsAction = stats.kind === 'ready' ? stats.data.needsAction : 0;
   const notice = useDeviceSetting(HOME_DEVICE_DATA_NOTICE_DISMISSED);
   const showNotice = notice.loaded && !notice.value;
   const statValue = (key: 'packed' | 'uploaded' | 'needsAction') =>
@@ -72,10 +101,15 @@ export function HomeScreen() {
         importantForAccessibility="no-hide-descendants"
         style={[styles.avatar, { backgroundColor: tokens.color.brand.soft }]}
       >
-        <Icon name="store" size={26} color={tokens.color.brand.primary} />
+        <Icon name="store" size={tokens.icon.lg} color={tokens.color.brand.primary} />
       </View>
       <View style={styles.headerText}>
-        <Text variant="sectionTitle" numberOfLines={1} testID="home-shop-name">
+        <Text
+          variant="sectionTitle"
+          numberOfLines={1}
+          accessibilityRole="header"
+          testID="home-shop-name"
+        >
           {shopName === undefined ? '' : (shopName ?? t('screens:home.shopFallback'))}
         </Text>
         <Text variant="caption" color="textMuted">
@@ -94,13 +128,19 @@ export function HomeScreen() {
           justifyContent: 'center',
         }}
       >
-        <Icon name="notifications" size={26} color={tokens.color.text.primary} />
+        <Icon name="notifications" size={tokens.icon.lg} color={tokens.color.text.primary} />
       </Pressable>
     </View>
   );
 
   return (
-    <Screen title={t('nav:titles.UI-B01')} header={header} inTabs testID="screen-UI-B01">
+    <Screen
+      title={t('nav:titles.UI-B01')}
+      header={header}
+      inTabs
+      testID="screen-UI-B01"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+    >
       <View style={{ gap: tokens.space.md }}>
         <HomeActionCard
           testID="home-pack-order"
@@ -118,38 +158,16 @@ export function HomeScreen() {
           description={t('screens:home.receiveReturnHint')}
           onPress={() => navigation.push(ROUTES.returnFindOrder)}
         />
-        <Pressable
-          testID="home-returns-list"
-          accessibilityRole="button"
-          onPress={() => navigation.push(ROUTES.returns)}
-          style={{ minHeight: touch, justifyContent: 'center', alignSelf: 'flex-end' }}
-        >
-          <Text variant="caption" bold style={{ color: tokens.color.action.link }}>
-            {t('screens:home.returnsList')}
-          </Text>
-        </Pressable>
       </View>
 
-      <View style={styles.quickRow}>
-        <QuickAction
-          testID="home-quick-order"
-          icon="add-circle"
-          label={t('screens:home.quick.quickOrder')}
-          onPress={() => navigation.push(ROUTES.quickOrder)}
-        />
-        <QuickAction
-          testID="home-quick-orders"
-          icon="orders"
-          label={t('screens:home.quick.orders')}
-          onPress={() => navigation.push(ROUTES.orders)}
-        />
-        <QuickAction
-          testID="home-quick-evidence"
-          icon="cloud-up"
-          label={t('screens:home.quick.evidence')}
-          onPress={() => navigation.push(ROUTES.sync)}
-        />
-      </View>
+      {needsAction > 0 ? (
+        <View accessibilityLiveRegion="polite" testID="home-needs-action">
+          <SyncStatusBar
+            counts={{ error: needsAction, waiting_upload: 0, uploading: 0 }}
+            onPress={() => navigation.push(ROUTES.sync, { filter: 'error' })}
+          />
+        </View>
+      ) : null}
 
       <View style={{ gap: tokens.space.md }}>
         <View style={styles.sectionRow}>
@@ -167,12 +185,13 @@ export function HomeScreen() {
             </Text>
           </Pressable>
         </View>
-        <View style={[styles.statRow, { gap: tokens.space.sm }]}>
+        <View style={[stackStats ? styles.statColumn : styles.statRow, { gap: tokens.space.sm }]}>
           <StatTile
             testID="home-stat-packed"
             tone="success"
             icon="check-circle"
             value={statValue('packed')}
+            loading={loadingStats}
             label={t('screens:home.stat.packed')}
             onPress={() => navigation.push(ROUTES.orders)}
           />
@@ -181,6 +200,7 @@ export function HomeScreen() {
             tone="info"
             icon="cloud-up"
             value={statValue('uploaded')}
+            loading={loadingStats}
             label={t('screens:home.stat.uploaded')}
             onPress={() => navigation.push(ROUTES.sync)}
           />
@@ -189,6 +209,7 @@ export function HomeScreen() {
             tone="danger"
             icon="alert"
             value={statValue('needsAction')}
+            loading={loadingStats}
             label={t('screens:home.stat.error')}
             onPress={() => navigation.push(ROUTES.sync, { filter: 'error' })}
           />
@@ -199,11 +220,50 @@ export function HomeScreen() {
           </Text>
         ) : null}
         {stats.kind === 'error' ? (
-          <Text variant="caption" color="textMuted" testID="home-today-error">
-            {t('screens:home.todayLoadError')}
-          </Text>
+          <View style={styles.errorRow}>
+            <Text variant="caption" color="textMuted" testID="home-today-error" style={styles.flex}>
+              {t('screens:home.todayLoadError')}
+            </Text>
+            <Pressable
+              testID="home-today-retry"
+              accessibilityRole="button"
+              onPress={refresh}
+              style={{ minHeight: touch, justifyContent: 'center' }}
+            >
+              <Text variant="caption" bold style={{ color: tokens.color.action.link }}>
+                {t('common:actions.retry')}
+              </Text>
+            </Pressable>
+          </View>
         ) : null}
       </View>
+
+      <ListGroup title={t('screens:home.shortcutsTitle')} testID="home-shortcuts">
+        <ListItem
+          testID="home-quick-order"
+          leadingIcon="add-circle"
+          title={t('screens:home.quick.quickOrder')}
+          onPress={() => navigation.push(ROUTES.quickOrder)}
+        />
+        <ListItem
+          testID="home-quick-orders"
+          leadingIcon="orders"
+          title={t('screens:home.quick.orders')}
+          onPress={() => navigation.push(ROUTES.orders)}
+        />
+        <ListItem
+          testID="home-returns-list"
+          leadingIcon="returns"
+          title={t('screens:home.returnsList')}
+          onPress={() => navigation.push(ROUTES.returns)}
+        />
+        <ListItem
+          testID="home-quick-evidence"
+          leadingIcon="cloud-up"
+          title={t('screens:home.quick.evidence')}
+          onPress={() => navigation.push(ROUTES.sync)}
+        />
+      </ListGroup>
 
       {showNotice ? (
         <Card testID="home-device-notice">
@@ -334,8 +394,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerText: { flex: 1 },
-  quickRow: { flexDirection: 'row', gap: layout.space.sm },
   sectionRow: { flexDirection: 'row', alignItems: 'center' },
   flex: { flex: 1 },
   statRow: { flexDirection: 'row' },
+  statColumn: { flexDirection: 'column' },
+  errorRow: { flexDirection: 'row', alignItems: 'center', gap: layout.space.md },
 });
