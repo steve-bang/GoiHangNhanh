@@ -135,6 +135,7 @@
     "plugins": [
       "expo-router",
       "@react-native-firebase/app",
+      "./scripts/with-firebase-configure.cjs",
       "@react-native-firebase/crashlytics",
       [
         "expo-build-properties",
