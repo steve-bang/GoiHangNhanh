@@ -163,6 +163,7 @@ describe('UI-B01 Trang chủ (mẫu thiết kế, D-16)', () => {
     };
     await renderWithProviders(<HomeScreen />, { orderStore });
     await screen.findByTestId('home-today-error');
+    expect(screen.getByText('Thử lại')).toBeOnTheScreen();
     fail = false;
     await fireEvent.press(screen.getByTestId('home-today-retry'));
     expect(await screen.findByLabelText('Đơn đã đóng gói: 3')).toBeOnTheScreen();

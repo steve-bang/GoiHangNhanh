@@ -231,7 +231,7 @@ export function HomeScreen() {
               style={{ minHeight: touch, justifyContent: 'center' }}
             >
               <Text variant="caption" bold style={{ color: tokens.color.action.link }}>
-                {t('common:retry')}
+                {t('common:actions.retry')}
               </Text>
             </Pressable>
           </View>
