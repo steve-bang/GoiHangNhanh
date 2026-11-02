@@ -15,4 +15,12 @@ Chụp bằng bản **web** react-native-web, cổng giả, phiên `signed_in`. 
 
 Dữ liệu tệp là do bản vá tạo (không phải dữ liệu thật, không có trong mã của repo); ảnh minh họa bố cục, không thay cho test (`SyncCenterScreen.test.tsx`).
 
-Chưa chụp được: offline, đang chờ Wi‑Fi, kéo để làm mới, bộ lọc "Đã tải lên", nhóm tệp của tài khoản khác, màn Chi tiết lỗi (UI-F02). Chúng được kiểm bằng test.
+Các trạng thái bổ sung (cùng dữ liệu vá, thêm một tệp do tài khoản khác tạo và một tệp đã xác minh):
+
+| Tệp | Trạng thái | Cách có được |
+|---|---|---|
+| `before|after-offline-*` | Đang mất mạng (sau: tóm tắt + thông báo mất mạng; bộ lọc Lỗi tự mở) | `/sync?data&offline`: `useConnectivity` trong bản sao vá trả `online: false` |
+| `before|after-waiting-foreign-*` | Bộ lọc "Chờ tải lên" kèm nhóm "Do tài khoản khác tạo trên máy này" (không có nút) | `/sync?data`, bấm chip "Chờ tải lên" |
+| `before|after-uploaded-*` | Bộ lọc "Đã tải lên" (tệp đã xác minh, bấm cả hàng mở hồ sơ) | `/sync?data`, bấm chip "Đã tải lên" |
+
+Chưa chụp được: đang chờ Wi‑Fi, kéo để làm mới thật, màn Chi tiết lỗi (UI-F02). Chúng được kiểm bằng test.
