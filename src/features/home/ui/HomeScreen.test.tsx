@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import * as ReactNative from 'react-native';
 
 import type { EvidenceId, OrderId, PackageId, SessionId } from '@/core/ids';
 import { ROUTES } from '@/core/navigation';
@@ -97,26 +98,104 @@ describe('UI-B01 Trang chủ (mẫu thiết kế, D-16)', () => {
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.returnFindOrder);
   });
 
-  it('có liên kết Danh sách hàng hoàn dẫn tới UI-D01, vùng chạm đủ lớn', async () => {
+  it('lối tắt gom trong một nhóm danh sách: Danh sách hàng hoàn dẫn tới UI-D01, vùng chạm đủ lớn', async () => {
     await renderWithProviders(<HomeScreen />);
     const link = screen.getByTestId('home-returns-list');
+    expect(screen.getByTestId('home-shortcuts')).toBeOnTheScreen();
     expect(screen.getByText('Danh sách hàng hoàn')).toBeOnTheScreen();
     expect(link).toHaveStyle({ minHeight: getMinTouchTarget() });
     await fireEvent.press(link);
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.returns);
   });
 
-  it('có 3 lối tắt: Tạo đơn nhanh, Danh sách đơn, Bằng chứng (Quét đã có ở nút giữa và thẻ chính)', async () => {
+  it('có 4 lối tắt: Tạo đơn nhanh, Danh sách đơn, Danh sách hàng hoàn, Bằng chứng (Quét đã có ở nút giữa và thẻ chính)', async () => {
     await renderWithProviders(<HomeScreen />);
     expect(screen.queryByTestId('home-quick-scan')).toBeNull();
     const cases: [string, unknown][] = [
       ['home-quick-order', ROUTES.quickOrder],
       ['home-quick-orders', ROUTES.orders],
+      ['home-returns-list', ROUTES.returns],
       ['home-quick-evidence', ROUTES.sync],
     ];
     for (const [id, route] of cases) {
       await fireEvent.press(screen.getByTestId(id));
       expect(mockNavigation.push).toHaveBeenLastCalledWith(route);
+    }
+  });
+
+  it('đang đọc số: ba ô hiện khối giữ chỗ và đọc là "Đang tải", không hiện 0 giả', async () => {
+    const orderStore: OrderStore = {
+      ...createMemoryOrderStore(),
+      countPackedOrders: () => new Promise<number>(() => undefined), // không bao giờ xong
+    };
+    await renderWithProviders(<HomeScreen />, { orderStore });
+    expect(screen.getByLabelText('Đơn đã đóng gói: Đang tải')).toBeOnTheScreen();
+    expect(screen.queryByTestId('home-today-empty')).toBeNull();
+    expect(screen.queryByTestId('home-today-error')).toBeNull();
+    // Hai hành động chính vẫn dùng được trong lúc tải.
+    await fireEvent.press(screen.getByTestId('home-pack-order'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.scan);
+  });
+
+  it('không có tệp lỗi: ẩn khối "Bằng chứng cần theo dõi"', async () => {
+    await renderWithProviders(<HomeScreen />);
+    await screen.findByLabelText('Đơn đã đóng gói: 0');
+    expect(screen.queryByTestId('home-needs-action')).toBeNull();
+  });
+
+  it('có tệp lỗi: khối cần xử lý nằm trên thống kê và mở Đồng bộ với bộ lọc lỗi', async () => {
+    const stores = withData([file('x', 'needs_attention'), file('y', 'hash_mismatch')], 1);
+    await renderWithProviders(<HomeScreen />, stores);
+    expect(await screen.findByTestId('home-needs-action')).toBeOnTheScreen();
+    expect(screen.getByText('Bằng chứng cần theo dõi')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText('Mở trung tâm đồng bộ'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.sync, { filter: 'error' });
+  });
+
+  it('đọc số lỗi: có nút Thử lại đọc lại được, hành động chính vẫn dùng được', async () => {
+    let fail = true;
+    const orderStore: OrderStore = {
+      ...createMemoryOrderStore(),
+      countPackedOrders: async () => {
+        if (fail) throw new Error('disk');
+        return 3;
+      },
+    };
+    await renderWithProviders(<HomeScreen />, { orderStore });
+    await screen.findByTestId('home-today-error');
+    fail = false;
+    await fireEvent.press(screen.getByTestId('home-today-retry'));
+    expect(await screen.findByLabelText('Đơn đã đóng gói: 3')).toBeOnTheScreen();
+    expect(screen.queryByTestId('home-today-error')).toBeNull();
+  });
+
+  it('kéo để làm mới đọc lại số liệu trên máy', async () => {
+    let packed = 1;
+    const orderStore: OrderStore = {
+      ...createMemoryOrderStore(),
+      countPackedOrders: async () => packed,
+    };
+    await renderWithProviders(<HomeScreen />, { orderStore });
+    await screen.findByLabelText('Đơn đã đóng gói: 1');
+    packed = 4;
+    const scroll = screen.getByTestId('screen-UI-B01-scroll');
+    const refresh = (scroll.props as { refreshControl: { props: { onRefresh: () => void } } })
+      .refreshControl;
+    refresh.props.onRefresh();
+    expect(await screen.findByLabelText('Đơn đã đóng gói: 4')).toBeOnTheScreen();
+  });
+
+  it('màn hẹp hoặc chữ phóng lớn: ba ô xếp theo cột, vẫn đủ ba ô', async () => {
+    const spy = jest
+      .spyOn(ReactNative, 'useWindowDimensions')
+      .mockReturnValue({ width: 320, height: 640, scale: 2, fontScale: 1 });
+    try {
+      await renderWithProviders(<HomeScreen />);
+      await screen.findByLabelText('Đơn đã đóng gói: 0');
+      expect(screen.getByTestId('home-stat-uploaded')).toBeOnTheScreen();
+      expect(screen.getByTestId('home-stat-error')).toBeOnTheScreen();
+    } finally {
+      spy.mockRestore();
     }
   });
 
