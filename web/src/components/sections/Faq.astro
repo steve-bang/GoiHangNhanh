@@ -19,6 +19,7 @@ const { faqs } = Astro.props;
           </div>
         ))
       }
+      <p class="faq__more"><a href="/cau-hoi-thuong-gap/">Xem thêm câu hỏi thường gặp</a></p>
     </div>
 
     <aside class="honest" aria-labelledby="khong-hua">
@@ -57,6 +58,9 @@ const { faqs } = Astro.props;
   .faq__item p {
     margin: 0;
     color: var(--text-secondary);
+  }
+  .faq__more {
+    margin: 0;
   }
   .honest {
     align-self: start;
