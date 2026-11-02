@@ -60,6 +60,7 @@ export const site = {
   /** Trang nội dung công khai khác (không phải pháp lý). */
   pages: {
     download: '/tai-ung-dung/',
+    guides: '/huong-dan/',
   },
   legalPages: {
     privacy: '/chinh-sach-quyen-rieng-tu/',

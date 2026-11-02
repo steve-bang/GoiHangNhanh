@@ -1,0 +1,46 @@
+---
+/* Khớp evidence.json status/statusHint (docs/09 mục 3) và screens.json sync. Không hứa tải nền khi app bị tắt. */
+import GuidePage from '../../components/GuidePage.astro';
+import { site } from '../../config/site';
+---
+
+<GuidePage
+  slug="trang-thai-tai-len"
+  title={`Hiểu trạng thái tải lên video và ảnh trong ${site.name}`}
+  description="Đã lưu trên máy, Chờ tải lên, Đang tải lên, Đã tải lên và Đã xác minh khác nhau thế nào ở từng tệp, và cần làm gì khi tệp báo lỗi."
+  heading="Hiểu trạng thái tải lên"
+  lead="Mỗi video hoặc ảnh có một trạng thái riêng, tách khỏi trạng thái đơn. Chỉ khi thấy Đã xác minh thì bản trên máy chủ mới được xem là khớp với bản trên máy."
+  steps={[
+    { name: 'Đã lưu trên máy', text: 'Tệp đã lưu trên điện thoại. Chưa có bản trên máy chủ.' },
+    { name: 'Chờ tải lên', text: 'Đang chờ mạng hoặc lượt xử lý. Tệp vẫn được giữ trên điện thoại.' },
+    { name: 'Đang tải lên', text: 'Đang truyền tới máy chủ. Chưa phải bản sao lưu cho tới khi máy chủ xác nhận.' },
+    { name: 'Đã tải lên', text: 'Máy chủ đã nhận đủ tệp và đang kiểm tra.' },
+    { name: 'Đã xác minh', text: 'Máy chủ đã tính lại mã băm và thấy khớp với bản gốc.' },
+    { name: 'Lỗi – cần xử lý', text: 'Tệp có lỗi cần bạn xử lý. Bản trên điện thoại vẫn được giữ lại.' },
+  ]}
+  howTo={false}
+>
+  <h2 id="khi-nao-tai">Khi nào ứng dụng tải lên</h2>
+  <ul>
+    <li>Ứng dụng chỉ tải lên khi đang mở. Đóng ứng dụng thì việc tải tạm dừng, mở lại sẽ tiếp tục.</li>
+    <li>Mất mạng: tệp vẫn ở trên máy và tải khi có mạng lại.</li>
+    <li>
+      Bật Chỉ tải khi có Wi-Fi để ảnh và video không tải qua mạng di động. Khi đó ứng dụng hiện Đang chờ Wi-Fi.
+    </li>
+  </ul>
+
+  <h2 id="trung-tam-dong-bo">Xem và xử lý tệp chưa xong</h2>
+  <p>
+    Mở Trung tâm đồng bộ để xem tệp theo từng nhóm: Đang tải, Chờ tải, Lỗi, Đã tải lên. Tệp lỗi có Chi tiết lỗi
+    và nút thử lại khi thử lại được.
+  </p>
+
+  <h2 id="ma-bam">Mã băm nghĩa là gì</h2>
+  <p>
+    Mã băm chỉ cho biết tệp không bị đổi kể từ lúc tính. Nó không chứng minh thời điểm quay hay việc quay là chân
+    thực. Thời gian trên điện thoại và thời gian máy chủ được lưu riêng.
+  </p>
+  <p>
+    Cần giúp khi video chưa tải? Xem <a href={site.legalPages.support}>Hỗ trợ</a>.
+  </p>
+</GuidePage>

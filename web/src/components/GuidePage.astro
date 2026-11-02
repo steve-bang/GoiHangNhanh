@@ -1,0 +1,82 @@
+---
+/**
+ * Khung trang hướng dẫn: đường dẫn 3 cấp, bước đánh số (khớp HowTo JSON-LD), lưu ý bản 1.0, Trước/Sau.
+ * Nội dung bước phải nguyên văn như hiển thị: JSON-LD lấy đúng mảng `steps`.
+ */
+import LegalPage from './LegalPage.astro';
+import { site } from '../config/site';
+import { guides, guidePath } from '../config/guides';
+import { howToLd, type HowToStep } from '../lib/jsonld';
+
+interface Props {
+  slug: string;
+  title: string;
+  description: string;
+  heading: string;
+  lead: string;
+  steps: HowToStep[];
+  /** Có HowTo JSON-LD hay không (trang chỉ giải thích thì tắt). */
+  howTo?: boolean;
+}
+const { slug, title, description, heading, lead, steps, howTo = true } = Astro.props;
+
+const i = guides.findIndex((g) => g.slug === slug);
+const prev = i > 0 ? guides[i - 1] : undefined;
+const next = i >= 0 && i < guides.length - 1 ? guides[i + 1] : undefined;
+const path = guidePath(slug);
+---
+
+<LegalPage
+  title={title}
+  description={description}
+  path={path}
+  heading={heading}
+  crumb={guides[i]?.title ?? heading}
+  parents={[{ name: 'Hướng dẫn', path: site.pages.guides }]}
+  jsonLd={howTo ? [howToLd(heading, description, steps)] : []}
+  hideEffectiveDate
+>
+  <p>{lead}</p>
+  <ol class="guide-steps">
+    {
+      steps.map((s) => (
+        <li>
+          <strong>{s.name}</strong>
+          <span>{s.text}</span>
+        </li>
+      ))
+    }
+  </ol>
+
+  <slot />
+
+  <p class="note">
+    Hướng dẫn mô tả bản 1.0. Tên nút có thể thay đổi nhẹ khi ứng dụng cập nhật. Cần giúp thêm thì xem
+    <a href={site.legalPages.support}>Hỗ trợ</a>.
+  </p>
+
+  <nav aria-label="Hướng dẫn khác" class="guide-nav">
+    {prev && <a href={guidePath(prev.slug)} rel="prev">← {prev.title}</a>}
+    {next && <a href={guidePath(next.slug)} rel="next">{next.title} →</a>}
+  </nav>
+</LegalPage>
+
+<style is:global>
+  .guide-steps {
+    padding-inline-start: var(--space-24);
+  }
+  .guide-steps li {
+    margin-block: var(--space-12);
+    padding-inline-start: var(--space-4);
+  }
+  .guide-steps li strong {
+    display: block;
+  }
+  .guide-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-12);
+    margin-block-start: var(--space-24);
+  }
+</style>

@@ -1,0 +1,30 @@
+---
+/* Khớp returns.json (list, find, exterior, record, photos, items, review, done) và home.receiveReturn. Video mở kiện sau cờ ghi video. */
+import GuidePage from '../../components/GuidePage.astro';
+import { site } from '../../config/site';
+---
+
+<GuidePage
+  slug="nhan-hang-hoan"
+  title={`Nhận và ghi nhận hàng hoàn với ${site.name}: từng bước`}
+  description="Tìm đơn gốc, ghi tình trạng kiện bên ngoài, chụp ảnh, quay video mở kiện và kiểm hàng thực nhận để lập hồ sơ hàng hoàn rõ ràng."
+  heading="Nhận và ghi nhận hàng hoàn"
+  lead="Ghi lại tình trạng kiện hoàn trước khi mở, rồi quay lúc mở và đối chiếu hàng thực nhận."
+  steps={[
+    { name: 'Tiếp nhận hàng hoàn', text: 'Ở Trang chủ chọn Nhận hàng hoàn, hoặc vào Danh sách hàng hoàn rồi chọn Tiếp nhận hàng hoàn.' },
+    { name: 'Tìm đơn gốc', text: 'Nhập mã trên kiện rồi chọn Tìm đơn gốc. Có nhiều đơn trùng mã thì bạn chọn đúng đơn. Không xác định được thì chọn Không xác định được đơn gốc và liên kết sau.' },
+    { name: 'Ghi tình trạng bên ngoài', text: 'Chọn một hoặc nhiều mục như Nguyên vẹn, Móp, biến dạng hoặc Ướt, thấm nước, thêm ghi chú nếu muốn. Kiện đã bị mở trước khi bạn quay thì đánh dấu và ghi lý do.' },
+    { name: 'Chụp ảnh kiện', text: 'Chọn Chụp ảnh kiện, tối đa 5 ảnh, không bắt buộc. Chụp nhầm thì xóa được khi hồ sơ chưa xác nhận.' },
+    { name: 'Quay video mở kiện', text: 'Quay từ trước khi mở niêm phong đến khi lấy hết hàng ra. Không quay được thì ghi lý do và tiếp tục; hồ sơ sẽ ghi hạn chế bằng chứng.' },
+    { name: 'Kiểm hàng thực nhận', text: 'Nhập tên hàng, số lượng thực nhận và tình trạng quan sát. Có lệch so với dự kiến thì bật Ghi nhận sai lệch.' },
+    { name: 'Xem lại và xác nhận', text: 'Kiểm tra bản tóm tắt rồi chọn Xác nhận hồ sơ, hoặc Lưu tạm, về danh sách.' },
+  ]}
+>
+  <h2 id="luu-y">Lưu ý</h2>
+  <ul>
+    <li>Ứng dụng không tự ghép đơn gốc. Mã không khớp hay trùng thì bạn xác nhận.</li>
+    <li>Hồ sơ đã xác nhận không phải kết luận về nguyên nhân hay bên chịu trách nhiệm.</li>
+    <li>Nội dung hồ sơ (tình trạng, kiểm kê) chỉ lưu trên máy này. Ảnh và video tải lên như các tệp khác.</li>
+    <li>Ảnh có thể ghi kèm vị trí trên máy nếu bạn cho phép. Vị trí không gửi lên máy chủ.</li>
+  </ul>
+</GuidePage>
