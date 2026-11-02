@@ -1,4 +1,5 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import * as ReactNative from 'react-native';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { AppError } from '@/core/errors/app-error';
@@ -10,6 +11,7 @@ import { createFakePersonalGateways } from '../data/fake-personal-gateways';
 import { createUnavailablePersonalGateways } from '../data/unavailable-personal-gateways';
 import { ACCOUNT_MENU, type MenuAvailability } from './account-menu';
 import { ProfileScreen } from './ProfileScreen';
+import { SHOP_A, SHOP_B } from './shop-test-kit';
 import { useSession } from './SessionProvider';
 
 jest.mock(
@@ -374,6 +376,64 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     await fireEvent.press(screen.getByTestId('switch-session'));
     await waitFor(() => expect(gateways.account.getProfileCalls).toBe(2));
     await waitFor(() => expect(screen.getByTestId('profile-summary')).toBeOnTheScreen());
+  });
+});
+
+describe('ProfileScreen: thiết kế lại UI-I01 (docs/ux-architecture-redesign.md §6.12)', () => {
+  it('có từ hai cửa hàng: hiện hàng Chuyển cửa hàng dưới thẻ cửa hàng, dẫn tới màn chuyển (guard do màn đó xử lý)', async () => {
+    await renderProfile(createFakePersonalGateways({ ...NAMED, shops: [SHOP_A, SHOP_B] }));
+    const entry = await screen.findByTestId('shop-switch-entry');
+    expect(screen.getByTestId('group-shop')).toBeOnTheScreen();
+    expect(entry).toHaveStyle({ minHeight: 44 });
+    await fireEvent.press(entry);
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.shopSwitch);
+    // Vẫn không có thẻ Gói khi mục đang ẩn.
+    expect(screen.queryByTestId('plan-card')).toBeNull();
+  });
+
+  it('chỉ một cửa hàng: không mời chuyển (ẩn hàng Chuyển cửa hàng)', async () => {
+    await renderProfile(createFakePersonalGateways({ ...NAMED, shops: [SHOP_A] }));
+    await screen.findByTestId('shop-card');
+    expect(screen.queryByTestId('shop-switch-entry')).toBeNull();
+  });
+
+  it('không tải được danh sách cửa hàng: ẩn hàng Chuyển, phần còn lại của màn vẫn dùng được', async () => {
+    const gateways = createFakePersonalGateways({ ...NAMED, shops: [SHOP_A, SHOP_B] });
+    gateways.account.listShops = async () => {
+      throw new AppError('AUTH_NETWORK_ERROR');
+    };
+    await renderProfile(gateways);
+    await screen.findByTestId('shop-card');
+    expect(screen.queryByTestId('shop-switch-entry')).toBeNull();
+    expect(screen.getByTestId('sign-out')).toBeOnTheScreen();
+  });
+
+  it('thông báo "dữ liệu đã lưu" khi offline cũng là cảnh báo cho trình đọc màn hình', async () => {
+    mockOffline = true;
+    await renderProfile(createFakePersonalGateways(NAMED));
+    const notice = await screen.findByTestId('profile-cached-notice');
+    expect(notice.props.accessibilityRole).toBe('alert');
+  });
+
+  it('Đăng xuất có gợi ý cho trình đọc màn hình về hộp thoại xác nhận', async () => {
+    await renderProfile();
+    expect(screen.getByTestId('sign-out').props.accessibilityHint).toBe(
+      'Hiện hộp thoại xác nhận trước khi đăng xuất.',
+    );
+  });
+
+  it('màn hẹp: ba ô dữ liệu bằng chứng xếp theo cột, vẫn đủ ba ô và nhãn', async () => {
+    const spy = jest
+      .spyOn(ReactNative, 'useWindowDimensions')
+      .mockReturnValue({ width: 320, height: 640, scale: 2, fontScale: 1 });
+    try {
+      await renderProfile();
+      expect(await screen.findByLabelText('Trên thiết bị: 0')).toBeOnTheScreen();
+      expect(screen.getByTestId('metric-pending-sync')).toBeOnTheScreen();
+      expect(screen.getByTestId('metric-cloud')).toBeOnTheScreen();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 
