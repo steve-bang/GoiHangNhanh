@@ -81,17 +81,17 @@ const features: { icon: IconName; title: string; text: string; soon?: boolean }[
     padding: var(--space-24) var(--space-16) 0;
     overflow: hidden;
     border-radius: var(--radius-24);
-    background: linear-gradient(160deg, var(--mint-200), var(--brand-soft));
+    background: linear-gradient(160deg, var(--color-brand-soft-strong), var(--color-brand-soft));
     --phone-width: 200px;
   }
   figcaption {
     margin-top: var(--space-8);
     font-size: var(--text-sm);
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
   }
   .features__note {
     font-size: var(--text-sm);
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
   }
   .features__list {
     display: grid;
@@ -107,7 +107,7 @@ const features: { icon: IconName; title: string; text: string; soon?: boolean }[
     max-width: none;
     padding: var(--space-16);
     border-radius: var(--radius-16);
-    background: var(--surface-raised);
+    background: var(--color-surface-raised);
     box-shadow: var(--shadow-card);
   }
   .feature__icon {
@@ -117,8 +117,8 @@ const features: { icon: IconName; title: string; text: string; soon?: boolean }[
     width: 56px;
     height: 56px;
     border-radius: var(--radius-full);
-    background: var(--brand-soft);
-    color: var(--action-primary);
+    background: var(--color-brand-soft);
+    color: var(--color-action-link);
   }
   h3 {
     display: flex;
@@ -131,7 +131,7 @@ const features: { icon: IconName; title: string; text: string; soon?: boolean }[
   .feature p {
     margin: 0;
     font-size: var(--text-sm);
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
   }
   @media (min-width: 60rem) {
     .features {

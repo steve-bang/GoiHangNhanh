@@ -39,10 +39,10 @@ const hasStore = Boolean(site.stores.appStore.url || site.stores.googlePlay.url)
     padding: var(--space-8) var(--space-16);
     font-size: var(--text-sm);
   }
-  /* Nền tối: viền và chữ sáng, vẫn đủ tương phản AA trên --brand-dark. */
+  /* Nền tối: viền và chữ sáng, vẫn đủ tương phản AA trên --color-brand-deep. */
   .cta--dark[aria-disabled='true'] {
     background: transparent;
-    border-color: var(--mint-200);
-    color: var(--mint-200);
+    border-color: var(--color-text-on-brand-muted);
+    color: var(--color-text-on-brand-muted);
   }
 </style>
