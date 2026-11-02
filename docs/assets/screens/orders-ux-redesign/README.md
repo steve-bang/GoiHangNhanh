@@ -10,5 +10,7 @@ Chụp bằng bản **web** react-native-web, cổng giả, phiên `signed_in` (
 | Danh sách rỗng | `before-default-*`, `after-default-*` | Bản web nguyên bản (kho bộ nhớ trống) |
 | Có 3 đơn | `before-data-*`, `after-data-*` | Tạo 3 đơn qua màn Tạo đơn nhanh trong chính bản web |
 | Không có kết quả | `before-noresults-*`, `after-noresults-*` | Gõ từ khóa không khớp sau khi có 3 đơn |
+| Đang tải | `before-loading-*`, `after-loading-*` | **Bản sao vá** (thư mục tạm, không có trong repo): `listOrders` của kho bộ nhớ không bao giờ xong |
+| Lỗi tải danh sách | `before-error-*`, `after-error-*` | **Bản sao vá**: `listOrders` ném lỗi |
 
-Chưa chụp: đang tải, lỗi tải, tải thêm lỗi, kéo làm mới, trạng thái tắt do chưa biết cửa hàng (chỉ có ở chế độ Firebase). Các trạng thái này được kiểm bằng test (`OrdersListScreen.test.tsx`).
+Chưa chụp: tải thêm lỗi, kéo làm mới, trạng thái tắt do chưa biết cửa hàng (chỉ có ở chế độ Firebase). Các trạng thái này được kiểm bằng test (`OrdersListScreen.test.tsx`).
