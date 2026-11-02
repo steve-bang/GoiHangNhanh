@@ -28,6 +28,7 @@ import {
 } from '@/shared/ui';
 import { layout } from '@/core/theme';
 
+import { useWritableShopId } from '../data';
 import {
   EMPTY_FILTERS,
   ORDER_LIST_PAGE_SIZE,
@@ -70,6 +71,8 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
   const [filters, setFilters] = useState<OrderListFilters>(EMPTY_FILTERS);
   const [sheetOpen, setSheetOpen] = useState(false);
   const list = useOrderList(filters, pageSize ? { pageSize } : {});
+  // Chưa biết shop ghi được (chế độ Firebase): tạo đơn sẽ bị QuickOrderScreen từ chối, nên tắt nút và nói rõ lý do.
+  const canCreate = useWritableShopId() !== null;
 
   const advanced = countAdvancedFilters(filters);
   const filtered = hasActiveFilters(filters);
@@ -108,6 +111,10 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
   })();
 
   const clearAll = () => setFilters(EMPTY_FILTERS);
+  const filterLabel = t(
+    advanced > 0 ? 'screens:orders.filters.openWithCount' : 'screens:orders.filters.open',
+    { count: advanced },
+  );
 
   // Danh sách rỗng chưa lọc đã có nút tạo đơn trong khối trạng thái rỗng: không lặp thêm ở đầu trang.
   const showCreate = !(list.status === 'ready' && list.total === 0 && !filtered);
@@ -119,9 +126,16 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
           <Text variant="formBody" accessibilityLiveRegion="polite" color="inkMuted">
             {t('screens:orders.loading')}
           </Text>
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
+          {/* Một nhóm giữ chỗ: trình đọc màn hình chỉ nghe câu "Đang tải" ở trên, không nghe từng khối. */}
+          <View
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={{ gap: tokens.space.sm }}
+          >
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </View>
         </View>
       );
     }
@@ -160,8 +174,12 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
           actionVariant="primary"
           title={t('screens:orders.emptyTitle')}
           message={t('screens:orders.emptyMessage')}
-          actionLabel={t('screens:orders.emptyAction')}
-          onAction={() => navigation.push(ROUTES.quickOrder)}
+          {...(canCreate
+            ? {
+                actionLabel: t('screens:orders.emptyAction'),
+                onAction: () => navigation.push(ROUTES.quickOrder),
+              }
+            : {})}
         />
       </View>
     );
@@ -175,30 +193,36 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
       scroll={false}
       inTabs
       testID="screen-UI-E01"
+      {...(showCreate
+        ? {
+            headerRight: (
+              <Button
+                size="compact"
+                testID="orders-create"
+                icon="add"
+                label={t('screens:orders.createAction')}
+                disabled={!canCreate}
+                onPress={() => navigation.push(ROUTES.quickOrder)}
+              />
+            ),
+          }
+        : {})}
     >
-      <View style={[styles.searchRow, { gap: tokens.space.sm }]}>
-        <View style={styles.flex}>
-          <SearchField
-            compact
-            testID="orders-search"
-            value={filters.search}
-            onChangeText={(search) => setFilters((prev) => ({ ...prev, search }))}
-            placeholder={t('screens:orders.search')}
-            onScan={() => navigation.push(ROUTES.scan)}
-            scanLabel={t('screens:orders.scanAction')}
-            scanTestID="orders-scan"
-          />
-        </View>
-        {showCreate ? (
-          <Button
-            size="compact"
-            testID="orders-create"
-            icon="add"
-            label={t('screens:orders.createAction')}
-            onPress={() => navigation.push(ROUTES.quickOrder)}
-          />
-        ) : null}
-      </View>
+      <SearchField
+        compact
+        testID="orders-search"
+        value={filters.search}
+        onChangeText={(search) => setFilters((prev) => ({ ...prev, search }))}
+        placeholder={t('screens:orders.search')}
+        onScan={() => navigation.push(ROUTES.scan)}
+        scanLabel={t('screens:orders.scanAction')}
+        scanTestID="orders-scan"
+      />
+      {!canCreate ? (
+        <Text variant="caption" color="textMuted" testID="orders-create-disabled-reason">
+          {t('screens:orders.createDisabledReason')}
+        </Text>
+      ) : null}
       <FilterChips
         size="compact"
         options={chipOptions}
@@ -211,17 +235,14 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
           variant="formBody"
           color="inkMuted"
           accessibilityLiveRegion="polite"
-          style={styles.flex}
+          style={{ flexGrow: 1, flexShrink: 1, flexBasis: tokens.space.xl * 5 }}
         >
           {countLabel ?? ' '}
         </Text>
         <Pressable
           testID="orders-open-filters"
           accessibilityRole="button"
-          accessibilityLabel={t(
-            advanced > 0 ? 'screens:orders.filters.openWithCount' : 'screens:orders.filters.open',
-            { count: advanced },
-          )}
+          accessibilityLabel={filterLabel}
           onPress={() => setSheetOpen(true)}
           hitSlop={{ top: filterSlop, bottom: filterSlop }}
           style={[
@@ -237,19 +258,14 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
         >
           <Icon
             name="filter"
-            size={16}
+            size={tokens.icon.sm}
             color={advanced > 0 ? tokens.color.brand.primary : tokens.color.text.strong}
           />
           <Text
             variant="formButton"
             style={{ color: advanced > 0 ? tokens.color.action.link : tokens.color.text.strong }}
           >
-            {t(
-              advanced > 0 ? 'screens:orders.filters.openWithCount' : 'screens:orders.filters.open',
-              {
-                count: advanced,
-              },
-            )}
+            {filterLabel}
           </Text>
         </Pressable>
       </View>
@@ -363,13 +379,12 @@ function OrderRow({
   );
 }
 
-/** Chiều cao nhìn thấy của nút Bộ lọc; vùng chạm được bù bằng hitSlop. */
-const FILTER_BUTTON_HEIGHT = 34;
+/** Chiều cao nhìn thấy của nút Bộ lọc (bằng chip compact, >= 40); vùng chạm được bù bằng hitSlop. */
+const FILTER_BUTTON_HEIGHT = 40;
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  searchRow: { flexDirection: 'row', alignItems: 'center' },
-  countRow: { flexDirection: 'row', alignItems: 'center' },
+  countRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
