@@ -44,6 +44,7 @@ const mockHash = jest.fn();
 jest.mock('@/platform/recording-files', () => ({
   persistRecording: (...args: unknown[]) => mockPersist(...args),
   recordingExists: () => true,
+  resolveRecordingUri: (stored: string) => `file:///docs/${stored}`,
   getAvailableDiskBytes: () => 10 * 1024 * 1024 * 1024,
 }));
 jest.mock('@/platform/file-hasher', () => ({

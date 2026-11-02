@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { layout } from '@/core/theme';
-import { Card, IconTile, Text, useTheme } from '@/shared/ui';
+import { IconTile, Text, useTheme } from '@/shared/ui';
 
 import type { EvidenceCounts, OrderEvidenceSummary } from '../domain';
 import { OrderEvidenceBadge } from './OrderEvidenceBadge';
@@ -22,7 +22,7 @@ export function EvidenceSummaryCard({
   const { t } = useTranslation();
   const { tokens } = useTheme();
   return (
-    <Card compact>
+    <View>
       <View style={styles.row}>
         <IconTile icon="shield-check" size="md" />
         <View style={[styles.flex, { gap: tokens.space.xs }]}>
@@ -48,7 +48,7 @@ export function EvidenceSummaryCard({
           )}
         </View>
       </View>
-    </Card>
+    </View>
   );
 }
 

@@ -90,6 +90,8 @@ export const ICON_GLYPHS = {
   cloud: 'cloud-outline',
   // công tắc "Chỉ tải khi có Wi‑Fi" (V1-09)
   wifi: 'wifi-outline',
+  // hàng tệp ở Trung tâm đồng bộ: ảnh (video dùng `camera`)
+  image: 'image-outline',
 } as const satisfies Record<string, GlyphName>;
 
 export type IconName = keyof typeof ICON_GLYPHS;

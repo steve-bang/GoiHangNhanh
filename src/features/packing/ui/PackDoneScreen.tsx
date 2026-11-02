@@ -3,7 +3,15 @@ import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
 import { useAppNavigation } from '@/platform';
-import { Button, Card, EvidenceStatusBadge, Screen, Text, useTheme } from '@/shared/ui';
+import {
+  Button,
+  ErrorState,
+  EvidenceStatusBadge,
+  Screen,
+  Skeleton,
+  Text,
+  useTheme,
+} from '@/shared/ui';
 
 import { RECORDER_ENABLED, summarizeSessionEvidence } from '../domain';
 import { PackNotRecorded } from './PackNotRecorded';
@@ -39,9 +47,19 @@ export function PackDoneScreen() {
     return (
       <Screen title={t('nav:titles.UI-C06')} onBack={navigation.back} testID="screen-UI-C06">
         {session === null ? (
-          <Text accessibilityRole="alert">{t('screens:confirm.sessionMissing')}</Text>
+          <ErrorState
+            title={t('screens:confirm.sessionMissing')}
+            onRetry={navigation.back}
+            retryLabel={t('screens:record.backToOrder')}
+            testID="done-session-missing"
+          />
         ) : (
-          <Text color="textMuted">{t('screens:preview.loading')}</Text>
+          <>
+            <Text color="textMuted" accessibilityLiveRegion="polite">
+              {t('screens:preview.loading')}
+            </Text>
+            <Skeleton height={72} />
+          </>
         )}
       </Screen>
     );
@@ -83,20 +101,25 @@ export function PackDoneScreen() {
           <Button
             variant="secondary"
             label={t('screens:packDone.viewEvidence')}
-            onPress={() => navigation.replace(ROUTES.orders)}
+            onPress={() => navigation.replace(ROUTES.orderEvidence, { orderId: session.orderId })}
           />
         </>
       }
     >
-      <Card>
-        <View style={{ gap: tokens.space.sm }}>
-          <Text>{`${t('screens:confirm.orderCode')}: ${session.snapshot.orderCode}`}</Text>
-          <Text>{t(summaryKey)}</Text>
-          {summary.problem ? <Text>{t(PROBLEM_MESSAGE_KEY[summary.problem])}</Text> : null}
-          <Text>{`${t('screens:packDone.videoCount')}: ${summary.saved}`}</Text>
-          {summary.label ? <EvidenceStatusBadge status={summary.label} /> : null}
+      <View style={{ gap: tokens.space.sm }}>
+        <View>
+          <Text variant="formLabel" color="inkMuted">
+            {t('screens:confirm.orderCode')}
+          </Text>
+          <Text variant="formTitle" testID="done-order-code">
+            {session.snapshot.orderCode}
+          </Text>
         </View>
-      </Card>
+        {summary.label ? <EvidenceStatusBadge status={summary.label} /> : null}
+        <Text>{t(summaryKey)}</Text>
+        {summary.problem ? <Text>{t(PROBLEM_MESSAGE_KEY[summary.problem])}</Text> : null}
+        <Text color="inkMuted">{`${t('screens:packDone.videoCount')}: ${summary.saved}`}</Text>
+      </View>
     </Screen>
   );
 }
