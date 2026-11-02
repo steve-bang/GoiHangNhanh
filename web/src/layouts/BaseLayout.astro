@@ -4,6 +4,7 @@ import { site } from '../config/site';
 import NavMenu from '../components/NavMenu.astro';
 import DownloadCta from '../components/DownloadCta.astro';
 import { navLinks } from '../config/nav';
+import { tokenValue } from '../lib/tokens';
 import { absoluteUrl, serializeLd, type JsonLd } from '../lib/jsonld';
 
 interface Props {
@@ -46,7 +47,7 @@ const robots = !site.indexable || noindex ? 'noindex, nofollow' : 'index, follow
     <meta name="description" content={description} />
     <meta name="robots" content={robots} />
     {!noCanonical && <link rel="canonical" href={canonical} />}
-    <meta name="theme-color" content="#157852" />
+    <meta name="theme-color" content={tokenValue('color-action-primary')} />
 
     <link rel="icon" href="/favicon.png" type="image/png" sizes="64x64" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -115,19 +116,19 @@ const robots = !site.indexable || noindex ? 'noindex, nofollow' : 'index, follow
 
 <style is:global>
   .site-footer {
-    background: var(--brand-dark);
-    color: var(--text-on-action);
+    background: var(--color-brand-deep);
+    color: var(--color-text-on-action);
     padding-block: var(--space-32);
     font-size: var(--text-sm);
   }
   .site-footer a {
-    color: var(--text-on-action);
+    color: var(--color-text-on-action);
   }
   .site-footer__inner {
     display: grid;
     gap: var(--space-24);
     padding-bottom: var(--space-24);
-    border-bottom: var(--border-thin) solid rgb(255 255 255 / 0.2);
+    border-bottom: var(--border-thin) solid color-mix(in srgb, var(--color-text-on-action) 20%, transparent);
   }
   .site-footer__name {
     display: flex;
@@ -138,7 +139,7 @@ const robots = !site.indexable || noindex ? 'noindex, nofollow' : 'index, follow
   }
   .site-footer__brand p:last-child {
     margin: 0;
-    color: var(--mint-200);
+    color: var(--color-text-on-brand-muted);
   }
   .site-footer ul {
     display: flex;
@@ -156,7 +157,7 @@ const robots = !site.indexable || noindex ? 'noindex, nofollow' : 'index, follow
   }
   .site-footer__legal {
     padding-top: var(--space-16);
-    color: var(--mint-200);
+    color: var(--color-text-on-brand-muted);
   }
   .site-footer__legal p {
     max-width: var(--measure);
@@ -174,7 +175,7 @@ const robots = !site.indexable || noindex ? 'noindex, nofollow' : 'index, follow
     display: inline-flex;
     align-items: center;
     min-height: var(--size-touch);
-    color: var(--text-on-action);
+    color: var(--color-text-on-action);
   }
   @media (min-width: 60rem) {
     .site-footer__inner {

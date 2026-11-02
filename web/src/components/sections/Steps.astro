@@ -56,7 +56,7 @@ const steps: { icon: IconName; title: string }[] = [
     gap: var(--space-24);
   }
   .steps__lead {
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
   }
   .steps__list {
     display: grid;
@@ -83,7 +83,7 @@ const steps: { icon: IconName; title: string }[] = [
     position: absolute;
     top: 1rem;
     right: -0.55rem;
-    color: var(--action-primary);
+    color: var(--color-action-link);
   }
   .steps__icon {
     display: grid;
@@ -91,8 +91,8 @@ const steps: { icon: IconName; title: string }[] = [
     width: 64px;
     height: 64px;
     border-radius: var(--radius-full);
-    background: var(--brand-soft);
-    color: var(--action-primary);
+    background: var(--color-brand-soft);
+    color: var(--color-action-link);
   }
   .steps__visual {
     margin: 0;
@@ -104,13 +104,13 @@ const steps: { icon: IconName; title: string }[] = [
     padding: var(--space-24) var(--space-16) 0;
     overflow: hidden;
     border-radius: var(--radius-24);
-    background: linear-gradient(200deg, var(--brand-soft), var(--mint-200));
+    background: linear-gradient(200deg, var(--color-brand-soft), var(--color-brand-soft-strong));
     --phone-width: 200px;
   }
   figcaption {
     margin-top: var(--space-8);
     font-size: var(--text-sm);
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
   }
   @media (min-width: 60rem) {
     .steps {

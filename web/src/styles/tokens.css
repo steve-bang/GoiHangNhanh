@@ -1,43 +1,70 @@
 /*
- * Design token cho web, chép từ docs/design-token-spec.md (mục 4). KHÔNG thêm màu mới ở đây.
+ * Design token cho web, chép từ app (src/core/theme/primitives.ts, semantic.ts; docs/design-token-spec.md). KHÔNG thêm màu mới ở đây.
  * Nếu cần màu chưa có, hỏi designer/BA rồi cập nhật docs/design-token-spec.md trước.
  * Phần cỡ chữ web (rem) là thang riêng của web vì spec chỉ có thang cho app di động.
  */
 :root {
-  /* Primitives màu (mục 4.1) */
-  --jade-950: #14382a;
-  --jade-700: #157852;
-  --jade-100: #e6f0e9;
-  --green-700: #1e7a3c;
-  --green-100: #e3f1e7;
+  /*
+   * Primitives màu: giá trị chép nguyên từ src/core/theme/primitives.ts (palette; Bright Orange, D-20).
+   * Tên biến = họ màu + độ đậm như palette của app. `npm run check:tokens` so khớp với app.
+   */
+  --orange-50: #fff1ec;
+  --orange-100: #fce5de;
+  --orange-500: #ff6a45;
+  --orange-600: #ee4d2d;
+  --orange-700: #d93b20;
+  --orange-800: #b02e17;
+  --orange-900: #7c2d12;
+  --stone-25: #fffaf7;
+  --stone-50: #fff5f0;
+  --stone-200: #f0e4de;
+  --stone-300: #d8cbc3;
+  --stone-400: #9a938d;
+  --stone-500: #746d68;
+  --stone-900: #292524;
+  --leaf-700: #15803d;
+  --leaf-100: #dcfce7;
+  --ember-700: #b91c1c;
+  --ember-100: #fee2e2;
+  --sky-700: #0369a1;
+  --sky-50: #f0f9ff;
+  --sky-100: #e0f2fe;
   --amber-700: #b45309;
   --amber-50: #fdf3e7;
-  --red-700: #b3261e;
-  --red-50: #fcebea;
-  --teal-50: #eaf5f4;
   --neutral-0: #ffffff;
-  --neutral-50: #faf8f2;
-  --neutral-100: #f3f6f5;
-  --neutral-300: #d9d6cc;
-  --neutral-600: #5a5f5c;
-  --neutral-900: #1b1b1b;
-  --mint-200: #d3e3de;
+  --black: #000000;
+  --alpha-white-75: rgb(255 255 255 / 0.75);
 
-  /* Semantic (mục 4.3) */
-  --text-primary: var(--neutral-900);
-  --text-secondary: var(--neutral-600);
-  --text-on-action: var(--neutral-0);
-  --surface-screen: var(--neutral-50);
-  --surface-raised: var(--neutral-0);
-  --surface-muted: var(--neutral-100);
-  --border-default: var(--neutral-300);
-  --border-field: var(--mint-200);
-  --action-primary: var(--jade-700);
-  --brand-dark: var(--jade-950);
-  --brand-soft: var(--jade-100);
-  --feedback-warning-fg: var(--amber-700);
-  --feedback-warning-bg: var(--amber-50);
-  --feedback-info-bg: var(--teal-50);
+  /* Semantic: tên theo src/core/theme/semantic.ts (color.<nhóm>.<vai trò> -> --color-<nhóm>-<vai trò>) */
+  --color-text-primary: var(--stone-900);
+  --color-text-secondary: var(--stone-500);
+  --color-text-on-action: var(--neutral-0);
+  --color-text-on-brand-muted: var(--alpha-white-75);
+  --color-surface-screen: var(--stone-25);
+  --color-surface-raised: var(--neutral-0);
+  --color-surface-muted: var(--stone-50);
+  --color-border-default: var(--stone-200);
+  --color-border-field: var(--stone-300);
+  --color-border-strong: var(--stone-400);
+  /* Nền nút chính (chữ trắng 4.57:1). Chữ/liên kết cam dùng --color-action-link, KHÔNG dùng action-primary làm màu chữ. */
+  --color-action-primary: var(--orange-700);
+  --color-action-primary-pressed: var(--orange-800);
+  --color-action-link: var(--orange-800);
+  --color-action-destructive: var(--ember-700);
+  /* Màu nhận diện (đồ họa >= 3:1). Không làm nền chữ trắng cỡ thường. */
+  --color-brand-primary: var(--orange-600);
+  --color-brand-soft: var(--orange-50);
+  --color-brand-soft-strong: var(--orange-100);
+  --color-brand-on-soft: var(--orange-800);
+  --color-brand-deep: var(--orange-900);
+  --color-feedback-success-fg: var(--leaf-700);
+  --color-feedback-success-bg: var(--leaf-100);
+  --color-feedback-warning-fg: var(--amber-700);
+  --color-feedback-warning-bg: var(--amber-50);
+  --color-feedback-danger-fg: var(--ember-700);
+  --color-feedback-danger-bg: var(--ember-100);
+  --color-feedback-info-fg: var(--sky-700);
+  --color-feedback-info-bg: var(--sky-50);
 
   /* Khoảng cách (mục 4.2): 0 2 4 6 8 12 16 24, mở rộng 32/48/64 cho bố cục trang */
   --space-2: 2px;
@@ -84,8 +111,8 @@
    */
   --text-4xl: 2.5rem;
   --radius-24: 24px;
-  --shadow-card: 0 4px 16px rgb(20 56 42 / 0.08);
-  --shadow-phone: 0 16px 32px rgb(20 56 42 / 0.22);
+  --shadow-card: 0 4px 16px rgb(0 0 0 / 0.08);
+  --shadow-phone: 0 16px 32px rgb(0 0 0 / 0.18);
   --font-hand: 'Segoe Script', 'Bradley Hand', 'Snell Roundhand', 'Comic Sans MS', cursive;
   --page-max: 72rem;
 }
