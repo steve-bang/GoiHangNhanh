@@ -63,6 +63,23 @@ export function faqLd(items: Faq[]): JsonLd {
   };
 }
 
+export interface HowToStep {
+  name: string;
+  text: string;
+}
+
+/** Chỉ dùng khi chính các bước này hiển thị nguyên văn trên trang (danh sách đánh số). */
+export function howToLd(name: string, description: string, steps: HowToStep[]): JsonLd {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name,
+    description,
+    inLanguage: site.lang,
+    step: steps.map((st, i) => ({ '@type': 'HowToStep', position: i + 1, name: st.name, text: st.text })),
+  };
+}
+
 export interface ArticleInput {
   headline: string;
   description: string;
