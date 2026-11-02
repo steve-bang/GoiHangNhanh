@@ -19,16 +19,17 @@ const { faqs } = Astro.props;
           </div>
         ))
       }
+      <p class="faq__more"><a href="/cau-hoi-thuong-gap/">Xem thêm câu hỏi thường gặp</a></p>
     </div>
 
     <aside class="honest" aria-labelledby="khong-hua">
       <h3 id="khong-hua">Điều chúng tôi không hứa</h3>
       <ul>
         <li>Không hứa thắng khiếu nại hay tranh chấp.</li>
-        <li>Không nói video là "bằng chứng pháp lý tuyệt đối".</li>
+        <li>Không nói video chắc chắn được sàn hay đơn vị vận chuyển chấp nhận.</li>
         <li>
-          Chỉ tải lên khi ứng dụng đang mở. Tắt ứng dụng, hết pin hoặc mất mạng thì việc tải tạm
-          dừng. Ứng dụng báo rõ video nào chưa tải xong.
+          Chỉ tải lên khi ứng dụng đang mở. iOS và Android giới hạn việc chạy ngầm. Tắt ứng dụng,
+          hết pin hoặc mất mạng thì việc tải tạm dừng. Ứng dụng báo rõ video nào chưa tải xong.
         </li>
       </ul>
     </aside>
@@ -57,6 +58,9 @@ const { faqs } = Astro.props;
   .faq__item p {
     margin: 0;
     color: var(--text-secondary);
+  }
+  .faq__more {
+    margin: 0;
   }
   .honest {
     align-self: start;
