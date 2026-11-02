@@ -8,6 +8,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Added
 
+- Chi tiết đơn (UI-E02) bớt thẻ theo audit OD-1 / `ux-architecture-redesign` §6.7: đầu trang phẳng (mã đơn, nguồn, trạng thái bằng chứng, giờ tạo), `ListGroup` cho Mã vận đơn · Tranh chấp · Sửa đơn, Sản phẩm, Kiện hàng, Lịch sử; "Sửa thông tin đơn" là hàng bị tắt kèm lý do khi đơn đã có phiên. Nghiệp vụ, route, `testID` giữ nguyên; ảnh web ở `docs/assets/screens/od-1-order-detail/`, chưa kiểm chứng trên thiết bị.
 - Xem lại bằng chứng từ máy chủ khi tệp trên máy không còn (video và ảnh, kể cả ảnh hàng hoàn): Function `getEvidenceReadUrl` cấp URL ký chỉ đọc 15 phút cho thành viên đang hoạt động, chỉ khi máy chủ đã nhận; ưu tiên tệp trên máy; chưa kiểm chứng trên thiết bị, chưa deploy (V1-29).
 - Tạm dừng hàng đợi tải lên và băm nền khi đang quay video (tín hiệu `core/recording/recording-activity`, bật trong `platform/camera-recorder`, tắt ở mọi đường kết thúc + lưới 15 phút); quay xong chạy lại ngay, lần gửi bị hủy không tốn lượt; chưa đo trên thiết bị (V1-28).
 - Số đo xử lý video không PII (`core/diagnostics/media-metrics`, log `media.metrics` qua `platform/media-metrics-log`): byte/phút, thời gian lưu/băm/gửi, MB/giây, số lần băm cho cổng thiết bị G-3/G-4/G-5/G-14; chưa chạy trên thiết bị (V1-27).
