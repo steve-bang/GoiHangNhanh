@@ -1,5 +1,5 @@
 import { useEffect, useRef, type MutableRefObject } from 'react';
-import { CameraView } from 'expo-camera';
+import { CameraView, useMicrophonePermissions } from 'expo-camera';
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { beginRecordingActivity } from '@/core/recording/recording-activity';
@@ -62,6 +62,14 @@ export function CameraRecorder({
   profile,
 }: CameraRecorderProps) {
   const cameraRef = useRef<CameraView>(null);
+  const [micPermission, requestMicPermission] = useMicrophonePermissions();
+  // Chưa cấp micro thì vẫn quay được, chỉ không có tiếng.
+  const micGranted = micPermission?.granted === true;
+  useEffect(() => {
+    if (micPermission && !micPermission.granted && micPermission.canAskAgain) {
+      void requestMicPermission();
+    }
+  }, [micPermission, requestMicPermission]);
 
   useEffect(() => {
     // Phiếu "đang quay" (V1-28) của các lần ghi chưa kết thúc; gỡ camera thì trả hết (không kẹt cờ).
@@ -131,7 +139,7 @@ export function CameraRecorder({
       style={[StyleSheet.absoluteFill, style]}
       facing="back"
       mode="video"
-      mute
+      mute={!micGranted}
       {...(profile ? { videoQuality: profile.quality, videoBitrate: profile.bitrateBps } : {})}
       enableTorch={torch}
       {...(onReady ? { onCameraReady: onReady } : {})}
