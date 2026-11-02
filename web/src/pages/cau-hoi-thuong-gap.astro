@@ -1,0 +1,102 @@
+---
+/*
+ * GHI CHÚ NỘI BỘ (không hiển thị): câu trả lời bám CLAUDE.md "Trạng thái dự án" và bất biến 1, 3, 4, 6, 10, 11.
+ * Chưa nêu giá, gói, thời hạn lưu bằng số (O-06, O-16 chưa chốt). Câu chữ chờ BA duyệt (xem báo cáo W-10).
+ * FAQPage JSON-LD lấy đúng mảng `faqs` hiển thị bên dưới (check-seo kiểm khớp). Câu trả lời là văn bản thuần.
+ * Tránh dùng các cụm bị check-seo cấm; chuyện chạy ngầm viết là "khi không mở ứng dụng".
+ */
+import LegalPage from '../components/LegalPage.astro';
+import { site } from '../config/site';
+import { faqLd, type Faq } from '../lib/jsonld';
+
+const faqs: Faq[] = [
+  {
+    question: `${site.name} là gì?`,
+    answer: `${site.name} là ứng dụng điện thoại cho người bán online. Ứng dụng giúp bạn quay video đóng hàng, gắn video đúng đơn và tìm lại theo mã đơn khi khách báo thiếu hàng hoặc hàng hoàn có vấn đề.`,
+  },
+  {
+    question: 'Ứng dụng đã phát hành chưa?',
+    answer:
+      'Chưa. Ứng dụng đang phát triển và chưa có liên kết tải. Hôm nay ứng dụng chưa ghi video thật cho người dùng và chưa tải video lên máy chủ. Các tính năng đó ghi là Sắp có.',
+  },
+  {
+    question: 'Video có giúp tôi chắc chắn thắng khiếu nại không?',
+    answer: `Không. ${site.name} giúp bạn lưu và tìm lại video có tổ chức. Sàn và đơn vị vận chuyển mới là bên quyết định. Chúng tôi không hứa kết quả khiếu nại và không phải dịch vụ pháp lý.`,
+  },
+  {
+    question: 'Mã băm là gì? Nó chứng minh được gì?',
+    answer:
+      'Mã băm là một dãy ký tự tính ra từ nội dung tệp. Nếu tệp bị đổi dù chỉ một chút, mã băm sẽ khác. Vì vậy mã băm chỉ cho biết tệp không bị đổi kể từ lúc tính. Nó không chứng minh thời điểm quay, địa điểm quay hay nội dung là thật.',
+  },
+  {
+    question: 'Đã tải lên và Đã xác minh khác nhau thế nào?',
+    answer:
+      'Đã tải lên là máy chủ đã nhận đủ tệp. Đã xác minh là máy chủ đã tính lại mã băm và thấy khớp với bản trên máy. Ứng dụng chỉ báo đã lưu trên máy chủ sau khi máy chủ xác nhận.',
+  },
+  {
+    question: 'Tắt ứng dụng thì video có tiếp tục tải lên không?',
+    answer:
+      'Đừng trông chờ vào điều đó. iPhone và Android giới hạn việc chạy ngầm, nên không ai hứa được tải xong khi không mở ứng dụng. Ứng dụng tải lên khi đang mở. Tắt ứng dụng, hết pin hoặc mất mạng thì việc tải tạm dừng. Ứng dụng báo rõ video nào chưa tải xong.',
+  },
+  {
+    question: 'Tôi có phải kết nối với Shopee, TikTok Shop hay sàn khác không?',
+    answer:
+      'Không. Bạn quét mã hoặc nhập tay mã đơn để bắt đầu. Ứng dụng không cần kết nối với sàn. Thông tin đơn là do bạn nhập, không phải dữ liệu chính thức từ sàn.',
+  },
+  {
+    question: 'Tôi phải nhập những gì để tạo một đơn?',
+    answer:
+      'Chỉ cần mã đơn và nguồn bán. Mã vận đơn và sản phẩm có thể thêm sau. Chưa khai báo sản phẩm vẫn quay được. Quét mã vận đơn không có nghĩa là ứng dụng biết tên sản phẩm.',
+  },
+  {
+    question: 'Một đơn có thể có nhiều video không?',
+    answer:
+      'Có. Một đơn có thể có nhiều kiện, mỗi kiện có thể có nhiều lần quay. Mã đơn chỉ dùng để tìm, không phải định danh duy nhất. Quay thêm là một lần quay mới, không thay lần quay cũ.',
+  },
+  {
+    question: 'Tôi quên quay thì sao?',
+    answer:
+      'Ứng dụng ghi nhận là thiếu bằng chứng. Ứng dụng không cho tạo video bổ sung rồi coi như quay lúc đóng hàng. Bạn vẫn quay thêm được, nhưng đó là lần quay mới, ghi đúng thời điểm quay thật.',
+  },
+  {
+    question: 'Ứng dụng bị tắt khi đang quay thì sao?',
+    answer:
+      'Video đang quay có thể bị mất. Ứng dụng ghi nhận lần quay bị gián đoạn và không coi là đầy đủ. Nếu quay lại, đó là một lần quay mới, không thay lần cũ.',
+  },
+  {
+    question: 'Giá và thời hạn lưu video là bao nhiêu?',
+    answer:
+      'Chưa công bố. Gói dịch vụ và thời hạn lưu chưa chốt. Khi có, chúng tôi sẽ ghi rõ trên website và trong ứng dụng, kể cả điều gì xảy ra với video khi hết hạn.',
+  },
+];
+---
+
+<LegalPage
+  title={`Câu hỏi thường gặp về ${site.name}: video, mã băm, tải lên`}
+  description={`Giải đáp ngắn về ${site.name}: ứng dụng đã phát hành chưa, mã băm chứng minh gì, tải lên khi nào, quên quay thì sao. Trả lời trung thực.`}
+  path="/cau-hoi-thuong-gap/"
+  heading="Câu hỏi thường gặp"
+  crumb="Câu hỏi thường gặp"
+  jsonLd={[faqLd(faqs)]}
+  hideEffectiveDate
+>
+  <p>
+    Đây là những câu người bán hay hỏi. Chúng tôi trả lời thẳng, kể cả những điều ứng dụng chưa làm
+    được.
+  </p>
+  {
+    faqs.map((f) => (
+      <section class="faq">
+        <h2>{f.question}</h2>
+        <p>{f.answer}</p>
+      </section>
+    ))
+  }
+
+  <h2 id="xem-them">Xem thêm</h2>
+  <ul>
+    <li><a href="/#tinh-nang">Các tính năng đang phát triển</a></li>
+    <li><a href={site.legalPages.support}>Hỗ trợ: quên mật khẩu, đổi điện thoại, xóa tài khoản</a></li>
+    <li><a href={site.legalPages.privacy}>Chính sách quyền riêng tư</a></li>
+  </ul>
+</LegalPage>

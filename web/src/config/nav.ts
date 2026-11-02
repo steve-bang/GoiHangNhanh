@@ -4,4 +4,5 @@ export const navLinks = [
   { label: 'Tính năng', href: '/#tinh-nang' },
   { label: 'Lợi ích', href: '/#loi-ich' },
   { label: 'Hướng dẫn', href: '/#cach-dung' },
+  { label: 'Câu hỏi', href: '/cau-hoi-thuong-gap/' },
 ] as const;
