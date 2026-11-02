@@ -57,6 +57,10 @@ export const site = {
    * Đường dẫn các trang pháp lý/hỗ trợ (URL tiếng Việt không dấu, ổn định: app và store trỏ tới).
    * Đổi đường dẫn = đổi URL đã khai báo với store: không đổi khi đã phát hành.
    */
+  /** Trang nội dung công khai khác (không phải pháp lý). */
+  pages: {
+    download: '/tai-ung-dung/',
+  },
   legalPages: {
     privacy: '/chinh-sach-quyen-rieng-tu/',
     terms: '/dieu-khoan/',
