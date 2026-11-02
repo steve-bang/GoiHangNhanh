@@ -236,18 +236,38 @@ const FORBIDDEN = [
   'sao lưu an toàn',
   'bản nháp',
 ];
+// Cụm dễ hứa quá lời: chỉ báo lỗi khi KHÔNG đứng sau "không"/"chưa" trong cùng mệnh đề
+// (ví dụ "Không hệ thống nào an toàn tuyệt đối" là câu phủ định hợp lệ).
+const FORBIDDEN_UNLESS_NEGATED = [
+  'tự động',
+  'an toàn tuyệt đối',
+  'tuyệt đối an toàn',
+  'lưu vĩnh viễn',
+  'vĩnh viễn',
+  'mãi mãi',
+  'không giới hạn',
+  'đảm bảo',
+  'bảo đảm',
+  '100%',
+];
+const isNegated = (text, idx) => /(không|chưa)[^.,;:!?]{0,30}$/.test(text.slice(Math.max(0, idx - 40), idx));
 // Câu hỏi FAQ được phép nhắc lại cụm từ để trả lời "Không" (ví dụ "chắc chắn thắng khiếu nại không?").
 const ALLOWED_QUESTIONS = ['có giúp tôi chắc chắn thắng khiếu nại không?'];
-for (const p of legalPaths) {
-  const html = pages.get(p);
-  if (!html) {
-    err(p, 'thiếu trang pháp lý/hỗ trợ');
-    continue;
-  }
+// Kiểm mọi trang nội dung (trừ 404), không chỉ trang pháp lý.
+for (const [p, html] of pages) {
+  if (p.includes('404')) continue;
   let text = visibleText(html);
   for (const q of ALLOWED_QUESTIONS) text = text.split(q).join(' ');
   for (const w of FORBIDDEN) if (text.includes(w)) err(p, `có cụm từ cấm: "${w}"`);
+  for (const w of FORBIDDEN_UNLESS_NEGATED) {
+    let i = text.indexOf(w);
+    while (i !== -1) {
+      if (!isNegated(text, i)) err(p, `có cụm từ dễ hứa quá lời (không phải câu phủ định): "${w}"`);
+      i = text.indexOf(w, i + w.length);
+    }
+  }
 }
+for (const p of legalPaths) if (!pages.get(p)) err(p, 'thiếu trang pháp lý/hỗ trợ');
 for (const [url, html] of pages)
   for (const lp of legalPaths)
     if (!html.includes(`href="${lp}"`)) err(url, `chân trang thiếu liên kết ${lp}`);
