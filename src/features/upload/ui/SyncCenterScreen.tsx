@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { RefreshControl, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
@@ -53,9 +53,15 @@ export function SyncCenterScreen() {
   const waitingWifi = useUploadNetworkGate() === 'waiting_wifi';
   // Tham số `filter` (ô "Lỗi – cần xử lý" ở Trang chủ mở thẳng bộ lọc Lỗi, V1-10); giá trị lạ bị bỏ qua.
   const requested = useRouteParams().filter;
-  const [filter, setFilter] = useState<SyncFilter>(
-    SYNC_FILTERS.find((key) => key === requested) ?? 'uploading',
+  // Bộ lọc người dùng chọn (hoặc do route chỉ định). Chưa chọn thì tự đặt MỘT lần khi danh sách tải xong:
+  // có tệp lỗi thì mở thẳng "Lỗi" (việc cần xử lý trước), không thì "Đang tải lên" như cũ.
+  const [chosen, setChosen] = useState<SyncFilter | null>(
+    SYNC_FILTERS.find((key) => key === requested) ?? null,
   );
+  const [auto, setAuto] = useState<SyncFilter | null>(null);
+  const filter: SyncFilter = chosen ?? auto ?? 'uploading';
+  const setFilter = setChosen;
+  const [refreshing, setRefreshing] = useState(false);
   const stores = useSyncJobStores();
   const { state, reload } = useSyncJobs(filter === 'uploaded');
   const { retry, recheck, busy } = useSyncActions(stores, reload);
@@ -73,6 +79,22 @@ export function SyncCenterScreen() {
 
   const count = (key: SyncFilter) =>
     rows ? rows.pending.filter((r) => r.view.filter === key).length : 0;
+  if (rows && chosen === null && auto === null) setAuto(count('error') > 0 ? 'error' : 'uploading');
+  const refresh = () => {
+    setRefreshing(true);
+    void reload().finally(() => setRefreshing(false));
+  };
+  // Tóm tắt một câu (chỉ khi đã đọc xong): "3 tệp đang chờ · 1 lỗi"; không có gì thì nói đúng như vậy.
+  const waitingCount = count('uploading') + count('waiting_upload');
+  const errorCount = count('error');
+  const summary = rows
+    ? [
+        waitingCount > 0 ? t('screens:sync.summary.waiting', { count: waitingCount }) : null,
+        errorCount > 0 ? t('screens:sync.summary.error', { count: errorCount }) : null,
+      ]
+        .filter(Boolean)
+        .join(' · ') || t('screens:sync.summary.none')
+    : null;
   const options: ChipOption<SyncFilter>[] = SYNC_FILTERS.map((key) => {
     const label = t(`screens:sync.filter.${key}`);
     const n = key === 'uploaded' ? 0 : count(key);
@@ -100,7 +122,17 @@ export function SyncCenterScreen() {
   );
 
   return (
-    <Screen title={t('nav:titles.UI-F01')} onBack={navigation.back} testID="screen-UI-F01">
+    <Screen
+      title={t('nav:titles.UI-F01')}
+      onBack={navigation.back}
+      testID="screen-UI-F01"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+    >
+      {summary ? (
+        <Text variant="sectionTitle" accessibilityLiveRegion="polite" testID="sync-summary">
+          {summary}
+        </Text>
+      ) : null}
       <Text color="textMuted" testID="sync-note">
         {t(
           !online
@@ -119,7 +151,10 @@ export function SyncCenterScreen() {
           <Text variant="formBody" color="textMuted" accessibilityLiveRegion="polite">
             {t('screens:sync.loading')}
           </Text>
-          <SkeletonCard />
+          {/* Khối giữ chỗ ẩn khỏi trình đọc màn hình: chỉ nghe câu "Đang đọc danh sách tệp…" ở trên. */}
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <SkeletonCard />
+          </View>
         </View>
       ) : null}
       {state.kind === 'error' ? (

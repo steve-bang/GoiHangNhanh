@@ -1,11 +1,12 @@
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
 import { formatFileSize } from '@/features/evidence';
 import { resumeRoute } from '@/features/returns';
-import type { AppNavigation } from '@/platform';
-import { Button, Card, EvidenceStatusBadge, Text, useTheme } from '@/shared/ui';
+import { EVIDENCE_STATUS_PRESENTATION } from '@/core/theme';
+import { getMinTouchTarget, type AppNavigation } from '@/platform';
+import { Button, Card, EvidenceStatusBadge, Icon, Text, useTheme } from '@/shared/ui';
 
 import type { SyncJob, SyncJobView } from '../domain';
 
@@ -73,18 +74,57 @@ export function SyncJobCard({
   const { recordLabel, size, reason } = useSyncJobText(job, view);
   const open = openSyncRecord(navigation, job);
   const done = view.filter === 'uploaded';
+  // Chạm vào phần thông tin của thẻ để mở chi tiết lỗi (UI-F02) hoặc hồ sơ chứa tệp; nút Thử lại / Kiểm tra
+  // lại là phần tử riêng bên dưới. Nhãn trợ năng gộp: hồ sơ, loại + dung lượng, trạng thái kèm lý do.
+  const target = done ? open : () => navigation.push(ROUTES.syncError, { jobId: job.key });
+  const targetLabel = t(done ? 'screens:sync.openRecord' : 'screens:sync.details');
+  const spoken = [
+    recordLabel,
+    size,
+    [t(EVIDENCE_STATUS_PRESENTATION[view.label].labelKey), reason].filter(Boolean).join('. '),
+  ].join('. ');
+  const info = (
+    <View style={{ gap: tokens.space.sm }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm }}>
+        <View style={{ flex: 1, flexShrink: 1, gap: tokens.space.xs }}>
+          <Text variant="cardTitle">{recordLabel}</Text>
+          <Text variant="formBody" color="textMuted">
+            {size}
+          </Text>
+        </View>
+        {target ? (
+          <Icon name="forward" size={tokens.icon.md} color={tokens.color.text.secondary} />
+        ) : null}
+      </View>
+      <EvidenceStatusBadge
+        status={view.label}
+        {...(reason ? { reason } : {})}
+        testID={`sync-job-status-${job.key}`}
+      />
+    </View>
+  );
   return (
     <Card testID={`sync-job-${job.key}`}>
       <View style={{ gap: tokens.space.sm }}>
-        <Text variant="cardTitle">{recordLabel}</Text>
-        <Text variant="formBody" color="textMuted">
-          {size}
-        </Text>
-        <EvidenceStatusBadge
-          status={view.label}
-          {...(reason ? { reason } : {})}
-          testID={`sync-job-status-${job.key}`}
-        />
+        {target ? (
+          <Pressable
+            onPress={target}
+            accessibilityRole="button"
+            accessibilityLabel={spoken}
+            accessibilityHint={targetLabel}
+            testID={done ? `sync-job-open-${job.key}` : `sync-job-details-${job.key}`}
+            style={({ pressed }) => ({
+              minHeight: getMinTouchTarget(),
+              opacity: pressed ? tokens.opacity.pressed : 1,
+            })}
+          >
+            {info}
+          </Pressable>
+        ) : (
+          <View accessible accessibilityLabel={spoken}>
+            {info}
+          </View>
+        )}
         {view.action === 'retry' ? (
           <Button
             label={t('screens:sync.retry')}
@@ -101,21 +141,6 @@ export function SyncJobCard({
             disabled={busy}
             loading={busy}
             testID={`sync-job-recheck-${job.key}`}
-          />
-        ) : null}
-        {!done ? (
-          <Button
-            variant="secondary"
-            label={t('screens:sync.details')}
-            onPress={() => navigation.push(ROUTES.syncError, { jobId: job.key })}
-            testID={`sync-job-details-${job.key}`}
-          />
-        ) : open ? (
-          <Button
-            variant="secondary"
-            label={t('screens:sync.openRecord')}
-            onPress={open}
-            testID={`sync-job-open-${job.key}`}
           />
         ) : null}
       </View>

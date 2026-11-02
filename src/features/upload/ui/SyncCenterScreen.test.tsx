@@ -162,8 +162,12 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
         file('done', 'uploaded'),
       ]),
     );
+    // Có tệp lỗi: mở sẵn bộ lọc Lỗi (việc cần xử lý trước); chưa chọn gì thì chỉ chọn mặc định một lần.
     expect(await screen.findByText('Đang tải lên (1)')).toBeOnTheScreen();
-    expect(screen.getByTestId('sync-job-pack:up')).toBeOnTheScreen();
+    expect(await screen.findByTestId('sync-job-pack:bad')).toBeOnTheScreen();
+    expect(screen.queryByTestId('sync-job-pack:up')).toBeNull();
+    await fireEvent.press(screen.getByText('Đang tải lên (1)'));
+    expect(await screen.findByTestId('sync-job-pack:up')).toBeOnTheScreen();
     expect(screen.getByText('DH-SYNC-1 · Kiện 1')).toBeOnTheScreen();
     expect(screen.getByText('Video · 182,4 MB')).toBeOnTheScreen();
     expect(screen.queryByTestId('sync-job-pack:done')).toBeNull();
@@ -195,11 +199,63 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
     expect(screen.queryByTestId('sync-job-pack:up')).toBeNull();
   });
 
-  it('tham số filter lạ: về bộ lọc mặc định Đang tải lên', async () => {
+  it('tham số filter lạ: về bộ lọc mặc định (có tệp lỗi thì mở Lỗi)', async () => {
     mockNavigation.params = { filter: 'khong-co' };
     await open(twoFiles());
+    expect(await screen.findByTestId('sync-job-pack:bad')).toBeOnTheScreen();
+    expect(screen.queryByTestId('sync-job-pack:up')).toBeNull();
+  });
+
+  it('không có tệp lỗi: bộ lọc mặc định vẫn là Đang tải lên', async () => {
+    mockNavigation.params = { filter: 'khong-co' };
+    await open(setup([file('up', 'uploading'), file('q', 'queued')]));
     expect(await screen.findByTestId('sync-job-pack:up')).toBeOnTheScreen();
-    expect(screen.queryByTestId('sync-job-pack:bad')).toBeNull();
+    expect(screen.queryByTestId('sync-job-pack:q')).toBeNull();
+  });
+
+  it('tóm tắt một câu theo số tệp: "N tệp đang chờ · M lỗi"; rỗng thì nói đúng như vậy', async () => {
+    await open(
+      setup([
+        file('up', 'uploading'),
+        file('q', 'queued'),
+        file('bad', 'needs_attention', { lastErrorCode: 'PERMISSION_DENIED' }),
+      ]),
+    );
+    expect(await screen.findByTestId('sync-summary')).toHaveTextContent('2 tệp đang chờ · 1 lỗi');
+  });
+
+  it('máy chưa có tệp: tóm tắt nói không có tệp nào đang chờ hoặc lỗi', async () => {
+    await open(setup([]));
+    expect(await screen.findByTestId('sync-summary')).toHaveTextContent(
+      'Không có tệp nào đang chờ hoặc lỗi',
+    );
+  });
+
+  it('thẻ tệp: phần thông tin là MỘT nút có nhãn gộp (hồ sơ, loại, trạng thái, lý do) mở chi tiết; nút Thử lại tách riêng', async () => {
+    await open(setup([file('bad', 'needs_attention', { lastErrorCode: 'PERMISSION_DENIED' })]));
+    const info = await screen.findByTestId('sync-job-details-pack:bad');
+    expect(info.props.accessibilityRole).toBe('button');
+    expect(info.props.accessibilityLabel).toContain('DH-SYNC-1 · Kiện 1');
+    expect(info.props.accessibilityLabel).toContain('Video');
+    expect(info.props.accessibilityLabel).toContain('Lỗi – cần xử lý');
+    expect(info.props.accessibilityLabel).toContain('Máy chủ chưa nhận tệp sau nhiều lần thử.');
+    expect(info.props.accessibilityHint).toBe('Chi tiết');
+    // Hành động Thử lại là phần tử riêng, không nằm trong nút thông tin.
+    expect(screen.getByTestId('sync-job-retry-pack:bad')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Chi tiết' })).toBeNull();
+  });
+
+  it('kéo để làm mới đọc lại danh sách tệp', async () => {
+    const stores = setup([file('up', 'uploading')]);
+    await open(stores);
+    await screen.findByTestId('sync-job-pack:up');
+    const scroll = screen.getByTestId('screen-UI-F01-scroll');
+    const { refreshControl } = scroll.props as {
+      refreshControl: { props: { onRefresh: () => void } };
+    };
+    expect(typeof refreshControl.props.onRefresh).toBe('function');
+    refreshControl.props.onRefresh();
+    expect(await screen.findByTestId('sync-job-pack:up')).toBeOnTheScreen();
   });
 
   it('Thử lại lỗi máy chủ: phát USER_RETRY_ATTENTION (device) một lần dù bấm đúp, rồi chạy hàng đợi một lần', async () => {

@@ -282,6 +282,11 @@
       "uploaded": "Đã tải lên"
     },
     "filterCount": "{{label}} ({{count}})",
+    "summary": {
+      "waiting": "{{count}} tệp đang chờ",
+      "error": "{{count}} lỗi",
+      "none": "Không có tệp nào đang chờ hoặc lỗi"
+    },
     "loading": "Đang đọc danh sách tệp…",
     "loadError": "Chưa đọc được danh sách tệp. Bạn thử lại nhé.",
     "reload": "Thử lại",
