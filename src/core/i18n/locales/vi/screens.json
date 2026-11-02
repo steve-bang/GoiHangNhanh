@@ -189,6 +189,7 @@
     "sessionMissing": "Không mở được phiên quay này.",
     "duration": "Thời lượng",
     "orderCode": "Mã đơn",
+    "moreVideos": "Phiên có {{count}} video. Đang hiện video mới nhất; mở Bằng chứng của đơn để xem các video khác.",
     "thumbnail": "Ảnh xem trước video (minh họa)",
     "savedMessage": "Video đã lưu trên thiết bị. Đang chờ tải lên máy chủ.",
     "review": "Xem lại video",

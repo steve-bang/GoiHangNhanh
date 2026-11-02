@@ -5,5 +5,5 @@
  */
 export { EvidenceDetailShell } from './EvidenceDetailShell';
 export type { EvidenceDetailPending, EvidenceDetailShellProps } from './EvidenceDetailShell';
-export { EvidenceDetailView } from './EvidenceDetailView';
+export { EvidenceDetailView, EvidencePlayer } from './EvidenceDetailView';
 export type { EvidenceDetailRow, EvidenceDetailViewProps } from './EvidenceDetailView';

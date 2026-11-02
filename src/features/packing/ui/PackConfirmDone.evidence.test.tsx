@@ -16,6 +16,7 @@ import {
   setMockScreenFocused,
 } from '@/test-utils/mock-navigation';
 import { sampleOrder, sampleSession, seedOrder } from '@/test-utils/order-fixtures';
+import { mockVideoPlayer, resetMockVideoPlayer } from '@/test-utils/mock-video-player';
 import { renderWithProviders } from '@/test-utils/render';
 
 import { PackConfirmScreen } from './PackConfirmScreen';
@@ -28,7 +29,15 @@ jest.mock(
   () => jest.requireActual('@/test-utils/mock-navigation').navigationMock,
 );
 
-beforeEach(() => resetMockNavigation());
+jest.mock('@/platform/recording-files', () => ({
+  recordingExists: () => true,
+  resolveRecordingUri: (stored: string) => `file:///docs/${stored}`,
+}));
+
+beforeEach(() => {
+  resetMockNavigation();
+  resetMockVideoPlayer();
+});
 
 const d = (type: string) => ({ type, origin: 'device' }) as never;
 const READY = {
@@ -121,6 +130,36 @@ describe('UI-C04/UI-C06: bố cục sau khi quay (audit PK-1/PK-2)', () => {
     expect(mockNavigation.replace).toHaveBeenCalledWith(ROUTES.orderEvidence, {
       orderId: session.orderId,
     });
+  });
+});
+
+describe('UI-C04: xem lại video ngay trên màn', () => {
+  it('tệp đã lưu: có trình phát với đúng URI của tệp trên máy, không tự phát nền', async () => {
+    await open(<PackConfirmScreen />, ['queued']);
+    expect(await screen.findByTestId('evidence-video-player')).toBeOnTheScreen();
+    expect(mockVideoPlayer.uri).toBe('file:///docs/evidence/x.mp4');
+    expect(screen.queryByTestId('confirm-more-videos')).toBeNull();
+  });
+
+  it('đang lưu: nói đang lưu, chưa có trình phát', async () => {
+    await open(<PackConfirmScreen />, ['saving_local']);
+    expect(await screen.findByTestId('evidence-media-capturing')).toBeOnTheScreen();
+    expect(screen.queryByTestId('evidence-video-player')).toBeNull();
+  });
+
+  it('phát lỗi: báo không phát được, nút Lưu bằng chứng vẫn dùng được', async () => {
+    await open(<PackConfirmScreen />, ['queued']);
+    await screen.findByTestId('evidence-video-player');
+    await act(async () => mockVideoPlayer.onError?.());
+    expect(await screen.findByTestId('evidence-media-playFailed')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Lưu bằng chứng' })).toBeEnabled();
+  });
+
+  it('nhiều video: phát video mới nhất kèm ghi chú; tệp lỗi lưu không được phát', async () => {
+    await open(<PackConfirmScreen />, ['queued', 'queued', 'local_save_failed']);
+    expect(await screen.findByTestId('confirm-more-videos')).toHaveTextContent(
+      /Phiên có 2 video\./,
+    );
   });
 });
 

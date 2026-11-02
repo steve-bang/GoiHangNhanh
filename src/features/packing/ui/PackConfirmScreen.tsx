@@ -2,13 +2,14 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
+import { EvidencePlayer, FILE_STATES } from '@/features/evidence';
+import { useCurrentShopId } from '@/features/orders';
 import { useAppNavigation } from '@/platform';
 import {
   Button,
   Card,
   ErrorState,
   EvidenceStatusBadge,
-  Icon,
   Screen,
   Skeleton,
   Text,
@@ -30,7 +31,7 @@ import { usePackSession } from './use-pack-session';
  * mục 5.5, A.1). Khi chưa có recorder hoặc phiên
  * chưa có tệp nào màn này chỉ báo "chưa có video nào được lưu" (`PackNotRecorded`). Mở bằng `sessionId`;
  * mã đơn lấy từ phiên (bất biến 2). Chân màn chỉ một nút Lưu: "Xem lại video" và "Ghi thêm đoạn riêng"
- * đã gỡ khỏi bố cục vì chưa có luồng (audit PK-1; xem lại thật ở Bằng chứng của đơn). Thời lượng là tổng
+ * đã gỡ khỏi bố cục vì chưa có luồng (audit PK-1); xem lại video ngay trên màn bằng `EvidencePlayer` (chỉ đọc, không tự phát). Thời lượng là tổng
  * `durationMs` thật của các tệp đã đóng; không có thì không hiện (không bịa số).
  */
 export function PackConfirmScreen() {
@@ -39,6 +40,7 @@ export function PackConfirmScreen() {
   const navigation = useAppNavigation();
   const session = usePackSession();
   const evidence = usePackEvidence(RECORDER_ENABLED ? session : null);
+  const shopId = useCurrentShopId();
 
   if (!RECORDER_ENABLED) {
     return (
@@ -91,6 +93,16 @@ export function PackConfirmScreen() {
     );
   }
   const saving = summary.inProgress > 0;
+  // Xem lại: video MỚI NHẤT của phiên (không ghép đoạn, bất biến 4); bỏ tệp lỗi lưu (không có gì để xem).
+  const videos = evidence
+    .filter(
+      (file) =>
+        file.kind === 'video' &&
+        file.state !== FILE_STATES.LOCAL_SAVE_FAILED &&
+        file.state !== FILE_STATES.UNRECOVERABLE,
+    )
+    .sort((a, b) => b.createdAtDevice - a.createdAtDevice);
+  const reviewFile = videos[0] ?? null;
   // Chỉ cộng thời lượng thật của tệp đã đóng (đặt ở sự kiện đóng tệp); không có thì không hiện.
   const measured = evidence.filter((file) => file.durationMs !== null);
   const durationMs =
@@ -120,20 +132,16 @@ export function PackConfirmScreen() {
         </>
       }
     >
-      <View
-        accessible
-        accessibilityLabel={t('screens:confirm.thumbnail')}
-        style={{
-          // token-exception: khung giữ chỗ tỉ lệ video 16:9 (chưa có ảnh thu nhỏ thật)
-          aspectRatio: 16 / 9,
-          backgroundColor: tokens.color.camera.background,
-          borderRadius: tokens.radius.lg,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Icon name="camera" size={48} color={tokens.color.camera.onCamera} />
-      </View>
+      {reviewFile ? (
+        <View style={{ gap: tokens.space.xs }}>
+          <EvidencePlayer file={reviewFile} shopId={shopId} />
+          {videos.length > 1 ? (
+            <Text variant="caption" color="textMuted" testID="confirm-more-videos">
+              {t('screens:confirm.moreVideos', { count: videos.length })}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
       <View style={{ gap: tokens.space.sm }}>
         <View>
           <Text variant="formLabel" color="inkMuted">
