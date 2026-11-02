@@ -14,6 +14,7 @@ import { Button, Icon, Text, useTheme } from '@/shared/ui';
 import { normalizeEmail, validateEmail, validatePassword } from '../domain/validation';
 import { FormErrorBanner, IconField, type TextInputHandle } from './onboarding/OnboardingParts';
 import { ShieldClipboardIllustration } from './onboarding/OnboardingIllustrations';
+import { PasswordToggle } from './onboarding/AuthParts';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import { OnboardingScaffold } from './onboarding/OnboardingScaffold';
 import {
@@ -282,22 +283,13 @@ export function SignUpScreen() {
           }}
           accessory={
             locked ? undefined : (
-              <Pressable
+              <PasswordToggle
                 testID="signup-toggle-password"
-                accessibilityRole="button"
-                accessibilityLabel={t(
-                  showPassword ? 'screens:signUp.hidePassword' : 'screens:signUp.showPassword',
-                )}
-                onPress={() => setShowPassword((prev) => !prev)}
-                hitSlop={6}
-                style={[styles.eye, { minWidth: touch, minHeight: touch }]}
-              >
-                <Icon
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={tokens.icon.lg}
-                  color={tokens.color.text.subtle}
-                />
-              </Pressable>
+                shown={showPassword}
+                onToggle={() => setShowPassword((prev) => !prev)}
+                showLabel={t('screens:signUp.showPassword')}
+                hideLabel={t('screens:signUp.hidePassword')}
+              />
             )
           }
         />
@@ -368,8 +360,6 @@ export function SignUpScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Kéo nút mắt sát mép phải ô nhập (bù đệm ngang của ô), vùng chạm vẫn đủ lớn.
-  eye: { alignItems: 'center', justifyContent: 'center', marginRight: -themeLayout.space.sm },
   dividerRow: { flexDirection: 'row', alignItems: 'center' },
   line: { flex: 1, height: StyleSheet.hairlineWidth },
   socialRow: { flexDirection: 'row' },
