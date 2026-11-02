@@ -62,6 +62,7 @@
   },
   "signOut": {
     "action": "Đăng xuất",
+    "hint": "Hiện hộp thoại xác nhận trước khi đăng xuất.",
     "dialogTitle": "Xác nhận đăng xuất",
     "dialogMessage": "Bạn có chắc muốn đăng xuất khỏi ứng dụng?",
     "dataNote": "Video và dữ liệu trên máy này vẫn được giữ lại. Dữ liệu chưa tải lên chỉ còn trên máy này.",
