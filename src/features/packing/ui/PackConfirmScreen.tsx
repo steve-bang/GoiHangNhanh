@@ -3,9 +3,19 @@ import { useTranslation } from 'react-i18next';
 
 import { ROUTES } from '@/core/navigation';
 import { useAppNavigation } from '@/platform';
-import { Button, Card, EvidenceStatusBadge, Icon, Screen, Text, useTheme } from '@/shared/ui';
+import {
+  Button,
+  Card,
+  ErrorState,
+  EvidenceStatusBadge,
+  Icon,
+  Screen,
+  Skeleton,
+  Text,
+  useTheme,
+} from '@/shared/ui';
 
-import { RECORDER_ENABLED, summarizeSessionEvidence } from '../domain';
+import { RECORDER_ENABLED, formatElapsed, summarizeSessionEvidence } from '../domain';
 import { PackNotRecorded } from './PackNotRecorded';
 import { PROBLEM_MESSAGE_KEY } from './session-evidence-text';
 import { usePackEvidence } from './use-pack-evidence';
@@ -19,7 +29,9 @@ import { usePackSession } from './use-pack-session';
  * trên máy (không bảo quay lại); KHÔNG nhãn "đã lưu" cho tệp chưa lưu được (bất biến 3, 11; docs/09
  * mục 5.5, A.1). Khi chưa có recorder hoặc phiên
  * chưa có tệp nào màn này chỉ báo "chưa có video nào được lưu" (`PackNotRecorded`). Mở bằng `sessionId`;
- * mã đơn lấy từ phiên (bất biến 2). "Xem lại" và "Ghi thêm đoạn riêng" chưa có logic.
+ * mã đơn lấy từ phiên (bất biến 2). Chân màn chỉ một nút Lưu: "Xem lại video" và "Ghi thêm đoạn riêng"
+ * đã gỡ khỏi bố cục vì chưa có luồng (audit PK-1; xem lại thật ở Bằng chứng của đơn). Thời lượng là tổng
+ * `durationMs` thật của các tệp đã đóng; không có thì không hiện (không bịa số).
  */
 export function PackConfirmScreen() {
   const { t } = useTranslation();
@@ -41,9 +53,19 @@ export function PackConfirmScreen() {
     return (
       <Screen title={t('nav:titles.UI-C04')} onBack={navigation.back} testID="screen-UI-C04">
         {session === null ? (
-          <Text accessibilityRole="alert">{t('screens:confirm.sessionMissing')}</Text>
+          <ErrorState
+            title={t('screens:confirm.sessionMissing')}
+            onRetry={navigation.back}
+            retryLabel={t('screens:record.backToOrder')}
+            testID="confirm-session-missing"
+          />
         ) : (
-          <Text color="textMuted">{t('screens:preview.loading')}</Text>
+          <>
+            <Text color="textMuted" accessibilityLiveRegion="polite">
+              {t('screens:preview.loading')}
+            </Text>
+            <Skeleton height={72} />
+          </>
         )}
       </Screen>
     );
@@ -69,6 +91,10 @@ export function PackConfirmScreen() {
     );
   }
   const saving = summary.inProgress > 0;
+  // Chỉ cộng thời lượng thật của tệp đã đóng (đặt ở sự kiện đóng tệp); không có thì không hiện.
+  const measured = evidence.filter((file) => file.durationMs !== null);
+  const durationMs =
+    measured.length > 0 ? measured.reduce((sum, file) => sum + (file.durationMs ?? 0), 0) : null;
 
   return (
     <Screen
@@ -81,18 +107,16 @@ export function PackConfirmScreen() {
             onPress={() => navigation.replace(ROUTES.packDone, { sessionId: session.id })}
             disabled={saving}
           />
-          <Button
-            variant="secondary"
-            label={t('screens:confirm.review')}
-            onPress={() => undefined}
-            disabled
-          />
-          <Button
-            variant="secondary"
-            label={t('screens:confirm.addSegment')}
-            onPress={() => undefined}
-            disabled
-          />
+          {saving ? (
+            <Text
+              variant="caption"
+              color="textMuted"
+              accessibilityLiveRegion="polite"
+              testID="confirm-saving-hint"
+            >
+              {t('screens:confirm.savingNow')}
+            </Text>
+          ) : null}
         </>
       }
     >
@@ -100,8 +124,8 @@ export function PackConfirmScreen() {
         accessible
         accessibilityLabel={t('screens:confirm.thumbnail')}
         style={{
-          // token-exception: khung xem trước video giữ chỗ, chiều cao minh họa (chưa có ảnh thu nhỏ thật)
-          minHeight: 180,
+          // token-exception: khung giữ chỗ tỉ lệ video 16:9 (chưa có ảnh thu nhỏ thật)
+          aspectRatio: 16 / 9,
           backgroundColor: tokens.color.camera.background,
           borderRadius: tokens.radius.lg,
           alignItems: 'center',
@@ -110,31 +134,46 @@ export function PackConfirmScreen() {
       >
         <Icon name="camera" size={48} color={tokens.color.camera.onCamera} />
       </View>
-      <Card>
-        <View style={{ gap: tokens.space.sm }}>
-          <Text>{`${t('screens:confirm.orderCode')}: ${session.snapshot.orderCode}`}</Text>
-          {summary.label ? <EvidenceStatusBadge status={summary.label} /> : null}
-          {saving ? <Text>{t('screens:confirm.savingNow')}</Text> : null}
-          {summary.label ? (
-            <Text>
-              {t(
-                summary.problem
-                  ? PROBLEM_MESSAGE_KEY[summary.problem]
-                  : confirmMessageKey(summary.label),
-              )}
-            </Text>
-          ) : null}
-          {summary.notSaved > 0 ? (
-            <Text accessibilityRole="alert">{t('screens:confirm.partialFailed')}</Text>
-          ) : null}
-          {session.sessionStatus === 'interrupted' ? (
-            // A06 "thông báo gián đoạn": quay bị dừng giữa chừng (app vào nền, camera bị ngắt; V1-11).
-            <Text accessibilityRole="alert" testID="confirm-interrupted">
-              {t('screens:confirm.interrupted')}
-            </Text>
-          ) : null}
+      <View style={{ gap: tokens.space.sm }}>
+        <View>
+          <Text variant="formLabel" color="inkMuted">
+            {t('screens:confirm.orderCode')}
+          </Text>
+          <Text variant="formTitle" testID="confirm-order-code">
+            {session.snapshot.orderCode}
+          </Text>
         </View>
-      </Card>
+        {summary.label ? <EvidenceStatusBadge status={summary.label} /> : null}
+        {summary.label ? (
+          <Text>
+            {t(
+              summary.problem
+                ? PROBLEM_MESSAGE_KEY[summary.problem]
+                : confirmMessageKey(summary.label),
+            )}
+          </Text>
+        ) : null}
+        {durationMs !== null ? (
+          <Text color="inkMuted" testID="confirm-duration">
+            {`${t('screens:confirm.duration')}: ${formatElapsed(0, durationMs)}`}
+          </Text>
+        ) : null}
+      </View>
+      {summary.notSaved > 0 || session.sessionStatus === 'interrupted' ? (
+        <Card tone="warning">
+          <View style={{ gap: tokens.space.sm }}>
+            {summary.notSaved > 0 ? (
+              <Text accessibilityRole="alert">{t('screens:confirm.partialFailed')}</Text>
+            ) : null}
+            {session.sessionStatus === 'interrupted' ? (
+              // A06 "thông báo gián đoạn": quay bị dừng giữa chừng (app vào nền, camera bị ngắt; V1-11).
+              <Text accessibilityRole="alert" testID="confirm-interrupted">
+                {t('screens:confirm.interrupted')}
+              </Text>
+            ) : null}
+          </View>
+        </Card>
+      ) : null}
     </Screen>
   );
 }

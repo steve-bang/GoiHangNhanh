@@ -183,7 +183,7 @@ Một tay: nút chính ghim chân màn (tốt). Ngoài trời: viền ô nhập 
 
 | ID | Vấn đề | Vì sao | Mức | Khuyến nghị | Kỳ vọng |
 |---|---|---|---|---|---|
-| PK-1 | **Màn Xác nhận có hai nút luôn tắt** "Xem lại video" và "Ghi thêm đoạn riêng": `disabled` + `onPress={() => undefined}` (`PackConfirmScreen.tsx:84-95`), không có lý do | Nút chết gây hiểu nhầm là lỗi; nguyên tắc 1, 9 | **High** | Giữ chức năng (không bỏ), nhưng ẩn tới khi chạy được hoặc kèm dòng giải thích "Sắp có"; bỏ khỏi đường chính | Không còn băn khoăn "sao bấm không được" |
+| PK-1 | **Màn Xác nhận có hai nút luôn tắt** "Xem lại video" và "Ghi thêm đoạn riêng": `disabled` + `onPress={() => undefined}` (`PackConfirmScreen.tsx:84-95`), không có lý do | Nút chết gây hiểu nhầm là lỗi; nguyên tắc 1, 9 | **High** | Giữ chức năng (không bỏ), nhưng ẩn tới khi chạy được hoặc kèm dòng giải thích "Sắp có"; bỏ khỏi đường chính (**đã gỡ khỏi bố cục UI-C04, 2026-11-02**) | Không còn băn khoăn "sao bấm không được" |
 | PK-2 | Ba nút xếp chồng ở chân màn (Lưu + 2 nút phụ) | Nút chính nằm trên cùng nhưng hai nút phụ đẩy chân màn rất cao | **Medium** | Sau khi xử lý PK-1 chỉ còn một nút chính | Màn gọn |
 | PK-3 | Ảnh xem trước thumbnail `minHeight: 180` số cứng; chuỗi `thumbnail` ghi "(minh họa)" | Lệch token; có thể gây hiểu nhầm là ảnh thật | **Low** | Dùng token; làm rõ nhãn | – |
 | PK-4 | Nút dừng quay có `accessibilityRole`/`Label` nhưng không có `accessibilityHint` (`RecordingFrame.tsx`) | Người dùng đọc màn hình không biết hệ quả bấm | **Medium** | Thêm hint ngắn | Dùng được với VoiceOver/TalkBack |
