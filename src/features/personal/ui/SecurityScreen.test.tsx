@@ -18,6 +18,29 @@ beforeEach(() => resetMockNavigation());
 
 const LOCKED = ['twoFactor', 'devices', 'dataAccess'] as const;
 
+describe('SecurityScreen: thứ tự hàng (audit PR-2)', () => {
+  it('việc làm được lên trước, ba hàng "Sắp có" nằm sau, Xóa tài khoản ở cuối', async () => {
+    await setup();
+    const order = [
+      'security-group',
+      'security-group-diagnostics',
+      'security-group-soon',
+      'security-group-danger',
+    ];
+    const json = JSON.stringify(screen.toJSON());
+    const positions = order.map((id) => json.indexOf(`"testID":"${id}"`));
+    expect(positions.every((p) => p >= 0)).toBe(true);
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+    // Ba hàng khóa nằm trong nhóm "Sắp có", không còn chung nhóm với Đổi mật khẩu.
+    expect(screen.getByTestId('security-group-soon')).toContainElement(
+      screen.getByTestId('security-twoFactor'),
+    );
+    expect(screen.getByTestId('security-group')).not.toContainElement(
+      screen.getByTestId('security-twoFactor'),
+    );
+  });
+});
+
 async function setup(gateways = createFakePersonalGateways()) {
   await renderWithProviders(<SecurityScreen />, { personalGateways: gateways });
   return gateways;

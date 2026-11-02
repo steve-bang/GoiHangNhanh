@@ -7,6 +7,7 @@
     "receiveReturn": "Nhận hàng hoàn",
     "receiveReturnHint": "Ghi hình mở kiện và kiểm tra hàng",
     "returnsList": "Danh sách hàng hoàn",
+    "shortcutsTitle": "Lối tắt",
     "quick": {
       "quickOrder": "Tạo đơn nhanh",
       "orders": "Danh sách đơn",
@@ -220,6 +221,7 @@
   },
   "orders": {
     "search": "Tìm mã đơn, mã vận đơn…",
+    "createDisabledReason": "Chưa xác định được cửa hàng nên chưa tạo đơn được. Kiểm tra mạng rồi thử lại.",
     "filterAll": "Tất cả",
     "filterNoVideo": "Chưa có video",
     "scanAction": "Quét mã đơn",

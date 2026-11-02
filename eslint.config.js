@@ -64,6 +64,7 @@ module.exports = [
       'docs/',
       'web/',
       'design-v2/',
+      '.claude/',
     ],
   },
   ...expoConfig,

@@ -55,6 +55,8 @@ export function ProfileScreen() {
 
   const profile = useRegion(() => account.getProfile(), session.key);
   const shop = useRegion(() => account.getShopSummary(), session.key);
+  // Danh sách cửa hàng chỉ để biết có từ hai cửa hàng trở lên hay không (giống Cài đặt cửa hàng, Q-20f).
+  const shops = useRegion(() => account.listShops(), session.key);
 
   // Sau khi sửa họ tên ở màn con, tải lại hồ sơ (giữ dữ liệu cũ trong lúc tải, không nháy khung chờ).
   const lastRevision = useRef(session.state.profileRevision);
@@ -67,11 +69,13 @@ export function ProfileScreen() {
 
   // Sau khi đổi tên shop ở màn con, tải lại thẻ shop.
   useReloadOnShopUpdated(shop.reload);
+  useReloadOnShopUpdated(shops.reload);
 
   const refreshing = profile.refreshing || shop.refreshing;
   const refresh = () => {
     void profile.reload();
     void shop.reload();
+    void shops.reload();
   };
   const hasStaleData =
     profile.state.status === 'ready' && (offline || profile.state.refreshError !== null);
@@ -88,6 +92,10 @@ export function ProfileScreen() {
   // Gói dịch vụ đang ẩn (Q-21ag): thẻ gói và khung chờ của nó chỉ hiện khi mục `plan` được bật lại.
   const showPlan = planMenuItem().availability !== 'hidden';
   const shopExtras = visibleMenuItems('shopAndPlan').filter((item) => item.id !== planId);
+  // Lối tắt Chuyển cửa hàng: chỉ khi thẻ cửa hàng đã có và tài khoản có từ hai cửa hàng (không mời làm điều chưa chắc làm được).
+  // Mọi chặn (đang quay, tệp chưa tải) do màn Chuyển cửa hàng xử lý như cũ.
+  const canSwitchShop =
+    shop.state.status === 'ready' && shops.state.status === 'ready' && shops.state.data.length > 1;
   const profileState = profile.state;
   const showPasswordRow =
     profileState.status === 'ready' && profileState.data.signInMethod === 'password';
@@ -100,7 +108,9 @@ export function ProfileScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
     >
       {offline && hasStaleData ? (
-        <Notice testID="profile-cached-notice">{t('personal:profile.cachedNotice')}</Notice>
+        <Notice alert testID="profile-cached-notice">
+          {t('personal:profile.cachedNotice')}
+        </Notice>
       ) : null}
       {!offline && refreshFailed ? (
         <Notice alert testID="profile-refresh-failed">
@@ -134,8 +144,20 @@ export function ProfileScreen() {
         <RegionError card region={shop} code={shop.state.code} testID="shop-error" />
       ) : null}
       {shop.state.status === 'ready' ? <ShopCard shop={shop.state.data} /> : null}
-      {shopExtras.length > 0 ? (
-        <ListGroup title={t('personal:groups.shopAndPlan')} testID="group-shop">
+      {canSwitchShop || shopExtras.length > 0 ? (
+        <ListGroup
+          {...(shopExtras.length > 0 ? { title: t('personal:groups.shopAndPlan') } : {})}
+          testID="group-shop"
+        >
+          {canSwitchShop ? (
+            <ListItem
+              leadingIcon="swap"
+              title={t('personal:shop.switchAction')}
+              titleWeight="regular"
+              onPress={() => navigation.push(ROUTES.shopSwitch)}
+              testID="shop-switch-entry"
+            />
+          ) : null}
           {shopExtras.map((item) => (
             <MenuRow key={item.id} item={item} />
           ))}
@@ -195,6 +217,7 @@ export function ProfileScreen() {
             titleWeight="regular"
             onPress={signOut.start}
             showChevron={false}
+            accessibilityHint={t('personal:signOut.hint')}
             testID="sign-out"
           />
         </ListGroup>

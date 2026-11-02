@@ -12,9 +12,10 @@ import {
 import { StyleSheet } from 'react-native';
 
 import { typography } from '@/core/theme';
+import { getMinTouchTarget } from '@/platform';
 import { renderWithProviders } from '@/test-utils/render';
 
-import { createMemoryOrderStore } from '../data';
+import { CurrentShopProvider, createMemoryOrderStore } from '../data';
 import { makeOrder } from '../data/order-store.contract';
 import { formatDeviceDateTime, type OrderStore } from '../domain';
 import { buildPackingSession } from '../domain/start-session';
@@ -660,6 +661,66 @@ describe('UI-E01 Danh sách đơn (dữ liệu thật)', () => {
     await open(store);
     await fireEvent.press(await screen.findByTestId('orders-create'));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.quickOrder);
+  });
+
+  it('bố cục đầu trang: Tạo đơn ở header, ô tìm riêng một hàng, Bộ lọc nhìn thấy >= 40', async () => {
+    const store = createMemoryOrderStore();
+    await seed(store, 'CO-HDR', { at: NOW });
+    await open(store);
+    await screen.findByTestId('orders-create');
+    expect(screen.getByTestId('orders-search')).toBeOnTheScreen();
+    expect(screen.getByTestId('orders-open-filters')).toHaveStyle({ minHeight: 40 });
+    // Vùng chạm thật (nhìn thấy + hitSlop) vẫn đạt mức tối thiểu của nền tảng.
+    expect(getMinTouchTarget()).toBeGreaterThanOrEqual(44);
+  });
+
+  it('skeleton: trình đọc màn hình chỉ nghe một câu "Đang tải", các khối giữ chỗ bị ẩn', async () => {
+    const store = createMemoryOrderStore();
+    const slow: OrderStore = { ...store, listOrders: () => new Promise(() => undefined) };
+    await open(slow);
+    const loading = screen.getByTestId('orders-loading');
+    expect(screen.getByText('Đang tải danh sách đơn…')).toBeOnTheScreen();
+    // Không còn nút/nhãn "Đang tải" riêng cho từng khối khi tìm theo nhãn truy cập.
+    expect(screen.queryAllByLabelText('Đang tải')).toHaveLength(0);
+    expect(within(loading).getByText('Đang tải danh sách đơn…')).toBeOnTheScreen();
+  });
+
+  it('chưa biết shop ghi được (chế độ chặt): tắt Tạo đơn kèm lý do và không điều hướng', async () => {
+    const store = createMemoryOrderStore();
+    await seed(store, 'CO-STRICT', { at: NOW });
+    await renderWithProviders(
+      <CurrentShopProvider shopId={null} strict>
+        <OrdersListScreen />
+      </CurrentShopProvider>,
+      { orderStore: store },
+    );
+    expect(await screen.findByTestId('orders-create-disabled-reason')).toHaveTextContent(
+      'Chưa xác định được cửa hàng nên chưa tạo đơn được. Kiểm tra mạng rồi thử lại.',
+    );
+    const create = screen.getByTestId('orders-create');
+    expect(create).toBeDisabled();
+    await fireEvent.press(create);
+    expect(mockNavigation.push).not.toHaveBeenCalledWith(ROUTES.quickOrder);
+  });
+
+  it('chưa biết shop ghi được: danh sách rỗng không có nút tạo đơn nhưng vẫn có lý do', async () => {
+    await renderWithProviders(
+      <CurrentShopProvider shopId={null} strict>
+        <OrdersListScreen />
+      </CurrentShopProvider>,
+      { orderStore: createMemoryOrderStore() },
+    );
+    expect(await screen.findByTestId('orders-empty')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Tạo đơn hàng' })).toBeNull();
+    expect(screen.getByTestId('orders-create-disabled-reason')).toBeOnTheScreen();
+  });
+
+  it('có shop ghi được: không hiện lý do tắt và nút Tạo đơn bấm được', async () => {
+    const store = createMemoryOrderStore();
+    await seed(store, 'CO-OK', { at: NOW });
+    await open(store);
+    expect(await screen.findByTestId('orders-create')).toBeEnabled();
+    expect(screen.queryByTestId('orders-create-disabled-reason')).toBeNull();
   });
 
   it('cô lập shop: không thấy đơn của shop khác', async () => {
