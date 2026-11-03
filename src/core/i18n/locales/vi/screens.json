@@ -27,8 +27,8 @@
     "todayEmpty": "Hôm nay chưa có đơn đóng gói hay tệp tải lên trên máy này.",
     "todayLoadError": "Không đọc được số liệu trên máy.",
     "deviceNotice": {
-      "title": "Dữ liệu nằm trên máy này",
-      "body": "Đơn và bằng chứng chỉ xem được trên máy đã tạo. Đổi máy hoặc cài lại ứng dụng sẽ không thấy dữ liệu cũ.",
+      "title": "Video đã tải lên được giữ trên máy chủ",
+      "body": "Đổi máy hoặc cài lại ứng dụng, đăng nhập lại là thấy đơn và video đã tải lên. Video chưa tải lên chỉ nằm trên máy này.",
       "dismiss": "Đã hiểu"
     }
   },
@@ -697,5 +697,19 @@
     "openSettings": "Mở Cài đặt",
     "backToOrder": "Về đơn hàng",
     "storageMinutes": "Máy cần đủ chỗ cho {{minutes}} phút quay. Hãy giải phóng dung lượng rồi kiểm tra lại."
+  },
+  "restore": {
+    "runningTitle": "Đang lấy lại đơn hàng của bạn",
+    "runningMessage": "Bạn vẫn dùng app bình thường trong lúc này.",
+    "runningCount": "Đã lấy lại {{count}} đơn",
+    "waitingTitle": "Đang chờ có mạng để tiếp tục",
+    "waitingMessage": "Có mạng lại là app tự lấy tiếp, bạn không phải làm gì.",
+    "failedTitle": "Chưa lấy lại được đơn hàng",
+    "failedMessage": "Bạn thử lại nhé. Dữ liệu đã lấy về vẫn còn nguyên.",
+    "retry": "Thử lại",
+    "doneTitle": "Đã lấy lại {{count}} đơn hàng",
+    "doneMessage": "Video đã tải lên trước đó xem được từ máy chủ.",
+    "emptyTitle": "Đang lấy lại đơn hàng của bạn",
+    "emptyMessage": "Đơn đã có sẽ hiện ở đây trong giây lát."
   }
 }

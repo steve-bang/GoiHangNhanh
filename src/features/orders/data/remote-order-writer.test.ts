@@ -20,6 +20,7 @@ function fakeDocs(uid: string | null = 'uid-1') {
     updateFields: async (path, fields) => void updates.push({ path, fields }),
     getFields: async () => null,
     getManyFields: async () => new Map(),
+    listPage: async () => ({ docs: [], next: null }),
     callFunction: async () => {
       throw new Error('unused');
     },

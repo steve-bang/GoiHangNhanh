@@ -368,6 +368,22 @@ export const MIGRATIONS: readonly string[] = [
     created_at_device INTEGER NOT NULL
   );
   `,
+  // v19 (khôi phục sau cài lại/đổi máy): tiến độ kéo dữ liệu từ máy chủ xuống, THEO cửa hàng + tài khoản +
+  // giai đoạn (orders/sessions/evidence). `cursor` = con trỏ trang kế (NULL = chưa bắt đầu), `done` = giai
+  // đoạn đã hết, `imported` = số bản ghi đã ghi vào máy (để hiện tiến độ). Là dữ liệu tài khoản nên bị xóa
+  // cùng các bảng nghiệp vụ khi xóa tài khoản. Chỉ thêm bảng.
+  `
+  CREATE TABLE restore_progress (
+    shop_id TEXT NOT NULL,
+    uid TEXT NOT NULL,
+    phase TEXT NOT NULL,
+    cursor TEXT,
+    done INTEGER NOT NULL DEFAULT 0 CHECK (done IN (0, 1)),
+    imported INTEGER NOT NULL DEFAULT 0,
+    updated_at_device INTEGER NOT NULL,
+    PRIMARY KEY (shop_id, uid, phase)
+  );
+  `,
 ];
 
 /**

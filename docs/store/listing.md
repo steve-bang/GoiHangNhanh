@@ -68,7 +68,7 @@ TRẠNG THÁI TỆP RÕ RÀNG
 • Có tùy chọn chỉ tải lên khi có Wi-Fi.
 
 ĐIỀU CẦN BIẾT TRƯỚC KHI DÙNG
-• Mỗi tài khoản dùng trên một điện thoại. Đơn và hồ sơ nằm trên máy này; máy chủ chỉ giữ phần đã tải lên. Đổi máy hoặc cài lại ứng dụng thì không xem lại được dữ liệu cũ trong ứng dụng.
+• Mỗi tài khoản dùng trên một điện thoại. Đơn và hồ sơ nằm trên máy này; máy chủ chỉ giữ phần đã tải lên. Đổi máy hoặc cài lại ứng dụng, đăng nhập lại là xem lại được đơn và video đã tải lên; video chưa tải lên, hồ sơ hàng hoàn và tranh chấp chỉ nằm trên máy cũ.
 • Ứng dụng chỉ tải lên khi đang mở. Gỡ ứng dụng hoặc mất máy trước khi tải xong thì tệp chưa tải sẽ mất.
 • Nếu ứng dụng bị tắt giữa lúc quay, đoạn đang quay có thể mất.
 • Hồ sơ hàng hoàn và tranh chấp chỉ lưu trên máy này.

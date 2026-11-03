@@ -4,8 +4,11 @@ import {
   documentId,
   getDocFromServer,
   getDocsFromServer,
+  limit as queryLimit,
+  orderBy,
   query,
   serverTimestamp,
+  startAfter,
   Timestamp,
   updateDoc,
   where,
@@ -29,7 +32,8 @@ export const FIRESTORE_IN_LIMIT = 10;
  */
 export const REMOTE_CALL_TIMEOUT_MS = 30_000;
 
-type RemoteOperation = 'createMissing' | 'updateFields' | 'getFields' | 'getManyFields';
+type RemoteOperation =
+  'createMissing' | 'updateFields' | 'getFields' | 'getManyFields' | 'listPage';
 
 /**
  * Bảng hạn theo từng lệnh: `defaultMs` cho mọi lệnh, `operations` ghi đè theo thao tác Firestore,
@@ -86,6 +90,7 @@ export function createFirestoreRemoteDocuments(
       bounded(() => raw.updateFields(path, fields), limit('updateFields')),
     getFields: (path) => bounded(() => raw.getFields(path), limit('getFields')),
     getManyFields: (paths) => bounded(() => raw.getManyFields(paths), limit('getManyFields')),
+    listPage: (request) => bounded(() => raw.listPage(request), limit('listPage')),
     callFunction: <T>(name: string, data: unknown) =>
       bounded(
         () => raw.callFunction<T>(name, data),
@@ -146,9 +151,50 @@ function createUnboundedRemoteDocuments({
       }
       return found;
     },
+    async listPage({ path, orderByField, pageSize, after }) {
+      // Sắp xếp theo trường thời gian giảm dần rồi ID giảm dần (cùng chiều nên dùng chỉ mục đơn trường).
+      const constraints = [orderBy(orderByField, 'desc'), orderBy(documentId(), 'desc')];
+      const cursor = after ? decodeCursor(after) : null;
+      const snapshot = await getDocsFromServer(
+        query(
+          collection(db, path),
+          ...constraints,
+          ...(cursor ? [startAfter(Timestamp.fromMillis(cursor.ms), cursor.id)] : []),
+          queryLimit(pageSize),
+        ),
+      );
+      const docs = snapshot.docs.map((item) => ({
+        id: item.id,
+        data: (item.data() ?? {}) as Record<string, unknown>,
+      }));
+      const last = docs[docs.length - 1];
+      const lastMs = last ? timestampMillis(last.data[orderByField]) : null;
+      // Trang đầy và biết mốc của tài liệu cuối thì còn trang sau; thiếu mốc thì dừng (không lặp vô hạn).
+      const next =
+        docs.length === pageSize && last && lastMs !== null ? encodeCursor(lastMs, last.id) : null;
+      return { docs, next };
+    },
     async callFunction<T>(name: string, data: unknown) {
       const result = await httpsCallable<unknown, T>(functions, name)(data);
       return result.data;
     },
   };
+}
+
+/** Mili giây của một giá trị thời gian Firestore (`Timestamp`); `null` nếu không phải. */
+export function timestampMillis(value: unknown): number | null {
+  if (value && typeof value === 'object' && 'toMillis' in value) {
+    const ms = (value as { toMillis: () => unknown }).toMillis();
+    return typeof ms === 'number' ? ms : null;
+  }
+  return null;
+}
+
+const encodeCursor = (ms: number, id: string): string => `${ms}|${id}`;
+
+function decodeCursor(cursor: string): { ms: number; id: string } {
+  const at = cursor.indexOf('|');
+  const ms = Number(cursor.slice(0, at));
+  if (at < 1 || !Number.isFinite(ms)) throw new Error('invalid_cursor');
+  return { ms, id: cursor.slice(at + 1) };
 }

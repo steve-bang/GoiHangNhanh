@@ -33,6 +33,7 @@ function fakeDocs(overrides: Partial<RemoteDocuments> = {}) {
     updateFields: async () => undefined,
     getFields: async () => null,
     getManyFields: async () => new Map(),
+    listPage: async () => ({ docs: [], next: null }),
     callFunction: async () => ({ status: 'already_received' }) as never,
     ...overrides,
   };

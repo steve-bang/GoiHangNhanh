@@ -267,14 +267,14 @@ describe('UI-B01 Trang chủ (mẫu thiết kế, D-16)', () => {
     expect(screen.queryByTestId('home-today-empty')).toBeNull();
   });
 
-  it('thẻ "Dữ liệu nằm trên máy này" (Q-24a): đóng được, nhớ theo máy, không hiện lại', async () => {
+  it('thẻ "Video đã tải lên được giữ trên máy chủ" (Q-24a): đóng được, nhớ theo máy, không hiện lại', async () => {
     const deviceSettingsStore = createMemoryDeviceSettingsStore();
     const view = await renderWithProviders(<HomeScreen />, { deviceSettingsStore });
     expect(await screen.findByTestId('home-device-notice')).toBeOnTheScreen();
-    expect(screen.getByText('Dữ liệu nằm trên máy này')).toBeOnTheScreen();
+    expect(screen.getByText('Video đã tải lên được giữ trên máy chủ')).toBeOnTheScreen();
     expect(
       screen.getByText(
-        'Đơn và bằng chứng chỉ xem được trên máy đã tạo. Đổi máy hoặc cài lại ứng dụng sẽ không thấy dữ liệu cũ.',
+        'Đổi máy hoặc cài lại ứng dụng, đăng nhập lại là thấy đơn và video đã tải lên. Video chưa tải lên chỉ nằm trên máy này.',
       ),
     ).toBeOnTheScreen();
     await fireEvent.press(screen.getByTestId('home-device-notice-dismiss'));

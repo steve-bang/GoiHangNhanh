@@ -4,6 +4,7 @@ export { OrderPreviewScreen } from './OrderPreviewScreen';
 export { EvidenceDetailScreen, PackingEvidenceDetail } from './EvidenceDetailScreen';
 export { OrderEvidenceScreen } from './OrderEvidenceScreen';
 export { OrdersListScreen } from './OrdersListScreen';
+export { RestoreBanner } from './RestoreBanner';
 export { QuickOrderScreen } from './QuickOrderScreen';
 export { ScanScreen } from './ScanScreen';
 export { SearchScreen } from './SearchScreen';
