@@ -1,6 +1,6 @@
 import { createUploadTask, FileSystemUploadType } from 'expo-file-system/legacy';
 
-import { createTempFileChunkSender, type ChunkSender } from './chunk-sender';
+import { createTempFileChunkSender, LocalChunkError, type ChunkSender } from './chunk-sender';
 import { resolveRecordingUri } from './recording-files';
 import {
   chunkContentRange,
@@ -57,6 +57,12 @@ export function classifyUploadStatus(status: number): UploadFileResult {
  */
 export const CHUNK_TIMEOUT_MS = 5 * 60_000;
 
+/**
+ * Hạn cho lệnh HỎI trạng thái phiên (PUT rỗng, không thân): ngắn hơn nhiều so với khối. GIÁ TRỊ TẠM, chưa đo
+ * trên máy.
+ */
+export const STATUS_QUERY_TIMEOUT_MS = 30_000;
+
 /** Số lần liên tiếp máy chủ báo 308 mà không nhận thêm byte nào thì bỏ cuộc lượt này (tránh vòng lặp vô hạn). */
 const MAX_STALLED_CHUNKS = 2;
 
@@ -71,6 +77,8 @@ export interface ResumeOptions {
   readonly sender?: ChunkSender;
   readonly chunkBytes?: number;
   readonly chunkTimeoutMs?: number;
+  /** Hạn riêng cho lệnh hỏi trạng thái phiên (mặc định `STATUS_QUERY_TIMEOUT_MS`). */
+  readonly statusQueryTimeoutMs?: number;
 }
 
 type Opened =
@@ -164,6 +172,8 @@ type Progress =
   | { readonly kind: 'done' }
   | { readonly kind: 'received'; readonly bytes: number }
   | { readonly kind: 'expired' }
+  /** 400/401/403: URL phiên bị từ chối (đã lưu thì coi như hết hạn, vừa mở thì báo lỗi phân loại). */
+  | { readonly kind: 'rejected'; readonly result: UploadFileResult }
   | { readonly kind: 'fail'; readonly result: UploadFileResult };
 
 /** Hỏi máy chủ đã nhận tới đâu: `PUT` rỗng với `Content-Range` dạng dấu sao (`statusQueryContentRange`). */
@@ -188,6 +198,9 @@ async function queryProgress(
         : { kind: 'received', bytes };
     }
     if (response.status === 404 || response.status === 410) return { kind: 'expired' };
+    if (isSessionRejection(response.status)) {
+      return { kind: 'rejected', result: classifyUploadStatus(response.status) };
+    }
     return { kind: 'fail', result: classifyUploadStatus(response.status) };
   } catch {
     if (signal?.aborted) return { kind: 'fail', result: network('NETWORK_LOST') };
@@ -196,6 +209,12 @@ async function queryProgress(
     deadline.done();
   }
 }
+
+const isSessionRejection = (status: number): boolean =>
+  status === 400 || status === 401 || status === 403;
+
+/** Mỗi tệp chỉ một lượt gửi khối tại một thời điểm (phiên GCS không chịu hai nguồn ghi). */
+const activeChunkUploads = new Set<string>();
 
 /** Gọi kho phiên mà không để lỗi kho làm hỏng việc tải (không có kho thì tải từ đầu như cũ). */
 async function safely<T>(task: () => Promise<T>, fallback: T): Promise<T> {
@@ -221,10 +240,30 @@ async function uploadInChunks(
   resume: ResumeOptions,
 ): Promise<UploadFileResult> {
   const lost = network('NETWORK_LOST');
+  const key = `${resume.shopId}/${resume.evidenceId}`;
+  // Hai lượt chồng nhau (effect chạy lại khi lượt cũ chưa xong): lượt sau lùi lại, không gửi song song.
+  if (activeChunkUploads.has(key)) return lost;
+  activeChunkUploads.add(key);
+  try {
+    return await uploadChunksExclusive(session, localUri, signal, openTimeoutMs, resume);
+  } finally {
+    activeChunkUploads.delete(key);
+  }
+}
+
+async function uploadChunksExclusive(
+  session: UploadSessionRequest,
+  localUri: string,
+  signal: AbortSignal | undefined,
+  openTimeoutMs: number,
+  resume: ResumeOptions,
+): Promise<UploadFileResult> {
+  const lost = network('NETWORK_LOST');
   const { store, shopId, evidenceId, sizeBytes } = resume;
   const sender = resume.sender ?? createTempFileChunkSender();
   const chunkBytes = resume.chunkBytes ?? UPLOAD_CHUNK_BYTES;
   const chunkTimeoutMs = resume.chunkTimeoutMs ?? CHUNK_TIMEOUT_MS;
+  const queryTimeoutMs = resume.statusQueryTimeoutMs ?? STATUS_QUERY_TIMEOUT_MS;
   const clear = () => safely(() => store.clear(shopId, evidenceId), undefined);
 
   const stored = await safely(() => store.get(shopId, evidenceId), null);
@@ -232,79 +271,107 @@ async function uploadInChunks(
   if (stored && stored.sizeBytes === sizeBytes) location = stored.location;
   else if (stored) await clear(); // tệp đổi cỡ: phiên cũ vô nghĩa
 
-  let received = 0;
-  let reopened = false;
-  for (;;) {
-    if (signal?.aborted) return lost;
-    if (!location) {
-      const opened = await openSession(session, signal, openTimeoutMs);
-      if (!opened.ok) return opened.result;
-      location = opened.location;
-      await safely(
-        () => store.save(shopId, evidenceId, { location: opened.location, sizeBytes }),
-        undefined,
-      );
-    }
-    const progress = await queryProgress(location, sizeBytes, signal, chunkTimeoutMs);
-    if (progress.kind === 'done') {
-      await clear();
-      return { ok: true };
-    }
-    if (progress.kind === 'fail') return progress.result;
-    if (progress.kind === 'expired') {
-      await clear();
-      location = null;
-      if (reopened) return network('SESSION_EXPIRED');
-      reopened = true;
-      continue;
-    }
-    received = progress.bytes;
-    break;
-  }
-
   const sourceUri = resolveRecordingUri(localUri);
-  let stalled = 0;
-  for (;;) {
-    const plan = nextChunk(received, sizeBytes, chunkBytes);
-    // Máy chủ báo đã nhận đủ byte mà chưa chốt tệp (không nên xảy ra): không đoán, lượt sau hỏi lại.
-    if (!plan) return retryable('NO_CHUNK_TO_SEND');
-    if (signal?.aborted) return lost;
-    const deadline = withDeadline(signal, chunkTimeoutMs);
-    let response;
-    try {
-      response = await sender.send({
-        url: location as string,
-        localUri: sourceUri,
-        start: plan.start,
-        end: plan.end,
-        contentRange: chunkContentRange(plan, sizeBytes),
-        evidenceId,
-        signal: deadline.signal,
-      });
-    } catch {
+  // `reopened`: đã bỏ một phiên (hết hạn/bị từ chối) và mở phiên khác trong lượt này: chỉ một lần.
+  // `openedHere`: `location` hiện tại do CHÍNH lượt này mở (từ chối thì không phải do phiên cũ lưu lại).
+  let reopened = false;
+  let openedHere = false;
+  restart: for (;;) {
+    let received = 0;
+    for (;;) {
       if (signal?.aborted) return lost;
-      return network(deadline.timedOut() ? 'TIMEOUT' : 'NETWORK');
-    } finally {
-      deadline.done();
+      if (!location) {
+        const opened = await openSession(session, signal, openTimeoutMs);
+        if (!opened.ok) return opened.result;
+        location = opened.location;
+        openedHere = true;
+        await safely(
+          () => store.save(shopId, evidenceId, { location: opened.location, sizeBytes }),
+          undefined,
+        );
+      }
+      const progress = await queryProgress(location, sizeBytes, signal, queryTimeoutMs);
+      if (progress.kind === 'done') {
+        await clear();
+        return { ok: true };
+      }
+      if (progress.kind === 'fail') return progress.result;
+      if (progress.kind === 'rejected') {
+        if (openedHere) return progress.result; // phiên vừa mở mà vẫn bị từ chối: không lặp
+        await clear();
+        location = null;
+        if (reopened) return progress.result;
+        reopened = true;
+        continue;
+      }
+      if (progress.kind === 'expired') {
+        await clear();
+        location = null;
+        openedHere = false;
+        if (reopened) return network('SESSION_EXPIRED');
+        reopened = true;
+        continue;
+      }
+      received = progress.bytes;
+      break;
     }
-    if (signal?.aborted) return lost;
-    if (response.status === 200 || response.status === 201) {
-      await clear();
-      return { ok: true };
+
+    let stalled = 0;
+    for (;;) {
+      const plan = nextChunk(received, sizeBytes, chunkBytes);
+      // Máy chủ báo đã nhận đủ byte mà chưa chốt tệp (không nên xảy ra): không đoán, lượt sau hỏi lại.
+      if (!plan) return retryable('NO_CHUNK_TO_SEND');
+      if (signal?.aborted) return lost;
+      const deadline = withDeadline(signal, chunkTimeoutMs);
+      let response;
+      try {
+        response = await sender.send({
+          url: location as string,
+          localUri: sourceUri,
+          start: plan.start,
+          end: plan.end,
+          contentRange: chunkContentRange(plan, sizeBytes),
+          evidenceId,
+          signal: deadline.signal,
+        });
+      } catch (error) {
+        if (signal?.aborted) return lost;
+        // Lỗi đọc tệp cục bộ KHÔNG phải mạng: không được nuốt thành chờ mạng (lặp mãi, người dùng không biết).
+        if (error instanceof LocalChunkError) {
+          return error.reason === 'missing'
+            ? { ok: false, kind: 'attention', code: 'FILE_MISSING' }
+            : retryable('LOCAL_READ_FAILED');
+        }
+        return network(deadline.timedOut() ? 'TIMEOUT' : 'NETWORK');
+      } finally {
+        deadline.done();
+      }
+      if (signal?.aborted) return lost;
+      if (response.status === 200 || response.status === 201) {
+        await clear();
+        return { ok: true };
+      }
+      if (response.status === 308) {
+        const next = parseReceivedBytes(response.range, sizeBytes);
+        if (next === null) return retryable('BAD_RANGE');
+        stalled = next <= received ? stalled + 1 : 0;
+        if (stalled >= MAX_STALLED_CHUNKS) return retryable('NO_PROGRESS');
+        received = next;
+        continue;
+      }
+      if (response.status === 404 || response.status === 410) {
+        await clear();
+        return network('SESSION_EXPIRED');
+      }
+      if (isSessionRejection(response.status) && !openedHere && !reopened) {
+        // Phiên lưu từ lượt trước bị từ chối: bỏ, mở phiên mới đúng một lần rồi gửi lại từ đầu.
+        await clear();
+        location = null;
+        reopened = true;
+        continue restart;
+      }
+      return classifyUploadStatus(response.status);
     }
-    if (response.status === 308) {
-      const next = parseReceivedBytes(response.range, sizeBytes);
-      if (next === null) return retryable('BAD_RANGE');
-      stalled = next <= received ? stalled + 1 : 0;
-      if (stalled >= MAX_STALLED_CHUNKS) return retryable('NO_PROGRESS');
-      received = next;
-      continue;
-    }
-    if (response.status === 404 || response.status === 410) {
-      await clear();
-      return network('SESSION_EXPIRED');
-    }
-    return classifyUploadStatus(response.status);
   }
 }
 

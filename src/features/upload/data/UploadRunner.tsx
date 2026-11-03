@@ -15,7 +15,7 @@ import {
   getAppVersion,
   getConnectivity,
   openLocalDatabase,
-  removeOrphanChunkFiles,
+  removeOrphanChunkFilesOnce,
   reportMediaMetrics,
   subscribeAppActive,
   subscribeConnectivity,
@@ -150,8 +150,8 @@ export function UploadRunner({
       gateway ??
       (docs ? createDeviceUploadGateway(docs, getAppVersion() ?? undefined, sessionStore) : null);
     if (!enabled || !effectiveGateway || shopId === LOCAL_SHOP_ID) return undefined;
-    // Dọn tệp khối tạm mồ côi (app bị tắt giữa lúc gửi khối); chỉ động tới tệp của chính bộ gửi khối.
-    removeOrphanChunkFiles();
+    // Dọn tệp khối tạm mồ côi cũ (app bị tắt giữa lúc gửi khối), một lần mỗi tiến trình; chỉ động tới tệp của chính bộ gửi khối.
+    removeOrphanChunkFilesOnce();
     // Tài khoản đang đăng nhập theo Firebase Auth (cùng uid mà Rules thấy), đọc MỖI lượt.
     const currentUid = () => docs?.currentUid() ?? null;
     // Mạng + công tắc Wi‑Fi đọc MỖI lần hỏi. Cài đặt chưa nạp xong = chưa biết (chờ, xem network-policy).

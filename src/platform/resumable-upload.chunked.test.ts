@@ -1,4 +1,4 @@
-import type { ChunkSendRequest, ChunkSender } from './chunk-sender';
+import { LocalChunkError, type ChunkSendRequest, type ChunkSender } from './chunk-sender';
 import { uploadFileResumable, type ResumeOptions } from './resumable-upload';
 import { GCS_CHUNK_ALIGNMENT } from './upload-protocol';
 import { createMemoryUploadSessionStoreForTest } from './upload-session-store.test-helper';
@@ -34,6 +34,11 @@ function createFakeGcs(total: number) {
     /** Nếu đặt: trả mã này cho khối kế tiếp (một lần). */
     nextChunkStatus: null as number | null,
     queryStatus: null as number | null,
+    /** Trả mã này khi hỏi/gửi tới đúng URL phiên (mô phỏng phiên cũ bị từ chối). */
+    /** true: URL bị từ chối chỉ ở lúc gửi khối, lệnh hỏi vẫn trả bình thường. */
+    sendRejectOnly: false,
+    rejectUrls: new Map<string, number>(),
+    queryTimeouts: [] as (number | undefined)[],
     queryRange: undefined as string | undefined,
   };
   const fetchImpl = jest.fn(async (url: string, init?: RequestInit) => {
@@ -44,6 +49,9 @@ function createFakeGcs(total: number) {
       return new Response(null, { status: 200, headers: { location } });
     }
     state.queries += 1;
+    const rejected = state.rejectUrls.get(url);
+    if (rejected !== undefined && !state.sendRejectOnly)
+      return new Response(null, { status: rejected });
     const headers = new Headers(init?.headers as Record<string, string>);
     expect(headers.get('content-range')).toBe(`bytes */${total}`);
     if (state.queryStatus !== null) {
@@ -68,6 +76,8 @@ function createFakeGcs(total: number) {
       sender.calls += 1;
       if (sender.failAt !== null && sender.calls === sender.failAt) throw new Error('mất mạng');
       if (request.signal?.aborted) throw new Error('hủy');
+      const rejectedUrl = state.rejectUrls.get(request.url);
+      if (rejectedUrl !== undefined) return { status: rejectedUrl, range: null };
       const got = state.received.get(request.url) ?? 0;
       // Quy tắc của giao thức thật: bắt đầu đúng chỗ máy chủ đã có; khối giữa là bội của 256 KiB.
       expect(request.start).toBe(got);
@@ -292,5 +302,100 @@ describe('tải theo khối và tiếp tục (uploadFileResumable có resume)', 
     t.gcs.sender.failAt = 1;
     const result = await t.run();
     expect(JSON.stringify(result)).not.toContain('session/');
+  });
+
+  describe('phiên đã lưu bị từ chối (400/401/403)', () => {
+    it.each([400, 401, 403])(
+      '%i khi HỎI trạng thái phiên đã lưu: bỏ phiên, mở phiên mới đúng một lần và tải xong',
+      async (status) => {
+        const t = setup({ stored: { location: 'https://session/old', sizeBytes: TOTAL } });
+        t.gcs.state.rejectUrls.set('https://session/old', status);
+        expect(await t.run()).toEqual({ ok: true });
+        expect(t.gcs.state.opened).toBe(1);
+        expect(t.gcs.state.sentRanges[0]).toEqual({ start: 0, end: CHUNK - 1 });
+        expect(await t.store.get('shop-a', 'ev-1')).toBeNull();
+      },
+    );
+
+    it('403 khi GỬI khối tới phiên đã lưu: bỏ phiên, mở phiên mới đúng một lần, tải xong', async () => {
+      const t = setup({ stored: { location: 'https://session/old', sizeBytes: TOTAL } });
+      t.gcs.state.received.set('https://session/old', 0);
+      t.gcs.state.rejectUrls.set('https://session/old', 403);
+      t.gcs.state.sendRejectOnly = true;
+      expect(await t.run()).toEqual({ ok: true });
+      expect(t.gcs.state.opened).toBe(1);
+      expect(await t.store.get('shop-a', 'ev-1')).toBeNull();
+    });
+
+    it('phiên VỪA MỞ trong lượt này mà vẫn bị từ chối: trả lỗi phân loại, không lặp mở phiên', async () => {
+      const t = setup();
+      t.gcs.state.rejectUrls.set('https://session/1', 403);
+      expect(await t.run()).toEqual({ ok: false, kind: 'retryable', code: 'SESSION_REJECTED' });
+      expect(t.gcs.state.opened).toBe(1);
+    });
+
+    it('phiên cũ bị từ chối rồi phiên mới cũng bị từ chối: dừng sau đúng một lần mở lại', async () => {
+      const t = setup({ stored: { location: 'https://session/old', sizeBytes: TOTAL } });
+      t.gcs.state.rejectUrls.set('https://session/old', 403);
+      t.gcs.state.rejectUrls.set('https://session/1', 403);
+      expect(await t.run()).toEqual({ ok: false, kind: 'retryable', code: 'SESSION_REJECTED' });
+      expect(t.gcs.state.opened).toBe(1);
+    });
+  });
+
+  it('lệnh hỏi trạng thái dùng hạn riêng ngắn, không dùng hạn khối', async () => {
+    const t = setup();
+    global.fetch = ((_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return Promise.resolve(
+          new Response(null, { status: 200, headers: { location: 'https://session/1' } }),
+        );
+      }
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new Error('hủy')));
+      });
+    }) as unknown as typeof fetch;
+    expect(await t.run(undefined, { statusQueryTimeoutMs: 20, chunkTimeoutMs: 60_000 })).toEqual({
+      ok: false,
+      kind: 'network',
+      code: 'TIMEOUT',
+    });
+  });
+
+  it('lỗi đọc tệp cục bộ (short_read) không bị nuốt thành lỗi mạng: retryable LOCAL_READ_FAILED, giữ phiên', async () => {
+    const t = setup();
+    t.gcs.sender.send = async () => {
+      throw new LocalChunkError('read_failed');
+    };
+    expect(await t.run()).toEqual({ ok: false, kind: 'retryable', code: 'LOCAL_READ_FAILED' });
+    expect(await t.store.get('shop-a', 'ev-1')).not.toBeNull();
+  });
+
+  it('tệp gốc mất: cần xử lý FILE_MISSING (không phải lỗi mạng)', async () => {
+    const t = setup();
+    t.gcs.sender.send = async () => {
+      throw new LocalChunkError('missing');
+    };
+    expect(await t.run()).toEqual({ ok: false, kind: 'attention', code: 'FILE_MISSING' });
+  });
+
+  it('hai lượt chồng nhau cho cùng evidenceId: lượt sau lùi (NETWORK_LOST), không gửi song song', async () => {
+    const t = setup();
+    let release: () => void = () => undefined;
+    const original = t.gcs.sender.send.bind(t.gcs.sender);
+    let sends = 0;
+    t.gcs.sender.send = async (request) => {
+      sends += 1;
+      if (sends === 1) await new Promise<void>((resolve) => (release = resolve));
+      return original(request);
+    };
+    const first = t.run();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const second = await t.run().finally(() => release());
+    expect(second).toEqual({ ok: false, kind: 'network', code: 'NETWORK_LOST' });
+    expect(await first).toEqual({ ok: true });
+    // sau khi lượt đầu xong, lượt mới lại chạy được
+    const again = setup();
+    expect(await again.run()).toEqual({ ok: true });
   });
 });
