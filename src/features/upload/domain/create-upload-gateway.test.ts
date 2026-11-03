@@ -207,3 +207,23 @@ describe('requestServerCheck (V1-08 Kiểm tra lại)', () => {
     ).rejects.toMatchObject({ kind: 'attention', code: 'PERMISSION_DENIED' });
   });
 });
+
+describe('createUploadGateway: bối cảnh tải tiếp được', () => {
+  it('truyền shopId + evidenceId cho bộ gửi để tiếp tục phiên dở', async () => {
+    const seen: unknown[] = [];
+    const gateway = createUploadGateway({
+      declarer: { declare: async () => undefined },
+      sessions: {
+        create: async () => ({ status: 'ready', url: 'u', method: 'POST', headers: {} }),
+      },
+      bytes: {
+        send: async (_session, _path, size, _signal, context) => {
+          seen.push([size, context]);
+        },
+      },
+      serverStates: { read: async () => new Map() },
+    });
+    expect(await gateway.upload(request)).toEqual({ kind: 'received' });
+    expect(seen).toEqual([[100, { shopId: 's1', evidenceId: 'e1' }]]);
+  });
+});

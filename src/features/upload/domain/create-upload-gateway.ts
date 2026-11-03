@@ -52,6 +52,8 @@ export interface BytesUploader {
     localPath: string,
     sizeBytes: number,
     signal?: AbortSignal,
+    /** Bằng chứng đang gửi: để tiếp tục phiên tải dở giữa các lượt (tải tiếp được). */
+    context?: { readonly shopId: ShopId; readonly evidenceId: EvidenceId },
   ): Promise<void>;
 }
 
@@ -126,7 +128,10 @@ export function createUploadGateway(
         );
         if (session.status === 'ready') {
           await withTimeout(
-            ports.bytes.send(session, request.localPath, request.sizeBytes, signal),
+            ports.bytes.send(session, request.localPath, request.sizeBytes, signal, {
+              shopId: request.shopId,
+              evidenceId: request.evidenceId,
+            }),
             null,
             signal,
           );

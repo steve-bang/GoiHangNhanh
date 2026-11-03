@@ -1,6 +1,6 @@
 # Kế hoạch: tải tiếp được bằng `Content-Range` (hạng mục 1, P0)
 
-> **Đề xuất kỹ thuật, 2026-11-03**, thuộc [reliability-priorities.md](reliability-priorities.md). Chưa duyệt, chưa viết mã, chưa chạy trên thiết bị.
+> **Đề xuất kỹ thuật, 2026-11-03**, thuộc [reliability-priorities.md](reliability-priorities.md). **Trạng thái (2026-11-03): đã viết mã và test đơn vị** (migration **v18**, vì v17 đã dùng cho nhịp tim `last_alive_at_device`), **chưa chạy trên thiết bị**: cách gửi khối và hành vi 308 cần spike ở G-3. Quyết định đã chọn: A bảng `upload_sessions`; B vẫn gọi `createUploadSession` mỗi lượt nhưng dùng `Location` đã lưu; C khối 8 MiB; D bộ gửi mặc định là tệp tạm + `uploadAsync` sau interface `ChunkSender` (đổi được). Ghi chú số migration ở đoạn dưới nay đọc là v18.
 
 ## 1. Hiện trạng đã đọc trong mã
 

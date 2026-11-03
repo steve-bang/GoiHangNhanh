@@ -5,6 +5,7 @@ export {
   OrderStoreProvider,
   OrderSyncRunner,
   createLocalEvidenceFileStore,
+  createLocalUploadSessionStore,
   createLocalOrderStore,
   EvidenceFileStoreProvider,
   useEvidenceFileStore,
