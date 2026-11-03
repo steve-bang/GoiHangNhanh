@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Website marketing/SEO của Đơn Chứng (độc lập với app di động)",
+  "description": "Website marketing/SEO của AmaBox (độc lập với app di động)",
   "engines": {
     "node": ">=22.12.0"
   },

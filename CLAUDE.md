@@ -39,7 +39,7 @@ Repo có tài liệu nghiệp vụ (`docs/`), **khung kỹ thuật** (Expo SDK 5
 - **Cổng giả** chọn qua `src/api/create-api.ts`: test và `__DEV__` = giả; bản build thường = Firebase thật, thiếu tệp cấu hình thì "chưa kết nối". `EXPO_PUBLIC_BACKEND=fake` hoặc `EXPO_PUBLIC_USE_FAKE_BACKEND=1` ép cổng giả (production `EXPO_PUBLIC_APP_ENV=prod` bỏ qua, V1-01).
 - Ở bản Firebase còn trả `AUTH_SERVICE_UNAVAILABLE` nhưng không có lối vào: đăng nhập Apple/Google (O-15), khôi phục bằng mã 6 số (O-22). Màn Dung lượng UI-F03 là khung; Thành viên, Gói, Cài đặt thông báo ẩn.
 - Chưa có: đồng bộ hai chiều, xuất hồ sơ, thời hạn lưu/giữ do tranh chấp phía máy chủ (QA-10 không áp dụng v1), mời thành viên (O-03, O-07), thanh toán/gói (O-06, O-16), đẩy thông báo.
-- Tên gói/hạn lưu, huy hiệu "Đã xác thực", email hỗ trợ, tên miền và URL pháp lý (giữ chỗ `.invalid`, D-4), khung 19 "Về Đơn Chứng" (Q-21j) còn thiếu dữ liệu thật.
+- Tên gói/hạn lưu, huy hiệu "Đã xác thực", email hỗ trợ, tên miền và URL pháp lý (giữ chỗ `.invalid`, D-4), khung 19 "Về AmaBox" (Q-21j) còn thiếu dữ liệu thật.
 
 ### Hạn chế đã biết còn mở
 
@@ -52,7 +52,7 @@ Việc con người còn phải làm và cổng phát hành: **`docs/engineering
 - Câu chữ và mã lỗi mới của Q-29 chờ BA (C-1); pháp lý trang web (C-2), Splash/slogan "Lưu trữ an toàn" (Q-24e, C-3); tên app và bundle id (D-1, O-11), sàn hệ điều hành (D-2, O-20).
 - **Chỉ được bật cờ ghi video cho người dùng thật** ở V1-21, sau khi cổng thiết bị G đạt (QA-01…14).
 
-Sản phẩm: **Đơn Chứng** (tên làm việc, có thể đổi sau khi kiểm tra nhãn hiệu; tên repo là `GoiHangNhanh`) — ứng dụng di động quản lý bằng chứng theo vòng đời đơn hàng thương mại điện tử: đóng gói → bàn giao → nhận hàng hoàn → đối chiếu → tranh chấp. Không phải "app lưu video đơn hàng".
+Sản phẩm: **AmaBox** (tên làm việc, có thể đổi sau khi kiểm tra nhãn hiệu; tên repo là `GoiHangNhanh`) — ứng dụng di động quản lý bằng chứng theo vòng đời đơn hàng thương mại điện tử: đóng gói → bàn giao → nhận hàng hoàn → đối chiếu → tranh chấp. Không phải "app lưu video đơn hàng".
 
 Tài liệu nằm trong `docs/`, bắt đầu từ `docs/README.md` (mục lục + nhật ký quyết định). Mọi tài liệu viết bằng tiếng Việt.
 
@@ -128,7 +128,7 @@ Các quyết định còn mở: xem `docs/README.md#quyết-định-còn-mở`. 
 7. **Mọi thay đổi sau khi bắt đầu quay/sau xác nhận đều lưu lịch sử**; nhật ký kiểm toán không cho người dùng thường sửa/xóa.
 8. **Cô lập dữ liệu theo shop** trên mọi truy vấn, kể cả khi đoán ID. Không URL công khai vĩnh viễn tới video.
 9. **Không xóa bằng chứng đang bị giữ do tranh chấp**; hạ cấp/hết hạn gói không được xóa ngầm.
-10. **Dữ liệu đơn tối giản, nguồn rõ ràng.** Đơn Chứng không quản lý bán hàng (không SKU/giá/khách hàng/tồn kho). Thiếu thông tin sản phẩm không được chặn quay — gắn nhãn *Chưa khai báo sản phẩm*. Không gộp các variant khác nhau. Thông tin do người dùng nhập phải ghi nguồn là do người dùng nhập, không giả định là dữ liệu chính thức từ sàn. Quét mã vận đơn không có nghĩa là lấy được tên sản phẩm.
+10. **Dữ liệu đơn tối giản, nguồn rõ ràng.** AmaBox không quản lý bán hàng (không SKU/giá/khách hàng/tồn kho). Thiếu thông tin sản phẩm không được chặn quay — gắn nhãn *Chưa khai báo sản phẩm*. Không gộp các variant khác nhau. Thông tin do người dùng nhập phải ghi nguồn là do người dùng nhập, không giả định là dữ liệu chính thức từ sàn. Quét mã vận đơn không có nghĩa là lấy được tên sản phẩm.
 11. **Ngôn ngữ trung thực:** không quảng cáo "bằng chứng pháp lý tuyệt đối", không hứa thắng khiếu nại, không hứa tải nền vô hạn (iOS/Android giới hạn chạy nền). Mã băm chỉ chứng minh tệp không đổi kể từ lúc tính, không chứng minh thời điểm quay hay tính chân thực; thời gian thiết bị và thời gian máy chủ lưu riêng.
 
 ## Quy ước khi viết tài liệu/mã

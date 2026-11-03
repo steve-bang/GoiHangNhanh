@@ -383,7 +383,7 @@
     }
   },
   "splash": {
-    "brandName": "Đơn Chứng",
+    "brandName": "AmaBox",
     "tagline": "Ghi hình đầy đủ\nLưu bằng chứng an tâm",
     "features": {
       "record": "Quay video\nđóng gói",
@@ -394,7 +394,7 @@
     "slogan": "Mỗi đơn hàng\nđều xứng đáng được bảo vệ!"
   },
   "welcome": {
-    "brandName": "Đơn chứng",
+    "brandName": "AmaBox",
     "title": "Bảo vệ bằng chứng\ncho từng đơn hàng",
     "subtitle": "Ghi hình đầy đủ – Lưu trữ an toàn – An tâm kinh doanh",
     "signIn": "Đăng nhập",
@@ -410,7 +410,7 @@
     "privacy": "Chính sách quyền riêng tư"
   },
   "signUp": {
-    "title": "Tạo tài khoản\nĐơn Chứng",
+    "title": "Tạo tài khoản\nAmaBox",
     "subtitle": "Bắt đầu lưu bằng chứng cho đơn hàng của bạn chỉ trong vài phút!",
     "emailLabel": "Email của bạn",
     "emailPlaceholder": "shop@example.com",
@@ -460,7 +460,7 @@
   },
   "setupDone": {
     "titleLead": "Tuyệt vời!",
-    "title": "Bạn đã sẵn sàng sử dụng Đơn Chứng",
+    "title": "Bạn đã sẵn sàng sử dụng AmaBox",
     "subtitle": "Cảm ơn bạn đã hoàn tất thiết lập. Giờ đây bạn có thể bắt đầu ghi hình và lưu bằng chứng cho đơn hàng.",
     "shopLabel": "Shop của bạn",
     "shopFallback": "Chưa có tên shop",
@@ -470,10 +470,10 @@
     "guide": "Xem hướng dẫn nhanh"
   },
   "signIn": {
-    "brandName": "Đơn Chứng",
+    "brandName": "AmaBox",
     "brandTagline": "Bảo vệ đơn hàng – Vững bước kinh doanh",
     "title": "Chào mừng bạn trở lại!",
-    "subtitle": "Cùng Đơn Chứng lưu bằng chứng cho từng đơn hàng nhé!",
+    "subtitle": "Cùng AmaBox lưu bằng chứng cho từng đơn hàng nhé!",
     "emailLabel": "Email",
     "emailPlaceholder": "shop@example.com",
     "passwordLabel": "Mật khẩu",
@@ -495,14 +495,14 @@
   "forgot": {
     "headerTitle": "Quên mật khẩu",
     "title": "Đừng lo, mình cùng lấy lại nhé!",
-    "description": "Nhập email đã đăng ký. Đơn Chứng sẽ gửi mã xác minh cho bạn.",
+    "description": "Nhập email đã đăng ký. AmaBox sẽ gửi mã xác minh cho bạn.",
     "emailLabel": "Email",
     "emailPlaceholder": "shop@example.com",
     "emailHint": "Dùng email bạn đã đăng ký tài khoản.",
     "submit": "Gửi mã xác minh",
     "backToSignIn": "Quay lại đăng nhập",
     "tipTitle": "Mẹo nhỏ cho bạn",
-    "tipBody": "Hãy kiểm tra kỹ email bạn đã đăng ký với Đơn Chứng nhé!",
+    "tipBody": "Hãy kiểm tra kỹ email bạn đã đăng ký với AmaBox nhé!",
     "errors": {
       "emailRequired": "Bạn nhập email trước nhé.",
       "sendFailed": "Chưa gửi được mã. Bạn thử lại sau ít phút nhé!",
@@ -511,14 +511,14 @@
       "emailTooMany": "Bạn đã gửi nhiều lần. Hãy thử lại sau ít phút."
     },
     "emailLink": {
-      "description": "Nhập email đã đăng ký. Đơn Chứng sẽ gửi thư có đường dẫn để bạn đặt lại mật khẩu.",
+      "description": "Nhập email đã đăng ký. AmaBox sẽ gửi thư có đường dẫn để bạn đặt lại mật khẩu.",
       "submit": "Gửi email đặt lại"
     }
   },
   "recoverySent": {
     "headerTitle": "Quên mật khẩu",
     "title": "Kiểm tra hộp thư",
-    "description": "Nếu {{email}} đã đăng ký Đơn Chứng, thư đặt lại mật khẩu sẽ tới trong vài phút.",
+    "description": "Nếu {{email}} đã đăng ký AmaBox, thư đặt lại mật khẩu sẽ tới trong vài phút.",
     "nextStep": "Mở đường dẫn trong thư để tạo mật khẩu mới, rồi quay lại đây đăng nhập.",
     "notYours": "Sai email? ",
     "changeEmail": "Đổi email",

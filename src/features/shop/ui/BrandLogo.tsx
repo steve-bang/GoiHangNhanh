@@ -5,7 +5,7 @@ import { layout } from '@/core/theme';
 import { Icon, Text, useTheme } from '@/shared/ui';
 
 /**
- * Hàng logo: khiên trong ô vuông bo góc + tên "Đơn chứng". Hình dựng bằng biểu tượng sẵn có; khi
+ * Hàng logo: khiên trong ô vuông bo góc + tên "AmaBox". Hình dựng bằng biểu tượng sẵn có; khi
  * có logo thật, thay NỘI DUNG của `BrandMark` (hoặc cả tệp) tại đây, màn hình không phải sửa.
  * Màu nhận diện là đồ họa (`brand.primary`); tên thương hiệu là chữ đậm `brand.deep`.
  */

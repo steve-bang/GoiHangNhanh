@@ -281,7 +281,6 @@ describe('quét toàn bộ chuỗi giao diện', () => {
   });
 
   it('bốn câu phụ đã chỉnh để không hứa quá: đúng từng chữ', () => {
-    const NBSP = '\u00a0';
     expect(resources.vi.screens.signUp.subtitle).toBe(
       'Bắt đầu lưu bằng chứng cho đơn hàng của bạn chỉ trong vài phút!',
     );
@@ -289,7 +288,7 @@ describe('quét toàn bộ chuỗi giao diện', () => {
       'Cảm ơn bạn đã hoàn tất thiết lập. Giờ đây bạn có thể bắt đầu ghi hình và lưu bằng chứng cho đơn hàng.',
     );
     expect(resources.vi.screens.signIn.subtitle).toBe(
-      `Cùng Đơn${NBSP}Chứng lưu bằng chứng cho từng đơn hàng nhé!`,
+      `Cùng AmaBox lưu bằng chứng cho từng đơn hàng nhé!`,
     );
     expect(resources.vi.screens.newPassword.description).toBe(
       'Chọn mật khẩu mạnh để giữ tài khoản của bạn an toàn hơn.',
@@ -301,22 +300,26 @@ describe('quét toàn bộ chuỗi giao diện', () => {
   });
 });
 
-describe('tên thương hiệu không bị tách dòng', () => {
-  const NBSP = ' ';
+describe('tên thương hiệu', () => {
   const all: [string, string][] = Object.entries(resources.vi).flatMap(([ns, tree]) =>
     flatten(tree as Json, ns),
   );
 
-  it('mọi chuỗi có tên "Đơn Chứng" dùng khoảng trắng không ngắt (U+00A0)', () => {
-    const hits = all.filter(([, v]) => /Đơn\s+Chứng|Đơn Chứng/.test(v));
+  it('không còn chuỗi nào dùng tên cũ "Đơn Chứng"', () => {
+    const old = all.filter(([, v]) => /Đơn[\s\u00a0]+[Cc]hứng/.test(v));
+    expect(old).toEqual([]);
+  });
+
+  it('tên "AmaBox" là một từ liền nên không cần khoảng trắng không ngắt', () => {
+    const hits = all.filter(([, v]) => v.includes('AmaBox'));
     expect(hits.length).toBeGreaterThanOrEqual(4);
     for (const [key, value] of hits) {
-      expect({ key, ok: value.includes(`Đơn${NBSP}Chứng`) }).toEqual({ key, ok: true });
+      expect({ key, ok: !/Ama\s+Box/.test(value) }).toEqual({ key, ok: true });
     }
   });
 
   it('tiêu đề đăng ký vẫn xuống dòng có chủ ý giữa "Tạo tài khoản" và tên thương hiệu', () => {
-    expect(resources.vi.screens.signUp.title).toBe(`Tạo tài khoản\nĐơn${NBSP}Chứng`);
+    expect(resources.vi.screens.signUp.title).toBe('Tạo tài khoản\nAmaBox');
   });
 });
 

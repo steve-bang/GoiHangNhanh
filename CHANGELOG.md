@@ -1,6 +1,6 @@
 # Nhật ký thay đổi
 
-Mọi thay đổi đáng chú ý của ứng dụng Đơn Chứng được ghi ở đây. Định dạng theo [Keep a Changelog 1.1.0](https://keepachangelog.com/vi/1.1.0/), phiên bản theo [SemVer](https://semver.org/lang/vi/). Quy ước ghi (mỗi PR một dòng, kèm mã `V1-xx` và số PR): [docs/engineering/v1-release-plan.md mục 5](docs/engineering/v1-release-plan.md#5-quy-ước-changelog).
+Mọi thay đổi đáng chú ý của ứng dụng AmaBox được ghi ở đây. Định dạng theo [Keep a Changelog 1.1.0](https://keepachangelog.com/vi/1.1.0/), phiên bản theo [SemVer](https://semver.org/lang/vi/). Quy ước ghi (mỗi PR một dòng, kèm mã `V1-xx` và số PR): [docs/engineering/v1-release-plan.md mục 5](docs/engineering/v1-release-plan.md#5-quy-ước-changelog).
 
 Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng ứng dụng.** Chưa có gì trong app từng chạy trên thiết bị thật hay build native; mọi mục dưới đây chỉ được kiểm chứng bằng unit test (Jest), Firebase Emulator và `expo export`.
 
@@ -42,6 +42,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Changed
 
+- Đổi tên hiển thị ứng dụng từ "Đơn Chứng" sang "AmaBox" (app, chuỗi i18n, quyền camera/micro/vị trí, web, tài liệu). Chưa đổi bundle id, scheme, tên tệp CSDL, tên module native, dự án Firebase, tên miền: danh sách ở `docs/engineering/release-checklist.md` mục R.
 - Rà soát câu chữ thông báo cho thân thiện và ngắn hơn (mã lỗi, rời màn quay, ngoại tuyến, hạn chế bằng chứng, trạng thái máy chủ); thống nhất "tải lên", "Ứng dụng", "Chưa … được"; chỉ đổi chữ, chờ BA duyệt (C-1; `MIC_PERMISSION_DENIED` chờ O-09).
 - Thông số quay tường minh trên cả iOS và Android: 1080p30, H.264 (`avc1`), 6 Mbps, `maxFileSize` 1,9 GB (< trần tải lên 2 GB) qua prop `profile` của `CameraRecorder`; `ESTIMATED_BYTES_PER_MINUTE` suy từ bitrate (58,5 MB/phút). Dựa trên đọc mã `expo-camera` 58.0.12, chưa chạy trên thiết bị (V1-22, Q-30a/b).
 - Ảnh minh họa màn Splash đổi tông xanh ngọc sang cam chủ đạo (áo yếm, điện thoại, biểu tượng trong bong bóng); logo Shopee/TikTok/Lazada và hai chậu cây giữ nguyên. Ảnh gốc xanh giữ ở `docs/assets/brand/splash/splash-hero-jade.webp`, script tạo lại ở `scripts/assets/recolor-splash-hero.py`. Chỉ kiểm qua ảnh bản web, chưa xem trên thiết bị.

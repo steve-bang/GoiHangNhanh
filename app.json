@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Đơn Chứng",
+    "name": "AmaBox",
     "slug": "don-chung",
     "version": "0.0.0",
     "orientation": "portrait",
@@ -149,15 +149,15 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Đơn Chứng dùng camera để quét mã đơn hàng, quay video đóng gói và mở kiện, chụp ảnh kiện hàng hoàn.",
-          "microphonePermission": "Đơn Chứng dùng micro để thu tiếng trong video đóng gói và mở kiện làm bằng chứng.",
+          "cameraPermission": "AmaBox dùng camera để quét mã đơn hàng, quay video đóng gói và mở kiện, chụp ảnh kiện hàng hoàn.",
+          "microphonePermission": "AmaBox dùng micro để thu tiếng trong video đóng gói và mở kiện làm bằng chứng.",
           "recordAudioAndroid": true
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Đơn Chứng dùng vị trí của máy để ghi nơi chụp ảnh kiện hàng hoàn. Nếu không cho phép, bạn vẫn chụp được ảnh.",
+          "locationWhenInUsePermission": "AmaBox dùng vị trí của máy để ghi nơi chụp ảnh kiện hàng hoàn. Nếu không cho phép, bạn vẫn chụp được ảnh.",
           "locationAlwaysAndWhenInUsePermission": false,
           "locationAlwaysPermission": false,
           "locationFullAccuracyPermission": false,

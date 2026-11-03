@@ -2,7 +2,7 @@
   "name": "don-chung",
   "version": "0.0.0",
   "private": true,
-  "description": "Đơn Chứng - ứng dụng di động quản lý bằng chứng theo vòng đời đơn hàng (React Native + Firebase)",
+  "description": "AmaBox - ứng dụng di động quản lý bằng chứng theo vòng đời đơn hàng (React Native + Firebase)",
   "main": "expo-router/entry",
   "engines": {
     "node": ">=22.13"

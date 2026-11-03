@@ -41,7 +41,7 @@ describe('UI-A02 Chào mừng', () => {
   it('hiện tiêu đề, dòng phụ, hai nút, nhóm social và hai liên kết', async () => {
     await renderWithProviders(<WelcomeScreen />);
     expect(screen.getByTestId('screen-UI-A02')).toBeOnTheScreen();
-    expect(screen.getByText('Đơn chứng')).toBeOnTheScreen();
+    expect(screen.getByText('AmaBox')).toBeOnTheScreen();
     expect(screen.getByText(/Bảo vệ bằng chứng\s*cho từng đơn hàng/)).toBeOnTheScreen();
     expect(
       screen.getByText('Ghi hình đầy đủ – Lưu trữ an toàn – An tâm kinh doanh'),

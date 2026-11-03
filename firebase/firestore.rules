@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Firestore Security Rules - Đơn Chứng.
+// Firestore Security Rules - AmaBox.
 //
 // Nguyên tắc (xem docs/engineering/architecture.md mục 6 và CLAUDE.md):
 // 1. Mặc định TỪ CHỐI. Mỗi collection chỉ được mở khi có rule + test trong

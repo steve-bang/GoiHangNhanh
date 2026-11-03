@@ -11,7 +11,7 @@ import { Notice } from './Notice';
  * Điều khoản và chính sách (UI-I06 route con; board 07 khung 18). Mở trang bằng trình duyệt qua `LEGAL_LINKS`.
  * Hôm nay cả hai URL là GIỮ CHỖ (`.invalid`, `isPlaceholderLink`) nên hàng bị khóa "Sắp có", không điều hướng
  * và có thẻ giải thích; hàng tự mở được khi URL thật được điền. Lệch board: KHÔNG dựng "Chính sách đổi trả"
- * (D20: Đơn Chứng không bán hàng) và KHÔNG có "Chính sách dữ liệu" (chưa có URL thật; Q-21ae). Không ghi
+ * (D20: AmaBox không bán hàng) và KHÔNG có "Chính sách dữ liệu" (chưa có URL thật; Q-21ae). Không ghi
  * phiên bản hay ngày hiệu lực vì chưa có.
  */
 export function LegalScreen() {

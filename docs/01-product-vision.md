@@ -2,7 +2,7 @@
 
 ## Định nghĩa sản phẩm
 
-Đơn Chứng là **ứng dụng quản lý bằng chứng theo vòng đời đơn hàng**, giúp người bán ghi nhận đúng, tìm lại nhanh và đối chiếu được bằng chứng đóng hàng – giao hàng – nhận hàng hoàn – tranh chấp.
+AmaBox là **ứng dụng quản lý bằng chứng theo vòng đời đơn hàng**, giúp người bán ghi nhận đúng, tìm lại nhanh và đối chiếu được bằng chứng đóng hàng – giao hàng – nhận hàng hoàn – tranh chấp.
 
 Triết lý: hệ thống phía sau phải mạnh, nhưng người bán dùng phía trước phải cực kỳ đơn giản.
 
@@ -48,7 +48,7 @@ Shop cá nhân, doanh nghiệp có nhiều nhân viên đóng hàng, nhà bán �
 | Kết nối sàn | Không bắt buộc để bắt đầu; nhập thủ công là luồng cơ bản |
 | Quản trị nội bộ | Quản lý khách hàng, thanh toán, hỗ trợ — giao diện nội bộ riêng khi cần, không phải web app cho người bán |
 
-**Ngoài phạm vi:** Đơn Chứng không quản lý bán hàng — không danh mục sản phẩm/SKU, tồn kho, giá, thông tin khách hàng hay xử lý đơn thay sàn. Dữ liệu đơn chỉ đủ để gắn đúng bằng chứng và đối chiếu hàng ([02](02-domain-model-and-states.md#thông-tin-đơn-hàng-tối-giản)). Giá trị chính là ghi nhận, bảo vệ, tìm kiếm và sử dụng bằng chứng.
+**Ngoài phạm vi:** AmaBox không quản lý bán hàng — không danh mục sản phẩm/SKU, tồn kho, giá, thông tin khách hàng hay xử lý đơn thay sàn. Dữ liệu đơn chỉ đủ để gắn đúng bằng chứng và đối chiếu hàng ([02](02-domain-model-and-states.md#thông-tin-đơn-hàng-tối-giản)). Giá trị chính là ghi nhận, bảo vệ, tìm kiếm và sử dụng bằng chứng.
 
 Các chức năng triển khai theo giai đoạn, nhưng mô hình dữ liệu và quy tắc nghiệp vụ phải thiết kế để không phải xây lại khi mở rộng.
 

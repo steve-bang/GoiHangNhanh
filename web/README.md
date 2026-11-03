@@ -1,4 +1,4 @@
-# Web marketing Đơn Chứng
+# Web marketing AmaBox
 
 Website tĩnh (Astro + TypeScript) cho marketing, SEO và chuyển đổi. **Độc lập hoàn toàn với app di động**: có `package.json` và `package-lock.json` riêng, không dùng chung phụ thuộc với thư mục gốc. Web **không** mang nghiệp vụ quản lý đơn và **không** thu thập dữ liệu bằng chứng/đơn hàng (D-02).
 

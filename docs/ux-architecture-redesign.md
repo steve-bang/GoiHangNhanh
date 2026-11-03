@@ -1,4 +1,4 @@
-# Thiết kế lại kiến trúc UX — Đơn Chứng
+# Thiết kế lại kiến trúc UX — AmaBox
 
 > **Trạng thái:** đề xuất thiết kế, **chưa triển khai mã**, chưa được BA/người dùng duyệt (trừ các mục ghi `decided`).
 > **Căn cứ:** `docs/ui-ux-audit.md` (mã vấn đề H-1, QO-1, PK-1…), `docs/09-ui-ux-design.md`, `docs/03`–`05`, `docs/engineering/layout.md`, bảng route `src/core/navigation/routes.ts`, tab `src/bootstrap/navigation/tab-config.ts`.

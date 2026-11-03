@@ -25,7 +25,7 @@ import { SPLASH_HERO_MAX_WAIT_MS } from '../domain/launch';
  * việc sau). Không có chuyển động nên không cần xử lý "giảm chuyển động".
  *
  * Chữ theo thiết kế đã được người dùng duyệt giữ nguyên (decisions.md Q-15, D-15). Trợ năng: mọi
- * thành phần trang trí ẩn khỏi trình đọc màn hình; chỉ đọc tên app "Đơn Chứng".
+ * thành phần trang trí ẩn khỏi trình đọc màn hình; chỉ đọc tên app "AmaBox".
  *
  * Màu và chữ theo design token (Bright Orange): không nằm trong `Screen` nên tự bọc `AppThemeScope`.
  * Câu viết tay màu trắng nằm trên thân sóng đậm (`action.primary` -> `brand.deep`, >= 4.5:1).

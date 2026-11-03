@@ -22,7 +22,7 @@ Ghi chú viết bằng **tiếng Anh** (người duyệt đọc nhanh hơn, và 
 Khoảng 3.000 byte (chủ yếu ASCII; chữ tiếng Việt trong ngoặc kép tốn thêm). Dán xong xem App Store Connect có báo vượt 4000 byte không. Thay `<…>` trước khi dán.
 
 ```
-Don Chung ("Đơn Chứng") is a Vietnamese-language app for online sellers. It records evidence per order: a video while packing, photos and a video when a returned parcel is opened, and a dispute file kept on the device.
+Don Chung ("AmaBox") is a Vietnamese-language app for online sellers. It records evidence per order: a video while packing, photos and a video when a returned parcel is opened, and a dispute file kept on the device.
 
 DEMO ACCOUNT
 Use the credentials in the Sign-in Information fields. The account already has a shop.

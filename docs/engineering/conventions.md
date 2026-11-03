@@ -1,4 +1,4 @@
-# Quy ước mã và quy trình — Đơn Chứng
+# Quy ước mã và quy trình — AmaBox
 
 > Quy ước làm việc cho đội. Các quy tắc có thể kiểm tra tự động được thực thi bằng ESLint/TypeScript/test (ghi chú "tự động"); phần còn lại do người review kiểm tra theo [PR template](../../.github/pull_request_template.md). Lựa chọn thư viện và kiến trúc: [architecture.md](architecture.md) (đề xuất, chờ duyệt). Bất biến nghiệp vụ: [CLAUDE.md](../../CLAUDE.md).
 

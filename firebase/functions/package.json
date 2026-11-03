@@ -1,7 +1,7 @@
 {
   "name": "don-chung-functions",
   "private": true,
-  "description": "Cloud Functions của Đơn Chứng (callable, trigger, lịch; script hỗ trợ xóa tài khoản)",
+  "description": "Cloud Functions của AmaBox (callable, trigger, lịch; script hỗ trợ xóa tài khoản)",
   "main": "lib/index.js",
   "engines": {
     "node": "22"

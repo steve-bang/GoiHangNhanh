@@ -1,4 +1,4 @@
-# Module Expo cục bộ của Đơn Chứng (V1-12, Q-24d): loại thư mục bằng chứng và CSDL khỏi iCloud Backup.
+# Module Expo cục bộ của AmaBox (V1-12, Q-24d): loại thư mục bằng chứng và CSDL khỏi iCloud Backup.
 # Sàn iOS = sàn của ExpoModulesCore SDK 58 (không tự nâng, O-20). Khuôn theo podspec của các module Expo SDK 58; dùng được với `useFrameworks: "dynamic"` (app.json).
 Pod::Spec.new do |s|
   s.name           = 'BackupExclusion'

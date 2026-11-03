@@ -10,12 +10,12 @@
 
 | Trường | Giá trị đề xuất | Độ dài | Giới hạn | Nguồn giới hạn |
 |---|---|---|---|---|
-| App Store: Name | `Đơn Chứng` | 9 ký tự | 2–30 ký tự | [App information][asc-appinfo]; [App Review 2.3.7][guidelines] |
+| App Store: Name | `AmaBox` | 9 ký tự | 2–30 ký tự | [App information][asc-appinfo]; [App Review 2.3.7][guidelines] |
 | App Store: Subtitle | `Video đóng gói và hàng hoàn` | 27 ký tự | ≤ 30 ký tự | [App information][asc-appinfo] |
-| Google Play: App name | `Đơn Chứng – Video đóng hàng` | 27 ký tự | ≤ 30 ký tự | [Play Console Help 9866151][gp-listing] (*chưa đọc trực tiếp*, xem mục 10) |
-| Tên dưới icon trên máy | `Đơn Chứng` (từ `app.json` `expo.name`) | 9 ký tự | – | `app.json` |
+| Google Play: App name | `AmaBox – Video đóng hàng` | 27 ký tự | ≤ 30 ký tự | [Play Console Help 9866151][gp-listing] (*chưa đọc trực tiếp*, xem mục 10) |
+| Tên dưới icon trên máy | `AmaBox` (từ `app.json` `expo.name`) | 9 ký tự | – | `app.json` |
 
-- **Rủi ro nhãn hiệu (O-11, release-checklist D-1):** "Đơn Chứng" là **tên làm việc**, chưa kiểm tra nhãn hiệu. Tên trên store đổi được sau này, nhưng **bundle id/applicationId không đổi được** sau lần tải lên đầu (giữ chỗ `vn.doncung.app`). Cần người dùng chốt D-1 trước khi tạo app trên App Store Connect (tên app phải duy nhất trên App Store) và trước lần tải AAB đầu.
+- **Rủi ro nhãn hiệu (O-11, release-checklist D-1):** "AmaBox" là **tên làm việc**, chưa kiểm tra nhãn hiệu. Tên trên store đổi được sau này, nhưng **bundle id/applicationId không đổi được** sau lần tải lên đầu (giữ chỗ `vn.doncung.app`). Cần người dùng chốt D-1 trước khi tạo app trên App Store Connect (tên app phải duy nhất trên App Store) và trước lần tải AAB đầu.
 - Không đưa tên sàn (Shopee, TikTok Shop, Lazada…) vào tên, phụ đề, từ khóa: App Review 2.3.7 cấm nhồi nhãn hiệu của bên khác vào metadata; ứng dụng cũng không tích hợp sàn nào.
 - Phụ đề và tên Google nhắc "video": chỉ đúng khi bản nộp đã bật ghi video (**[theo V1-21]**: `EXPO_PUBLIC_RECORDER_ENABLED=1` ở profile `production` sau cổng thiết bị). Không nộp mô tả này với bản build chưa bật ghi video.
 - Đếm ký tự: chữ tiếng Việt viết ở dạng dựng sẵn (NFC), mỗi chữ có dấu là một ký tự. Dán xong phải xem bộ đếm của Console; nếu Console báo khác, sửa câu chứ không cắt giữa từ.
@@ -43,7 +43,7 @@ Bản đầu tiên: miễn phí, không có mua trong ứng dụng. Đơn và vi
 Giới hạn App Store: 4000 ký tự, văn bản thuần ([Platform version information][asc-version]). Google Play: 4000 ký tự (*chưa đọc trực tiếp*, mục 10). Bản dưới đây khoảng 2.300 ký tự.
 
 ```
-Đơn Chứng giúp người bán online ghi lại bằng chứng theo từng đơn hàng: quay video lúc đóng gói, ghi nhận hàng hoàn, rồi gom bằng chứng khi cần khiếu nại.
+AmaBox giúp người bán online ghi lại bằng chứng theo từng đơn hàng: quay video lúc đóng gói, ghi nhận hàng hoàn, rồi gom bằng chứng khi cần khiếu nại.
 
 ĐÓNG GÓI
 • Quét mã vạch hoặc mã QR trên nhãn đơn, hoặc nhập tay. Mã chưa có thì tạo đơn nhanh, chỉ cần mã đơn và nguồn bán.
@@ -73,7 +73,7 @@ TRẠNG THÁI TỆP RÕ RÀNG
 • Nếu ứng dụng bị tắt giữa lúc quay, đoạn đang quay có thể mất.
 • Hồ sơ hàng hoàn và tranh chấp chỉ lưu trên máy này.
 • Ứng dụng không kết nối với sàn thương mại điện tử. Thông tin đơn và sản phẩm do bạn nhập.
-• Đơn Chứng giúp bạn có tư liệu để đối chiếu. Ứng dụng không bảo đảm kết quả khiếu nại; mỗi sàn và đơn vị vận chuyển có quy trình riêng.
+• AmaBox giúp bạn có tư liệu để đối chiếu. Ứng dụng không bảo đảm kết quả khiếu nại; mỗi sàn và đơn vị vận chuyển có quy trình riêng.
 
 QUYỀN RIÊNG TƯ
 • Không quảng cáo, không bán dữ liệu.
@@ -106,7 +106,7 @@ Miễn phí, không có mua trong ứng dụng.
 App Store không yêu cầu cho bản đầu. Google Play (Release notes):
 
 ```
-Bản đầu tiên của Đơn Chứng.
+Bản đầu tiên của AmaBox.
 ```
 
 ## 3. Từ khóa (chỉ App Store, ≤ 100 byte)
@@ -244,7 +244,7 @@ Quy tắc chụp:
 
 Chuỗi sở hữu ở `app.json` (iOS `NSCameraUsageDescription`, `NSLocationWhenInUseUsageDescription`); không chép sang đây để tránh lệch. Nội dung v1:
 
-- Camera (đã đổi ở V1-18): "Đơn Chứng dùng camera để quét mã đơn hàng, quay video đóng gói và mở kiện, chụp ảnh kiện hàng hoàn. Ứng dụng không ghi âm." Nêu đủ các cách dùng camera theo App Review 5.1.1(ii) ([App Review Guidelines][guidelines]).
+- Camera (đã đổi ở V1-18): "AmaBox dùng camera để quét mã đơn hàng, quay video đóng gói và mở kiện, chụp ảnh kiện hàng hoàn. Ứng dụng không ghi âm." Nêu đủ các cách dùng camera theo App Review 5.1.1(ii) ([App Review Guidelines][guidelines]).
 - Vị trí (khi đang dùng app): giữ nguyên chuỗi hiện có (ghi nơi chụp ảnh kiện hàng hoàn; không cho phép vẫn chụp được).
 - Micro: không xin (O-09). Thư viện ảnh: không xin.
 

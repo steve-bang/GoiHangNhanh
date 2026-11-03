@@ -1,4 +1,4 @@
-# Kiến trúc kỹ thuật — Đơn Chứng
+# Kiến trúc kỹ thuật — AmaBox
 
 > **Trạng thái: ĐỀ XUẤT, CHỜ DUYỆT.** Công nghệ nền (React Native + Firebase, không backend riêng) đã chốt ở D-03. Mọi lựa chọn kỹ thuật bên dưới *không* nằm trong D-xx và chưa được người dùng duyệt; chúng được đánh số ADR-xx trong [decisions.md](decisions.md). Không mục nào ở đây chốt câu hỏi mở O-xx.
 >

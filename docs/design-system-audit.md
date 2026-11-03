@@ -1,4 +1,4 @@
-# Audit hệ thống thiết kế (Design Token) — Đơn Chứng
+# Audit hệ thống thiết kế (Design Token) — AmaBox
 
 > Trạng thái: **audit trước triển khai** (số liệu ở đây là hiện trạng `main` khi audit; kết quả sau triển khai: [design-token-migration-report.md](design-token-migration-report.md)). TK-1, TK-2, TK-3 (mã "token" của tài liệu này, không phải Q-xx của `engineering/decisions.md`) đã được xác nhận và ghi ở [D-17, D-18, D-19](README.md#đã-chốt). Đi kèm [design-token-spec.md](design-token-spec.md) (đặc tả token đề xuất). Ngày audit: 2026-10-27, nhánh `design-token`, dựa trên `main`.
 > Số liệu lấy bằng quét regex trên mã nguồn (không tính tệp test); sẽ được thay bằng công cụ kiểm tra chính thức (`check:tokens`) khi triển khai. Số là gần đúng theo mẫu quét, đủ để quyết định, không phải con số nghiệm thu.
