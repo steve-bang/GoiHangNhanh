@@ -33,12 +33,13 @@ interface FileRow {
   last_error_code: string | null;
   hashed_size_bytes: number | null;
   hashed_mtime_device: number | null;
+  last_alive_at_device: number | null;
   created_at_device: number;
   updated_at_device: number;
 }
 
 const COLUMNS =
-  'id, shop_id, order_id, package_id, session_id, file_group, kind, state, local_path, size_bytes, duration_ms, sha256_client, attempt_count, next_attempt_at_device, last_error_code, hashed_size_bytes, hashed_mtime_device, created_at_device, updated_at_device';
+  'id, shop_id, order_id, package_id, session_id, file_group, kind, state, local_path, size_bytes, duration_ms, sha256_client, attempt_count, next_attempt_at_device, last_error_code, hashed_size_bytes, hashed_mtime_device, last_alive_at_device, created_at_device, updated_at_device';
 
 /** `COLUMNS` với tiền tố bảng `f.` (truy vấn có JOIN). */
 const PREFIXED_COLUMNS = COLUMNS.split(', ')
@@ -72,6 +73,7 @@ function toFile(row: FileRow): EvidenceFile {
           },
         }
       : {}),
+    ...(row.last_alive_at_device !== null ? { lastAliveAtDevice: row.last_alive_at_device } : {}),
     createdAtDevice: row.created_at_device,
     updatedAtDevice: row.updated_at_device,
   };
@@ -148,7 +150,7 @@ export function createSqliteEvidenceFileStore(db: SqlDatabase): EvidenceFileStor
           );
           if (!linked) throw new AppError('LOCAL_SAVE_UNAVAILABLE');
           await db.runAsync(
-            `INSERT INTO evidence_files (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, 'recording', NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, ?, ?)`,
+            `INSERT INTO evidence_files (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, 'recording', NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, ?, ?)`,
             [
               input.id,
               input.shopId,
@@ -200,6 +202,14 @@ export function createSqliteEvidenceFileStore(db: SqlDatabase): EvidenceFileStor
           );
         });
         return outcome;
+      }),
+    touchAlive: (shopId, id, atDevice) =>
+      guarded(async () => {
+        // Chỉ khi còn `recording`; không đụng trạng thái hay `updated_at_device` (không phải sự kiện).
+        await db.runAsync(
+          "UPDATE evidence_files SET last_alive_at_device = ? WHERE shop_id = ? AND id = ? AND state = 'recording'",
+          [atDevice, shopId, id],
+        );
       }),
     listByStates: (shopId, states) =>
       guarded(async () => {

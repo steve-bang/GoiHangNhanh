@@ -16,7 +16,7 @@ import {
   type RecordResult,
   type RecordingPorts,
 } from './recording-controller';
-import { MIN_FREE_BYTES_TO_RECORD } from './recording-policy';
+import { HEARTBEAT_INTERVAL_MS, MIN_FREE_BYTES_TO_RECORD } from './recording-policy';
 
 async function setup() {
   const orders = createMemoryOrderStore();
@@ -33,6 +33,8 @@ async function setup() {
     persist: { ok: true, uri: 'file:///docs/evidence/ev-1.mp4', sizeBytes: 2048 } as PersistOutcome,
     hash: { ok: true, sha256: 'ab'.repeat(32), sizeBytes: 2048 } as HashOutcome,
     persistCalls: [] as string[],
+    /** Nhịp tim giả (G-4): `fire()` mô phỏng một nhịp hẹn giờ. */
+    beat: { everyMs: [] as number[], stopped: 0, tick: null as (() => void) | null },
     /** Nếu đặt: `hash` chờ promise này (mô phỏng băm rất lâu, để "kill" giữa chừng). */
     hashGate: null as Promise<void> | null,
   };
@@ -58,6 +60,16 @@ async function setup() {
     hash: async () => (state.hashGate ? state.hashGate.then(() => state.hash) : state.hash),
     newEvidenceId: () => 'ev-1' as EvidenceId,
     now: () => 5000,
+    heartbeat: {
+      start: (tick, everyMs) => {
+        state.beat.everyMs.push(everyMs);
+        state.beat.tick = tick;
+        return () => {
+          state.beat.stopped += 1;
+          state.beat.tick = null;
+        };
+      },
+    },
   };
   return {
     ports,
@@ -970,5 +982,123 @@ describe('V1-23: lỗi kho lúc STOP_RECORDING không làm mất tệp', () => {
       expect(result).toEqual({ interrupted: 1, lost: 0 });
       expect(await t.fileState()).toBe('queued');
     });
+  });
+});
+
+describe('G-4 nhịp tim lúc quay (lastAliveAtDevice)', () => {
+  const alive = async (t: Awaited<ReturnType<typeof setup>>) =>
+    (await t.files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId))?.lastAliveAtDevice;
+
+  it('ghi một nhịp ngay khi bắt đầu quay, rồi mỗi HEARTBEAT_INTERVAL_MS', async () => {
+    const t = await setup();
+    let clock = 5000;
+    t.ports.now = () => clock;
+    await started(t);
+    await flushPromises();
+    expect(t.state.beat.everyMs).toEqual([HEARTBEAT_INTERVAL_MS]);
+    expect(await alive(t)).toBe(5000);
+    clock = 10_000;
+    t.state.beat.tick?.();
+    await flushPromises();
+    expect(await alive(t)).toBe(10_000);
+  });
+
+  it('dừng nhịp khi quay xong; nhịp muộn không ghi thêm và không đổi trạng thái tệp', async () => {
+    const t = await setup();
+    const active = await started(t);
+    await flushPromises();
+    const lateTick = t.state.beat.tick;
+    t.finish({ ok: true, tempUri: 'file:///cache/Camera/x.mov' });
+    await active.result;
+    expect(t.state.beat.stopped).toBe(1);
+    const before = await t.files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId);
+    t.ports.now = () => 99_000;
+    lateTick?.(); // nhịp đã được lên lịch trước khi dừng: bị bỏ qua
+    await flushPromises();
+    const after = await t.files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId);
+    expect(after).toEqual(before);
+    expect(after?.state).toBe('queued');
+  });
+
+  it('dừng nhịp cả khi bộ ghi báo lỗi lúc đang quay (done reject)', async () => {
+    const t = await setup();
+    const active = await started(t);
+    t.crash();
+    await active.result;
+    expect(t.state.beat.stopped).toBe(1);
+  });
+
+  it('camera không bắt đầu được hoặc thiếu dung lượng: không bật nhịp', async () => {
+    const throwing = await setup();
+    throwing.state.recordThrows = true;
+    await startRecording(throwing.ports, throwing.session);
+    expect(throwing.state.beat.everyMs).toEqual([]);
+
+    const full = await setup();
+    full.ports.availableBytes = () => 0;
+    await startRecording(full.ports, full.session);
+    expect(full.state.beat.everyMs).toEqual([]);
+  });
+
+  it('kho lỗi lúc ghi nhịp: không ảnh hưởng việc quay và lưu', async () => {
+    const t = await setup();
+    t.ports.files.touchAlive = async () => {
+      throw new Error('db');
+    };
+    const active = await started(t);
+    await flushPromises();
+    t.state.beat.tick?.();
+    t.finish({ ok: true, tempUri: 'file:///cache/Camera/x.mov' });
+    expect(await active.result).toEqual({ kind: 'saved', evidenceId: 'ev-1' });
+  });
+
+  it('không chồng lệnh: nhịp đến khi lần ghi trước chưa xong thì bỏ qua', async () => {
+    const t = await setup();
+    const calls: number[] = [];
+    let release: () => void = () => undefined;
+    t.ports.files.touchAlive = (_s, _id, at) => {
+      calls.push(at);
+      return new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    };
+    await started(t);
+    await flushPromises();
+    t.state.beat.tick?.();
+    t.state.beat.tick?.();
+    await flushPromises();
+    expect(calls).toHaveLength(1);
+    release();
+    await flushPromises();
+    t.state.beat.tick?.();
+    await flushPromises();
+    expect(calls).toHaveLength(2);
+  });
+
+  it('app bị kill giữa lúc quay: tệp unrecoverable vẫn giữ lastAliveAtDevice, phiên interrupted', async () => {
+    const t = await setup();
+    t.ports.now = () => 7000;
+    await started(t);
+    await flushPromises();
+    expect(await alive(t)).toBe(7000);
+    // "kill": không có done; lần mở app sau chạy phục hồi
+    await recoverInterruptedRecordings(
+      {
+        files: t.files,
+        orders: t.orders,
+        persist: t.ports.persist,
+        hash: t.ports.hash,
+        now: () => 9000,
+        exists: () => false,
+        findPersisted: () => null,
+      },
+      LOCAL_SHOP_ID,
+    );
+    const file = await t.files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId);
+    expect(file?.state).toBe('unrecoverable');
+    expect(file?.lastAliveAtDevice).toBe(7000);
+    expect((await t.orders.getSession(LOCAL_SHOP_ID, t.session.id))?.sessionStatus).toBe(
+      'interrupted',
+    );
   });
 });

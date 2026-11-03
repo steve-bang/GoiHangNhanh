@@ -130,6 +130,35 @@ export function runEvidenceFileStoreContract(name: string, make: () => Promise<E
       expect(again.state).toBe('saving_local');
     });
 
+    it('G-4 touchAlive: chỉ ghi khi còn recording; không đổi trạng thái/updatedAtDevice; sai shop/ID thì bỏ qua', async () => {
+      const h = await make();
+      const input = await seedFile(h, 'ALIVE');
+      const created = await h.files.create(input);
+      expect(created.lastAliveAtDevice ?? null).toBeNull();
+
+      await h.files.touchAlive(LOCAL_SHOP_ID, input.id, 4100);
+      await h.files.touchAlive(LOCAL_SHOP_ID, input.id, 4200);
+      const touched = await h.files.get(LOCAL_SHOP_ID, input.id);
+      expect(touched).toMatchObject({
+        state: 'recording',
+        lastAliveAtDevice: 4200,
+        updatedAtDevice: created.updatedAtDevice,
+      });
+
+      // sai shop / ID không có: không ném lỗi, không đổi gì
+      await h.files.touchAlive('shop-khac' as never, input.id, 9999);
+      await h.files.touchAlive(LOCAL_SHOP_ID, 'khong-co' as never, 9999);
+      expect((await h.files.get(LOCAL_SHOP_ID, input.id))?.lastAliveAtDevice).toBe(4200);
+
+      // đã dừng: nhịp muộn không ghi, nhịp cuối được giữ
+      await h.files.applyEvent(LOCAL_SHOP_ID, input.id, device('STOP_RECORDING'), 4300);
+      await h.files.touchAlive(LOCAL_SHOP_ID, input.id, 5000);
+      expect(await h.files.get(LOCAL_SHOP_ID, input.id)).toMatchObject({
+        state: 'saving_local',
+        lastAliveAtDevice: 4200,
+      });
+    });
+
     it('đi hết đường đóng tệp: recording -> saving_local -> queued, lưu chi tiết tệp', async () => {
       const h = await make();
       const input = await seedFile(h, 'C');

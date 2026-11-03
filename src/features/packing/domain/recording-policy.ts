@@ -81,3 +81,9 @@ export const MIN_FREE_BYTES_TO_RECORD = requiredFreeBytes();
  * dùng đồng ý chặn). GIÁ TRỊ TẠM 10%, cần thử trên máy thật.
  */
 export const MIN_BATTERY_LEVEL = 0.1;
+
+/**
+ * Khoảng giữa hai nhịp tim khi đang quay (ms; G-4): ghi `lastAliveAtDevice` để sau khi app bị kill biết app
+ * sống đến lúc nào. GIÁ TRỊ TẠM 5 giây, cần đo tải ghi/pin trên máy thật.
+ */
+export const HEARTBEAT_INTERVAL_MS = 5000;

@@ -348,6 +348,13 @@ export const MIGRATIONS: readonly string[] = [
   CREATE INDEX idx_sessions_shop_started ON packing_sessions (shop_id, started_at_device);
   CREATE INDEX idx_return_media_shop_state ON return_media (shop_id, state);
   `,
+  // v17 (G-4, nhịp tim phiên quay): giờ THIẾT BỊ (ms) lần gần nhất app còn chạy khi tệp đang `recording`,
+  // ghi mỗi vài giây. Sau khi app bị kill giữa lúc quay, giá trị này cho biết app sống đến lúc nào, kể cả
+  // khi tệp hỏng. KHÔNG nói gì về nội dung tệp hay thời điểm quay thật. NULL = chưa có nhịp nào. Chỉ ADD
+  // COLUMN nullable: dữ liệu có sẵn giữ nguyên.
+  `
+  ALTER TABLE evidence_files ADD COLUMN last_alive_at_device INTEGER;
+  `,
 ];
 
 /**

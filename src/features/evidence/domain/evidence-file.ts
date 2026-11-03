@@ -41,6 +41,11 @@ export interface EvidenceFile {
    * lần thử tải sau phải băm lại. Là bộ nhớ đệm, không phải chi tiết bất biến của bản gốc.
    */
   readonly hashedFingerprint?: FileFingerprint | null;
+  /**
+   * Giờ THIẾT BỊ (ms) nhịp tim gần nhất trong lúc tệp `recording` (G-4). Chỉ nói "app còn chạy đến lúc
+   * này", KHÔNG nói về nội dung tệp hay thời điểm quay thật. Vắng/`null` = chưa có nhịp nào.
+   */
+  readonly lastAliveAtDevice?: number | null;
   readonly createdAtDevice: number;
   readonly updatedAtDevice: number;
 }
@@ -238,6 +243,11 @@ export interface EvidenceFileStore {
   ): Promise<ApplyEventResult>;
   /** Tệp của shop đang ở một trong các trạng thái, cũ nhất trước (hàng đợi tải lên). */
   listByStates(shopId: ShopId, states: readonly FileState[]): Promise<readonly EvidenceFile[]>;
+  /**
+   * Ghi nhịp tim (G-4): đặt `lastAliveAtDevice` CHỈ khi tệp còn `recording` (tệp ở trạng thái khác hoặc không
+   * có thì không làm gì, không ném lỗi). Không đổi trạng thái, không đổi `updatedAtDevice`, không là sự kiện.
+   */
+  touchAlive(shopId: ShopId, id: EvidenceId, atDevice: number): Promise<void>;
   /**
    * Như `listByStates` nhưng CHỈ tệp thuộc phiên do CHÍNH `uid` tạo (`packing_sessions.created_by`; Q-24g,
    * V1-07): hàng đợi tải lên không khai báo hộ tệp của tài khoản khác dùng chung máy. Phiên không rõ người
