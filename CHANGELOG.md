@@ -8,6 +8,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Added
 
+- Icon ứng dụng mới (chữ "A" trắng trên nền gradient cam): `icon.png`, adaptive icon Android (nền gradient + chữ A + bản đơn sắc cho themed icon), ảnh splash hệ điều hành, favicon/apple-touch-icon/logo web; sinh bằng `scripts/assets/make-app-icons.py` từ `assets/images/brand-source/icon-source.png` (O-23). Chưa kiểm chứng trên launcher thật; logo trong app chưa đổi.
 - Web: mục Hướng dẫn `/huong-dan/` (chỉ mục) và 6 trang con: bắt đầu, quay video đóng hàng, trạng thái tải lên, nhận hàng hoàn, tranh chấp, xóa tài khoản. Nhãn nút lấy từ chuỗi giao diện thật; `LegalPage` có đường dẫn nhiều cấp (`parents`), thêm `howToLd`, `GuidePage`, `src/config/guides.ts`; menu "Hướng dẫn" trỏ `/huong-dan/`. Mô tả bản 1.0, chờ BA duyệt (C-1) và đối chiếu app thật (C-6).
 - Web: trang Tải ứng dụng `/tai-ung-dung/` (chưa phát hành nên nút cửa hàng hiện "Sắp có", tự đổi khi điền `site.stores.*.url`), thêm vào menu; nêu đúng giới hạn v1 (một tài khoản một điện thoại, tải lên khi app mở, không ghi âm). Chưa ghi sàn hệ điều hành tối thiểu (chờ D-2).
 - Xem lại video ngay tại Xác nhận video (UI-C04): thay khung đen giữ chỗ bằng `EvidencePlayer` (tách từ `EvidenceDetailView`, cùng `VideoPlayer`/`expo-video`, chỉ đọc, không tự phát, không thêm phụ thuộc); phát video mới nhất của phiên (bỏ tệp lỗi lưu), có dòng ghi chú khi phiên có nhiều video; đang lưu / tệp mất / phát lỗi dùng đúng trạng thái trung thực của UI-E04. Chưa kiểm chứng trên thiết bị (phát tệp vừa ghi, tua video dài).

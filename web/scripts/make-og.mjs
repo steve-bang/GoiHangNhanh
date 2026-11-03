@@ -5,7 +5,7 @@ import sharp from 'sharp';
 import { site } from '../src/config/site.ts';
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-const icon = await sharp('../assets/images/icon.png').resize(260, 260).png().toBuffer();
+const icon = await sharp('public/logo-512.png').resize(260, 260).png().toBuffer();
 // Màu lấy từ docs/design-token-spec.md: jade.950, neutral.0, jade.100
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
   <rect width="1200" height="630" fill="#14382A"/>
