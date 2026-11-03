@@ -1012,9 +1012,11 @@ describe('G-4 nhịp tim lúc quay (lastAliveAtDevice)', () => {
     await active.result;
     expect(t.state.beat.stopped).toBe(1);
     const before = await t.files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId);
+    const touch = jest.spyOn(t.ports.files, 'touchAlive');
     t.ports.now = () => 99_000;
-    lateTick?.(); // nhịp đã được lên lịch trước khi dừng: bị bỏ qua
+    lateTick?.(); // nhịp đã được lên lịch trước khi dừng: bị bỏ qua, kho không được gọi
     await flushPromises();
+    expect(touch).not.toHaveBeenCalled();
     const after = await t.files.get(LOCAL_SHOP_ID, 'ev-1' as EvidenceId);
     expect(after).toEqual(before);
     expect(after?.state).toBe('queued');

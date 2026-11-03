@@ -42,7 +42,7 @@ Ghi cho mỗi lần: máy, hệ điều hành, thời lượng đã quay, có t�
 
 1. **Nhịp tim phiên (ĐÃ LÀM, migration v17, chưa hiển thị UI, chưa đo trên máy):** cập nhật `last_alive_at` vào SQLite mỗi vài giây khi đang quay (cần migration v17 hoặc cột trên bảng phiên/tệp). Sau kill, app biết đã quay đến giây nào và ghi trung thực "bị ngắt khoảng mm:ss", kể cả khi tệp hỏng. Không thay đổi trạng thái tệp; không tuyên bố đủ video.
 2. **Pin thấp:** `runPrecheck` (`precheck.ts`) **đã chặn** khi pin ≤ `MIN_BATTERY_LEVEL` (10%, giá trị tạm, `recording-policy.ts:83`) và không cắm sạc. Việc còn lại là **đo mức hợp lý** trên máy thật (mất nguồn thường xảy ra trước khi đồng hồ pin về 0) và cân nhắc cảnh báo mềm ở mức cao hơn (ví dụ 20%) trong lúc đang quay. Cần BA duyệt câu chữ.
-3. Sửa hai tài liệu cũ nói "iOS có thể giữ tệp" như giả thuyết chưa có cơ sở (xong ở bản này).
+3. Tài liệu: `reliability-priorities.md` hạng mục 0 đã ghi lại bằng chứng từ mã `expo-camera` (iOS phân đoạn 10 giây theo tài liệu Apple, Android MP4 chuẩn chưa có nguồn xác nhận) thay cho giả thuyết ban đầu.
 
 ## 6. Phục hồi tệp tạm bằng so sánh thư mục (quyết định SAU khi có số đo)
 

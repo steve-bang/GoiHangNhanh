@@ -23,7 +23,7 @@
 
 | # | Câu hỏi | Đề xuất |
 |---|---|---|
-| Q-A | Lưu `Location` ở đâu? | Cột mới trên bảng tệp bằng chứng hoặc bảng `upload_sessions` (migration v17 trong `sqlite-migrations.ts`). Cột `Location` nhạy cảm (URL có quyền ghi tới khi hết hạn): xóa khi tệp `uploaded`, và nằm trong danh sách xóa của xóa tài khoản (V1-15). |
+| Q-A | Lưu `Location` ở đâu? | Cột mới trên bảng tệp bằng chứng hoặc bảng `upload_sessions` (migration kế tiếp trong `sqlite-migrations.ts`; số chốt lúc làm, v17 đã dùng cho nhịp tim `last_alive_at_device`). Cột `Location` nhạy cảm (URL có quyền ghi tới khi hết hạn): xóa khi tệp `uploaded`, và nằm trong danh sách xóa của xóa tài khoản (V1-15). |
 | Q-B | Lượt sau còn gọi `createUploadSession` không? | Nếu còn phiên lưu: **bỏ qua** gọi để đỡ nhiễu `auditEvents`; nhưng `createUploadSession` đang kiểm quyền người khai báo (V1-07b) và trạng thái "đã nhận". Cần xem lại để không bỏ mất kiểm tra đối soát (412/`already_received`). |
 | Q-C | Cỡ khối | 8 MiB, đo trên thiết bị thật (G-3/G-5) rồi chỉnh. |
 | Q-D | `fetch` hay module native cho khối | Thử `fetch` + `Uint8Array` trước; nếu RN không gửi được `ArrayBufferView` ổn định thì `createUploadTask` với `uploadType: BINARY_CONTENT` kèm đoạn tệp tạm, hoặc module nhỏ. |
@@ -33,7 +33,7 @@
 1. Hàm thuần `parseRangeHeader` / `nextChunk(offset, total, chunk)` + test (không cần thiết bị).
 2. `queryUploadOffset(location, total)` và `putChunk(...)` sau cổng `platform`, mock `fetch` + `FileHandle` trong test.
 3. `uploadFileResumable` nhận `resume?: { location }` và trả `{ location }` để bên gọi lưu; giữ `classifyUploadStatus`.
-4. Migration v17 + kho lưu `Location`; nối vào `BytesUploader`/cổng chung; xóa khi `uploaded` và khi xóa tài khoản.
+4. Migration kế tiếp (số chốt lúc làm) + kho lưu `Location`; nối vào `BytesUploader`/cổng chung; xóa khi `uploaded` và khi xóa tài khoản.
 5. Test đường: đứt giữa khối → lượt sau tiếp từ offset; phiên hết hạn → mở lại; tệp đổi cỡ → bỏ phiên; hủy bằng `signal`.
 6. Kiểm chứng thiết bị (G-3): ngắt Wi‑Fi giữa lúc tải video 1 GB, bật lại, đo byte gửi lần hai.
 

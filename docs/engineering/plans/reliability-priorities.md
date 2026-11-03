@@ -28,6 +28,8 @@ Tiêu chí: tác động nếu xảy ra (mất bằng chứng là mất đúng g
 | 2 | Tải nền thật (iOS `NSURLSession` background, Android WorkManager + foreground service) | Trung bình | Cao | Cao (hai nền tảng, native, khai báo store) | **P2** |
 | 5 | Đồng bộ hai chiều đầy đủ | Thấp cho v1 | Chỉ khi có nhiều thành viên (O-03) | Rất cao | **P3** |
 
+> **Lưu ý số migration:** v17 đã dùng cho nhịp tim `last_alive_at_device` (G-4). Các kế hoạch khác từng giữ chỗ v17 (`v1-22-video-pipeline-hardening.md` V1-24 `media_check`; `live-evidence-watermark-assessment.md` `location_events`) phải lấy số migration kế tiếp khi làm, chốt lúc làm.
+
 ## 3. Lý do chính
 
 - **Tải tiếp được (P0).** Giá trị trên chi phí cao nhất. Mỗi lần lỗi gửi lại từ đầu thì người dùng 4G thấy tệp kẹt "Đang tải lên". Cũng là nền cho tải nền sau này. Cần xác minh `expo-file-system` 58 có API đọc khối tệp phù hợp không; nếu không thì cần module native nhỏ. Phiên GCS sống khoảng một tuần: xử lý hết hạn bằng cách mở phiên mới. Khối là bội số 256 KiB.
