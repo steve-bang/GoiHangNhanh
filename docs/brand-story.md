@@ -2,6 +2,8 @@
 
 > **Trạng thái:** văn bản do người dùng cung cấp (2026-11-03), giữ nguyên câu chữ; **chỉ đổi tên** "Đơn Chứng" thành "AmaBox" theo yêu cầu. Chưa gắn vào app, web hay tài liệu store.
 >
+> Sứ mệnh, tầm nhìn, giá trị cốt lõi: [brand-mission-vision-values.md](brand-mission-vision-values.md).
+>
 > **Lưu ý tên:** tên hiển thị hiện là **AmaBox** (PR #92; O-11, nhãn hiệu chưa kiểm tra). Nếu tên chính thức đổi lần nữa thì thay lại trong tài liệu này.
 >
 > **Đối chiếu với bất biến nghiệp vụ** (CLAUDE.md, mục "Bất biến nghiệp vụ"): câu chuyện phù hợp với bất biến 11 (ngôn ngữ trung thực): nói rõ "không thể ngăn mọi sự cố" và "không thể hứa mọi khiếu nại có lợi cho người bán". Khi dùng làm nội dung công khai, cần lưu ý ba chỗ:
