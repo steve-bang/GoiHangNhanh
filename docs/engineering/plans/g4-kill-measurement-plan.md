@@ -1,6 +1,6 @@
 # Kế hoạch #0: Đo G-4 "kill khi đang quay" trên iOS và Android thật
 
-> **Đề xuất kỹ thuật, 2026-11-03** (bản 2, sau khi đọc mã `expo-camera` 58.0.12), thuộc [reliability-priorities.md](reliability-priorities.md). Người dùng đã duyệt hướng này; chưa đo trên thiết bị, chưa viết mã.
+> **Đề xuất kỹ thuật, 2026-11-03** (bản 2, sau khi đọc mã `expo-camera` 58.0.12), thuộc [reliability-priorities.md](reliability-priorities.md). Người dùng đã duyệt **hướng đo** (dev build, không màn hình chẩn đoán); chưa duyệt các quyết định ở mục 6 và 7. **Trạng thái: G-4 CHƯA ĐƯỢC ĐO** trên bất kỳ máy thật nào; PR #96 chỉ chuẩn bị đo (kế hoạch + dữ liệu thô nhịp tim, mục 5.1).
 
 ## 1. Bối cảnh
 
@@ -13,6 +13,7 @@
 | iOS | `AVCaptureMovieFileOutput` ghi `.mov` (không phải `.mp4`) vào `cache/Camera/` | `node_modules/expo-camera/ios/Current/CameraVideoRecording.swift` |
 | iOS | Mã không đặt `movieFragmentInterval` nên dùng mặc định 10 giây; Apple nêu phim ghi dở phát được đến đoạn cuối đã ghi | Tài liệu Apple `movieFragmentInterval` |
 | Android | CameraX `Recorder` + `FileOutputOptions` ghi `Camera*.mp4` vào cache. CameraX ghi MP4 chuẩn, không có tuỳ chọn ghi theo đoạn (**hiểu biết, chưa có nguồn xác nhận**) | `.../android/.../ExpoCameraView.kt:354` |
+| Cả hai | Có sự kiện tiến độ ghi `onRecordingProgress` với `duration` (giây đã ghi) và `fileSize` (byte đã ghi) do chính recorder báo: Android từ `recordingStats` (`ExpoCameraView.kt` ~dòng 388–398), iOS từ `AVCaptureFileOutput.recordedDuration/recordedFileSize` (`CameraVideoRecording.swift` ~dòng 129–144). Prop của `CameraView`; chu kỳ chỉnh bằng `progressUpdateInterval` (iOS tối thiểu 0,1 giây). Mã app **chưa dùng** (`grep onRecordingProgress` trong `src/` không ra) | `build/Camera.types.d.ts`, hai tệp trên |
 | Cả hai | Thư mục tạm **biết trước** (`cache/Camera/`), chỉ tên tệp không biết | như trên |
 
 Giả thuyết còn lại cần đo trên máy thật: **H1** iOS sau kill vẫn phát được, mất tối đa ~10 giây cuối; **H2** Android sau kill thường hỏng; **H3** kiểu kill khác nhau cho kết quả khác nhau.
@@ -36,13 +37,16 @@ Cách MP4/MOV được ghi **không phụ thuộc** bản debug hay release, nê
 | K4 | **Mất nguồn**: pin cạn hoặc tắt cưỡng bức | Kịch bản thực tế đáng lo nhất khi app ở foreground |
 | K5 | Kill ngay sau Dừng, lúc đang chuyển tệp vào thư mục bền hoặc băm | Kiểm nhánh phục hồi hiện có |
 
-Ghi cho mỗi lần: máy, hệ điều hành, thời lượng đã quay, có tệp tạm không, kích thước, phát được không, thời lượng phát được, mất bao nhiêu giây cuối, trạng thái trong app sau khi mở lại (`interrupted`, `unrecoverable`, `RECOVERY_FOUND_FILE`). Đo ngay sau mở lại app và đo lại sau 24 giờ (hệ điều hành có thể dọn cache).
+Ghi cho mỗi lần: máy, hệ điều hành, thời lượng đã quay (**đối chiếu thêm `duration`/`fileSize` cuối cùng của `onRecordingProgress` nếu có bản đo, mục 5.4**), có tệp tạm không, kích thước, phát được không, thời lượng phát được, mất bao nhiêu giây cuối, trạng thái trong app sau khi mở lại (`interrupted`, `unrecoverable`, `RECOVERY_FOUND_FILE`). Đo ngay sau mở lại app và đo lại sau 24 giờ (hệ điều hành có thể dọn cache).
 
 ## 5. Việc rẻ làm song song (không phụ thuộc số đo)
 
-1. **Nhịp tim phiên (ĐÃ LÀM, migration v17, chưa hiển thị UI, chưa đo trên máy):** cập nhật `last_alive_at` vào SQLite mỗi vài giây khi đang quay (cần migration v17 hoặc cột trên bảng phiên/tệp). Sau kill, app biết đã quay đến giây nào và ghi trung thực "bị ngắt khoảng mm:ss", kể cả khi tệp hỏng. Không thay đổi trạng thái tệp; không tuyên bố đủ video.
+1. **Nhịp tim phiên (mới có DỮ LIỆU THÔ: migration v17 + ghi cột; CHƯA có chỗ đọc hay hiển thị UI, chưa đo trên máy):** cập nhật `last_alive_at` vào SQLite mỗi vài giây khi đang quay (cần migration v17 hoặc cột trên bảng phiên/tệp). Sau kill, app biết đã quay đến giây nào và ghi trung thực "bị ngắt khoảng mm:ss", kể cả khi tệp hỏng. Không thay đổi trạng thái tệp; không tuyên bố đủ video.
 2. **Pin thấp:** `runPrecheck` (`precheck.ts`) **đã chặn** khi pin ≤ `MIN_BATTERY_LEVEL` (10%, giá trị tạm, `recording-policy.ts:83`) và không cắm sạc. Việc còn lại là **đo mức hợp lý** trên máy thật (mất nguồn thường xảy ra trước khi đồng hồ pin về 0) và cân nhắc cảnh báo mềm ở mức cao hơn (ví dụ 20%) trong lúc đang quay. Cần BA duyệt câu chữ.
 3. Tài liệu: `reliability-priorities.md` hạng mục 0 đã ghi lại bằng chứng từ mã `expo-camera` (iOS phân đoạn 10 giây theo tài liệu Apple, Android MP4 chuẩn chưa có nguồn xác nhận) thay cho giả thuyết ban đầu.
+
+4. **Sự kiện tiến độ của recorder (`onRecordingProgress`), CHỈ để đo, chưa làm:** nhịp tim mục 5.1 chỉ nói "JS còn chạy", không nói "camera còn ghi" (camera có thể dừng ghi mà JS vẫn sống: cuộc gọi, `Finalize` lỗi). Số liệu gần hơn với câu hỏi G-4 là `duration` và `fileSize` do recorder báo. Đề xuất cho bản dev build dùng đo: gắn `onRecordingProgress` ở `CameraRecorder` (`src/platform/camera-recorder.tsx`), mỗi lần nhận thì ghi `duration`/`fileSize` mới nhất vào bộ nhớ đệm bền (ví dụ cùng nhịp ghi `last_alive_at_device`, hoặc tệp log dev); sau kill đọc ra so với `ffprobe`. Không đổi trạng thái tệp/phiên, không hiển thị, không gửi lên máy chủ. Có thể chỉ làm trong nhánh đo (dev build) nếu không muốn mang cột mới vào bản phát hành; quyết định sau khi duyệt. Giới hạn: iOS timer chạy ở main run loop; Android chỉ phát khi `isRecording`; chu kỳ càng ngắn càng tốn ghi.
+5. **Độ bền khi mất nguồn (K4):** lần ghi SQLite/ nhịp cuối có thể chưa xuống đĩa lúc cắt nguồn nên số đọc được có thể thấp hơn thực tế; ghi chú khi phân tích.
 
 ## 6. Phục hồi tệp tạm bằng so sánh thư mục (quyết định SAU khi có số đo)
 
