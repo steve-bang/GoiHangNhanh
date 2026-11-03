@@ -348,6 +348,26 @@ export const MIGRATIONS: readonly string[] = [
   CREATE INDEX idx_sessions_shop_started ON packing_sessions (shop_id, started_at_device);
   CREATE INDEX idx_return_media_shop_state ON return_media (shop_id, state);
   `,
+  // v17 (G-4, nhịp tim phiên quay): giờ THIẾT BỊ (ms) lần gần nhất app còn chạy khi tệp đang `recording`,
+  // ghi mỗi vài giây. Sau khi app bị kill giữa lúc quay, giá trị này cho biết app sống đến lúc nào, kể cả
+  // khi tệp hỏng. KHÔNG nói gì về nội dung tệp hay thời điểm quay thật. NULL = chưa có nhịp nào. Chỉ ADD
+  // COLUMN nullable: dữ liệu có sẵn giữ nguyên.
+  `
+  ALTER TABLE evidence_files ADD COLUMN last_alive_at_device INTEGER;
+  `,
+  // v18 (tải tiếp được): phiên tải GCS đang dở của MỘT bằng chứng (đóng gói hoặc hàng hoàn; `evidence_id`
+  // duy nhất giữa hai nhóm). `location` là URL phiên có quyền ghi tới khi phiên hết hạn: KHÔNG log, xóa khi
+  // tải xong/đổi cỡ tệp/xóa tài khoản. Lượt tải sau hỏi máy chủ đã nhận tới đâu và gửi tiếp thay vì từ đầu.
+  // Chỉ thêm bảng, không đụng bảng cũ.
+  `
+  CREATE TABLE upload_sessions (
+    evidence_id TEXT PRIMARY KEY NOT NULL,
+    shop_id TEXT NOT NULL,
+    location TEXT NOT NULL,
+    size_bytes INTEGER NOT NULL,
+    created_at_device INTEGER NOT NULL
+  );
+  `,
 ];
 
 /**

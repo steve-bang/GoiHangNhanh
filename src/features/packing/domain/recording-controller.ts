@@ -3,7 +3,7 @@ import type { EvidenceId } from '@/core/ids';
 import type { EvidenceFile, EvidenceFileStore, FileEventType } from '@/features/evidence';
 import type { OrderStore, PackingSession } from '@/features/orders';
 
-import { MIN_FREE_BYTES_TO_RECORD } from './recording-policy';
+import { HEARTBEAT_INTERVAL_MS, MIN_FREE_BYTES_TO_RECORD } from './recording-policy';
 
 /** Kết quả ghi do bộ ghi (camera) trả về khi dừng. */
 export type RecordResult =
@@ -64,10 +64,57 @@ export interface RecordingPorts {
    * Không truyền = không gián đoạn.
    */
   wasInterrupted?(): boolean;
+  /**
+   * Bộ hẹn giờ cho nhịp tim lúc quay (G-4); `start` trả hàm dừng. Không truyền = `setInterval`. Tiêm khi test.
+   */
+  readonly heartbeat?: HeartbeatTimer;
   /** Nhận số đo không PII (V1-27: kích thước, thời gian lưu/băm). Không truyền = không đo. Không ném lỗi. */
   readonly metrics?: MediaMetricsReporter;
   /** Chờ (ms) giữa các lần thử ghi lại CSDL sau lỗi lúc dừng (V1-23). Không truyền = `setTimeout`. */
   readonly sleep?: (ms: number) => Promise<void>;
+}
+
+export interface HeartbeatTimer {
+  start(tick: () => void, everyMs: number): () => void;
+}
+
+const intervalTimer: HeartbeatTimer = {
+  start(tick, everyMs) {
+    const handle = setInterval(tick, everyMs);
+    // Node/Jest: không giữ tiến trình sống chỉ vì nhịp tim (React Native không có `unref`).
+    (handle as { unref?: () => void }).unref?.();
+    return () => clearInterval(handle);
+  },
+};
+
+/**
+ * Nhịp tim lúc quay (G-4): ghi `lastAliveAtDevice` ngay rồi mỗi `HEARTBEAT_INTERVAL_MS`, để sau khi app bị
+ * kill biết app sống đến lúc nào. Không chồng lệnh (nhịp đến khi lần ghi trước chưa xong thì bỏ qua), nuốt
+ * mọi lỗi (không bao giờ làm hỏng việc quay). Trả hàm dừng; sau khi dừng không ghi thêm.
+ */
+function startHeartbeat(
+  ports: RecordingPorts,
+  shopId: PackingSession['shopId'],
+  evidenceId: EvidenceId,
+): () => void {
+  let stopped = false;
+  let inFlight = false;
+  const tick = () => {
+    if (stopped || inFlight) return;
+    inFlight = true;
+    Promise.resolve()
+      .then(() => ports.files.touchAlive(shopId, evidenceId, ports.now()))
+      .catch(() => undefined)
+      .finally(() => {
+        inFlight = false;
+      });
+  };
+  tick();
+  const cancel = (ports.heartbeat ?? intervalTimer).start(tick, HEARTBEAT_INTERVAL_MS);
+  return () => {
+    stopped = true;
+    cancel();
+  };
 }
 
 export type RecordingOutcome =
@@ -170,9 +217,16 @@ export async function startRecording(
   }
 
   const startedAt = now();
+  const stopHeartbeat = startHeartbeat(ports, shopId, evidenceId);
   const result = handle.done.then(
-    (recorded) => finish(ports, session, evidenceId, recorded, now() - startedAt),
-    () => finish(ports, session, evidenceId, { ok: false, reason: 'RECORDER_FAILED' }, 0),
+    (recorded) => {
+      stopHeartbeat();
+      return finish(ports, session, evidenceId, recorded, now() - startedAt);
+    },
+    () => {
+      stopHeartbeat();
+      return finish(ports, session, evidenceId, { ok: false, reason: 'RECORDER_FAILED' }, 0);
+    },
   );
   const markInterrupted = () =>
     orders

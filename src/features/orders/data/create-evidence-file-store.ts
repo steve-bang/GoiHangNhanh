@@ -29,6 +29,7 @@ export function createLocalEvidenceFileStore(
     create: async (f) => (await get()).create(f),
     get: async (s, id) => (await get()).get(s, id),
     applyEvent: async (s, id, e, n, p) => (await get()).applyEvent(s, id, e, n, p),
+    touchAlive: async (s, id, at) => (await get()).touchAlive(s, id, at),
     listByStates: async (s, st) => (await get()).listByStates(s, st),
     listForUpload: async (s, st, u) => (await get()).listForUpload(s, st, u),
     listShopsWithStates: async (st) => (await get()).listShopsWithStates(st),

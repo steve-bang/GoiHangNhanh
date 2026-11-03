@@ -70,6 +70,11 @@ export function createMemoryEvidenceFileStore(
       if (result.ok) files.set(id, result.file);
       return result;
     },
+    touchAlive: async (shopId, id, atDevice) => {
+      const file = files.get(id);
+      if (!file || file.shopId !== shopId || file.state !== 'recording') return;
+      files.set(id, { ...file, lastAliveAtDevice: atDevice });
+    },
     listByStates: async (shopId, states) =>
       ofShop(shopId)
         .filter((f) => states.includes(f.state))

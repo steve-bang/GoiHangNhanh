@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode }
 import type { RemoteDocuments } from '@/api/contract';
 import { isRecordingActive, subscribeRecordingActivity } from '@/core/recording/recording-activity';
 import {
+  createLocalUploadSessionStore,
   useCurrentShopId,
   useDeviceSettings,
   useEvidenceFileStore,
@@ -13,6 +14,8 @@ import { useReturnStore } from '@/features/returns';
 import {
   getAppVersion,
   getConnectivity,
+  openLocalDatabase,
+  removeOrphanChunkFilesOnce,
   reportMediaMetrics,
   subscribeAppActive,
   subscribeConnectivity,
@@ -115,6 +118,9 @@ export function UploadRunner({
   const engine = useRef<Engine | null>(null);
   const listeners = useRef(new Set<() => void>());
 
+  // Phiên tải GCS dở của từng tệp (tải tiếp được): cùng kết nối SQLite, mở lười khi cần.
+  const sessionStore = useMemo(() => createLocalUploadSessionStore(openLocalDatabase), []);
+
   const control = useMemo<UploadQueueControl>(
     () => ({
       get active() {
@@ -141,8 +147,11 @@ export function UploadRunner({
 
   useEffect(() => {
     const effectiveGateway =
-      gateway ?? (docs ? createDeviceUploadGateway(docs, getAppVersion() ?? undefined) : null);
+      gateway ??
+      (docs ? createDeviceUploadGateway(docs, getAppVersion() ?? undefined, sessionStore) : null);
     if (!enabled || !effectiveGateway || shopId === LOCAL_SHOP_ID) return undefined;
+    // Dọn tệp khối tạm mồ côi cũ (app bị tắt giữa lúc gửi khối), một lần mỗi tiến trình; chỉ động tới tệp của chính bộ gửi khối.
+    removeOrphanChunkFilesOnce();
     // Tài khoản đang đăng nhập theo Firebase Auth (cùng uid mà Rules thấy), đọc MỖI lượt.
     const currentUid = () => docs?.currentUid() ?? null;
     // Mạng + công tắc Wi‑Fi đọc MỖI lần hỏi. Cài đặt chưa nạp xong = chưa biết (chờ, xem network-policy).
@@ -237,7 +246,7 @@ export function UploadRunner({
       unsubscribeNetwork();
       unsubscribeSetting();
     };
-  }, [docs, enabled, gateway, hasher, files, orders, returns, settings, shopId]);
+  }, [docs, enabled, gateway, hasher, files, orders, returns, sessionStore, settings, shopId]);
 
   return <UploadQueueContext.Provider value={control}>{children}</UploadQueueContext.Provider>;
 }
