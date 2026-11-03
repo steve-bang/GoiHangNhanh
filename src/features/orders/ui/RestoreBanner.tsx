@@ -64,45 +64,47 @@ export function RestoreBanner({ testID = 'restore-banner' }: { testID?: string }
 
   return (
     <Card compact tone={view.tone} testID={testID}>
-      <View
-        accessible
-        accessibilityRole="alert"
-        accessibilityLiveRegion="polite"
-        style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.md }}
-      >
-        {status.kind === 'running' ? (
-          <ActivityIndicator color={tokens.color.brand.primary} />
-        ) : (
-          <Icon
-            name={
-              status.kind === 'done'
-                ? 'cloud-done'
-                : status.kind === 'waiting_network'
-                  ? 'wifi-off'
-                  : 'cloud-up'
-            }
-            size={tokens.icon.md}
-            color={tokens.color.brand.primary}
-          />
-        )}
-        <View style={{ flexShrink: 1, flexGrow: 1, gap: tokens.space.xs }}>
-          <Text variant="formBody" bold>
-            {view.title}
-          </Text>
-          <Text variant="caption" color="inkMuted">
-            {view.message}
-          </Text>
+      <View style={{ gap: tokens.space.md }}>
+        <View
+          accessible
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space.md }}
+        >
+          {status.kind === 'running' ? (
+            <ActivityIndicator color={tokens.color.brand.primary} />
+          ) : (
+            <Icon
+              name={
+                status.kind === 'done'
+                  ? 'cloud-done'
+                  : status.kind === 'waiting_network'
+                    ? 'wifi-off'
+                    : 'alert-triangle'
+              }
+              size={tokens.icon.md}
+              color={tokens.color.brand.primary}
+            />
+          )}
+          <View style={{ flexShrink: 1, flexGrow: 1, gap: tokens.space.xs }}>
+            <Text variant="formBody" bold>
+              {view.title}
+            </Text>
+            <Text variant="caption" color="inkMuted">
+              {view.message}
+            </Text>
+          </View>
         </View>
+        {status.kind === 'failed' && controller ? (
+          <Button
+            size="slim"
+            variant="secondary"
+            testID={`${testID}-retry`}
+            label={t('screens:restore.retry')}
+            onPress={controller.retry}
+          />
+        ) : null}
       </View>
-      {status.kind === 'failed' && controller ? (
-        <Button
-          size="slim"
-          variant="secondary"
-          testID={`${testID}-retry`}
-          label={t('screens:restore.retry')}
-          onPress={controller.retry}
-        />
-      ) : null}
     </Card>
   );
 }
