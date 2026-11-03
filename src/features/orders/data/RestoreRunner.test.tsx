@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
-import type { RemoteDocuments } from '@/api/contract';
+import type { RemoteDocuments, RemoteListRequest } from '@/api/contract';
 import { resetMockConnectivity, setMockConnectivity } from '@/test-utils/mock-connectivity';
 import { renderWithProviders } from '@/test-utils/render';
 
@@ -52,7 +52,7 @@ describe('RestoreRunner', () => {
     const controller = createRestoreController();
     const kinds: string[] = [];
     controller.subscribe(() => kinds.push(controller.get().kind));
-    const listPage = jest.fn(async () => ({ docs: [], next: null }));
+    const listPage = jest.fn(async (_request: RemoteListRequest) => ({ docs: [], next: null }));
     await mount(fakeDocs(listPage), controller);
     await flush();
     expect(kinds).toContain('running');
@@ -67,7 +67,7 @@ describe('RestoreRunner', () => {
 
   it('không có cổng, shop cục bộ tạm hoặc chưa biết shop: không đọc gì', async () => {
     const controller = createRestoreController();
-    const listPage = jest.fn(async () => ({ docs: [], next: null }));
+    const listPage = jest.fn(async (_request: RemoteListRequest) => ({ docs: [], next: null }));
     await mount(null, controller);
     await mount(fakeDocs(listPage), controller, 'local-shop');
     await flush();
@@ -78,7 +78,7 @@ describe('RestoreRunner', () => {
   it('mất mạng: chờ có mạng (không lỗi), có mạng lại thì tự chạy tiếp', async () => {
     setMockConnectivity({ online: false });
     const controller = createRestoreController();
-    const listPage = jest.fn(async () => ({ docs: [], next: null }));
+    const listPage = jest.fn(async (_request: RemoteListRequest) => ({ docs: [], next: null }));
     await mount(fakeDocs(listPage), controller);
     await flush();
     expect(controller.get().kind).toBe('waiting_network');
@@ -91,7 +91,7 @@ describe('RestoreRunner', () => {
   it('lỗi mạng của máy chủ: chờ mạng; lỗi khác: báo lỗi và Thử lại chạy lại được', async () => {
     const controller = createRestoreController();
     let failure: unknown = Object.assign(new Error('x'), { code: 'unavailable' });
-    const listPage = jest.fn(async () => {
+    const listPage = jest.fn(async (_request: RemoteListRequest) => {
       if (failure) throw failure;
       return { docs: [], next: null };
     });
