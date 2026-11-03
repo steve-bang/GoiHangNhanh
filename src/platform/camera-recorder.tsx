@@ -44,9 +44,8 @@ interface CameraRecorderProps {
 }
 
 /**
- * Camera GHI VIDEO thật trên `expo-camera` (`mode="video"`, `recordAsync`). Ghi KHÔNG tiếng
- * (`mute`): `app.json` đặt `microphonePermission: false`, và việc có thu tiếng hay không là quyết định
- * mở O-09; không đụng micro để không phát sinh quyền mới. Tệp trả về nằm ở thư mục TẠM của hệ điều hành
+ * Camera GHI VIDEO thật trên `expo-camera` (`mode="video"`, `recordAsync`). Có tiếng khi người dùng
+ * đã cấp micro (O-09; `app.json` có lời giải thích quyền micro), chưa cấp thì `mute` và vẫn quay được. Tệp trả về nằm ở thư mục TẠM của hệ điều hành
  * nên bên gọi phải chuyển vào thư mục bền ngay (`persistRecording`). `expo-camera` không có sự kiện
  * "đã bắt đầu ghi": coi là đang ghi khi `recordAsync` đã được gọi mà chưa báo lỗi. Chưa kiểm chứng
  * trên thiết bị (độ ổn định ghi dài, bị ngắt cuộc gọi/nền, hết bộ nhớ). Hành vi `profile` (V1-22) dựa trên
