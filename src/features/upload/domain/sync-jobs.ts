@@ -150,6 +150,8 @@ const ATTENTION_REASON: Readonly<Record<string, SyncReason>> = {
   LOCAL_HASH_CHANGED: 'fileChanged',
   FILE_MISSING: 'fileMissing',
   FILE_UNREADABLE: 'fileUnreadable',
+  // Đọc/ghi tệp khối cục bộ hỏng liên tục (đĩa lỗi, cache đầy): lỗi ở máy, không phải máy chủ từ chối.
+  LOCAL_READ_FAILED: 'fileUnreadable',
   UNSUPPORTED_FILE_TYPE: 'unsupportedType',
   // V1-07b: máy chủ từ chối vì phiên/hồ sơ/bằng chứng do tài khoản khác tạo.
   NOT_EVIDENCE_CREATOR: 'notCreator',

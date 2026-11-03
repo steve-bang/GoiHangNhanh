@@ -102,6 +102,7 @@ export function createTempFileChunkSender(): ChunkSender {
         } catch {
           throw new LocalChunkError('read_failed');
         }
+        // Kiểm hủy sau các bước bất đồng bộ; từ đây tới lúc gắn listener không còn `await`.
         if (request.signal?.aborted) throw new Error('cancelled');
         const task = createUploadTask(request.url, temp.uri, {
           httpMethod: 'PUT',
@@ -113,11 +114,6 @@ export function createTempFileChunkSender(): ChunkSender {
         };
         request.signal?.addEventListener('abort', cancel);
         try {
-          // Hủy có thể xảy ra giữa lúc đọc/ghi (bất đồng bộ) và lúc gắn listener: kiểm lại.
-          if (request.signal?.aborted) {
-            cancel();
-            throw new Error('cancelled');
-          }
           const response = await task.uploadAsync();
           if (!response) throw new Error('cancelled');
           return { status: response.status, range: headerValue(response.headers, 'range') };

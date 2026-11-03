@@ -108,6 +108,12 @@ describe('describeSyncJob: lý do và hành động', () => {
     expect(view?.reason).not.toBe('serverRejected');
   });
 
+  it('LOCAL_READ_FAILED hết lượt: lý do tệp không đọc được (lỗi ở máy), vẫn có Thử lại', () => {
+    expect(
+      describeSyncJob(job('needs_attention', { lastErrorCode: 'LOCAL_READ_FAILED' }), online),
+    ).toMatchObject({ reason: 'fileUnreadable', action: 'retry' });
+  });
+
   it('UPLOAD_FILE_TOO_LARGE dùng câu của docs/04 A07', () => {
     expect(
       describeSyncJob(job('needs_attention', { lastErrorCode: 'UPLOAD_FILE_TOO_LARGE' }), online)
