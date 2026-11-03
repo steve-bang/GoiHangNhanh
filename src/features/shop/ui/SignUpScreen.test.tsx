@@ -106,7 +106,7 @@ describe('UI-A03 Tạo tài khoản: giao diện', () => {
     await renderWithProviders(<SignUpScreen />);
     expect(screen.getByTestId('screen-UI-A03')).toBeOnTheScreen();
     // toHaveTextContent gộp khoảng trắng nên không thấy U+00A0: so sánh chuỗi gốc
-    expect(screen.getByRole('header').props.children).toBe('Tạo tài khoản\nĐơn\u00a0Chứng');
+    expect(screen.getByRole('header').props.children).toBe('Tạo tài khoản\nAmaBox');
     expect(
       screen.getByText('Bắt đầu lưu bằng chứng cho đơn hàng của bạn chỉ trong vài phút!'),
     ).toBeOnTheScreen();

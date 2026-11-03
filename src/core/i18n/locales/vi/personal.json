@@ -58,7 +58,7 @@
     "offlineMessage": "Chưa tải được thông tin cá nhân. Hãy kết nối mạng rồi thử lại.",
     "shopEyebrow": "Cửa hàng của bạn",
     "shopManage": "Quản lý cửa hàng",
-    "version": "Đơn Chứng · phiên bản {{version}}"
+    "version": "AmaBox · phiên bản {{version}}"
   },
   "signOut": {
     "action": "Đăng xuất",
@@ -76,7 +76,7 @@
     "openSync": "Xem trung tâm đồng bộ"
   },
   "sessionGate": {
-    "title": "Đơn Chứng",
+    "title": "AmaBox",
     "loading": "Đang nạp thông tin cửa hàng…",
     "unreachableTitle": "Chưa kết nối được cửa hàng.",
     "unreachableHint": "Bạn kiểm tra mạng rồi thử lại nhé. Dữ liệu trên máy vẫn được giữ."
@@ -335,7 +335,7 @@
         "summary": "Ứng dụng dùng camera để quét mã và xem trước ở màn quay. Bạn vẫn nhập mã bằng tay được.",
         "step": {
           "1": "Ở màn Quét, bấm Mở Cài đặt.",
-          "2": "Bật quyền Camera cho Đơn Chứng.",
+          "2": "Bật quyền Camera cho AmaBox.",
           "3": "Quay lại ứng dụng và quét lại. Nếu camera báo bị chiếm, hãy đóng ứng dụng khác đang dùng camera."
         },
         "keywords": "quyền camera bị chặn không mở được camera cài đặt"
@@ -352,12 +352,12 @@
       },
       "codes": {
         "title": "Mã đơn và mã vận đơn khác nhau thế nào?",
-        "summary": "Mã đơn là mã của đơn bán hàng. Mã vận đơn là mã trên nhãn của đơn vị vận chuyển. Đơn Chứng dùng cả hai để tìm đơn. Quét mã vận đơn không cho biết tên sản phẩm.",
+        "summary": "Mã đơn là mã của đơn bán hàng. Mã vận đơn là mã trên nhãn của đơn vị vận chuyển. AmaBox dùng cả hai để tìm đơn. Quét mã vận đơn không cho biết tên sản phẩm.",
         "keywords": "phân biệt mã"
       },
       "scope": {
-        "title": "Đơn Chứng có quản lý bán hàng không?",
-        "summary": "Không. Đơn Chứng chỉ ghi mã đơn, nguồn bán, mã vận đơn và tên sản phẩm bạn nhập để đối chiếu. Không có giá, tồn kho hay thông tin khách hàng.",
+        "title": "AmaBox có quản lý bán hàng không?",
+        "summary": "Không. AmaBox chỉ ghi mã đơn, nguồn bán, mã vận đơn và tên sản phẩm bạn nhập để đối chiếu. Không có giá, tồn kho hay thông tin khách hàng.",
         "keywords": "quản lý bán hàng sku giá tồn kho khách hàng"
       },
       "whereData": {

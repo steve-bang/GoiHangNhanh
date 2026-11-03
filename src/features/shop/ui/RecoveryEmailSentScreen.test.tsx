@@ -78,7 +78,7 @@ describe('Kiểm tra hộp thư: giao diện', () => {
     expect(screen.getByRole('header', { name: 'Kiểm tra hộp thư' })).toBeOnTheScreen();
     const description = screen.getByTestId('recovery-sent-description');
     expect(description).toHaveTextContent(
-      'Nếu la•••@example.com đã đăng ký Đơn Chứng, thư đặt lại mật khẩu sẽ tới trong vài phút.',
+      'Nếu la•••@example.com đã đăng ký AmaBox, thư đặt lại mật khẩu sẽ tới trong vài phút.',
     );
     expect(
       within(screen.getByTestId('screen-UI-A07-sent')).queryByText(/lan\.anh@example\.com/),

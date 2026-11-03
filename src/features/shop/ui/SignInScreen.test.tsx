@@ -74,9 +74,7 @@ describe('UI-A03 Đăng nhập: giao diện', () => {
     expect(screen.getByTestId('stacked-brand-logo')).toBeOnTheScreen();
     expect(screen.getByText('Bảo vệ đơn hàng – Vững bước kinh doanh')).toBeOnTheScreen();
     expect(screen.getByText('Chào mừng bạn trở lại!')).toBeOnTheScreen();
-    expect(
-      screen.getByText('Cùng Đơn Chứng lưu bằng chứng cho từng đơn hàng nhé!'),
-    ).toBeOnTheScreen();
+    expect(screen.getByText('Cùng AmaBox lưu bằng chứng cho từng đơn hàng nhé!')).toBeOnTheScreen();
     expect(screen.getByText('Email')).toBeOnTheScreen();
     expect(screen.getByText('Mật khẩu')).toBeOnTheScreen();
     expect(screen.getByRole('link', { name: 'Quên mật khẩu?' })).toBeOnTheScreen();

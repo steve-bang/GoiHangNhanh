@@ -1167,3 +1167,8 @@ Kế hoạch: `docs/engineering/plans/v1-29-server-playback.md`. Yêu cầu do n
 | 15 | Rà soát câu chữ thông báo (thân thiện, ngắn; docs/09 mục 5.1): giọng "Bạn … nhé", "Chưa … được" cho lỗi tạm thời, "tải lên" thay "đồng bộ" khi nói về đưa tệp lên máy chủ (giữ tên màn "Trung tâm đồng bộ", "Lưu và đồng bộ", "Chi tiết lỗi đồng bộ"), "Ứng dụng" thay "App", bỏ thuật ngữ nội bộ ("bản ghi", "số đọc của máy", "chính sách shop"). Chỉ đổi chữ, giữ khóa i18n, biến và ý nghĩa; không đổi hành vi | Dễ đọc với người bán không rành công nghệ; ý trung thực giữ nguyên (bất biến 3, 11) |
 
 **Chuỗi mới chờ BA duyệt (không mã lỗi mới):** `evidence:detail.media.cloudLabel`, `cloudLoading`, `cloudNote`, `cloudError.{offline,network,unavailable,playback}`. Đã bỏ khóa `detail.media.missingMessage.server` ("Xem từ máy chủ."): nhánh không đạt tới được vì máy chủ đã xác nhận thì nguồn là `cloud`.
+
+## Q-30 — Đổi tên hiển thị "Đơn Chứng" -> "AmaBox"
+
+- **Quyết định (người dùng yêu cầu):** chỉ đổi tên hiển thị (app, chuỗi i18n, quyền hệ điều hành, web `site.name`, tài liệu, agent). Mọi giá trị kỹ thuật còn mang tên cũ và được liệt kê ở `release-checklist.md` mục R để đổi sau (bundle id, CSDL `doncung.db`, module native, scheme, dự án Firebase, tên miền).
+- **Ghi chú:** các ô Q-xx cũ phía trên vẫn ghi "Đơn Chứng" vì là hồ sơ tại thời điểm quyết định. Nhãn hiệu "AmaBox" chưa được kiểm tra (O-11). Vì "AmaBox" là một từ liền nên không còn cần khoảng trắng không ngắt (U+00A0) như quy ước cũ ở Q-15h.

@@ -54,7 +54,7 @@ describe('UI-A07 Quên mật khẩu: giao diện', () => {
     ).toBeOnTheScreen();
     expect(screen.getByText('Đừng lo, mình cùng lấy lại nhé!')).toBeOnTheScreen();
     expect(
-      screen.getByText('Nhập email đã đăng ký. Đơn Chứng sẽ gửi mã xác minh cho bạn.'),
+      screen.getByText('Nhập email đã đăng ký. AmaBox sẽ gửi mã xác minh cho bạn.'),
     ).toBeOnTheScreen();
     expect(screen.getByText('Email')).toBeOnTheScreen();
     expect(screen.getByText('Dùng email bạn đã đăng ký tài khoản.')).toBeOnTheScreen();
@@ -289,7 +289,7 @@ describe('UI-A07 Quên mật khẩu: chế độ thư đặt lại (v1, D-14)', 
     await renderWithProviders(<ForgotPasswordScreen />);
     expect(
       screen.getByText(
-        'Nhập email đã đăng ký. Đơn Chứng sẽ gửi thư có đường dẫn để bạn đặt lại mật khẩu.',
+        'Nhập email đã đăng ký. AmaBox sẽ gửi thư có đường dẫn để bạn đặt lại mật khẩu.',
       ),
     ).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Gửi email đặt lại' })).toBeOnTheScreen();

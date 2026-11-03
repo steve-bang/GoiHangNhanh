@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { colors, semantic } from '@/core/theme';
+import { semantic } from '@/core/theme';
 
 import { HERO_IMAGE } from './splash-layout';
 
@@ -51,7 +51,14 @@ describe('cấu hình splash hệ điều hành và icon (app.json)', () => {
   const config = JSON.parse(read('app.json').toString('utf8')) as {
     expo: {
       icon: string;
-      android: { adaptiveIcon: { foregroundImage: string; backgroundColor: string } };
+      android: {
+        adaptiveIcon: {
+          foregroundImage: string;
+          backgroundImage: string;
+          monochromeImage: string;
+          backgroundColor: string;
+        };
+      };
       plugins: (string | [string, Record<string, unknown>])[];
     };
   };
@@ -82,16 +89,22 @@ describe('cấu hình splash hệ điều hành và icon (app.json)', () => {
     expect(size.width).toBe(size.height);
   });
 
-  it('icon ứng dụng và icon thích ứng Android (tạm) tồn tại, vuông 1024', () => {
+  it('icon ứng dụng và icon thích ứng Android tồn tại, vuông 1024', () => {
     const { icon, android } = config.expo;
     expect(pngSize(read(icon))).toEqual({ width: 1024, height: 1024 });
     expect(pngSize(read(android.adaptiveIcon.foregroundImage))).toEqual({
       width: 1024,
       height: 1024,
     });
-    // Icon (ảnh tĩnh jade) chưa thiết kế lại theo Bright Orange: nền icon giữ màu cũ.
-    expect(android.adaptiveIcon.backgroundColor.toUpperCase()).toBe(
-      colors.splashBackground.toUpperCase(),
-    );
+    expect(pngSize(read(android.adaptiveIcon.backgroundImage))).toEqual({
+      width: 1024,
+      height: 1024,
+    });
+    expect(pngSize(read(android.adaptiveIcon.monochromeImage))).toEqual({
+      width: 1024,
+      height: 1024,
+    });
+    // Icon mới (chữ A trắng trên nền gradient cam): nền dự phòng là màu cam, không còn màu splash jade cũ.
+    expect(android.adaptiveIcon.backgroundColor.toUpperCase()).toBe('#FF4A0C');
   });
 });

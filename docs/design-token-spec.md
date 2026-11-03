@@ -1,4 +1,4 @@
-# Đặc tả Design Token — Đơn Chứng
+# Đặc tả Design Token — AmaBox
 
 > Trạng thái: **đã triển khai** trong `src/core/theme/` (kết quả: [design-token-migration-report.md](design-token-migration-report.md); cách dùng: [design-system.md](design-system.md)). TK-1, TK-2, TK-3 ở audit mục 6 đã được xác nhận ([D-17, D-18, D-19](README.md#đã-chốt)). Phạm vi: các màn **bên trong app sau đăng nhập**. Splash, Đăng nhập, Đăng ký, Quên mật khẩu, OTP, Mật khẩu mới (và các tệp hỗ trợ) **không đổi** — xem audit mục 1.
 > Giá trị hex bên dưới **lấy nguyên từ `core/theme/colors.ts` hiện tại**, không có màu mới. Mục tiêu của token là cấu trúc và ngăn lệch, không phải đổi giao diện.

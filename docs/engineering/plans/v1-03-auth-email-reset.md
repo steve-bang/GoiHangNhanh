@@ -46,7 +46,7 @@ Chào mừng, Đăng nhập, Đăng ký (sau khi ẩn nút), Quên mật khẩu,
 
 ## Tự review
 
-Vòng 1 (bất biến 1–11, dữ liệu, kích thước): không đụng dữ liệu bằng chứng/Rules/migration (1–10 không bị ảnh hưởng). Bất biến 11: phát hiện câu cũ "Đơn Chứng sẽ gửi mã xác minh" sai ở chế độ email -> **sửa kế hoạch**: đổi câu chữ theo chế độ (lệch có chủ đích, ghi Q-29/V1-03). Chống dò: phát hiện `AUTH_INVALID_CREDENTIALS` hiện "Email hoặc mật khẩu chưa chính xác" ở màn Quên mật khẩu gây hiểu nhầm -> **sửa**: lời riêng "email chưa đúng định dạng" (không liên quan tồn tại). Kích thước: ước ~400 dòng mã, trong ngân sách.
+Vòng 1 (bất biến 1–11, dữ liệu, kích thước): không đụng dữ liệu bằng chứng/Rules/migration (1–10 không bị ảnh hưởng). Bất biến 11: phát hiện câu cũ "AmaBox sẽ gửi mã xác minh" sai ở chế độ email -> **sửa kế hoạch**: đổi câu chữ theo chế độ (lệch có chủ đích, ghi Q-29/V1-03). Chống dò: phát hiện `AUTH_INVALID_CREDENTIALS` hiện "Email hoặc mật khẩu chưa chính xác" ở màn Quên mật khẩu gây hiểu nhầm -> **sửa**: lời riêng "email chưa đúng định dạng" (không liên quan tồn tại). Kích thước: ước ~400 dòng mã, trong ngân sách.
 
 Vòng 2 (điều hướng): màn Kiểm tra hộp thư đặt TRÊN Quên mật khẩu (push) để Back/Đổi email giữ email và không kích hoạt `left_flow`; "Quay lại đăng nhập" xóa điều kiện như màn Quên. Route con mới cần cập nhật danh sách đã duyệt trong `routes.test.ts` (kế hoạch v1 đã cho phép route `/forgot-password/sent`).
 

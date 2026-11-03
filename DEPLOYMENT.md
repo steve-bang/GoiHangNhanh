@@ -1,4 +1,4 @@
-# Triển khai Đơn Chứng
+# Triển khai AmaBox
 
 Hướng dẫn từ máy phát triển đến phát hành production trên **Google Play** và **Apple App Store**, cùng Firebase phía máy chủ.
 

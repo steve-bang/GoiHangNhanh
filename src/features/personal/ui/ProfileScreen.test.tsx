@@ -326,7 +326,7 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
 
   it('dòng phiên bản lấy từ cấu hình; không đọc được thì bỏ dòng, không bịa số', async () => {
     await renderProfile();
-    expect(screen.getByTestId('app-version')).toHaveTextContent('Đơn\u00a0Chứng · phiên bản 9.8.7');
+    expect(screen.getByTestId('app-version')).toHaveTextContent('AmaBox · phiên bản 9.8.7');
   });
 
   it('không đọc được phiên bản: không hiện dòng phiên bản', async () => {

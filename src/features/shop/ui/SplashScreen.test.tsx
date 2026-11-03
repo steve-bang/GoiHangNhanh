@@ -71,7 +71,7 @@ describe('UI-A01 Splash: nội dung', () => {
     await renderWithProviders(<SplashScreen />);
     expect(screen.getByTestId('screen-UI-A01')).toBeOnTheScreen();
     const hidden = { includeHiddenElements: true };
-    expect(screen.getByText('Đơn Chứng', hidden)).toBeOnTheScreen();
+    expect(screen.getByText('AmaBox', hidden)).toBeOnTheScreen();
     expect(screen.getByText(/Ghi hình đầy đủ\s*Lưu bằng chứng an tâm/, hidden)).toBeOnTheScreen();
     for (const label of [/Quay video\s*đóng gói/, /Lưu trữ\s*đám mây/, /Quản lý\s*đơn hàng/]) {
       expect(screen.getByText(label, hidden)).toBeOnTheScreen();
@@ -86,11 +86,11 @@ describe('UI-A01 Splash: nội dung', () => {
     await renderWithProviders(<SplashScreen />);
     const root = screen.getByTestId('screen-UI-A01');
     expect(root.props.accessible).toBe(true);
-    expect(root.props.accessibilityLabel).toBe('Đơn Chứng');
+    expect(root.props.accessibilityLabel).toBe('AmaBox');
     // Không thấy khi truy vấn theo trợ năng (mặc định bỏ qua phần tử bị ẩn): chữ nằm trong khối ẩn.
     expect(screen.queryByText(/Mỗi đơn hàng/)).toBeNull();
     expect(screen.queryByText(/Quay video/)).toBeNull();
-    expect(screen.queryByText('Đơn Chứng')).toBeNull();
+    expect(screen.queryByText('AmaBox')).toBeNull();
     for (const id of ['splash-hero', 'splash-wave', 'splash-backdrop', 'splash-logo']) {
       expect(screen.getByTestId(id, { includeHiddenElements: true })).toBeOnTheScreen();
     }

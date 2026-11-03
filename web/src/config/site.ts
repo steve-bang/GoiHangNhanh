@@ -1,12 +1,12 @@
 /**
  * Cấu hình site: MỘT nơi duy nhất cho tên thương hiệu, URL và liên kết cửa hàng.
- * Không viết cứng "Đơn Chứng" hay URL ở nơi khác (trừ nội dung bài viết tự do, nên dùng `site.name`).
+ * Không viết cứng "AmaBox" hay URL ở nơi khác (trừ nội dung bài viết tự do, nên dùng `site.name`).
  *
  * Mọi giá trị đánh dấu GIỮ CHỖ cần người dùng chốt trước khi lên production.
  */
 export const site = {
   /** Tên làm việc; có thể đổi sau khi kiểm tra nhãn hiệu. */
-  name: 'Đơn Chứng',
+  name: 'AmaBox',
   /** Câu mô tả ngắn dùng cho meta mặc định và Organization. */
   tagline: 'Quản lý bằng chứng đóng hàng cho người bán online',
   /**

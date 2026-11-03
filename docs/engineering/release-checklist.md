@@ -6,10 +6,24 @@
 
 ## 0. Quyết định phải có trước (không đổi được sau khi phát hành)
 
-- [ ] **D-1. Tên ứng dụng và định danh gói chính thức** (O-11, Q-06). Giữ chỗ hiện tại khi `APP_ENV=prod`: `vn.doncung.app`. Bundle id/applicationId **không đổi được** sau lần tải lên đầu.
+- [ ] **D-1. Tên ứng dụng và định danh gói chính thức** (O-11, Q-06). Giữ chỗ hiện tại khi `APP_ENV=prod`: `vn.doncung.app` (vẫn mang tên cũ "Đơn Chứng", xem mục R). Bundle id/applicationId **không đổi được** sau lần tải lên đầu.
 - [ ] **D-2. Sàn hệ điều hành** (O-20). Mặc định v1: sàn kỹ thuật của Expo SDK 58/RN 0.88 và thư viện đã chọn (RN: iOS 15.1, Android 7.0/API 24); xác nhận lại sàn thật sau `expo prebuild`.
 - [x] **D-3. Câu hỏi R-1…R-8** (v1-release-plan.md mục 7.3): **đã được điều phối chốt** ở mục 7.5 (2026-10-30; chưa có xác nhận trực tiếp của người dùng). R-7 vẫn cần người dùng xác nhận ở D-1/D-2 trước lần tải đầu.
 - [ ] **D-4. Địa chỉ email hỗ trợ và tên miền web thật**; điền vào `src/core/config/public-links.ts` và `web/src/config/site.ts` (test tooling bắt khác nhau). Ở web: `site.url` (giữ chỗ `https://don-chung.invalid`), `site.legal.supportEmail`, `site.legal.operatorName`, `site.legal.operatorAddress` (đều `null` = **cần điền trước khi phát hành**; trang hiện câu "sẽ công bố"), rồi đặt `site.indexable = true`. `npm --prefix web run check` báo lỗi nếu bật `indexable` khi còn giữ chỗ. Hộp thư hỗ trợ phải có người trực để xử lý yêu cầu xóa tài khoản qua email (script hỗ trợ của V1-14). Sau khi điền, mở app bản build và kiểm **cả hai** nút liên hệ (V1-18): (1) Xóa tài khoản, điều kiện "dữ liệu tài khoản khác" ở trạng thái Cần xử lý: "Xóa tài khoản qua trang web" mở `/xoa-tai-khoan/`, "Liên hệ hỗ trợ" mở màn Liên hệ hỗ trợ; (2) màn "Đang hoàn tất xóa tài khoản" khi bị chặn: "Liên hệ hỗ trợ" mở `/ho-tro/` (hoặc ứng dụng email nếu chỉ có email).
+
+## R. Đổi tên sang AmaBox: giá trị kỹ thuật còn lại
+
+Đã đổi **tên hiển thị** "Đơn Chứng" -> "AmaBox" (app, chuỗi i18n, quyền hệ điều hành trong `app.json`, web `site.name`, tài liệu, agent). Các giá trị dưới đây **chưa đổi** và còn mang tên cũ; đổi sau, theo thứ tự rủi ro:
+
+- [ ] **R-1. Bundle id / package** `vn.doncung.app` (+ `.dev`): `app.json`, `scripts/dev-emulator.sh`, `scripts/env/validate-release-env.test.cjs`, `firebase/config/README.md`, `DEPLOYMENT.md`, `src/test-utils/pii-samples.ts`, `src/core/logging/crash-safe.test.ts`. **Không đổi được sau lần tải store đầu**; đổi thì phải tạo lại app Firebase (iOS và Android) và tệp `GoogleService-Info.plist` / `google-services.json` (D-1).
+- [ ] **R-2. Tên tệp CSDL cục bộ** `doncung.db` (`src/platform/local-db.ts`, test `wipe-local-data`): đổi sẽ làm máy dev mất dữ liệu cục bộ cũ.
+- [ ] **R-3. Module native** `DonChungBackupExclusion` (`modules/backup-exclusion`, `src/platform/backup-exclusion.ts` + test): đổi cả hai phía Swift và TypeScript cùng lúc.
+- [ ] **R-4. URL scheme** `doncung` (`app.json`, `session-guard.test.tsx`) và `slug` / `name` `don-chung` trong `app.json`, `package.json` (ảnh hưởng EAS project nếu đã tạo).
+- [ ] **R-5. Tên dự án Firebase** `donchungdev` (`firebase/.firebaserc`, `scripts/env/dev.env`, `DEPLOYMENT.md`) và `demo-doncung` (script `test:rules`): không đổi tên được dự án, chỉ tạo dự án mới; người dùng cuối không thấy.
+- [ ] **R-6. Tên miền và email** `doncung.vn`, `don-chung.invalid` (giữ chỗ, D-4): `src/core/config/public-links.ts`, `web/src/config/site.ts`, test URL trong `src/core/config`, `src/features/personal/ui/*.test.tsx`.
+- [ ] **R-7. Tên gói web** `doncung-web` (`web/package.json`), tiền tố tag `doncung-record-` (`src/platform/keep-awake.ts`).
+- [ ] **R-8. Kiểm tra nhãn hiệu "AmaBox"** (O-11) và đối chiếu mô tả store `docs/store/` với tên cuối cùng (C-4).
+- [ ] **R-9. Chuỗi ngoài mã**: `docs/engineering/decisions.md` và các bản ghi lịch sử (`design-v2/`) vẫn ghi "Đơn Chứng" có chủ đích, vì là hồ sơ quyết định/thiết kế tại thời điểm đó.
 
 ## F. Firebase production
 

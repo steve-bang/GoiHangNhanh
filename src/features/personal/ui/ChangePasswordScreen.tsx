@@ -234,7 +234,7 @@ export function ChangePasswordScreen() {
 }
 
 /**
- * Tài khoản Apple/Google không có mật khẩu của Đơn Chứng để đổi (Q-20c, D-13): thay form bằng thẻ giải
+ * Tài khoản Apple/Google không có mật khẩu của AmaBox để đổi (Q-20c, D-13): thay form bằng thẻ giải
  * thích (board 07 khung 3 vẽ cả form lẫn thẻ; hiện form cho tài khoản không đổi được là chức năng giả).
  */
 function SocialAccountNotice({ method }: { method: Exclude<SignInMethod, 'password'> }) {

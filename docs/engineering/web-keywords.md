@@ -2,7 +2,7 @@
 
 Ngày kiểm tra: **2026-10-29**. Người làm: SEO web developer (agent). Trạng thái: **đề xuất, chờ người dùng duyệt**; không phải quyết định D-xx.
 
-Phạm vi: website marketing của Đơn Chứng (`web/`), chỉ phục vụ marketing, SEO, chuyển đổi (D-02). Xem `docs/01-product-vision.md` mục *Website marketing*.
+Phạm vi: website marketing của AmaBox (`web/`), chỉ phục vụ marketing, SEO, chuyển đổi (D-02). Xem `docs/01-product-vision.md` mục *Website marketing*.
 
 ## 1. Cách làm và giới hạn của dữ liệu
 
@@ -48,16 +48,16 @@ Quy ước: URL không dấu, ngắn, ổn định. Từ khóa là giả thuyế
 
 | # | URL | Từ khóa chính | Từ khóa phụ (giả thuyết) | Ý định tìm kiếm | Trang liên quan (liên kết nội bộ) | CTA | Ghi chú đối thủ / khoảng trống | Số liệu | Trạng thái |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | `/` | quay video đóng hàng (thương hiệu: Đơn Chứng) | app quản lý video đóng hàng, lưu bằng chứng đơn hàng | Điều hướng + tìm hiểu giải pháp | 2, 3, 4, 5, 6 | Tải ứng dụng (App Store / Google Play, chưa có link) | Đối thủ là phần mềm máy tính/camera; ít app điện thoại tiếng Việt thấy được. Không quảng cáo tính năng chưa có | chưa có số liệu | khung |
+| 1 | `/` | quay video đóng hàng (thương hiệu: AmaBox) | app quản lý video đóng hàng, lưu bằng chứng đơn hàng | Điều hướng + tìm hiểu giải pháp | 2, 3, 4, 5, 6 | Tải ứng dụng (App Store / Google Play, chưa có link) | Đối thủ là phần mềm máy tính/camera; ít app điện thoại tiếng Việt thấy được. Không quảng cáo tính năng chưa có | chưa có số liệu | khung |
 | 2 | `/huong-dan/` | hướng dẫn đóng hàng và lưu bằng chứng | kiến thức người bán online | Thông tin (trang tổng hợp) | 3, 4, 5, 6, 7 | Tải ứng dụng | Trang chỉ mục các bài; không tự có từ khóa riêng | chưa có số liệu | kế hoạch |
 | 3 | `/huong-dan/quay-video-dong-hang/` | quay video đóng hàng | cách quay video đóng hàng bằng điện thoại, quay video đóng hàng Shopee, video đóng gói cần quay gì | Thông tin: "làm thế nào" | 4, 5, 6, 7 | Tải ứng dụng để quay và gắn đúng đơn | Bài GHN/BigSeller nói chung chung và thiên về camera/máy tính. Khoảng trống: hướng dẫn từng bước bằng điện thoại; quay liền mạch từ trước đóng gói đến niêm phong; mã đơn thấy trong video. Không nêu "bắt buộc" vì không có nguồn sàn chính thức | chưa có số liệu | kế hoạch |
 | 4 | `/huong-dan/khach-bao-thieu-hang/` | khách báo thiếu hàng | khách báo thiếu hàng Shopee, khách nói nhận thiếu hàng phải làm sao, bằng chứng khi khách báo thiếu hàng | Thông tin + hành động: "làm gì ngay" | 3, 5, 6, 7 | Tải ứng dụng; xem cách tìm lại video theo mã đơn | Không thấy bài trả lời đúng câu hỏi theo từng bước. Nguồn tham khảo: BigSeller, GHN. Không nêu thời hạn nộp bằng chứng (các nguồn mâu thuẫn). Không hứa thắng khiếu nại | chưa có số liệu | kế hoạch |
 | 5 | `/huong-dan/xu-ly-hang-hoan-sai-thieu/` | hàng hoàn về sai thiếu | hàng hoàn thiếu sản phẩm, đồng kiểm hàng hoàn, kiểm tra hàng hoàn Shopee TikTok Shop | Hành động: "xử lý thế nào" | 3, 4, 6, 7 | Tải ứng dụng; "Nhận hàng hoàn" (chỉ ghi khi tính năng đã có, hôm nay là sắp có) | BigSeller có bài đồng kiểm Shopee. Khoảng trống: đối chiếu hàng hoàn với hàng đã gửi; áp dụng cả TikTok Shop, Lazada. Chưa thấy nguồn chính thức Lazada | chưa có số liệu | kế hoạch |
-| 6 | `/huong-dan/luu-video-dong-hang-bao-lau/` | lưu video đóng hàng bao lâu | thời hạn lưu video đóng gói, nên giữ video đóng hàng mấy tháng | Thông tin: "bao lâu là đủ" | 3, 4, 7 | Tải ứng dụng; xem gói lưu (chỉ khi O-06 đã chốt) | **Khoảng trống lớn:** kết quả tiếng Việt gần như không có. Nội dung phải trung thực: không có nguồn chính thức nêu số ngày; chỉ nêu cách tự cân nhắc (thời hạn khiếu nại của sàn, thời gian giao nhận). Thời hạn lưu của Đơn Chứng **chưa chốt (O-06)**, không được viết con số | chưa có số liệu | kế hoạch (chờ O-06 cho phần nói về app) |
+| 6 | `/huong-dan/luu-video-dong-hang-bao-lau/` | lưu video đóng hàng bao lâu | thời hạn lưu video đóng gói, nên giữ video đóng hàng mấy tháng | Thông tin: "bao lâu là đủ" | 3, 4, 7 | Tải ứng dụng; xem gói lưu (chỉ khi O-06 đã chốt) | **Khoảng trống lớn:** kết quả tiếng Việt gần như không có. Nội dung phải trung thực: không có nguồn chính thức nêu số ngày; chỉ nêu cách tự cân nhắc (thời hạn khiếu nại của sàn, thời gian giao nhận). Thời hạn lưu của AmaBox **chưa chốt (O-06)**, không được viết con số | chưa có số liệu | kế hoạch (chờ O-06 cho phần nói về app) |
 | 7 | `/huong-dan/dong-hang-theo-lo/` | đóng hàng theo lô | quay video đóng nhiều đơn, quay nhiều đơn một lần, đóng hàng hàng loạt | Thông tin | 3, 5, 6 | Tải ứng dụng | Kết quả hầu như lạc đề (sản xuất video marketing). Có thể ít người tìm; **ưu tiên thấp**, cần số liệu rồi mới viết. Chế độ theo lô của app chưa có, ghi "sắp có" | chưa có số liệu | kế hoạch (ưu tiên thấp) |
-| 8 | `/cau-hoi-thuong-gap/` | câu hỏi thường gặp Đơn Chứng | Đơn Chứng là gì, có miễn phí không | Thông tin / tin cậy | 1, 3, 6 | Tải ứng dụng | Chỉ đưa câu hỏi thật, trả lời trung thực (chưa có giá, chưa có lưu trữ thật). Đánh dấu `FAQPage` chỉ khi khớp nội dung hiển thị | không áp dụng | kế hoạch |
-| 9 | `/bang-gia/` | giá Đơn Chứng | gói dịch vụ | Thương mại | 1, 6 | Đăng ký chờ | **Gói và giá chưa chốt (O-06, O-16).** Chưa tạo trang; không đặt giá | không áp dụng | chưa làm, chờ O-06/O-16 |
-| 10 | `/chinh-sach-quyen-rieng-tu/`, `/dieu-khoan/`, `/ho-tro/`, `/xoa-tai-khoan/` (V1-19; thay cho `/quyen-rieng-tu/` dự kiến trước đó) | (trang tin cậy, URL khai báo với store) | Đơn Chứng hỗ trợ, xóa tài khoản Đơn Chứng | Tin cậy / điều hướng | 1 và nhau (chân trang mọi trang) | Không (Hỗ trợ: email khi có) | Bản nháp do agent soạn theo v1-release-plan.md V1-19, **chờ luật sư rà** (release-checklist C-2). `/chinh-sach-luu-tru/` chưa làm: thời hạn lưu v1 nằm trong trang quyền riêng tư | không áp dụng | đã dựng, chờ rà pháp lý |
+| 8 | `/cau-hoi-thuong-gap/` | câu hỏi thường gặp AmaBox | AmaBox là gì, có miễn phí không | Thông tin / tin cậy | 1, 3, 6 | Tải ứng dụng | Chỉ đưa câu hỏi thật, trả lời trung thực (chưa có giá, chưa có lưu trữ thật). Đánh dấu `FAQPage` chỉ khi khớp nội dung hiển thị | không áp dụng | kế hoạch |
+| 9 | `/bang-gia/` | giá AmaBox | gói dịch vụ | Thương mại | 1, 6 | Đăng ký chờ | **Gói và giá chưa chốt (O-06, O-16).** Chưa tạo trang; không đặt giá | không áp dụng | chưa làm, chờ O-06/O-16 |
+| 10 | `/chinh-sach-quyen-rieng-tu/`, `/dieu-khoan/`, `/ho-tro/`, `/xoa-tai-khoan/` (V1-19; thay cho `/quyen-rieng-tu/` dự kiến trước đó) | (trang tin cậy, URL khai báo với store) | AmaBox hỗ trợ, xóa tài khoản AmaBox | Tin cậy / điều hướng | 1 và nhau (chân trang mọi trang) | Không (Hỗ trợ: email khi có) | Bản nháp do agent soạn theo v1-release-plan.md V1-19, **chờ luật sư rà** (release-checklist C-2). `/chinh-sach-luu-tru/` chưa làm: thời hạn lưu v1 nằm trong trang quyền riêng tư | không áp dụng | đã dựng, chờ rà pháp lý |
 | 11 | `/404` | (không áp dụng) | | Hỗ trợ điều hướng | 1, 2 | Về trang chủ | `noindex` | không áp dụng | khung |
 
 Ghi chú:
@@ -65,7 +65,7 @@ Ghi chú:
 - Mỗi bài `/huong-dan/*` trả lời **một** câu hỏi, có ví dụ thật, liên kết sang 2 đến 3 bài liên quan với anchor mô tả (không "xem thêm").
 - Thứ tự viết đề xuất: 3 → 4 → 5 → 6 (dựa trên mức khớp sản phẩm và khoảng trống). Bài 7 sau khi có số liệu.
 - Mọi nội dung nhắc chính sách sàn phải có: liên kết nguồn chính thức, ngày kiểm tra, câu "có thể đã thay đổi". Hôm nay **chưa có** nguồn chính thức nào, nên chưa nhắc.
-- Mọi câu nói về Đơn Chứng phải khớp trạng thái thật ở `CLAUDE.md` (chưa ghi video thật, chưa tải lên, chưa thanh toán).
+- Mọi câu nói về AmaBox phải khớp trạng thái thật ở `CLAUDE.md` (chưa ghi video thật, chưa tải lên, chưa thanh toán).
 
 ## 4. Việc cần làm tiếp để có số liệu thật
 

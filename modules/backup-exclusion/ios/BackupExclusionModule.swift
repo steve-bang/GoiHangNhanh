@@ -1,7 +1,7 @@
 import ExpoModulesCore
 import Foundation
 
-// Đơn Chứng V1-12 (Q-24d A): loại thư mục bằng chứng (`Documents/evidence`) và CSDL cục bộ
+// AmaBox V1-12 (Q-24d A): loại thư mục bằng chứng (`Documents/evidence`) và CSDL cục bộ
 // (`Documents/SQLite`) khỏi iCloud Backup / sao lưu máy tính. Đặt thuộc tính lên THƯ MỤC: Apple áp cho
 // cả nội dung bên trong, kể cả tệp tạo sau. Chỉ đặt thuộc tính, không đọc/ghi/xóa tệp. Không ném lỗi
 // sang JS: trả mã kết quả để adapter (`src/platform/backup-exclusion.ts`) ghi log không đường dẫn.

@@ -1,4 +1,4 @@
-# Chiến lược kiểm thử — Đơn Chứng
+# Chiến lược kiểm thử — AmaBox
 
 > Kiểm thử phục vụ các bất biến trong [CLAUDE.md](../../CLAUDE.md) và kịch bản QA-01…QA-14 trong [docs/08](../08-acceptance-qa-risks.md). Nguyên tắc trung thực: **chỉ test tự động mới "xanh" tự động; luồng ghi hình/tải nền chỉ được coi là đạt khi đã chạy trên thiết bị thật iOS và Android.** Đánh dấu trong tài liệu không có nghĩa là đã kiểm thử (docs/08).
 

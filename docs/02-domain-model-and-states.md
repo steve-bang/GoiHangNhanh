@@ -44,7 +44,7 @@ Shop (tổ chức sở hữu dữ liệu)
 
 ## Thông tin đơn hàng tối giản
 
-Đơn Chứng **không phải phần mềm quản lý bán hàng thu nhỏ**: người bán đã quản lý đơn trên Shopee, TikTok Shop, Lazada. Ứng dụng chỉ giữ đủ thông tin để gắn đúng bằng chứng với đúng đơn và đối chiếu hàng khi đóng gói/nhận hàng hoàn. Ít nhập liệu nhất có thể; ưu tiên quét mã, tái sử dụng dữ liệu; chỉ yêu cầu bổ sung khi thực sự cần.
+AmaBox **không phải phần mềm quản lý bán hàng thu nhỏ**: người bán đã quản lý đơn trên Shopee, TikTok Shop, Lazada. Ứng dụng chỉ giữ đủ thông tin để gắn đúng bằng chứng với đúng đơn và đối chiếu hàng khi đóng gói/nhận hàng hoàn. Ít nhập liệu nhất có thể; ưu tiên quét mã, tái sử dụng dữ liệu; chỉ yêu cầu bổ sung khi thực sự cần.
 
 | Nhóm | Trường | Ghi chú |
 |---|---|---|

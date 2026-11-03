@@ -145,11 +145,11 @@ D1..D17 theo bản nháp đã chỉnh; D18..D29 là phát hiện thêm sau khi p
 | D13 | Sửa hồ sơ/đổi mật khẩu bản Firebase | Hợp đồng API chưa có (Q-20t) | Giữ "chưa kết nối" trung thực |
 | D14 | "Gửi yêu cầu" | Chưa có kênh nhận | Mở email soạn sẵn; không giả "đã gửi" (Q-21i) |
 | D15 | "Vai trò: Quản lý" | Danh sách vai trò chưa chốt (O-07) | Hiện theo cổng (`owner`/`member`) hoặc ẩn khi không chắc |
-| D16 | Thiếu khung "Về Đơn Chứng" | Board bỏ khung 19 | Q-21j |
+| D16 | Thiếu khung "Về AmaBox" | Board bỏ khung 19 | Q-21j |
 | D17 | Câu quảng bá ("Bảo vệ đơn hàng", "bảo mật" trong tiêu đề, "đám mây") | Test i18n chặn "bảo vệ" ngoài ngoại lệ (Q-20s); từ "đám mây" so "máy chủ" (O-28c) | Câu trung thực đã duyệt; tiêu đề "Quyền riêng tư và bảo mật" dùng được (đã là tên mục menu); khung chữ giữ |
 | D18 | Khung 3 hiện **cả form lẫn thẻ Apple/Google** | Tài khoản Apple/Google không có mật khẩu để đổi (Q-20c) | Thẻ thay cho form khi đăng nhập social; hiện form khi email+mật khẩu |
 | D19 | Khung 12: "dữ liệu có thể vẫn xem được trên thiết bị của bạn" sau hết hạn | docs/06 chưa chốt xử lý khi hết hạn và bản cục bộ (O-06); không được hứa | Đổi thành câu trung thực ("Thời hạn lưu theo gói; thông tin chi tiết sẽ cập nhật khi gói được chốt") hoặc bỏ thẻ; BA duyệt |
-| D20 | Khung 18: "Chính sách đổi trả" | Đơn Chứng không bán hàng, không có chính sách này | **Không dựng** hàng này; 3 hàng còn lại |
+| D20 | Khung 18: "Chính sách đổi trả" | AmaBox không bán hàng, không có chính sách này | **Không dựng** hàng này; 3 hàng còn lại |
 | D21 | Khung 4c: không có lối "Đăng xuất" | Q-20l (2a) đang áp dụng là chỉ chặn; (2b) "Vẫn đăng xuất" chờ BA | **PR-C: giữ đúng board, chỉ chặn** (Q-21q); nếu BA chọn (2b) thì thêm liên kết chữ nhỏ dưới nút phụ |
 | D22 | Khung 6: "20/50" trong khi tên có 15 ký tự | Số đếm sai | Đếm theo độ dài thật |
 | D23 | Khung 5: hàng "Vai trò", "Trạng thái" có chevron | Hàng thuộc tính không mở được màn nào | Bỏ chevron |
@@ -370,7 +370,7 @@ Một route con mới của UI-I05, KHÔNG mã UI mới (Q-21b): `ROUTES.deleteA
 
 Mã của PR-A đến PR-I đã xong (PR-A..H đã merge; PR-I chờ duyệt). **Còn thiếu hoặc chờ BA/designer/hạ tầng:**
 
-- Khung 19 "Về Đơn Chứng": chưa làm (Q-21j chờ designer). Khung 21 (dải trạng thái) chỉ có thành phần + test, không có màn (Q-21z). Thẻ "Đang quay video" của khung 21 chưa dựng.
+- Khung 19 "Về AmaBox": chưa làm (Q-21j chờ designer). Khung 21 (dải trạng thái) chỉ có thành phần + test, không có màn (Q-21z). Thẻ "Đang quay video" của khung 21 chưa dựng.
 - Khung 16: chưa có ảnh/video hướng dẫn (D26, Q-21k). Huy hiệu "Đã xác thực" (Q-21m) chưa có dữ liệu. Thành viên và quyền (UI-I03, O-03, O-07) chưa làm.
 - Dữ liệu thật còn thiếu: địa chỉ hỗ trợ (`SUPPORT_EMAIL = null`), URL Điều khoản/Quyền riêng tư (giữ chỗ), gói và thanh toán (mọi giá trị "Chưa có thông tin", nút nâng cấp khóa), số đếm bằng chứng (chưa có tệp; Q-21aa), thời hạn lưu (O-06).
 - Chưa có hạ tầng: xóa tài khoản (Q-20e, Q-21af), xác nhận 2 lớp, thiết bị đăng nhập, dữ liệu và quyền truy cập, thông báo đẩy và thẻ quyền hệ điều hành (Q-21ab), lưu bền tùy chọn thông báo, ngoại tuyến thật (`useIsOffline` là khung tạm).
@@ -402,4 +402,4 @@ Theo yêu cầu người dùng, **thẻ gói trên UI-I01 và mục menu "Gói d
 
 ## 9. Câu hỏi mở
 
-Xem [decisions.md Q-21](decisions.md): j (khung 19 "Về Đơn Chứng"), k (bản board >= 3000px, icon header 1a-1e), l (nhóm "Cài đặt" ở 1a và các hàng dưới), m (nội dung khung 12/18/25 cần BA duyệt: D19, D20, D25), n (mã UI cho BA gán). Cập nhật bảng ánh xạ PER-xx/UI-xx ở [personal-tab-plan.md](personal-tab-plan.md) khi BA trả lời.
+Xem [decisions.md Q-21](decisions.md): j (khung 19 "Về AmaBox"), k (bản board >= 3000px, icon header 1a-1e), l (nhóm "Cài đặt" ở 1a và các hàng dưới), m (nội dung khung 12/18/25 cần BA duyệt: D19, D20, D25), n (mã UI cho BA gán). Cập nhật bảng ánh xạ PER-xx/UI-xx ở [personal-tab-plan.md](personal-tab-plan.md) khi BA trả lời.

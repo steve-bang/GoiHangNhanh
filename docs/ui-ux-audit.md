@@ -1,4 +1,4 @@
-# Báo cáo audit UI/UX — Đơn Chứng
+# Báo cáo audit UI/UX — AmaBox
 
 > **Phạm vi:** toàn bộ app di động (Expo SDK 58, React Native, Expo Router) ở HEAD `0834935` của `main` (2026-11-02).
 > **Phương pháp:** đánh giá **tĩnh từ mã nguồn và tài liệu**; không chạy app, không có thiết bị, không có trình đọc màn hình. Mọi hành vi lúc chạy (bàn phím, `hitSlop`, thứ tự đọc, Dynamic Type) ghi là *chưa kiểm chứng trên thiết bị*, khớp với cổng G-11 trong `release-checklist.md`.

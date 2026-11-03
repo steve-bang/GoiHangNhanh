@@ -1,8 +1,8 @@
-# Đơn Chứng
+# AmaBox
 
 Ứng dụng di động (iOS + Android) quản lý **bằng chứng theo vòng đời đơn hàng thương mại điện tử**: đóng gói → bàn giao → nhận hàng hoàn → đối chiếu → tranh chấp. Đây không phải "app lưu video đơn hàng".
 
-> **Tên làm việc.** "Đơn Chứng" có thể đổi sau khi kiểm tra nhãn hiệu (O-11); tên repo là `GoiHangNhanh`.
+> **Tên làm việc.** "AmaBox" (trước đây "Đơn Chứng") có thể đổi sau khi kiểm tra nhãn hiệu (O-11); tên repo là `GoiHangNhanh`. Mới đổi tên **hiển thị**; mã định danh kỹ thuật vẫn mang tên cũ, xem [release-checklist.md mục R](docs/engineering/release-checklist.md).
 
 ## Trạng thái hiện tại (đọc trước khi dùng)
 

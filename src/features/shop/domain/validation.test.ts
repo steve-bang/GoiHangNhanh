@@ -65,7 +65,7 @@ describe('kiểm tra tên shop', () => {
 
   it('chuẩn hóa bỏ khoảng trắng đầu/cuối, giữ nguyên chữ có dấu', () => {
     expect(normalizeShopName('  Cửa hàng Ánh  ')).toBe('Cửa hàng Ánh');
-    expect(textLength('Đơn Chứng')).toBe(9);
+    expect(textLength('AmaBox')).toBe(6);
   });
 });
 
