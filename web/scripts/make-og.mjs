@@ -12,7 +12,7 @@ const bg = token('orange-900');
 const fg = token('neutral-0');
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-const icon = await sharp('../assets/images/icon.png').resize(260, 260).png().toBuffer();
+const icon = await sharp('public/logo-512.png').resize(260, 260).png().toBuffer();
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
   <rect width="1200" height="630" fill="${bg}"/>
   <text x="340" y="300" font-family="DejaVu Sans, Noto Sans, Arial, sans-serif" font-size="88" font-weight="700" fill="${fg}">${esc(site.name)}</text>
