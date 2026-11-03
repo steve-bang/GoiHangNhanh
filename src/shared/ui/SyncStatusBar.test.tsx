@@ -27,6 +27,28 @@ describe('SyncStatusBar', () => {
     expect(screen.queryByText('Đang tải lên')).toBeNull();
   });
 
+  it('chỉ có tệp đang tải: tiêu đề "Đang tải lên" (không dọa), có vòng quay đang chạy', async () => {
+    await renderWithProviders(
+      <SyncStatusBar
+        counts={{ uploading: 2, waiting_upload: 0, error: 0 }}
+        onPress={() => undefined}
+      />,
+    );
+    expect(screen.getAllByText('Đang tải lên').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Bằng chứng cần theo dõi')).toBeNull();
+    expect(screen.getByTestId('evidence-badge-busy')).toBeOnTheScreen();
+  });
+
+  it('có lỗi thì giữ tiêu đề "cần theo dõi" dù còn tệp đang tải', async () => {
+    await renderWithProviders(
+      <SyncStatusBar
+        counts={{ uploading: 1, waiting_upload: 0, error: 1 }}
+        onPress={() => undefined}
+      />,
+    );
+    expect(screen.getByText('Bằng chứng cần theo dõi')).toBeOnTheScreen();
+  });
+
   it('câu nhắc nói đúng giới hạn v1: chỉ tải khi ứng dụng đang mở, không hứa tải nền (V1-18)', async () => {
     await renderWithProviders(
       <SyncStatusBar

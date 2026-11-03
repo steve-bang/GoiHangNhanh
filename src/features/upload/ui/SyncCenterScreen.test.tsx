@@ -182,7 +182,7 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
 
     await fireEvent.press(screen.getByText('Lỗi (1)'));
     expect(await screen.findByTestId('sync-job-pack:bad')).toBeOnTheScreen();
-    expect(screen.getByText('Máy chủ chưa nhận tệp sau nhiều lần thử.')).toBeOnTheScreen();
+    expect(screen.getByText('Chưa tải lên được sau nhiều lần thử.')).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByText('Đã tải lên'));
     expect(await screen.findByTestId('sync-job-pack:done')).toBeOnTheScreen();
@@ -316,7 +316,7 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
     expect(info.props.accessibilityLabel).toContain('DH-SYNC-1 · Kiện 1');
     expect(info.props.accessibilityLabel).toContain('Video');
     expect(info.props.accessibilityLabel).toContain('Lỗi – cần xử lý');
-    expect(info.props.accessibilityLabel).toContain('Máy chủ chưa nhận tệp sau nhiều lần thử.');
+    expect(info.props.accessibilityLabel).toContain('Chưa tải lên được sau nhiều lần thử.');
     expect(info.props.accessibilityHint).toBe('Chi tiết');
     // Hành động Thử lại là phần tử riêng, không nằm trong nút thông tin.
     expect(screen.getByTestId('sync-job-retry-pack:bad')).toBeOnTheScreen();
@@ -364,7 +364,7 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
       busy: false,
     });
     await act(async () => release());
-    expect(await screen.findByText('Đã đưa vào hàng chờ tải lên.')).toBeOnTheScreen();
+    expect(await screen.findByText('Đang thử tải lại.')).toBeOnTheScreen();
   });
 
   it('kéo để làm mới đọc lại danh sách tệp', async () => {
@@ -402,7 +402,7 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
       attemptCount: 0,
       lastErrorCode: 'HTTP_403',
     });
-    expect(await screen.findByText('Đã đưa vào hàng chờ tải lên.')).toBeOnTheScreen();
+    expect(await screen.findByText('Đang thử tải lại.')).toBeOnTheScreen();
   });
 
   it('lỗi tệp cục bộ (tệp mất, quá lớn) và lệch mã băm: không có nút Thử lại', async () => {
@@ -494,7 +494,7 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
     expect(await screen.findByText('Đang chờ mạng.')).toBeOnTheScreen();
     await fireEvent.press(screen.getByTestId('sync-job-retry-pack:a'));
     expect(
-      await screen.findByText('Đã đưa vào hàng chờ. Sẽ tải khi có mạng và ứng dụng đang mở.'),
+      await screen.findByText('Sẽ tải lại khi có mạng và ứng dụng đang mở.'),
     ).toBeOnTheScreen();
     expect(t.records.get('a')?.state).toBe('queued');
   });
@@ -511,9 +511,7 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
     expect(screen.queryByTestId('sync-job-recheck-pack:new')).toBeNull();
     expect(t.applyEvent).not.toHaveBeenCalled();
     expect(t.records.get('old')?.state).toBe('uploaded');
-    expect(
-      await screen.findByText('Đã nhờ máy chủ kiểm tra lại. Kết quả sẽ hiện ở đây.'),
-    ).toBeOnTheScreen();
+    expect(await screen.findByText('Đang kiểm tra lại. Kết quả sẽ hiện ở đây.')).toBeOnTheScreen();
   });
 
   it('Chi tiết mở UI-F02 bằng khóa tệp', async () => {
@@ -524,13 +522,13 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
   });
 });
 
-describe('UI-F02 Chi tiết lỗi đồng bộ (V1-08)', () => {
+describe('UI-F02 Chi tiết lỗi tải lên (V1-08)', () => {
   it('lỗi máy chủ: nguyên nhân, dữ liệu còn trên máy, có Thử lại và Mở hồ sơ', async () => {
     const t = setup([file('a', 'needs_attention', { lastErrorCode: 'PERMISSION_DENIED' })]);
     mockNavigation.params = { jobId: 'pack:a' };
     await open(t, <SyncErrorScreen />);
     expect(await screen.findByTestId('sync-detail-cause')).toHaveTextContent(
-      'Máy chủ chưa nhận tệp sau nhiều lần thử.',
+      'Chưa tải lên được sau nhiều lần thử.',
     );
     expect(screen.getByTestId('sync-detail-where')).toHaveTextContent(
       'Tệp gốc vẫn còn trên máy này. Không cần quay hay chụp lại.',
@@ -645,7 +643,7 @@ describe('UI-F01: Chỉ tải khi có Wi‑Fi (V1-09)', () => {
     expect(await screen.findByText('Đang chờ Wi‑Fi.')).toBeOnTheScreen();
     await act(async () => fireEvent.press(screen.getByTestId('sync-job-retry-pack:bad')));
     expect(
-      await screen.findByText('Đã đưa vào hàng chờ. Sẽ tải khi có Wi‑Fi và ứng dụng đang mở.'),
+      await screen.findByText('Sẽ tải lại khi có Wi‑Fi và ứng dụng đang mở.'),
     ).toBeOnTheScreen();
     expect(t.records.get('bad')?.state).toBe('queued');
   });
@@ -664,9 +662,7 @@ describe('UI-F01: Chỉ tải khi có Wi‑Fi (V1-09)', () => {
     expect(status).not.toHaveTextContent(/chưa kiểm tra xong/);
     await act(async () => fireEvent.press(screen.getByTestId('sync-job-recheck-pack:old')));
     await waitFor(() => expect(t.control.requestServerCheck).toHaveBeenCalledWith('old'));
-    expect(
-      await screen.findByText('Đã nhờ máy chủ kiểm tra lại. Kết quả sẽ hiện khi có Wi‑Fi.'),
-    ).toBeOnTheScreen();
+    expect(await screen.findByText('Sẽ kiểm tra lại khi có Wi‑Fi.')).toBeOnTheScreen();
     expect(t.records.get('old')?.state).toBe('uploaded');
   });
 

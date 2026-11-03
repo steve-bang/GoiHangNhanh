@@ -71,6 +71,7 @@ export function HomeScreen() {
   };
   const loadingStats = stats.kind === 'loading';
   const needsAction = stats.kind === 'ready' ? stats.data.needsAction : 0;
+  const uploading = stats.kind === 'ready' ? stats.data.uploading : 0;
   const notice = useDeviceSetting(HOME_DEVICE_DATA_NOTICE_DISMISSED);
   const showNotice = notice.loaded && !notice.value;
   const statValue = (key: 'packed' | 'uploaded' | 'needsAction') =>
@@ -160,11 +161,13 @@ export function HomeScreen() {
         />
       </View>
 
-      {needsAction > 0 ? (
+      {needsAction > 0 || uploading > 0 ? (
         <View accessibilityLiveRegion="polite" testID="home-needs-action">
           <SyncStatusBar
-            counts={{ error: needsAction, waiting_upload: 0, uploading: 0 }}
-            onPress={() => navigation.push(ROUTES.sync, { filter: 'error' })}
+            counts={{ error: needsAction, waiting_upload: 0, uploading }}
+            onPress={() =>
+              navigation.push(ROUTES.sync, { filter: needsAction > 0 ? 'error' : 'uploading' })
+            }
           />
         </View>
       ) : null}

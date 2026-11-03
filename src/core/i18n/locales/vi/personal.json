@@ -40,7 +40,7 @@
   },
   "notifications": {
     "uploadProblems": "Tải lên lỗi hoặc cần xử lý",
-    "syncCompleted": "Đồng bộ hoàn tất",
+    "syncCompleted": "Tải lên xong",
     "storageNearlyFull": "Dung lượng sắp đầy",
     "planExpiring": "Gói sắp hết hạn"
   },
@@ -73,7 +73,7 @@
     "recordingMessage": "Bạn đang quay video đóng gói. Hãy dừng quay trước khi đăng xuất.",
     "unsyncedTitle": "Còn bằng chứng chưa tải lên",
     "unsyncedMessage": "Còn {{count}} tệp chưa tải lên xong. Chờ tải xong rồi đăng xuất nhé.",
-    "openSync": "Xem trung tâm đồng bộ"
+    "openSync": "Xem tiến độ tải lên"
   },
   "sessionGate": {
     "title": "AmaBox",
@@ -143,7 +143,7 @@
     "unsyncedTitle": "Còn bằng chứng chưa tải lên",
     "unsyncedMessage": "Cửa hàng này còn {{count}} tệp chưa tải lên xong. Tệp vẫn được giữ trên máy.",
     "unsyncedContinue": "Vẫn chuyển cửa hàng",
-    "openSync": "Xem trung tâm đồng bộ",
+    "openSync": "Xem tiến độ tải lên",
     "suspendedHint": "Cửa hàng đang bị khóa nên chưa chuyển vào được.",
     "search": "Tìm cửa hàng",
     "noMatch": "Không có cửa hàng nào khớp.",
@@ -164,7 +164,7 @@
     "pendingSync": "Đang chờ tải lên",
     "cloud": "Trên đám mây",
     "unknown": "–",
-    "openSync": "Xem trung tâm đồng bộ",
+    "openSync": "Xem tiến độ tải lên",
     "openDetail": "Xem chi tiết dữ liệu bằng chứng"
   },
   "groups": {
@@ -205,7 +205,7 @@
     "explainPending": "Đang chờ tải lên: tệp chưa được máy chủ xác nhận đã nhận.",
     "explainCloud": "Trên đám mây: chỉ tính tệp máy chủ đã xác nhận và kiểm tra khớp.",
     "retentionRow": "Thời hạn lưu",
-    "openSync": "Xem trung tâm đồng bộ"
+    "openSync": "Xem tiến độ tải lên"
   },
   "retentionDetail": {
     "planEyebrow": "Thời hạn lưu bằng chứng",
@@ -223,7 +223,7 @@
         "description": "Báo khi có video tải lên chưa xong và cần bạn xử lý."
       },
       "syncCompleted": {
-        "title": "Đồng bộ dữ liệu",
+        "title": "Tải lên tự động",
         "description": "Nhận thông báo khi tải lên xong."
       },
       "storageNearlyFull": {
@@ -314,7 +314,7 @@
         "title": "Chỉ tải khi có Wi‑Fi",
         "summary": "Mặc định ứng dụng tải cả bằng 4G/5G. Bật Chỉ tải khi có Wi‑Fi để ảnh và video không tải qua mạng di động. Thông tin đơn vẫn được gửi.",
         "step": {
-          "1": "Mở Trung tâm đồng bộ, hoặc vào tab Cá nhân rồi chọn Dữ liệu bằng chứng.",
+          "1": "Mở màn Tải lên, hoặc vào tab Cá nhân rồi chọn Dữ liệu bằng chứng.",
           "2": "Bật công tắc Chỉ tải khi có Wi‑Fi. Tệp chưa tải vẫn nằm trên máy và hiện Đang chờ Wi‑Fi.",
           "3": "Phát Wi‑Fi từ một điện thoại khác vẫn được coi là Wi‑Fi, nên vẫn tốn dữ liệu di động của máy phát. Hãy cân nhắc khi dùng cách này."
         },
@@ -503,7 +503,7 @@
         "unknown": "Chưa đọc được danh sách cửa hàng."
       }
     },
-    "syncLink": "Xem trung tâm đồng bộ",
+    "syncLink": "Xem tiến độ tải lên",
     "unsyncedWarning": "{{count}} tệp chưa tải lên sẽ bị xóa khỏi máy này và không thể khôi phục.",
     "unsyncedAck": "Tôi hiểu {{count}} tệp này sẽ mất",
     "dataTitle": "Dữ liệu sẽ ra sao",

@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { EVIDENCE_STATUS_PRESENTATION, type EvidenceStatusLabel } from '@/core/theme';
@@ -64,7 +64,16 @@ export function EvidenceStatusBadge({
           },
         ]}
       >
-        <Icon name={presentation.icon} size={compact ? 14 : 16} color={foreground} />
+        {status === 'uploading' ? (
+          // Đang chạy thật: vòng quay thay biểu tượng tĩnh (chỉ ở "Đang tải lên"; mọi nhãn khác giữ biểu tượng).
+          <ActivityIndicator
+            testID={testID ? `${testID}-busy` : 'evidence-badge-busy'}
+            size="small"
+            color={foreground}
+          />
+        ) : (
+          <Icon name={presentation.icon} size={compact ? 14 : 16} color={foreground} />
+        )}
         <Text variant="caption" bold style={{ color: foreground }}>
           {label + progress}
         </Text>

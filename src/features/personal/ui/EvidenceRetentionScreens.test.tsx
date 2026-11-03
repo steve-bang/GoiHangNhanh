@@ -92,9 +92,9 @@ describe('EvidenceDataScreen (UI-I01 route con, khung 11)', () => {
     expect(screen.getByTestId('screen-UI-I01-evidence')).not.toHaveTextContent(OVERPROMISE);
   });
 
-  it('"Xem trung tâm đồng bộ" mở UI-F01; hàng Thời hạn lưu mở khung 12', async () => {
+  it('"Xem tiến độ tải lên" mở UI-F01; hàng Thời hạn lưu mở khung 12', async () => {
     await renderWithProviders(<EvidenceDataScreen />);
-    await fireEvent.press(screen.getByRole('button', { name: 'Xem trung tâm đồng bộ' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Xem tiến độ tải lên' }));
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.sync);
     await fireEvent.press(screen.getByTestId('evidence-retention-link'));
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.retentionDetail);

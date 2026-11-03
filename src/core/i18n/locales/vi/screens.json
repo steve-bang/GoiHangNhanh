@@ -34,8 +34,8 @@
   },
   "notificationList": {
     "title": "Chưa có thông báo",
-    "message": "Ứng dụng chưa gửi thông báo. Lỗi tải lên xem ở Trung tâm đồng bộ.",
-    "openSync": "Mở Trung tâm đồng bộ"
+    "message": "Ứng dụng chưa gửi thông báo. Lỗi tải lên xem ở màn Tải lên.",
+    "openSync": "Xem tiến độ tải lên"
   },
   "scan": {
     "hint": "Đưa mã QR / mã vạch vào khung hình để quét tự động",
@@ -322,7 +322,7 @@
       "waitingWifi": "Đang chờ Wi‑Fi.",
       "waitingNetwork": "Mạng chập chờn. Ứng dụng sẽ tự thử lại.",
       "willRetry": "Chưa tải được. Ứng dụng sẽ tự thử lại.",
-      "serverRejected": "Máy chủ chưa nhận tệp sau nhiều lần thử.",
+      "serverRejected": "Chưa tải lên được sau nhiều lần thử.",
       "signInAgain": "Cần đăng nhập lại để tải lên.",
       "tooLarge": "Tệp quá lớn nên không tải lên được. Tệp vẫn còn trên máy này.",
       "fileChanged": "Tệp trên máy đã khác lúc lưu nên không tải lên.",
@@ -346,16 +346,16 @@
     "openRecord": "Mở hồ sơ",
     "doneLimit": "Chỉ hiện {{count}} tệp mới nhất.",
     "toast": {
-      "retried": "Đã đưa vào hàng chờ tải lên.",
-      "retriedOffline": "Đã đưa vào hàng chờ. Sẽ tải khi có mạng và ứng dụng đang mở.",
-      "retriedWaitingWifi": "Đã đưa vào hàng chờ. Sẽ tải khi có Wi‑Fi và ứng dụng đang mở.",
+      "retried": "Đang thử tải lại.",
+      "retriedOffline": "Sẽ tải lại khi có mạng và ứng dụng đang mở.",
+      "retriedWaitingWifi": "Sẽ tải lại khi có Wi‑Fi và ứng dụng đang mở.",
       "retryChanged": "Trạng thái tệp vừa đổi. Danh sách đã được cập nhật.",
-      "retryFailed": "Chưa đưa tệp vào hàng chờ được. Bạn thử lại nhé.",
-      "recheckRequested": "Đã nhờ máy chủ kiểm tra lại. Kết quả sẽ hiện ở đây.",
-      "recheckRequestedWaitingWifi": "Đã nhờ máy chủ kiểm tra lại. Kết quả sẽ hiện khi có Wi‑Fi.",
+      "retryFailed": "Chưa thử tải lại được. Bạn thử lại nhé.",
+      "recheckRequested": "Đang kiểm tra lại. Kết quả sẽ hiện ở đây.",
+      "recheckRequestedWaitingWifi": "Sẽ kiểm tra lại khi có Wi‑Fi.",
       "recheckOffline": "Cần có mạng để kiểm tra lại.",
-      "recheckFailed": "Chưa nhờ máy chủ kiểm tra lại được. Bạn thử lại sau nhé.",
-      "recheckUnavailable": "Chưa kết nối máy chủ nên chưa kiểm tra lại được."
+      "recheckFailed": "Chưa kiểm tra lại được. Bạn thử lại sau nhé.",
+      "recheckUnavailable": "Chưa kết nối được nên chưa kiểm tra lại được."
     },
     "emptyTitle": "Không có tệp ở mục này",
     "emptyMessage": "Chọn mục khác để xem các tệp còn lại, hoặc mở danh sách đơn.",
@@ -378,8 +378,8 @@
       "noAction": "Ứng dụng không thử lại được lỗi này.",
       "foreignNoAction": "Chỉ tài khoản đã tạo tệp mới tải lên được.",
       "notFoundTitle": "Tệp này không còn cần xử lý.",
-      "notFoundMessage": "Có thể tệp đã tải lên xong. Xem lại ở Trung tâm đồng bộ.",
-      "back": "Về Trung tâm đồng bộ"
+      "notFoundMessage": "Có thể tệp đã tải lên xong. Xem lại ở màn Tải lên.",
+      "back": "Về màn Tải lên"
     }
   },
   "splash": {
@@ -625,7 +625,7 @@
     },
     "capturedAt": "Ghi lúc {{time}} (giờ thiết bị)",
     "errorHint": "Tệp này cần xử lý.",
-    "openSync": "Mở trung tâm đồng bộ",
+    "openSync": "Xem tiến độ tải lên",
     "openDetail": "Xem {{kind}}"
   },
   "orderMatch": {

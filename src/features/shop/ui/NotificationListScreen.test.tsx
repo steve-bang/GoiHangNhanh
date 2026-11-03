@@ -19,7 +19,7 @@ describe('UI-I07 tab Thông báo (V1-10)', () => {
     expect(screen.getByTestId('screen-UI-I07')).toBeOnTheScreen();
     expect(screen.getByText('Chưa có thông báo')).toBeOnTheScreen();
     expect(
-      screen.getByText('Ứng dụng chưa gửi thông báo. Lỗi tải lên xem ở Trung tâm đồng bộ.'),
+      screen.getByText('Ứng dụng chưa gửi thông báo. Lỗi tải lên xem ở màn Tải lên.'),
     ).toBeOnTheScreen();
     expect(screen.queryByText(/sắp có/i)).toBeNull();
   });
@@ -27,7 +27,7 @@ describe('UI-I07 tab Thông báo (V1-10)', () => {
   it('nút mở Trung tâm đồng bộ; là màn gốc của tab nên không có nút quay lại', async () => {
     await renderWithProviders(<NotificationListScreen />);
     expect(screen.queryByLabelText('Quay lại')).toBeNull();
-    await fireEvent.press(screen.getByRole('button', { name: 'Mở Trung tâm đồng bộ' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Xem tiến độ tải lên' }));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.sync);
   });
 });

@@ -143,12 +143,21 @@ describe('UI-B01 Trang chủ (mẫu thiết kế, D-16)', () => {
     expect(screen.queryByTestId('home-needs-action')).toBeNull();
   });
 
+  it('có tệp đang tải lên (không lỗi): hiện "Đang tải lên" và mở màn Tải lên ở bộ lọc đang tải', async () => {
+    const stores = withData([file('u', 'uploading')], 1);
+    await renderWithProviders(<HomeScreen />, stores);
+    expect(await screen.findByTestId('home-needs-action')).toBeOnTheScreen();
+    expect(screen.queryByText('Bằng chứng cần theo dõi')).toBeNull();
+    await fireEvent.press(screen.getByText('Xem tiến độ tải lên'));
+    expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.sync, { filter: 'uploading' });
+  });
+
   it('có tệp lỗi: khối cần xử lý nằm trên thống kê và mở Đồng bộ với bộ lọc lỗi', async () => {
     const stores = withData([file('x', 'needs_attention'), file('y', 'hash_mismatch')], 1);
     await renderWithProviders(<HomeScreen />, stores);
     expect(await screen.findByTestId('home-needs-action')).toBeOnTheScreen();
     expect(screen.getByText('Bằng chứng cần theo dõi')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByText('Mở trung tâm đồng bộ'));
+    await fireEvent.press(screen.getByText('Xem tiến độ tải lên'));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.sync, { filter: 'error' });
   });
 

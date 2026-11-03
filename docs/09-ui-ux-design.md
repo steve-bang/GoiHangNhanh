@@ -120,7 +120,7 @@ Luồng rút gọn: Quét/nhập mã → tra cứu hoặc tạo nhanh → (kiể
 | UI-C02 | Kiểm tra trước khi quay | Camera, micro, bộ nhớ đủ cho phiên dự kiến, quyền, khả năng lưu cục bộ. **Chạy ngầm; chỉ hiện khi có điều kiện không đạt**, kèm cách khắc phục cụ thể. Chỉ cho quay khi đủ điều kiện ghi và lưu an toàn |
 | UI-C03 | Quay video | Khung camera chiếm phần lớn; mã đơn, mã kiện, đồng hồ luôn hiện; nút ghi/dừng rõ; cảnh báo camera gián đoạn/gần hết bộ nhớ; **không** bộ lọc/làm đẹp/chỉnh sửa; không đổi đơn khi đang quay; gián đoạn phải ghi nhận và hiển thị |
 | UI-C04 | Kết thúc và xác nhận | Thumbnail, thời lượng, mã đơn; xem lại / ghi thêm đoạn riêng / dùng video; nhãn "phiên quay bị gián đoạn" nếu có; CTA *Lưu bằng chứng* — báo lưu thành công chỉ sau khi tệp đã ghi an toàn |
-| UI-C05 | Lưu và đồng bộ | Trạng thái cục bộ tách khỏi cloud; tiến độ khi xác định được; được làm tiếp trong lúc tải; mất mạng → *Chờ tải lên* và tự thử lại; không xóa tệp cục bộ trước khi máy chủ xác nhận và chính sách cho phép. Không bắt đứng nhìn thanh tiến trình |
+| UI-C05 | Lưu video | Trạng thái cục bộ tách khỏi cloud; tiến độ khi xác định được; được làm tiếp trong lúc tải; mất mạng → *Chờ tải lên* và tự thử lại; không xóa tệp cục bộ trước khi máy chủ xác nhận và chính sách cho phép. Không bắt đứng nhìn thanh tiến trình |
 | UI-C06 | Hoàn tất đóng gói | Tóm tắt số video + trạng thái; chưa tải xong → "Video đã lưu trên thiết bị — đang chờ đồng bộ"; CTA chính *Đóng gói đơn tiếp theo*, phụ *Xem bằng chứng* |
 
 ### Nhóm D — Nhận hàng hoàn
@@ -151,8 +151,8 @@ Phải khác luồng đóng gói: ghi nhận tình trạng kiện **trước** k
 
 | Mã | Màn | Nội dung chính |
 |---|---|---|
-| UI-F01 | Trung tâm đồng bộ | Lọc: Đang tải lên, Chờ tải lên, Lỗi, Đã tải lên; mỗi tệp: tên hồ sơ, dung lượng, tiến độ/lý do chờ; thử lại, chi tiết, mở hồ sơ; thử lại hàng loạt cho tệp đủ điều kiện; **không có "Xóa tất cả"** |
-| UI-F02 | Chi tiết lỗi đồng bộ | Ví dụ: "Video vẫn được lưu trên thiết bị. Chưa thể tải lên vì kết nối mạng không ổn định."; nêu nguyên nhân, nêu dữ liệu còn ở đâu; CTA *Thử tải lên lại*; không bắt quay lại nếu tệp gốc còn nguyên |
+| UI-F01 | Tải lên (trước đây "Trung tâm đồng bộ") | Lọc: Đang tải lên, Chờ tải lên, Lỗi, Đã tải lên; mỗi tệp: tên hồ sơ, dung lượng, tiến độ/lý do chờ; thử lại, chi tiết, mở hồ sơ; thử lại hàng loạt cho tệp đủ điều kiện; **không có "Xóa tất cả"** |
+| UI-F02 | Chi tiết lỗi tải lên | Ví dụ: "Video vẫn được lưu trên thiết bị. Chưa thể tải lên vì kết nối mạng không ổn định."; nêu nguyên nhân, nêu dữ liệu còn ở đâu; CTA *Thử tải lên lại*; không bắt quay lại nếu tệp gốc còn nguyên |
 | UI-F03 | Dung lượng và lưu trữ | Riêng biệt: dung lượng cục bộ, tệp chờ tải, cloud đã dùng, giới hạn + thời hạn theo gói, tệp giải phóng được an toàn. Không tự xóa tệp chưa tải/bằng chứng bị giữ; trước dọn phải nêu tệp nào bị xóa và bản nào vẫn còn |
 | UI-F04 | Ngoại tuyến | Banner nhỏ "Đang ngoại tuyến — bằng chứng sẽ được đồng bộ khi có mạng"; tiếp tục ghi nhận nếu lưu cục bộ được; thao tác cần máy chủ đánh dấu riêng; có mạng lại thì tự đồng bộ; phiên đăng nhập hết hạn không bị bỏ qua âm thầm |
 

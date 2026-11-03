@@ -1172,3 +1172,14 @@ Kế hoạch: `docs/engineering/plans/v1-29-server-playback.md`. Yêu cầu do n
 
 - **Quyết định (người dùng yêu cầu):** chỉ đổi tên hiển thị (app, chuỗi i18n, quyền hệ điều hành, web `site.name`, tài liệu, agent). Mọi giá trị kỹ thuật còn mang tên cũ và được liệt kê ở `release-checklist.md` mục R để đổi sau (bundle id, CSDL `doncung.db`, module native, scheme, dự án Firebase, tên miền).
 - **Ghi chú:** các ô Q-xx cũ phía trên vẫn ghi "Đơn Chứng" vì là hồ sơ tại thời điểm quyết định. Nhãn hiệu "AmaBox" chưa được kiểm tra (O-11). Vì "AmaBox" là một từ liền nên không còn cần khoảng trắng không ngắt (U+00A0) như quy ước cũ ở Q-15h.
+
+#### Q-31 / V1-31 — loading-style-upload-status
+
+Yêu cầu do người dùng nêu trực tiếp (2026-11-03): bớt ngôn ngữ kỹ thuật về kết nối máy-máy chủ, trạng thái hiện kiểu "đang tải…" như web gọi API. Chi tiết do điều phối chốt, **chưa có xác nhận trực tiếp**; câu chữ chờ BA (C-1). Chưa kiểm chứng trên thiết bị.
+
+| # | Quyết định | Lý do |
+|---|---|---|
+| a | Vòng quay CHỈ ở nhãn "Đang tải lên" (việc đang chạy thật); không bao giờ thay cho "Đã lưu trên máy"/"Đã tải lên"/"Đã xác minh", không tick khi chưa được máy chủ xác nhận | Bất biến 3, 11; docs/09 mục 3 |
+| b | Giữ 6 nhãn trạng thái bằng chứng; chỉ đổi tên màn và câu hướng dẫn: UI-F01 "Tải lên", UI-C05 "Lưu video", UI-F02 "Chi tiết lỗi tải lên", nút "Xem tiến độ tải lên"; bỏ "đồng bộ", "hàng chờ", "nhờ máy chủ kiểm tra lại" | Đổi nhãn là đổi nghiệp vụ, ngoài phạm vi |
+| c | Trang chủ hiện khối "Đang tải lên" khi có tệp đang tải (trước: chỉ khi có lỗi); có lỗi thì giữ tiêu đề "Bằng chứng cần theo dõi" | Người dùng thấy app đang làm việc; không dọa khi không lỗi |
+| d | Giữ: cảnh báo mất dữ liệu (đăng xuất, đổi cửa hàng, xóa tài khoản), nhãn hồ sơ chỉ trên máy, câu "Ứng dụng chỉ tải lên khi đang mở" (không hứa tải nền), câu "Đang tải lên máy chủ" ở màn Xác nhận/Hoàn tất (test nguyên văn). Từ khóa tìm của Trợ giúp vẫn có "đồng bộ" | Trung thực; chưa làm màn Xác nhận/Hoàn tất |

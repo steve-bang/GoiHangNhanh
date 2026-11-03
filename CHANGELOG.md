@@ -6,6 +6,10 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ## [Unreleased]
 
+### Changed
+
+- Trạng thái tải lên kiểu "đang tải…" thay ngôn ngữ đồng bộ (V1-31, **câu chữ chờ BA duyệt C-1; chưa kiểm chứng trên thiết bị**): nhãn "Đang tải lên" có vòng quay (`EvidenceStatusBadge`), Trang chủ hiện khối "Đang tải lên" khi có tệp đang tải (trước chỉ hiện khi có lỗi; `TodayStats.uploading`), tiêu đề không còn dọa khi chỉ có việc đang chạy. Đổi chữ: "Đồng bộ" -> "Tải lên" (UI-F01), "Lưu và đồng bộ" -> "Lưu video", "Chi tiết lỗi đồng bộ" -> "Chi tiết lỗi tải lên", "Trung tâm đồng bộ" -> "Xem tiến độ tải lên"/"màn Tải lên", bỏ "hàng chờ", "nhờ máy chủ kiểm tra lại". Giữ nguyên 6 nhãn trạng thái bằng chứng (docs/09 mục 3), phân biệt "trên máy"/"trên máy chủ", cảnh báo mất dữ liệu và câu "chỉ tải lên khi đang mở". Không đổi route.
+
 ### Added
 
 - Tải tiếp được (Content-Range, hạng mục 1 của `plans/reliability-priorities.md`): `uploadFileResumable` có `resume` thì lưu `Location` phiên GCS vào bảng mới `upload_sessions` (migration v18; xóa khi tải xong/`already_received`/hết hạn/đổi cỡ tệp/xóa tài khoản), lượt sau hỏi máy chủ đã nhận tới đâu (`PUT` rỗng, `Content-Range` dấu sao, `Range` của 308) rồi gửi phần còn lại theo khối 8 MiB; mất mạng/hủy giữ phiên, phiên hết hạn (404/410) mở phiên mới đúng một lần. Phần thuần `platform/upload-protocol.ts`, bộ gửi khối `platform/chunk-sender.ts` (ghi khối ra tệp tạm trong cache rồi `uploadAsync`), kho `features/orders/data/upload-session-store.ts`. Không đổi Rules/Functions, không đổi trạng thái tệp. Sửa sau review: tệp khối tạm có tên duy nhất mỗi lần gửi, dọn mồ côi một lần mỗi tiến trình và chỉ tệp cũ hơn 1 giờ, mỗi tệp một lượt gửi khối tại một thời điểm, kiểm hủy ngay trước `uploadAsync`, lỗi đọc tệp cục bộ không còn bị coi là mất mạng (`LOCAL_READ_FAILED` tính lượt, `FILE_MISSING` cần xử lý), 400/401/403 trên phiên đã lưu coi như hết hạn (mở phiên mới đúng một lần), lệnh hỏi trạng thái hạn riêng 30 giây. **Chưa chạy trên thiết bị**: cách gửi khối, hành vi 308, thông lượng và bộ nhớ cần spike ở G-3; chưa có tải nền.

@@ -175,7 +175,7 @@ describe('ProfileScreen (UI-I01) khung 1a: màn chính', () => {
     );
     expect(screen.getByTestId('metric-cloud').props.accessibilityLabel).toBe('Trên đám mây: 0');
     expect(block).not.toHaveTextContent(/Chưa có số liệu/);
-    await fireEvent.press(screen.getByRole('button', { name: 'Xem trung tâm đồng bộ' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Xem tiến độ tải lên' }));
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.sync);
   });
 

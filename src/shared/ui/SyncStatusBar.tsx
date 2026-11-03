@@ -29,14 +29,17 @@ export function SyncStatusBar({ counts, onPress }: SyncStatusBarProps) {
   const { t } = useTranslation();
   const visible = ORDER.filter((key) => counts[key] > 0);
   if (visible.length === 0) return null;
+  // Chỉ có việc đang chạy (không lỗi, không chờ): nói "Đang tải lên", không dọa bằng "cần theo dõi".
+  const onlyUploading = visible.length === 1 && visible[0] === 'uploading';
+  const title = t(onlyUploading ? 'common:syncBar.titleUploading' : 'common:syncBar.title');
   return (
     <Card
       onPress={onPress}
-      tone={counts.error > 0 ? 'danger' : 'warning'}
-      accessibilityLabel={`${t('common:syncBar.title')}. ${t('common:syncBar.action')}`}
+      tone={counts.error > 0 ? 'danger' : onlyUploading ? 'default' : 'warning'}
+      accessibilityLabel={`${title}. ${t('common:syncBar.action')}`}
     >
       <View style={styles.column}>
-        <Text variant="sectionTitle">{t('common:syncBar.title')}</Text>
+        <Text variant="sectionTitle">{title}</Text>
         {visible.map((key) => (
           <View key={key} style={styles.row}>
             <EvidenceStatusBadge status={key} />

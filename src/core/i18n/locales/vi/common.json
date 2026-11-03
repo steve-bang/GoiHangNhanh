@@ -15,7 +15,7 @@
   },
   "loading": "Đang tải",
   "offline": {
-    "banner": "Đang không có mạng. Bằng chứng sẽ tự tải lên khi có mạng."
+    "banner": "Đang không có mạng. Video sẽ tự tải lên khi có mạng."
   },
   "placeholder": {
     "title": "Tính năng sắp có",
@@ -39,8 +39,9 @@
   },
   "syncBar": {
     "title": "Bằng chứng cần theo dõi",
+    "titleUploading": "Đang tải lên",
     "hint": "Ứng dụng chỉ tải lên khi đang mở. Đóng ứng dụng thì việc tải tạm dừng, mở lại sẽ tiếp tục.",
-    "action": "Mở trung tâm đồng bộ"
+    "action": "Xem tiến độ tải lên"
   },
   "recording": {
     "clock": "Thời lượng",

@@ -41,6 +41,8 @@ export interface TodayStats {
   readonly uploaded: number;
   /** Tệp đang ở bộ lọc Lỗi của Trung tâm đồng bộ (mọi ngày: lỗi cũ vẫn cần xử lý). */
   readonly needsAction: number;
+  /** Tệp đang tải lên NGAY BÂY GIỜ (cùng phân loại bộ lọc "Đang tải" của UI-F01); để Trang chủ báo việc đang chạy. */
+  readonly uploading: number;
 }
 
 export async function loadTodayStats(
@@ -57,10 +59,14 @@ export async function loadTodayStats(
     loadSyncJobs(stores, shopId, uid, PENDING_SYNC_STATES),
   ]);
   // Cùng phân loại với UI-F01 (V1-08): ô Lỗi = đúng số tệp người dùng thấy ở bộ lọc Lỗi.
-  const needsAction = pending.filter(
-    (job) => describeSyncJob(job, { online: true, now })?.filter === 'error',
-  ).length;
-  return { packed, uploaded: sumCounts([files, media], DONE_SYNC_STATES), needsAction };
+  const countFilter = (filter: 'error' | 'uploading') =>
+    pending.filter((job) => describeSyncJob(job, { online: true, now })?.filter === filter).length;
+  return {
+    packed,
+    uploaded: sumCounts([files, media], DONE_SYNC_STATES),
+    needsAction: countFilter('error'),
+    uploading: countFilter('uploading'),
+  };
 }
 
 /** Trạng thái chưa (hoặc không còn) có bản đã lưu trên máy. */

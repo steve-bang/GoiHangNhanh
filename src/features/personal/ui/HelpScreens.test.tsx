@@ -206,7 +206,7 @@ describe('Chi tiết bài hướng dẫn (khung 16)', () => {
     await renderWithProviders(<HelpArticleScreen />);
     expect(screen.getByTestId('help-article-title')).toHaveTextContent('Chỉ tải khi có Wi‑Fi');
     expect(screen.getByTestId('help-article-summary')).toHaveTextContent(/Mặc định .* 4G\/5G/);
-    expect(screen.getByTestId('help-article-step-1')).toHaveTextContent(/Trung tâm đồng bộ/);
+    expect(screen.getByTestId('help-article-step-1')).toHaveTextContent(/màn Tải lên/);
     expect(screen.getByTestId('help-article-step-3')).toHaveTextContent(
       /Phát Wi‑Fi từ một điện thoại khác vẫn được coi là Wi‑Fi, nên vẫn tốn dữ liệu di động/,
     );

@@ -106,6 +106,7 @@ describe('loadTodayStats (Trang chủ, V1-10)', () => {
       packed: 0,
       uploaded: 0,
       needsAction: 0,
+      uploading: 0,
     });
   });
 

@@ -26,9 +26,15 @@ describe('EvidenceStatusBadge (docs/09 mục 3)', () => {
   it.each(STATUSES)('%s hiển thị đúng nhãn chữ và có biểu tượng', async (status) => {
     await renderWithProviders(<EvidenceStatusBadge status={status} testID="badge" />);
     expect(screen.getByText(EXPECTED_LABELS[status])).toBeOnTheScreen();
-    // Biểu tượng riêng của nhãn thật sự được vẽ (jest.setup.js thay font icon bằng tên glyph).
-    const glyph = ICON_GLYPHS[EVIDENCE_STATUS_PRESENTATION[status].icon];
-    expect(screen.getByTestId(`icon-${glyph}`)).toBeOnTheScreen();
+    if (status === 'uploading') {
+      // Việc đang chạy thật: vòng quay thay biểu tượng tĩnh; mọi nhãn khác không có vòng quay.
+      expect(screen.getByTestId('badge-busy')).toBeOnTheScreen();
+    } else {
+      // Biểu tượng riêng của nhãn thật sự được vẽ (jest.setup.js thay font icon bằng tên glyph).
+      const glyph = ICON_GLYPHS[EVIDENCE_STATUS_PRESENTATION[status].icon];
+      expect(screen.getByTestId(`icon-${glyph}`)).toBeOnTheScreen();
+      expect(screen.queryByTestId('badge-busy')).toBeNull();
+    }
     expect(screen.getByLabelText(EXPECTED_LABELS[status])).toBeOnTheScreen();
   });
 
