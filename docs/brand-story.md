@@ -1,8 +1,8 @@
 # Câu chuyện thương hiệu (brand story)
 
-> **Trạng thái:** văn bản gốc do người dùng cung cấp (2026-11-03), lưu **nguyên văn**, chưa chỉnh sửa. Chưa gắn vào app, web hay tài liệu store.
+> **Trạng thái:** văn bản do người dùng cung cấp (2026-11-03), giữ nguyên câu chữ; **chỉ đổi tên** "Đơn Chứng" thành "AmaBox" theo yêu cầu. Chưa gắn vào app, web hay tài liệu store.
 >
-> **Lưu ý tên:** văn bản viết bằng tên cũ "Đơn Chứng". Tên hiển thị hiện là **AmaBox** (PR #92; O-11, nhãn hiệu chưa kiểm tra). Khi dùng ở nơi công khai phải đổi tên theo quyết định cuối cùng (bản gốc giữ nguyên ở dưới để làm tư liệu).
+> **Lưu ý tên:** tên hiển thị hiện là **AmaBox** (PR #92; O-11, nhãn hiệu chưa kiểm tra). Nếu tên chính thức đổi lần nữa thì thay lại trong tài liệu này.
 >
 > **Đối chiếu với bất biến nghiệp vụ** (CLAUDE.md, mục "Bất biến nghiệp vụ"): câu chuyện phù hợp với bất biến 11 (ngôn ngữ trung thực): nói rõ "không thể ngăn mọi sự cố" và "không thể hứa mọi khiếu nại có lợi cho người bán". Khi dùng làm nội dung công khai, cần lưu ý ba chỗ:
 >
@@ -12,7 +12,7 @@
 
 ---
 
-ĐƠN CHỨNG – Bởi người bán hàng, dành cho người bán hàng
+AMABOX – Bởi người bán hàng, dành cho người bán hàng
 
 Tôi từng là một người bán hàng online khởi nghiệp.
 
@@ -54,9 +54,9 @@ Giá như mọi hình ảnh, video đều được gắn đúng mã đơn, lưu 
 
 Và giá như việc đó đủ đơn giản để bất kỳ shop nào cũng có thể thực hiện mỗi ngày, dù chỉ có một người bán hàng hay cả một đội ngũ đóng gói.
 
-Đó là lý do Đơn Chứng ra đời.
+Đó là lý do AmaBox ra đời.
 
-Chúng tôi xây dựng Đơn Chứng để giúp người bán hàng ghi lại quá trình đóng gói, tiếp nhận hàng hoàn và lưu trữ bằng chứng theo từng đơn hàng.
+Chúng tôi xây dựng AmaBox để giúp người bán hàng ghi lại quá trình đóng gói, tiếp nhận hàng hoàn và lưu trữ bằng chứng theo từng đơn hàng.
 
 Không còn phải gửi video qua nhiều nhóm chat rồi loay hoay tìm lại.
 
@@ -70,6 +70,6 @@ Chúng tôi không thể ngăn mọi sự cố xảy ra. Cũng không thể hứ
 
 Nhưng chúng tôi tin rằng mỗi shop xứng đáng có cơ hội bảo vệ quyền lợi của mình bằng những bằng chứng rõ ràng, được ghi nhận đúng cách và lưu trữ cẩn thận.
 
-Đơn Chứng – Bởi người bán hàng, dành cho người bán hàng.
+AmaBox – Bởi người bán hàng, dành cho người bán hàng.
 
 Vì phía sau mỗi đơn hàng là công sức của một người kinh doanh. Và công sức ấy xứng đáng được bảo vệ.
