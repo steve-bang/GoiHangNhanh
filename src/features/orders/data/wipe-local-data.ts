@@ -29,6 +29,7 @@ export const WIPED_TABLES: readonly string[] = [
   'order_lines',
   'orders',
   'search_history',
+  'upload_sessions',
 ];
 export const KEPT_TABLES: readonly string[] = ['device_settings'];
 

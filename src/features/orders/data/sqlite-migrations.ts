@@ -355,6 +355,19 @@ export const MIGRATIONS: readonly string[] = [
   `
   ALTER TABLE evidence_files ADD COLUMN last_alive_at_device INTEGER;
   `,
+  // v18 (tải tiếp được): phiên tải GCS đang dở của MỘT bằng chứng (đóng gói hoặc hàng hoàn; `evidence_id`
+  // duy nhất giữa hai nhóm). `location` là URL phiên có quyền ghi tới khi phiên hết hạn: KHÔNG log, xóa khi
+  // tải xong/đổi cỡ tệp/xóa tài khoản. Lượt tải sau hỏi máy chủ đã nhận tới đâu và gửi tiếp thay vì từ đầu.
+  // Chỉ thêm bảng, không đụng bảng cũ.
+  `
+  CREATE TABLE upload_sessions (
+    evidence_id TEXT PRIMARY KEY NOT NULL,
+    shop_id TEXT NOT NULL,
+    location TEXT NOT NULL,
+    size_bytes INTEGER NOT NULL,
+    created_at_device INTEGER NOT NULL
+  );
+  `,
 ];
 
 /**

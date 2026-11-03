@@ -54,6 +54,7 @@ export type { DeleteRecordingResult, PersistResult } from './recording-files';
 export { LOCAL_WIPE_MARKER_NAME } from './local-wipe-marker';
 export { LOCAL_WIPE_FILE_STEPS } from './local-wipe-files';
 export { classifyUploadStatus, uploadFileResumable } from './resumable-upload';
+export type { StoredUploadSession, UploadSessionStore } from './upload-session-store';
 export type { UploadFileResult, UploadSessionRequest } from './resumable-upload';
 export { CameraPhoto, usePhotoPermission } from './camera-photo';
 export type { CameraPhotoHandle, PhotoPermission, PhotoResult } from './camera-photo';

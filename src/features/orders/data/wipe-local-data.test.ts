@@ -50,6 +50,10 @@ async function seed(db: ReturnType<typeof createNodeSqliteDatabase>, uid: string
      VALUES ('shop-a', 'DH-1', 'DH-1', 1)`,
   );
   await db.runAsync(
+    `INSERT INTO upload_sessions (evidence_id, shop_id, location, size_bytes, created_at_device)
+     VALUES ('e1', 'shop-a', 'https://storage.example/upload/abc', 10, 7)`,
+  );
+  await db.runAsync(
     `INSERT INTO return_cases (id, shop_id, seq, code, status, created_at_device, updated_at_device, created_by)
      VALUES ('r1', 'shop-a', 1, 'RH-00001', 'receiving', 1, 1, ?)`,
     [uid],
