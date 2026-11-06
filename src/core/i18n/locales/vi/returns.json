@@ -56,7 +56,10 @@
     "another": "Đây là lần tiếp nhận khác",
     "linkMode": "Liên kết đơn gốc cho hồ sơ {{code}}. Việc liên kết được ghi vào lịch sử hồ sơ.",
     "linkAction": "Liên kết đơn này",
-    "alreadyLinked": "Hồ sơ này đã có đơn gốc nên không đổi được."
+    "alreadyLinked": "Hồ sơ này đã có đơn gốc nên không đổi được.",
+    "scan": "Quét mã trên kiện",
+    "scanHint": "Đưa mã QR hoặc mã vạch trên kiện hoàn vào khung. Mã đọc được chỉ để tìm đơn.",
+    "scanManual": "Nhập mã bằng tay"
   },
   "exterior": {
     "intro": "Ghi lại những gì bạn thấy ở bên ngoài kiện, trước khi mở.",
@@ -114,7 +117,10 @@
       "backToList": "Về danh sách hàng hoàn",
       "leavePreparing": "Chưa bắt đầu ghi video. Thoát sẽ quay về danh sách hàng hoàn.",
       "leaveSaving": "Video đang được lưu trên máy. Bạn có thể về danh sách, việc lưu vẫn tiếp tục.",
-      "loading": "Đang kiểm tra hồ sơ…"
+      "loading": "Đang kiểm tra hồ sơ…",
+      "saveForLater": "Lưu tạm, quay sau",
+      "deviceKept": "Hồ sơ vẫn được giữ. Bạn quay lại mở kiện sau khi xử lý xong.",
+      "deviceOpenedBefore": "Kiện đã mở trước khi quay. Hãy ghi nhận lý do chưa có video để tiếp tục."
     }
   },
   "recovery": {

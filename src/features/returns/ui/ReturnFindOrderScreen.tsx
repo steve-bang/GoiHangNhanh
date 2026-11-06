@@ -24,6 +24,7 @@ import {
 } from '@/shared/ui';
 
 import type { LinkBasis, ReturnSummary } from '../domain';
+import { ReturnScanPanel } from './ReturnScanPanel';
 import { ReturnLoadState } from './ReturnLoadState';
 import { resumeRoute } from './return-routes';
 import { useReturnCase } from './use-return-case';
@@ -80,6 +81,7 @@ function FindOrderBody(props: BodyProps) {
     items: readonly ReturnSummary[];
     pending: Selection;
   } | null>(null);
+  const [scanning, setScanning] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<ErrorCode | null>(null);
 
@@ -90,14 +92,14 @@ function FindOrderBody(props: BodyProps) {
   const selected = candidates.find((c) => c.details.order.id === selectedId);
   const typedCode = code.trim();
 
-  const search = async () => {
+  const search = async (value: string = code) => {
     setFailure(null);
     setDuplicates(null);
     setChosen(null);
     setCodeError(null);
     setPhase({ kind: 'searching' });
     try {
-      const result = await ops.lookupOrders(code);
+      const result = await ops.lookupOrders(value);
       if (result.kind === 'invalid') {
         setCodeError(t('returns:find.invalidCode'));
         setPhase({ kind: 'idle' });
@@ -108,6 +110,13 @@ function FindOrderBody(props: BodyProps) {
       logger.warn('returns.lookup_failed', { reason: isAppError(error) ? error.code : 'unknown' });
       setPhase({ kind: 'error' });
     }
+  };
+
+  /** Mã quét được điền vào ô nhập rồi tra cứu như nhập tay: người dùng vẫn thấy mã, sửa được, và tự xác nhận đơn. */
+  const onScanned = (scanned: string) => {
+    setScanning(false);
+    setCode(scanned);
+    void search(scanned);
   };
 
   const finish = (details: { returnCase: { id: string } }) =>
@@ -268,6 +277,18 @@ function FindOrderBody(props: BodyProps) {
         onSubmitEditing={() => void search()}
         {...(codeError ? { error: codeError } : {})}
       />
+      {scanning ? (
+        <ReturnScanPanel onScan={onScanned} onClose={() => setScanning(false)} />
+      ) : (
+        <Button
+          testID="return-scan"
+          variant="secondary"
+          size="compact"
+          icon="scan"
+          label={t('returns:find.scan')}
+          onPress={() => setScanning(true)}
+        />
+      )}
       <Button
         testID="return-search"
         variant="secondary"
