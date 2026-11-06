@@ -7,6 +7,8 @@ export {
   WARN_BEFORE_LIMIT_SECONDS,
   formatElapsed,
   maxRecordSeconds,
+  runPrecheck,
+  type PrecheckResult,
   requiredFreeBytes,
   VIDEO_PROFILE,
 } from './domain';

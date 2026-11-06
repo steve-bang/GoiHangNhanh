@@ -22,6 +22,8 @@ export const components = {
   checkbox: { size: 24 },
   stepper: { valueMinWidth: 48 },
   scanFrame: { cornerRadius: 14 },
+  /** Khung camera quét mã nằm trong màn có form (UI-D02): vừa nhìn rõ mã, vẫn chừa chỗ cho nút. */
+  scanPanel: { height: 220 },
   record: {
     stopOuter: 84,
     stopInner: 68,
