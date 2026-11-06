@@ -9,6 +9,27 @@ export interface RemoteWriteSpec {
   readonly data: Readonly<Record<string, unknown>>;
 }
 
+export interface RemoteListRequest {
+  /** Đường dẫn bộ sưu tập, ví dụ `shops/{shopId}/orders`. */
+  readonly path: string;
+  /** Trường thời gian máy chủ để sắp xếp (ví dụ `createdAt`). */
+  readonly orderByField: string;
+  readonly pageSize: number;
+  /** `next` của trang trước; bỏ trống = trang đầu. */
+  readonly after?: string | null;
+}
+
+export interface RemoteListedDocument {
+  readonly id: string;
+  readonly data: Readonly<Record<string, unknown>>;
+}
+
+export interface RemoteListPage {
+  readonly docs: readonly RemoteListedDocument[];
+  /** Con trỏ tới trang sau; `null` = hết. */
+  readonly next: string | null;
+}
+
 export interface RemoteDocuments {
   /** Giá trị đặc biệt của máy chủ để đặt vào nội dung tài liệu. */
   readonly values: {
@@ -34,6 +55,12 @@ export interface RemoteDocuments {
   getManyFields(
     paths: readonly string[],
   ): Promise<ReadonlyMap<string, Readonly<Record<string, unknown>>>>;
+  /**
+   * Đọc MỘT TRANG của một bộ sưu tập (khôi phục dữ liệu sau khi cài lại/đổi máy). Sắp xếp theo trường
+   * thời gian `orderByField` GIẢM DẦN (mới trước) rồi theo ID giảm dần; phân trang bằng `after` là
+   * con trỏ mờ của trang trước (`next`). Chỉ đọc từ máy chủ, không dùng bộ đệm. Không cần chỉ mục ghép.
+   */
+  listPage(request: RemoteListRequest): Promise<RemoteListPage>;
   /** Gọi một Cloud Function dạng callable (ví dụ `createUploadSession`). Lỗi giữ nguyên `code` của SDK. */
   callFunction<T>(name: string, data: unknown): Promise<T>;
 }

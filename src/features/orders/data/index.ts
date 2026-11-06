@@ -38,3 +38,12 @@ export {
 } from './upload-session-store';
 export { createLocalDataWiper, createLocalDeviceData, LocalWipeError } from './wipe-local-data';
 export type { LocalDataWiper, LocalDeviceData, LocalWipeSteps } from './wipe-local-data';
+export { RestoreProvider, useRestoreController, useRestoreStatus } from './RestoreProvider';
+export { RestoreRunner } from './RestoreRunner';
+export { createRestoreController, isRestoreVisible } from './restore-status';
+export type { RestoreController, RestoreStatus } from './restore-status';
+export {
+  createLocalRestoreStore,
+  createMemoryRestoreStore,
+  createSqliteRestoreStore,
+} from './sqlite-restore-store';

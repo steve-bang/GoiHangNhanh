@@ -33,6 +33,7 @@ function docs(uid: string | null) {
     updateFields: async () => undefined,
     getFields: async () => null,
     getManyFields: async () => new Map(),
+    listPage: async () => ({ docs: [], next: null }),
     callFunction: async () => {
       throw new Error('unused');
     },

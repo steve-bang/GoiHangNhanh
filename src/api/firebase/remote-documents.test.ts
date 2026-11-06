@@ -13,15 +13,21 @@ const mockCommit = jest.fn(async () => undefined);
 const mockUpdateDoc = jest.fn(async () => undefined);
 
 const mockQueries: { parent: string; ids: string[] }[] = [];
+const mockListQueries: unknown[] = [];
+let mockListDocs: { id: string; data: Record<string, unknown> }[] = [];
 
 jest.mock('@react-native-firebase/firestore', () => ({
   collection: (_db: unknown, path: string) => ({ collectionPath: path }),
   documentId: () => 'DOC_ID',
   where: (_field: string, _op: string, ids: string[]) => ({ ids }),
-  query: (ref: { collectionPath: string }, filter: { ids: string[] }) => ({
+  query: (ref: { collectionPath: string }, ...constraints: { ids?: string[] }[]) => ({
     parent: ref.collectionPath,
-    ids: filter.ids,
+    ids: constraints[0]?.ids,
+    constraints,
   }),
+  orderBy: (field: string, direction: string) => ({ orderBy: [field, direction] }),
+  startAfter: (...values: unknown[]) => ({ startAfter: values }),
+  limit: (n: number) => ({ limit: n }),
   // Đọc từ bộ đệm: KHÔNG được dùng (pending write trông như đã có). Ném để test bắt nếu lỡ dùng.
   getDoc: async () => {
     throw new Error('không được đọc bộ đệm');
@@ -29,8 +35,23 @@ jest.mock('@react-native-firebase/firestore', () => ({
   getDocs: async () => {
     throw new Error('không được đọc bộ đệm');
   },
-  getDocsFromServer: async (q: { parent: string; ids: string[] }) => {
-    mockQueries.push(q);
+  getDocsFromServer: async (q: {
+    parent: string;
+    ids?: string[];
+    constraints: { limit?: number; startAfter?: unknown[] }[];
+  }) => {
+    if (!q.ids) {
+      mockListQueries.push(q);
+      const after = q.constraints.find((c) => c.startAfter)?.startAfter;
+      const size = q.constraints.find((c) => c.limit)?.limit ?? 0;
+      const start = after ? mockListDocs.findIndex((d) => d.id === after[1]) + 1 : 0;
+      return {
+        docs: mockListDocs
+          .slice(start, start + size)
+          .map((d) => ({ id: d.id, data: () => d.data })),
+      };
+    }
+    mockQueries.push({ parent: q.parent, ids: q.ids });
     return {
       docs: q.ids
         .filter((id) => mockExisting.has(`${q.parent}/${id}`))
@@ -76,6 +97,8 @@ beforeEach(() => {
   mockExisting.clear();
   mockCached.clear();
   mockQueries.length = 0;
+  mockListQueries.length = 0;
+  mockListDocs = [];
   mockBatchSets.length = 0;
   mockCommit.mockClear();
   mockUpdateDoc.mockClear();
@@ -234,5 +257,29 @@ describe('createFirestoreRemoteDocuments', () => {
       mockCall.mockReset();
       jest.useRealTimers();
     }
+  });
+  it('listPage: mới trước, phân trang bằng con trỏ (mốc thời gian + id), trang cuối trả next = null', async () => {
+    const docs = createFirestoreRemoteDocuments(services);
+    const at = (ms: number) => ({ toMillis: () => ms });
+    mockListDocs = [
+      { id: 'c', data: { createdAt: at(30) } },
+      { id: 'b', data: { createdAt: at(20) } },
+      { id: 'a', data: { createdAt: at(10) } },
+    ];
+    const first = await docs.listPage({
+      path: 'shops/s/orders',
+      orderByField: 'createdAt',
+      pageSize: 2,
+    });
+    expect(first.docs.map((d) => d.id)).toEqual(['c', 'b']);
+    expect(first.next).toBe('20|b');
+    const second = await docs.listPage({
+      path: 'shops/s/orders',
+      orderByField: 'createdAt',
+      pageSize: 2,
+      after: first.next,
+    });
+    expect(second.docs.map((d) => d.id)).toEqual(['a']);
+    expect(second.next).toBeNull();
   });
 });

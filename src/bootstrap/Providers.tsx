@@ -9,6 +9,8 @@ import {
   EvidenceFileStoreProvider,
   OrderStoreProvider,
   OrderSyncRunner,
+  RestoreProvider,
+  RestoreRunner,
 } from '@/features/orders';
 import { EvidenceReadUrlProvider } from '@/features/evidence';
 import { RecordingRecovery } from '@/features/packing';
@@ -45,6 +47,7 @@ function BackgroundRunners({ children }: { children: ReactNode }) {
           <RecordingRecovery />
           <ReturnMediaRecovery />
           <OrderSyncRunner docs={getDefaultRemoteDocuments()} />
+          <RestoreRunner docs={getDefaultRemoteDocuments()} />
           <ReturnSyncRunner docs={getDefaultRemoteDocuments()} />
         </>
       ) : null}
@@ -81,20 +84,22 @@ export function AppProviders({ children }: { children: ReactNode }) {
                 <ToastProvider>
                   <SessionShopProvider>
                     <OrderStoreProvider>
-                      <EvidenceFileStoreProvider>
-                        <ReturnStoreProvider>
-                          <DisputeStoreProvider>
-                            <DeviceSettingsProvider>
-                              {/* V1-16: công tắc "Gửi báo lỗi ứng dụng" -> Crashlytics (chỉ bản build Firebase). */}
-                              <CrashReportingBridge />
-                              {/* Xem lại bằng chứng từ máy chủ khi tệp trên máy không còn. */}
-                              <EvidenceReadUrlProvider docs={getDefaultRemoteDocuments()}>
-                                <BackgroundRunners>{children}</BackgroundRunners>
-                              </EvidenceReadUrlProvider>
-                            </DeviceSettingsProvider>
-                          </DisputeStoreProvider>
-                        </ReturnStoreProvider>
-                      </EvidenceFileStoreProvider>
+                      <RestoreProvider>
+                        <EvidenceFileStoreProvider>
+                          <ReturnStoreProvider>
+                            <DisputeStoreProvider>
+                              <DeviceSettingsProvider>
+                                {/* V1-16: công tắc "Gửi báo lỗi ứng dụng" -> Crashlytics (chỉ bản build Firebase). */}
+                                <CrashReportingBridge />
+                                {/* Xem lại bằng chứng từ máy chủ khi tệp trên máy không còn. */}
+                                <EvidenceReadUrlProvider docs={getDefaultRemoteDocuments()}>
+                                  <BackgroundRunners>{children}</BackgroundRunners>
+                                </EvidenceReadUrlProvider>
+                              </DeviceSettingsProvider>
+                            </DisputeStoreProvider>
+                          </ReturnStoreProvider>
+                        </EvidenceFileStoreProvider>
+                      </RestoreProvider>
                     </OrderStoreProvider>
                   </SessionShopProvider>
                 </ToastProvider>

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { logger } from '@/core/logging/logger';
 import { ROUTES } from '@/core/navigation';
-import { useDeviceSetting } from '@/features/orders';
+import { RestoreBanner, useDeviceSetting } from '@/features/orders';
 import { useCurrentShopName } from '@/features/personal';
 import { useTodayEvidenceStats } from '@/features/upload';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
@@ -141,6 +141,7 @@ export function HomeScreen() {
       testID="screen-UI-B01"
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
     >
+      <RestoreBanner testID="home-restore" />
       <View style={{ gap: tokens.space.md }}>
         <HomeActionCard
           testID="home-pack-order"

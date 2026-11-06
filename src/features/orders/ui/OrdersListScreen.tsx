@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -28,7 +28,7 @@ import {
 } from '@/shared/ui';
 import { layout } from '@/core/theme';
 
-import { useWritableShopId } from '../data';
+import { isRestoreVisible, useRestoreStatus, useWritableShopId } from '../data';
 import {
   EMPTY_FILTERS,
   ORDER_LIST_PAGE_SIZE,
@@ -42,6 +42,7 @@ import {
 } from '../domain';
 import { OrderEvidenceBadge, useEvidenceSummaryText } from './OrderEvidenceBadge';
 import { OrderFiltersSheet } from './OrderFiltersSheet';
+import { RestoreBanner } from './RestoreBanner';
 import { useOrderList, type OrderListRow } from './use-order-list';
 import { useStartPacking } from './use-start-packing';
 
@@ -73,6 +74,20 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
   const list = useOrderList(filters, pageSize ? { pageSize } : {});
   // Chưa biết shop ghi được (chế độ Firebase): tạo đơn sẽ bị QuickOrderScreen từ chối, nên tắt nút và nói rõ lý do.
   const canCreate = useWritableShopId() !== null;
+
+  // Khôi phục sau cài lại/đổi máy: đơn về dần thì nạp lại danh sách; máy còn trống trong lúc lấy về thì
+  // nói "đang lấy lại" thay vì "Chưa có đơn hàng nào".
+  const restore = useRestoreStatus();
+  const restoring =
+    isRestoreVisible(restore) && (restore.kind === 'running' || restore.kind === 'waiting_network');
+  const restoredOrders = restore.kind === 'idle' ? 0 : restore.orders;
+  const lastRestored = useRef(0);
+  const refreshList = list.refresh;
+  useEffect(() => {
+    if (restoredOrders === lastRestored.current) return;
+    lastRestored.current = restoredOrders;
+    if (restoredOrders > 0) refreshList();
+  }, [restoredOrders, refreshList]);
 
   const advanced = countAdvancedFilters(filters);
   const filtered = hasActiveFilters(filters);
@@ -172,8 +187,8 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
           iconCircle
           icon="package"
           actionVariant="primary"
-          title={t('screens:orders.emptyTitle')}
-          message={t('screens:orders.emptyMessage')}
+          title={t(restoring ? 'screens:restore.emptyTitle' : 'screens:orders.emptyTitle')}
+          message={t(restoring ? 'screens:restore.emptyMessage' : 'screens:orders.emptyMessage')}
           {...(canCreate
             ? {
                 actionLabel: t('screens:orders.emptyAction'),
@@ -208,6 +223,7 @@ export function OrdersListScreen({ pageSize }: { pageSize?: number } = {}) {
           }
         : {})}
     >
+      <RestoreBanner testID="orders-restore" />
       <SearchField
         compact
         testID="orders-search"
