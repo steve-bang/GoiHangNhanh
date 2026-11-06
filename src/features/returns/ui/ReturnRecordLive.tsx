@@ -43,6 +43,7 @@ import {
   type VideoPorts,
   type VideoStartFailure,
 } from '../domain';
+import { ReturnDeviceGate } from './ReturnDeviceGate';
 import { SkipReasonSheet } from './ReturnSkipSheet';
 import { useReturnMedia } from './use-return-photos';
 import { useReturnOps } from './use-return-ops';
@@ -85,8 +86,9 @@ const FAILED_REASONS: readonly MissingVideoReason[] = ['device_problem', 'user_s
  * Mỗi hồ sơ chỉ MỘT video mở kiện: đã có video hoặc đã có lần quay trước (kể cả lưu lỗi) thì không mở
  * camera nữa (bất biến 4, 6). Video đã lưu mà hồ sơ chưa ghi nhận (lỗi kho ở bước cuối, app bị đóng) thì
  * tự ghi nhận khi mở màn. Kiện đã mở trước khi quay vẫn là nhánh ngoại lệ: video chỉ ghi tình trạng
- * hiện tại và hồ sơ vẫn mang nhãn hạn chế bằng chứng. Chưa kiểm tra pin/nhiệt độ/ghi thử (A04) như UI-C02
- * của đóng gói; chỉ kiểm dung lượng. Video bị chặn rời màn bằng hộp thoại của khung.
+ * hiện tại và hồ sơ vẫn mang nhãn hạn chế bằng chứng. Trước khi mở camera, `ReturnDeviceGate` kiểm pin (và nhiệt
+ * độ khi có nguồn đo) bằng `runPrecheck` dùng chung với UI-C02; ghi thử và micro chưa kiểm như UI-C02. Dung lượng
+ * kiểm ở `startOpeningVideo`. Video bị chặn rời màn bằng hộp thoại của khung.
  *
  * V1-11 (giống UI-C03): giữ màn hình sáng khi chuẩn bị/quay/lưu; app vào nền khi đang quay thì dừng qua đường
  * lưu sẵn có và ghi video `interrupted: true` (hạn chế bằng chứng, không quay bù/quay tiếp: bất biến 6);
@@ -270,20 +272,22 @@ export function ReturnRecordLive({ details }: { details: ReturnDetails }) {
   }
 
   return (
-    <LiveCamera
-      details={details}
-      onSaved={(saved) => {
-        if (saved.recordedInCase) {
-          toItems();
-          return;
-        }
-        if (saved.interrupted) setInterruptedVideoId(saved.mediaId);
-        void reload(); // đối soát ở trên sẽ ghi nhận video đã lưu vào hồ sơ
-      }}
-      onFailedAskReason={askForReason}
-      toList={toList}
-      sheet={sheet}
-    />
+    <ReturnDeviceGate onNoteReason={askForReason} toList={toList} sheet={sheet}>
+      <LiveCamera
+        details={details}
+        onSaved={(saved) => {
+          if (saved.recordedInCase) {
+            toItems();
+            return;
+          }
+          if (saved.interrupted) setInterruptedVideoId(saved.mediaId);
+          void reload(); // đối soát ở trên sẽ ghi nhận video đã lưu vào hồ sơ
+        }}
+        onFailedAskReason={askForReason}
+        toList={toList}
+        sheet={sheet}
+      />
+    </ReturnDeviceGate>
   );
 }
 

@@ -34,7 +34,7 @@ Nguồn: `v1-release-plan.md` mục 1.2 (Q-24b = A, Q-24f = A), 3.0, 3.3 V1-11, 
 
 **Trợ giúp:** bài hỏi đáp `recordingLimits` (FAQ, không bước): "Đang quay mà ứng dụng bị tắt thì sao?".
 
-**Ngoài phạm vi:** kiểm tra pin/nhiệt độ (UI-C02) cho D04: kế hoạch V1-11 không yêu cầu; giữ ghi chú cũ trong `ReturnRecordLive`. Chia đoạn video (PR8, Q-24b = A), tải nền, tự quay tiếp.
+**Ngoài phạm vi (lúc lập kế hoạch; phần pin của D04 đã làm sau đó, 2026-11-06, xem decisions.md Q-29 mục 9):** kiểm tra pin/nhiệt độ (UI-C02) cho D04. Chia đoạn video (PR8, Q-24b = A), tải nền, tự quay tiếp.
 
 **Migration/Rules/Functions/mã lỗi:** không.
 
