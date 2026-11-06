@@ -55,7 +55,7 @@ beforeEach(() => {
   resetMockRecorder();
 });
 
-async function seedOpening(store: ReturnStore): Promise<ReturnCaseId> {
+async function seedOpening(store: ReturnStore, openedBefore = false): Promise<ReturnCaseId> {
   const id = `ret-${Math.random().toString(36).slice(2)}` as ReturnCaseId;
   await store.createReturn({
     id,
@@ -68,7 +68,7 @@ async function seedOpening(store: ReturnStore): Promise<ReturnCaseId> {
   });
   await store.saveExterior(SHOP, id, {
     exterior: { signs: ['dented'], note: '', recordedAtDevice: 2_000 },
-    openedBefore: null,
+    openedBefore: openedBefore ? { reason: 'mở sẵn', markedAtDevice: 2_000 } : null,
     eventId: `x-${id}`,
     openedEventId: `y-${id}`,
   });
@@ -157,6 +157,16 @@ describe('UI-D04 kiểm pin trước khi quay (B04 dùng chung A04)', () => {
     expect((await store.getReturn(SHOP, id))?.returnCase.openingVideo).toMatchObject({
       reason: 'device_problem',
     });
+  });
+
+  it('kiện đã mở trước khi quay: không có "Lưu tạm, quay sau", chỉ ghi nhận lý do (B04)', async () => {
+    mockDevice = { batteryLevel: 0.05, charging: false, thermal: null };
+    const store = createMemoryReturnStore();
+    await open(store, await seedOpening(store, true));
+    expect(await screen.findByTestId('return-device-issue-battery')).toBeOnTheScreen();
+    expect(screen.queryByTestId('return-device-later')).toBeNull();
+    expect(screen.getByText(/Kiện đã mở trước khi quay/)).toBeOnTheScreen();
+    expect(screen.getByTestId('return-device-note-reason')).toBeOnTheScreen();
   });
 
   it('đọc pin treo quá hạn: coi là không biết, không kẹt, không chặn', async () => {

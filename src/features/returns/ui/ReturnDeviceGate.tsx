@@ -19,17 +19,20 @@ const DEVICE_READ_TIMEOUT_MS = 3000;
  * Dùng CHUNG `runPrecheck` của đóng gói, nhưng chỉ phần pin/nhiệt độ: quyền camera và dung lượng đã có
  * chỗ xử lý riêng ở màn quay. Pin thấp khi không sạc (hoặc máy quá nóng, khi có nguồn đo) thì CHẶN mở
  * camera, nói rõ cách xử lý. Không đọc được pin thì KHÔNG chặn (không đoán). Bị chặn không làm mất hồ sơ:
- * có "Kiểm tra lại", "Lưu tạm, quay sau" (về danh sách, hồ sơ giữ nguyên) và ghi nhận lý do chưa có video
+ * có "Kiểm tra lại", "Lưu tạm, quay sau" (về danh sách, hồ sơ giữ nguyên; CHỈ khi kiện chưa mở, B04) và ghi nhận lý do chưa có video
  * (không ép hủy hồ sơ; không có đường bỏ qua rồi coi như đã kiểm). Câu chữ `BATTERY_LOW`/`DEVICE_OVERHEATED`
  * còn chờ BA duyệt (C-1). Chưa kiểm chứng trên thiết bị.
  */
 export function ReturnDeviceGate({
   children,
+  openedBefore,
   onNoteReason,
   toList,
   sheet,
 }: {
   children: ReactNode;
+  /** Kiện đã mở trước khi quay (nhánh ngoại lệ): không có "quay sau", chỉ ghi nhận lý do. */
+  openedBefore: boolean;
   onNoteReason: () => void;
   toList: () => void;
   sheet: ReactNode;
@@ -100,12 +103,14 @@ export function ReturnDeviceGate({
                 setRound((value) => value + 1);
               }}
             />
-            <Button
-              testID="return-device-later"
-              variant="secondary"
-              label={t('returns:record.live.saveForLater')}
-              onPress={toList}
-            />
+            {openedBefore ? null : (
+              <Button
+                testID="return-device-later"
+                variant="secondary"
+                label={t('returns:record.live.saveForLater')}
+                onPress={toList}
+              />
+            )}
             <Button
               testID="return-device-note-reason"
               variant="secondary"
@@ -131,7 +136,11 @@ export function ReturnDeviceGate({
           ))}
         </View>
         <Text variant="caption" color="textMuted">
-          {t('returns:record.live.deviceKept')}
+          {t(
+            openedBefore
+              ? 'returns:record.live.deviceOpenedBefore'
+              : 'returns:record.live.deviceKept',
+          )}
         </Text>
       </Screen>
       {sheet}

@@ -272,7 +272,12 @@ export function ReturnRecordLive({ details }: { details: ReturnDetails }) {
   }
 
   return (
-    <ReturnDeviceGate onNoteReason={askForReason} toList={toList} sheet={sheet}>
+    <ReturnDeviceGate
+      openedBefore={openedBefore}
+      onNoteReason={askForReason}
+      toList={toList}
+      sheet={sheet}
+    >
       <LiveCamera
         details={details}
         onSaved={(saved) => {

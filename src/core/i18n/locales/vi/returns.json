@@ -119,7 +119,8 @@
       "leaveSaving": "Video đang được lưu trên máy. Bạn có thể về danh sách, việc lưu vẫn tiếp tục.",
       "loading": "Đang kiểm tra hồ sơ…",
       "saveForLater": "Lưu tạm, quay sau",
-      "deviceKept": "Hồ sơ vẫn được giữ. Bạn quay lại mở kiện sau khi xử lý xong."
+      "deviceKept": "Hồ sơ vẫn được giữ. Bạn quay lại mở kiện sau khi xử lý xong.",
+      "deviceOpenedBefore": "Kiện đã mở trước khi quay. Hãy ghi nhận lý do chưa có video để tiếp tục."
     }
   },
   "recovery": {
