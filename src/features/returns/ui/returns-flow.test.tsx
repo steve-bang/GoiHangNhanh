@@ -275,10 +275,23 @@ describe('UI-D02 Tìm đơn gốc', () => {
     expect(mockNavigation.replace).not.toHaveBeenCalled();
   });
 
-  it('mã không hợp lệ (rỗng) khi bấm Tìm: báo tại ô nhập, không tra', async () => {
-    await open(createMemoryReturnStore(), createMemoryOrderStore());
+  it('ô mã rỗng hoặc chỉ khoảng trắng: nút Tìm tắt, bấm/Enter không tra', async () => {
+    const orders = createMemoryOrderStore();
+    const lookup = jest.spyOn(orders, 'findOrdersByCodes');
+    await open(createMemoryReturnStore(), orders);
+    expect(screen.getByTestId('return-search').props.accessibilityState.disabled).toBe(true);
+    await fireEvent.changeText(screen.getByTestId('return-code'), '   ');
+    expect(screen.getByTestId('return-search').props.accessibilityState.disabled).toBe(true);
     await fireEvent.press(screen.getByTestId('return-search'));
-    expect(await screen.findByText('Mã chưa hợp lệ. Hãy nhập lại.')).toBeOnTheScreen();
+    await fireEvent(screen.getByTestId('return-code'), 'submitEditing');
+    expect(lookup).not.toHaveBeenCalled();
+    expect(screen.queryByText('Mã chưa hợp lệ. Hãy nhập lại.')).toBeNull();
+  });
+
+  it('gõ mã thì nút Tìm bật', async () => {
+    await open(createMemoryReturnStore(), createMemoryOrderStore());
+    await fireEvent.changeText(screen.getByTestId('return-code'), 'ABC');
+    expect(screen.getByTestId('return-search').props.accessibilityState.disabled).toBe(false);
   });
 
   it('đúng một đơn khớp (theo mã vận đơn): hiện đơn + nhãn "Do bạn nhập", dùng đơn này tạo hồ sơ liên kết và nạp dòng dự kiến', async () => {
@@ -379,6 +392,17 @@ describe('UI-D02 Tìm đơn gốc', () => {
   });
 
   describe('chế độ liên kết đơn gốc sau (có returnId)', () => {
+    it('cùng bố cục quét trước: Quét, "Hoặc nhập mã", Tìm tắt khi rỗng; không tự mở camera', async () => {
+      const store = createMemoryReturnStore();
+      const made = await seedReturn(store, { stage: 'confirmed' });
+      mockNavigation.params = { returnId: made.returnCase.id };
+      await open(store, createMemoryOrderStore());
+      expect(await screen.findByTestId('return-scan')).toBeOnTheScreen();
+      expect(screen.getByTestId('return-or-enter')).toBeOnTheScreen();
+      expect(screen.queryByTestId('return-scan-panel')).toBeNull();
+      expect(screen.getByTestId('return-search').props.accessibilityState.disabled).toBe(true);
+    });
+
     it('liên kết đơn được chọn, ghi sự kiện "linked_later", rồi quay lại', async () => {
       const orders = createMemoryOrderStore();
       const order = await seedOrder(orders);

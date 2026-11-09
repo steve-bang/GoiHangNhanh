@@ -28,7 +28,8 @@
     "confirmed": "Đã xác nhận"
   },
   "find": {
-    "intro": "Nhập mã trên kiện hàng hoàn để tìm đơn gốc. Không có mã vẫn tiếp nhận được.",
+    "intro": "Quét mã trên kiện hoàn để tìm đơn gốc. Không có mã vẫn tiếp nhận được.",
+    "orEnter": "Hoặc nhập mã",
     "codeLabel": "Mã đơn hoặc mã vận đơn",
     "codePlaceholder": "Nhập mã trên kiện hoàn",
     "search": "Tìm đơn gốc",

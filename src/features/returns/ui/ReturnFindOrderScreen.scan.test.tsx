@@ -1,3 +1,4 @@
+import { StyleSheet } from 'react-native';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import type { ReturnCaseId } from '@/core/ids';
@@ -120,5 +121,52 @@ describe('UI-D02 Quét mã trên kiện hoàn (B02)', () => {
     expect(screen.queryByTestId('return-scan-camera')).toBeNull();
     await fireEvent.press(screen.getByTestId('return-scan-manual'));
     expect(screen.getByTestId('return-code')).toBeOnTheScreen();
+  });
+
+  const bg = (testID: string) =>
+    StyleSheet.flatten(screen.getByTestId(testID).props.style).backgroundColor;
+
+  it('không tự mở camera khi vào màn; Quét là nút chính đầu màn, ô nhập và Tìm nằm dưới', async () => {
+    await renderWithProviders(<ReturnFindOrderScreen />, {
+      returnStore: createMemoryReturnStore(),
+      orderStore: createMemoryOrderStore(),
+    });
+    expect(screen.queryByTestId('return-scan-panel')).toBeNull();
+    expect(screen.queryByTestId('return-scan-camera')).toBeNull();
+    expect(mockScanner.request).not.toHaveBeenCalled();
+    const order = ['return-scan', 'return-or-enter', 'return-code', 'return-search'];
+    const json = JSON.stringify(screen.toJSON());
+    const at = order.map((id) => json.indexOf(`"testID":"${id}"`));
+    expect(at.every((i) => i >= 0)).toBe(true);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
+    expect(bg('return-scan')).not.toEqual(bg('return-search'));
+    expect(screen.getByTestId('return-unlinked')).toBeOnTheScreen();
+  });
+
+  it('gõ mã thì Tìm thành nút chính và Quét thành nút phụ (luôn một nút chính)', async () => {
+    await renderWithProviders(<ReturnFindOrderScreen />, {
+      returnStore: createMemoryReturnStore(),
+      orderStore: createMemoryOrderStore(),
+    });
+    const scanWhenEmpty = bg('return-scan');
+    const searchWhenEmpty = bg('return-search');
+    await fireEvent.changeText(screen.getByTestId('return-code'), 'ABC');
+    expect(bg('return-search')).toEqual(scanWhenEmpty);
+    expect(bg('return-scan')).toEqual(searchWhenEmpty);
+  });
+
+  it('panel quét mở: ô nhập vẫn còn, không quyền camera vẫn nhập tay và tìm được', async () => {
+    mockScanner.permission = 'blocked';
+    const orders = createMemoryOrderStore();
+    await seedOrder(orders);
+    await renderWithProviders(<ReturnFindOrderScreen />, {
+      returnStore: createMemoryReturnStore(),
+      orderStore: orders,
+    });
+    await fireEvent.press(screen.getByTestId('return-scan'));
+    expect(await screen.findByTestId('return-scan-unavailable')).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByTestId('return-code'), 'SPX1234567890');
+    await fireEvent.press(screen.getByTestId('return-search'));
+    expect(await screen.findByText('Tìm thấy 1 đơn')).toBeOnTheScreen();
   });
 });
