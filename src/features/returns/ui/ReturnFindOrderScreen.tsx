@@ -91,6 +91,10 @@ function FindOrderBody(props: BodyProps) {
   const selectedId = only ? only.details.order.id : chosen;
   const selected = candidates.find((c) => c.details.order.id === selectedId);
   const typedCode = code.trim();
+  // Chỉ MỘT nút chính: Quét khi ô trống, Tìm khi đã gõ mã, cả hai phụ khi đã có kết quả (nút chính ở footer).
+  const canSearch = typedCode !== '' && phase.kind !== 'searching';
+  const scanPrimary = typedCode === '' && phase.kind !== 'result';
+  const searchPrimary = typedCode !== '' && phase.kind !== 'result';
 
   const search = async (value: string = code) => {
     setFailure(null);
@@ -262,6 +266,21 @@ function FindOrderBody(props: BodyProps) {
           ? t('returns:find.linkMode', { code: props.code })
           : t('returns:find.intro')}
       </Text>
+      {scanning ? (
+        <ReturnScanPanel onScan={onScanned} onClose={() => setScanning(false)} />
+      ) : (
+        <Button
+          testID="return-scan"
+          variant={scanPrimary ? 'primary' : 'secondary'}
+          size="compact"
+          icon="scan"
+          label={t('returns:find.scan')}
+          onPress={() => setScanning(true)}
+        />
+      )}
+      <Text variant="caption" color="textMuted" testID="return-or-enter">
+        {t('returns:find.orEnter')}
+      </Text>
       <TextField
         compact
         testID="return-code"
@@ -274,28 +293,19 @@ function FindOrderBody(props: BodyProps) {
         }}
         autoCapitalize="characters"
         returnKeyType="search"
-        onSubmitEditing={() => void search()}
+        onSubmitEditing={() => {
+          if (canSearch) void search();
+        }}
         {...(codeError ? { error: codeError } : {})}
       />
-      {scanning ? (
-        <ReturnScanPanel onScan={onScanned} onClose={() => setScanning(false)} />
-      ) : (
-        <Button
-          testID="return-scan"
-          variant="secondary"
-          size="compact"
-          icon="scan"
-          label={t('returns:find.scan')}
-          onPress={() => setScanning(true)}
-        />
-      )}
       <Button
         testID="return-search"
-        variant="secondary"
+        variant={searchPrimary ? 'primary' : 'secondary'}
         size="compact"
         icon="search"
         label={phase.kind === 'searching' ? t('returns:find.searching') : t('returns:find.search')}
         loading={phase.kind === 'searching'}
+        disabled={!canSearch}
         onPress={() => void search()}
       />
       {failureText ? (
