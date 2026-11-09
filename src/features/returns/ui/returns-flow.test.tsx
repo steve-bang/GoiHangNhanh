@@ -93,11 +93,33 @@ describe('UI-D01 Danh sách hàng hoàn (dữ liệu thật)', () => {
       ...(orderStore ? { orderStore } : {}),
     });
 
-  it('chưa có hồ sơ: trạng thái rỗng có hành động "Tiếp nhận hàng hoàn" mở UI-D02', async () => {
+  it('chưa có hồ sơ: trạng thái rỗng không có nút; chỉ một nút "Tiếp nhận hàng hoàn" ở chân màn mở UI-D02', async () => {
     await open(createMemoryReturnStore());
     const empty = await screen.findByTestId('returns-empty');
-    await fireEvent.press(within(empty).getByRole('button', { name: 'Tiếp nhận hàng hoàn' }));
+    expect(within(empty).queryByRole('button')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Tiếp nhận hàng hoàn' })).toHaveLength(1);
+    await fireEvent.press(screen.getByRole('button', { name: 'Tiếp nhận hàng hoàn' }));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.returnFindOrder);
+  });
+
+  it('chưa có hồ sơ: ẩn ô tìm và chip lọc; có hồ sơ thì hiện lại; lọc ra 0 kết quả vẫn giữ chúng', async () => {
+    const empty = createMemoryReturnStore();
+    const view = await open(empty);
+    await screen.findByTestId('returns-empty');
+    expect(screen.queryByTestId('returns-search')).toBeNull();
+    expect(screen.queryByText('Tất cả')).toBeNull();
+    view.unmount();
+
+    const store = createMemoryReturnStore();
+    await seedReturn(store, { atDevice: 1_000 });
+    await open(store);
+    await screen.findByText('Chưa liên kết đơn gốc');
+    expect(screen.getByTestId('returns-search')).toBeOnTheScreen();
+    expect(screen.getByText('Tất cả')).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByTestId('returns-search'), 'khong-co-ma-nay');
+    expect(await screen.findByTestId('returns-no-results')).toBeOnTheScreen();
+    expect(screen.getByTestId('returns-search')).toBeOnTheScreen();
+    expect(screen.getByText('Tất cả')).toBeOnTheScreen();
   });
 
   it('nút Tiếp nhận hàng hoàn ở chân màn luôn mở UI-D02 (không kèm ID hồ sơ)', async () => {

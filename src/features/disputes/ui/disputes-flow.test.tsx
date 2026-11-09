@@ -94,10 +94,13 @@ async function addFile(
 }
 
 describe('UI-G01 Danh sách tranh chấp', () => {
-  it('chưa có hồ sơ: trạng thái rỗng và nút tạo mở UI-G02', async () => {
+  it('chưa có hồ sơ: trạng thái rỗng không có nút, chỉ một nút tạo ở chân màn mở UI-G02, chip lọc ẩn', async () => {
     await renderWithProviders(<DisputesListScreen />);
     const empty = await screen.findByTestId('disputes-empty');
-    await fireEvent.press(within(empty).getByRole('button', { name: 'Tạo hồ sơ tranh chấp' }));
+    expect(within(empty).queryByRole('button')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Tạo hồ sơ tranh chấp' })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: /^Đang mở/ })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Tạo hồ sơ tranh chấp' }));
     expect(mockNavigation.push).toHaveBeenLastCalledWith(ROUTES.disputeNew);
   });
 

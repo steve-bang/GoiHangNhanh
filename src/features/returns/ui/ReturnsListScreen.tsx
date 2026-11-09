@@ -99,6 +99,8 @@ export function ReturnsListScreen() {
   );
   const receive = () => navigation.push(ROUTES.returnFindOrder);
   const filtered = filter !== 'all' || queryKey !== '';
+  // Chưa có hồ sơ nào: ô tìm và chip chỉ gây nhiễu (nút duy nhất nằm ở chân màn).
+  const showFilters = state.kind !== 'ready' || state.items.length > 0;
 
   const body = (() => {
     if (state.kind === 'loading') {
@@ -131,9 +133,6 @@ export function ReturnsListScreen() {
             iconCircle
             title={t('returns:list.emptyTitle')}
             message={t('returns:list.emptyMessage')}
-            actionLabel={t('returns:list.receive')}
-            actionVariant="primary"
-            onAction={receive}
           />
         </View>
       );
@@ -195,13 +194,17 @@ export function ReturnsListScreen() {
         />
       }
     >
-      <SearchField
-        testID="returns-search"
-        value={query}
-        onChangeText={setQuery}
-        placeholder={t('returns:list.search')}
-      />
-      <FilterChips options={options} selectedKey={filter} onSelect={setFilter} size="compact" />
+      {showFilters ? (
+        <>
+          <SearchField
+            testID="returns-search"
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('returns:list.search')}
+          />
+          <FilterChips options={options} selectedKey={filter} onSelect={setFilter} size="compact" />
+        </>
+      ) : null}
       {body}
     </Screen>
   );

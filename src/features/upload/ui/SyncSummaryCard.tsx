@@ -17,6 +17,8 @@ interface SyncSummaryCardProps {
   retryableCount: number;
   retrying: boolean;
   onRetryAll: () => void;
+  /** Lối đi khi cả màn rỗng (chỉ hiện ở biến thể "không có việc"). */
+  emptyAction?: { label: string; onPress: () => void } | undefined;
 }
 
 /**
@@ -31,6 +33,7 @@ export function SyncSummaryCard({
   retryableCount,
   retrying,
   onRetryAll,
+  emptyAction,
 }: SyncSummaryCardProps) {
   const { t } = useTranslation();
   const { tokens } = useTheme();
@@ -79,6 +82,14 @@ export function SyncSummaryCard({
             disabled={retrying}
             loading={retrying}
             testID="sync-retry-all"
+          />
+        ) : null}
+        {!hasError && waitingCount === 0 && emptyAction ? (
+          <Button
+            variant="secondary"
+            label={emptyAction.label}
+            onPress={emptyAction.onPress}
+            testID="sync-empty-action"
           />
         ) : null}
       </View>

@@ -145,7 +145,7 @@ afterEach(() => resetMockConnectivity());
 describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
   it('máy chưa có tệp: trạng thái rỗng, không còn dữ liệu minh họa, câu tải khi app mở', async () => {
     await open(setup([]));
-    expect(await screen.findByText('Không có tệp ở mục này')).toBeOnTheScreen();
+    expect(await screen.findByTestId('sync-summary')).toBeOnTheScreen();
     expect(screen.queryByText(/DEMO-/)).toBeNull();
     expect(screen.queryByText(/minh họa/i)).toBeNull();
     // Câu "chỉ tải khi đang mở" nằm trong bảng Cài đặt tải lên (bất biến 11: vẫn phải hiện, chỉ chuyển chỗ).
@@ -302,6 +302,39 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
     ]);
   });
 
+  it('cả màn rỗng: chỉ MỘT thông điệp (thẻ tóm tắt) kèm nút Mở danh sách đơn, không chip, không dòng rỗng thứ hai', async () => {
+    await open(setup([]));
+    await screen.findByTestId('sync-summary');
+    await waitFor(() => expect(screen.queryByText('Đang đọc danh sách tệp…')).toBeNull());
+    expect(screen.queryByText('Không có tệp ở mục này')).toBeNull();
+    expect(screen.queryByTestId('sync-tab-empty')).toBeNull();
+    expect(screen.queryByText('Đang tải')).toBeNull();
+    expect(screen.queryByText('Chờ tải')).toBeNull();
+    await fireEvent.press(screen.getByTestId('sync-empty-action'));
+    expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.orders);
+  });
+
+  it('chỉ có tệp chờ tải: mở thẳng mục Chờ tải', async () => {
+    await open(setup([file('q', 'queued')]));
+    expect(await screen.findByTestId('sync-job-pack:q')).toBeOnTheScreen();
+    expect(screen.queryByTestId('sync-empty-action')).toBeNull();
+  });
+
+  it('chỉ có tệp đã tải lên: mở thẳng mục Đã tải lên', async () => {
+    await open(setup([file('done', 'uploaded')]));
+    expect(await screen.findByTestId('sync-job-pack:done')).toBeOnTheScreen();
+    expect(screen.queryByTestId('sync-tab-empty')).toBeNull();
+  });
+
+  it('tab đang chọn rỗng nhưng tab khác có tệp: một dòng chữ, không nút', async () => {
+    await open(setup([file('q', 'queued')]));
+    await screen.findByTestId('sync-job-pack:q');
+    await fireEvent.press(screen.getByText('Đang tải'));
+    expect(await screen.findByTestId('sync-tab-empty')).toHaveTextContent('Không có tệp ở mục này');
+    expect(screen.queryByTestId('sync-empty-action')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Mở danh sách đơn' })).toBeNull();
+  });
+
   it('máy chưa có tệp: khối trạng thái nói không có tệp nào đang chờ hoặc lỗi', async () => {
     await open(setup([]));
     expect(await screen.findByTestId('sync-summary')).toHaveTextContent(
@@ -331,7 +364,6 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
 
   it('hàng tệp đã tải lên: chạm thông tin mở hồ sơ, nhãn nói "Mở hồ sơ"', async () => {
     await open(setup([file('done', 'uploaded')]));
-    await fireEvent.press(await screen.findByText('Đã tải lên'));
     const info = await screen.findByTestId('sync-job-open-pack:done');
     expect(info.props.accessibilityHint).toBe('Mở hồ sơ');
     await fireEvent.press(info);
@@ -505,7 +537,6 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
       file('new', 'uploaded', { updatedAtDevice: NOW }),
     ]);
     await open(t);
-    await fireEvent.press(await screen.findByText('Đã tải lên'));
     await fireEvent.press(await screen.findByTestId('sync-job-recheck-pack:old'));
     await waitFor(() => expect(t.control.requestServerCheck).toHaveBeenCalledWith('old'));
     expect(screen.queryByTestId('sync-job-recheck-pack:new')).toBeNull();
@@ -658,7 +689,6 @@ describe('UI-F01: Chỉ tải khi có Wi‑Fi (V1-09)', () => {
       file('old', 'uploaded', { updatedAtDevice: NOW - RECHECK_AFTER_MS - 60_000 }),
     ]);
     await open(t, <SyncCenterScreen />, store);
-    await fireEvent.press(await screen.findByText('Đã tải lên'));
     const status = await screen.findByTestId('sync-job-status-pack:old');
     await waitFor(() => expect(status).toHaveTextContent(/Đang chờ Wi‑Fi\./));
     expect(status).not.toHaveTextContent(/chưa kiểm tra xong/);

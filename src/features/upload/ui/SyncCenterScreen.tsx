@@ -6,7 +6,6 @@ import { ROUTES } from '@/core/navigation';
 import { useAppNavigation, useConnectivity, useRouteParams } from '@/platform';
 import {
   Card,
-  EmptyState,
   ErrorState,
   FilterChips,
   Icon,
@@ -23,6 +22,7 @@ import {
   inForeignGroup,
   DONE_LIST_LIMIT,
   SYNC_FILTERS,
+  pickDefaultSyncFilter,
   type SyncFilter,
   type SyncJob,
   type SyncReason,
@@ -73,7 +73,7 @@ export function SyncCenterScreen() {
   // Tham số `filter` (ô "Lỗi – cần xử lý" ở Trang chủ mở thẳng bộ lọc Lỗi, V1-10); giá trị lạ bị bỏ qua.
   const requested = useRouteParams().filter;
   // Bộ lọc người dùng chọn (hoặc do route chỉ định). Chưa chọn thì tự đặt MỘT lần khi danh sách tải xong:
-  // có tệp lỗi thì mở thẳng "Lỗi" (việc cần xử lý trước), không thì "Đang tải lên" như cũ.
+  // mở nhóm đầu tiên có tệp theo Lỗi > Đang tải > Chờ tải > Đã tải lên (`pickDefaultSyncFilter`).
   const [chosen, setChosen] = useState<SyncFilter | null>(
     SYNC_FILTERS.find((key) => key === requested) ?? null,
   );
@@ -98,7 +98,15 @@ export function SyncCenterScreen() {
 
   const count = (key: SyncFilter) =>
     rows ? rows.pending.filter((r) => r.view.filter === key).length : 0;
-  if (rows && chosen === null && auto === null) setAuto(count('error') > 0 ? 'error' : 'uploading');
+  if (rows && chosen === null && auto === null) {
+    setAuto(
+      pickDefaultSyncFilter({
+        error: count('error'),
+        uploading: count('uploading'),
+        waiting_upload: count('waiting_upload'),
+      }),
+    );
+  }
   const refresh = () => {
     setRefreshing(true);
     void reload().finally(() => setRefreshing(false));
@@ -126,6 +134,16 @@ export function SyncCenterScreen() {
   const visible = source.filter((r) => r.view.filter === filter);
   const own = visible.filter((r) => !inForeignGroup(r.job, r.view));
   const foreign = visible.filter((r) => inForeignGroup(r.job, r.view));
+  // Cả màn rỗng: không tệp chờ/lỗi và danh sách "Đã tải lên" đã nạp xong cũng rỗng. Khi đó chỉ còn thẻ
+  // tóm tắt (kèm nút), không dải chip và không thông điệp rỗng thứ hai.
+  const wholeEmpty = rows !== null && rows.pending.length === 0 && rows.done?.length === 0;
+  // Chỉ tab đang chọn rỗng: một dòng chữ. Không hiện khi thẻ tóm tắt đã nói "không có tệp nào chờ".
+  const showTabEmpty =
+    rows !== null &&
+    !wholeEmpty &&
+    !doneLoading &&
+    visible.length === 0 &&
+    (filter === 'uploaded' || rows.pending.length > 0);
 
   const row = ({ job, view }: Row) => (
     <SyncJobRow
@@ -154,6 +172,14 @@ export function SyncCenterScreen() {
           retryableCount={retryable.length}
           retrying={retryable.some((j) => busy.has(j.key))}
           onRetryAll={() => void retry(retryable)}
+          emptyAction={
+            wholeEmpty
+              ? {
+                  label: t('screens:sync.emptyAction'),
+                  onPress: () => navigation.push(ROUTES.orders),
+                }
+              : undefined
+          }
         />
       ) : null}
       {!online || waitingWifi ? (
@@ -177,11 +203,18 @@ export function SyncCenterScreen() {
       <ListGroup>
         <UploadSettingsRow />
       </ListGroup>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={{ paddingVertical: tokens.space.xs }}>
-          <FilterChips options={options} selectedKey={filter} onSelect={setFilter} size="compact" />
-        </View>
-      </ScrollView>
+      {wholeEmpty ? null : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={{ paddingVertical: tokens.space.xs }}>
+            <FilterChips
+              options={options}
+              selectedKey={filter}
+              onSelect={setFilter}
+              size="compact"
+            />
+          </View>
+        </ScrollView>
+      )}
       {state.kind === 'loading' || doneLoading ? (
         <View style={{ gap: tokens.space.md }}>
           <Text variant="formBody" color="textMuted" accessibilityLiveRegion="polite">
@@ -218,13 +251,10 @@ export function SyncCenterScreen() {
               {t('screens:sync.doneLimit', { count: DONE_LIST_LIMIT })}
             </Text>
           ) : null}
-          {visible.length === 0 && !doneLoading ? (
-            <EmptyState
-              title={t('screens:sync.emptyTitle')}
-              message={t('screens:sync.emptyMessage')}
-              actionLabel={t('screens:sync.emptyAction')}
-              onAction={() => navigation.push(ROUTES.orders)}
-            />
+          {showTabEmpty ? (
+            <Text variant="formBody" color="textMuted" testID="sync-tab-empty">
+              {t('screens:sync.emptyTitle')}
+            </Text>
           ) : null}
         </>
       ) : null}
