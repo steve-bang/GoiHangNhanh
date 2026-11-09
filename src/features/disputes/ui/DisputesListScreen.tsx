@@ -44,6 +44,8 @@ export function DisputesListScreen() {
         ? t('disputes:list.filterAll')
         : t(`disputes:list.filter${key === 'open' ? 'Open' : 'Closed'}`),
   }));
+  // Chưa có hồ sơ nào: chip lọc chỉ gây nhiễu (nút duy nhất nằm ở chân màn).
+  const showFilters = state.kind !== 'ready' || state.items.length > 0;
   const visible = useMemo(
     () =>
       state.kind === 'ready'
@@ -83,9 +85,6 @@ export function DisputesListScreen() {
             iconCircle
             title={t('disputes:list.emptyTitle')}
             message={t('disputes:list.emptyMessage')}
-            actionLabel={t('disputes:list.create')}
-            actionVariant="primary"
-            onAction={create}
           />
         </View>
       );
@@ -135,7 +134,9 @@ export function DisputesListScreen() {
         />
       }
     >
-      <FilterChips options={options} selectedKey={filter} onSelect={setFilter} size="compact" />
+      {showFilters ? (
+        <FilterChips options={options} selectedKey={filter} onSelect={setFilter} size="compact" />
+      ) : null}
       {body}
     </Screen>
   );
