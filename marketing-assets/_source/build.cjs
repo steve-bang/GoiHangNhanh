@@ -183,11 +183,70 @@ function poster() {
   return { w: W, h: H, html: page(W, H, body, css) };
 }
 
+// ---------- Poster kể chuyện: hoàn đơn (2:3, 1200x1800) ----------
+const SHOT_EXTERIOR = b64(path.join(ROOT, 'returns/original/return-exterior-780x1688.png'));
+const SHOT_ITEMS = b64(path.join(ROOT, 'returns/original/return-items-780x1688.png'));
+
+function posterStory() {
+  const W = 1200;
+  const H = 1800;
+  const panelTop = 1544;
+  const css = `
+    .brand{left:80px;top:80px}
+    .note{right:80px;top:96px}
+    h1{left:80px;top:190px;width:1040px;font-size:128px;line-height:1.02;letter-spacing:-0.03em}
+    .track{position:absolute;left:80px;top:636px;width:1040px;display:grid;grid-template-columns:repeat(3,1fr);column-gap:28px}
+    .track:before{content:'';position:absolute;left:13px;right:0;top:12px;border-top:4px dashed rgba(255,245,240,.35)}
+    .step{position:relative;padding-top:50px}
+    .step i{position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;border:4px solid ${PAPER};background:${INK}}
+    .step.hot i{background:${ORANGE};border-color:${ORANGE}}
+    .step b{display:block;font:800 34px/1.14 'Inter Display','Inter',sans-serif;letter-spacing:-0.015em;margin-bottom:10px;text-wrap:balance}
+    .step.hot b{color:${ORANGE}}
+    .step span{display:block;font:500 27px/1.32 'Inter',sans-serif;opacity:.8;text-wrap:balance}
+    .bridge{position:absolute;left:80px;top:868px;width:1040px;font:700 40px/1.2 'Inter Display','Inter',sans-serif;letter-spacing:-0.015em;text-wrap:balance}
+    .phone{width:540px;border-radius:66px}
+    .phone img{border-radius:56px}
+    .p1{left:40px;top:1000px}
+    .p2{left:620px;top:1000px}
+    .tape{position:absolute;left:490px;top:972px;width:220px;height:62px;background:${KRAFT};opacity:.94;
+      transform:rotate(-3deg);box-shadow:0 8px 18px rgba(0,0,0,.35);
+      clip-path:polygon(0 0,3% 12%,0 26%,3% 40%,0 54%,3% 68%,0 82%,3% 100%,100% 100%,97% 86%,100% 72%,97% 58%,100% 44%,97% 30%,100% 16%,97% 0)}
+    .panel{position:absolute;left:0;top:${panelTop}px;width:${W}px;height:${H - panelTop}px;background:${PAPER};color:${INK};
+      display:flex;align-items:center;justify-content:space-between;padding:20px 80px 0}
+    .panel:before{content:'';position:absolute;left:0;right:0;top:-1px;height:22px;
+      background:radial-gradient(circle at 14px 0,${INK} 0 11px,transparent 11.5px) 0 0/40px 22px repeat-x}
+    .tag{font:800 84px/1 'Inter Display','Inter',sans-serif;letter-spacing:-0.03em}
+    .tag em{font-style:normal;color:#D93B20}
+    .pitch{width:340px;font:500 27px/1.34 'Inter',sans-serif;opacity:.88;text-wrap:balance;
+      border-left:3px dashed rgba(14,43,63,.28);padding-left:36px}
+  `;
+  const body = `
+    <div class="brand"><img src="${ICON}"><span>AmaBox</span></div>
+    <p class="note">Dữ liệu mẫu.<br>Bản đang phát triển.</p>
+    <h1>Hàng hoàn về.<br>Bạn có gì<br>để chứng minh?</h1>
+    <div class="track">
+      <div class="step"><i></i><b>Đã giao thành công</b><span>Bạn đã đóng gói cẩn thận.</span></div>
+      <div class="step"><i></i><b>Khách hoàn đơn</b><span>Kiện hàng bắt đầu quay về.</span></div>
+      <div class="step hot"><i></i><b>Kiện về, hộp đã bị mở</b><span>Bạn không có gì để chứng minh.</span></div>
+    </div>
+    <p class="bridge">Khi kiện hoàn về, AmaBox giúp bạn ghi lại từng bước.</p>
+    <div class="phone p1"><img src="${SHOT_EXTERIOR}"></div>
+    <div class="phone p2"><img src="${SHOT_ITEMS}"></div>
+    <div class="tape"></div>
+    <div class="panel">
+      <div class="tag">Bởi Seller,<br>vì <em>Seller.</em></div>
+      <p class="pitch">Tình trạng kiện, hàng thực nhận và đơn gốc, gom về một hồ sơ.</p>
+    </div>`;
+  return { w: W, h: H, html: page(W, H, body, css) };
+}
+
 const JOBS = [
   { out: 'orders/instagram-portrait/showcase-1080x1350.png', make: showcaseA },
   { out: 'orders/instagram-portrait/feature-highlight-1080x1350.png', make: highlightB },
   { out: 'poster/poster-1200x1800.png', make: poster },
   { out: 'poster/poster-2400x3600@2x.png', make: poster, scale: 2 },
+  { out: 'poster/poster-story-1200x1800.png', make: posterStory },
+  { out: 'poster/poster-story-2400x3600@2x.png', make: posterStory, scale: 2 },
 ];
 
 (async () => {

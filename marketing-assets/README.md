@@ -51,6 +51,21 @@ Module: Đơn hàng. Màn: Danh sách đơn hàng UI-E01. Route nguồn: `/order
 
 Ba ý ở dải tem đã đối chiếu: "Quét hoặc nhập mã" (ô tìm có nút quét, màn Tạo đơn nhanh), "Đơn, kiện, bằng chứng" (mục "Kiện hàng" và "Bằng chứng" trên Chi tiết đơn), "Nguồn dữ liệu rõ ràng" (dòng "Thông tin do bạn nhập, không lấy từ sàn").
 
+### Poster kể chuyện: hoàn đơn
+
+Câu chuyện: seller có kiện hoàn về mà không có gì để chứng minh (kể theo kiểu các dòng trạng thái theo dõi vận đơn), rồi chuyển sang sản phẩm. Khẩu hiệu "Bởi Seller, vì Seller." do chủ sản phẩm cung cấp.
+
+| Tệp | Cỡ | Nội dung |
+|---|---|---|
+| `returns/original/return-exterior-780x1688.png` | 780×1688 | Ảnh gốc UI-D03 Tình trạng kiện bên ngoài, route `/returns/package-exterior` (dữ liệu mẫu: móp, băng keo bất thường) |
+| `returns/original/return-items-780x1688.png` | 780×1688 | Ảnh gốc UI-D05 Kiểm tra hàng thực nhận, route `/returns/items-check` (dữ liệu mẫu: thực nhận 0, app tự hiện "Ít hơn dự kiến") |
+| `poster/poster-story-1200x1800.png` | 1200×1800 (2:3) | Poster: "Hàng hoàn về. Bạn có gì để chứng minh?" |
+| `poster/poster-story-2400x3600@2x.png` | 2400×3600 | Cùng poster, độ phân giải gấp đôi để in |
+
+Đối chiếu nội dung với app: "ghi lại từng bước khi kiện hoàn về" (D03 ghi tình trạng bên ngoài, D05 kiểm hàng thực nhận), "đơn gốc" (hồ sơ hàng hoàn liên kết đơn gốc, D02), "gom về một hồ sơ" (hồ sơ hàng hoàn). Phần truyện (đã giao, khách hoàn đơn, kiện về hộp đã bị mở) là **tình huống minh họa**, không phải số liệu hay lời chứng thực. Poster **không** hứa thắng khiếu nại hay bảo vệ được quyền lợi, chỉ nói app giúp ghi lại để có hồ sơ.
+
+Dựng lại ảnh gốc: `node marketing-assets/_source/capture-returns.cjs <dist-web> marketing-assets/returns/original`.
+
 ### Mô tả tính năng và đối chiếu mã
 
 | Nội dung ảnh | Đối chiếu | Trạng thái |
