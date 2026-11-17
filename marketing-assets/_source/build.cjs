@@ -139,16 +139,62 @@ function highlightB() {
   return { w: 1080, h: 1350, html: page(1080, 1350, body, css) };
 }
 
+
+// ---------- Poster (2:3, 1200x1800; xuất thêm @2x để in) ----------
+const SHOT_DETAIL = b64(path.join(ROOT, 'orders/original/order-detail-780x1688.png'));
+
+function poster() {
+  const W = 1200;
+  const H = 1800;
+  const css = `
+    .brand{left:80px;top:80px}
+    .note{right:80px;top:96px}
+    h1{left:80px;top:196px;width:1040px;font-size:136px;line-height:1.02;letter-spacing:-0.03em}
+    .sub{left:80px;top:640px;width:760px;font-size:36px}
+    .phone{width:540px;border-radius:66px}
+    .phone img{border-radius:56px}
+    .p1{left:76px;top:800px}
+    .p2{left:590px;top:900px}
+    .tape{position:absolute;left:800px;top:868px;width:210px;height:64px;background:${KRAFT};opacity:.94;
+      transform:rotate(4deg);box-shadow:0 8px 18px rgba(0,0,0,.35);
+      clip-path:polygon(0 0,3% 12%,0 26%,3% 40%,0 54%,3% 68%,0 82%,3% 100%,100% 100%,97% 86%,100% 72%,97% 58%,100% 44%,97% 30%,100% 16%,97% 0)}
+    .label{position:absolute;left:0;top:1500px;width:${W}px;height:${H - 1500}px;background:${PAPER};color:${INK};
+      display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:56px 80px 0}
+    .label:before{content:'';position:absolute;left:0;right:0;top:-1px;height:22px;
+      background:radial-gradient(circle at 14px 0,${INK} 0 11px,transparent 11.5px) 0 0/40px 22px repeat-x}
+    .col{padding-right:36px}
+    .col+.col{padding-left:36px;border-left:3px dashed rgba(14,43,63,.28)}
+    .col b{display:block;font:800 36px/1.12 'Inter Display','Inter',sans-serif;letter-spacing:-0.015em;margin-bottom:12px;text-wrap:balance}
+    .col span{display:block;font:500 27px/1.32 'Inter',sans-serif;opacity:.85;text-wrap:balance}
+  `;
+  const body = `
+    <div class="brand"><img src="${ICON}"><span>AmaBox</span></div>
+    <p class="note">Dữ liệu mẫu.<br>Bản đang phát triển.</p>
+    <h1>Mỗi đơn hàng,<br>một hồ sơ<br>rõ ràng.</h1>
+    <p class="sub">Quản lý đơn, kiện hàng và bằng chứng của người bán online, ngay trên điện thoại.</p>
+    <div class="phone p2"><img src="${SHOT_DETAIL}"></div>
+    <div class="phone p1"><img src="${SHOT}"></div>
+    <div class="tape"></div>
+    <div class="label">
+      <div class="col"><b>Quét hoặc nhập mã</b><span>Mã đơn và mã vận đơn, không phải gõ dài.</span></div>
+      <div class="col"><b>Đơn, kiện, bằng chứng</b><span>Mỗi đơn có thể có nhiều kiện, mỗi kiện một hồ sơ riêng.</span></div>
+      <div class="col"><b>Nguồn dữ liệu rõ ràng</b><span>Thông tin do bạn nhập được ghi rõ, không lấy từ sàn.</span></div>
+    </div>`;
+  return { w: W, h: H, html: page(W, H, body, css) };
+}
+
 const JOBS = [
   { out: 'orders/instagram-portrait/showcase-1080x1350.png', make: showcaseA },
   { out: 'orders/instagram-portrait/feature-highlight-1080x1350.png', make: highlightB },
+  { out: 'poster/poster-1200x1800.png', make: poster },
+  { out: 'poster/poster-2400x3600@2x.png', make: poster, scale: 2 },
 ];
 
 (async () => {
   const browser = await chromium.launch();
   for (const job of JOBS) {
     const { w, h, html } = job.make();
-    const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
+    const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: job.scale || 1 });
     await page.setContent(html, { waitUntil: 'load' });
     await page.evaluate(() => document.fonts.ready);
     const file = path.join(ROOT, job.out);

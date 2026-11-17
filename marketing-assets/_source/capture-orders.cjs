@@ -59,11 +59,15 @@ const ORDERS = [
   await vtxt('Danh sách đơn').click();
   await p.waitForTimeout(1200);
   await p.screenshot({ path: path.join(out, 'orders-list-780x1688.png') });
+  // Chi tiết đơn có mã vận đơn: mở từ thẻ đơn trong danh sách.
+  await vtxt('SP2611-48307').click();
+  await p.waitForTimeout(1200);
+  await p.screenshot({ path: path.join(out, 'order-detail-780x1688.png') });
   await browser.close();
   await srv.close();
   if (errors.length) {
     console.error('Lỗi trang:', errors.join('; '));
     process.exit(1);
   }
-  console.log('Đã chụp orders-list-780x1688.png');
+  console.log('Đã chụp orders-list-780x1688.png, order-detail-780x1688.png');
 })();

@@ -41,6 +41,16 @@ Module: Đơn hàng. Màn: Danh sách đơn hàng UI-E01. Route nguồn: `/order
 | `orders/instagram-portrait/showcase-1080x1350.png` | 1080×1350 | A. Product Showcase | "Mọi đơn hàng, một danh sách rõ ràng." |
 | `orders/instagram-portrait/feature-highlight-1080x1350.png` | 1080×1350 | B. Feature Highlight | "Đơn nào chưa có video? Lọc một chạm." |
 
+### Poster (đa màn hình)
+
+| Tệp | Cỡ | Nội dung |
+|---|---|---|
+| `orders/original/order-detail-780x1688.png` | 780×1688 | Ảnh gốc Chi tiết đơn (UI-E02), route `/orders/[orderId]`, đơn mẫu `SP2611-48307` |
+| `poster/poster-1200x1800.png` | 1200×1800 (2:3) | Poster: tiêu đề "Mỗi đơn hàng, một hồ sơ rõ ràng.", hai màn thật (Danh sách đơn, Chi tiết đơn), ba ý ở dải tem |
+| `poster/poster-2400x3600@2x.png` | 2400×3600 | Cùng poster, độ phân giải gấp đôi để in |
+
+Ba ý ở dải tem đã đối chiếu: "Quét hoặc nhập mã" (ô tìm có nút quét, màn Tạo đơn nhanh), "Đơn, kiện, bằng chứng" (mục "Kiện hàng" và "Bằng chứng" trên Chi tiết đơn), "Nguồn dữ liệu rõ ràng" (dòng "Thông tin do bạn nhập, không lấy từ sàn").
+
 ### Mô tả tính năng và đối chiếu mã
 
 | Nội dung ảnh | Đối chiếu | Trạng thái |
