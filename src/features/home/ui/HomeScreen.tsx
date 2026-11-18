@@ -246,12 +246,6 @@ export function HomeScreen() {
           onPress={() => navigation.push(ROUTES.quickOrder)}
         />
         <ListItem
-          testID="home-quick-orders"
-          leadingIcon="orders"
-          title={t('screens:home.quick.orders')}
-          onPress={() => navigation.push(ROUTES.orders)}
-        />
-        <ListItem
           testID="home-returns-list"
           leadingIcon="returns"
           title={t('screens:home.returnsList')}

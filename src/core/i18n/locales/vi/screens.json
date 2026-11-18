@@ -10,7 +10,6 @@
     "shortcutsTitle": "Lối tắt",
     "quick": {
       "quickOrder": "Tạo đơn nhanh",
-      "orders": "Danh sách đơn",
       "evidence": "Bằng chứng"
     },
     "todayTitle": "Thống kê hôm nay",
@@ -503,8 +502,6 @@
     "emailHint": "Dùng email bạn đã đăng ký tài khoản.",
     "submit": "Gửi mã xác minh",
     "backToSignIn": "Quay lại đăng nhập",
-    "tipTitle": "Mẹo nhỏ cho bạn",
-    "tipBody": "Hãy kiểm tra kỹ email bạn đã đăng ký với AmaBox nhé!",
     "errors": {
       "emailRequired": "Bạn nhập email trước nhé.",
       "sendFailed": "Chưa gửi được mã. Bạn thử lại sau ít phút nhé!",

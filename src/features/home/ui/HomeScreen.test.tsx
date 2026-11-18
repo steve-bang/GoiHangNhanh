@@ -113,7 +113,6 @@ describe('UI-B01 Trang chủ (mẫu thiết kế, D-16)', () => {
     expect(screen.queryByTestId('home-quick-scan')).toBeNull();
     const cases: [string, unknown][] = [
       ['home-quick-order', ROUTES.quickOrder],
-      ['home-quick-orders', ROUTES.orders],
       ['home-returns-list', ROUTES.returns],
       ['home-quick-evidence', ROUTES.sync],
     ];
