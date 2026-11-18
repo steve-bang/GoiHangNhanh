@@ -210,6 +210,19 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
     expect(screen.queryByTestId('sync-job-pack:up')).toBeNull();
   });
 
+  it('chỉ có tệp chờ: bộ lọc mặc định là Chờ tải, không mở tab Đang tải rỗng', async () => {
+    mockNavigation.params = { filter: 'khong-co' };
+    await open(setup([file('q', 'queued'), file('done', 'uploaded')]));
+    expect(await screen.findByTestId('sync-job-pack:q')).toBeOnTheScreen();
+    expect(screen.queryByTestId('sync-job-pack:done')).toBeNull();
+  });
+
+  it('không còn tệp nào đang chờ hoặc lỗi: mặc định mở Đã tải lên, không phải tab rỗng', async () => {
+    mockNavigation.params = { filter: 'khong-co' };
+    await open(setup([file('done', 'uploaded')]));
+    expect(await screen.findByTestId('sync-job-pack:done')).toBeOnTheScreen();
+  });
+
   it('không có tệp lỗi: bộ lọc mặc định vẫn là Đang tải lên', async () => {
     mockNavigation.params = { filter: 'khong-co' };
     await open(setup([file('up', 'uploading'), file('q', 'queued')]));
@@ -331,7 +344,7 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
 
   it('hàng tệp đã tải lên: chạm thông tin mở hồ sơ, nhãn nói "Mở hồ sơ"', async () => {
     await open(setup([file('done', 'uploaded')]));
-    await fireEvent.press(await screen.findByText('Đã tải lên'));
+    // Không còn tệp chờ/lỗi: màn tự mở sẵn "Đã tải lên".
     const info = await screen.findByTestId('sync-job-open-pack:done');
     expect(info.props.accessibilityHint).toBe('Mở hồ sơ');
     await fireEvent.press(info);
@@ -505,7 +518,6 @@ describe('UI-F01 Trung tâm đồng bộ (dữ liệu thật, V1-08)', () => {
       file('new', 'uploaded', { updatedAtDevice: NOW }),
     ]);
     await open(t);
-    await fireEvent.press(await screen.findByText('Đã tải lên'));
     await fireEvent.press(await screen.findByTestId('sync-job-recheck-pack:old'));
     await waitFor(() => expect(t.control.requestServerCheck).toHaveBeenCalledWith('old'));
     expect(screen.queryByTestId('sync-job-recheck-pack:new')).toBeNull();
@@ -658,7 +670,6 @@ describe('UI-F01: Chỉ tải khi có Wi‑Fi (V1-09)', () => {
       file('old', 'uploaded', { updatedAtDevice: NOW - RECHECK_AFTER_MS - 60_000 }),
     ]);
     await open(t, <SyncCenterScreen />, store);
-    await fireEvent.press(await screen.findByText('Đã tải lên'));
     const status = await screen.findByTestId('sync-job-status-pack:old');
     await waitFor(() => expect(status).toHaveTextContent(/Đang chờ Wi‑Fi\./));
     expect(status).not.toHaveTextContent(/chưa kiểm tra xong/);

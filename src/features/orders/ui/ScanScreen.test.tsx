@@ -260,6 +260,13 @@ describe('UI-B02 Quét mã đơn hàng', () => {
     expect(mockScanner.request).toHaveBeenCalledTimes(1);
   });
 
+  it('hộp thoại xin quyền đang mở: không lặp tiêu đề và nút "Cho phép camera" ở nền', async () => {
+    mockScanner.permission = 'askable';
+    await renderWithProviders(<ScanScreen />);
+    expect(screen.getAllByText('Cần dùng camera để quét mã')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Cho phép camera' })).toHaveLength(1);
+  });
+
   it('đóng hộp thoại thì còn khung hướng dẫn trên màn quét, vẫn xin quyền và nhập tay được', async () => {
     mockScanner.permission = 'askable';
     await renderWithProviders(<ScanScreen />);

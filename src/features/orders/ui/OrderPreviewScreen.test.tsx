@@ -293,6 +293,9 @@ describe('UI-C01 Xác nhận đơn trước khi quay', () => {
       await fireEvent.press(screen.getByTestId('preview-start'));
       expect(await screen.findByTestId('start-permission-modal')).toBeOnTheScreen();
       expect(screen.getByText(/chưa ghi video/)).toBeOnTheScreen();
+      // Xin quyền để xem trước/quay: tiêu đề KHÔNG nói "quét mã" (đó là ngữ cảnh của màn Quét).
+      expect(screen.getByText('Cần dùng camera')).toBeOnTheScreen();
+      expect(screen.queryByText('Cần dùng camera để quét mã')).toBeNull();
       expect(mockNavigation.replace).not.toHaveBeenCalled();
       await fireEvent.press(screen.getByTestId('start-permission-allow'));
       expect(mockScanner.request).toHaveBeenCalled();

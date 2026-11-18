@@ -13,6 +13,8 @@ interface CameraPermissionSheetProps {
   onClose: () => void;
   onRequest: () => void;
   onOpenSettings: () => void;
+  /** `scan`: quét mã (mặc định); `record`: xem trước/quay từ UI-C01. Quyết định tiêu đề và câu khi bị chặn. */
+  purpose?: 'scan' | 'record';
   /** Lý do xin quyền theo ngữ cảnh (quét mã khác xem trước khi quay); mặc định là lý do của màn quét. */
   reason?: string;
   testID?: string;
@@ -29,6 +31,7 @@ export function CameraPermissionSheet({
   onClose,
   onRequest,
   onOpenSettings,
+  purpose = 'scan',
   reason,
   testID,
   allowTestID,
@@ -36,18 +39,27 @@ export function CameraPermissionSheet({
   const { t } = useTranslation();
   const { tokens } = useTheme();
   const blocked = status === 'blocked';
+  const key = purpose === 'record' ? 'record' : 'scan';
   return (
     <BottomSheet
       visible={visible}
       onClose={onClose}
       title={t(
-        blocked ? 'screens:scan.permission.blockedTitle' : 'screens:scan.permission.askTitle',
+        blocked
+          ? 'screens:scan.permission.blockedTitle'
+          : purpose === 'record'
+            ? 'screens:scan.permission.recordAskTitle'
+            : 'screens:scan.permission.askTitle',
       )}
     >
       <View testID={testID} style={{ gap: tokens.space.md }}>
         <Text>
           {blocked
-            ? t('screens:scan.permission.blockedMessage')
+            ? t(
+                key === 'record'
+                  ? 'screens:scan.permission.recordBlockedMessage'
+                  : 'screens:scan.permission.blockedMessage',
+              )
             : (reason ?? t('screens:scan.permission.askReason'))}
         </Text>
         <Button

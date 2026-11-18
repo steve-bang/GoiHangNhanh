@@ -222,6 +222,7 @@ function ScanScreenBody() {
           <ScanUnavailable
             status={permission.status}
             cameraFailed={cameraFailed}
+            promptOpen={permissionPromptOpen}
             onRequest={() => void permission.request()}
             onOpenSettings={() => void openAppSettings()}
           />
@@ -380,11 +381,14 @@ function ScanScreenBody() {
 function ScanUnavailable({
   status,
   cameraFailed,
+  promptOpen,
   onRequest,
   onOpenSettings,
 }: {
   status: 'checking' | 'granted' | 'askable' | 'blocked';
   cameraFailed: boolean;
+  /** Hộp thoại xin quyền đang mở: không lặp lại tiêu đề và nút của nó phía sau. */
+  promptOpen: boolean;
   onRequest: () => void;
   onOpenSettings: () => void;
 }) {
@@ -411,13 +415,20 @@ function ScanUnavailable({
   return (
     <View testID="scan-unavailable" style={[styles.unavailable, { gap: tokens.space.md }]}>
       <Icon name="scan" size={56} color={tokens.color.camera.onCamera} />
-      <Text variant="sectionTitle" style={[styles.center, { color: tokens.color.camera.onCamera }]}>
-        {title}
-      </Text>
+      {promptOpen && !cameraFailed ? null : (
+        <Text
+          variant="sectionTitle"
+          style={[styles.center, { color: tokens.color.camera.onCamera }]}
+        >
+          {title}
+        </Text>
+      )}
       {message ? (
         <Text style={[styles.center, { color: tokens.color.camera.onCameraMuted }]}>{message}</Text>
       ) : null}
-      {action ? <Button label={action.label} onPress={action.onPress} /> : null}
+      {action && !(promptOpen && !cameraFailed) ? (
+        <Button label={action.label} onPress={action.onPress} />
+      ) : null}
     </View>
   );
 }
