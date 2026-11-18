@@ -7,7 +7,6 @@ import { PASSWORD_RECOVERY_MODE } from '@/core/config/feature-flags';
 import type { ErrorCode } from '@/core/errors/codes';
 import { resolveErrorMessage, type ErrorMessage } from '@/core/i18n/error-message';
 import { ROUTES } from '@/core/navigation';
-import { layout as themeLayout } from '@/core/theme';
 import { getMinTouchTarget, useAppNavigation } from '@/platform';
 import { Button, Text, useTheme } from '@/shared/ui';
 
@@ -15,7 +14,6 @@ import { DEFAULT_RESEND_SECONDS } from '../domain/otp';
 import { normalizeEmail, validateEmail } from '../domain/validation';
 import { AUTH_TITLE_VARIANT, computeForgotLayout } from './auth-layout';
 import { LINK_ROW_HEIGHT } from './onboarding-layout';
-import { TipCard } from './onboarding/AuthParts';
 import { LockIllustration } from './onboarding/AuthIllustrations';
 import { useOnboardingFlow } from './onboarding/OnboardingFlow';
 import { OnboardingScaffold } from './onboarding/OnboardingScaffold';
@@ -221,14 +219,6 @@ export function ForgotPasswordScreen() {
           {t('screens:forgot.backToSignIn')}
         </Text>
       </Pressable>
-
-      <View style={styles.spacer} />
-      <TipCard
-        testID="forgot-tip"
-        icon="bulb"
-        title={t('screens:forgot.tipTitle')}
-        body={t('screens:forgot.tipBody')}
-      />
     </OnboardingScaffold>
   );
 }
@@ -236,5 +226,4 @@ export function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   center: { textAlign: 'center' },
   link: { alignSelf: 'center', justifyContent: 'center' },
-  spacer: { flexGrow: 1, minHeight: themeLayout.space.md },
 });

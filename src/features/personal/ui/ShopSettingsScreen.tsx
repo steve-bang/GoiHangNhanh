@@ -12,7 +12,6 @@ import {
   ListGroup,
   ListItem,
   Screen,
-  StatusBadge,
   Text,
   useTheme,
 } from '@/shared/ui';
@@ -118,7 +117,6 @@ function ShopDetails({
             <Text variant="sectionTitle" testID="shop-settings-name">
               {shop.name}
             </Text>
-            <StatusBadge label={status} tone={active ? 'info' : 'warning'} />
           </View>
         </View>
       </Card>

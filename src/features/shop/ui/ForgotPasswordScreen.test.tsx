@@ -44,7 +44,7 @@ const email = () => screen.getByTestId('forgot-email');
 const submit = () => screen.getByTestId('forgot-submit');
 
 describe('UI-A07 Quên mật khẩu: giao diện', () => {
-  it('có tiêu đề header, hình, lời trấn an, mô tả, ô Email + gợi ý, nút, link quay lại và thẻ Mẹo', async () => {
+  it('có tiêu đề header, hình, lời trấn an, mô tả, ô Email + gợi ý, nút và link quay lại (không còn thẻ Mẹo)', async () => {
     await renderWithProviders(<ForgotPasswordScreen />);
     expect(screen.getByTestId('screen-UI-A07')).toBeOnTheScreen();
     expect(screen.getByText('Quên mật khẩu')).toBeOnTheScreen();
@@ -60,20 +60,19 @@ describe('UI-A07 Quên mật khẩu: giao diện', () => {
     expect(screen.getByText('Dùng email bạn đã đăng ký tài khoản.')).toBeOnTheScreen();
     expect(submit()).toBeOnTheScreen();
     expect(screen.getByRole('link', { name: 'Quay lại đăng nhập' })).toBeOnTheScreen();
-    expect(screen.getByText('Mẹo nhỏ cho bạn')).toBeOnTheScreen();
+    expect(screen.queryByText('Mẹo nhỏ cho bạn')).toBeNull();
     expect(screen.queryByText(/điện thoại/i)).toBeNull();
   });
 
   it.each([
     [375, 667],
     [320, 568],
-  ])('màn thấp %ix%i: vẫn đủ ô, nút, link và thẻ Mẹo', async (w, h) => {
+  ])('màn thấp %ix%i: vẫn đủ ô, nút và link', async (w, h) => {
     mockWindow.mockReturnValue({ width: w, height: h, scale: 2, fontScale: 1 });
     await renderWithProviders(<ForgotPasswordScreen />);
     expect(email()).toBeOnTheScreen();
     expect(submit()).toBeOnTheScreen();
     expect(screen.getByRole('link', { name: 'Quay lại đăng nhập' })).toBeOnTheScreen();
-    expect(screen.getByTestId('forgot-tip')).toBeOnTheScreen();
   });
 });
 
@@ -294,7 +293,8 @@ describe('UI-A07 Quên mật khẩu: chế độ thư đặt lại (v1, D-14)', 
     ).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Gửi email đặt lại' })).toBeOnTheScreen();
     expect(screen.queryByText(/mã xác minh/i)).toBeNull();
-    expect(screen.getByTestId('forgot-tip')).toBeOnTheScreen();
+    // Không còn thẻ "Mẹo nhỏ": lặp lại câu gợi ý ngay dưới ô email.
+    expect(screen.queryByTestId('forgot-tip')).toBeNull();
   });
 
   it('gửi thành công: sang /forgot-password/sent (không sang /verify-otp)', async () => {
