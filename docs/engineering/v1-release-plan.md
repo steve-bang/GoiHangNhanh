@@ -101,7 +101,7 @@ Ngoài tab Cá nhân, `src/api/firebase/firebase-api.ts:68-71`: `signInWithProvi
 | Trang chủ UI-B01 | `HomeScreen.tsx:7-9,52,80,154-170` dùng `ILLUSTRATIVE_SHOP_NAME`, `ILLUSTRATIVE_TODAY_STATS`, dải "minh họa" | Tab đầu | **Nối thật**: tên shop từ phiên; 3 ô = số phiên đóng gói hôm nay (giờ thiết bị), số tệp đã được máy chủ nhận hôm nay, số tệp cần xử lý; bỏ dải minh họa; thêm thẻ "Dữ liệu nằm trên máy này" (Q-24a) | V1-10 |
 | Trung tâm đồng bộ UI-F01 | `SyncCenterScreen.tsx:46` dữ liệu minh họa | Trang chủ (lối tắt Bằng chứng, ô Lỗi), Cá nhân, cảnh báo đăng xuất | **Nối thật** + Thử lại | V1-08 |
 | Chi tiết lỗi tải UI-F02 | `upload/ui/placeholders.tsx:5` khung | Từ UI-F01 | **Nối thật** (mã lỗi thân thiện, hành động) | V1-08 |
-| Dung lượng UI-F03 | `placeholders.tsx:6` khung | Không có lối vào (grep `ROUTES.storage`: 0) | **Giữ khung**, không thêm lối vào; route guard chặn deep link khi chưa đăng nhập | – |
+| Dung lượng UI-F03 | `placeholders.tsx:6` khung | Không có lối vào (grep `ROUTES.storage`: 0) | **Giữ khung** theo kế hoạch gốc; **đã thay bằng màn thật ở V1-30** (lối vào từ Dữ liệu bằng chứng, chỉ đọc, không nút xóa), route guard vẫn chặn deep link khi chưa đăng nhập | V1-30 |
 | Thông báo UI-I07 (tab) | `shop/ui/screens.tsx:25` khung "Tính năng sắp có" | Tab Thông báo (D-16, không bỏ tab) | **Trạng thái rỗng trung thực**: "Chưa có thông báo. Ứng dụng chưa gửi thông báo; lỗi tải lên xem ở Trung tâm đồng bộ." + nút mở UI-F01 | V1-10 |
 | Cài đặt thông báo UI-I04 | Màn thật, cổng Firebase "chưa kết nối" | Menu Cá nhân | **Ẩn mục menu** ở v1 | V1-05 |
 | Thành viên UI-I03, Gói UI-H01…H04 | Khung/ẩn | Đã ẩn (`account-menu.ts`) | **Giữ ẩn** | – |
@@ -152,6 +152,7 @@ Ngoài tab Cá nhân, `src/api/firebase/firebase-api.ts:68-71`: `signInWithProvi
 | V1-19 | web-legal-pages | Trang web quyền riêng tư, điều khoản, hỗ trợ, yêu cầu xóa tài khoản | store | – | tất cả | S (web) | Đã hợp nhất (#42) |
 | V1-20 | store-listing-docs | Mô tả store, Privacy Labels, Data safety, ghi chú duyệt (chỉ tài liệu) | store | – | tất cả | tài liệu | Đã hợp nhất (#45) |
 | — | **Cổng thiết bị** (con người) | Build `staging` EAS, QA-01…14 iOS + Android | release-checklist G | V1-00…V1-20 | – | – | Chưa làm (release-checklist G) |
+| V1-30 | storage-screen | Màn Dung lượng UI-F03 thật, chỉ đọc (ngoài kế hoạch gốc) | mục 2.3, Q-30g A | V1-10 | – | S | Đã code ([plans/v1-30-storage-screen.md](plans/v1-30-storage-screen.md)) |
 | V1-21 | release-1.0.0 | Phiên bản 1.0.0, bật ghi video ở production, CHANGELOG `[1.0.0]` | – | cổng thiết bị đạt | – | S | Chờ cổng thiết bị |
 
 PR8 (chia đoạn video) và PR9 (kéo xuống) của release-hardening-plan **không làm ở v1** (Q-24a A, Q-24b A). PR7 bước 1 (đo) và module băm native chỉ làm nếu cổng thiết bị cho thấy V1-13 chưa đủ (mục 7, R-5).

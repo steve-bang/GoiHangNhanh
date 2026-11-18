@@ -74,7 +74,7 @@ Thanh tab (D-16, theo mockup 02): **Trang chủ · Đơn hàng · Quét · Thôn
 | `/orders/[orderId]/history` | UI-E05 | chưa có đặc tả (docs/09 mục 4) | hiện | `orders`: `OrderHistoryScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/sync` | UI-F01 | A07 | ẩn | `upload`: `SyncCenterScreen` | Tệp thật trên máy (bằng chứng đóng gói + ảnh/video hàng hoàn), bốn bộ lọc, Thử lại / Kiểm tra lại, nhóm tài khoản khác (V1-08) |
 | `/sync/[jobId]` | UI-F02 | chưa có đặc tả (docs/09 mục 4) | ẩn | `upload`: `SyncErrorScreen` | Placeholder (route + tiêu đề + lối quay lại) |
-| `/sync/storage` | UI-F03 | chưa có đặc tả (docs/09 mục 4) | ẩn | `upload`: `StorageScreen` | Placeholder (route + tiêu đề + lối quay lại) |
+| `/sync/storage` | UI-F03 | docs/09 mục 4 (V1-30) | không có tab; vào từ Cá nhân > Dữ liệu bằng chứng > "Dung lượng trên máy" | `upload`: `StorageScreen` | Màn thật (V1-30): dung lượng tệp của tài khoản + shop đang dùng, trên máy này |
 | `/disputes` | UI-G01 | chưa có đặc tả (docs/09 mục 4) | ẩn | `disputes`: `DisputesScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/disputes/new` | UI-G02 | chưa có đặc tả (docs/09 mục 4) | ẩn | `disputes`: `DisputeNewScreen` | Placeholder (route + tiêu đề + lối quay lại) |
 | `/disputes/select-evidence` | UI-G03 | chưa có đặc tả (docs/09 mục 4) | ẩn | `disputes`: `DisputeSelectEvidenceScreen` | Placeholder (route + tiêu đề + lối quay lại) |
