@@ -60,6 +60,7 @@ Trạng thái hiện tại: **chưa có bản phát hành nào trên cửa hàng
 
 ### Fixed
 
+- Rà UI/UX (PR A): hộp thoại xin quyền camera ở bước xem trước/quay không còn nói "quét mã" (thêm `purpose: 'record'`, tiêu đề "Cần dùng camera", câu bị chặn riêng); màn Quét không còn lặp tiêu đề và nút "Cho phép camera" ở nền khi hộp thoại đang mở; Trung tâm đồng bộ mặc định mở mục đầu tiên có tệp (Lỗi, Đang tải, Chờ tải), không còn việc thì "Đã tải lên" thay vì tab rỗng. Chưa chạy trên thiết bị.
 - Rà UI/UX (PR B): bớt thông tin lặp. Trang chủ bỏ lối tắt "Danh sách đơn" (trùng tab Đơn hàng); màn Cửa hàng chỉ ghi trạng thái một lần (hàng Trạng thái, bỏ huy hiệu cạnh tên); Quên mật khẩu bỏ thẻ "Mẹo nhỏ" lặp câu gợi ý dưới ô email. Giữ ba hàng "Sắp có" ở Bảo mật vì đặc tả board 07 khung 14 chủ ý để lại.
 - Lỗi kho SQLite lúc dừng quay không còn làm mất dấu tệp tạm: vẫn chuyển sang `evidence/<id>.<đuôi>` và ghi lại bằng `RECOVERY_FOUND_FILE` (thử lại 3 lần), mọi nhánh lỗi mang đường dẫn; khôi phục tệp `recording` tìm tệp bền theo ID (đóng gói và hàng hoàn). Không quét thư mục tạm, không xóa tệp (V1-23).
 - Trang chủ không còn dữ liệu minh họa: tên cửa hàng lấy từ tài khoản, ba ô "Thống kê hôm nay" đếm thật trên máy (đơn đã đóng gói có video, tệp máy chủ đã nhận hôm nay, tệp lỗi cần xử lý; ô Lỗi mở thẳng bộ lọc Lỗi), máy trống hiện số 0 kèm câu rỗng, thêm thẻ "Dữ liệu nằm trên máy này" đóng được; thẻ và màn Dữ liệu bằng chứng ở Cá nhân có số thật; tab Thông báo nói rõ ứng dụng chưa gửi thông báo và mở Trung tâm đồng bộ. Chưa kiểm chứng trên thiết bị (V1-10).
