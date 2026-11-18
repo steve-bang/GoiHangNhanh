@@ -30,6 +30,8 @@ export function StorageScreen() {
   const countOnly = (group: UsageGroup | undefined): string =>
     group ? t('screens:storage.valueCount', { count: group.files }) : t('screens:storage.unknown');
 
+  const empty =
+    data !== null && data.onServer.files + data.notOnServer.files + data.noLocalCopy.files === 0;
   const unknownSize = data ? data.onServer.unknownSize + data.notOnServer.unknownSize : 0;
 
   return (
@@ -39,32 +41,41 @@ export function StorageScreen() {
       testID="screen-UI-F03"
       contentGap={tokens.space.lg}
     >
-      <ListGroup>
-        <MetricTile
-          layout="row"
-          icon="cloud"
-          tone="blue"
-          label={t('screens:storage.onServer')}
-          value={withSize(data?.onServer)}
-          testID="storage-on-server"
-        />
-        <MetricTile
-          layout="row"
-          icon="sync"
-          tone="warning"
-          label={t('screens:storage.notOnServer')}
-          value={withSize(data?.notOnServer)}
-          testID="storage-not-on-server"
-        />
-        <MetricTile
-          layout="row"
-          icon="alert"
-          tone="neutral"
-          label={t('screens:storage.noLocalCopy')}
-          value={countOnly(data?.noLocalCopy)}
-          testID="storage-no-local-copy"
-        />
-      </ListGroup>
+      {empty ? (
+        <Text variant="formBody" color="textMuted" testID="storage-empty">
+          {t('screens:storage.empty')}
+        </Text>
+      ) : (
+        <ListGroup>
+          <MetricTile
+            layout="row"
+            icon="cloud"
+            tone="blue"
+            label={t('screens:storage.onServer')}
+            value={withSize(data?.onServer)}
+            testID="storage-on-server"
+          />
+          <MetricTile
+            layout="row"
+            icon="sync"
+            tone="warning"
+            label={t('screens:storage.notOnServer')}
+            value={withSize(data?.notOnServer)}
+            testID="storage-not-on-server"
+          />
+          {/* Trường hợp hiếm (đang ghi, lưu máy lỗi): chỉ hiện khi có, để không làm rối màn. */}
+          {!data || data.noLocalCopy.files > 0 ? (
+            <MetricTile
+              layout="row"
+              icon="alert"
+              tone="neutral"
+              label={t('screens:storage.noLocalCopy')}
+              value={countOnly(data?.noLocalCopy)}
+              testID="storage-no-local-copy"
+            />
+          ) : null}
+        </ListGroup>
+      )}
       <View style={{ gap: tokens.space.xs }} testID="storage-explain">
         {state.kind === 'error' ? (
           <Text variant="caption" color="textMuted" testID="storage-load-error">
@@ -74,15 +85,11 @@ export function StorageScreen() {
         <Text variant="caption" color="textMuted">
           {t('screens:storage.scope')}
         </Text>
-        <Text variant="caption" color="textMuted">
-          {t('screens:storage.explainOnServer')}
-        </Text>
-        <Text variant="caption" color="textMuted">
-          {t('screens:storage.explainNotOnServer')}
-        </Text>
-        <Text variant="caption" color="textMuted">
-          {t('screens:storage.explainNoLocalCopy')}
-        </Text>
+        {data && data.notOnServer.files > 0 ? (
+          <Text variant="caption" color="textMuted" testID="storage-risk">
+            {t('screens:storage.risk')}
+          </Text>
+        ) : null}
         {unknownSize > 0 ? (
           <Text variant="caption" color="textMuted" testID="storage-unknown-size">
             {t('screens:storage.unknownSize', { count: unknownSize })}

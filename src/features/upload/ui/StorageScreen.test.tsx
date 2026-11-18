@@ -41,17 +41,19 @@ const f = (id: string, state: string, sizeBytes: number | null): Partial<Evidenc
 });
 
 describe('StorageScreen (UI-F03, V1-30)', () => {
-  it('máy trống: ba nhóm là 0 tệp THẬT, có phạm vi đếm và không hứa quá mức', async () => {
+  it('máy trống: một câu "chưa có tệp", không hàng số 0, có phạm vi đếm, không hứa quá mức', async () => {
     await renderWithProviders(<StorageScreen />);
-    expect(await screen.findByLabelText('Đã lên máy chủ: 0 tệp · 0 B')).toBeTruthy();
-    expect(screen.getByLabelText('Chưa lên máy chủ: 0 tệp · 0 B')).toBeTruthy();
-    expect(screen.getByLabelText('Chưa có bản lưu trên máy: 0 tệp')).toBeTruthy();
+    expect(await screen.findByTestId('storage-empty')).toHaveTextContent(
+      'Chưa có tệp bằng chứng nào trên máy này.',
+    );
+    expect(screen.queryByTestId('storage-on-server')).toBeNull();
     expect(screen.getByTestId('screen-UI-F03')).toBeTruthy();
     const explain = screen.getByTestId('storage-explain');
-    expect(explain).toHaveTextContent(/Chỉ tính tệp do tài khoản đang đăng nhập tạo/);
+    expect(explain).toHaveTextContent(/Chỉ tính tệp của tài khoản này/);
     expect(explain).not.toHaveTextContent(OVERPROMISE);
-    expect(screen.queryByTestId('storage-unknown-size')).toBeNull();
-    expect(screen.queryByTestId('storage-other-accounts')).toBeNull();
+    for (const id of ['storage-risk', 'storage-unknown-size', 'storage-other-accounts']) {
+      expect(screen.queryByTestId(id)).toBeNull();
+    }
   });
 
   it('có tệp: cộng dung lượng theo nhóm, báo tệp chưa rõ cỡ', async () => {
@@ -66,8 +68,9 @@ describe('StorageScreen (UI-F03, V1-30)', () => {
     expect(await screen.findByLabelText('Đã lên máy chủ: 2 tệp · 2 MB')).toBeTruthy();
     expect(screen.getByLabelText('Chưa lên máy chủ: 2 tệp · 1,5 KB')).toBeTruthy();
     expect(screen.getByLabelText('Chưa có bản lưu trên máy: 1 tệp')).toBeTruthy();
+    expect(screen.getByTestId('storage-risk')).toHaveTextContent(/có thể mất nếu bạn gỡ ứng dụng/);
     expect(screen.getByTestId('storage-unknown-size')).toHaveTextContent(
-      'Có 1 tệp chưa rõ dung lượng, nên tổng có thể thấp hơn thực tế.',
+      '1 tệp chưa rõ dung lượng, nên tổng có thể cao hơn.',
     );
   });
 
@@ -83,12 +86,13 @@ describe('StorageScreen (UI-F03, V1-30)', () => {
       'Không đọc được số liệu trên máy.',
     );
     expect(screen.getByLabelText('Đã lên máy chủ: –')).toBeTruthy();
+    expect(screen.queryByTestId('storage-empty')).toBeNull();
     expect(screen.getByTestId('storage-retry')).toBeTruthy();
   });
 
   it('không có nút xóa/giải phóng; nút Xem trung tâm đồng bộ mở UI-F01', async () => {
     await renderWithProviders(<StorageScreen />);
-    await screen.findByLabelText('Đã lên máy chủ: 0 tệp · 0 B');
+    await screen.findByTestId('storage-empty');
     expect(screen.queryByText(/xóa|giải phóng|dọn/i)).toBeNull();
     await fireEvent.press(screen.getByTestId('storage-open-sync'));
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.sync);

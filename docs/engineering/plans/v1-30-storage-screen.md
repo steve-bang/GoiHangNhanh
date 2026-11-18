@@ -18,6 +18,9 @@ UI-F03 (`/sync/storage`) chỉ là `PlaceholderScreen`, không lối vào. Ngư�
 - `upload/ui/use-evidence-stats.ts`: `useStorageUsage` trên `useLocalStats` (nạp khi focus và sau mỗi lượt hàng đợi, không định kỳ; đổi shop không hiện số cũ).
 - `upload/ui/StorageScreen.tsx` thay khung; chuỗi ở `screens:storage.*`, `personal:evidenceData.storageRow`.
 
+## Rà soát UI/UX (sau lần đầu)
+Bỏ ba dòng giải thích lặp lại nhãn; chỉ còn một dòng phạm vi, và các dòng chỉ hiện khi đúng tình huống (rủi ro mất tệp khi có tệp chưa lên máy chủ; tệp chưa rõ cỡ; tài khoản khác). Hàng "Chưa có bản lưu trên máy" chỉ hiện khi có tệp; máy trống hiện một câu thay vì hai hàng "0 tệp · 0 B".
+
 ## Giới hạn đã biết
 - Số liệu chỉ là phần máy này biết: tệp đã xóa khỏi máy hoặc ở máy khác không có trong tổng; màn nói rõ "trên máy này", không phải tổng dung lượng đám mây của shop.
 - `loadSyncJobs` đọc mọi tệp của shop kèm tra phiên/đơn/hồ sơ (có đệm theo id): ổn với số tệp hiện tại, chưa đo trên máy nhiều nghìn tệp.

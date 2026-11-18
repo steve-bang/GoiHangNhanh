@@ -705,14 +705,13 @@
     "unknown": "–",
     "valueWithSize": "{{count}} tệp · {{size}}",
     "valueCount": "{{count}} tệp",
-    "scope": "Chỉ tính tệp do tài khoản đang đăng nhập tạo, của cửa hàng này, trên máy này.",
-    "explainOnServer": "Đã lên máy chủ: chỉ tính tệp máy chủ đã xác nhận đã nhận.",
-    "explainNotOnServer": "Chưa lên máy chủ: tệp có thể mất nếu bạn gỡ ứng dụng hoặc đổi máy.",
-    "explainNoLocalCopy": "Chưa có bản lưu trên máy: tệp đang ghi hoặc không lưu được vào máy.",
-    "unknownSize": "Có {{count}} tệp chưa rõ dung lượng, nên tổng có thể thấp hơn thực tế.",
-    "otherAccounts": "Máy còn có {{count}} tệp của tài khoản khác, không tính ở đây.",
+    "scope": "Chỉ tính tệp của tài khoản này, trong cửa hàng này, trên máy này.",
+    "unknownSize": "{{count}} tệp chưa rõ dung lượng, nên tổng có thể cao hơn.",
+    "otherAccounts": "Máy còn {{count}} tệp của tài khoản khác, không tính ở đây.",
     "loadError": "Không đọc được số liệu trên máy.",
     "retry": "Thử lại",
-    "openSync": "Xem trung tâm đồng bộ"
+    "openSync": "Xem trung tâm đồng bộ",
+    "risk": "Tệp chưa lên máy chủ có thể mất nếu bạn gỡ ứng dụng hoặc đổi máy.",
+    "empty": "Chưa có tệp bằng chứng nào trên máy này."
   }
 }
