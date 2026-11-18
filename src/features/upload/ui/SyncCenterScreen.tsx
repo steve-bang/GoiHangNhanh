@@ -73,7 +73,7 @@ export function SyncCenterScreen() {
   // Tham số `filter` (ô "Lỗi – cần xử lý" ở Trang chủ mở thẳng bộ lọc Lỗi, V1-10); giá trị lạ bị bỏ qua.
   const requested = useRouteParams().filter;
   // Bộ lọc người dùng chọn (hoặc do route chỉ định). Chưa chọn thì tự đặt MỘT lần khi danh sách tải xong:
-  // có tệp lỗi thì mở thẳng "Lỗi" (việc cần xử lý trước), không thì "Đang tải lên" như cũ.
+  // có tệp lỗi thì mở thẳng "Lỗi" (việc cần xử lý trước), rồi "Đang tải", "Chờ tải"; không còn việc thì "Đã tải lên".
   const [chosen, setChosen] = useState<SyncFilter | null>(
     SYNC_FILTERS.find((key) => key === requested) ?? null,
   );
@@ -98,7 +98,13 @@ export function SyncCenterScreen() {
 
   const count = (key: SyncFilter) =>
     rows ? rows.pending.filter((r) => r.view.filter === key).length : 0;
-  if (rows && chosen === null && auto === null) setAuto(count('error') > 0 ? 'error' : 'uploading');
+  // Mặc định: mục đầu tiên CÓ tệp (Lỗi, Đang tải, Chờ tải); không còn việc nào thì "Đã tải lên" thay vì tab rỗng.
+  if (rows && chosen === null && auto === null) {
+    setAuto(
+      (['error', 'uploading', 'waiting_upload'] as const).find((key) => count(key) > 0) ??
+        'uploaded',
+    );
+  }
   const refresh = () => {
     setRefreshing(true);
     void reload().finally(() => setRefreshing(false));

@@ -137,6 +137,7 @@ export function useStartPacking(options: { navigate?: 'push' | 'replace' } = {})
     <CameraPermissionSheet
       visible={pending !== null && sheetStatus !== null}
       status={sheetStatus ?? 'askable'}
+      purpose="record"
       // Câu giải thích theo cờ ghi video (V1-18): bật cờ thì nói thật là quay video, không ghi âm (O-09);
       // tắt cờ thì nói bản này chưa ghi video.
       reason={t(
