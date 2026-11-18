@@ -697,5 +697,21 @@
     "openSettings": "Mở Cài đặt",
     "backToOrder": "Về đơn hàng",
     "storageMinutes": "Máy cần đủ chỗ cho {{minutes}} phút quay. Hãy giải phóng dung lượng rồi kiểm tra lại."
+  },
+  "storage": {
+    "onServer": "Đã lên máy chủ",
+    "notOnServer": "Chưa lên máy chủ",
+    "noLocalCopy": "Chưa có bản lưu trên máy",
+    "unknown": "–",
+    "valueWithSize": "{{count}} tệp · {{size}}",
+    "valueCount": "{{count}} tệp",
+    "scope": "Chỉ tính tệp của tài khoản này, trong cửa hàng này, trên máy này.",
+    "unknownSize": "{{count}} tệp chưa rõ dung lượng, nên tổng có thể cao hơn.",
+    "otherAccounts": "Máy còn {{count}} tệp của tài khoản khác, không tính ở đây.",
+    "loadError": "Không đọc được số liệu trên máy.",
+    "retry": "Thử lại",
+    "openSync": "Xem trung tâm đồng bộ",
+    "risk": "Tệp chưa lên máy chủ có thể mất nếu bạn gỡ ứng dụng hoặc đổi máy.",
+    "empty": "Chưa có tệp bằng chứng nào trên máy này."
   }
 }

@@ -99,6 +99,12 @@ describe('EvidenceDataScreen (UI-I01 route con, khung 11)', () => {
     await fireEvent.press(screen.getByTestId('evidence-retention-link'));
     expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.retentionDetail);
   });
+  it('V1-30: hàng "Dung lượng trên máy" mở UI-F03', async () => {
+    await renderWithProviders(<EvidenceDataScreen />);
+    await fireEvent.press(screen.getByTestId('evidence-storage-link'));
+    expect(mockNavigation.push).toHaveBeenCalledWith(ROUTES.storage);
+  });
+
   it('V1-09: công tắc "Chỉ tải khi có Wi‑Fi" mặc định tắt, bật thì lưu vào cài đặt máy', async () => {
     const store = createMemoryDeviceSettingsStore();
     await renderWithProviders(<EvidenceDataScreen />, { deviceSettingsStore: store });

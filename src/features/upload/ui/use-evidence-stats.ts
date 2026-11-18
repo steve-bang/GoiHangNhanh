@@ -12,9 +12,11 @@ import { useScreenFocused } from '@/platform';
 
 import {
   loadEvidenceTotals,
+  loadStorageUsage,
   loadTodayStats,
   type EvidenceStatsStores,
   type EvidenceTotals,
+  type StorageUsage,
   type TodayStats,
 } from '../domain';
 import { useUploadQueueControl } from '../data';
@@ -91,4 +93,11 @@ export function useTodayEvidenceStats() {
 /** Số tệp bằng chứng của shop trên máy: tổng / trên máy / đang chờ / trên đám mây. */
 export function useEvidenceTotals() {
   return useLocalStats<EvidenceTotals>((stores, shopId) => loadEvidenceTotals(stores, shopId));
+}
+
+/** Dung lượng tệp của tài khoản + shop đang đăng nhập trên máy (UI-F03, V1-30). */
+export function useStorageUsage() {
+  return useLocalStats<StorageUsage>((stores, shopId, uid) =>
+    loadStorageUsage(stores, shopId, uid),
+  );
 }

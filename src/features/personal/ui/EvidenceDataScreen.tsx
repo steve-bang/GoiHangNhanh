@@ -85,6 +85,13 @@ export function EvidenceDataScreen() {
       </ListGroup>
       <ListGroup>
         <ListItem
+          leadingIcon="device-saved"
+          title={t('personal:evidenceData.storageRow')}
+          titleWeight="regular"
+          onPress={() => navigation.push(ROUTES.storage)}
+          testID="evidence-storage-link"
+        />
+        <ListItem
           leadingIcon="clock"
           title={t('personal:evidenceData.retentionRow')}
           titleWeight="regular"

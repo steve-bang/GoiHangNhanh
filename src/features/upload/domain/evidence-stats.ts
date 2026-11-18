@@ -64,7 +64,7 @@ export async function loadTodayStats(
 }
 
 /** Trạng thái chưa (hoặc không còn) có bản đã lưu trên máy. */
-const NOT_SAVED_ON_DEVICE: readonly FileState[] = [
+export const NOT_SAVED_ON_DEVICE: readonly FileState[] = [
   FILE_STATES.RECORDING,
   FILE_STATES.SAVING_LOCAL,
   FILE_STATES.LOCAL_SAVE_FAILED,

@@ -205,7 +205,8 @@
     "explainPending": "Đang chờ tải lên: tệp chưa được máy chủ xác nhận đã nhận.",
     "explainCloud": "Trên đám mây: chỉ tính tệp máy chủ đã xác nhận và kiểm tra khớp.",
     "retentionRow": "Thời hạn lưu",
-    "openSync": "Xem trung tâm đồng bộ"
+    "openSync": "Xem trung tâm đồng bộ",
+    "storageRow": "Dung lượng trên máy"
   },
   "retentionDetail": {
     "planEyebrow": "Thời hạn lưu bằng chứng",
